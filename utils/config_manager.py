@@ -1,63 +1,72 @@
 import json
 import os
-from . import constants
+from utils.constants import (
+    CONFIG_FILE, DEFAULT_API_URL, DEFAULT_AI_PROMPT_TEMPLATE, DEFAULT_KEYBINDINGS
+)
 
 
-class ConfigManager:
-    def __init__(self, config_file=constants.CONFIG_FILE):
-        self.config_file = config_file
-        self.config = self.load_config()
+def load_config():
+    try:
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        config_data = {}
 
-    def load_config(self):
-        try:
-            with open(self.config_file, 'r', encoding='utf-8') as f:
-                config_data = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            config_data = {}
+    config_data.setdefault("deduplicate", False)
+    config_data.setdefault("show_ignored", True)
+    config_data.setdefault("show_untranslated", False)
+    config_data.setdefault("show_translated", False)
+    config_data.setdefault("show_unreviewed", False)
+    config_data.setdefault("auto_save_tm", False)
+    config_data.setdefault("auto_backup_tm_on_save", True)
+    config_data.setdefault("last_dir", "")
+    config_data.setdefault("recent_files", [])
 
-        # General settings
-        config_data.setdefault("language", "zh_cn")
-        config_data.setdefault("last_dir", "")
-        config_data.setdefault("recent_files", [])
-        config_data.setdefault("auto_backup_tm_on_save", True)
-        config_data.setdefault("hotkeys", constants.DEFAULT_HOTKEYS)
+    config_data.setdefault("ai_api_key", "")
+    config_data.setdefault("ai_api_base_url", DEFAULT_API_URL)
+    config_data.setdefault("ai_target_language", "中文")
+    config_data.setdefault("ai_model_name", "deepseek-chat")
+    config_data.setdefault("ai_api_interval", 200)
+    config_data.setdefault("ai_max_concurrent_requests", 1)
+    config_data.setdefault("ai_use_translation_context", False)
+    config_data.setdefault("ai_context_neighbors", 0)
+    # New AI context settings
+    config_data.setdefault("ai_use_original_context", True)
+    config_data.setdefault("ai_original_context_neighbors", 3)
 
-        # AI settings
-        config_data.setdefault("ai_api_key", "")
-        config_data.setdefault("ai_api_base_url", constants.DEFAULT_API_URL)
-        config_data.setdefault("ai_target_language", "中文")
-        config_data.setdefault("ai_model_name", "deepseek-chat")
-        config_data.setdefault("ai_api_interval", 200)
-        config_data.setdefault("ai_max_concurrent_requests", 1)
-        config_data.setdefault("ai_use_translation_context", True)
-        config_data.setdefault("ai_context_neighbors", 3)
-        config_data.setdefault("ai_use_original_context", True)
-        config_data.setdefault("ai_original_context_neighbors", 3)
+    current_prompt = config_data.get("ai_prompt_template")
+    if not current_prompt or "[Custom Translate]" not in current_prompt or "[Untranslated Context]" not in current_prompt:
+        config_data["ai_prompt_template"] = DEFAULT_AI_PROMPT_TEMPLATE
 
-        current_prompt = config_data.get("ai_prompt_template")
-        if not current_prompt or "[Termbase Mappings]" not in current_prompt:
-            config_data["ai_prompt_template"] = constants.DEFAULT_AI_PROMPT_TEMPLATE
+    if 'keybindings' not in config_data:
+        config_data['keybindings'] = DEFAULT_KEYBINDINGS.copy()
+    else:
+        for key, value in DEFAULT_KEYBINDINGS.items():
+            config_data['keybindings'].setdefault(key, value)
 
-        return config_data
+    return config_data
 
-    def save_config(self):
-        try:
-            with open(self.config_file, 'w', encoding='utf-8') as f:
-                json.dump(self.config, f, indent=4, ensure_ascii=False)
-        except Exception as e:
-            print(f"Error saving config file: {e}")
 
-    def get(self, key, default=None):
-        return self.config.get(key, default)
+def save_config(app_instance):
+    config = app_instance.config
+    config["deduplicate"] = app_instance.deduplicate_strings_var.get()
+    config["show_ignored"] = app_instance.show_ignored_var.get()
+    config["show_untranslated"] = app_instance.show_untranslated_var.get()
+    config["show_translated"] = app_instance.show_translated_var.get()
+    config["show_unreviewed"] = app_instance.show_unreviewed_var.get()
+    config["auto_save_tm"] = app_instance.auto_save_tm_var.get()
+    config["auto_backup_tm_on_save"] = app_instance.auto_backup_tm_on_save_var.get()
 
-    def set(self, key, value):
-        self.config[key] = value
-        self.save_config()
+    if 'keybindings' in app_instance.config:
+        config['keybindings'] = app_instance.config['keybindings']
 
-    def add_to_recent_files(self, filepath):
-        if not filepath: return
-        recent_files = self.get("recent_files", [])
-        if filepath in recent_files:
-            recent_files.remove(filepath)
-        recent_files.insert(0, filepath)
-        self.set("recent_files", recent_files[:10])
+    if app_instance.current_project_file_path:
+        config["last_dir"] = os.path.dirname(app_instance.current_project_file_path)
+    elif app_instance.current_code_file_path:
+        config["last_dir"] = os.path.dirname(app_instance.current_code_file_path)
+
+    try:
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        print(f"Error saving config file: {e}")

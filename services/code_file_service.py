@@ -1,111 +1,184 @@
 import re
-from models.translatable_string import TranslatableString, unescape_overwatch_string
+import os
+import shutil
+import datetime
+from models.translatable_string import TranslatableString
 
-class CodeFileService:
-    @staticmethod
-    def extract_translatable_strings(code_content):
-        strings = []
-        full_code_lines = code_content.splitlines()
+def unescape_overwatch_string(s):
+    res = []
+    i = 0
+    while i < len(s):
+        if s[i] == '\\':
+            if i + 1 < len(s):
+                char_after_backslash = s[i + 1]
+                if char_after_backslash == 'n':
+                    res.append('\n')
+                elif char_after_backslash == 't':
+                    res.append('\t')
+                elif char_after_backslash == '"':
+                    res.append('"')
+                elif char_after_backslash == '\\':
+                    res.append('\\')
+                else:
+                    res.append('\\');
+                    res.append(char_after_backslash)
+                i += 2
+            else:
+                res.append('\\');
+                i += 1
+        else:
+            res.append(s[i]);
+            i += 1
+    return "".join(res)
 
-        patterns = [
-            ("Custom String", re.compile(r'(?:自定义字符串|Custom String)\s*\(\s*\"', re.IGNORECASE)),
-            ("Description", re.compile(r'(?:Description|描述)\s*:\s*\"', re.IGNORECASE)),
-            ("Mode Name", re.compile(r'(?:Mode Name|模式名称)\s*:\s*\"', re.IGNORECASE)),
-        ]
 
-        regex_all_digits = re.compile(r'^\d+$')
-        regex_ow_placeholder = re.compile(r'^\{\d+\}$')
-        allowed_symbols = r".,?!|:;\-_+=*/%&#@$^~`<>(){}\[\]\s"
-        regex_only_symbols = re.compile(f"^[{re.escape(allowed_symbols)}]+$")
-        regex_placeholder_like = re.compile(r'\{\d+\}')
-        regex_repeating_char = re.compile(r"^(.)\1{1,}$")
-        regex_progress_bar = re.compile(r"^[\[\(\|\-=<>#\s]*[\]\s]*$")
-        known_untranslatable = {"ID", "HP", "MP", "XP", "LV", "CD", "UI", "OK", "X", "Y", "Z", "A", "B", "C", "N/A"}
+def extract_translatable_strings(code_content):
+    strings = []
+    full_code_lines = code_content.splitlines()
 
-        for string_type, pattern in patterns:
-            for match in pattern.finditer(code_content):
-                start_idx = match.end()
-                content_chars = []
-                ptr = start_idx
-                escaped = False
-                closed = False
-                end_idx = -1
+    pattern_custom_string_start_str = r'(?:自定义字符串|Custom String)\s*\(\s*\"'
+    pattern_custom_string_start = re.compile(pattern_custom_string_start_str, re.IGNORECASE)
 
-                while ptr < len(code_content):
-                    char = code_content[ptr]
-                    if escaped:
-                        content_chars.append(char)
-                        escaped = False
-                    elif char == '\\':
-                        content_chars.append(char)
-                        escaped = True
-                    elif char == '"':
-                        closed = True
-                        end_idx = ptr
-                        break
-                    elif char == '\n' and string_type == "Custom String":
-                        break
-                    else:
-                        content_chars.append(char)
-                    ptr += 1
+    pattern_description_start_str = r'(?:Description|描述)\s*:\s*\"'
+    pattern_description_start = re.compile(pattern_description_start_str, re.IGNORECASE)
 
-                if closed:
-                    raw_content = "".join(content_chars)
-                    semantic_content = unescape_overwatch_string(raw_content)
-                    line_num = code_content.count('\n', 0, start_idx) + 1
+    pattern_mode_name_start_str = r'(?:Mode Name|模式名称)\s*:\s*\"'
+    pattern_mode_name_start = re.compile(pattern_mode_name_start_str, re.IGNORECASE)
 
-                    ts = TranslatableString(
-                        original_raw=raw_content,
-                        original_semantic=semantic_content,
-                        line_num=line_num,
-                        char_pos_start_in_file=start_idx,
-                        char_pos_end_in_file=end_idx,
-                        full_code_lines=full_code_lines,
-                        string_type=string_type
-                    )
+    all_patterns_to_check = [
+        ("Custom String", pattern_custom_string_start),
+        ("Description", pattern_description_start),
+        ("Mode Name", pattern_mode_name_start),
+    ]
 
-                    if string_type in ["Description", "Mode Name"]:
-                        ts.comment = string_type
+    regex_all_digits = re.compile(r'^\d+$')
+    regex_ow_placeholder = re.compile(r'^\{\d+\}$')
+    allowed_symbols_and_whitespace_chars = r".,?!|:;\-_+=*/%&#@$^~`<>(){}\[\]\s"
+    regex_only_symbols_and_whitespace = re.compile(f"^[{re.escape(allowed_symbols_and_whitespace_chars)}]+$")
+    regex_placeholder_like = re.compile(r'\{\d+\}')
+    regex_repeating_char = re.compile(r"^(.)\1{1,}$")
+    regex_progress_bar_like = re.compile(r"^[\[\(\|\-=<>#\s]*[\]\s]*$")
+    known_untranslatable_short_words = {
+        "ID", "HP", "MP", "XP", "LV", "CD", "UI", "OK",
+        "X", "Y", "Z", "A", "B", "C", "N/A"
+    }
 
-                    s_stripped = semantic_content.strip()
-                    s_len = len(s_stripped)
+    for string_type, compiled_pattern in all_patterns_to_check:
+        for match in compiled_pattern.finditer(code_content):
+            open_quote_idx_in_content = match.end() - 1
+            string_content_start_file_idx = open_quote_idx_in_content + 1
 
-                    auto_ignore = (
-                        not s_stripped or
-                        regex_all_digits.fullmatch(s_stripped) or
-                        regex_ow_placeholder.fullmatch(s_stripped) or
-                        (s_len == 1 and 'a' <= s_stripped.lower() <= 'z' and s_stripped.isascii()) or
-                        regex_only_symbols.fullmatch(semantic_content) or
-                        (s_len >= 2 and regex_repeating_char.fullmatch(s_stripped)) or
-                        s_stripped.upper() in known_untranslatable or
-                        (s_len > 2 and regex_progress_bar.fullmatch(s_stripped))
-                    )
+            current_raw_string_content_chars = []
+            ptr = string_content_start_file_idx
+            is_escaped_char_pending = False
+            string_closed_properly = False
+            closing_quote_file_idx = -1
 
-                    if not auto_ignore and regex_placeholder_like.search(s_stripped):
-                        content_no_placeholders = regex_placeholder_like.sub('', s_stripped)
-                        content_text_only = re.sub(f"[{re.escape(allowed_symbols)}]", '', content_no_placeholders).strip()
+            while ptr < len(code_content):
+                char = code_content[ptr]
+                if is_escaped_char_pending:
+                    current_raw_string_content_chars.append(char)
+                    is_escaped_char_pending = False
+                elif char == '\\':
+                    current_raw_string_content_chars.append(char)
+                    is_escaped_char_pending = True
+                elif char == '"':
+                    string_closed_properly = True
+                    closing_quote_file_idx = ptr
+                    break
+                elif char == '\n' and string_type == "Custom String":
+                    string_closed_properly = False
+                    break
+                else:
+                    current_raw_string_content_chars.append(char)
+                ptr += 1
+
+            if string_closed_properly:
+                raw_content = "".join(current_raw_string_content_chars)
+                semantic_content = unescape_overwatch_string(raw_content)
+
+                line_num = code_content.count('\n', 0, string_content_start_file_idx) + 1
+
+                ts = TranslatableString(
+                    original_raw=raw_content,
+                    original_semantic=semantic_content,
+                    line_num=line_num,
+                    char_pos_start_in_file=string_content_start_file_idx,
+                    char_pos_end_in_file=closing_quote_file_idx,
+                    full_code_lines=full_code_lines,
+                    string_type=string_type
+                )
+
+                if string_type == "Description":
+                    ts.comment = "Description"
+                elif string_type == "Mode Name":
+                    ts.comment = "Mode Name"
+
+                s_semantic_stripped = semantic_content.strip()
+                s_len_stripped = len(s_semantic_stripped)
+
+                if not s_semantic_stripped:
+                    ts.was_auto_ignored = True;
+                    ts.is_ignored = True
+                elif regex_all_digits.fullmatch(s_semantic_stripped):
+                    ts.was_auto_ignored = True;
+                    ts.is_ignored = True
+                elif regex_ow_placeholder.fullmatch(s_semantic_stripped):
+                    ts.was_auto_ignored = True;
+                    ts.is_ignored = True
+                elif s_len_stripped == 1 and 'a' <= s_semantic_stripped.lower() <= 'z' and s_semantic_stripped.isascii():
+                    ts.was_auto_ignored = True;
+                    ts.is_ignored = True
+                elif regex_only_symbols_and_whitespace.fullmatch(
+                        semantic_content):
+                    ts.was_auto_ignored = True;
+                    ts.is_ignored = True
+                elif s_len_stripped >= 2 and regex_repeating_char.fullmatch(s_semantic_stripped):
+                    ts.was_auto_ignored = True;
+                    ts.is_ignored = True
+                elif s_semantic_stripped.upper() in known_untranslatable_short_words:
+                    ts.was_auto_ignored = True;
+                    ts.is_ignored = True
+                elif s_len_stripped > 2 and regex_progress_bar_like.fullmatch(s_semantic_stripped):
+                    ts.was_auto_ignored = True;
+                    ts.is_ignored = True
+                else:
+                    if regex_placeholder_like.search(s_semantic_stripped):
+                        content_no_placeholders = regex_placeholder_like.sub('', s_semantic_stripped)
+                        content_text_only = re.sub(f"[{re.escape(allowed_symbols_and_whitespace_chars)}]", '',
+                                                   content_no_placeholders).strip()
                         if len(content_text_only) < 2:
-                            auto_ignore = True
+                            ts.was_auto_ignored = True;
+                            ts.is_ignored = True
 
-                    if auto_ignore:
-                        ts.was_auto_ignored = True
-                        ts.is_ignored = True
+                strings.append(ts)
 
-                    strings.append(ts)
+    strings.sort(key=lambda s: s.char_pos_start_in_file)
+    return strings
 
-        strings.sort(key=lambda s: s.char_pos_start_in_file)
-        return strings
+def save_translated_code(filepath_to_save, original_raw_code_content, translatable_objects, app_instance):
+    content_chars = list(original_raw_code_content)
+    sorted_ts_objects = sorted(translatable_objects, key=lambda ts: ts.char_pos_start_in_file, reverse=True)
 
-    @staticmethod
-    def generate_translated_code(original_code, translatable_objects):
-        content_chars = list(original_code)
-        sorted_ts = sorted(translatable_objects, key=lambda ts: ts.char_pos_start_in_file, reverse=True)
+    for ts_obj in sorted_ts_objects:
+        if ts_obj.translation and not ts_obj.is_ignored:
+            start_idx = ts_obj.char_pos_start_in_file
+            end_idx_of_content_to_replace = ts_obj.char_pos_end_in_file
+            raw_translated_str_for_code = ts_obj.get_raw_translated_for_code()
+            content_chars[start_idx: end_idx_of_content_to_replace] = list(raw_translated_str_for_code)
 
-        for ts_obj in sorted_ts:
-            if ts_obj.translation and not ts_obj.is_ignored:
-                start = ts_obj.char_pos_start_in_file
-                end = ts_obj.char_pos_end_in_file
-                raw_translated = ts_obj.get_raw_translated_for_code()
-                content_chars[start:end] = list(raw_translated)
+    final_content = "".join(content_chars)
 
-        return "".join(content_chars)
+    if os.path.exists(filepath_to_save):
+        backup_path = filepath_to_save + ".bak." + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        try:
+            shutil.copy2(filepath_to_save, backup_path)
+            app_instance.update_statusbar(f"已创建备份: {os.path.basename(backup_path)}")
+        except Exception as e_backup:
+            from tkinter import messagebox
+            messagebox.showwarning("备份失败",
+                                   f"无法创建代码文件备份 '{os.path.basename(backup_path)}': {e_backup}",
+                                   parent=app_instance.root)
+
+    with open(filepath_to_save, 'w', encoding='utf-8') as f:
+        f.write(final_content)

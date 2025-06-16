@@ -1,67 +1,72 @@
 import json
 import os
-import shutil
-import datetime
+from tkinter import messagebox
 from models.translatable_string import TranslatableString
-from utils import constants
+from utils.constants import APP_VERSION
 
+def load_project(project_filepath):
+    with open(project_filepath, 'r', encoding='utf-8') as f:
+        project_data = json.load(f)
 
-class ProjectService:
-    @staticmethod
-    def open_project(project_filepath):
-        with open(project_filepath, 'r', encoding='utf-8') as f:
-            project_data = json.load(f)
+    if not all(k in project_data for k in ["version", "original_code_file_path", "translatable_objects_data"]):
+        raise ValueError("项目文件格式不正确或缺少必要字段。")
 
-        if not all(k in project_data for k in ["version", "original_code_file_path", "translatable_objects_data"]):
-            raise ValueError("Project file is invalid or missing required fields.")
+    original_code_file_path = project_data["original_code_file_path"]
+    original_raw_code_content = ""
+    full_code_lines_for_project = []
 
-        code_path = project_data["original_code_file_path"]
-        raw_code = ""
-        code_lines = []
-        code_load_warning = None
-
-        if code_path and os.path.exists(code_path):
-            try:
-                with open(code_path, 'r', encoding='utf-8', errors='replace') as cf:
-                    raw_code = cf.read()
-                code_lines = raw_code.splitlines()
-            except Exception as e:
-                code_load_warning = f"Could not load associated code file '{code_path}': {e}"
-        elif code_path:
-            code_load_warning = f"Associated code file '{code_path}' not found."
-
-        translatable_objects = [
-            TranslatableString.from_dict(ts_data, code_lines)
-            for ts_data in project_data["translatable_objects_data"]
-        ]
-
-        project_data['translatable_objects'] = translatable_objects
-        project_data['original_raw_code_content'] = raw_code
-        project_data['code_load_warning'] = code_load_warning
-
-        return project_data
-
-    @staticmethod
-    def save_project(project_filepath, project_data):
+    if original_code_file_path and os.path.exists(original_code_file_path):
         try:
-            with open(project_filepath, 'w', encoding='utf-8') as f:
-                json.dump(project_data, f, indent=4, ensure_ascii=False,
-                          default=lambda o: o.to_dict() if isinstance(o, TranslatableString) else o.__dict__)
-            return True
-        except Exception as e:
-            raise IOError(f"Failed to save project file: {e}")
+            with open(original_code_file_path, 'r', encoding='utf-8', errors='replace') as cf:
+                original_raw_code_content = cf.read()
+            full_code_lines_for_project = original_raw_code_content.splitlines()
+        except Exception as e_code:
+            messagebox.showwarning("项目警告",
+                                   f"无法加载项目关联的代码文件 '{original_code_file_path}': {e_code}\n上下文预览可能不可用。")
+    elif original_code_file_path:
+        messagebox.showwarning("项目警告",
+                               f"项目关联的代码文件 '{original_code_file_path}' 未找到。\n上下文预览和保存到代码文件功能将受限。")
 
-    @staticmethod
-    def save_code_file(filepath_to_save, original_code, translatable_objects):
-        from .code_file_service import CodeFileService
-        final_content = CodeFileService.generate_translated_code(original_code, translatable_objects)
+    translatable_objects = [
+        TranslatableString.from_dict(ts_data, full_code_lines_for_project)
+        for ts_data in project_data["translatable_objects_data"]
+    ]
 
-        if os.path.exists(filepath_to_save):
-            backup_path = filepath_to_save + ".bak." + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            try:
-                shutil.copy2(filepath_to_save, backup_path)
-            except Exception as e_backup:
-                print(f"Warning: Could not create backup: {e_backup}")
+    return {
+        "project_data": project_data,
+        "original_code_file_path": original_code_file_path,
+        "original_raw_code_content": original_raw_code_content,
+        "translatable_objects": translatable_objects
+    }
 
-        with open(filepath_to_save, 'w', encoding='utf-8') as f:
-            f.write(final_content)
+def save_project(filepath, app_instance):
+    if not app_instance.current_code_file_path and not app_instance.translatable_objects:
+        messagebox.showerror("保存项目错误", "无法保存项目：没有关联的代码文件或可翻译内容。", parent=app_instance.root)
+        return False
+
+    project_data = {
+        "version": APP_VERSION,
+        "original_code_file_path": app_instance.current_code_file_path or "",
+        "translatable_objects_data": [ts.to_dict() for ts in app_instance.translatable_objects],
+        "project_custom_instructions": app_instance.project_custom_instructions,
+        "current_tm_file_path": app_instance.current_tm_file or "",
+        "filter_settings": {
+            "deduplicate": app_instance.deduplicate_strings_var.get(),
+            "show_ignored": app_instance.show_ignored_var.get(),
+            "show_untranslated": app_instance.show_untranslated_var.get(),
+            "show_translated": app_instance.show_translated_var.get(),
+            "show_unreviewed": app_instance.show_unreviewed_var.get(),
+        },
+        "ui_state": {
+            "search_term": app_instance.search_var.get() if app_instance.search_var.get() != "快速搜索..." else "",
+            "selected_ts_id": app_instance.current_selected_ts_id or ""
+        },
+    }
+
+    try:
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(project_data, f, indent=4, ensure_ascii=False)
+        return True
+    except Exception as e:
+        messagebox.showerror("保存项目错误", f"无法保存项目文件: {e}", parent=app_instance.root)
+        return False

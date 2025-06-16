@@ -1,19 +1,23 @@
-import requests
 import json
-from utils import constants
+from utils.constants import DEFAULT_API_URL
+
+try:
+    import requests
+except ImportError:
+    requests = None
 
 class AITranslator:
-    def __init__(self, api_key, model_name="deepseek-chat", api_url=constants.DEFAULT_API_URL):
+    def __init__(self, api_key, model_name="deepseek-chat", api_url=DEFAULT_API_URL):
         self.api_key = api_key
-        self.api_url = api_url if api_url and api_url.strip() else constants.DEFAULT_API_URL
+        self.api_url = api_url if api_url and api_url.strip() else DEFAULT_API_URL
         self.model_name = model_name
 
     def translate(self, text_to_translate, target_language, system_prompt_template,
-                  context_str="", original_context_str="", custom_instructions="", termbase_mappings=""):
+                  translation_context="", custom_instructions="", original_context=""):
         if not self.api_key:
-            raise ValueError("API Key not set.")
+            raise ValueError("API Key 未设置。")
         if not requests:
-            raise ImportError("requests library not found. AI translation is unavailable.")
+            raise ImportError("requests库未找到。AI翻译功能不可用。")
 
         headers = {
             "Content-Type": "application/json",
@@ -21,10 +25,18 @@ class AITranslator:
         }
 
         final_system_prompt = system_prompt_template.replace("[Target Language]", target_language)
-        final_system_prompt = final_system_prompt.replace("[Custom Translate]", custom_instructions if custom_instructions.strip() else "None")
-        final_system_prompt = final_system_prompt.replace("[Translated Context]", context_str if context_str.strip() else "None")
-        final_system_prompt = final_system_prompt.replace("[Original Untranslated Context]", original_context_str if original_context_str.strip() else "None")
-        final_system_prompt = final_system_prompt.replace("[Termbase Mappings]", termbase_mappings if termbase_mappings.strip() else "None")
+        final_system_prompt = final_system_prompt.replace("[Custom Translate]",
+                                                          custom_instructions if custom_instructions.strip() else "无")
+
+        if translation_context:
+            final_system_prompt = final_system_prompt.replace("[Translated Context]", translation_context)
+        else:
+            final_system_prompt = final_system_prompt.replace("[Translated Context]", "无")
+
+        if original_context:
+            final_system_prompt = final_system_prompt.replace("[Untranslated Context]", original_context)
+        else:
+            final_system_prompt = final_system_prompt.replace("[Untranslated Context]", "无")
 
         payload = {
             "model": self.model_name,
@@ -45,25 +57,31 @@ class AITranslator:
                 return translation
             else:
                 error_message = result.get("error", {}).get("message", "Unknown API error structure")
+                if not error_message and result.get("choices") and len(result["choices"]) > 0 and "message" not in \
+                        result["choices"][0]:
+                    error_message = result["choices"][0].get("finish_reason",
+                                                             "No content in message")
                 raise Exception(f"API Error: {error_message}. Response: {result}")
         except requests.exceptions.Timeout:
-            raise Exception("API request timed out.")
+            raise Exception("API请求超时。")
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Network error or API request failed: {e}")
+            raise Exception(f"网络错误或API请求失败: {e}")
         except json.JSONDecodeError:
-            raise Exception(f"Failed to decode API response. Response text: {response.text if 'response' in locals() else 'No response object'}")
+            raise Exception(
+                f"无法解码API响应。响应文本: {response.text if 'response' in locals() else 'No response object'}")
         except Exception as e:
-            raise Exception(f"An unknown error occurred during translation: {e}")
+            raise Exception(f"翻译时发生未知错误: {e}")
 
-    def test_connection(self, test_text="Hello, OverWatch.", target_lang="中文", system_prompt_template="Translate to [Target Language]:"):
+    def test_connection(self, test_text="Hello, OverWatch.", target_lang="中文",
+                        system_prompt_template="Translate to [Target Language]:"):
         try:
             test_prompt = system_prompt_template.replace("[Target Language]", target_lang)
-            test_prompt = test_prompt.replace("[Translated Context]", "N/A")
-            test_prompt = test_prompt.replace("[Original Untranslated Context]", "N/A")
-            test_prompt = test_prompt.replace("[Custom Translate]", "N/A")
-            test_prompt = test_prompt.replace("[Termbase Mappings]", "N/A")
+            if "[Translated Context]" in test_prompt:
+                test_prompt = test_prompt.replace("[Translated Context]", "N/A")
+            if "[Custom Translate]" in test_prompt:
+                test_prompt = test_prompt.replace("[Custom Translate]", "N/A")
 
             translation = self.translate(test_text, target_lang, test_prompt)
-            return True, f"Connection successful. Test translation ('{test_text}' -> '{translation[:30]}...')"
+            return True, f"连接成功。测试翻译 ('{test_text}' -> '{translation[:30]}...')"
         except Exception as e:
-            return False, f"Connection failed: {e}"
+            return False, f"连接失败: {e}"

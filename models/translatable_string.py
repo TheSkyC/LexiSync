@@ -1,11 +1,11 @@
 import uuid
-from utils import constants
+from utils.constants import APP_NAMESPACE_UUID, MAX_UNDO_HISTORY
 
 class TranslatableString:
     def __init__(self, original_raw, original_semantic, line_num, char_pos_start_in_file, char_pos_end_in_file,
                  full_code_lines, string_type="Custom String"):
         name_string_for_uuid = f"{original_semantic}::{string_type}::L{line_num}::C{char_pos_start_in_file}"
-        self.id = str(uuid.uuid5(constants.APP_NAMESPACE_UUID, name_string_for_uuid))
+        self.id = str(uuid.uuid5(APP_NAMESPACE_UUID, name_string_for_uuid))
         self.original_raw = original_raw
         self.original_semantic = original_semantic
         self.translation = ""
@@ -18,7 +18,6 @@ class TranslatableString:
         self.string_type = string_type
         self.comment = ""
         self.is_reviewed = False
-        self.is_inherited = False
 
         context_radius = 2
         start_line_idx = max(0, line_num - 1 - context_radius)
@@ -42,7 +41,7 @@ class TranslatableString:
         if self._translation_history_pointer < len(self._translation_edit_history) - 1:
             self._translation_edit_history = self._translation_edit_history[:self._translation_history_pointer + 1]
         self._translation_edit_history.append(self.translation)
-        if len(self._translation_edit_history) > constants.MAX_UNDO_HISTORY * 2:
+        if len(self._translation_edit_history) > MAX_UNDO_HISTORY * 2:
             self._translation_edit_history.pop(0)
         self._translation_history_pointer = len(self._translation_edit_history) - 1
 
@@ -69,7 +68,6 @@ class TranslatableString:
             'string_type': self.string_type,
             'comment': self.comment,
             'is_reviewed': self.is_reviewed,
-            'is_inherited': self.is_inherited,
             '_translation_edit_history': self._translation_edit_history,
             '_translation_history_pointer': self._translation_history_pointer,
         }
@@ -91,35 +89,7 @@ class TranslatableString:
         ts.was_auto_ignored = data.get('was_auto_ignored', False)
         ts.comment = data.get('comment', "")
         ts.is_reviewed = data.get('is_reviewed', False)
-        ts.is_inherited = data.get('is_inherited', False)
         ts._translation_edit_history = data.get('_translation_edit_history', [ts.translation])
         ts._translation_history_pointer = data.get('_translation_history_pointer',
                                                    len(ts._translation_edit_history) - 1 if ts._translation_edit_history else 0)
         return ts
-
-def unescape_overwatch_string(s):
-    res = []
-    i = 0
-    while i < len(s):
-        if s[i] == '\\':
-            if i + 1 < len(s):
-                char_after_backslash = s[i + 1]
-                if char_after_backslash == 'n':
-                    res.append('\n')
-                elif char_after_backslash == 't':
-                    res.append('\t')
-                elif char_after_backslash == '"':
-                    res.append('"')
-                elif char_after_backslash == '\\':
-                    res.append('\\')
-                else:
-                    res.append('\\');
-                    res.append(char_after_backslash)
-                i += 2
-            else:
-                res.append('\\');
-                i += 1
-        else:
-            res.append(s[i]);
-            i += 1
-    return "".join(res)

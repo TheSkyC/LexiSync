@@ -11,7 +11,8 @@ class VirtualTreeview(ttk.Frame):
             'columns': kwargs.pop('columns', []),
             'displaycolumns': kwargs.pop('displaycolumns', None),
             'show': kwargs.pop('show', 'headings'),
-            'selectmode': kwargs.pop('selectmode', 'extended')
+            'selectmode': kwargs.pop('selectmode', 'extended'),
+            'xscrollcommand': kwargs.pop('xscrollcommand', None)
         }
         self.right_click_callback = kwargs.pop('right_click_callback', None)
 
@@ -34,12 +35,10 @@ class VirtualTreeview(ttk.Frame):
 
         self._tree = ttk.Treeview(self, **treeview_kwargs)
         self._vsb = ttk.Scrollbar(self, orient="vertical", command=self._on_scroll)
-        self._hsb = ttk.Scrollbar(self, orient="horizontal", command=self._tree.xview)
-        self._tree.configure(xscrollcommand=self._hsb.set)
+        # Horizontal scrollbar (_hsb) is removed from this widget's responsibility.
 
         self._tree.grid(row=0, column=0, sticky='nsew')
         self._vsb.grid(row=0, column=1, sticky='ns')
-        self._hsb.grid(row=1, column=0, sticky='ew')
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -67,6 +66,9 @@ class VirtualTreeview(ttk.Frame):
         self._row_height = 20
 
         self.after(10, self._calculate_row_height)
+
+    def xview(self, *args):
+        self._tree.xview(*args)
 
     def _calculate_row_height(self):
         try:
