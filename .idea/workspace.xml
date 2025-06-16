@@ -5,12 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e7286de0-17d4-4367-aaa2-58f9ce5509b7" name="更改" comment="my">
-      <change afterPath="$PROJECT_DIR$/components/project_tab.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dialogs/diff_dialog.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/services/diff_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dialogs/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dialogs/keybinding_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/dialogs/keybinding_dialog.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dialogs/diff_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/dialogs/diff_dialog.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,12 +38,12 @@
   }
 }</component>
   <component name="GithubDefaultAccount">
-    <option name="defaultAccountId" value="9932a4ed-2ea7-4654-b289-ade7e3a59a25" />
+    <option name="defaultAccountId" value="ddb59f56-0580-4667-bd6a-5b726ab7808f" />
   </component>
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
-    "url": "git@github.com:/TheSkyC/overwatch-localizer.git",
-    "accountId": "9932a4ed-2ea7-4654-b289-ade7e3a59a25"
+    "url": "https://github.com/TheSkyC/overwatch-localizer.git",
+    "accountId": "ddb59f56-0580-4667-bd6a-5b726ab7808f"
   }
 }]]></component>
   <component name="ProjectColorInfo">{
@@ -64,25 +62,54 @@
     "Python.activate_this.executor": "Run",
     "Python.ai_translator.executor": "Run",
     "Python.app.executor": "Run",
+    "Python.diff_dialog.executor": "Run",
     "Python.diff_service.executor": "Run",
     "Python.keybinding_dialog.executor": "Run",
     "Python.main.executor": "Run",
     "Python.translatev0.1a.executor": "Run",
     "Python.translatev0.7.executor": "Run",
     "Python.virtual_treeview.executor": "Run",
+    "Python.主程序.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "master",
+    "last_opened_file_path": "E:/workspace/overwatch-localizer/main.py",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "run.code.analysis.last.selected.profile": "pProject Default",
-    "settings.editor.selected.configurable": "vcs.Git",
+    "settings.editor.selected.configurable": "editor.stickyLines",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RunManager">
+    <configuration name="主程序" type="PythonConfigurationType" factoryName="Python">
+      <module name="overwatch-localizer" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="Python 3.12 (overwatch-localizer)" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -101,7 +128,8 @@
       <updated>1750080561227</updated>
       <workItem from="1750080562280" duration="111000" />
       <workItem from="1750080699401" duration="2419000" />
-      <workItem from="1750083271083" duration="8293000" />
+      <workItem from="1750083271083" duration="9065000" />
+      <workItem from="1750131869898" duration="3083000" />
     </task>
     <task id="LOCAL-00001" summary="test">
       <option name="closed" value="true" />
@@ -151,7 +179,23 @@
       <option name="project" value="LOCAL" />
       <updated>1750088673974</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="my">
+      <option name="closed" value="true" />
+      <created>1750091667391</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1750091667391</updated>
+    </task>
+    <task id="LOCAL-00008" summary="my">
+      <option name="closed" value="true" />
+      <created>1750092162735</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1750092162735</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -163,15 +207,17 @@
     <option name="LAST_COMMIT_MESSAGE" value="my" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/project_tab_py$main.coverage" NAME="main 覆盖结果" MODIFIED="1750091593117" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/project_tab_py$main.coverage" NAME="main 覆盖结果" MODIFIED="1750134588205" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/project_tab_py$keybinding_dialog.coverage" NAME="keybinding_dialog 覆盖结果" MODIFIED="1750088947024" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dialogs" />
     <SUITE FILE_PATH="coverage/project_tab_py$translatev0_7.coverage" NAME="translatev0.7 覆盖结果" MODIFIED="1750086728860" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$USER_HOME$/Desktop/工坊代码/Translate" />
     <SUITE FILE_PATH="coverage/project_tab_py$diff_service.coverage" NAME="diff_service 覆盖结果" MODIFIED="1750091368217" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/services" />
-    <SUITE FILE_PATH="coverage/overwatch_localizer$main.coverage" NAME="main 覆盖结果" MODIFIED="1750082783743" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/overwatch_localizer$translatev0_1a.coverage" NAME="translatev0.1a 覆盖结果" MODIFIED="1750083110966" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$USER_HOME$/Desktop/工坊代码/Translate" />
-    <SUITE FILE_PATH="coverage/overwatch_localizer$ai_translator.coverage" NAME="ai_translator 覆盖结果" MODIFIED="1750082124308" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/services" />
+    <SUITE FILE_PATH="coverage/project_tab_py$diff_dialog.coverage" NAME="diff_dialog 覆盖结果" MODIFIED="1750133837117" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dialogs" />
     <SUITE FILE_PATH="coverage/project_tab_py$app.coverage" NAME="app 覆盖结果" MODIFIED="1750090946826" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/project_tab_py$virtual_treeview.coverage" NAME="virtual_treeview 覆盖结果" MODIFIED="1750086166793" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/components" />
     <SUITE FILE_PATH="coverage/overwatch_localizer$activate_this.coverage" NAME="activate_this 覆盖结果" MODIFIED="1750080632744" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/.venv/Scripts" />
+    <SUITE FILE_PATH="coverage/overwatch_localizer$main.coverage" NAME="main 覆盖结果" MODIFIED="1750082783743" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/project_tab_py$.coverage" NAME="主程序 覆盖结果" MODIFIED="1750135185722" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
+    <SUITE FILE_PATH="coverage/overwatch_localizer$ai_translator.coverage" NAME="ai_translator 覆盖结果" MODIFIED="1750082124308" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/services" />
   </component>
 </project>

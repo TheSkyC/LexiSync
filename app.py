@@ -42,9 +42,9 @@ class OverwatchLocalizerApp:
         elif TkinterDnD:
             self.root = TkinterDnD.DnDWrapper(self.root)
 
-        self.root.title(f"Overwatch Localizer Pro - v{APP_VERSION}")
+        self.root.title(f"Overwatch Localizer - v{APP_VERSION}")
         self.root.geometry("1600x900")
-        self.root.title(f"Overwatch Localizer Pro - v{APP_VERSION}")
+        self.root.title(f"Overwatch Localizer - v{APP_VERSION}")
         self.root.geometry("1600x900")
 
         self.ACTION_MAP = {
@@ -226,7 +226,7 @@ class OverwatchLocalizerApp:
             self.save_config()
 
     def about(self):
-        messagebox.showinfo("关于 Overwatch Localizer Pro",
+        messagebox.showinfo("关于 Overwatch Localizer",
                             f"守望先锋自定义代码翻译工具\n\n"
                             f"版本: {APP_VERSION}\n"
                             "作者：骰子掷上帝\n"
@@ -710,7 +710,7 @@ class OverwatchLocalizerApp:
             f"显示: {displayed_count} | 已译: {translated_visible} | 未译: {untranslated_visible} | 已忽略: {ignored_visible}")
 
     def update_title(self):
-        base_title = f"Overwatch Localizer Pro - v{APP_VERSION}"
+        base_title = f"Overwatch Localizer - v{APP_VERSION}"
         file_name_part = ""
         if self.current_project_file_path:
             file_name_part = os.path.basename(self.current_project_file_path)
@@ -2938,119 +2938,139 @@ class OverwatchLocalizerApp:
         if count > 0:
             self.update_statusbar(f"已为 {count} 个选中项启动AI翻译。")
 
+        # In app.py
+
+
     def compare_with_new_version(self, event=None):
-        if not self.current_code_file_path or not self.translatable_objects:
-            messagebox.showerror("错误", "请先打开一个已保存的项目或代码文件。", parent=self.root)
-            return
+            if not self.current_code_file_path or not self.translatable_objects:
+                messagebox.showerror("错误", "请先打开一个已保存的项目或代码文件。", parent=self.root)
+                return
 
-        filepath = filedialog.askopenfilename(
-            title="选择新版本的代码文件进行对比",
-            filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
-            initialdir=os.path.dirname(self.current_code_file_path),
-            parent=self.root
-        )
-        if not filepath:
-            return
+            filepath = filedialog.askopenfilename(
+                title="选择新版本的代码文件进行对比",
+                filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
+                initialdir=os.path.dirname(self.current_code_file_path),
+                parent=self.root
+            )
+            if not filepath:
+                return
 
-        try:
-            with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-                new_code_content = f.read()
+            try:
+                with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+                    new_code_content = f.read()
 
-            self.update_statusbar("正在解析新文件并进行对比...", persistent=True)
-            self.root.update_idletasks()
+                # --- Progress Bar Setup ---
+                self.progress_bar.pack(side=tk.RIGHT, padx=5, pady=2, before=self.counts_label_widget)
+                self.progress_bar['value'] = 0
+                self.update_statusbar("正在解析新文件...", persistent=True)
+                self.root.update_idletasks()
 
-            new_strings = extract_translatable_strings(new_code_content)
-            old_strings = self.translatable_objects
+                new_strings = extract_translatable_strings(new_code_content)
+                old_strings = self.translatable_objects
 
-            old_map = {s.original_semantic: s for s in old_strings}
-            new_map = {s.original_semantic: s for s in new_strings}
+                old_map = {s.original_semantic: s for s in old_strings}
+                new_map = {s.original_semantic: s for s in new_strings}
 
-            diff_results = {
-                'added': [],
-                'removed': [],
-                'modified': [],
-                'unchanged': []
-            }
+                diff_results = {
+                    'added': [],
+                    'removed': [],
+                    'modified': [],
+                    'unchanged': []
+                }
 
-            # 1. Find unchanged and removed strings
-            for old_semantic, old_obj in old_map.items():
-                if old_semantic in new_map:
-                    new_obj = new_map[old_semantic]
-                    # Exact match found, transfer translation data
-                    new_obj.translation = old_obj.translation
-                    new_obj.comment = old_obj.comment
-                    new_obj.is_ignored = old_obj.is_ignored
-                    new_obj.is_reviewed = old_obj.is_reviewed
-                    diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': new_obj})
-                else:
-                    # Not in new version, might be removed or modified
-                    pass  # Will be handled in the next step
+                total_steps = len(old_map) + len(new_map)
+                current_step = 0
 
-            # 2. Find added and modified strings
-            unmatched_old = [s for s in old_strings if s.original_semantic not in new_map]
-            unmatched_new = [s for s in new_strings if s.original_semantic not in old_map]
+                # --- Step 1: Find unchanged strings ---
+                self.update_statusbar("步骤 1/3: 正在匹配完全相同的字符串...", persistent=True)
+                for old_semantic, old_obj in old_map.items():
+                    current_step += 1
+                    if old_semantic in new_map:
+                        new_obj = new_map[old_semantic]
+                        new_obj.translation = old_obj.translation
+                        new_obj.comment = old_obj.comment
+                        new_obj.is_ignored = old_obj.is_ignored
+                        new_obj.is_reviewed = old_obj.is_reviewed
+                        diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': new_obj})
+                    self.progress_bar['value'] = (current_step / total_steps) * 100
+                    if current_step % 20 == 0: self.root.update_idletasks()
 
-            # Use a copy to safely remove items while iterating
-            new_pool = unmatched_new[:]
+                # --- Step 2: Find modified strings with high similarity ---
+                self.update_statusbar("步骤 2/3: 正在匹配高度相似的字符串...", persistent=True)
+                unmatched_old = [s for s in old_strings if s.original_semantic not in new_map]
+                unmatched_new = [s for s in new_strings if s.original_semantic not in old_map]
+                new_pool = unmatched_new[:]
 
-            for old_obj in unmatched_old:
-                best_match = None
-                highest_similarity = 0.0
+                for i, old_obj in enumerate(unmatched_old):
+                    current_step += 1
+                    best_match = None
+                    highest_similarity = 0.0
 
+                    for new_obj in new_pool:
+                        similarity = SequenceMatcher(None, old_obj.original_semantic, new_obj.original_semantic).ratio()
+                        if similarity > highest_similarity:
+                            highest_similarity = similarity
+                            best_match = new_obj
+
+                    if highest_similarity >= 0.95 and best_match:
+                        best_match.translation = old_obj.translation
+                        best_match.comment = f"[继承自旧版] {old_obj.comment}".strip()
+                        best_match.is_ignored = old_obj.is_ignored
+                        best_match.is_reviewed = False
+
+                        diff_results['modified'].append({
+                            'old_obj': old_obj,
+                            'new_obj': best_match,
+                            'similarity': highest_similarity
+                        })
+                        new_pool.remove(best_match)
+                    else:
+                        diff_results['removed'].append({'old_obj': old_obj})
+
+                    self.progress_bar['value'] = (current_step / total_steps) * 100
+                    if i % 10 == 0: self.root.update_idletasks()
+
+                # --- Step 3: Identify added strings ---
+                self.update_statusbar("步骤 3/3: 正在识别新增和移除的字符串...", persistent=True)
                 for new_obj in new_pool:
-                    similarity = SequenceMatcher(None, old_obj.original_semantic, new_obj.original_semantic).ratio()
-                    if similarity > highest_similarity:
-                        highest_similarity = similarity
-                        best_match = new_obj
+                    current_step += 1
+                    diff_results['added'].append({'new_obj': new_obj})
+                    self.progress_bar['value'] = (current_step / total_steps) * 100
 
-                # Similarity threshold for inheriting translation
-                if highest_similarity >= 0.95 and best_match:
-                    # Inherit translation but mark for review
-                    best_match.translation = old_obj.translation
-                    best_match.comment = f"[继承自旧版] {old_obj.comment}".strip()
-                    best_match.is_ignored = old_obj.is_ignored
-                    best_match.is_reviewed = False  # IMPORTANT: Mark for review
+                self.progress_bar['value'] = 100
+                self.update_statusbar("对比完成，正在生成报告...", persistent=True)
 
-                    diff_results['modified'].append({
-                        'old_obj': old_obj,
-                        'new_obj': best_match,
-                        'similarity': highest_similarity
-                    })
-                    # Remove from pool to avoid matching again
-                    new_pool.remove(best_match)
+                # --- Generate Summary and Show Dialog ---
+                summary = (
+                    f"对比完成。发现 "
+                    f"{len(diff_results['added'])} 个新增项, "
+                    f"{len(diff_results['removed'])} 个移除项, "
+                    f"以及 {len(diff_results['modified'])} 个修改/继承项。"
+                )
+                diff_results['summary'] = summary
+
+                from dialogs.diff_dialog import DiffDialog
+                dialog = DiffDialog(self.root, "版本对比结果", diff_results)
+
+                # --- Cleanup and Update Project ---
+                self.progress_bar.pack_forget()  # Hide progress bar after dialog closes
+
+                if dialog.result:
+                    self.update_statusbar("正在应用更新...", persistent=True)
+
+                    self.translatable_objects = new_strings
+                    self.original_raw_code_content = new_code_content
+                    self.current_code_file_path = filepath
+
+                    self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
+
+                    self.mark_project_modified()
+                    self.refresh_treeview()
+                    self.update_statusbar(f"项目已更新至新版本: {os.path.basename(filepath)}", persistent=True)
                 else:
-                    # No close match found, consider it removed
-                    diff_results['removed'].append({'old_obj': old_obj})
+                    self.update_statusbar("版本更新已取消。")
 
-            # Any remaining new strings are considered truly new
-            for new_obj in new_pool:
-                diff_results['added'].append({'new_obj': new_obj})
-
-            self.update_statusbar("对比完成，正在显示结果...", persistent=True)
-
-            # Show diff dialog
-            from dialogs.diff_dialog import DiffDialog
-            dialog = DiffDialog(self.root, "版本对比结果", diff_results)
-
-            if dialog.result:
-                # User confirmed, update the project state
-                self.update_statusbar("正在应用更新...", persistent=True)
-
-                # The new list of translatable objects is the one from the new file,
-                # with data transferred for unchanged/modified strings.
-                self.translatable_objects = new_strings
-                self.original_raw_code_content = new_code_content
-                self.current_code_file_path = filepath
-
-                # Apply TM to newly added strings
-                self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
-
-                self.mark_project_modified()
-                self.refresh_treeview()
-                self.update_statusbar(f"项目已更新至新版本: {os.path.basename(filepath)}", persistent=True)
-            else:
-                self.update_statusbar("版本更新已取消。")
-
-        except Exception as e:
-            messagebox.showerror("对比失败", f"处理文件或对比时发生错误: {e}", parent=self.root)
-            self.update_statusbar("版本对比失败。")
+            except Exception as e:
+                self.progress_bar.pack_forget()
+                messagebox.showerror("对比失败", f"处理文件或对比时发生错误: {e}", parent=self.root)
+                self.update_statusbar("版本对比失败。")

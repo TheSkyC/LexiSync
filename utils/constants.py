@@ -20,7 +20,7 @@ DEFAULT_AI_PROMPT_TEMPLATE = (
     "7.  **重要：你的回答[必须且仅能包含翻译后的文本内容]，不要添加任何额外的解释、说明。**"
 )
 DEFAULT_API_URL = "https://api.deepseek.com/chat/completions"
-APP_VERSION = "0.7"
+APP_VERSION = "1.01"
 
 DEFAULT_KEYBINDINGS = {
     'open_code_file': '<Control-o>',
