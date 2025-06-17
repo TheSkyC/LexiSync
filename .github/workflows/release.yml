@@ -7,11 +7,11 @@ on:
 
 env:
   APP_NAME: OverwatchLocalizer
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.11.0'
 
 jobs:
   build:
-    name: Build for ${{ matrix.os_name }}-${{ matrix.arch }}
+    name: Build for ${{ matrix.os_name }}-${{ matrix.arch_display }}
     runs-on: ${{ matrix.os_image }}
     strategy:
       fail-fast: false
@@ -20,35 +20,47 @@ jobs:
           # Windows
           - os_name: windows
             os_image: windows-latest
-            arch: x64
-            asset_suffix: win-x64.zip
+            arch_display: x64
             python_arch: x64
+            asset_suffix: win-x64.zip
           - os_name: windows
             os_image: windows-latest
-            arch: x86
-            asset_suffix: win-x86.zip
+            arch_display: x86
             python_arch: x86
+            asset_suffix: win-x86.zip
           # Linux
           - os_name: linux
             os_image: ubuntu-latest
-            arch: x64
-            asset_suffix: linux-x64.tar.gz
+            arch_display: x64
             python_arch: x64
-          # macOS - universal2
+            asset_suffix: linux-x64.tar.gz
+          # macOS
           - os_name: macos
             os_image: macos-latest
-            arch: universal
+            arch_display: universal
             asset_suffix: macos-universal.dmg
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Determine macOS Python Architecture
+      id: mac_arch
+      if: matrix.os_name == 'macos'
+      shell: bash
+      run: |
+        echo "Runner Arch (from GITHUB_RUNNER_ARCH): $RUNNER_ARCH"
+        if [[ "$RUNNER_ARCH" == "ARM64" ]]; then
+          echo "python_arch_for_macos=arm64" >> $GITHUB_OUTPUT
+        else
+          echo "python_arch_for_macos=x64" >> $GITHUB_OUTPUT
+        fi
+
     - name: Set up Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        architecture: ${{ (matrix.os_name == 'macos' && 'default') || matrix.python_arch }}
+        architecture: ${{ (matrix.os_name == 'macos' && steps.mac_arch.outputs.python_arch_for_macos) || matrix.python_arch }}
 
     - name: Install dependencies
       shell: bash
@@ -68,7 +80,7 @@ jobs:
         PYINSTALLER_ARGS="--name ${{ env.APP_NAME }} --onefile --windowed --noconfirm"
         
         if [[ "${{ runner.os }}" == "macOS" ]]; then
-          echo "Building for macOS. PyInstaller will attempt to create a universal binary if possible."
+          echo "Building for macOS. Python arch: ${{ steps.mac_arch.outputs.python_arch_for_macos }}"
         fi
         
         pyinstaller $PYINSTALLER_ARGS main.py
@@ -108,7 +120,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.APP_NAME }}-${{ matrix.os_name }}-${{ matrix.arch }}
+        name: ${{ env.APP_NAME }}-${{ matrix.os_name }}-${{ matrix.arch_display }}
         path: ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}
 
   release:
