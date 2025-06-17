@@ -1,0 +1,107 @@
+name: Build and Release Overwatch Localizer
+
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+
+env:
+  APP_NAME: OverwatchLocalizer
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset_suffix: 'windows.zip'
+          - os: ubuntu-latest
+            asset_suffix: 'linux.tar.gz'
+          - os: macos-latest
+            asset_suffix: 'macos.zip'
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            SEP=";"
+          else
+            SEP=":"
+          fi
+          
+          pyinstaller --noconfirm --onefile --windowed --name "${{ env.APP_NAME }}" \
+            --add-data "components${SEP}components" \
+            --add-data "dialogs${SEP}dialogs" \
+            --add-data "services${SEP}services" \
+            --add-data "utils${SEP}utils" \
+            main.py
+
+      - name: Package the application
+        id: package
+        run: |
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/v//')
+          
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            ASSET_PATH="dist/${{ env.APP_NAME }}.exe"
+            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-${{ matrix.asset_suffix }}"
+            powershell -Command "Compress-Archive -Path '${ASSET_PATH}' -DestinationPath '${ARCHIVE_NAME}'"
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            ASSET_PATH="dist/${{ env.APP_NAME }}.app"
+            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-${{ matrix.asset_suffix }}"
+            zip -r "${ARCHIVE_NAME}" "${ASSET_PATH}"
+          else # Linux
+            ASSET_PATH="dist/${{ env.APP_NAME }}"
+            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-${{ matrix.asset_suffix }}"
+            tar -czvf "${ARCHIVE_NAME}" -C dist/ "${{ env.APP_NAME }}"
+          fi
+          
+          echo "ASSET_NAME=${ARCHIVE_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-asset-${{ matrix.os }}
+          path: ${{ steps.package.outputs.ASSET_NAME }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: release-artifacts/*/*
