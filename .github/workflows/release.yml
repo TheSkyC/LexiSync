@@ -60,6 +60,7 @@ jobs:
 
       - name: Package the application
         id: package
+        shell: bash
         run: |
           VERSION=$(echo "${{ github.ref_name }}" | sed 's/v//')
           
