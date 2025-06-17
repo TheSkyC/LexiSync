@@ -2875,25 +2875,37 @@ class OverwatchLocalizerApp:
 
     def cm_clear_selected_translations(self):
         selected_objs = self._get_selected_ts_objects()
-        if not selected_objs: return
+        if not selected_objs:
+            return
 
         if not messagebox.askyesno("确认清除", f"确定要清除选中的 {len(selected_objs)} 项的译文吗？", parent=self.root):
             return
 
         bulk_changes = []
+        cleared_ids = set()
+
         for ts_obj in selected_objs:
-            if ts_obj.translation.strip() != "":
+            if ts_obj.translation != "":
                 old_val = ts_obj.get_translation_for_storage_and_tm()
                 ts_obj.set_translation_internal("")
-                bulk_changes.append(
-                    {'string_id': ts_obj.id, 'field': 'translation', 'old_value': old_val, 'new_value': ""})
+                bulk_changes.append({
+                    'string_id': ts_obj.id,
+                    'field': 'translation',
+                    'old_value': old_val,
+                    'new_value': ""
+                })
+                cleared_ids.add(ts_obj.id)
 
-        if bulk_changes:
-            self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.refresh_treeview_preserve_selection()
-            self.on_tree_select(None)
-            self.update_statusbar(f"清除了 {len(bulk_changes)} 项译文。")
-            self.mark_project_modified()
+        if not bulk_changes:
+            self.update_statusbar("选中的项目译文已为空，无需清除。")
+            return
+        self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
+        self.mark_project_modified()
+        if self.current_selected_ts_id in cleared_ids:
+            self.translation_edit_text.delete('1.0', tk.END)
+            self.translation_edit_text.edit_reset()
+        self.refresh_treeview_preserve_selection()
+        self.update_statusbar(f"清除了 {len(bulk_changes)} 项译文。")
 
     def cm_ai_translate_selected(self):
         selected_objs = self._get_selected_ts_objects()
@@ -2928,8 +2940,6 @@ class OverwatchLocalizerApp:
 
         if count > 0:
             self.update_statusbar(f"已为 {count} 个选中项启动AI翻译。")
-
-
 
     def compare_with_new_version(self, event=None):
             if not self.current_code_file_path or not self.translatable_objects:
