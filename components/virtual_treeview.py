@@ -1,5 +1,3 @@
-# virtual_treeview.py (v2.0)
-
 import tkinter as tk
 from tkinter import ttk
 import uuid
@@ -35,7 +33,6 @@ class VirtualTreeview(ttk.Frame):
 
         self._tree = ttk.Treeview(self, **treeview_kwargs)
         self._vsb = ttk.Scrollbar(self, orient="vertical", command=self._on_scroll)
-        # Horizontal scrollbar (_hsb) is removed from this widget's responsibility.
 
         self._tree.grid(row=0, column=0, sticky='nsew')
         self._vsb.grid(row=0, column=1, sticky='ns')
@@ -45,17 +42,17 @@ class VirtualTreeview(ttk.Frame):
 
         self._tree.bind("<<TreeviewSelect>>", self._on_ui_select)
         self._tree.bind("<Button-1>", self._on_button1_press)
-        self._tree.bind("<Button-3>", self._on_button3_press)  # Right-click
+        self._tree.bind("<Button-3>", self._on_button3_press)
         self._tree.bind("<B1-Motion>", lambda e: "break")
         self._tree.bind("<MouseWheel>", self._on_mousewheel)
-        self._tree.bind("<Button-4>", self._on_mousewheel)  # For Linux (scroll up)
-        self._tree.bind("<Button-5>", self._on_mousewheel)  # For Linux (scroll down)
+        self._tree.bind("<Button-4>", self._on_mousewheel)
+        self._tree.bind("<Button-5>", self._on_mousewheel)
 
 
         self._tree.bind("<Up>", self._on_key_press)
         self._tree.bind("<Down>", self._on_key_press)
-        self._tree.bind("<Prior>", self._on_key_press)  # Page Up
-        self._tree.bind("<Next>", self._on_key_press)  # Page Down
+        self._tree.bind("<Prior>", self._on_key_press)
+        self._tree.bind("<Next>", self._on_key_press)
         self._tree.bind("<Home>", self._on_key_press)
         self._tree.bind("<End>", self._on_key_press)
 
@@ -152,9 +149,9 @@ class VirtualTreeview(ttk.Frame):
                 new_idx = max(0, idx - 1)
             elif event.keysym == 'Down':
                 new_idx = min(len(self._ordered_iids) - 1, idx + 1)
-            elif event.keysym == 'Prior':  # Page Up
+            elif event.keysym == 'Prior':
                 new_idx = max(0, idx - self._visible_rows)
-            elif event.keysym == 'Next':  # Page Down
+            elif event.keysym == 'Next':
                 new_idx = min(len(self._ordered_iids) - 1, idx + self._visible_rows)
             elif event.keysym == 'Home':
                 new_idx = 0
@@ -168,7 +165,6 @@ class VirtualTreeview(ttk.Frame):
                 self.event_generate("<<TreeviewSelect>>")
                 return "break"
         except ValueError:
-            # If focus is somehow invalid, select the first item
             self._handle_single_select(self._ordered_iids[0])
             self.event_generate("<<TreeviewSelect>>")
             return "break"
@@ -189,7 +185,6 @@ class VirtualTreeview(ttk.Frame):
 
     def _handle_shift_select(self, iid, state):
         if not self._anchor:
-            # If there's no anchor, treat it as a single select and set the anchor
             self._handle_single_select(iid)
             return
 

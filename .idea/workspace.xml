@@ -5,9 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e7286de0-17d4-4367-aaa2-58f9ce5509b7" name="更改" comment="my">
-      <change afterPath="$PROJECT_DIR$/dialogs/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/project_tab.py" beforeDir="false" afterPath="$PROJECT_DIR$/components/project_tab.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/virtual_treeview.py" beforeDir="false" afterPath="$PROJECT_DIR$/components/virtual_treeview.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dialogs/ai_settings_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/dialogs/ai_settings_dialog.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dialogs/diff_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/dialogs/diff_dialog.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -40,12 +42,12 @@
   <component name="GithubDefaultAccount">
     <option name="defaultAccountId" value="ddb59f56-0580-4667-bd6a-5b726ab7808f" />
   </component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/TheSkyC/overwatch-localizer.git",
-    "accountId": "ddb59f56-0580-4667-bd6a-5b726ab7808f"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/TheSkyC/overwatch-localizer.git&quot;,
+    &quot;accountId&quot;: &quot;ddb59f56-0580-4667-bd6a-5b726ab7808f&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7
 }</component>
@@ -57,33 +59,33 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.activate_this.executor": "Run",
-    "Python.ai_translator.executor": "Run",
-    "Python.app.executor": "Run",
-    "Python.diff_dialog.executor": "Run",
-    "Python.diff_service.executor": "Run",
-    "Python.keybinding_dialog.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.translatev0.1a.executor": "Run",
-    "Python.translatev0.7.executor": "Run",
-    "Python.virtual_treeview.executor": "Run",
-    "Python.主程序.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "E:/workspace/overwatch-localizer/main.py",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "run.code.analysis.last.selected.profile": "pProject Default",
-    "settings.editor.selected.configurable": "editor.stickyLines",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.activate_this.executor&quot;: &quot;Run&quot;,
+    &quot;Python.ai_translator.executor&quot;: &quot;Run&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.diff_dialog.executor&quot;: &quot;Run&quot;,
+    &quot;Python.diff_service.executor&quot;: &quot;Run&quot;,
+    &quot;Python.keybinding_dialog.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.translatev0.1a.executor&quot;: &quot;Run&quot;,
+    &quot;Python.translatev0.7.executor&quot;: &quot;Run&quot;,
+    &quot;Python.virtual_treeview.executor&quot;: &quot;Run&quot;,
+    &quot;Python.主程序.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/workspace/overwatch-localizer/main.py&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;editor.stickyLines&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="主程序" type="PythonConfigurationType" factoryName="Python">
       <module name="overwatch-localizer" />
@@ -129,7 +131,7 @@
       <workItem from="1750080562280" duration="111000" />
       <workItem from="1750080699401" duration="2419000" />
       <workItem from="1750083271083" duration="9065000" />
-      <workItem from="1750131869898" duration="3083000" />
+      <workItem from="1750131869898" duration="3690000" />
     </task>
     <task id="LOCAL-00001" summary="test">
       <option name="closed" value="true" />
@@ -195,7 +197,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750092162735</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="my">
+      <option name="closed" value="true" />
+      <created>1750135254035</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1750135254035</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

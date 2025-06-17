@@ -29,7 +29,6 @@ class AISettingsDialog(simpledialog.Dialog):
         api_frame.grid(row=0, column=0, columnspan=2, sticky=tk.EW, padx=5, pady=5)
         api_frame.columnconfigure(1, weight=1)
 
-        # ... (API Key, Base URL, Model Name entries remain the same) ...
         api_row_idx = 0
         ttk.Label(api_frame, text="API Key:").grid(row=api_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
         self.api_key_var = tk.StringVar(value=self.initial_api_key)
@@ -54,7 +53,6 @@ class AISettingsDialog(simpledialog.Dialog):
         trans_frame.columnconfigure(1, weight=1)
 
         trans_row_idx = 0
-        # ... (Target Language, API Interval, Max Concurrency entries remain the same) ...
         ttk.Label(trans_frame, text="目标语言:").grid(row=trans_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
         self.target_language_var = tk.StringVar(value=self.initial_target_language)
         self.target_language_entry = ttk.Entry(trans_frame, textvariable=self.target_language_var, width=60)
@@ -75,7 +73,6 @@ class AISettingsDialog(simpledialog.Dialog):
         self.max_concurrent_requests_spinbox.grid(row=trans_row_idx, column=1, sticky=tk.W, padx=5, pady=3)
         trans_row_idx += 1
 
-        # --- Original Text Context ---
         self.use_original_context_var = tk.BooleanVar(value=self.initial_use_original_context)
         self.use_original_context_check = ttk.Checkbutton(trans_frame, text="引用临近原文作为上下文",
                                                  variable=self.use_original_context_var,
@@ -93,7 +90,6 @@ class AISettingsDialog(simpledialog.Dialog):
         ttk.Label(original_context_neighbor_frame, text="条原文 (0为所有)").pack(side=tk.LEFT)
         trans_row_idx += 1
 
-        # --- Translated Text Context ---
         self.use_context_var = tk.BooleanVar(value=self.initial_use_context)
         self.use_context_check = ttk.Checkbutton(trans_frame, text="引用临近译文作为上下文",
                                                  variable=self.use_context_var,
@@ -111,7 +107,6 @@ class AISettingsDialog(simpledialog.Dialog):
         ttk.Label(context_neighbor_frame, text="条翻译 (0为所有)").pack(side=tk.LEFT)
         trans_row_idx += 1
 
-        # ... (Prompt Frame and Test Status Label remain the same) ...
         prompt_frame = ttk.LabelFrame(master, text="AI 提示词模板", padding=(10, 5))
         prompt_frame.grid(row=2, column=0, columnspan=2, sticky=tk.NSEW, padx=5, pady=5)
         prompt_frame.columnconfigure(0, weight=1)
@@ -189,7 +184,6 @@ class AISettingsDialog(simpledialog.Dialog):
                 messagebox.showerror("测试连接", message, parent=self)
 
     def apply(self):
-        # ... (This method needs to be updated to save the new settings) ...
         api_key = self.api_key_var.get()
         api_base_url = self.api_base_url_var.get().strip()
         target_language = self.target_language_var.get().strip()
@@ -202,7 +196,6 @@ class AISettingsDialog(simpledialog.Dialog):
         original_context_neighbors = self.original_context_neighbors_var.get()
         max_concurrent_requests = self.max_concurrent_requests_var.get()
 
-        # ... (Validation remains the same) ...
         if not target_language:
             messagebox.showerror("错误", "目标语言不能为空。", parent=self)
             self.target_language_entry.focus_set()

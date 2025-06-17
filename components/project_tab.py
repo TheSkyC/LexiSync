@@ -9,7 +9,6 @@ class ProjectTab(ttk.Frame):
         super().__init__(master, **kwargs)
         self.app = app_instance
 
-        # --- Data attributes for this specific tab ---
         self.current_code_file_path = None
         self.current_project_file_path = None
         self.original_raw_code_content = ""
@@ -23,7 +22,6 @@ class ProjectTab(ttk.Frame):
         self.placeholder_regex = re.compile(r'\{(\d+)\}')
         self._placeholder_validation_job = None
 
-        # --- UI attributes for this specific tab ---
         self._setup_main_layout()
 
     def _setup_main_layout(self):

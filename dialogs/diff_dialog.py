@@ -6,13 +6,11 @@ class DiffDialog(simpledialog.Dialog):
     def __init__(self, parent, title, diff_results):
         self.diff_results = diff_results
 
-        # Manually replicate parts of simpledialog.Dialog.__init__
         self.parent = parent
         self.result = None
 
-        # Create a Toplevel window
         tk.Toplevel.__init__(self, parent)
-        self.withdraw()  # Hide window until it's ready
+        self.withdraw()
 
         if parent.winfo_viewable():
             self.transient(parent)
@@ -20,17 +18,14 @@ class DiffDialog(simpledialog.Dialog):
         if title:
             super().title(title)
 
-        # Main container frame that will hold everything
         main_container = ttk.Frame(self)
         self.initial_focus = self.body(main_container)
         main_container.pack(padx=5, pady=5, expand=True, fill=tk.BOTH)
 
-        # Configure the main container's grid
-        main_container.grid_rowconfigure(0, weight=0)  # Fixed height for summary (row 0)
-        main_container.grid_rowconfigure(1, weight=1)  # Expandable for treeview (row 1)
+        main_container.grid_rowconfigure(0, weight=0)
+        main_container.grid_rowconfigure(1, weight=1)
         main_container.grid_columnconfigure(0, weight=1)
 
-        # Create and place the button box
         self.buttonbox(main_container)
 
         if not self.initial_focus:
@@ -48,13 +43,10 @@ class DiffDialog(simpledialog.Dialog):
         self.wait_window(self)
 
     def body(self, master):
-        """Create dialog body. Return widget that should have initial focus."""
-        # Configure the grid layout for the 'master' frame
-        master.grid_rowconfigure(0, weight=0)  # Fixed height for summary (row 0)
-        master.grid_rowconfigure(1, weight=1)  # Expandable for treeview (row 1)
+        master.grid_rowconfigure(0, weight=0)
+        master.grid_rowconfigure(1, weight=1)
         master.grid_columnconfigure(0, weight=1)
 
-        # --- Add Summary Label (Fixed height) ---
         summary_text = self.diff_results.get('summary', '对比结果摘要')
         summary_label = ttk.Label(
             master,
@@ -65,11 +57,9 @@ class DiffDialog(simpledialog.Dialog):
         )
         summary_label.grid(row=0, column=0, sticky="ew", padx=5, pady=(0, 10))
 
-        # --- Treeview and Scrollbars (Expandable) ---
         tree_container = ttk.Frame(master)
         tree_container.grid(row=1, column=0, sticky="nsew")
 
-        # Configure the grid inside the tree_container
         tree_container.grid_rowconfigure(0, weight=1)
         tree_container.grid_columnconfigure(0, weight=1)
 
@@ -84,7 +74,6 @@ class DiffDialog(simpledialog.Dialog):
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
 
-        # Configure tree columns
         self.tree.heading("status", text="状态")
         self.tree.heading("old_text", text="旧版原文")
         self.tree.heading("new_text", text="新版原文")
@@ -95,7 +84,6 @@ class DiffDialog(simpledialog.Dialog):
         self.tree.column("new_text", width=500, anchor=tk.W)
         self.tree.column("similarity", width=80, anchor=tk.CENTER)
 
-        # Configure tags for styling
         self.tree.tag_configure('added', background='#DFF0D8', foreground='#3C763D')
         self.tree.tag_configure('removed', background='#F2DEDE', foreground='#A94442')
         self.tree.tag_configure('modified', background='#FCF8E3', foreground='#8A6D3B')
@@ -105,14 +93,11 @@ class DiffDialog(simpledialog.Dialog):
         return self.tree
 
     def buttonbox(self, master):
-        """Create button box."""
         box = ttk.Frame(master)
         ttk.Button(box, text="确认并更新项目", width=18, command=self.ok, default=tk.ACTIVE).pack(
             side=tk.LEFT, padx=5, pady=5)
         ttk.Button(box, text="取消", width=10, command=self.cancel).pack(
             side=tk.LEFT, padx=5, pady=5)
-
-        # Place the button box in row 2 (fixed height)
         box.grid(row=2, column=0, sticky="e", pady=(5, 0))
 
         self.bind("<Escape>", self.cancel)

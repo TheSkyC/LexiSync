@@ -257,7 +257,6 @@ class OverwatchLocalizerApp:
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
 
-        # --- File Menu ---
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="文件", menu=file_menu)
         file_menu.add_command(label="打开代码文件...", command=self.ACTION_MAP['open_code_file']['method'])
@@ -271,7 +270,6 @@ class OverwatchLocalizerApp:
         file_menu.add_separator()
         file_menu.add_command(label="保存翻译到新代码文件", command=self.ACTION_MAP['save_code_file']['method'],
                               state=tk.DISABLED)
-        # ... (other file menu items remain the same) ...
         file_menu.add_separator()
         file_menu.add_command(label="导入Excel翻译 (项目)", command=self.import_project_translations_from_excel,
                               state=tk.DISABLED)
@@ -287,7 +285,6 @@ class OverwatchLocalizerApp:
         file_menu.add_command(label="退出", command=self.on_closing)
         self.file_menu = file_menu
 
-        # --- Edit Menu ---
         edit_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="编辑", menu=edit_menu)
         edit_menu.add_command(label="撤销", command=self.ACTION_MAP['undo']['method'], state=tk.DISABLED)
@@ -301,7 +298,6 @@ class OverwatchLocalizerApp:
                               state=tk.DISABLED)
         self.edit_menu = edit_menu
 
-        # --- View Menu (no changes) ---
         view_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="视图", menu=view_menu)
         view_menu.add_checkbutton(label="去重显示", variable=self.deduplicate_strings_var,
@@ -325,7 +321,6 @@ class OverwatchLocalizerApp:
         tools_menu.add_separator()
         tools_menu.add_command(label="使用AI翻译 (选中项)", command=self.ACTION_MAP['ai_translate_selected']['method'],
                                state=tk.DISABLED)
-        # ... (other tools menu items remain the same) ...
         tools_menu.add_command(label="使用AI翻译 (所有未翻译项)", command=self.ai_translate_all_untranslated,
                                state=tk.DISABLED)
         tools_menu.add_command(label="停止AI批量翻译", command=lambda: self.stop_batch_ai_translation(),
@@ -336,19 +331,16 @@ class OverwatchLocalizerApp:
         tools_menu.add_command(label="AI翻译设置...", command=self.show_ai_settings_dialog)
         self.tools_menu = tools_menu
 
-        # --- Settings Menu ---
         settings_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="设置", menu=settings_menu)
         settings_menu.add_checkbutton(label="保存时自动备份记忆库", variable=self.auto_backup_tm_on_save_var,
                                       command=self.save_config)
         settings_menu.add_command(label="快捷键设置...", command=self.show_keybinding_dialog)
 
-        # --- Help Menu (no changes) ---
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="帮助", menu=help_menu)
         help_menu.add_command(label="关于", command=self.about)
 
-        # --- Dynamic Bindings ---
         self._setup_keybindings()
         self.update_menu_accelerators()
 
@@ -2352,7 +2344,6 @@ class OverwatchLocalizerApp:
                 self.root.after(0, self._decrement_active_threads_and_dispatch_more)
 
     def _initiate_single_ai_translation(self, ts_id_to_translate):
-        # ... (This method needs to be updated to call the new context generation function) ...
         if not self._check_ai_prerequisites(): return
         if not ts_id_to_translate:
             return
@@ -2938,7 +2929,6 @@ class OverwatchLocalizerApp:
         if count > 0:
             self.update_statusbar(f"已为 {count} 个选中项启动AI翻译。")
 
-        # In app.py
 
 
     def compare_with_new_version(self, event=None):
@@ -2959,7 +2949,6 @@ class OverwatchLocalizerApp:
                 with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
                     new_code_content = f.read()
 
-                # --- Progress Bar Setup ---
                 self.progress_bar.pack(side=tk.RIGHT, padx=5, pady=2, before=self.counts_label_widget)
                 self.progress_bar['value'] = 0
                 self.update_statusbar("正在解析新文件...", persistent=True)
@@ -2981,7 +2970,6 @@ class OverwatchLocalizerApp:
                 total_steps = len(old_map) + len(new_map)
                 current_step = 0
 
-                # --- Step 1: Find unchanged strings ---
                 self.update_statusbar("步骤 1/3: 正在匹配完全相同的字符串...", persistent=True)
                 for old_semantic, old_obj in old_map.items():
                     current_step += 1
@@ -2995,7 +2983,7 @@ class OverwatchLocalizerApp:
                     self.progress_bar['value'] = (current_step / total_steps) * 100
                     if current_step % 20 == 0: self.root.update_idletasks()
 
-                # --- Step 2: Find modified strings with high similarity ---
+
                 self.update_statusbar("步骤 2/3: 正在匹配高度相似的字符串...", persistent=True)
                 unmatched_old = [s for s in old_strings if s.original_semantic not in new_map]
                 unmatched_new = [s for s in new_strings if s.original_semantic not in old_map]
@@ -3030,7 +3018,6 @@ class OverwatchLocalizerApp:
                     self.progress_bar['value'] = (current_step / total_steps) * 100
                     if i % 10 == 0: self.root.update_idletasks()
 
-                # --- Step 3: Identify added strings ---
                 self.update_statusbar("步骤 3/3: 正在识别新增和移除的字符串...", persistent=True)
                 for new_obj in new_pool:
                     current_step += 1
@@ -3040,7 +3027,6 @@ class OverwatchLocalizerApp:
                 self.progress_bar['value'] = 100
                 self.update_statusbar("对比完成，正在生成报告...", persistent=True)
 
-                # --- Generate Summary and Show Dialog ---
                 summary = (
                     f"对比完成。发现 "
                     f"{len(diff_results['added'])} 个新增项, "
@@ -3052,8 +3038,7 @@ class OverwatchLocalizerApp:
                 from dialogs.diff_dialog import DiffDialog
                 dialog = DiffDialog(self.root, "版本对比结果", diff_results)
 
-                # --- Cleanup and Update Project ---
-                self.progress_bar.pack_forget()  # Hide progress bar after dialog closes
+                self.progress_bar.pack_forget()
 
                 if dialog.result:
                     self.update_statusbar("正在应用更新...", persistent=True)
