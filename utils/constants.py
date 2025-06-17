@@ -8,7 +8,7 @@ PROJECT_FILE_EXTENSION = ".owproj"
 TM_FILE_EXCEL = "ow_translator_tm.xlsx"
 MAX_UNDO_HISTORY = 30
 DEFAULT_API_URL = "https://api.deepseek.com/chat/completions"
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 PROMPT_PRESET_EXTENSION = ".owprompt"
 
 STRUCTURAL = "结构化内容"
