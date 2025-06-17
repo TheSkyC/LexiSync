@@ -1,29 +1,37 @@
-name: Build and Release Overwatch Localizer
-
-
+name: Build and Release Multi-Arch Application
 on:
   push:
     tags:
       - 'v*.*.*'
-
-
 env:
   APP_NAME: OverwatchLocalizer
   PYTHON_VERSION: '3.11'
 
 jobs:
   build:
-    name: Build for ${{ matrix.os }}
+    name: ${{ matrix.os }} (${{ matrix.arch }})
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-latest
-            asset_suffix: 'windows.zip'
+            arch: 'x64'
+            python-arch: 'x64'
+          - os: windows-latest
+            arch: 'x86'
+            python-arch: 'x86'
           - os: ubuntu-latest
-            asset_suffix: 'linux.tar.gz'
-          - os: macos-latest
-            asset_suffix: 'macos.zip'
+            arch: 'x64'
+            python-arch: 'x64'
+          - os: ubuntu-latest
+            arch: 'arm64'
+            python-arch: 'x64'
+          - os: macos-12
+            arch: 'x64'
+            python-arch: 'x64'
+          - os: macos-14
+            arch: 'arm64'
+            python-arch: 'arm64'
 
     runs-on: ${{ matrix.os }}
 
@@ -31,10 +39,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup QEMU for ARM build
+        if: matrix.arch == 'arm64' && matrix.os == 'ubuntu-latest'
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+          architecture: ${{ matrix.python-arch }}
 
       - name: Install dependencies
         run: |
@@ -51,39 +64,50 @@ jobs:
             SEP=":"
           fi
           
-          pyinstaller --noconfirm --onefile --windowed --name "${{ env.APP_NAME }}" \
-            --add-data "components${SEP}components" \
-            --add-data "dialogs${SEP}dialogs" \
-            --add-data "services${SEP}services" \
-            --add-data "utils${SEP}utils" \
-            main.py
+          CERTIFI_PATH=$(python -m certifi)
+          TKINTERDND2_PATH=$(python -c "import os, tkinterdnd2; print(os.path.dirname(tkinterdnd2.__file__))")
+          
+          PYINSTALLER_CMD="pyinstaller --noconfirm --onefile --windowed --name \"${{ env.APP_NAME }}\" \
+            --add-data \"components${SEP}components\" \
+            --add-data \"dialogs${SEP}dialogs\" \
+            --add-data \"services${SEP}services\" \
+            --add-data \"utils${SEP}utils\" \
+            --add-data \"${TKINTERDND2_PATH}${SEP}tkinterdnd2\" \
+            --add-data \"${CERTIFI_PATH}${SEP}certifi\" \
+            --hidden-import \"openpyxl\" \
+            --hidden-import \"PIL.Image\" \
+            main.py"
+
+          if [ "${{ matrix.arch }}" == "arm64" ] && [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            docker run --rm -v "$(pwd):/src" -w /src arm64v8/ubuntu:22.04 /bin/bash -c "apt-get update && apt-get install -y python3-pip python3-tk && python3 -m pip install --upgrade pip && pip3 install -r requirements.txt && pip3 install pyinstaller && ${PYINSTALLER_CMD}"
+          else
+            eval $PYINSTALLER_CMD
+          fi
 
       - name: Package the application
         id: package
         shell: bash
         run: |
           VERSION=$(echo "${{ github.ref_name }}" | sed 's/v//')
-          
           if [ "${{ runner.os }}" == "Windows" ]; then
             ASSET_PATH="dist/${{ env.APP_NAME }}.exe"
-            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-${{ matrix.asset_suffix }}"
+            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-windows-${{ matrix.arch }}.zip"
             powershell -Command "Compress-Archive -Path '${ASSET_PATH}' -DestinationPath '${ARCHIVE_NAME}'"
           elif [ "${{ runner.os }}" == "macOS" ]; then
             ASSET_PATH="dist/${{ env.APP_NAME }}.app"
-            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-${{ matrix.asset_suffix }}"
+            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-macos-${{ matrix.arch }}.zip"
             zip -r "${ARCHIVE_NAME}" "${ASSET_PATH}"
-          else # Linux
+          else
             ASSET_PATH="dist/${{ env.APP_NAME }}"
-            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-${{ matrix.asset_suffix }}"
-            tar -czvf "${ARCHIVE_NAME}" -C dist/ "${{ env.APP_NAME }}"
+            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-linux-${{ matrix.arch }}.tar.gz"
+            tar -czvf "${ARCHIVE_NAME}" -C "dist/" "${{ env.APP_NAME }}"
           fi
-          
           echo "ASSET_NAME=${ARCHIVE_NAME}" >> $GITHUB_OUTPUT
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-asset-${{ matrix.os }}
+          name: release-asset-${{ matrix.os }}-${{ matrix.arch }}
           path: ${{ steps.package.outputs.ASSET_NAME }}
 
   release:
