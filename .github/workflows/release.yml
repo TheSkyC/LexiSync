@@ -77,7 +77,6 @@ jobs:
                     --onefile \
                     --windowed \
                     --noconfirm \
-                    # --icon=icon.ico \
                     main.py
 
     - name: Prepare Artifacts (Windows)
