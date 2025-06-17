@@ -1,133 +1,147 @@
 name: Build and Release Multi-Arch Application
+
 on:
   push:
     tags:
       - 'v*.*.*'
+
 env:
   APP_NAME: OverwatchLocalizer
   PYTHON_VERSION: '3.11'
 
 jobs:
   build:
-    name: ${{ matrix.os }} (${{ matrix.arch }})
     strategy:
-      fail-fast: false
       matrix:
         include:
+          # Windows x64
           - os: windows-latest
             arch: 'x64'
-            python-arch: 'x64'
+            target: 'windows-x64'
+            pyinstaller_arch_flag: ''
+
+          # Windows x86
           - os: windows-latest
             arch: 'x86'
-            python-arch: 'x86'
-          - os: ubuntu-latest
-            arch: 'x64'
-            python-arch: 'x64'
-          - os: ubuntu-latest
+            target: 'windows-x86'
+            pyinstaller_arch_flag: '--target-arch=x86'
+
+          # macOS x86_64
+          - os: macos-latest
+            arch: 'x86_64'
+            target: 'macos-x86_64'
+            pyinstaller_arch_flag: '--target-arch=x86_64'
+
+          # macOS arm64
+          - os: macos-latest
             arch: 'arm64'
-            python-arch: 'x64'
-          - os: macos-12
-            arch: 'x64'
-            python-arch: 'x64'
-          - os: macos-14
-            arch: 'arm64'
-            python-arch: 'arm64'
+            target: 'macos-arm64'
+            pyinstaller_arch_flag: '--target-arch=arm64'
+
+          # Linux x86_64
+          - os: ubuntu-latest
+            arch: 'x86_64'
+            target: 'linux-x86_64'
+            pyinstaller_arch_flag: '' # Defaults to the runner's arch
+
+          # Linux aarch64
+          - os: ubuntu-latest
+            arch: 'aarch64'
+            target: 'linux-aarch64'
+            pyinstaller_arch_flag: ''
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup QEMU for ARM build
-        if: matrix.arch == 'arm64' && matrix.os == 'ubuntu-latest'
-        uses: docker/setup-qemu-action@v3
 
-      - name: Set up Python
+      - name: Set up QEMU
+        if: matrix.os == 'ubuntu-latest' && matrix.arch == 'aarch64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          architecture: ${{ matrix.python-arch }}
+          architecture: ${{ matrix.arch }}
+
 
       - name: Install dependencies
+        shell: bash
         run: |
           python -m pip install --upgrade pip
+          pip install pyinstaller wheel
           pip install -r requirements.txt
-          pip install pyinstaller
 
-      - name: Build with PyInstaller
+      - name: Build executable with PyInstaller
         shell: bash
         run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            SEP=";"
-          else
-            SEP=":"
-          fi
-          
-          CERTIFI_PATH=$(python -m certifi)
-          TKINTERDND2_PATH=$(python -c "import os, tkinterdnd2; print(os.path.dirname(tkinterdnd2.__file__))")
-          
-          PYINSTALLER_CMD="pyinstaller --noconfirm --onefile --windowed --name \"${{ env.APP_NAME }}\" \
-            --add-data \"components${SEP}components\" \
-            --add-data \"dialogs${SEP}dialogs\" \
-            --add-data \"services${SEP}services\" \
-            --add-data \"utils${SEP}utils\" \
-            --add-data \"${TKINTERDND2_PATH}${SEP}tkinterdnd2\" \
-            --add-data \"${CERTIFI_PATH}${SEP}certifi\" \
-            --hidden-import \"openpyxl\" \
-            --hidden-import \"PIL.Image\" \
-            main.py"
+          pyinstaller app.py \
+            --noconsole \
+            --onefile \
+            --windowed \
+            --name ${{ env.APP_NAME }}-${{ matrix.target }} \
+            ${{ matrix.pyinstaller_arch_flag }}
 
-          if [ "${{ matrix.arch }}" == "arm64" ] && [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            docker run --rm -v "$(pwd):/src" -w /src arm64v8/ubuntu:22.04 /bin/bash -c "apt-get update && apt-get install -y python3-pip python3-tk && python3 -m pip install --upgrade pip && pip3 install -r requirements.txt && pip3 install pyinstaller && ${PYINSTALLER_CMD}"
-          else
-            eval $PYINSTALLER_CMD
-          fi
 
-      - name: Package the application
-        id: package
+      - name: Package artifact
         shell: bash
         run: |
-          VERSION=$(echo "${{ github.ref_name }}" | sed 's/v//')
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            ASSET_PATH="dist/${{ env.APP_NAME }}.exe"
-            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-windows-${{ matrix.arch }}.zip"
-            powershell -Command "Compress-Archive -Path '${ASSET_PATH}' -DestinationPath '${ARCHIVE_NAME}'"
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            ASSET_PATH="dist/${{ env.APP_NAME }}.app"
-            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-macos-${{ matrix.arch }}.zip"
-            zip -r "${ARCHIVE_NAME}" "${ASSET_PATH}"
+          shell: bash
+          mkdir -p artifact
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            7z a artifact/${{ env.APP_NAME }}-${{ matrix.target }}.zip ./dist/${{ env.APP_NAME }}-${{ matrix.target }}.exe
           else
-            ASSET_PATH="dist/${{ env.APP_NAME }}"
-            ARCHIVE_NAME="${{ env.APP_NAME }}-${VERSION}-linux-${{ matrix.arch }}.tar.gz"
-            tar -czvf "${ARCHIVE_NAME}" -C "dist/" "${{ env.APP_NAME }}"
+            tar -czvf artifact/${{ env.APP_NAME }}-${{ matrix.target }}.tar.gz -C ./dist/ .
           fi
-          echo "ASSET_NAME=${ARCHIVE_NAME}" >> $GITHUB_OUTPUT
 
-      - name: Upload Artifact
+      - name: Upload artifact for release
         uses: actions/upload-artifact@v4
         with:
-          name: release-asset-${{ matrix.os }}-${{ matrix.arch }}
-          path: ${{ steps.package.outputs.ASSET_NAME }}
+          name: ${{ env.APP_NAME }}-${{ matrix.target }}
+          path: artifact/*
 
   release:
-    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
+
+
     permissions:
       contents: write
 
     steps:
-      - name: Download all artifacts
+      - name: Get tag name
+        id: get_tag
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          release_name: Release ${{ env.TAG_NAME }}
+          body: "Automated release for ${{ env.APP_NAME }} version ${{ env.TAG_NAME }}."
+          draft: false
+          prerelease: false
+
+      - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: release-artifacts
+          path: all-artifacts/
 
-      - name: Create Release and Upload Assets
-        uses: softprops/action-gh-release@v2
+      - name: Upload assets to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          name: Release ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
-          generate_release_notes: true
-          files: release-artifacts/*/*
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: all-artifacts/*/*
+          asset_name: ${{_asset_name_}}
+          asset_content_type: ${{_asset_content_type_}}
