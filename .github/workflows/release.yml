@@ -43,6 +43,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build with PyInstaller
+        shell: bash
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
             SEP=";"
