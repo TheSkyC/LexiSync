@@ -101,13 +101,14 @@ class PromptManagerDialog(tk.Toplevel):
             self.drag_data["y"] = event.y
 
     def on_motion(self, event):
-        if not self.drag_data["item"]:
+        dragged_item = self.drag_data.get("item")
+        if not dragged_item:
             return
-        delta_y = event.y - self.drag_data["y"]
-        if abs(delta_y) > 5:
-            self.tree.move(self.drag_data["item"], "",
-                           self.tree.index(self.drag_data["item"]) + (1 if delta_y > 0 else -1))
-            self.drag_data["y"] = event.y
+
+        target_item = self.tree.identify_row(event.y)
+
+        if target_item and target_item != dragged_item:
+            self.tree.move(dragged_item, "", self.tree.index(target_item))
 
     def on_release(self, event):
         if not self.drag_data["item"]:
