@@ -4,13 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e7286de0-17d4-4367-aaa2-58f9ce5509b7" name="更改" comment="my">
+    <list default="true" id="e7286de0-17d4-4367-aaa2-58f9ce5509b7" name="更改" comment="release">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/project_tab.py" beforeDir="false" afterPath="$PROJECT_DIR$/components/project_tab.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/virtual_treeview.py" beforeDir="false" afterPath="$PROJECT_DIR$/components/virtual_treeview.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dialogs/ai_settings_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/dialogs/ai_settings_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dialogs/diff_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/dialogs/diff_dialog.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,11 +21,10 @@
     </option>
   </component>
   <component name="Git.Settings">
-    <option name="PUSH_TAGS">
-      <GitPushTagMode>
-        <option name="argument" value="--follow-tags" />
-        <option name="title" value="Current Branch" />
-      </GitPushTagMode>
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master" />
+      </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -48,6 +43,9 @@
     &quot;accountId&quot;: &quot;ddb59f56-0580-4667-bd6a-5b726ab7808f&quot;
   }
 }</component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="ProjectErrors" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7
 }</component>
@@ -59,33 +57,33 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.activate_this.executor&quot;: &quot;Run&quot;,
-    &quot;Python.ai_translator.executor&quot;: &quot;Run&quot;,
-    &quot;Python.app.executor&quot;: &quot;Run&quot;,
-    &quot;Python.diff_dialog.executor&quot;: &quot;Run&quot;,
-    &quot;Python.diff_service.executor&quot;: &quot;Run&quot;,
-    &quot;Python.keybinding_dialog.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.translatev0.1a.executor&quot;: &quot;Run&quot;,
-    &quot;Python.translatev0.7.executor&quot;: &quot;Run&quot;,
-    &quot;Python.virtual_treeview.executor&quot;: &quot;Run&quot;,
-    &quot;Python.主程序.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;E:/workspace/overwatch-localizer/main.py&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;editor.stickyLines&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.activate_this.executor": "Run",
+    "Python.ai_translator.executor": "Run",
+    "Python.app.executor": "Run",
+    "Python.diff_dialog.executor": "Run",
+    "Python.diff_service.executor": "Run",
+    "Python.keybinding_dialog.executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.translatev0.1a.executor": "Run",
+    "Python.translatev0.7.executor": "Run",
+    "Python.virtual_treeview.executor": "Run",
+    "Python.主程序.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "E:/workspace/overwatch-localizer/main.py",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "run.code.analysis.last.selected.profile": "pProject Default",
+    "settings.editor.selected.configurable": "reference.idesettings.debugger.python",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="主程序" type="PythonConfigurationType" factoryName="Python">
       <module name="overwatch-localizer" />
@@ -131,7 +129,10 @@
       <workItem from="1750080562280" duration="111000" />
       <workItem from="1750080699401" duration="2419000" />
       <workItem from="1750083271083" duration="9065000" />
-      <workItem from="1750131869898" duration="3690000" />
+      <workItem from="1750131869898" duration="14752000" />
+      <workItem from="1750148250570" duration="3878000" />
+      <workItem from="1750152180753" duration="7044000" />
+      <workItem from="1750171824919" duration="3538000" />
     </task>
     <task id="LOCAL-00001" summary="test">
       <option name="closed" value="true" />
@@ -205,16 +206,200 @@
       <option name="project" value="LOCAL" />
       <updated>1750135254035</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="feat">
+      <option name="closed" value="true" />
+      <created>1750136015678</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1750136015678</updated>
+    </task>
+    <task id="LOCAL-00011" summary="fix:  clear_selected_translations">
+      <option name="closed" value="true" />
+      <created>1750137482047</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1750137482047</updated>
+    </task>
+    <task id="LOCAL-00012" summary="feat: implement advanced prompt management system">
+      <option name="closed" value="true" />
+      <created>1750143072213</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1750143072213</updated>
+    </task>
+    <task id="LOCAL-00013" summary="fix: correct focus behavior">
+      <option name="closed" value="true" />
+      <created>1750143302666</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1750143302666</updated>
+    </task>
+    <task id="LOCAL-00014" summary="fix: correct scroll clamping to ensure last item is always visible">
+      <option name="closed" value="true" />
+      <created>1750145706418</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1750145706418</updated>
+    </task>
+    <task id="LOCAL-00015" summary="fix: rework treeview">
+      <option name="closed" value="true" />
+      <created>1750146700573</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1750146700573</updated>
+    </task>
+    <task id="LOCAL-00016" summary="style: format code">
+      <option name="closed" value="true" />
+      <created>1750148518216</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1750148518216</updated>
+    </task>
+    <task id="LOCAL-00017" summary="release">
+      <option name="closed" value="true" />
+      <created>1750149990402</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1750149990402</updated>
+    </task>
+    <task id="LOCAL-00018" summary="requirements">
+      <option name="closed" value="true" />
+      <created>1750150018430</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1750150018430</updated>
+    </task>
+    <task id="LOCAL-00019" summary="fix: Build with PyInstaller">
+      <option name="closed" value="true" />
+      <created>1750150978108</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1750150978108</updated>
+    </task>
+    <task id="LOCAL-00020" summary="chore: version v1.0.2">
+      <option name="closed" value="true" />
+      <created>1750151230650</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1750151230650</updated>
+    </task>
+    <task id="LOCAL-00021" summary="fix: Package the application">
+      <option name="closed" value="true" />
+      <created>1750151670901</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1750151670902</updated>
+    </task>
+    <task id="LOCAL-00022" summary="release">
+      <option name="closed" value="true" />
+      <created>1750156645205</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1750156645205</updated>
+    </task>
+    <task id="LOCAL-00023" summary="release">
+      <option name="closed" value="true" />
+      <created>1750158278789</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1750158278789</updated>
+    </task>
+    <task id="LOCAL-00024" summary="release">
+      <option name="closed" value="true" />
+      <created>1750158813434</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1750158813434</updated>
+    </task>
+    <task id="LOCAL-00025" summary="release">
+      <option name="closed" value="true" />
+      <created>1750159308452</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1750159308452</updated>
+    </task>
+    <task id="LOCAL-00026" summary="fix: remove pip==23.2.1">
+      <option name="closed" value="true" />
+      <created>1750159563490</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1750159563490</updated>
+    </task>
+    <task id="LOCAL-00027" summary="release">
+      <option name="closed" value="true" />
+      <created>1750160146534</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1750160146534</updated>
+    </task>
+    <task id="LOCAL-00028" summary="release">
+      <option name="closed" value="true" />
+      <created>1750160758735</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1750160758736</updated>
+    </task>
+    <task id="LOCAL-00029" summary="release">
+      <option name="closed" value="true" />
+      <created>1750161296770</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1750161296770</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="test" />
     <MESSAGE value="my" />
-    <option name="LAST_COMMIT_MESSAGE" value="my" />
+    <MESSAGE value="feat" />
+    <MESSAGE value="fix:  clear_selected_translations" />
+    <MESSAGE value="feat: implement advanced prompt management system" />
+    <MESSAGE value="fix: correct focus behavior" />
+    <MESSAGE value="fix: correct scroll clamping to ensure last item is always visible" />
+    <MESSAGE value="fix: rework treeview" />
+    <MESSAGE value="style: format code" />
+    <MESSAGE value="requirements" />
+    <MESSAGE value="fix: Build with PyInstaller" />
+    <MESSAGE value="chore: version v1.0.2" />
+    <MESSAGE value="fix: Package the application" />
+    <MESSAGE value="fix: remove pip==23.2.1" />
+    <MESSAGE value="release" />
+    <option name="LAST_COMMIT_MESSAGE" value="release" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/project_tab_py$main.coverage" NAME="main 覆盖结果" MODIFIED="1750134588205" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
@@ -225,9 +410,10 @@
     <SUITE FILE_PATH="coverage/project_tab_py$diff_dialog.coverage" NAME="diff_dialog 覆盖结果" MODIFIED="1750133837117" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dialogs" />
     <SUITE FILE_PATH="coverage/project_tab_py$app.coverage" NAME="app 覆盖结果" MODIFIED="1750090946826" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/project_tab_py$virtual_treeview.coverage" NAME="virtual_treeview 覆盖结果" MODIFIED="1750086166793" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/components" />
+    <SUITE FILE_PATH="coverage/OverwatchLocalizer$.coverage" NAME="主程序 覆盖结果" MODIFIED="1750175271936" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
     <SUITE FILE_PATH="coverage/overwatch_localizer$activate_this.coverage" NAME="activate_this 覆盖结果" MODIFIED="1750080632744" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/.venv/Scripts" />
     <SUITE FILE_PATH="coverage/overwatch_localizer$main.coverage" NAME="main 覆盖结果" MODIFIED="1750082783743" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/project_tab_py$.coverage" NAME="主程序 覆盖结果" MODIFIED="1750135185722" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
+    <SUITE FILE_PATH="coverage/project_tab_py$.coverage" NAME="主程序 覆盖结果" MODIFIED="1750147679423" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
     <SUITE FILE_PATH="coverage/overwatch_localizer$ai_translator.coverage" NAME="ai_translator 覆盖结果" MODIFIED="1750082124308" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/services" />
   </component>
 </project>
