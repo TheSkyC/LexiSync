@@ -683,8 +683,13 @@ class OverwatchLocalizerApp:
             self.statusbar_text.set("准备就绪")
 
     def update_counts_display(self):
-        if not hasattr(self, 'translatable_objects'): return
+        if not hasattr(self, 'translatable_objects'):
+            self.counts_text.set("显示: 0/0 | 已译: 0 | 未译: 0 | 已忽略: 0")
+            return
+
         displayed_count = len(self.displayed_string_ids)
+        total_count = len(self.translatable_objects)
+
         translated_visible = 0
         untranslated_visible = 0
         ignored_visible = 0
@@ -700,7 +705,8 @@ class OverwatchLocalizerApp:
                     untranslated_visible += 1
 
         self.counts_text.set(
-            f"显示: {displayed_count} | 已译: {translated_visible} | 未译: {untranslated_visible} | 已忽略: {ignored_visible}")
+            f"显示: {displayed_count}/{total_count} | 已译: {translated_visible} | 未译: {untranslated_visible} | 已忽略: {ignored_visible}"
+        )
 
     def update_title(self):
         base_title = f"Overwatch Localizer - v{APP_VERSION}"
