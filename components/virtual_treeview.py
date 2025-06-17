@@ -94,7 +94,13 @@ class VirtualTreeview(ttk.Frame):
         elif action == "scroll":
             self._first_visible_index += int(value)
 
-        self._first_visible_index = max(0, min(self._first_visible_index, total_rows - self._visible_rows))
+        if total_rows > self._visible_rows:
+            max_start_index = total_rows - self._visible_rows + 1
+            max_start_index = min(max_start_index, total_rows - 1)
+        else:
+            max_start_index = 0
+
+        self._first_visible_index = max(0, min(self._first_visible_index, max_start_index))
         self._redraw_view()
 
     def _on_mousewheel(self, event):
@@ -107,7 +113,15 @@ class VirtualTreeview(ttk.Frame):
 
         self._first_visible_index += delta
         total_rows = len(self._ordered_iids)
-        self._first_visible_index = max(0, min(self._first_visible_index, total_rows - self._visible_rows))
+
+
+        if total_rows > self._visible_rows:
+            max_start_index = total_rows - self._visible_rows + 1
+            max_start_index = min(max_start_index, total_rows - 1)
+        else:
+            max_start_index = 0
+
+        self._first_visible_index = max(0, min(self._first_visible_index, max_start_index))
         self._redraw_view()
         return "break"
 
@@ -222,7 +236,7 @@ class VirtualTreeview(ttk.Frame):
             return
 
         start = self._first_visible_index
-        end = min(start + self._visible_rows + 2, total_rows)
+        end = min(start + self._visible_rows , total_rows)
 
         visible_iids = []
         for i in range(start, end):
