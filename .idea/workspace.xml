@@ -4,8 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e7286de0-17d4-4367-aaa2-58f9ce5509b7" name="更改" comment="release">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="e7286de0-17d4-4367-aaa2-58f9ce5509b7" name="更改" comment="fix: Correctly display AI translation results in UI">
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -132,7 +131,7 @@
       <workItem from="1750131869898" duration="14752000" />
       <workItem from="1750148250570" duration="3878000" />
       <workItem from="1750152180753" duration="7044000" />
-      <workItem from="1750171824919" duration="3538000" />
+      <workItem from="1750171824919" duration="3632000" />
     </task>
     <task id="LOCAL-00001" summary="test">
       <option name="closed" value="true" />
@@ -366,7 +365,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750161296770</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="fix: Correctly display AI translation results in UI">
+      <option name="closed" value="true" />
+      <created>1750175411522</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1750175411522</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -399,7 +406,8 @@
     <MESSAGE value="fix: Package the application" />
     <MESSAGE value="fix: remove pip==23.2.1" />
     <MESSAGE value="release" />
-    <option name="LAST_COMMIT_MESSAGE" value="release" />
+    <MESSAGE value="fix: Correctly display AI translation results in UI" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix: Correctly display AI translation results in UI" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/project_tab_py$main.coverage" NAME="main 覆盖结果" MODIFIED="1750134588205" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

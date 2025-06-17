@@ -312,8 +312,6 @@ class OverwatchLocalizerApp:
                                   command=self.refresh_treeview_preserve_selection)
         view_menu.add_checkbutton(label="仅显示未审阅", variable=self.show_unreviewed_var,
                                   command=self.refresh_treeview_preserve_selection)
-
-        # --- Tools Menu ---
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="工具", menu=tools_menu)
         tools_menu.add_command(label="应用记忆库到未翻译项",
@@ -2358,46 +2356,31 @@ class OverwatchLocalizerApp:
         PromptManagerDialog(self.root, "AI提示词管理器", self)
 
     def _initiate_single_ai_translation(self, ts_id_to_translate, called_from_cm=False):
-        # Prerequisites are checked by the caller (cm_ai_translate_selected or button handler)
-        # if not self._check_ai_prerequisites(): return False
 
         if not ts_id_to_translate:
             return False
 
-        # Batch translation check is also handled by caller
-        # if self.is_ai_translating_batch:
-        #     messagebox.showwarning("AI翻译进行中", "AI批量翻译正在进行中。", parent=self.root)
-        #     return False
-
         ts_obj = self._find_ts_obj_by_id(ts_id_to_translate)
         if not ts_obj: return False
-
-        # Ensure current editor content for THIS item is saved before proceeding
-        # This is important if the call comes directly from a button press
-        # while this item is already selected and potentially edited.
         if not called_from_cm and self.current_selected_ts_id == ts_id_to_translate:
             current_editor_text = self.translation_edit_text.get("1.0", tk.END).rstrip('\n')
             if current_editor_text != ts_obj.get_translation_for_ui():
                 self._apply_translation_to_model(ts_obj, current_editor_text, source="pre_single_ai_save")
 
         if ts_obj.is_ignored:
-            if not called_from_cm:  # Only show message if not part of a loop
+            if not called_from_cm:
                 messagebox.showinfo("已忽略", "选中的字符串已被标记为忽略，不会进行AI翻译。", parent=self.root)
             return False
 
         if ts_obj.translation.strip():
-            # If called from context menu (potentially multiple items),
-            # and it's not the only item selected, skip confirmation for already translated ones.
             if called_from_cm and len(self.tree.selection()) > 1:
-                return False  # Skip already translated ones in multi-select from context menu
+                return False
 
             if not messagebox.askyesno("覆盖确认",
                                        f"字符串 \"{ts_obj.original_semantic[:50]}...\" 已有翻译。\n是否使用AI翻译覆盖现有译文？",
                                        parent=self.root):
                 return False
 
-        # Update statusbar only if not called from the context menu's loop
-        # The context menu will provide a summary status at the end.
         if not called_from_cm:
             self.update_statusbar(f"AI正在翻译: \"{ts_obj.original_semantic[:30].replace(chr(10), '↵')}...\"")
 
@@ -2409,7 +2392,7 @@ class OverwatchLocalizerApp:
                                         context_dict, self.project_custom_instructions, False),
                                   daemon=True)
         thread.start()
-        return True  # Successfully initiated
+        return True
 
     def _dispatch_next_ai_batch_item(self):
         if not self.is_ai_translating_batch: return
@@ -2439,7 +2422,7 @@ class OverwatchLocalizerApp:
                 context_dict = self._generate_ai_context_strings(ts_obj.id)
                 target_language = self.config.get("ai_target_language", "中文")
 
-                # The prompt_template is no longer needed here.
+
                 thread = threading.Thread(target=self._perform_ai_translation_threaded,
                                           args=(ts_obj.id, ts_obj.original_semantic, target_language,
                                                 context_dict, self.project_custom_instructions, True),
@@ -2495,13 +2478,13 @@ class OverwatchLocalizerApp:
                                      parent=self.root)
         elif translated_text is not None and translated_text.strip():
             apply_source = "ai_batch_item" if is_batch_item else "ai_selected"
-            cleaned_translation = translated_text.strip()  # This is the definitive new translation
+            cleaned_translation = translated_text.strip()
 
             undo_change_data = None
             if is_batch_item:
                 old_undo_val = ts_obj.get_translation_for_storage_and_tm()
                 ts_obj.set_translation_internal(cleaned_translation)
-                if cleaned_translation:  # Update TM for batch items too
+                if cleaned_translation:
                     self.translation_memory[ts_obj.original_semantic] = ts_obj.get_translation_for_storage_and_tm()
                 self.ai_batch_successful_translations_for_undo.append({
                     'string_id': ts_obj.id,
@@ -2509,24 +2492,17 @@ class OverwatchLocalizerApp:
                     'old_value': old_undo_val,
                     'new_value': ts_obj.get_translation_for_storage_and_tm()
                 })
-            else:  # For single AI translation (ai_selected)
-                # _apply_translation_to_model will handle undo history and TM update
-                # It returns True if a change was made and undo was added.
+            else:
                 change_applied = self._apply_translation_to_model(ts_obj, cleaned_translation, source=apply_source)
-                # If no actual change (e.g., AI returned same as existing), _apply_translation_to_model might return False.
-                # We still want to update the UI with the AI's result.
 
-            # --- UI Update Section ---
             if self.tree.exists(ts_obj.id):
                 current_values = list(self.tree.item(ts_obj.id, 'values'))
-                current_values[1] = "T"  # Status
-                # Use cleaned_translation directly for the tree display
+                current_values[1] = "T"
                 current_values[3] = cleaned_translation.replace("\n", "↵")
                 self.tree.item(ts_obj.id, values=tuple(current_values), tags=('translated_row_visual',))
 
             if self.current_selected_ts_id == ts_obj.id:
                 self.translation_edit_text.delete("1.0", tk.END)
-                # Use cleaned_translation directly for the editor
                 self.translation_edit_text.insert("1.0", cleaned_translation)
                 self.schedule_placeholder_validation()
                 self.update_tm_suggestions_for_text(ts_obj.original_semantic)
@@ -2537,18 +2513,14 @@ class OverwatchLocalizerApp:
             if not is_batch_item:
                 self.update_statusbar(f"AI翻译成功: \"{ts_obj.original_semantic[:20].replace(chr(10), '↵')}...\"")
 
-        elif translated_text is not None and not translated_text.strip():  # AI returned empty
+        elif translated_text is not None and not translated_text.strip():
             self.update_statusbar(f"AI返回空翻译 for \"{ts_obj.original_semantic[:20].replace(chr(10), '↵')}...\"")
-            # If it's a single selected item, and AI returns empty, we should also clear the editor
             if not is_batch_item and self.current_selected_ts_id == ts_obj.id:
                 self.translation_edit_text.delete("1.0", tk.END)
-                # Also apply this empty translation to the model
                 self._apply_translation_to_model(ts_obj, "", source="ai_selected_empty")
 
-        # --- Batch Progress Update ---
         if is_batch_item:
             self.ai_batch_completed_count += 1
-            # ... (rest of batch progress logic) ...
             if self.ai_batch_total_items > 0:
                 progress_percent = (self.ai_batch_completed_count / self.ai_batch_total_items) * 100
                 if hasattr(self, 'progress_bar'): self.progress_bar['value'] = progress_percent
@@ -2884,7 +2856,7 @@ class OverwatchLocalizerApp:
         self.refresh_treeview_preserve_selection()
         self.update_statusbar(f"清除了 {len(bulk_changes)} 项译文。")
 
-    def cm_ai_translate_selected(self, event=None):  # Added event=None for consistency
+    def cm_ai_translate_selected(self, event=None):
         selected_objs = self._get_selected_ts_objects()
         if not selected_objs:
             self.update_statusbar("没有选中的项目可供AI翻译。")
@@ -2899,9 +2871,6 @@ class OverwatchLocalizerApp:
         items_actually_translated_count = 0
 
         for i, ts_obj in enumerate(selected_objs):
-            # If this is not the first item in a multi-selection,
-            # and the previous item was the one in the details pane,
-            # ensure its editor content is saved before proceeding.
             if i > 0 and self.current_selected_ts_id == selected_objs[i - 1].id:
                 prev_ts_obj = selected_objs[i - 1]
                 current_editor_text = self.translation_edit_text.get("1.0", tk.END).rstrip('\n')
@@ -2909,37 +2878,27 @@ class OverwatchLocalizerApp:
                     self._apply_translation_to_model(prev_ts_obj, current_editor_text,
                                                      source="multi_ai_intermediate_save")
 
-            # Ensure the current item for AI translation is selected and visible in details
             if self.current_selected_ts_id != ts_obj.id:
                 if self.tree.exists(ts_obj.id):
                     self.tree.selection_set(ts_obj.id)
                     self.tree.focus(ts_obj.id)
                     self.tree.see(ts_obj.id)
-                    self.on_tree_select(None)  # Update details pane for this item
+                    self.on_tree_select(None)
                 else:
-                    # Should not happen if _get_selected_ts_objects is correct
                     continue
 
-                    # Now, call _initiate_single_ai_translation for the current ts_obj
-            # It will handle its own checks (ignored, already translated + confirmation)
             initiated = self._initiate_single_ai_translation(ts_obj.id, called_from_cm=True)
             if initiated:
                 items_actually_translated_count += 1
 
-            # If there are more items and we successfully initiated, wait a bit
-            # This is crucial to allow the previous AI request to be fully processed
-            # and its UI updates (like statusbar) to complete before the next one starts.
             if initiated and i < len(selected_objs) - 1:
-                # Wait for a short period to allow UI to settle and previous AI call to progress.
-                # The duration might need tuning.
-                # This also helps to avoid hitting API rate limits if interval is very low.
                 interval_ms = self.config.get("ai_api_interval", 200)
-                time.sleep(max(0.2, interval_ms / 1000.0 * 1.5))  # Sleep a bit longer than API interval
-                self.root.update_idletasks()  # Process any pending UI events
+                time.sleep(max(0.2, interval_ms / 1000.0 * 1.5))
+                self.root.update_idletasks()
 
         if items_actually_translated_count > 0:
             self.update_statusbar(f"已为 {items_actually_translated_count} 个选中项启动AI翻译。")
-        elif selected_objs:  # If items were selected but none were initiated for translation
+        elif selected_objs:
             self.update_statusbar("没有符合条件的选中项可供AI翻译。")
 
     def compare_with_new_version(self, event=None):
