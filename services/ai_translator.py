@@ -1,3 +1,5 @@
+# In services/ai_translator.py
+
 import json
 from utils.constants import DEFAULT_API_URL
 
@@ -12,8 +14,7 @@ class AITranslator:
         self.api_url = api_url if api_url and api_url.strip() else DEFAULT_API_URL
         self.model_name = model_name
 
-    def translate(self, text_to_translate, target_language, system_prompt_template,
-                  translation_context="", custom_instructions="", original_context=""):
+    def translate(self, text_to_translate, system_prompt):
         if not self.api_key:
             raise ValueError("API Key 未设置。")
         if not requests:
@@ -24,24 +25,10 @@ class AITranslator:
             "Authorization": f"Bearer {self.api_key}"
         }
 
-        final_system_prompt = system_prompt_template.replace("[Target Language]", target_language)
-        final_system_prompt = final_system_prompt.replace("[Custom Translate]",
-                                                          custom_instructions if custom_instructions.strip() else "无")
-
-        if translation_context:
-            final_system_prompt = final_system_prompt.replace("[Translated Context]", translation_context)
-        else:
-            final_system_prompt = final_system_prompt.replace("[Translated Context]", "无")
-
-        if original_context:
-            final_system_prompt = final_system_prompt.replace("[Untranslated Context]", original_context)
-        else:
-            final_system_prompt = final_system_prompt.replace("[Untranslated Context]", "无")
-
         payload = {
             "model": self.model_name,
             "messages": [
-                {"role": "system", "content": final_system_prompt},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": text_to_translate}
             ],
             "temperature": 0.3,
@@ -72,16 +59,10 @@ class AITranslator:
         except Exception as e:
             raise Exception(f"翻译时发生未知错误: {e}")
 
-    def test_connection(self, test_text="Hello, OverWatch.", target_lang="中文",
-                        system_prompt_template="Translate to [Target Language]:"):
+    def test_connection(self, test_text="Hello, OverWatch.", system_prompt="Translate to Chinese:"):
         try:
-            test_prompt = system_prompt_template.replace("[Target Language]", target_lang)
-            if "[Translated Context]" in test_prompt:
-                test_prompt = test_prompt.replace("[Translated Context]", "N/A")
-            if "[Custom Translate]" in test_prompt:
-                test_prompt = test_prompt.replace("[Custom Translate]", "N/A")
-
-            translation = self.translate(test_text, target_lang, test_prompt)
+            # The test connection now also uses the 'translate' method
+            translation = self.translate(test_text, system_prompt)
             return True, f"连接成功。测试翻译 ('{test_text}' -> '{translation[:30]}...')"
         except Exception as e:
             return False, f"连接失败: {e}"

@@ -1,31 +1,65 @@
 import tkinter as tk
-from tkinter import ttk, simpledialog, scrolledtext, messagebox
+from tkinter import ttk, simpledialog, messagebox
 import threading
 from services.ai_translator import AITranslator
-from utils.constants import DEFAULT_AI_PROMPT_TEMPLATE, DEFAULT_API_URL
+from utils.constants import DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE
+from services.prompt_service import generate_prompt_from_structure
+from dialogs.prompt_manager_dialog import PromptManagerDialog
 
-class AISettingsDialog(simpledialog.Dialog):
-    def __init__(self, parent, title, app_config_ref, save_config_callback, ai_translator_ref):
+class AISettingsDialog(tk.Toplevel):
+    def __init__(self, parent, title, app_config_ref, save_config_callback, ai_translator_ref, app_instance):
+        super().__init__(parent)
         self.app_config = app_config_ref
         self.save_config_callback = save_config_callback
         self.ai_translator_instance = ai_translator_ref
+        self.result = None
+        self.app = app_instance
 
+        # --- Load initial values ---
+        # ... (rest of __init__ remains the same) ...
         self.initial_api_key = self.app_config.get("ai_api_key", "")
         self.initial_api_base_url = self.app_config.get("ai_api_base_url", DEFAULT_API_URL)
         self.initial_target_language = self.app_config.get("ai_target_language", "中文")
         self.initial_api_interval = self.app_config.get("ai_api_interval", 200)
         self.initial_model_name = self.app_config.get("ai_model_name", "deepseek-chat")
-        self.initial_prompt_template = self.app_config.get("ai_prompt_template", DEFAULT_AI_PROMPT_TEMPLATE)
+        self.initial_max_concurrent_requests = self.app_config.get("ai_max_concurrent_requests", 1)
         self.initial_use_context = self.app_config.get("ai_use_translation_context", False)
         self.initial_context_neighbors = self.app_config.get("ai_context_neighbors", 0)
         self.initial_use_original_context = self.app_config.get("ai_use_original_context", True)
         self.initial_original_context_neighbors = self.app_config.get("ai_original_context_neighbors", 3)
-        self.initial_max_concurrent_requests = self.app_config.get("ai_max_concurrent_requests", 1)
-        super().__init__(parent, title)
+
+        # --- Toplevel Window Setup ---
+        self.withdraw()
+        if parent.winfo_viewable():
+            self.transient(parent)
+        if title:
+            self.title(title)
+
+        self.parent = parent
+
+        main_container = ttk.Frame(self)
+        main_container.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
+        main_container.grid_columnconfigure(0, weight=1)
+
+        self.initial_focus = self.body(main_container)
+        self.buttonbox(main_container)
+
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
+        if self.parent is not None:
+            self.geometry(f"+{parent.winfo_rootx() + 50}+{parent.winfo_rooty() + 50}")
+
+        self.deiconify()
+        if self.initial_focus:
+            self.initial_focus.focus_set()
+
+        self.wait_visibility()
+        self.grab_set()
+        self.wait_window(self)
 
     def body(self, master):
         master.columnconfigure(1, weight=1)
-        api_frame = ttk.LabelFrame(master, text="API 配置", padding=(10, 5))
+
+        api_frame = ttk.LabelFrame(master, text="API 连接与模型设置", padding=(10, 5))
         api_frame.grid(row=0, column=0, columnspan=2, sticky=tk.EW, padx=5, pady=5)
         api_frame.columnconfigure(1, weight=1)
 
@@ -47,8 +81,7 @@ class AISettingsDialog(simpledialog.Dialog):
         self.model_name_entry = ttk.Entry(api_frame, textvariable=self.model_name_var, width=60)
         self.model_name_entry.grid(row=api_row_idx, column=1, sticky=tk.EW, padx=5, pady=3)
 
-
-        trans_frame = ttk.LabelFrame(master, text="翻译设置", padding=(10, 5))
+        trans_frame = ttk.LabelFrame(master, text="翻译与上下文设置", padding=(10, 5))
         trans_frame.grid(row=1, column=0, columnspan=2, sticky=tk.EW, padx=5, pady=5)
         trans_frame.columnconfigure(1, weight=1)
 
@@ -75,17 +108,19 @@ class AISettingsDialog(simpledialog.Dialog):
 
         self.use_original_context_var = tk.BooleanVar(value=self.initial_use_original_context)
         self.use_original_context_check = ttk.Checkbutton(trans_frame, text="引用临近原文作为上下文",
-                                                 variable=self.use_original_context_var,
-                                                 command=self.toggle_context_neighbors_state)
-        self.use_original_context_check.grid(row=trans_row_idx, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(5,0))
+                                                          variable=self.use_original_context_var,
+                                                          command=self.toggle_context_neighbors_state)
+        self.use_original_context_check.grid(row=trans_row_idx, column=0, columnspan=2, sticky=tk.W, padx=5,
+                                             pady=(5, 0))
         trans_row_idx += 1
 
         original_context_neighbor_frame = ttk.Frame(trans_frame)
         original_context_neighbor_frame.grid(row=trans_row_idx, column=0, columnspan=2, sticky=tk.W, padx=25)
         ttk.Label(original_context_neighbor_frame, text="引用临近").pack(side=tk.LEFT)
         self.original_context_neighbors_var = tk.IntVar(value=self.initial_original_context_neighbors)
-        self.original_context_neighbors_spinbox = tk.Spinbox(original_context_neighbor_frame, from_=0, to=10, increment=1,
-                                                    textvariable=self.original_context_neighbors_var, width=5)
+        self.original_context_neighbors_spinbox = tk.Spinbox(original_context_neighbor_frame, from_=0, to=10,
+                                                             increment=1,
+                                                             textvariable=self.original_context_neighbors_var, width=5)
         self.original_context_neighbors_spinbox.pack(side=tk.LEFT, padx=5)
         ttk.Label(original_context_neighbor_frame, text="条原文 (0为所有)").pack(side=tk.LEFT)
         trans_row_idx += 1
@@ -94,7 +129,7 @@ class AISettingsDialog(simpledialog.Dialog):
         self.use_context_check = ttk.Checkbutton(trans_frame, text="引用临近译文作为上下文",
                                                  variable=self.use_context_var,
                                                  command=self.toggle_context_neighbors_state)
-        self.use_context_check.grid(row=trans_row_idx, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(5,0))
+        self.use_context_check.grid(row=trans_row_idx, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(5, 0))
         trans_row_idx += 1
 
         context_neighbor_frame = ttk.Frame(trans_frame)
@@ -105,27 +140,10 @@ class AISettingsDialog(simpledialog.Dialog):
                                                     textvariable=self.context_neighbors_var, width=5)
         self.context_neighbors_spinbox.pack(side=tk.LEFT, padx=5)
         ttk.Label(context_neighbor_frame, text="条翻译 (0为所有)").pack(side=tk.LEFT)
-        trans_row_idx += 1
-
-        prompt_frame = ttk.LabelFrame(master, text="AI 提示词模板", padding=(10, 5))
-        prompt_frame.grid(row=2, column=0, columnspan=2, sticky=tk.NSEW, padx=5, pady=5)
-        prompt_frame.columnconfigure(0, weight=1)
-        prompt_frame.rowconfigure(0, weight=1)
-
-        self.ai_prompt_template_text = scrolledtext.ScrolledText(prompt_frame, height=10, width=70, wrap=tk.WORD,
-                                                                 relief=tk.SOLID, borderwidth=1)
-        self.ai_prompt_template_text.insert(tk.END, self.initial_prompt_template)
-        self.ai_prompt_template_text.grid(row=0, column=0, sticky=tk.NSEW, padx=5, pady=5)
-
-        ttk.Label(prompt_frame, text="可用占位符: [Target Language], [Untranslated Context], [Translated Context], [Custom Translate]").grid(
-            row=1, column=0,
-            sticky=tk.W, padx=5,
-            pady=(2, 5))
 
         self.test_status_label = ttk.Label(master, text="", wraplength=550)
-        self.test_status_label.grid(row=3, column=0, columnspan=2, sticky=tk.W, padx=10, pady=(5, 10))
+        self.test_status_label.grid(row=2, column=0, columnspan=2, sticky=tk.W, padx=10, pady=(10, 5))
 
-        master.rowconfigure(2, weight=1)
         self.toggle_context_neighbors_state()
         return self.api_key_entry
 
@@ -136,21 +154,33 @@ class AISettingsDialog(simpledialog.Dialog):
         orig_state = tk.NORMAL if self.use_original_context_var.get() else tk.DISABLED
         self.original_context_neighbors_spinbox.config(state=orig_state)
 
-    def buttonbox(self):
-        box = ttk.Frame(self)
+    def buttonbox(self, master):
+        main_frame = ttk.Frame(master)
+        main_frame.grid(row=3, column=0, columnspan=2, sticky="ew", padx=10, pady=5)
 
-        test_btn = ttk.Button(box, text="测试连接", width=10, command=self.test_api_connection_dialog)
-        test_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        left_frame = ttk.Frame(main_frame)
+        left_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        ok_btn = ttk.Button(box, text="确定", width=10, command=self.ok, default=tk.ACTIVE)
-        ok_btn.pack(side=tk.LEFT, padx=5, pady=5)
-        cancel_btn = ttk.Button(box, text="取消", width=10, command=self.cancel)
-        cancel_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        right_frame = ttk.Frame(main_frame)
+        right_frame.pack(side=tk.RIGHT)
 
-        self.bind("<Return>", lambda e: self.ok())
-        self.bind("<Escape>", lambda e: self.cancel())
+        prompt_btn = ttk.Button(left_frame, text="提示词管理器...", command=self.show_prompt_manager)
+        prompt_btn.pack(side=tk.LEFT, padx=(0, 10))
 
-        box.pack()
+        test_btn = ttk.Button(right_frame, text="测试连接", width=10, command=self.test_api_connection_dialog)
+        test_btn.pack(side=tk.LEFT, padx=(0, 5), pady=5)
+
+        ok_btn = ttk.Button(right_frame, text="确定", width=10, command=self.ok, default=tk.ACTIVE)
+        ok_btn.pack(side=tk.LEFT, padx=(0, 5), pady=5)
+
+        cancel_btn = ttk.Button(right_frame, text="取消", width=10, command=self.cancel)
+        cancel_btn.pack(side=tk.LEFT, pady=5)
+
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+
+    def show_prompt_manager(self):
+        PromptManagerDialog(self, "AI提示词管理器", self.app)
 
     def test_api_connection_dialog(self):
         self.test_status_label.config(text="测试中...")
@@ -168,9 +198,12 @@ class AISettingsDialog(simpledialog.Dialog):
         temp_translator = AITranslator(api_key, model_name, api_url)
 
         def _test_in_thread():
-            success, message = temp_translator.test_connection(
-                system_prompt_template=self.ai_prompt_template_text.get("1.0", tk.END).strip()
-            )
+            placeholders = {'[Target Language]': '中文', '[Custom Translate]': '', '[Untranslated Context]': '',
+                            '[Translated Context]': ''}
+            test_prompt = generate_prompt_from_structure(
+                self.app_config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE), placeholders)
+
+            success, message = temp_translator.test_connection(system_prompt=test_prompt)
             self.after(0, self._show_test_result, success, message)
 
         threading.Thread(target=_test_in_thread, daemon=True).start()
@@ -183,13 +216,19 @@ class AISettingsDialog(simpledialog.Dialog):
             else:
                 messagebox.showerror("测试连接", message, parent=self)
 
+    def ok(self, event=None):
+        if self.apply():
+            self.destroy()
+
+    def cancel(self, event=None):
+        self.destroy()
+
     def apply(self):
         api_key = self.api_key_var.get()
         api_base_url = self.api_base_url_var.get().strip()
         target_language = self.target_language_var.get().strip()
         model_name = self.model_name_var.get().strip()
         api_interval = self.api_interval_var.get()
-        prompt_template = self.ai_prompt_template_text.get("1.0", tk.END).strip()
         use_context = self.use_context_var.get()
         context_neighbors = self.context_neighbors_var.get()
         use_original_context = self.use_original_context_var.get()
@@ -199,30 +238,25 @@ class AISettingsDialog(simpledialog.Dialog):
         if not target_language:
             messagebox.showerror("错误", "目标语言不能为空。", parent=self)
             self.target_language_entry.focus_set()
-            return
+            return False
         if not model_name:
             messagebox.showerror("错误", "模型名称不能为空。", parent=self)
             self.model_name_entry.focus_set()
-            return
+            return False
         if api_interval < 0:
             messagebox.showerror("错误", "API 调用间隔不能为负。", parent=self)
             self.api_interval_spinbox.focus_set()
-            return
-        if not prompt_template:
-            messagebox.showerror("错误", "AI 翻译提示词模板不能为空。", parent=self)
-            self.ai_prompt_template_text.focus_set()
-            return
+            return False
         if not (1 <= max_concurrent_requests <= 10):
             messagebox.showerror("错误", "最大并发请求数必须在 1 到 10 之间。", parent=self)
             self.max_concurrent_requests_spinbox.focus_set()
-            return
+            return False
 
         self.app_config["ai_api_key"] = api_key
         self.app_config["ai_api_base_url"] = api_base_url if api_base_url else DEFAULT_API_URL
         self.app_config["ai_target_language"] = target_language
         self.app_config["ai_model_name"] = model_name
         self.app_config["ai_api_interval"] = api_interval
-        self.app_config["ai_prompt_template"] = prompt_template
         self.app_config["ai_use_translation_context"] = use_context
         self.app_config["ai_context_neighbors"] = context_neighbors
         self.app_config["ai_use_original_context"] = use_original_context
@@ -238,7 +272,6 @@ class AISettingsDialog(simpledialog.Dialog):
                    target_language != self.initial_target_language or
                    model_name != self.initial_model_name or
                    api_interval != self.initial_api_interval or
-                   prompt_template != self.initial_prompt_template or
                    use_context != self.initial_use_context or
                    context_neighbors != self.initial_context_neighbors or
                    use_original_context != self.initial_use_original_context or
@@ -247,3 +280,5 @@ class AISettingsDialog(simpledialog.Dialog):
 
         if changed:
             self.save_config_callback()
+
+        return True

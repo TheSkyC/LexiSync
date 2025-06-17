@@ -18,6 +18,7 @@ from dialogs.search_dialog import AdvancedSearchDialog
 from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
 from services.project_service import load_project, save_project
+from services.prompt_service import generate_prompt_from_structure
 from utils import config_manager
 from utils.constants import *
 
@@ -325,6 +326,7 @@ class OverwatchLocalizerApp:
                                state=tk.DISABLED)
         tools_menu.add_command(label="停止AI批量翻译", command=lambda: self.stop_batch_ai_translation(),
                                state=tk.DISABLED)
+
         tools_menu.add_separator()
         tools_menu.add_command(label="项目个性化翻译设置...", command=self.show_project_custom_instructions_dialog,
                                state=tk.DISABLED)
@@ -2218,7 +2220,7 @@ class OverwatchLocalizerApp:
             messagebox.showerror("功能不可用", "requests库未安装，AI翻译功能无法使用。\n请运行: pip install requests",
                                  parent=self.root)
             return
-        AISettingsDialog(self.root, "AI翻译设置", self.config, self.save_config, self.ai_translator)
+        AISettingsDialog(self.root, "AI设置", self.config, self.save_config, self.ai_translator, self)
 
     def _check_ai_prerequisites(self, show_error=True):
         if not requests:
@@ -2324,17 +2326,20 @@ class OverwatchLocalizerApp:
 
         return contexts
 
-    def _perform_ai_translation_threaded(self, ts_id, original_text, target_language, prompt_template, context_dict,
+    def _perform_ai_translation_threaded(self, ts_id, original_text, target_language, context_dict,
                                          custom_instructions, is_batch_item):
         try:
-            translated_text = self.ai_translator.translate(
-                original_text,
-                target_language,
-                prompt_template,
-                translation_context=context_dict.get("translation_context", ""),
-                custom_instructions=custom_instructions,
-                original_context=context_dict.get("original_context", "")
-            )
+            placeholders = {
+                '[Target Language]': target_language,
+                '[Custom Translate]': custom_instructions,
+                '[Untranslated Context]': context_dict.get("original_context", ""),
+                '[Translated Context]': context_dict.get("translation_context", "")
+            }
+            prompt_structure = self.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
+            final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
+
+            translated_text = self.ai_translator.translate(original_text, final_prompt)
+
             self.root.after(0, self._handle_ai_translation_result, ts_id, translated_text, None, is_batch_item)
         except Exception as e:
             self.root.after(0, self._handle_ai_translation_result, ts_id, None, e, is_batch_item)
@@ -2342,6 +2347,10 @@ class OverwatchLocalizerApp:
             if is_batch_item and self.ai_batch_semaphore is not None:
                 self.ai_batch_semaphore.release()
                 self.root.after(0, self._decrement_active_threads_and_dispatch_more)
+
+    def show_prompt_manager_dialog(self):
+        from dialogs.prompt_manager_dialog import PromptManagerDialog
+        PromptManagerDialog(self.root, "AI提示词管理器", self)
 
     def _initiate_single_ai_translation(self, ts_id_to_translate):
         if not self._check_ai_prerequisites(): return
@@ -2364,17 +2373,16 @@ class OverwatchLocalizerApp:
 
         self.update_statusbar(f"AI正在翻译选中项: \"{ts_obj.original_semantic[:30].replace(chr(10), '↵')}...\"")
         context_dict = self._generate_ai_context_strings(ts_obj.id)
-        prompt_template = self.config.get("ai_prompt_template", DEFAULT_AI_PROMPT_TEMPLATE)
         target_language = self.config.get("ai_target_language", "中文")
 
+        # The prompt_template is no longer needed here.
         thread = threading.Thread(target=self._perform_ai_translation_threaded,
                                   args=(ts_obj.id, ts_obj.original_semantic, target_language,
-                                        prompt_template, context_dict, self.project_custom_instructions, False),
+                                        context_dict, self.project_custom_instructions, False),
                                   daemon=True)
         thread.start()
 
     def _dispatch_next_ai_batch_item(self):
-
         if not self.is_ai_translating_batch: return
         if self.ai_batch_next_item_index >= self.ai_batch_total_items: return
 
@@ -2400,12 +2408,12 @@ class OverwatchLocalizerApp:
 
             if ts_obj and not ts_obj.is_ignored and not ts_obj.translation.strip():
                 context_dict = self._generate_ai_context_strings(ts_obj.id)
-                prompt_template = self.config.get("ai_prompt_template", DEFAULT_AI_PROMPT_TEMPLATE)
                 target_language = self.config.get("ai_target_language", "中文")
 
+                # The prompt_template is no longer needed here.
                 thread = threading.Thread(target=self._perform_ai_translation_threaded,
                                           args=(ts_obj.id, ts_obj.original_semantic, target_language,
-                                                prompt_template, context_dict, self.project_custom_instructions, True),
+                                                context_dict, self.project_custom_instructions, True),
                                           daemon=True)
                 thread.start()
             else:
@@ -2520,36 +2528,6 @@ class OverwatchLocalizerApp:
     def ai_translate_selected_from_button(self):
         self._initiate_single_ai_translation(self.current_selected_ts_id)
 
-    def _initiate_single_ai_translation(self, ts_id_to_translate):
-        if not self._check_ai_prerequisites(): return
-        if not ts_id_to_translate:
-            return
-        if self.is_ai_translating_batch:
-            messagebox.showwarning("AI翻译进行中", "AI批量翻译正在进行中。请等待其完成或停止。", parent=self.root)
-            return
-
-        ts_obj = self._find_ts_obj_by_id(ts_id_to_translate)
-        if not ts_obj: return
-
-        if ts_obj.is_ignored:
-            messagebox.showinfo("已忽略", "选中的字符串已被标记为忽略，不会进行AI翻译。", parent=self.root)
-            return
-
-        if ts_obj.translation.strip() and \
-                not messagebox.askyesno("覆盖确认", "此字符串已有翻译。是否使用AI翻译覆盖现有译文？", parent=self.root):
-            return
-
-        self.update_statusbar(f"AI正在翻译选中项: \"{ts_obj.original_semantic[:30].replace(chr(10), '↵')}...\"")
-        context_str = self._generate_ai_context_strings(ts_obj.id)
-        prompt_template = self.config.get("ai_prompt_template", DEFAULT_AI_PROMPT_TEMPLATE)
-        target_language = self.config.get("ai_target_language", "中文")
-
-        thread = threading.Thread(target=self._perform_ai_translation_threaded,
-                                  args=(ts_obj.id, ts_obj.original_semantic, target_language,
-                                        prompt_template, context_str, self.project_custom_instructions, False),
-                                  daemon=True)
-        thread.start()
-
     def ai_translate_all_untranslated(self):
         if not self._check_ai_prerequisites(): return
         if self.is_ai_translating_batch:
@@ -2603,50 +2581,6 @@ class OverwatchLocalizerApp:
                 self._dispatch_next_ai_batch_item()
             else:
                 break
-
-    def _dispatch_next_ai_batch_item(self):
-        if not self.is_ai_translating_batch: return
-        if self.ai_batch_next_item_index >= self.ai_batch_total_items: return
-
-        if self.ai_batch_semaphore.acquire(blocking=False):
-            if not self.is_ai_translating_batch:
-                self.ai_batch_semaphore.release()
-                return
-
-            if self.ai_batch_next_item_index >= self.ai_batch_total_items:
-                self.ai_batch_semaphore.release()
-                return
-
-            current_item_idx = self.ai_batch_next_item_index
-            self.ai_batch_next_item_index += 1
-            self.ai_batch_active_threads += 1
-
-            ts_id = self.ai_translation_batch_ids_queue[current_item_idx]
-            ts_obj = self._find_ts_obj_by_id(ts_id)
-
-            self.update_statusbar(
-                f"AI批量: 处理中 {current_item_idx + 1}/{self.ai_batch_total_items} (并发: {self.ai_batch_active_threads})...",
-                persistent=True)
-
-            if ts_obj and not ts_obj.is_ignored and not ts_obj.translation.strip():
-                context_str = self._generate_ai_context_string(ts_obj.id)
-                prompt_template = self.config.get("ai_prompt_template", DEFAULT_AI_PROMPT_TEMPLATE)
-                target_language = self.config.get("ai_target_language", "中文")
-
-                thread = threading.Thread(target=self._perform_ai_translation_threaded,
-                                          args=(ts_obj.id, ts_obj.original_semantic, target_language,
-                                                prompt_template, context_str, self.project_custom_instructions, True),
-                                          daemon=True)
-                thread.start()
-            else:
-                self.ai_batch_semaphore.release()
-                self.ai_batch_active_threads -= 1
-                self.ai_batch_completed_count += 1
-                if self.is_ai_translating_batch:
-                    if self.ai_batch_next_item_index < self.ai_batch_total_items:
-                        self.root.after(0, self._dispatch_next_ai_batch_item)
-                    elif self.ai_batch_active_threads == 0 and self.ai_batch_completed_count >= self.ai_batch_total_items:
-                        self._finalize_batch_ai_translation()
 
     def _finalize_batch_ai_translation(self):
         if not self.is_ai_translating_batch and self.ai_batch_active_threads > 0:

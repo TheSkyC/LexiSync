@@ -1,7 +1,8 @@
 import json
 import os
+from copy import deepcopy
 from utils.constants import (
-    CONFIG_FILE, DEFAULT_API_URL, DEFAULT_AI_PROMPT_TEMPLATE, DEFAULT_KEYBINDINGS
+    CONFIG_FILE, DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS
 )
 
 
@@ -12,6 +13,7 @@ def load_config():
     except (FileNotFoundError, json.JSONDecodeError):
         config_data = {}
 
+    # ... (other setdefault calls remain the same) ...
     config_data.setdefault("deduplicate", False)
     config_data.setdefault("show_ignored", True)
     config_data.setdefault("show_untranslated", False)
@@ -30,14 +32,15 @@ def load_config():
     config_data.setdefault("ai_max_concurrent_requests", 1)
     config_data.setdefault("ai_use_translation_context", False)
     config_data.setdefault("ai_context_neighbors", 0)
-    # New AI context settings
     config_data.setdefault("ai_use_original_context", True)
     config_data.setdefault("ai_original_context_neighbors", 3)
 
-    current_prompt = config_data.get("ai_prompt_template")
-    if not current_prompt or "[Custom Translate]" not in current_prompt or "[Untranslated Context]" not in current_prompt:
-        config_data["ai_prompt_template"] = DEFAULT_AI_PROMPT_TEMPLATE
+    # --- Use new prompt structure ---
+    config_data.setdefault("ai_prompt_structure", deepcopy(DEFAULT_PROMPT_STRUCTURE))
+    # Remove old template if it exists for clean-up
+    config_data.pop("ai_prompt_template", None)
 
+    # Keybindings
     if 'keybindings' not in config_data:
         config_data['keybindings'] = DEFAULT_KEYBINDINGS.copy()
     else:
