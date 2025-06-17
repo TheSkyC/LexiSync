@@ -9,23 +9,18 @@ class KeybindingDialog(simpledialog.Dialog):
         self.key_vars = {}
         self.current_capture_entry = None
 
-        # --- New state tracking attributes ---
         self.pressed_modifiers = set()
         self.modifier_map = {
             'Control_L': 'Control', 'Control_R': 'Control',
             'Shift_L': 'Shift', 'Shift_R': 'Shift',
             'Alt_L': 'Alt', 'Alt_R': 'Alt', 'Alt_Gr': 'Alt',
-            'Super_L': 'Command', 'Super_R': 'Command'  # For macOS/Linux
+            'Super_L': 'Command', 'Super_R': 'Command'
         }
 
         super().__init__(parent, title)
 
     def body(self, master):
         master.columnconfigure(1, weight=1)
-
-        ttk.Label(master, text="点击输入框后，直接按下您想设置的快捷键组合。", wraplength=400).grid(row=0, column=0,
-                                                                                                  columnspan=2,
-                                                                                                  pady=(0, 10))
 
         self.entries = {}
         row_idx = 1
@@ -43,68 +38,55 @@ class KeybindingDialog(simpledialog.Dialog):
             self.entries[action] = entry
             row_idx += 1
 
-        return self.entries[list(self.app.ACTION_MAP.keys())[0]]
+        return None
 
     def on_entry_focus(self, event):
-        """When an entry gets focus, prepare to capture keys."""
         self.current_capture_entry = event.widget
         self.current_capture_entry.config(foreground="red")
 
-        # Reset modifier state and bind events
         self.pressed_modifiers.clear()
         self.bind_all("<KeyPress>", self.on_key_press, add="+")
         self.bind_all("<KeyRelease>", self.on_key_release, add="+")
 
     def on_entry_blur(self, event):
-        """When an entry loses focus, stop capturing."""
         if self.current_capture_entry:
             self.current_capture_entry.config(foreground="black")
         self.current_capture_entry = None
 
-        # Unbind all events
         self.unbind_all("<KeyPress>")
         self.unbind_all("<KeyRelease>")
 
+
     def on_key_press(self, event):
-        """Track pressed modifiers or finalize capture on a normal key press."""
         if not self.current_capture_entry:
             return
 
         keysym = event.keysym
 
-        # If it's a modifier, add it to our set of pressed keys
         if keysym in self.modifier_map:
             self.pressed_modifiers.add(self.modifier_map[keysym])
-            return  # Don't finalize yet, wait for a non-modifier key
+            return
 
-        # --- Finalize capture when a non-modifier key is pressed ---
-
-        # Get the unique, ordered list of modifiers
-        # Using a dict to get unique values while preserving order (Python 3.7+)
         final_modifiers = list(dict.fromkeys(self.pressed_modifiers))
 
-        # Format the main key
         main_key = keysym
         if len(main_key) == 1 and main_key.isalnum():
             main_key = main_key.upper()
 
-        # Combine modifiers and the main key
         all_parts = final_modifiers + [main_key]
         key_sequence = f"<{'-'.join(all_parts)}>"
 
-        # Update the entry's variable
         for action, entry in self.entries.items():
             if entry == self.current_capture_entry:
                 self.key_vars[action].set(key_sequence)
                 break
 
-        # Move focus to the next widget to "finalize" the capture
-        self.current_capture_entry.tk_focusNext().focus_set()
-
-        return "break"  # Prevent default behavior
+        self.pressed_modifiers.clear()
+        self.current_capture_entry.config(foreground="black")
+        self.focus_set()
+        return "break"
 
     def on_key_release(self, event):
-        """Track released modifiers."""
         if not self.current_capture_entry:
             return
 
@@ -123,11 +105,11 @@ class KeybindingDialog(simpledialog.Dialog):
         box.pack()
 
     def cancel(self):
-        self.on_entry_blur(None)  # Ensure all bindings are removed
+        self.on_entry_blur(None)
         super().cancel()
 
     def ok(self, event=None):
-        self.on_entry_blur(None)  # Ensure all bindings are removed
+        self.on_entry_blur(None)
         super().ok(event)
 
     def reset_to_defaults(self):
