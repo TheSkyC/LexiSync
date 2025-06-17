@@ -17,46 +17,38 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Windows
           - os_name: windows
             os_image: windows-latest
             arch: x64
-            pyinstaller_target_arch: win_amd64
             asset_suffix: win-x64.zip
             python_arch: x64
           - os_name: windows
             os_image: windows-latest
             arch: x86
-            pyinstaller_target_arch: win32
             asset_suffix: win-x86.zip
             python_arch: x86
+          # Linux
           - os_name: linux
             os_image: ubuntu-latest
             arch: x64
-            pyinstaller_target_arch: linux_x86_64
             asset_suffix: linux-x64.tar.gz
             python_arch: x64
-          - os_name: linux-arm64
-            os_image: ubuntu-latest
-            arch: arm64
-            pyinstaller_target_arch: linux_aarch64
-            asset_suffix: linux-arm64.tar.gz
-            python_arch: aarch64
+          # macOS - universal2
           - os_name: macos
             os_image: macos-latest
             arch: universal
-            pyinstaller_target_arch: macos_universal2
             asset_suffix: macos-universal.dmg
-            python_arch: universal2
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python ${{ env.PYTHON_VERSION }} - ${{ matrix.python_arch }}
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        architecture: ${{ matrix.python_arch }}
+        architecture: ${{ (matrix.os_name == 'macos' && 'default') || matrix.python_arch }}
 
     - name: Install dependencies
       shell: bash
@@ -70,14 +62,16 @@ jobs:
           pip install openpyxl tkinterdnd2-universal requests
         fi
 
-    - name: Build with PyInstaller (${{ matrix.pyinstaller_target_arch }})
+    - name: Build with PyInstaller for ${{ matrix.os_name }}
       shell: bash
       run: |
-        pyinstaller --name ${{ env.APP_NAME }} \
-                    --onefile \
-                    --windowed \
-                    --noconfirm \
-                    main.py
+        PYINSTALLER_ARGS="--name ${{ env.APP_NAME }} --onefile --windowed --noconfirm"
+        
+        if [[ "${{ runner.os }}" == "macOS" ]]; then
+          echo "Building for macOS. PyInstaller will attempt to create a universal binary if possible."
+        fi
+        
+        pyinstaller $PYINSTALLER_ARGS main.py
 
     - name: Prepare Artifacts (Windows)
       if: runner.os == 'Windows'
@@ -95,10 +89,20 @@ jobs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        if [ -d "dist/${{ env.APP_NAME }}.app" ]; then
-          hdiutil create -volname "${{ env.APP_NAME }}" -srcfolder "dist/${{ env.APP_NAME }}.app" -ov -format UDZO "${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
+        APP_BUNDLE_PATH="dist/${{ env.APP_NAME }}.app"
+        FINAL_EXECUTABLE_PATH="dist/${{ env.APP_NAME }}"
+
+        if [ -d "$APP_BUNDLE_PATH" ]; then
+          echo "Found .app bundle: $APP_BUNDLE_PATH"
+          hdiutil create -volname "${{ env.APP_NAME }}" -srcfolder "$APP_BUNDLE_PATH" -ov -format UDZO "${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
+          echo "Created DMG: ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
+        elif [ -f "$FINAL_EXECUTABLE_PATH" ]; then
+          echo "Found single executable: $FINAL_EXECUTABLE_PATH. Zipping it."
+          zip -j ${{ env.APP_NAME }}-${{ matrix.asset_suffix }} "$FINAL_EXECUTABLE_PATH"
+          echo "Created ZIP: ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
         else
-          zip -r ${{ env.APP_NAME }}-${{ matrix.asset_suffix }} dist/${{ env.APP_NAME }}
+          echo "Error: Neither .app bundle nor single executable found in dist/ for macOS."
+          exit 1
         fi
 
     - name: Upload artifact
