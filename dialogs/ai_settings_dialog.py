@@ -15,8 +15,6 @@ class AISettingsDialog(tk.Toplevel):
         self.result = None
         self.app = app_instance
 
-        # --- Load initial values ---
-        # ... (rest of __init__ remains the same) ...
         self.initial_api_key = self.app_config.get("ai_api_key", "")
         self.initial_api_base_url = self.app_config.get("ai_api_base_url", DEFAULT_API_URL)
         self.initial_target_language = self.app_config.get("ai_target_language", "中文")
@@ -28,7 +26,6 @@ class AISettingsDialog(tk.Toplevel):
         self.initial_use_original_context = self.app_config.get("ai_use_original_context", True)
         self.initial_original_context_neighbors = self.app_config.get("ai_original_context_neighbors", 3)
 
-        # --- Toplevel Window Setup ---
         self.withdraw()
         if parent.winfo_viewable():
             self.transient(parent)

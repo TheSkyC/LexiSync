@@ -1,5 +1,3 @@
-# In utils/constants.py
-
 import uuid
 
 APP_NAMESPACE_UUID = uuid.UUID('c2e02333-2f1d-48ba-bc8d-90d49da373af')

@@ -23,13 +23,11 @@ class PromptManagerDialog(tk.Toplevel):
         self.parent = parent
         self.geometry("1000x700")
 
-        # Main container
         main_container = ttk.Frame(self)
         main_container.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
         main_container.grid_rowconfigure(0, weight=1)
         main_container.grid_columnconfigure(0, weight=1)
 
-        # Create body and buttonbox
         self.initial_focus = self.body(main_container)
         self.buttonbox(main_container)
 
@@ -46,7 +44,6 @@ class PromptManagerDialog(tk.Toplevel):
         self.wait_window(self)
 
     def body(self, master):
-        # --- Toolbar ---
         toolbar = ttk.Frame(master)
         toolbar.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
 
@@ -56,7 +53,6 @@ class PromptManagerDialog(tk.Toplevel):
         ttk.Button(toolbar, text="导入预设", command=self.import_preset).pack(side=tk.RIGHT, padx=2)
         ttk.Button(toolbar, text="导出预设", command=self.export_preset).pack(side=tk.RIGHT, padx=2)
 
-        # --- Treeview ---
         tree_frame = ttk.Frame(master)
         tree_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
         tree_frame.grid_rowconfigure(0, weight=1)
@@ -207,7 +203,6 @@ class PromptManagerDialog(tk.Toplevel):
 
 
 class PromptItemEditor(simpledialog.Dialog):
-    # ... (This class remains unchanged) ...
     def __init__(self, parent, title, initial_data):
         self.initial_data = initial_data
         super().__init__(parent, title)

@@ -1730,7 +1730,6 @@ class OverwatchLocalizerApp:
         return False
 
     def save_project_file(self, project_filepath):
-        # Add po_metadata to project data if it exists
         project_data_dict = {
             "version": APP_VERSION,
             "original_code_file_path": self.current_code_file_path or "",
@@ -1752,7 +1751,7 @@ class OverwatchLocalizerApp:
         if self.current_po_metadata:
             project_data_dict["po_metadata"] = self.current_po_metadata
 
-        if save_project(project_filepath, self): # save_project in project_service.py needs to handle self.current_po_metadata
+        if save_project(project_filepath, self):
             self.current_project_file_path = project_filepath
             self.add_to_recent_files(project_filepath)
             self.mark_project_modified(False)
@@ -1939,7 +1938,7 @@ class OverwatchLocalizerApp:
         elif self.current_code_file_path:
             base, _ = os.path.splitext(os.path.basename(self.current_code_file_path))
             default_filename = f"{base}_translations.json"
-        elif self.current_selected_ts_id:  # Fallback if loaded from PO
+        elif self.current_selected_ts_id:
             default_filename = "po_export.json"
 
         filepath = filedialog.asksaveasfilename(
@@ -1952,7 +1951,6 @@ class OverwatchLocalizerApp:
         if not filepath: return
 
         try:
-            # Pass self to allow service to access displayed_string_ids or all objects
             export_service.export_to_json(filepath, self.translatable_objects, self.displayed_string_ids,
                                           app_instance=self)
             self.update_statusbar(f"项目翻译已导出到: {os.path.basename(filepath)}")
@@ -1971,7 +1969,7 @@ class OverwatchLocalizerApp:
         elif self.current_code_file_path:
             base, _ = os.path.splitext(os.path.basename(self.current_code_file_path))
             default_filename = f"{base}_translations.yaml"
-        elif self.current_selected_ts_id:  # Fallback if loaded from PO
+        elif self.current_selected_ts_id:
             default_filename = "po_export.yaml"
 
         filepath = filedialog.asksaveasfilename(
@@ -1991,7 +1989,6 @@ class OverwatchLocalizerApp:
             messagebox.showerror("导出错误", f"无法导出项目翻译到YAML: {e}", parent=self.root)
 
     def extract_to_pot_dialog(self):
-        # No current project needs to be saved before this, it's a utility
         code_filepath = filedialog.askopenfilename(
             title="选择要提取POT的代码文件",
             filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
@@ -2014,19 +2011,18 @@ class OverwatchLocalizerApp:
                 code_content = f.read()
 
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
-            project_name = os.path.basename(code_filepath)  # For POT metadata
+            project_name = os.path.basename(code_filepath)
 
             pot_object = po_file_service.extract_to_pot(code_content, extraction_patterns, project_name, APP_VERSION,
                                                         os.path.basename(code_filepath))
             pot_object.save(pot_save_filepath)
             self.update_statusbar(f"POT模板已保存到: {os.path.basename(pot_save_filepath)}")
-            self.config["last_dir"] = os.path.dirname(code_filepath)  # Update last_dir
+            self.config["last_dir"] = os.path.dirname(code_filepath)
             self.save_config()
         except Exception as e:
             messagebox.showerror("POT提取错误", f"提取POT文件时出错: {e}", parent=self.root)
 
     def import_po_file_dialog_with_path(self, po_filepath):
-        # This is a helper for drag-drop, directly uses the path
         original_code_for_context = None
         original_code_filepath_for_context = None
         if messagebox.askyesno("关联代码文件?", "是否关联一个原始代码文件以获取上下文和行号信息?", parent=self.root):
@@ -2049,9 +2045,9 @@ class OverwatchLocalizerApp:
             )
 
             self.original_raw_code_content = original_code_for_context if original_code_for_context else ""
-            self.current_code_file_path = original_code_filepath_for_context  # Store this
-            self.current_project_file_path = None  # Not a .owproj
-            self.project_custom_instructions = ""  # Reset
+            self.current_code_file_path = original_code_filepath_for_context
+            self.current_project_file_path = None
+            self.project_custom_instructions = ""
 
             self.add_to_recent_files(po_filepath)
             self.config["last_dir"] = os.path.dirname(po_filepath)
@@ -2093,7 +2089,6 @@ class OverwatchLocalizerApp:
             return
 
         default_filename = "translations.po"
-        # Suggest a name based on current context
         if self.current_project_file_path:
             base, _ = os.path.splitext(os.path.basename(self.current_project_file_path))
             default_filename = f"{base}.po"
@@ -2125,10 +2120,8 @@ class OverwatchLocalizerApp:
 
     def show_extraction_pattern_dialog(self):
         from dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
-        # Pass self (app_instance) to the dialog
         dialog = ExtractionPatternManagerDialog(self.root, "提取规则管理器", self)
-        if dialog.result:  # Check if dialog applied changes
-            # Optionally, ask user if they want to reload text now
+        if dialog.result:
             if self.original_raw_code_content:
                 if messagebox.askyesno("规则已更新", "提取规则已更新。是否立即使用新规则重新加载当前代码的翻译文本？",
                                        parent=self.root):
@@ -2139,8 +2132,6 @@ class OverwatchLocalizerApp:
             messagebox.showinfo("提示", "没有已加载的代码内容可供重新加载。", parent=self.root)
             return
 
-        # If there's a current code file path, prefer re-reading from disk
-        # to ensure the latest version of the file is used with new patterns.
         current_content_to_reextract = self.original_raw_code_content
         source_name = "当前内存中的代码"
         if self.current_code_file_path and os.path.exists(self.current_code_file_path):
@@ -2157,7 +2148,6 @@ class OverwatchLocalizerApp:
             messagebox.showerror("错误", "无法获取用于重新提取的代码内容。", parent=self.root)
             return
 
-        # Preserve current translations before re-extracting
         old_translations_map = {ts.original_semantic: {
             'translation': ts.translation,
             'comment': ts.comment,
@@ -2166,7 +2156,7 @@ class OverwatchLocalizerApp:
             'was_auto_ignored': ts.was_auto_ignored
         } for ts in self.translatable_objects}
 
-        if self.current_project_modified or old_translations_map:  # Check if any data exists
+        if self.current_project_modified or old_translations_map:
             if not messagebox.askyesno("确认重新加载",
                                        f"将使用新规则从 {source_name} 重新提取字符串。\n"
                                        "现有翻译将尝试根据原文匹配保留，但未匹配项的翻译和状态可能会丢失。\n"
@@ -2177,16 +2167,10 @@ class OverwatchLocalizerApp:
         try:
             self.update_statusbar("正在使用新规则重新提取字符串...", persistent=True)
             self.root.update_idletasks()
-
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
-
-            # Update original_raw_code_content if re-read from disk
             self.original_raw_code_content = current_content_to_reextract
-
             self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
                                                                      extraction_patterns)
-
-            # Attempt to restore translations and states
             restored_count = 0
             for ts_obj in self.translatable_objects:
                 if ts_obj.original_semantic in old_translations_map:
@@ -2194,10 +2178,9 @@ class OverwatchLocalizerApp:
                     ts_obj.set_translation_internal(saved_state['translation'])
                     ts_obj.comment = saved_state['comment']
                     ts_obj.is_reviewed = saved_state['is_reviewed']
-                    # Only restore manual ignore, not auto-ignore, as auto-ignore logic will re-run
                     if not saved_state['was_auto_ignored'] and saved_state['is_ignored']:
                         ts_obj.is_ignored = True
-                        ts_obj.was_auto_ignored = False  # Ensure it's marked as manual
+                        ts_obj.was_auto_ignored = False
                     restored_count += 1
 
             if restored_count > 0:

@@ -61,7 +61,6 @@ class AITranslator:
 
     def test_connection(self, test_text="Hello, OverWatch.", system_prompt="Translate to Chinese:"):
         try:
-            # The test connection now also uses the 'translate' method
             translation = self.translate(test_text, system_prompt)
             return True, f"连接成功。测试翻译 ('{test_text}' -> '{translation[:30]}...')"
         except Exception as e:

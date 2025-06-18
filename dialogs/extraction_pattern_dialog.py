@@ -11,10 +11,9 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
     def __init__(self, parent, title, app_instance):
         super().__init__(parent)
         self.app = app_instance
-        # Deepcopy to allow cancellation without affecting app.config immediately
         self.patterns_buffer = deepcopy(self.app.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS))
         self.drag_data = {"item": None, "y": 0}
-        self.result = None  # To indicate if changes were applied
+        self.result = None
 
         self.withdraw()
         if parent.winfo_viewable():
@@ -27,9 +26,9 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
 
         main_container = ttk.Frame(self)
         main_container.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
-        main_container.grid_rowconfigure(0, weight=1)  # Treeview area
-        main_container.grid_rowconfigure(1, weight=0)  # Toolbar
-        main_container.grid_rowconfigure(2, weight=0)  # Buttonbox
+        main_container.grid_rowconfigure(0, weight=1)
+        main_container.grid_rowconfigure(1, weight=0)
+        main_container.grid_rowconfigure(2, weight=0)
         main_container.grid_columnconfigure(0, weight=1)
 
         self.initial_focus = self.body(main_container)
@@ -105,7 +104,6 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
         if item_iid:
             self.drag_data["item_iid"] = item_iid
             self.drag_data["y"] = event.y
-            # Store index for reordering data list
             self.drag_data["index"] = self.tree.index(item_iid)
 
     def on_motion(self, event):
@@ -115,24 +113,17 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
 
         target_item_iid = self.tree.identify_row(event.y)
         if target_item_iid and target_item_iid != dragged_item_iid:
-            # Move in tree for visual feedback
             self.tree.move(dragged_item_iid, "", self.tree.index(target_item_iid))
 
     def on_release(self, event):
         if not self.drag_data.get("item_iid"):
             return
 
-        # Update the self.patterns_buffer based on the new order in the tree
-        new_order_ids = self.tree.get_children()  # These are UUIDs
-
-        # Create a map for quick lookup of pattern objects by ID
+        new_order_ids = self.tree.get_children()
         patterns_map = {p["id"]: p for p in self.patterns_buffer}
-
-        # Rebuild self.patterns_buffer in the new order
         self.patterns_buffer = [patterns_map[iid] for iid in new_order_ids if iid in patterns_map]
+        self.drag_data["item_iid"] = None
 
-        self.drag_data["item_iid"] = None  # Reset drag data
-        # No need to call populate_tree here as the tree itself reflects the order
 
     def add_item(self):
         new_pattern = {
@@ -142,13 +133,12 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
             "string_type": "Custom",
             "regex_pattern_str": ""
         }
-        # Add to buffer first
+
         self.patterns_buffer.append(new_pattern)
-        # Then update tree
-        self.populate_tree()  # Repopulate to ensure correct order if items were dragged
+        self.populate_tree()
         self.tree.selection_set(new_pattern["id"])
         self.tree.see(new_pattern["id"])
-        self.edit_item_by_id(new_pattern["id"])  # Open editor for new item
+        self.edit_item_by_id(new_pattern["id"])
 
     def delete_item(self):
         selected_id_tuple = self.tree.selection()
@@ -165,15 +155,14 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
             return
 
         dialog = ExtractionPatternItemEditor(self, "编辑提取规则", pattern_to_edit)
-        if dialog.result:  # dialog.result contains the updated pattern data
-            # Update the item in the buffer
+        if dialog.result:
             for i, p_item in enumerate(self.patterns_buffer):
                 if p_item["id"] == item_id:
-                    self.patterns_buffer[i] = dialog.result  # dialog.result should include the id
+                    self.patterns_buffer[i] = dialog.result
                     break
             self.populate_tree()
 
-    def edit_item(self, event):  # Called on double-click
+    def edit_item(self, event):
         item_id = self.tree.identify_row(event.y)
         if not item_id:
             return
@@ -196,13 +185,11 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 preset = json.load(f)
-            # Basic validation
             if isinstance(preset, list) and all("name" in p and "regex_pattern_str" in p for p in preset):
-                # Ensure all items have IDs, generate if missing (for older presets)
                 for p_item in preset:
                     if "id" not in p_item:
                         p_item["id"] = str(uuid.uuid4())
-                    if "enabled" not in p_item:  # ensure enabled field
+                    if "enabled" not in p_item:
                         p_item["enabled"] = True
                     if "string_type" not in p_item:
                         p_item["string_type"] = "Custom"
@@ -243,67 +230,59 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
         self.destroy()
 
     def cancel(self, event=None):
-        self.result = None  # Indicate no changes applied
+        self.result = None
         self.destroy()
 
     def apply_changes(self):
-        # Only save if there's a change from the original config
+
         if self.patterns_buffer != self.app.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS):
             self.app.config["extraction_patterns"] = deepcopy(self.patterns_buffer)
             self.app.save_config()
             self.app.update_statusbar("提取规则已更新。建议重新加载翻译文本。")
-            self.result = True  # Indicate changes were applied
+            self.result = True
         else:
             self.result = False
 
 
 class ExtractionPatternItemEditor(simpledialog.Dialog):
     def __init__(self, parent, title, initial_data):
-        self.initial_data = initial_data  # This should include the 'id'
+        self.initial_data = initial_data
         super().__init__(parent, title)
 
     def body(self, master):
-        self.geometry("700x350")  # Adjusted size
+        self.geometry("700x350")
         master.columnconfigure(1, weight=1)
-        master.rowconfigure(3, weight=1)  # Regex pattern text area
+        master.rowconfigure(3, weight=1)
 
-        # Name
         ttk.Label(master, text="规则名称:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
         self.name_var = tk.StringVar(value=self.initial_data.get("name", ""))
         name_entry = ttk.Entry(master, textvariable=self.name_var)
         name_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
 
-        # Enabled Checkbox (moved next to name for better layout)
         self.enabled_var = tk.BooleanVar(value=self.initial_data.get("enabled", True))
         enabled_check = ttk.Checkbutton(master, text="启用此规则", variable=self.enabled_var)
         enabled_check.grid(row=0, column=2, padx=5, pady=5, sticky="w")
 
-        # String Type
         ttk.Label(master, text="字符串类型:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
         self.string_type_var = tk.StringVar(value=self.initial_data.get("string_type", "Custom"))
         string_type_entry = ttk.Entry(master, textvariable=self.string_type_var)
         string_type_entry.grid(row=1, column=1, columnspan=2, sticky="ew", padx=5, pady=5)
         ttk.Label(master, text="(用于TranslatableString分类)").grid(row=2, column=1, columnspan=2, sticky="w", padx=5,
                                                                     pady=2)
-
-        # Regex Pattern
         ttk.Label(master, text="正则表达式:").grid(row=3, column=0, sticky="nw", padx=5, pady=5)
-        self.regex_text = tk.Text(master, wrap=tk.WORD, height=8)  # Increased height
+        self.regex_text = tk.Text(master, wrap=tk.WORD, height=8)
         self.regex_text.grid(row=3, column=1, columnspan=2, sticky="nsew", padx=5, pady=5)
         self.regex_text.insert("1.0", self.initial_data.get("regex_pattern_str", ""))
 
-        # Regex help/info
         regex_info = "示例: (?:自定义字符串|Custom String)\\s*\\(\\s*\\\"  (必须以捕获引号前的部分结束，如 \\s*\\(\\s*\\\")"
         ttk.Label(master, text=regex_info, wraplength=450, justify=tk.LEFT).grid(row=4, column=1, columnspan=2,
                                                                                  sticky="w", padx=5, pady=2)
 
-        return name_entry  # Initial focus
+        return name_entry
 
     def apply(self):
-        # This method is called by simpledialog.Dialog's ok()
-        # It should set self.result with the data to be returned
         self.result = {
-            "id": self.initial_data["id"],  # Preserve the ID
+            "id": self.initial_data["id"],
             "name": self.name_var.get().strip(),
             "enabled": self.enabled_var.get(),
             "string_type": self.string_type_var.get().strip() or "Custom",
@@ -311,7 +290,7 @@ class ExtractionPatternItemEditor(simpledialog.Dialog):
         }
         if not self.result["name"]:
             messagebox.showerror("错误", "规则名称不能为空。", parent=self)
-            self.result = None  # Prevent dialog from closing
+            self.result = None
             return
         if not self.result["regex_pattern_str"]:
             messagebox.showerror("错误", "正则表达式不能为空。", parent=self)
