@@ -436,13 +436,11 @@ class OverwatchLocalizerApp:
         self.search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=25, font=('Segoe UI', 9))
         self.search_entry.pack(side=tk.LEFT, padx=(0, 5))
         self.search_entry.bind("<Return>", lambda e: self.find_string_from_toolbar())
-        self.search_entry.bind("<FocusIn>", lambda e: self.search_entry.config(
-            foreground="black") if self.search_var.get() == "快速搜索..." else None)
-        self.search_entry.bind("<FocusOut>", lambda e: self.search_entry.config(
-            foreground="grey") if not self.search_var.get() else None)
-        if not self.search_var.get():
-            self.search_entry.insert(0, "快速搜索...")
-            self.search_entry.config(foreground="grey")
+
+        self.search_entry.bind("<FocusIn>", self.on_search_focus_in)
+        self.search_entry.bind("<FocusOut>", self.on_search_focus_out)
+
+        self.on_search_focus_out(None)  # 调用一次以设置初始状态
 
         search_button = ttk.Button(search_frame, text="查找", command=self.find_string_from_toolbar,
                                    style="Toolbar.TButton")
@@ -1313,6 +1311,16 @@ class OverwatchLocalizerApp:
 
         if not self.search_var.get() and hasattr(self.search_entry, 'insert'):
             self.search_entry.insert(0, "快速搜索...")
+            self.search_entry.config(foreground="grey")
+
+    def on_search_focus_in(self, event):
+        if self.search_var.get() == "快速搜索...":
+            self.search_var.set("")
+            self.search_entry.config(foreground="black")
+
+    def on_search_focus_out(self, event):
+        if not self.search_var.get():
+            self.search_var.set("快速搜索...")
             self.search_entry.config(foreground="grey")
 
     def _get_ts_obj_from_tree_iid(self, tree_iid):
