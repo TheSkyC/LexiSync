@@ -24,6 +24,7 @@ from services.code_file_service import extract_translatable_strings, save_transl
 from services.project_service import load_project, save_project
 from services.prompt_service import generate_prompt_from_structure
 
+from utils.localization import LocalizationManager
 from utils import config_manager
 from utils.constants import *
 
@@ -50,25 +51,27 @@ class OverwatchLocalizerApp:
         elif TkinterDnD:
             self.root = TkinterDnD.DnDWrapper(self.root)
 
-        self.root.title(f"Overwatch Localizer - v{APP_VERSION}")
-        self.root.geometry("1600x900")
+        self.config = config_manager.load_config()
+        self.loc_manager = LocalizationManager(self)
+        _ = self.loc_manager.get
+
         self.root.title(f"Overwatch Localizer - v{APP_VERSION}")
         self.root.geometry("1600x900")
 
         self.ACTION_MAP = {
-            'open_code_file': {'method': self.open_code_file_dialog, 'desc': '打开代码文件'},
-            'open_project': {'method': self.open_project_dialog, 'desc': '打开项目'},
-            'save_project': {'method': self.save_project_dialog, 'desc': '保存项目'},
-            'save_code_file': {'method': self.save_code_file, 'desc': '保存到新代码文件'},
-            'undo': {'method': self.undo_action, 'desc': '撤销'},
-            'redo': {'method': self.redo_action, 'desc': '恢复'},
-            'find_replace': {'method': self.show_advanced_search_dialog, 'desc': '查找/替换'},
-            'copy_original': {'method': self.copy_selected_original_text_menu, 'desc': '复制原文'},
-            'paste_translation': {'method': self.paste_clipboard_to_selected_translation_menu, 'desc': '粘贴到译文'},
-            'ai_translate_selected': {'method': self.ai_translate_selected_from_menu, 'desc': 'AI翻译选中项'},
-            'toggle_reviewed': {'method': self.cm_toggle_reviewed_status, 'desc': '切换审阅状态'},
-            'toggle_ignored': {'method': self.cm_toggle_ignored_status, 'desc': '切换忽略状态'},
-            'apply_and_next': {'method': self.apply_and_select_next_untranslated, 'desc': '应用并到下一未译项'},
+            'open_code_file': {'method': self.open_code_file_dialog, 'desc': _('menu.file.open_code_file')},
+            'open_project': {'method': self.open_project_dialog, 'desc': _('menu.file.open_project')},
+            'save_project': {'method': self.save_project_dialog, 'desc': _('menu.file.save_project')},
+            'save_code_file': {'method': self.save_code_file, 'desc': _('menu.file.save_code_file')},
+            'undo': {'method': self.undo_action, 'desc': _('menu.edit.undo')},
+            'redo': {'method': self.redo_action, 'desc': _('menu.edit.redo')},
+            'find_replace': {'method': self.show_advanced_search_dialog, 'desc': _('menu.edit.find_replace')},
+            'copy_original': {'method': self.copy_selected_original_text_menu, 'desc': _('menu.edit.copy_original')},
+            'paste_translation': {'method': self.paste_clipboard_to_selected_translation_menu, 'desc': _('menu.edit.paste_translation')},
+            'ai_translate_selected': {'method': self.ai_translate_selected_from_menu, 'desc': _('menu.tools.ai_translate_selected')},
+            'toggle_reviewed': {'method': self.cm_toggle_reviewed_status, 'desc': _('menu.view.show_unreviewed')},
+            'toggle_ignored': {'method': self.cm_toggle_ignored_status, 'desc': _('menu.view.show_ignored')},
+            'apply_and_next': {'method': self.apply_and_select_next_untranslated, 'desc': _('details_pane.apply_button')},
         }
         self.current_code_file_path = None
         self.current_project_file_path = None
@@ -88,6 +91,7 @@ class OverwatchLocalizerApp:
         self.current_selected_ts_id = None
 
         self.config = config_manager.load_config()
+
         self.ai_translator = AITranslator(
             api_key=self.config.get("ai_api_key"),
             model_name=self.config.get("ai_model_name", "deepseek-chat"),
@@ -132,7 +136,9 @@ class OverwatchLocalizerApp:
         self.update_ai_related_ui_state()
         self.update_counts_display()
         self.update_title()
+        self.loc_manager.update_all_ui_text()
         self.update_recent_files_menu()
+
 
     def _load_icons(self):
         return {}
@@ -238,11 +244,10 @@ class OverwatchLocalizerApp:
             self.save_config()
 
     def about(self):
-        messagebox.showinfo("关于 Overwatch Localizer",
-                            f"守望先锋自定义代码翻译工具\n\n"
-                            f"版本: {APP_VERSION}\n"
-                            "作者：骰子掷上帝\n"
-                            "国服ID：小鸟游六花#56683 / 亚服：小鳥游六花#31665", parent=self.root)
+        _ = self.loc_manager.get
+        messagebox.showinfo(_("app.about_title"),
+                            _("app.about_message", version=APP_VERSION),
+                            parent=self.root)
 
     def on_closing(self):
         if not self.prompt_save_if_modified():
