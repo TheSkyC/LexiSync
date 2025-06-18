@@ -199,7 +199,7 @@ class AISettingsDialog(tk.Toplevel):
         temp_translator = AITranslator(api_key, model_name, api_url)
 
         def _test_in_thread():
-            placeholders = {'[Target Language]': _('中文'), '[Custom Translate]': '', '[Untranslated Context]': '',
+            placeholders = {'[Target Language]': _('Target Language'), '[Custom Translate]': '', '[Untranslated Context]': '',
                             '[Translated Context]': ''}
             test_prompt = generate_prompt_from_structure(
                 self.app_config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE), placeholders)

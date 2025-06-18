@@ -2818,7 +2818,7 @@ class OverwatchLocalizerApp:
             self.update_statusbar(_("AI is translating: \"{text}...\"").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
 
         context_dict = self._generate_ai_context_strings(ts_obj.id)
-        target_language = self.config.get("ai_target_language", _("Target_Languege"))
+        target_language = self.config.get("ai_target_language", _("Target Language"))
 
 
         thread = threading.Thread(target=self._perform_ai_translation_threaded,
@@ -2854,7 +2854,7 @@ class OverwatchLocalizerApp:
 
             if ts_obj and not ts_obj.is_ignored and not ts_obj.translation.strip():
                 context_dict = self._generate_ai_context_strings(ts_obj.id)
-                target_language = self.config.get("ai_target_language", _("Target_Languege"))
+                target_language = self.config.get("ai_target_language", _("Target Language"))
 
 
                 thread = threading.Thread(target=self._perform_ai_translation_threaded,

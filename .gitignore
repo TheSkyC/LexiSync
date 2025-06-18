@@ -41,6 +41,8 @@ venv.bak/
 localization_tool_config.json
 ow_translator_tm.xlsx
 *.owprompt
+manage_translations.py
+babel.cfg
 
 .DS_Store
 Thumbs.db
