@@ -4,6 +4,7 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox
 import re
+from utils.localization import setup_translation, get_available_languages, _
 
 class AdvancedSearchDialog(simpledialog.Dialog):
     def __init__(self, parent, title, app_instance):
@@ -23,21 +24,21 @@ class AdvancedSearchDialog(simpledialog.Dialog):
     def body(self, master):
         master.columnconfigure(1, weight=1)
 
-        ttk.Label(master, text="查找内容:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
+        ttk.Label(master, text=_("Find what:")).grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
         self.search_entry = ttk.Entry(master, textvariable=self.search_term_var, width=40)
         self.search_entry.grid(row=0, column=1, columnspan=2, sticky=tk.EW, padx=5, pady=2)
         self.search_entry.bind("<Return>", lambda e: self._find_next())
 
-        ttk.Label(master, text="替换为:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=2)
+        ttk.Label(master, text=_("Replace with:")).grid(row=1, column=0, sticky=tk.W, padx=5, pady=2)
         self.replace_entry = ttk.Entry(master, textvariable=self.replace_term_var, width=40)
         self.replace_entry.grid(row=1, column=1, columnspan=2, sticky=tk.EW, padx=5, pady=2)
 
         options_frame = ttk.Frame(master)
         options_frame.grid(row=2, column=0, columnspan=3, sticky=tk.W, padx=5, pady=5)
-        ttk.Checkbutton(options_frame, text="区分大小写", variable=self.case_sensitive_var).pack(side=tk.LEFT, padx=2)
-        ttk.Checkbutton(options_frame, text="正则表达式", variable=self.regex_var, state=tk.DISABLED).pack(side=tk.LEFT,
+        ttk.Checkbutton(options_frame, text=_("Case sensitive"), variable=self.case_sensitive_var).pack(side=tk.LEFT, padx=2)
+        ttk.Checkbutton(options_frame, text=_("Regular expression"), variable=self.regex_var, state=tk.DISABLED).pack(side=tk.LEFT,
                                                                                                            padx=2)
-        ttk.Checkbutton(options_frame, text="全字匹配", variable=self.whole_word_var, state=tk.DISABLED).pack(
+        ttk.Checkbutton(options_frame, text=_("Whole word"), variable=self.whole_word_var, state=tk.DISABLED).pack(
             side=tk.LEFT, padx=2)
 
         self.results_label = ttk.Label(master, text="")
@@ -48,13 +49,13 @@ class AdvancedSearchDialog(simpledialog.Dialog):
     def buttonbox(self):
         box = ttk.Frame(self)
 
-        ttk.Button(box, text="查找下一个", command=self._find_next).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(box, text="替换", command=self._replace_current).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(box, text="全部替换 (可见项)", command=lambda: self._replace_all(in_view=True)).pack(side=tk.LEFT,
+        ttk.Button(box, text=_("Find Next"), command=self._find_next).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(box, text=_("Replace"), command=self._replace_current).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(box, text=_("Replace All (Visible)"), command=lambda: self._replace_all(in_view=True)).pack(side=tk.LEFT,
                                                                                                         padx=5, pady=5)
-        ttk.Button(box, text="全部替换 (文档)", command=lambda: self._replace_all(in_view=False)).pack(side=tk.LEFT,
+        ttk.Button(box, text=_("Replace All (Document)"), command=lambda: self._replace_all(in_view=False)).pack(side=tk.LEFT,
                                                                                                        padx=5, pady=5)
-        ttk.Button(box, text="关闭", command=self.ok).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(box, text=_("Close"), command=self.ok).pack(side=tk.LEFT, padx=5, pady=5)
 
         self.bind("<Escape>", self.cancel)
         box.pack(pady=5)
@@ -69,7 +70,7 @@ class AdvancedSearchDialog(simpledialog.Dialog):
 
         search_term = self.search_term_var.get()
         if not search_term:
-            self.results_label.config(text="请输入查找内容。")
+            self.results_label.config(text=_("Please enter a search term."))
             return
 
         case_sensitive = self.case_sensitive_var.get()
@@ -99,15 +100,15 @@ class AdvancedSearchDialog(simpledialog.Dialog):
                     self.app.tree.item(ts_obj.id, tags=('search_highlight',))
 
         if self.search_results_iids:
-            self.results_label.config(text=f"找到 {len(self.search_results_iids)} 个匹配项。")
+            self.results_label.config(text=_("Found {count} matches.").format(count=len(self.search_results_iids)))
             self.app.tree.tag_configure('search_highlight', background='yellow', foreground='black')
         else:
-            self.results_label.config(text="未找到匹配项。")
+            self.results_label.config(text=_("No matches found."))
 
     def _find_next(self):
         search_term = self.search_term_var.get()
         if not search_term:
-            self.results_label.config(text="请输入查找内容。")
+            self.results_label.config(text=_("Please enter a search term."))
             return
 
         if not self.search_results_iids:
@@ -129,10 +130,10 @@ class AdvancedSearchDialog(simpledialog.Dialog):
                 self.app.on_tree_select(None)
                 self.last_found_tree_iid = target_iid
                 self.results_label.config(
-                    text=f"匹配项 {self.current_search_index + 1}/{len(self.search_results_iids)}")
+                    text=_("Match {current}/{total}").format(current=self.current_search_index + 1, total=len(self.search_results_iids)))
             else:
                 self.results_label.config(
-                    text=f"匹配项 {self.current_search_index + 1}/{len(self.search_results_iids)} (当前不可见)")
+                    text=_("Match {current}/{total} (currently not visible)").format(current=self.current_search_index + 1, total=len(self.search_results_iids)))
                 start_idx = self.current_search_index
                 for i in range(len(self.search_results_iids)):
                     next_idx = (start_idx + i) % len(self.search_results_iids)
@@ -145,12 +146,12 @@ class AdvancedSearchDialog(simpledialog.Dialog):
                         self.app.on_tree_select(None)
                         self.last_found_tree_iid = potential_iid
                         self.results_label.config(
-                            text=f"匹配项 {self.current_search_index + 1}/{len(self.search_results_iids)}")
+                            text=_("Match {current}/{total}").format(current=self.current_search_index + 1, total=len(self.search_results_iids)))
                         break
 
     def _replace_current(self):
         if not self.last_found_tree_iid or not self.app.tree.exists(self.last_found_tree_iid):
-            messagebox.showinfo("无选中项", "请先查找一个项目以替换。", parent=self)
+            messagebox.showinfo(_("No Selection"), _("Please find an item to replace first."), parent=self)
             return
 
         ts_obj = self.app._find_ts_obj_by_id(self.last_found_tree_iid)
@@ -161,7 +162,7 @@ class AdvancedSearchDialog(simpledialog.Dialog):
         case_sensitive = self.case_sensitive_var.get()
 
         if not search_term:
-            messagebox.showerror("错误", "查找内容不能为空。", parent=self)
+            messagebox.showerror(_("Error"), _("Find what cannot be empty."), parent=self)
             return
 
         changes_made = False
@@ -182,12 +183,12 @@ class AdvancedSearchDialog(simpledialog.Dialog):
         if new_translation_ui != current_translation_ui:
             self.app._apply_translation_to_model(ts_obj, new_translation_ui.rstrip('\n'), source="replace_current")
             changes_made = True
-            self.results_label.config(text="已替换。")
+            self.results_label.config(text=_("Replaced."))
             if self.app.current_selected_ts_id == ts_obj.id:
                 self.app.translation_edit_text.delete("1.0", tk.END)
                 self.app.translation_edit_text.insert("1.0", new_translation_ui.rstrip('\n'))
         else:
-            self.results_label.config(text="当前选中项译文中未找到匹配（或替换无变化）。")
+            self.results_label.config(text=_("No match found in current translation (or no change after replace)."))
 
         if changes_made:
             self._find_next()
@@ -198,7 +199,7 @@ class AdvancedSearchDialog(simpledialog.Dialog):
         case_sensitive = self.case_sensitive_var.get()
 
         if not search_term:
-            messagebox.showerror("错误", "查找内容不能为空。", parent=self)
+            messagebox.showerror(_("Error"), _("Find what cannot be empty."), parent=self)
             return
 
         items_to_process_ids = []
@@ -208,11 +209,14 @@ class AdvancedSearchDialog(simpledialog.Dialog):
             items_to_process_ids = [ts.id for ts in self.app.translatable_objects]
 
         if not items_to_process_ids:
-            messagebox.showinfo("无项目", "没有可供替换的项目。", parent=self)
+            messagebox.showinfo(_("No Items"), _("No items available for replacement."), parent=self)
             return
 
-        confirm_msg = f"确定要在 {'可见项' if in_view else '整个文档'} 中将所有 \"{search_term}\" 替换为 \"{replace_term}\" 吗？\n此操作将影响译文。"
-        if not messagebox.askyesno("确认全部替换", confirm_msg, parent=self):
+        scope_text = _("visible items") if in_view else _("the entire document")
+        confirm_msg = _("Are you sure you want to replace all \"{search_term}\" with \"{replace_term}\" in {scope}?\nThis operation will affect translations.").format(
+            search_term=search_term, replace_term=replace_term, scope=scope_text
+        )
+        if not messagebox.askyesno(_("Confirm Replace All"), confirm_msg, parent=self):
             return
 
         replaced_count = 0
@@ -234,7 +238,7 @@ class AdvancedSearchDialog(simpledialog.Dialog):
                     pattern = re.compile(re.escape(search_term), re.IGNORECASE)
                     new_translation_ui = pattern.sub(replace_term, current_translation_ui)
                 except re.error:
-                    messagebox.showerror("错误", "查找内容无法编译为有效的正则表达式。", parent=self)
+                    messagebox.showerror(_("Error"), _("Find what cannot be compiled into a valid regular expression."), parent=self)
                     return
 
             if new_translation_ui != current_translation_ui:
@@ -255,9 +259,9 @@ class AdvancedSearchDialog(simpledialog.Dialog):
             self.app.refresh_treeview_preserve_selection()
             if self.app.current_selected_ts_id:
                 self.app.on_tree_select(None)
-            messagebox.showinfo("全部替换完成", f"已在 {replaced_count} 个项目的译文中执行替换。", parent=self)
+            messagebox.showinfo(_("Replace All Complete"), _("Replaced in {count} items' translations.").format(count=replaced_count), parent=self)
         else:
-            messagebox.showinfo("全部替换", "未找到可替换的匹配项 (或替换无变化)。", parent=self)
+            messagebox.showinfo(_("Replace All"), _("No replaceable matches found (or no change after replace)."), parent=self)
 
         self._perform_search()
 

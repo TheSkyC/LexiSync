@@ -4,7 +4,7 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox
 from utils.constants import DEFAULT_KEYBINDINGS
-
+from utils.localization import setup_translation, get_available_languages, _
 
 class KeybindingDialog(simpledialog.Dialog):
     def __init__(self, parent, title, app_instance):
@@ -101,9 +101,9 @@ class KeybindingDialog(simpledialog.Dialog):
 
     def buttonbox(self):
         box = ttk.Frame(self)
-        ttk.Button(box, text="重置为默认值", command=self.reset_to_defaults).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(box, text="确定", width=10, command=self.ok, default=tk.ACTIVE).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(box, text="取消", width=10, command=self.cancel).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(box, text=_("Reset to Defaults"), command=self.reset_to_defaults).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(box, text=_("OK"), width=10, command=self.ok, default=tk.ACTIVE).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(box, text=_("Cancel"), width=10, command=self.cancel).pack(side=tk.LEFT, padx=5, pady=5)
         self.bind("<Escape>", self.cancel)
         box.pack()
 
@@ -116,7 +116,7 @@ class KeybindingDialog(simpledialog.Dialog):
         super().ok(event)
 
     def reset_to_defaults(self):
-        if messagebox.askyesno("确认", "确定要将所有快捷键重置为默认设置吗？", parent=self):
+        if messagebox.askyesno(_("Confirm"), _("Are you sure you want to reset all keybindings to their default settings?"), parent=self):
             for action, key_sequence in DEFAULT_KEYBINDINGS.items():
                 if action in self.key_vars:
                     self.key_vars[action].set(key_sequence)
@@ -129,4 +129,4 @@ class KeybindingDialog(simpledialog.Dialog):
         self.app.save_config()
         self.app._setup_keybindings()
         self.app.update_menu_accelerators()
-        self.app.update_statusbar("快捷键已更新。")
+        self.app.update_statusbar(_("Keybindings have been updated."))

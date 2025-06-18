@@ -7,7 +7,7 @@ import json
 import uuid
 from copy import deepcopy
 from utils.constants import PROMPT_PRESET_EXTENSION, DEFAULT_PROMPT_STRUCTURE, STRUCTURAL, STATIC, DYNAMIC
-
+from utils.localization import setup_translation, get_available_languages, _
 
 class PromptManagerDialog(tk.Toplevel):
     def __init__(self, parent, title, app_instance):
@@ -50,11 +50,11 @@ class PromptManagerDialog(tk.Toplevel):
         toolbar = ttk.Frame(master)
         toolbar.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
 
-        ttk.Button(toolbar, text="新增", command=self.add_item).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text="删除选中", command=self.delete_item).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text="恢复默认", command=self.reset_to_defaults).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text="导入预设", command=self.import_preset).pack(side=tk.RIGHT, padx=2)
-        ttk.Button(toolbar, text="导出预设", command=self.export_preset).pack(side=tk.RIGHT, padx=2)
+        ttk.Button(toolbar, text=_("Add"), command=self.add_item).pack(side=tk.LEFT, padx=2)
+        ttk.Button(toolbar, text=_("Delete Selected"), command=self.delete_item).pack(side=tk.LEFT, padx=2)
+        ttk.Button(toolbar, text=_("Reset to Defaults"), command=self.reset_to_defaults).pack(side=tk.LEFT, padx=2)
+        ttk.Button(toolbar, text=_("Import Preset"), command=self.import_preset).pack(side=tk.RIGHT, padx=2)
+        ttk.Button(toolbar, text=_("Export Preset"), command=self.export_preset).pack(side=tk.RIGHT, padx=2)
 
         tree_frame = ttk.Frame(master)
         tree_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
@@ -70,9 +70,9 @@ class PromptManagerDialog(tk.Toplevel):
         self.tree.grid(row=0, column=0, sticky="nsew")
         vsb.grid(row=0, column=1, sticky="ns")
 
-        self.tree.heading("enabled", text="启用")
-        self.tree.heading("type", text="类型")
-        self.tree.heading("content", text="内容")
+        self.tree.heading("enabled", text=_("Enabled"))
+        self.tree.heading("type", text=_("Type"))
+        self.tree.heading("content", text=_("Content"))
 
         self.tree.column("enabled", width=50, anchor=tk.CENTER, stretch=False)
         self.tree.column("type", width=100, anchor=tk.W, stretch=False)
@@ -117,7 +117,7 @@ class PromptManagerDialog(tk.Toplevel):
         self.drag_data["item"] = None
 
     def add_item(self):
-        new_part = {"id": str(uuid.uuid4()), "type": STATIC, "enabled": True, "content": "新指令"}
+        new_part = {"id": str(uuid.uuid4()), "type": STATIC, "enabled": True, "content": _("New Instruction")}
         self.prompt_structure.append(new_part)
         self.populate_tree()
         self.tree.selection_set(new_part["id"])
@@ -140,19 +140,19 @@ class PromptManagerDialog(tk.Toplevel):
         if not part_to_edit:
             return
 
-        dialog = PromptItemEditor(self, "编辑提示词片段", part_to_edit)
+        dialog = PromptItemEditor(self, _("Edit Prompt Fragment"), part_to_edit)
         if dialog.result:
             part_to_edit.update(dialog.result)
             self.populate_tree()
 
     def reset_to_defaults(self):
-        if messagebox.askyesno("确认", "确定要将提示词恢复为默认设置吗？\n当前所有自定义内容将丢失。", parent=self):
+        if messagebox.askyesno(_("Confirm"), _("Are you sure you want to reset the prompt to its default settings?\nAll current customizations will be lost."), parent=self):
             self.prompt_structure = deepcopy(DEFAULT_PROMPT_STRUCTURE)
             self.populate_tree()
 
     def import_preset(self):
         filepath = filedialog.askopenfilename(
-            title="导入提示词预设",
+            title=_("Import Prompt Preset"),
             filetypes=(("Overwatch Prompt Files", f"*{PROMPT_PRESET_EXTENSION}"), ("All Files", "*.*")),
             defaultextension=PROMPT_PRESET_EXTENSION,
             parent=self
@@ -164,15 +164,15 @@ class PromptManagerDialog(tk.Toplevel):
             if isinstance(preset, list) and all("content" in p for p in preset):
                 self.prompt_structure = preset
                 self.populate_tree()
-                messagebox.showinfo("成功", "预设已成功导入。", parent=self)
+                messagebox.showinfo(_("Success"), _("Preset imported successfully."), parent=self)
             else:
-                messagebox.showerror("错误", "预设文件格式不正确。", parent=self)
+                messagebox.showerror(_("Error"), _("Preset file format is incorrect."), parent=self)
         except Exception as e:
-            messagebox.showerror("导入失败", f"无法加载预设文件: {e}", parent=self)
+            messagebox.showerror(_("Import Failed"), _("Could not load preset file: {error}").format(error=e), parent=self)
 
     def export_preset(self):
         filepath = filedialog.asksaveasfilename(
-            title="导出提示词预设",
+            title=_("Export Prompt Preset"),
             filetypes=(("Overwatch Prompt Files", f"*{PROMPT_PRESET_EXTENSION}"), ("All Files", "*.*")),
             defaultextension=PROMPT_PRESET_EXTENSION,
             initialfile="my_prompt_preset.owprompt",
@@ -182,14 +182,14 @@ class PromptManagerDialog(tk.Toplevel):
         try:
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(self.prompt_structure, f, indent=4, ensure_ascii=False)
-            messagebox.showinfo("成功", "预设已成功导出。", parent=self)
+            messagebox.showinfo(_("Success"), _("Preset exported successfully."), parent=self)
         except Exception as e:
-            messagebox.showerror("导出失败", f"无法保存预设文件: {e}", parent=self)
+            messagebox.showerror(_("Export Failed"), _("Could not save preset file: {error}").format(error=e), parent=self)
 
     def buttonbox(self, master):
         box = ttk.Frame(master)
-        ttk.Button(box, text="确定", width=10, command=self.ok, default=tk.ACTIVE).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(box, text="取消", width=10, command=self.cancel).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(box, text=_("OK"), width=10, command=self.ok, default=tk.ACTIVE).pack(side=tk.LEFT, padx=5, pady=5)
+        ttk.Button(box, text=_("Cancel"), width=10, command=self.cancel).pack(side=tk.LEFT, padx=5, pady=5)
         box.grid(row=2, column=0, sticky="e", padx=5, pady=5)
 
     def ok(self, event=None):
@@ -202,7 +202,7 @@ class PromptManagerDialog(tk.Toplevel):
     def apply(self):
         self.app.config["ai_prompt_structure"] = self.prompt_structure
         self.app.save_config()
-        self.app.update_statusbar("AI提示词结构已更新。")
+        self.app.update_statusbar(_("AI prompt structure updated."))
 
 
 class PromptItemEditor(simpledialog.Dialog):
@@ -215,17 +215,17 @@ class PromptItemEditor(simpledialog.Dialog):
         master.rowconfigure(1, weight=1)
         master.columnconfigure(1, weight=1)
 
-        ttk.Label(master, text="类型:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        ttk.Label(master, text=_("Type:")).grid(row=0, column=0, sticky="w", padx=5, pady=5)
         self.type_var = tk.StringVar(value=self.initial_data["type"])
         type_menu = ttk.Combobox(master, textvariable=self.type_var, values=[STRUCTURAL, STATIC, DYNAMIC],
                                  state="readonly")
         type_menu.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
 
         self.enabled_var = tk.BooleanVar(value=self.initial_data.get("enabled", True))
-        enabled_check = ttk.Checkbutton(master, text="启用此片段", variable=self.enabled_var)
+        enabled_check = ttk.Checkbutton(master, text=_("Enable this fragment"), variable=self.enabled_var)
         enabled_check.grid(row=0, column=2, padx=5, pady=5)
 
-        ttk.Label(master, text="内容:").grid(row=1, column=0, sticky="nw", padx=5, pady=5)
+        ttk.Label(master, text=_("Content:")).grid(row=1, column=0, sticky="nw", padx=5, pady=5)
         self.content_text = tk.Text(master, wrap=tk.WORD, height=10)
         self.content_text.grid(row=1, column=1, columnspan=2, sticky="nsew", padx=5, pady=5)
         self.content_text.insert("1.0", self.initial_data["content"])

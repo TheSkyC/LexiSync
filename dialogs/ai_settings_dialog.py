@@ -6,6 +6,7 @@ from tkinter import ttk, simpledialog, messagebox
 import threading
 from services.ai_translator import AITranslator
 from utils.constants import DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE
+from utils.localization import setup_translation, get_available_languages, _
 from services.prompt_service import generate_prompt_from_structure
 from dialogs.prompt_manager_dialog import PromptManagerDialog
 
@@ -20,7 +21,7 @@ class AISettingsDialog(tk.Toplevel):
 
         self.initial_api_key = self.app_config.get("ai_api_key", "")
         self.initial_api_base_url = self.app_config.get("ai_api_base_url", DEFAULT_API_URL)
-        self.initial_target_language = self.app_config.get("ai_target_language", "中文")
+        self.initial_target_language = self.app_config.get("ai_target_language", _("Target_Languege"))
         self.initial_api_interval = self.app_config.get("ai_api_interval", 200)
         self.initial_model_name = self.app_config.get("ai_model_name", "deepseek-chat")
         self.initial_max_concurrent_requests = self.app_config.get("ai_max_concurrent_requests", 1)
@@ -59,47 +60,47 @@ class AISettingsDialog(tk.Toplevel):
     def body(self, master):
         master.columnconfigure(1, weight=1)
 
-        api_frame = ttk.LabelFrame(master, text="API 连接与模型设置", padding=(10, 5))
+        api_frame = ttk.LabelFrame(master, text=_("API Connection & Model Settings"), padding=(10, 5))
         api_frame.grid(row=0, column=0, columnspan=2, sticky=tk.EW, padx=5, pady=5)
         api_frame.columnconfigure(1, weight=1)
 
         api_row_idx = 0
-        ttk.Label(api_frame, text="API Key:").grid(row=api_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
+        ttk.Label(api_frame, text=_("API Key:")).grid(row=api_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
         self.api_key_var = tk.StringVar(value=self.initial_api_key)
         self.api_key_entry = ttk.Entry(api_frame, textvariable=self.api_key_var, show="*", width=60)
         self.api_key_entry.grid(row=api_row_idx, column=1, sticky=tk.EW, padx=5, pady=3)
         api_row_idx += 1
 
-        ttk.Label(api_frame, text="API Base URL:").grid(row=api_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
+        ttk.Label(api_frame, text=_("API Base URL:")).grid(row=api_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
         self.api_base_url_var = tk.StringVar(value=self.initial_api_base_url)
         self.api_base_url_entry = ttk.Entry(api_frame, textvariable=self.api_base_url_var, width=60)
         self.api_base_url_entry.grid(row=api_row_idx, column=1, sticky=tk.EW, padx=5, pady=3)
         api_row_idx += 1
 
-        ttk.Label(api_frame, text="模型名称:").grid(row=api_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
+        ttk.Label(api_frame, text=_("Model Name:")).grid(row=api_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
         self.model_name_var = tk.StringVar(value=self.initial_model_name)
         self.model_name_entry = ttk.Entry(api_frame, textvariable=self.model_name_var, width=60)
         self.model_name_entry.grid(row=api_row_idx, column=1, sticky=tk.EW, padx=5, pady=3)
 
-        trans_frame = ttk.LabelFrame(master, text="翻译与上下文设置", padding=(10, 5))
+        trans_frame = ttk.LabelFrame(master, text=_("Translation & Context Settings"), padding=(10, 5))
         trans_frame.grid(row=1, column=0, columnspan=2, sticky=tk.EW, padx=5, pady=5)
         trans_frame.columnconfigure(1, weight=1)
 
         trans_row_idx = 0
-        ttk.Label(trans_frame, text="目标语言:").grid(row=trans_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
+        ttk.Label(trans_frame, text=_("Target Language:")).grid(row=trans_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
         self.target_language_var = tk.StringVar(value=self.initial_target_language)
         self.target_language_entry = ttk.Entry(trans_frame, textvariable=self.target_language_var, width=60)
         self.target_language_entry.grid(row=trans_row_idx, column=1, sticky=tk.EW, padx=5, pady=3)
         trans_row_idx += 1
 
-        ttk.Label(trans_frame, text="API 调用间隔 (ms):").grid(row=trans_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
+        ttk.Label(trans_frame, text=_("API Call Interval (ms):")).grid(row=trans_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
         self.api_interval_var = tk.IntVar(value=self.initial_api_interval)
         self.api_interval_spinbox = tk.Spinbox(trans_frame, from_=0, to=10000, increment=50,
                                                textvariable=self.api_interval_var, width=10)
         self.api_interval_spinbox.grid(row=trans_row_idx, column=1, sticky=tk.W, padx=5, pady=3)
         trans_row_idx += 1
 
-        ttk.Label(trans_frame, text="最大并发请求数:").grid(row=trans_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
+        ttk.Label(trans_frame, text=_("Max Concurrent Requests:")).grid(row=trans_row_idx, column=0, sticky=tk.W, padx=5, pady=3)
         self.max_concurrent_requests_var = tk.IntVar(value=self.initial_max_concurrent_requests)
         self.max_concurrent_requests_spinbox = tk.Spinbox(trans_frame, from_=1, to=10, increment=1,
                                                           textvariable=self.max_concurrent_requests_var, width=10)
@@ -107,7 +108,7 @@ class AISettingsDialog(tk.Toplevel):
         trans_row_idx += 1
 
         self.use_original_context_var = tk.BooleanVar(value=self.initial_use_original_context)
-        self.use_original_context_check = ttk.Checkbutton(trans_frame, text="引用临近原文作为上下文",
+        self.use_original_context_check = ttk.Checkbutton(trans_frame, text=_("Use nearby original text as context"),
                                                           variable=self.use_original_context_var,
                                                           command=self.toggle_context_neighbors_state)
         self.use_original_context_check.grid(row=trans_row_idx, column=0, columnspan=2, sticky=tk.W, padx=5,
@@ -116,17 +117,17 @@ class AISettingsDialog(tk.Toplevel):
 
         original_context_neighbor_frame = ttk.Frame(trans_frame)
         original_context_neighbor_frame.grid(row=trans_row_idx, column=0, columnspan=2, sticky=tk.W, padx=25)
-        ttk.Label(original_context_neighbor_frame, text="引用临近").pack(side=tk.LEFT)
+        ttk.Label(original_context_neighbor_frame, text=_("Use nearby")).pack(side=tk.LEFT)
         self.original_context_neighbors_var = tk.IntVar(value=self.initial_original_context_neighbors)
         self.original_context_neighbors_spinbox = tk.Spinbox(original_context_neighbor_frame, from_=0, to=10,
                                                              increment=1,
                                                              textvariable=self.original_context_neighbors_var, width=5)
         self.original_context_neighbors_spinbox.pack(side=tk.LEFT, padx=5)
-        ttk.Label(original_context_neighbor_frame, text="条原文 (0为所有)").pack(side=tk.LEFT)
+        ttk.Label(original_context_neighbor_frame, text=_("original strings (0 for all)")).pack(side=tk.LEFT)
         trans_row_idx += 1
 
         self.use_context_var = tk.BooleanVar(value=self.initial_use_context)
-        self.use_context_check = ttk.Checkbutton(trans_frame, text="引用临近译文作为上下文",
+        self.use_context_check = ttk.Checkbutton(trans_frame, text=_("Use nearby translated text as context"),
                                                  variable=self.use_context_var,
                                                  command=self.toggle_context_neighbors_state)
         self.use_context_check.grid(row=trans_row_idx, column=0, columnspan=2, sticky=tk.W, padx=5, pady=(5, 0))
@@ -134,12 +135,12 @@ class AISettingsDialog(tk.Toplevel):
 
         context_neighbor_frame = ttk.Frame(trans_frame)
         context_neighbor_frame.grid(row=trans_row_idx, column=0, columnspan=2, sticky=tk.W, padx=25)
-        ttk.Label(context_neighbor_frame, text="引用临近").pack(side=tk.LEFT)
+        ttk.Label(context_neighbor_frame, text=_("Use nearby")).pack(side=tk.LEFT)
         self.context_neighbors_var = tk.IntVar(value=self.initial_context_neighbors)
         self.context_neighbors_spinbox = tk.Spinbox(context_neighbor_frame, from_=0, to=10, increment=1,
                                                     textvariable=self.context_neighbors_var, width=5)
         self.context_neighbors_spinbox.pack(side=tk.LEFT, padx=5)
-        ttk.Label(context_neighbor_frame, text="条翻译 (0为所有)").pack(side=tk.LEFT)
+        ttk.Label(context_neighbor_frame, text=_("translations (0 for all)")).pack(side=tk.LEFT)
 
         self.test_status_label = ttk.Label(master, text="", wraplength=550)
         self.test_status_label.grid(row=2, column=0, columnspan=2, sticky=tk.W, padx=10, pady=(10, 5))
@@ -164,26 +165,26 @@ class AISettingsDialog(tk.Toplevel):
         right_frame = ttk.Frame(main_frame)
         right_frame.pack(side=tk.RIGHT)
 
-        prompt_btn = ttk.Button(left_frame, text="提示词管理器...", command=self.show_prompt_manager)
+        prompt_btn = ttk.Button(left_frame, text=_("Prompt Manager..."), command=self.show_prompt_manager)
         prompt_btn.pack(side=tk.LEFT, padx=(0, 10))
 
-        test_btn = ttk.Button(right_frame, text="测试连接", width=10, command=self.test_api_connection_dialog)
+        test_btn = ttk.Button(right_frame, text=_("Test Connection"), width=10, command=self.test_api_connection_dialog)
         test_btn.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
-        ok_btn = ttk.Button(right_frame, text="确定", width=10, command=self.ok, default=tk.ACTIVE)
+        ok_btn = ttk.Button(right_frame, text=_("OK"), width=10, command=self.ok, default=tk.ACTIVE)
         ok_btn.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
-        cancel_btn = ttk.Button(right_frame, text="取消", width=10, command=self.cancel)
+        cancel_btn = ttk.Button(right_frame, text=_("Cancel"), width=10, command=self.cancel)
         cancel_btn.pack(side=tk.LEFT, pady=5)
 
         self.bind("<Return>", self.ok)
         self.bind("<Escape>", self.cancel)
 
     def show_prompt_manager(self):
-        PromptManagerDialog(self, "AI提示词管理器", self.app)
+        PromptManagerDialog(self, _("AI Prompt Manager"), self.app)
 
     def test_api_connection_dialog(self):
-        self.test_status_label.config(text="测试中...")
+        self.test_status_label.config(text=_("Testing..."))
         self.update_idletasks()
 
         api_key = self.api_key_var.get()
@@ -191,14 +192,14 @@ class AISettingsDialog(tk.Toplevel):
         model_name = self.model_name_var.get().strip()
 
         if not api_key:
-            messagebox.showerror("测试失败", "API Key 未填写。", parent=self)
-            self.test_status_label.config(text="测试失败: API Key 未填写。")
+            messagebox.showerror(_("Test Failed"), _("API Key is not filled."), parent=self)
+            self.test_status_label.config(text=_("Test failed: API Key is not filled."))
             return
 
         temp_translator = AITranslator(api_key, model_name, api_url)
 
         def _test_in_thread():
-            placeholders = {'[Target Language]': '中文', '[Custom Translate]': '', '[Untranslated Context]': '',
+            placeholders = {'[Target Language]': _('中文'), '[Custom Translate]': '', '[Untranslated Context]': '',
                             '[Translated Context]': ''}
             test_prompt = generate_prompt_from_structure(
                 self.app_config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE), placeholders)
@@ -212,9 +213,9 @@ class AISettingsDialog(tk.Toplevel):
         if self.winfo_exists():
             self.test_status_label.config(text=message)
             if success:
-                messagebox.showinfo("测试连接", message, parent=self)
+                messagebox.showinfo(_("Test Connection"), message, parent=self)
             else:
-                messagebox.showerror("测试连接", message, parent=self)
+                messagebox.showerror(_("Test Connection"), message, parent=self)
 
     def ok(self, event=None):
         if self.apply():
@@ -236,19 +237,19 @@ class AISettingsDialog(tk.Toplevel):
         max_concurrent_requests = self.max_concurrent_requests_var.get()
 
         if not target_language:
-            messagebox.showerror("错误", "目标语言不能为空。", parent=self)
+            messagebox.showerror(_("Error"), _("Target language cannot be empty."), parent=self)
             self.target_language_entry.focus_set()
             return False
         if not model_name:
-            messagebox.showerror("错误", "模型名称不能为空。", parent=self)
+            messagebox.showerror(_("Error"), _("Model name cannot be empty."), parent=self)
             self.model_name_entry.focus_set()
             return False
         if api_interval < 0:
-            messagebox.showerror("错误", "API 调用间隔不能为负。", parent=self)
+            messagebox.showerror(_("Error"), _("API call interval cannot be negative."), parent=self)
             self.api_interval_spinbox.focus_set()
             return False
         if not (1 <= max_concurrent_requests <= 10):
-            messagebox.showerror("错误", "最大并发请求数必须在 1 到 10 之间。", parent=self)
+            messagebox.showerror(_("Error"), _("Max concurrent requests must be between 1 and 10."), parent=self)
             self.max_concurrent_requests_spinbox.focus_set()
             return False
 

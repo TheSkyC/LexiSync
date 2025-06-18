@@ -3,6 +3,7 @@
 
 import tkinter as tk
 from tkinter import ttk, simpledialog
+from utils.localization import setup_translation, get_available_languages, _
 
 class DiffDialog(simpledialog.Dialog):
     def __init__(self, parent, title, diff_results):
@@ -49,7 +50,7 @@ class DiffDialog(simpledialog.Dialog):
         master.grid_rowconfigure(1, weight=1)
         master.grid_columnconfigure(0, weight=1)
 
-        summary_text = self.diff_results.get('summary', '对比结果摘要')
+        summary_text = self.diff_results.get('summary', _('Comparison Results Summary'))
         summary_label = ttk.Label(
             master,
             text=summary_text,
@@ -76,10 +77,10 @@ class DiffDialog(simpledialog.Dialog):
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
 
-        self.tree.heading("status", text="状态")
-        self.tree.heading("old_text", text="旧版原文")
-        self.tree.heading("new_text", text="新版原文")
-        self.tree.heading("similarity", text="相似度")
+        self.tree.heading("status", text=_("Status"))
+        self.tree.heading("old_text", text=_("Old Version Original"))
+        self.tree.heading("new_text", text=_("New Version Original"))
+        self.tree.heading("similarity", text=_("Similarity"))
 
         self.tree.column("status", width=80, anchor=tk.W)
         self.tree.column("old_text", width=500, anchor=tk.W)
@@ -96,9 +97,9 @@ class DiffDialog(simpledialog.Dialog):
 
     def buttonbox(self, master):
         box = ttk.Frame(master)
-        ttk.Button(box, text="确认并更新项目", width=18, command=self.ok, default=tk.ACTIVE).pack(
+        ttk.Button(box, text=_("Confirm and Update Project"), width=18, command=self.ok, default=tk.ACTIVE).pack(
             side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(box, text="取消", width=10, command=self.cancel).pack(
+        ttk.Button(box, text=_("Cancel"), width=10, command=self.cancel).pack(
             side=tk.LEFT, padx=5, pady=5)
         box.grid(row=2, column=0, sticky="e", pady=(5, 0))
 
@@ -108,18 +109,18 @@ class DiffDialog(simpledialog.Dialog):
     def populate_tree(self):
         for item in self.diff_results['added']:
             self.tree.insert("", "end",
-                             values=("新增", "", item['new_obj'].original_semantic, "N/A"),
+                             values=(_("Added"), "", item['new_obj'].original_semantic, "N/A"),
                              tags=('added',))
 
         for item in self.diff_results['removed']:
             self.tree.insert("", "end",
-                             values=("移除", item['old_obj'].original_semantic, "", "N/A"),
+                             values=(_("Removed"), item['old_obj'].original_semantic, "", "N/A"),
                              tags=('removed',))
 
         for item in self.diff_results['modified']:
             sim_str = f"{item['similarity']:.2%}"
             self.tree.insert("", "end",
-                             values=("修改/继承", item['old_obj'].original_semantic,
+                             values=(_("Modified/Inherited"), item['old_obj'].original_semantic,
                                      item['new_obj'].original_semantic, sim_str),
                              tags=('modified',))
 
