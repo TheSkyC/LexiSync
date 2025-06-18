@@ -1,0 +1,2045 @@
+# Translations template for Overwatch-Localizer.
+# Copyright (C) 2025 TheSkyC
+# This file is distributed under the same license as the Overwatch-Localizer
+# project.
+# Automatically generated, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Overwatch-Localizer 1.0.3\n"
+"Report-Msgid-Bugs-To: your-email@example.com\n"
+"POT-Creation-Date: 2025-06-18 16:23+0000\n"
+"PO-Revision-Date: 2025-06-18 16:22+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: app.py:1455
+msgid " (Auto)"
+msgstr ""
+
+#: app.py:3102
+msgid "AI Batch Translation"
+msgstr ""
+
+#: app.py:2852
+#, python-brace-format
+msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
+msgstr ""
+
+#: app.py:2965
+#, python-brace-format
+msgid "AI Batch: {current}/{total} completed ({progress_percent:.0f}%)."
+msgstr ""
+
+#: app.py:2664
+msgid "AI Feature Unavailable"
+msgstr ""
+
+#: app.py:2789 dialogs/ai_settings_dialog.py:184
+msgid "AI Prompt Manager"
+msgstr ""
+
+#: app.py:2659
+msgid "AI Settings"
+msgstr ""
+
+#: app.py:370 app.py:856
+msgid "AI Settings..."
+msgstr ""
+
+#: app.py:362 app.py:852
+msgid "AI Translate All Untranslated"
+msgstr ""
+
+#: app.py:74 app.py:359 app.py:429 app.py:641 app.py:850
+msgid "AI Translate Selected"
+msgstr ""
+
+#: app.py:2910
+msgid "AI Translation Error"
+msgstr ""
+
+#: app.py:264 app.py:2983 app.py:3302
+msgid "AI Translation in Progress"
+msgstr ""
+
+#: app.py:3047
+#, python-brace-format
+msgid ""
+"AI batch translation complete. Successfully translated {success_count}/"
+"{processed_count} items (total {total_items} planned)."
+msgstr ""
+
+#: app.py:2983
+msgid "AI batch translation is already in progress."
+msgstr ""
+
+#: app.py:1139
+msgid "AI batch translation is in progress."
+msgstr ""
+
+#: app.py:1082
+msgid ""
+"AI batch translation is in progress. Please wait for it to complete or stop "
+"it before opening a new file."
+msgstr ""
+
+#: app.py:3302
+msgid ""
+"AI batch translation is in progress. Please wait for it to complete or stop "
+"it."
+msgstr ""
+
+#: app.py:265
+msgid ""
+"AI batch translation is still in progress. Are you sure you want to exit?\n"
+"Unfinished translations will be lost."
+msgstr ""
+
+#: app.py:3026
+#, python-brace-format
+msgid "AI batch translation started ({concurrency_info})..."
+msgstr ""
+
+#: app.py:3102
+msgid ""
+"AI batch translation stop requested.\n"
+"Dispatched tasks will continue to complete, please wait."
+msgstr ""
+
+#: app.py:3104
+msgid "AI batch translation stop requested. Finishing dispatched tasks..."
+msgstr ""
+
+#: app.py:2818
+#, python-brace-format
+msgid "AI is translating: \"{text}...\""
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:205
+msgid "AI prompt structure updated."
+msgstr ""
+
+#: app.py:2951
+#, python-brace-format
+msgid "AI returned empty translation for \"{text}...\""
+msgstr ""
+
+#: app.py:2911
+#, python-brace-format
+msgid ""
+"AI translation failed for \"{text}...\":\n"
+"{error}"
+msgstr ""
+
+#: app.py:2907
+#, python-brace-format
+msgid "AI translation failed for \"{text}...\": {error}"
+msgstr ""
+
+#: app.py:2948
+#, python-brace-format
+msgid "AI translation successful: \"{text}...\""
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:74
+msgid "API Base URL:"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:96
+msgid "API Call Interval (ms):"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:63
+msgid "API Connection & Model Settings"
+msgstr ""
+
+#: app.py:2670
+msgid "API Key Missing"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:195
+msgid "API Key is not filled."
+msgstr ""
+
+#: app.py:2670
+msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:68
+msgid "API Key:"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:248
+msgid "API call interval cannot be negative."
+msgstr ""
+
+#: app.py:398
+msgid "About"
+msgstr ""
+
+#: app.py:252
+msgid "About Overwatch Localizer"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:55 dialogs/prompt_manager_dialog.py:53
+msgid "Add"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:140
+msgid "Add Extraction Rule"
+msgstr ""
+
+#: dialogs/diff_dialog.py:112
+msgid "Added"
+msgstr ""
+
+#: app.py:3090
+#, python-brace-format
+msgid "Added comments to {count} placeholder mismatched items."
+msgstr ""
+
+#: app.py:3075
+#, python-brace-format
+msgid ""
+"After AI batch translation, {count} items were found with placeholder "
+"mismatches.\n"
+"Do you want to add the comment \"Placeholder Mismatch\" to these items in "
+"bulk?"
+msgstr ""
+
+#: app.py:3463
+#, python-brace-format
+msgid "An error occurred while processing or comparing files: {error}"
+msgstr ""
+
+#: app.py:3254
+#, python-brace-format
+msgid "Applied TM to {count} selected items."
+msgstr ""
+
+#: app.py:2618 app.py:2619
+#, python-brace-format
+msgid "Applied TM to {count} strings."
+msgstr ""
+
+#: app.py:663
+msgid "Apply Comment"
+msgstr ""
+
+#: app.py:552
+msgid "Apply Memory to Selected Items"
+msgstr ""
+
+#: app.py:353 app.py:835
+msgid "Apply TM to Untranslated"
+msgstr ""
+
+#: app.py:638
+msgid "Apply Translation"
+msgstr ""
+
+#: app.py:2422
+msgid "Apply Translation Memory"
+msgstr ""
+
+#: app.py:77
+msgid "Apply and Go to Next Untranslated"
+msgstr ""
+
+#: app.py:3447
+msgid "Applying updates..."
+msgstr ""
+
+#: app.py:2449
+msgid ""
+"Are you sure you want to clear all entries from the in-memory Translation "
+"Memory?\n"
+"This cannot be undone."
+msgstr ""
+
+#: app.py:245
+msgid "Are you sure you want to clear all recent file history?"
+msgstr ""
+
+#: app.py:3264
+#, python-brace-format
+msgid ""
+"Are you sure you want to clear the translations for the {count} selected "
+"items?"
+msgstr ""
+
+#: app.py:2505
+#, python-brace-format
+msgid ""
+"Are you sure you want to remove the TM entry for:\n"
+"'{text}...'?"
+msgstr ""
+
+#: dialogs/search_dialog.py:216
+#, python-brace-format
+msgid ""
+"Are you sure you want to replace all \"{search_term}\" with \"{replace_term}"
+"\" in {scope}?\n"
+"This operation will affect translations."
+msgstr ""
+
+#: dialogs/keybinding_dialog.py:119
+msgid ""
+"Are you sure you want to reset all keybindings to their default settings?"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:175
+msgid ""
+"Are you sure you want to reset extraction rules to their default settings?\n"
+"All current custom rules will be lost."
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:149
+msgid ""
+"Are you sure you want to reset the prompt to its default settings?\n"
+"All current customizations will be lost."
+msgstr ""
+
+#: app.py:2122
+msgid "Associate Code File?"
+msgstr ""
+
+#: app.py:2284
+#, python-brace-format
+msgid "Attempted to restore {count} old translations/statuses."
+msgstr ""
+
+#: app.py:379
+msgid "Auto-backup TM on Save"
+msgstr ""
+
+#: app.py:2385
+msgid "Backup Failed"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:177 dialogs/diff_dialog.py:102
+#: dialogs/extraction_pattern_dialog.py:225 dialogs/keybinding_dialog.py:106
+#: dialogs/prompt_manager_dialog.py:192
+msgid "Cancel"
+msgstr ""
+
+#: dialogs/search_dialog.py:38
+msgid "Case sensitive"
+msgstr ""
+
+#: app.py:223
+msgid "Clear History"
+msgstr ""
+
+#: app.py:554
+msgid "Clear Selected Translations"
+msgstr ""
+
+#: app.py:714
+msgid "Clear TM for Selected"
+msgstr ""
+
+#: app.py:2445
+msgid "Clear Translation Memory"
+msgstr ""
+
+#: app.py:356
+msgid "Clear Translation Memory (in-memory)"
+msgstr ""
+
+#: app.py:3291
+#, python-brace-format
+msgid "Cleared {count} translations."
+msgstr ""
+
+#: app.py:3157
+msgid "Clipboard content pasted to translation."
+msgstr ""
+
+#: dialogs/search_dialog.py:58
+msgid "Close"
+msgstr ""
+
+#: app.py:2135
+msgid "Code File Load Failed"
+msgstr ""
+
+#: app.py:1122
+msgid "Code file loading failed"
+msgstr ""
+
+#: app.py:1755
+#, python-brace-format
+msgid "Code file saved to: {filename}"
+msgstr ""
+
+#: app.py:1875 app.py:1929 app.py:1937
+msgid "Comment"
+msgstr ""
+
+#: app.py:1669
+#, python-brace-format
+msgid "Comment updated for ID {id}..."
+msgstr ""
+
+#: app.py:646
+msgid "Comment:"
+msgstr ""
+
+#: app.py:290 app.py:809
+msgid "Compare/Import New Version..."
+msgstr ""
+
+#: app.py:3463
+msgid "Comparison Failed"
+msgstr ""
+
+#: dialogs/diff_dialog.py:53
+msgid "Comparison Results Summary"
+msgstr ""
+
+#: app.py:3431
+msgid "Comparison complete, generating report..."
+msgstr ""
+
+#: app.py:3434
+msgid "Comparison complete. Found "
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:175 dialogs/keybinding_dialog.py:119
+#: dialogs/prompt_manager_dialog.py:149
+msgid "Confirm"
+msgstr ""
+
+#: app.py:3009
+msgid "Confirm Batch Translation"
+msgstr ""
+
+#: app.py:2448 app.py:2504 app.py:3264
+msgid "Confirm Clear"
+msgstr ""
+
+#: app.py:2582
+msgid "Confirm Operation"
+msgstr ""
+
+#: app.py:1774
+msgid "Confirm Overwrite"
+msgstr ""
+
+#: app.py:2257
+msgid "Confirm Reload"
+msgstr ""
+
+#: dialogs/search_dialog.py:219
+msgid "Confirm Replace All"
+msgstr ""
+
+#: app.py:2473
+msgid "Confirm Update TM"
+msgstr ""
+
+#: dialogs/diff_dialog.py:100
+msgid "Confirm and Update Project"
+msgstr ""
+
+#: app.py:245
+msgid "Confirmation"
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:75
+msgid "Content"
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:228
+msgid "Content:"
+msgstr ""
+
+#: app.py:683
+msgid "Context Preview:"
+msgstr ""
+
+#: app.py:3123
+#, python-brace-format
+msgid "Copied {count} original strings to clipboard."
+msgstr ""
+
+#: app.py:3134
+#, python-brace-format
+msgid "Copied {count} translations to clipboard."
+msgstr ""
+
+#: app.py:72 app.py:332 app.py:426 app.py:538 app.py:827 app.py:1523
+msgid "Copy Original"
+msgstr ""
+
+#: app.py:539
+msgid "Copy Translation"
+msgstr ""
+
+#: app.py:3125 app.py:3136
+msgid "Copy failed. Could not access clipboard."
+msgstr ""
+
+#: app.py:2385
+#, python-brace-format
+msgid "Could not create backup for TM: {error}"
+msgstr ""
+
+#: app.py:2334
+#, python-brace-format
+msgid ""
+"Could not determine original/translation columns from '{filename}' header. "
+"Will try to use the first two columns by default (A=Original, B=Translation)."
+msgstr ""
+
+#: app.py:1902
+#, python-brace-format
+msgid "Could not export project translations to Excel: {error}"
+msgstr ""
+
+#: app.py:2050
+#, python-brace-format
+msgid "Could not export project translations to JSON: {error}"
+msgstr ""
+
+#: app.py:2082
+#, python-brace-format
+msgid "Could not export project translations to YAML: {error}"
+msgstr ""
+
+#: app.py:2468
+msgid "Could not find data for the selected item."
+msgstr ""
+
+#: app.py:2245
+msgid "Could not get code content for re-extraction."
+msgstr ""
+
+#: app.py:2017
+#, python-brace-format
+msgid "Could not import project translations from Excel: {error}"
+msgstr ""
+
+#: app.py:2136
+#, python-brace-format
+msgid "Could not load associated code file: {error}"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:203
+#: dialogs/prompt_manager_dialog.py:171
+#, python-brace-format
+msgid "Could not load preset file: {error}"
+msgstr ""
+
+#: app.py:1193
+#, python-brace-format
+msgid "Could not load project file '{filename}': {error}"
+msgstr ""
+
+#: app.py:1118
+#, python-brace-format
+msgid "Could not open or parse code file '{filename}': {error}"
+msgstr ""
+
+#: app.py:2241
+#, python-brace-format
+msgid ""
+"Could not re-read {filepath} from disk.\n"
+"Using in-memory version.\n"
+"Error: {error}"
+msgstr ""
+
+#: app.py:1758
+#, python-brace-format
+msgid "Could not save code file: {error}"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:220
+#: dialogs/prompt_manager_dialog.py:187
+#, python-brace-format
+msgid "Could not save preset file: {error}"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:102
+#: dialogs/extraction_pattern_dialog.py:135
+#: dialogs/extraction_pattern_dialog.py:195
+#: dialogs/extraction_pattern_dialog.py:265
+#: dialogs/extraction_pattern_dialog.py:299
+msgid "Custom"
+msgstr ""
+
+#: app.py:469
+msgid "Deduplicate"
+msgstr ""
+
+#: app.py:340
+msgid "Deduplicate Strings"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:56 dialogs/prompt_manager_dialog.py:54
+msgid "Delete Selected"
+msgstr ""
+
+#: app.py:760
+msgid "Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"
+msgstr ""
+
+#: app.py:781
+#, python-brace-format
+msgid ""
+"Displayed: {displayed_count}/{total_count} | Translated: "
+"{translated_visible} | Untranslated: {untranslated_visible} | Ignored: "
+"{ignored_visible}"
+msgstr ""
+
+#: app.py:2122
+msgid ""
+"Do you want to associate an original code file to get context and line "
+"number information?"
+msgstr ""
+
+#: app.py:195
+msgid "Drag and Drop Error"
+msgstr ""
+
+#: app.py:192
+#, python-brace-format
+msgid "Drag and drop failed: '{filename}' is not a file."
+msgstr ""
+
+#: app.py:189
+#, python-brace-format
+msgid "Drag and drop failed: Invalid file type '{filename}'"
+msgstr ""
+
+#: app.py:197
+msgid "Drag and drop processing error"
+msgstr ""
+
+#: app.py:325
+msgid "Edit"
+msgstr ""
+
+#: app.py:596
+msgid "Edit & Details"
+msgstr ""
+
+#: app.py:550 app.py:3206
+msgid "Edit Comment..."
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:160
+msgid "Edit Extraction Rule"
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:143
+msgid "Edit Prompt Fragment"
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:225
+msgid "Enable this fragment"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:261
+msgid "Enable this rule"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:74 dialogs/prompt_manager_dialog.py:73
+msgid "Enabled"
+msgstr ""
+
+#: app.py:3203
+#, python-brace-format
+msgid "Enter comment for {count} selected items:"
+msgstr ""
+
+#: app.py:2645
+msgid ""
+"Enter specific translation instructions for this project (e.g., 'Translate "
+"\"Hero\" as \"Agent\"', 'Use a lively and cute style').\n"
+"These instructions will be used during AI translation."
+msgstr ""
+
+#: app.py:1118 app.py:1750 app.py:1763 app.py:1767 app.py:2245 app.py:2362
+#: app.py:2408 app.py:2468 app.py:2641 app.py:3340
+#: dialogs/ai_settings_dialog.py:240 dialogs/ai_settings_dialog.py:244
+#: dialogs/ai_settings_dialog.py:248 dialogs/ai_settings_dialog.py:252
+#: dialogs/extraction_pattern_dialog.py:201
+#: dialogs/extraction_pattern_dialog.py:304
+#: dialogs/extraction_pattern_dialog.py:308
+#: dialogs/prompt_manager_dialog.py:169 dialogs/search_dialog.py:165
+#: dialogs/search_dialog.py:202 dialogs/search_dialog.py:241
+msgid "Error"
+msgstr ""
+
+#: app.py:2117
+#, python-brace-format
+msgid "Error extracting POT file: {error}"
+msgstr ""
+
+#: app.py:2165
+#, python-brace-format
+msgid "Error importing PO file '{filename}': {error}"
+msgstr ""
+
+#: app.py:2015
+#, python-brace-format
+msgid "Error processing Excel file (possibly column names issue): {error}"
+msgstr ""
+
+#: app.py:2003
+#, python-brace-format
+msgid "Error processing Excel row {row_num}: {error}. Skipping this row."
+msgstr ""
+
+#: app.py:196
+#, python-brace-format
+msgid "Error processing dropped file: {error}"
+msgstr ""
+
+#: app.py:2300
+#, python-brace-format
+msgid "Error reloading translatable text: {error}"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:281
+msgid "Escape for Regex (Left)"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:282
+msgid "Escape for Regex (Right)"
+msgstr ""
+
+#: app.py:1923
+msgid "Excel header format is incorrect or empty."
+msgstr ""
+
+#: app.py:1936
+#, python-brace-format
+msgid ""
+"Excel header must contain 'UUID' and '{translation_col}' columns.\n"
+"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', "
+"'{original_semantic_col}'."
+msgstr ""
+
+#: app.py:321
+msgid "Exit"
+msgstr ""
+
+#: app.py:316 app.py:2434
+msgid "Export Current TM (Excel)"
+msgstr ""
+
+#: app.py:1901 app.py:2049 app.py:2082 app.py:2216
+msgid "Export Error"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:207
+msgid "Export Extraction Rule Preset"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:220
+#: dialogs/prompt_manager_dialog.py:187
+msgid "Export Failed"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:59 dialogs/prompt_manager_dialog.py:57
+msgid "Export Preset"
+msgstr ""
+
+#: app.py:1867
+msgid "Export Project Translations to Excel"
+msgstr ""
+
+#: app.py:2038
+msgid "Export Project Translations to JSON"
+msgstr ""
+
+#: app.py:2072
+msgid "Export Project Translations to YAML"
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:175
+msgid "Export Prompt Preset"
+msgstr ""
+
+#: app.py:304 app.py:821
+msgid "Export to Excel"
+msgstr ""
+
+#: app.py:306 app.py:822
+msgid "Export to JSON"
+msgstr ""
+
+#: app.py:313 app.py:824 app.py:2203
+msgid "Export to PO File..."
+msgstr ""
+
+#: app.py:308 app.py:823
+msgid "Export to YAML"
+msgstr ""
+
+#: app.py:311
+msgid "Extract POT Template from Code..."
+msgstr ""
+
+#: app.py:1097
+msgid "Extracting strings..."
+msgstr ""
+
+#: app.py:2220
+msgid "Extraction Rule Manager"
+msgstr ""
+
+#: app.py:372
+msgid "Extraction Rule Manager..."
+msgstr ""
+
+#: app.py:2223
+msgid "Extraction Rules Updated"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:240
+msgid "Extraction rules updated. Consider reloading the text."
+msgstr ""
+
+#: app.py:2223
+msgid ""
+"Extraction rules updated. Do you want to reload the translatable text of the "
+"current code using the new rules immediately?"
+msgstr ""
+
+#: app.py:2216
+#, python-brace-format
+msgid "Failed to export to PO file: {error}"
+msgstr ""
+
+#: app.py:2362 app.py:2363
+#, python-brace-format
+msgid "Failed to load Excel Translation Memory: {error}"
+msgstr ""
+
+#: app.py:2408
+#, python-brace-format
+msgid "Failed to save Translation Memory: {error}"
+msgstr ""
+
+#: app.py:2656
+msgid "Feature Unavailable"
+msgstr ""
+
+#: app.py:286
+msgid "File"
+msgstr ""
+
+#: app.py:1775
+#, python-brace-format
+msgid ""
+"File '{filename}' already exists. Overwrite? A backup file (.bak) will be "
+"created."
+msgstr ""
+
+#: app.py:227
+#, python-brace-format
+msgid "File '{filepath}' does not exist."
+msgstr ""
+
+#: app.py:2240
+msgid "File Read Error"
+msgstr ""
+
+#: app.py:227
+msgid "File not found"
+msgstr ""
+
+#: app.py:468
+msgid "Filter:"
+msgstr ""
+
+#: app.py:1373
+#, python-brace-format
+msgid "Filtered by '{search_term}'."
+msgstr ""
+
+#: app.py:492
+msgid "Find"
+msgstr ""
+
+#: dialogs/search_dialog.py:52
+msgid "Find Next"
+msgstr ""
+
+#: app.py:2629
+msgid "Find and Replace"
+msgstr ""
+
+#: dialogs/search_dialog.py:241
+msgid "Find what cannot be compiled into a valid regular expression."
+msgstr ""
+
+#: dialogs/search_dialog.py:165 dialogs/search_dialog.py:202
+msgid "Find what cannot be empty."
+msgstr ""
+
+#: dialogs/search_dialog.py:27
+msgid "Find what:"
+msgstr ""
+
+#: app.py:71
+msgid "Find/Replace"
+msgstr ""
+
+#: app.py:329 app.py:425 app.py:826
+msgid "Find/Replace..."
+msgstr ""
+
+#: dialogs/search_dialog.py:103
+#, python-brace-format
+msgid "Found {count} matches."
+msgstr ""
+
+#: app.py:397
+msgid "Help"
+msgstr ""
+
+#: app.py:746
+msgid "Hint: "
+msgstr ""
+
+#: app.py:744
+msgid "Hint: requests not found, AI translation is disabled."
+msgstr ""
+
+#: app.py:743
+msgid "Hint: tkinterdnd2 not found, drag & drop is disabled."
+msgstr ""
+
+#: app.py:1711
+#, python-brace-format
+msgid "Ignore status for ID {id} -> {status}"
+msgstr ""
+
+#: app.py:671 app.py:1453
+msgid "Ignore this string"
+msgstr ""
+
+#: app.py:471 app.py:1875 app.py:1931 app.py:1938 app.py:2805
+msgid "Ignored"
+msgstr ""
+
+#: app.py:1923 app.py:1935 app.py:2015 app.py:2017
+msgid "Import Error"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:181
+msgid "Import Extraction Rule Preset"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:203
+#: dialogs/prompt_manager_dialog.py:171
+msgid "Import Failed"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:58 dialogs/prompt_manager_dialog.py:56
+msgid "Import Preset"
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:155
+msgid "Import Prompt Preset"
+msgstr ""
+
+#: app.py:315 app.py:2412
+msgid "Import Translation Memory (Excel)"
+msgstr ""
+
+#: app.py:302 app.py:820 app.py:1912
+msgid "Import Translations from Excel"
+msgstr ""
+
+#: app.py:312
+msgid "Import Translations from PO File..."
+msgstr ""
+
+#: app.py:2012
+#, python-brace-format
+msgid ""
+"Imported/updated {field_count} fields for {item_count} items from Excel."
+msgstr ""
+
+#: app.py:2452
+msgid "In-memory Translation Memory has been cleared."
+msgstr ""
+
+#: app.py:1789 app.py:1852 app.py:1907 app.py:2021 app.py:2055 app.py:2185
+#: app.py:2229 app.py:2463 app.py:2498 app.py:2514 app.py:2575 app.py:2578
+#: app.py:2627 app.py:3095 app.py:3233 app.py:3257
+msgid "Info"
+msgstr ""
+
+#: app.py:3408
+msgid "Inherited from old version"
+msgstr ""
+
+#: app.py:434
+msgid "Keybinding Settings"
+msgstr ""
+
+#: app.py:394
+msgid "Keybinding Settings..."
+msgstr ""
+
+#: dialogs/keybinding_dialog.py:132
+msgid "Keybindings have been updated."
+msgstr ""
+
+#: app.py:383
+msgid "Language"
+msgstr ""
+
+#: app.py:443
+msgid ""
+"Language settings have been changed. Please restart the application for the "
+"changes to take effect."
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:77
+msgid "Left Delimiter (Regex)"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:269
+msgid "Left Delimiter:"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:308
+msgid "Left and right delimiters cannot be empty."
+msgstr ""
+
+#: app.py:2159
+#, python-brace-format
+msgid "Loaded {count} entries from PO file {filename}."
+msgstr ""
+
+#: app.py:1112
+#, python-brace-format
+msgid "Loaded {count} translatable strings from {filename}"
+msgstr ""
+
+#: app.py:2355
+#, python-brace-format
+msgid "Loaded/merged {count} Excel TM records from '{filename}'."
+msgstr ""
+
+#: app.py:541
+msgid "Mark as Ignored"
+msgstr ""
+
+#: app.py:545
+msgid "Mark as Reviewed"
+msgstr ""
+
+#: app.py:547
+msgid "Mark as Unreviewed"
+msgstr ""
+
+#: dialogs/search_dialog.py:133 dialogs/search_dialog.py:149
+#, python-brace-format
+msgid "Match {current}/{total}"
+msgstr ""
+
+#: dialogs/search_dialog.py:136
+#, python-brace-format
+msgid "Match {current}/{total} (currently not visible)"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:103
+msgid "Max Concurrent Requests:"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:252
+msgid "Max concurrent requests must be between 1 and 10."
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:80
+msgid "Model Name:"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:244
+msgid "Model name cannot be empty."
+msgstr ""
+
+#: dialogs/diff_dialog.py:123
+msgid "Modified/Inherited"
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:120
+msgid "New Instruction"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:133
+msgid "New Rule"
+msgstr ""
+
+#: dialogs/diff_dialog.py:82
+msgid "New Version Original"
+msgstr ""
+
+#: app.py:1711 app.py:1730 app.py:1891 app.py:1892
+msgid "No"
+msgstr ""
+
+#: app.py:3095
+msgid "No AI batch translation task is in progress."
+msgstr ""
+
+#: app.py:216
+msgid "No History"
+msgstr ""
+
+#: dialogs/search_dialog.py:212
+msgid "No Items"
+msgstr ""
+
+#: dialogs/search_dialog.py:154
+msgid "No Selection"
+msgstr ""
+
+#: app.py:2992
+msgid "No Translation Needed"
+msgstr ""
+
+#: app.py:2621
+msgid "No applicable translations found in TM (or no changes needed)."
+msgstr ""
+
+#: app.py:2229
+msgid "No code content loaded to reload."
+msgstr ""
+
+#: app.py:1852 app.py:2021 app.py:2055 app.py:2185
+msgid "No data to export."
+msgstr ""
+
+#: app.py:3336
+msgid "No eligible selected items for AI translation."
+msgstr ""
+
+#: dialogs/search_dialog.py:212
+msgid "No items available for replacement."
+msgstr ""
+
+#: app.py:3296
+msgid "No items selected for AI translation."
+msgstr ""
+
+#: dialogs/search_dialog.py:191
+msgid "No match found in current translation (or no change after replace)."
+msgstr ""
+
+#: app.py:1375
+#, python-brace-format
+msgid "No matches found for '{search_term}' under current filters."
+msgstr ""
+
+#: dialogs/search_dialog.py:106
+msgid "No matches found."
+msgstr ""
+
+#: app.py:3257
+msgid "No matching TM entries or no changes needed for selected items."
+msgstr ""
+
+#: app.py:999
+msgid "No more actions to redo"
+msgstr ""
+
+#: app.py:914
+msgid "No more actions to undo"
+msgstr ""
+
+#: app.py:2710
+msgid "No more untranslated items."
+msgstr ""
+
+#: app.py:1767
+msgid "No original code content to save."
+msgstr ""
+
+#: app.py:1763
+msgid "No original code file path."
+msgstr ""
+
+#: dialogs/search_dialog.py:264
+msgid "No replaceable matches found (or no change after replace)."
+msgstr ""
+
+#: app.py:2575
+msgid "No strings to apply TM to."
+msgstr ""
+
+#: app.py:2992
+msgid "No untranslated and non-ignored strings found."
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:174 dialogs/extraction_pattern_dialog.py:224
+#: dialogs/keybinding_dialog.py:105 dialogs/prompt_manager_dialog.py:191
+msgid "OK"
+msgstr ""
+
+#: dialogs/diff_dialog.py:81
+msgid "Old Version Original"
+msgstr ""
+
+#: app.py:65 app.py:1072
+msgid "Open Code File"
+msgstr ""
+
+#: app.py:287 app.py:417
+msgid "Open Code File..."
+msgstr ""
+
+#: app.py:66
+msgid "Open Project"
+msgstr ""
+
+#: app.py:1193
+msgid "Open Project Error"
+msgstr ""
+
+#: app.py:1129
+msgid "Open Project File"
+msgstr ""
+
+#: app.py:288 app.py:418
+msgid "Open Project..."
+msgstr ""
+
+#: app.py:1082 app.py:1139
+msgid "Operation Restricted"
+msgstr ""
+
+#: app.py:606
+msgid "Original (Ctrl+Shift+C to copy):"
+msgstr ""
+
+#: app.py:1876
+msgid "Original (Raw)"
+msgstr ""
+
+#: app.py:1875 app.py:1933 app.py:1938
+msgid "Original (Semantic)"
+msgstr ""
+
+#: app.py:3204
+#, python-brace-format
+msgid ""
+"Original:\n"
+"{original_semantic}...\n"
+"\n"
+"Enter comment:"
+msgstr ""
+
+#: app.py:253
+#, python-brace-format
+msgid ""
+"Overwatch Custom Code Translation Tool\n"
+"\n"
+"Version: {version}\n"
+"Author: TheSkyC\n"
+"China Server ID: 小鸟游六花#56683 / Asia Server: 小鳥游六花#31665"
+msgstr ""
+
+#: app.py:61
+#, python-brace-format
+msgid "Overwatch Localizer - v{version}"
+msgstr ""
+
+#: app.py:2812
+msgid "Overwrite Confirmation"
+msgstr ""
+
+#: app.py:2165
+msgid "PO Import Error"
+msgstr ""
+
+#: app.py:2168
+msgid "PO file loading failed"
+msgstr ""
+
+#: app.py:2117
+msgid "POT Extraction Error"
+msgstr ""
+
+#: app.py:2113
+#, python-brace-format
+msgid "POT template saved to: {filename}"
+msgstr ""
+
+#: app.py:3358
+msgid "Parsing new file..."
+msgstr ""
+
+#: app.py:3149
+msgid "Paste failed from clipboard."
+msgstr ""
+
+#: app.py:3159
+msgid "Paste failed: Clipboard content is not text."
+msgstr ""
+
+#: app.py:73 app.py:334 app.py:427 app.py:829 app.py:1524
+msgid "Paste to Translation"
+msgstr ""
+
+#: app.py:3076 app.py:3080
+msgid "Placeholder Mismatch"
+msgstr ""
+
+#: dialogs/search_dialog.py:73 dialogs/search_dialog.py:111
+msgid "Please enter a search term."
+msgstr ""
+
+#: dialogs/search_dialog.py:154
+msgid "Please find an item to replace first."
+msgstr ""
+
+#: app.py:1907
+msgid ""
+"Please load a code file or project first to match imported translations."
+msgstr ""
+
+#: app.py:2627
+msgid "Please load a file or project first."
+msgstr ""
+
+#: app.py:3340
+msgid "Please open a saved project or code file first."
+msgstr ""
+
+#: app.py:2463 app.py:2498
+msgid "Please select an item first."
+msgstr ""
+
+#: app.py:3140
+msgid "Please select an item."
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:218
+#: dialogs/prompt_manager_dialog.py:185
+msgid "Preset exported successfully."
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:201
+#: dialogs/prompt_manager_dialog.py:169
+msgid "Preset file format is incorrect."
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:198
+#: dialogs/prompt_manager_dialog.py:167
+msgid "Preset imported successfully."
+msgstr ""
+
+#: app.py:1188
+#, python-brace-format
+msgid "Project '{filename}' loaded."
+msgstr ""
+
+#: app.py:1156
+msgid "Project Warning"
+msgstr ""
+
+#: app.py:1196
+msgid "Project file loading failed."
+msgstr ""
+
+#: app.py:1841
+#, python-brace-format
+msgid "Project saved to: {filename}"
+msgstr ""
+
+#: app.py:1899 app.py:2047 app.py:2080
+#, python-brace-format
+msgid "Project translations exported to: {filename}"
+msgstr ""
+
+#: app.py:3457
+#, python-brace-format
+msgid "Project updated to new version: {filename}"
+msgstr ""
+
+#: app.py:1156
+#, python-brace-format
+msgid "Project's associated Translation Memory file '{tm_path}' not found."
+msgstr ""
+
+#: app.py:2644
+msgid "Project-specific Instructions"
+msgstr ""
+
+#: app.py:367 app.py:836 app.py:1846
+msgid "Project-specific Instructions..."
+msgstr ""
+
+#: app.py:2652
+msgid "Project-specific translation settings updated."
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:168
+msgid "Prompt Manager..."
+msgstr ""
+
+#: app.py:2665
+msgid ""
+"Python 'requests' library not found. Please install it (pip install "
+"requests) to use AI translation features."
+msgstr ""
+
+#: app.py:1283 app.py:1374 app.py:1380 app.py:1384
+msgid "Quick search..."
+msgstr ""
+
+#: app.py:2265
+msgid "Re-extracting strings with new rules..."
+msgstr ""
+
+#: app.py:729 app.py:756
+msgid "Ready"
+msgstr ""
+
+#: app.py:319
+msgid "Recent Files"
+msgstr ""
+
+#: app.py:70 app.py:327 app.py:424 app.py:833 app.py:885 app.py:946 app.py:978
+#: app.py:1064
+msgid "Redo"
+msgstr ""
+
+#: app.py:1031
+#, python-brace-format
+msgid "Redo error: Object ID {obj_id} not found"
+msgstr ""
+
+#: app.py:1053
+#, python-brace-format
+msgid "Redo: Bulk change ({count} items)"
+msgstr ""
+
+#: app.py:1027
+#, python-brace-format
+msgid "Redo: {field} for ID {id} -> '{value}'"
+msgstr ""
+
+#: dialogs/search_dialog.py:39
+msgid "Regular expression"
+msgstr ""
+
+#: app.py:2300
+msgid "Reload Error"
+msgstr ""
+
+#: app.py:373 app.py:838
+msgid "Reload Translatable Text"
+msgstr ""
+
+#: app.py:2301
+msgid "Reload failed."
+msgstr ""
+
+#: app.py:2295
+#, python-brace-format
+msgid "Reloaded {count} strings from {source} using new rules."
+msgstr ""
+
+#: dialogs/diff_dialog.py:117
+msgid "Removed"
+msgstr ""
+
+#: dialogs/search_dialog.py:53
+msgid "Replace"
+msgstr ""
+
+#: dialogs/search_dialog.py:264
+msgid "Replace All"
+msgstr ""
+
+#: dialogs/search_dialog.py:56
+msgid "Replace All (Document)"
+msgstr ""
+
+#: dialogs/search_dialog.py:54
+msgid "Replace All (Visible)"
+msgstr ""
+
+#: dialogs/search_dialog.py:262
+msgid "Replace All Complete"
+msgstr ""
+
+#: dialogs/search_dialog.py:32
+msgid "Replace with:"
+msgstr ""
+
+#: dialogs/search_dialog.py:262
+#, python-brace-format
+msgid "Replaced in {count} items' translations."
+msgstr ""
+
+#: dialogs/search_dialog.py:186
+msgid "Replaced."
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:57 dialogs/keybinding_dialog.py:104
+#: dialogs/prompt_manager_dialog.py:55
+msgid "Reset to Defaults"
+msgstr ""
+
+#: app.py:442
+msgid "Restart Required"
+msgstr ""
+
+#: app.py:1730
+#, python-brace-format
+msgid "Review status for ID {id} -> {status}"
+msgstr ""
+
+#: app.py:675 app.py:1875 app.py:1930 app.py:1937
+msgid "Reviewed"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:78
+msgid "Right Delimiter (Regex)"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:274
+msgid "Right Delimiter:"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:75
+msgid "Rule Name"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:255
+msgid "Rule Name:"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:304
+msgid "Rule name cannot be empty."
+msgstr ""
+
+#: app.py:1758
+msgid "Save Error"
+msgstr ""
+
+#: app.py:2094
+msgid "Save POT Template File"
+msgstr ""
+
+#: app.py:67 app.py:293 app.py:419 app.py:815
+msgid "Save Project"
+msgstr ""
+
+#: app.py:1808
+msgid "Save Project As"
+msgstr ""
+
+#: app.py:295 app.py:817
+msgid "Save Project As..."
+msgstr ""
+
+#: app.py:297 app.py:420 app.py:813
+msgid "Save Translation to New Code File"
+msgstr ""
+
+#: app.py:68
+msgid "Save to New Code File"
+msgstr ""
+
+#: app.py:1377
+msgid "Search cleared."
+msgstr ""
+
+#: app.py:2124
+msgid "Select Associated Code File (for context)"
+msgstr ""
+
+#: app.py:2086
+msgid "Select Code File to Extract POT From"
+msgstr ""
+
+#: app.py:2175
+msgid "Select PO File to Import"
+msgstr ""
+
+#: app.py:3344
+msgid "Select new version code file for comparison"
+msgstr ""
+
+#: app.py:1466
+#, python-brace-format
+msgid "Selected: \"{text}...\" (Line: {line_num})"
+msgstr ""
+
+#: app.py:378
+msgid "Settings"
+msgstr ""
+
+#: app.py:342
+msgid "Show Ignored"
+msgstr ""
+
+#: app.py:346
+msgid "Show Translated"
+msgstr ""
+
+#: app.py:348
+msgid "Show Unreviewed"
+msgstr ""
+
+#: app.py:344
+msgid "Show Untranslated"
+msgstr ""
+
+#: dialogs/diff_dialog.py:83
+msgid "Similarity"
+msgstr ""
+
+#: app.py:1875
+msgid "Source Line"
+msgstr ""
+
+#: app.py:3334
+#, python-brace-format
+msgid "Started AI translation for {count} selected items."
+msgstr ""
+
+#: dialogs/diff_dialog.py:80
+msgid "Status"
+msgstr ""
+
+#: app.py:3377
+msgid "Step 1/3: Matching exact strings..."
+msgstr ""
+
+#: app.py:3390
+msgid "Step 2/3: Matching highly similar strings..."
+msgstr ""
+
+#: app.py:3424
+msgid "Step 3/3: Identifying added and removed strings..."
+msgstr ""
+
+#: app.py:364 app.py:854
+msgid "Stop AI Batch Translation"
+msgstr ""
+
+#: app.py:2813
+#, python-brace-format
+msgid ""
+"String \"{text}...\" already has a translation. Overwrite with AI "
+"translation?"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:76
+msgid "String Type"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:264
+msgid "String Type:"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:198
+#: dialogs/extraction_pattern_dialog.py:218
+#: dialogs/prompt_manager_dialog.py:167 dialogs/prompt_manager_dialog.py:185
+msgid "Success"
+msgstr ""
+
+#: app.py:2333
+msgid "TM Load Warning"
+msgstr ""
+
+#: app.py:2508
+msgid "TM entry cleared for selected item."
+msgstr ""
+
+#: app.py:2478
+msgid "TM update cancelled."
+msgstr ""
+
+#: app.py:2484
+#, python-brace-format
+msgid "TM updated for original: '{text}...'"
+msgstr ""
+
+#: app.py:2821 app.py:2857 dialogs/ai_settings_dialog.py:202
+msgid "Target Language"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:90
+msgid "Target Language:"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:240
+msgid "Target language cannot be empty."
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:24
+msgid "Target_Languege"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:171 dialogs/ai_settings_dialog.py:216
+#: dialogs/ai_settings_dialog.py:218
+msgid "Test Connection"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:195
+msgid "Test Failed"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:196
+msgid "Test failed: API Key is not filled."
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:187
+msgid "Testing..."
+msgstr ""
+
+#: app.py:2656
+msgid ""
+"The 'requests' library is not installed, AI translation is unavailable.\n"
+"Please run: pip install requests"
+msgstr ""
+
+#: app.py:1217
+msgid "The current project has unsaved changes. Do you want to save?"
+msgstr ""
+
+#: app.py:2474
+#, python-brace-format
+msgid ""
+"The current translation is empty. Do you want to update the TM entry for:\n"
+"'{text}...' with an empty translation?"
+msgstr ""
+
+#: app.py:2514
+msgid "The selected item has no entry in the Translation Memory."
+msgstr ""
+
+#: app.py:2805
+msgid "The selected string is marked as ignored and will not be AI translated."
+msgstr ""
+
+#: app.py:1789
+msgid ""
+"There is no content to save as a project. Please open a code file first."
+msgstr ""
+
+#: app.py:1750
+msgid ""
+"There is no original code file content to save.\n"
+"Please ensure the code file associated with the project is loaded."
+msgstr ""
+
+#: app.py:2641
+msgid "This feature is only available when a project file is open."
+msgstr ""
+
+#: app.py:2582
+msgid ""
+"This will apply TM to all matching strings, overwriting existing "
+"translations. Continue?"
+msgstr ""
+
+#: app.py:2258
+#, python-brace-format
+msgid ""
+"This will re-extract strings from {source} using the new rules.\n"
+"Existing translations will be preserved where the original text matches, but "
+"unmatched translations and statuses may be lost.\n"
+"This action will clear the undo history. Continue?"
+msgstr ""
+
+#: app.py:3010
+#, python-brace-format
+msgid ""
+"This will start AI translation for {count} untranslated strings "
+"({concurrency_info}).\n"
+"API call interval {api_interval_ms}ms (minimum interval between tasks when "
+"concurrent).\n"
+"Estimated time: ~{time_s:.1f} seconds.\n"
+"Continue?"
+msgstr ""
+
+#: app.py:76
+msgid "Toggle Ignored Status"
+msgstr ""
+
+#: app.py:75
+msgid "Toggle Reviewed Status"
+msgstr ""
+
+#: app.py:352
+msgid "Tools"
+msgstr ""
+
+#: app.py:475
+msgid "Translated"
+msgstr ""
+
+#: app.py:1875 app.py:1928 app.py:1937
+msgid "Translation"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:85
+msgid "Translation & Context Settings"
+msgstr ""
+
+#: app.py:620
+msgid "Translation (Ctrl+Shift+V to paste):"
+msgstr ""
+
+#: app.py:2354 app.py:2368 app.py:2402 app.py:2428 app.py:2618 app.py:2621
+msgid "Translation Memory"
+msgstr ""
+
+#: app.py:703
+msgid "Translation Memory Matches:"
+msgstr ""
+
+#: app.py:2422
+msgid ""
+"Translation Memory imported. Do you want to apply it to untranslated strings "
+"in the current project immediately?"
+msgstr ""
+
+#: app.py:2445
+msgid "Translation Memory is already empty."
+msgstr ""
+
+#: app.py:2368 app.py:2428
+msgid "Translation Memory is empty, nothing to export."
+msgstr ""
+
+#: app.py:2578 app.py:3233
+msgid "Translation Memory is empty."
+msgstr ""
+
+#: app.py:2358
+#, python-brace-format
+msgid "Translation Memory loaded from '{filename}' (Excel)."
+msgstr ""
+
+#: app.py:2402 app.py:2405
+#, python-brace-format
+msgid "Translation Memory saved to '{filename}'."
+msgstr ""
+
+#: app.py:2571
+msgid "Translation Memory suggestion applied."
+msgstr ""
+
+#: app.py:1610
+#, python-brace-format
+msgid "Translation applied: \"{original_semantic}...\""
+msgstr ""
+
+#: app.py:2213
+#, python-brace-format
+msgid "Translations exported to PO file: {filename}"
+msgstr ""
+
+#: app.py:3283
+msgid "Translations for selected items are already empty, no clearing needed."
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:74
+msgid "Type"
+msgstr ""
+
+#: dialogs/prompt_manager_dialog.py:218
+msgid "Type:"
+msgstr ""
+
+#: app.py:69 app.py:326 app.py:423 app.py:832 app.py:884 app.py:977 app.py:1032
+#: app.py:1065
+msgid "Undo"
+msgstr ""
+
+#: app.py:945
+#, python-brace-format
+msgid "Undo error: Object ID {obj_id} not found"
+msgstr ""
+
+#: app.py:967
+#, python-brace-format
+msgid "Undo: Bulk change ({count} items)"
+msgstr ""
+
+#: app.py:941
+#, python-brace-format
+msgid "Undo: {field} for ID {id} -> '{value}'"
+msgstr ""
+
+#: app.py:542
+msgid "Unmark as Ignored"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:101
+msgid "Unnamed Rule"
+msgstr ""
+
+#: app.py:477
+msgid "Unreviewed"
+msgstr ""
+
+#: app.py:1216
+msgid "Unsaved Changes"
+msgstr ""
+
+#: app.py:473
+msgid "Untranslated"
+msgstr ""
+
+#: app.py:710
+msgid "Update TM for Selected"
+msgstr ""
+
+#: app.py:3226
+#, python-brace-format
+msgid "Updated comments for {count} items."
+msgstr ""
+
+#: app.py:557
+msgid "Use AI to Translate Selected Items"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:120 dialogs/ai_settings_dialog.py:138
+msgid "Use nearby"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:111
+msgid "Use nearby original text as context"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:130
+msgid "Use nearby translated text as context"
+msgstr ""
+
+#: app.py:3442
+msgid "Version Comparison Results"
+msgstr ""
+
+#: app.py:3464
+msgid "Version comparison failed."
+msgstr ""
+
+#: app.py:3459
+msgid "Version update cancelled."
+msgstr ""
+
+#: app.py:339
+msgid "View"
+msgstr ""
+
+#: app.py:1957
+#, python-brace-format
+msgid ""
+"Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the "
+"one in Excel. Data will still be imported."
+msgstr ""
+
+#: dialogs/search_dialog.py:41
+msgid "Whole word"
+msgstr ""
+
+#: app.py:1711 app.py:1730 app.py:1891 app.py:1892 app.py:1983 app.py:1993
+msgid "Yes"
+msgstr ""
+
+#: app.py:3437
+#, python-brace-format
+msgid "and {modified} modified/inherited items."
+msgstr ""
+
+#: app.py:522
+msgid "col_comment"
+msgstr ""
+
+#: app.py:523
+msgid "col_line"
+msgstr ""
+
+#: app.py:522
+msgid "col_original"
+msgstr ""
+
+#: app.py:522
+msgid "col_translation"
+msgstr ""
+
+#: app.py:2233
+msgid "current in-memory code"
+msgstr ""
+
+#: app.py:2238
+#, python-brace-format
+msgid "file '{filename}'"
+msgstr ""
+
+#: app.py:2326
+msgid "original"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:126
+msgid "original strings (0 for all)"
+msgstr ""
+
+#: app.py:3002
+msgid "sequential execution"
+msgstr ""
+
+#: dialogs/search_dialog.py:215
+msgid "the entire document"
+msgstr ""
+
+#: app.py:2328
+msgid "translation"
+msgstr ""
+
+#: dialogs/ai_settings_dialog.py:143
+msgid "translations (0 for all)"
+msgstr ""
+
+#: app.py:3007
+#, python-brace-format
+msgid "up to {max_concurrency} concurrent"
+msgstr ""
+
+#: dialogs/search_dialog.py:215
+msgid "visible items"
+msgstr ""
+
+#: app.py:3435
+#, python-brace-format
+msgid "{added} new items, "
+msgstr ""
+
+#: app.py:3177
+#, python-brace-format
+msgid "{count} items' ignore status updated."
+msgstr ""
+
+#: app.py:3195
+#, python-brace-format
+msgid "{count} items' review status updated."
+msgstr ""
+
+#: app.py:3436
+#, python-brace-format
+msgid "{removed} removed items, "
+msgstr ""
