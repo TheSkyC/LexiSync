@@ -45,7 +45,7 @@ class VirtualTreeview(ttk.Frame):
         self._tree.bind("<<TreeviewSelect>>", self._on_ui_select)
         self._tree.bind("<Button-1>", self._on_button1_press)
         self._tree.bind("<Button-3>", self._on_button3_press)
-        self._tree.bind("<B1-Motion>", lambda e: "break")
+        self._tree.bind("<B1-Motion>", self._on_b1_motion)
         self._tree.bind("<MouseWheel>", self._on_mousewheel)
         self._tree.bind("<Button-4>", self._on_mousewheel)
         self._tree.bind("<Button-5>", self._on_mousewheel)
@@ -150,6 +150,11 @@ class VirtualTreeview(ttk.Frame):
             self.right_click_callback(event)
         return "break"
 
+    def _on_b1_motion(self, event):
+        region = self._tree.identify_region(event.x, event.y)
+        if region in ('heading', 'separator'):
+            return
+        return "break"
     def _on_key_press(self, event):
         if not self._ordered_iids: return
 
