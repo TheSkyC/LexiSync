@@ -51,24 +51,27 @@ DEFAULT_PROMPT_STRUCTURE = [
     },
     {
         "id": str(uuid.uuid4()), "type": STRUCTURAL, "enabled": True,
-        "content": "重要：你的回答[必须且仅能包含翻译后的文本内容]，不要添加任何额外的解释、说明。"
+        "content": "**重要：你的回答[必须且仅能包含翻译后的文本内容]，不要添加任何额外的解释、说明。**"
     }
 ]
 
 DEFAULT_EXTRACTION_PATTERNS = [
     {
         "id": str(uuid.uuid4()), "name": "Custom String (EN/CN)", "enabled": True,
-        "regex_pattern_str": r'(?:自定义字符串|Custom String)\s*\(\s*\"', # Note: The regex should end just BEFORE the opening quote of the content
+        "left_delimiter": r'(?:自定义字符串|Custom String)\s*\(\s*"',
+        "right_delimiter": r'"',
         "string_type": "Custom String"
     },
     {
         "id": str(uuid.uuid4()), "name": "Description (EN/CN)", "enabled": True,
-        "regex_pattern_str": r'(?:Description|描述)\s*:\s*\"',
+        "left_delimiter": r'(?:Description|描述)\s*:\s*"',
+        "right_delimiter": r'"',
         "string_type": "Description"
     },
     {
         "id": str(uuid.uuid4()), "name": "Mode Name (EN/CN)", "enabled": True,
-        "regex_pattern_str": r'(?:Mode Name|模式名称)\s*:\s*\"',
+        "left_delimiter": r'(?:Mode Name|模式名称)\s*:\s*"',
+        "right_delimiter": r'"',
         "string_type": "Mode Name"
     }
 ]

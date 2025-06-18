@@ -57,104 +57,82 @@ def extract_translatable_strings(code_content, extraction_patterns):
             continue
 
         pattern_name = pattern_config.get("name", "Unknown Pattern")
-        regex_str = pattern_config.get("regex_pattern_str")
+        left_delimiter_str = pattern_config.get("left_delimiter")
+        right_delimiter_str = pattern_config.get("right_delimiter")
         string_type_from_pattern = pattern_config.get("string_type", "Custom")
 
-        if not regex_str:
-            print(f"Warning: Skipping pattern '{pattern_name}' due to missing regex string.")
+        if not left_delimiter_str or not right_delimiter_str:
             continue
 
         try:
-            compiled_pattern = re.compile(regex_str, re.IGNORECASE)
+            full_regex_str = f"({re.escape(left_delimiter_str)})(.*?)({re.escape(right_delimiter_str)})"
+            full_regex_str = f"({left_delimiter_str})(.*?)({right_delimiter_str})"
+
+            compiled_pattern = re.compile(full_regex_str, re.DOTALL)
+
         except re.error as e:
             print(f"Warning: Invalid regex for pattern '{pattern_name}': {e}. Skipping.")
             continue
 
         for match in compiled_pattern.finditer(code_content):
-            string_content_start_file_idx = match.end()
+            raw_content = match.group(2)
+            semantic_content = unescape_overwatch_string(raw_content)
 
-            current_raw_string_content_chars = []
-            ptr = string_content_start_file_idx
-            is_escaped_char_pending = False
-            string_closed_properly = False
-            closing_quote_file_idx = -1
+            content_start_pos = match.start(2)
+            content_end_pos = match.end(2)
 
-            while ptr < len(code_content):
-                char = code_content[ptr]
-                if is_escaped_char_pending:
-                    current_raw_string_content_chars.append(char)
-                    is_escaped_char_pending = False
-                elif char == '\\':
-                    current_raw_string_content_chars.append(char)
-                    is_escaped_char_pending = True
-                elif char == '"':
-                    string_closed_properly = True
-                    closing_quote_file_idx = ptr
-                    break
-                elif char == '\n' and string_type_from_pattern == "Custom String":
-                    string_closed_properly = False
-                    break
-                else:
-                    current_raw_string_content_chars.append(char)
-                ptr += 1
+            line_num = code_content.count('\n', 0, content_start_pos) + 1
 
-            if string_closed_properly:
-                raw_content = "".join(current_raw_string_content_chars)
-                semantic_content = unescape_overwatch_string(raw_content)
+            ts = TranslatableString(
+                original_raw=raw_content,
+                original_semantic=semantic_content,
+                line_num=line_num,
+                char_pos_start_in_file=content_start_pos,
+                char_pos_end_in_file=content_end_pos,
+                full_code_lines=full_code_lines,
+                string_type=string_type_from_pattern
+            )
 
-                line_num = code_content.count('\n', 0, match.start()) + 1
+            if string_type_from_pattern and string_type_from_pattern not in ["Custom String", "Custom", ""]:
+                ts.comment = string_type_from_pattern
 
-                ts = TranslatableString(
-                    original_raw=raw_content,
-                    original_semantic=semantic_content,
-                    line_num=line_num,
-                    char_pos_start_in_file=string_content_start_file_idx,
-                    char_pos_end_in_file=closing_quote_file_idx,
-                    full_code_lines=full_code_lines,
-                    string_type=string_type_from_pattern
-                )
+            s_semantic_stripped = semantic_content.strip()
+            s_len_stripped = len(s_semantic_stripped)
 
-                if string_type_from_pattern and string_type_from_pattern not in ["Custom String", "Custom", ""]:
-                    ts.comment = string_type_from_pattern
+            if not s_semantic_stripped:
+                ts.was_auto_ignored = True;
+                ts.is_ignored = True
+            elif regex_all_digits.fullmatch(s_semantic_stripped):
+                ts.was_auto_ignored = True;
+                ts.is_ignored = True
+            elif regex_ow_placeholder.fullmatch(s_semantic_stripped):
+                ts.was_auto_ignored = True;
+                ts.is_ignored = True
+            elif s_len_stripped == 1 and 'a' <= s_semantic_stripped.lower() <= 'z' and s_semantic_stripped.isascii():
+                ts.was_auto_ignored = True;
+                ts.is_ignored = True
+            elif regex_only_symbols_and_whitespace.fullmatch(semantic_content):
+                ts.was_auto_ignored = True;
+                ts.is_ignored = True
+            elif s_len_stripped >= 2 and regex_repeating_char.fullmatch(s_semantic_stripped):
+                ts.was_auto_ignored = True;
+                ts.is_ignored = True
+            elif s_semantic_stripped.upper() in known_untranslatable_short_words:
+                ts.was_auto_ignored = True;
+                ts.is_ignored = True
+            elif s_len_stripped > 2 and regex_progress_bar_like.fullmatch(s_semantic_stripped):
+                ts.was_auto_ignored = True;
+                ts.is_ignored = True
+            else:
+                if regex_placeholder_like.search(s_semantic_stripped):
+                    content_no_placeholders = regex_placeholder_like.sub('', s_semantic_stripped)
+                    content_text_only = re.sub(f"[{re.escape(allowed_symbols_and_whitespace_chars)}]", '',
+                                               content_no_placeholders).strip()
+                    if len(content_text_only) < 2:
+                        ts.was_auto_ignored = True;
+                        ts.is_ignored = True
 
-                s_semantic_stripped = semantic_content.strip()
-                s_len_stripped = len(s_semantic_stripped)
-
-                if not s_semantic_stripped:
-                    ts.was_auto_ignored = True;
-                    ts.is_ignored = True
-                elif regex_all_digits.fullmatch(s_semantic_stripped):
-                    ts.was_auto_ignored = True;
-                    ts.is_ignored = True
-                elif regex_ow_placeholder.fullmatch(s_semantic_stripped):
-                    ts.was_auto_ignored = True;
-                    ts.is_ignored = True
-                elif s_len_stripped == 1 and 'a' <= s_semantic_stripped.lower() <= 'z' and s_semantic_stripped.isascii():
-                    ts.was_auto_ignored = True;
-                    ts.is_ignored = True
-                elif regex_only_symbols_and_whitespace.fullmatch(
-                        semantic_content):
-                    ts.was_auto_ignored = True;
-                    ts.is_ignored = True
-                elif s_len_stripped >= 2 and regex_repeating_char.fullmatch(s_semantic_stripped):
-                    ts.was_auto_ignored = True;
-                    ts.is_ignored = True
-                elif s_semantic_stripped.upper() in known_untranslatable_short_words:
-                    ts.was_auto_ignored = True;
-                    ts.is_ignored = True
-                elif s_len_stripped > 2 and regex_progress_bar_like.fullmatch(s_semantic_stripped):
-                    ts.was_auto_ignored = True;
-                    ts.is_ignored = True
-                else:
-                    if regex_placeholder_like.search(s_semantic_stripped):
-                        content_no_placeholders = regex_placeholder_like.sub('', s_semantic_stripped)
-                        content_text_only = re.sub(f"[{re.escape(allowed_symbols_and_whitespace_chars)}]", '',
-                                                   content_no_placeholders).strip()
-                        if len(content_text_only) < 2:
-                            ts.was_auto_ignored = True;
-                            ts.is_ignored = True
-
-                strings.append(ts)
+            strings.append(ts)
 
     strings.sort(key=lambda s: s.char_pos_start_in_file)
     return strings
