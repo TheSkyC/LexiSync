@@ -65,17 +65,15 @@ def extract_translatable_strings(code_content, extraction_patterns):
             continue
 
         try:
-            full_regex_str = f"({re.escape(left_delimiter_str)})(.*?)({re.escape(right_delimiter_str)})"
             full_regex_str = f"({left_delimiter_str})(.*?)({right_delimiter_str})"
-
             compiled_pattern = re.compile(full_regex_str, re.DOTALL)
-
         except re.error as e:
             print(f"Warning: Invalid regex for pattern '{pattern_name}': {e}. Skipping.")
             continue
 
         for match in compiled_pattern.finditer(code_content):
             raw_content = match.group(2)
+
             semantic_content = unescape_overwatch_string(raw_content)
 
             content_start_pos = match.start(2)
