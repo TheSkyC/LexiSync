@@ -40,13 +40,14 @@ def load_project(project_filepath):
     }
 
 def save_project(filepath, app_instance):
-    if not app_instance.current_code_file_path and not app_instance.translatable_objects:
-        messagebox.showerror("保存项目错误", "无法保存项目：没有关联的代码文件或可翻译内容。", parent=app_instance.root)
+    if not app_instance.current_code_file_path and not app_instance.translatable_objects and not app_instance.original_raw_code_content:
+        messagebox.showerror("保存项目错误", "无法保存项目：没有关联的代码文件、PO源或可翻译内容。", parent=app_instance.root)
         return False
 
     project_data = {
         "version": APP_VERSION,
         "original_code_file_path": app_instance.current_code_file_path or "",
+        # original_raw_code_content is not saved in project file, it's reloaded from original_code_file_path
         "translatable_objects_data": [ts.to_dict() for ts in app_instance.translatable_objects],
         "project_custom_instructions": app_instance.project_custom_instructions,
         "current_tm_file_path": app_instance.current_tm_file or "",
@@ -62,6 +63,10 @@ def save_project(filepath, app_instance):
             "selected_ts_id": app_instance.current_selected_ts_id or ""
         },
     }
+    # Add PO metadata if it exists (from a loaded PO file)
+    if app_instance.current_po_metadata:
+        project_data["po_metadata"] = app_instance.current_po_metadata
+
 
     try:
         with open(filepath, 'w', encoding='utf-8') as f:

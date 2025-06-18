@@ -15,12 +15,16 @@ from openpyxl import Workbook, load_workbook
 from components.virtual_treeview import VirtualTreeview
 from dialogs.ai_settings_dialog import AISettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
+from services import export_service, po_file_service
 from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
 from services.project_service import load_project, save_project
 from services.prompt_service import generate_prompt_from_structure
+
 from utils import config_manager
 from utils.constants import *
+
+from utils.constants import DEFAULT_EXTRACTION_PATTERNS, EXTRACTION_PATTERN_PRESET_EXTENSION
 
 try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
@@ -68,6 +72,7 @@ class OverwatchLocalizerApp:
         self.original_raw_code_content = ""
         self.current_project_modified = False
         self.project_custom_instructions = ""
+        self.current_po_metadata = None
 
         self.translatable_objects = []
         self.displayed_string_ids = []
@@ -168,6 +173,9 @@ class OverwatchLocalizerApp:
                         elif filepath.lower().endswith(PROJECT_FILE_EXTENSION):
                             if self.prompt_save_if_modified():
                                 self.open_project_file(filepath)
+                        elif filepath.lower().endswith((".po", ".pot")):
+                            if self.prompt_save_if_modified():
+                                self.import_po_file_dialog_with_path(filepath)
                         else:
                             self.update_statusbar(f"拖放失败: 无效的文件类型 '{os.path.basename(filepath)}'")
                     else:
@@ -267,7 +275,6 @@ class OverwatchLocalizerApp:
                               state=tk.DISABLED)
         file_menu.add_separator()
         file_menu.add_command(label="保存项目", command=self.ACTION_MAP['save_project']['method'], state=tk.DISABLED)
-        file_menu.add_command(label="保存项目", command=self.ACTION_MAP['save_project']['method'], state=tk.DISABLED)
         file_menu.add_command(label="项目另存为...", command=self.save_project_as_dialog, state=tk.DISABLED)
         file_menu.add_separator()
         file_menu.add_command(label="保存翻译到新代码文件", command=self.ACTION_MAP['save_code_file']['method'],
@@ -277,6 +284,14 @@ class OverwatchLocalizerApp:
                               state=tk.DISABLED)
         file_menu.add_command(label="导出到Excel (项目)", command=self.export_project_translations_to_excel,
                               state=tk.DISABLED)
+        file_menu.add_command(label="导出到JSON (项目)", command=self.export_project_translations_to_json,
+                              state=tk.DISABLED)
+        file_menu.add_command(label="导出到YAML (项目)", command=self.export_project_translations_to_yaml,
+                              state=tk.DISABLED)
+        file_menu.add_separator()
+        file_menu.add_command(label="提取为POT模板...", command=self.extract_to_pot_dialog)
+        file_menu.add_command(label="从PO文件导入翻译...", command=self.import_po_file_dialog)
+        file_menu.add_command(label="导出到PO文件...", command=self.export_to_po_file_dialog, state=tk.DISABLED)
         file_menu.add_separator()
         file_menu.add_command(label="导入翻译记忆库 (Excel)", command=self.import_tm_excel_dialog)
         file_menu.add_command(label="导出当前记忆库 (Excel)", command=self.export_tm_excel_dialog)
@@ -312,6 +327,7 @@ class OverwatchLocalizerApp:
                                   command=self.refresh_treeview_preserve_selection)
         view_menu.add_checkbutton(label="仅显示未审阅", variable=self.show_unreviewed_var,
                                   command=self.refresh_treeview_preserve_selection)
+
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="工具", menu=tools_menu)
         tools_menu.add_command(label="应用记忆库到未翻译项",
@@ -325,11 +341,13 @@ class OverwatchLocalizerApp:
                                state=tk.DISABLED)
         tools_menu.add_command(label="停止AI批量翻译", command=lambda: self.stop_batch_ai_translation(),
                                state=tk.DISABLED)
-
         tools_menu.add_separator()
         tools_menu.add_command(label="项目个性化翻译设置...", command=self.show_project_custom_instructions_dialog,
                                state=tk.DISABLED)
         tools_menu.add_command(label="AI翻译设置...", command=self.show_ai_settings_dialog)
+        tools_menu.add_separator()
+        tools_menu.add_command(label="提取规则管理器...", command=self.show_extraction_pattern_dialog)
+        tools_menu.add_command(label="重新加载翻译文本", command=self.reload_translatable_text, state=tk.DISABLED)
         self.tools_menu = tools_menu
 
         settings_menu = tk.Menu(menubar, tearoff=0)
@@ -726,17 +744,23 @@ class OverwatchLocalizerApp:
     def update_ui_state_after_file_load(self, file_or_project_loaded=False):
         has_content = bool(self.translatable_objects) and file_or_project_loaded
         state = tk.NORMAL if has_content else tk.DISABLED
+
         self.file_menu.entryconfig("版本对比/导入新版代码...",
                                    state=tk.NORMAL if self.current_code_file_path and has_content else tk.DISABLED)
-        self.file_menu.entryconfig("保存翻译到新代码文件",
-                                   state=tk.NORMAL if self.current_code_file_path and has_content else tk.DISABLED)
+
+        can_save_to_code = self.original_raw_code_content and has_content
+        self.file_menu.entryconfig("保存翻译到新代码文件", state=tk.NORMAL if can_save_to_code else tk.DISABLED)
+
         self.file_menu.entryconfig("保存项目",
-                                   state=tk.NORMAL if self.current_code_file_path or self.current_project_file_path else tk.DISABLED)
+                                   state=tk.NORMAL if self.current_code_file_path or self.current_project_file_path or self.original_raw_code_content else tk.DISABLED)
         self.file_menu.entryconfig("项目另存为...",
-                                   state=tk.NORMAL if has_content else tk.DISABLED)
+                                   state=tk.NORMAL if has_content or self.original_raw_code_content else tk.DISABLED)
 
         self.file_menu.entryconfig("导入Excel翻译 (项目)", state=state)
         self.file_menu.entryconfig("导出到Excel (项目)", state=state)
+        self.file_menu.entryconfig("导出到JSON (项目)", state=state)
+        self.file_menu.entryconfig("导出到YAML (项目)", state=state)
+        self.file_menu.entryconfig("导出到PO文件...", state=state)
 
         self.edit_menu.entryconfig("查找/替换...", state=state)
         self.edit_menu.entryconfig("复制原文", state=tk.DISABLED if not has_content else (
@@ -750,6 +774,8 @@ class OverwatchLocalizerApp:
         self.tools_menu.entryconfig("应用记忆库到未翻译项", state=state)
         self.tools_menu.entryconfig("项目个性化翻译设置...",
                                     state=tk.NORMAL if self.current_project_file_path else tk.DISABLED)
+        self.tools_menu.entryconfig("重新加载翻译文本",
+                                    state=tk.NORMAL if self.original_raw_code_content or self.current_code_file_path else tk.DISABLED)
 
         self.update_ai_related_ui_state()
         self.update_title()
@@ -995,9 +1021,9 @@ class OverwatchLocalizerApp:
         try:
             with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
                 self.original_raw_code_content = f.read()
-
             self.current_code_file_path = filepath
             self.current_project_file_path = None
+            self.current_po_metadata = None
             self.project_custom_instructions = ""
             self.add_to_recent_files(filepath)
             self.config["last_dir"] = os.path.dirname(filepath)
@@ -1005,9 +1031,12 @@ class OverwatchLocalizerApp:
 
             self.update_statusbar("正在提取字符串...", persistent=True)
             self.root.update_idletasks()
-
-            self.translatable_objects = extract_translatable_strings(self.original_raw_code_content)
+            extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+            self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
+                                                                     extraction_patterns)
             self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
+
+            self.undo_history.clear()
 
             self.undo_history.clear()
             self.redo_history.clear()
@@ -1051,7 +1080,7 @@ class OverwatchLocalizerApp:
             self.current_code_file_path = loaded_data["original_code_file_path"]
             self.original_raw_code_content = loaded_data["original_raw_code_content"]
             self.translatable_objects = loaded_data["translatable_objects"]
-
+            self.current_po_metadata = project_data.get("po_metadata")
             self.project_custom_instructions = project_data.get("project_custom_instructions", "")
 
             tm_path_from_project = project_data.get("current_tm_file_path")
@@ -1103,6 +1132,7 @@ class OverwatchLocalizerApp:
     def _reset_app_state(self):
         self.current_code_file_path = None
         self.current_project_file_path = None
+        self.current_po_metadata = None
         self.original_raw_code_content = ""
         self.project_custom_instructions = ""
         self.translatable_objects = []
@@ -1700,7 +1730,29 @@ class OverwatchLocalizerApp:
         return False
 
     def save_project_file(self, project_filepath):
-        if save_project(project_filepath, self):
+        # Add po_metadata to project data if it exists
+        project_data_dict = {
+            "version": APP_VERSION,
+            "original_code_file_path": self.current_code_file_path or "",
+            "translatable_objects_data": [ts.to_dict() for ts in self.translatable_objects],
+            "project_custom_instructions": self.project_custom_instructions,
+            "current_tm_file_path": self.current_tm_file or "",
+            "filter_settings": {
+                "deduplicate": self.deduplicate_strings_var.get(),
+                "show_ignored": self.show_ignored_var.get(),
+                "show_untranslated": self.show_untranslated_var.get(),
+                "show_translated": self.show_translated_var.get(),
+                "show_unreviewed": self.show_unreviewed_var.get(),
+            },
+            "ui_state": {
+                "search_term": self.search_var.get() if self.search_var.get() != "快速搜索..." else "",
+                "selected_ts_id": self.current_selected_ts_id or ""
+            },
+        }
+        if self.current_po_metadata:
+            project_data_dict["po_metadata"] = self.current_po_metadata
+
+        if save_project(project_filepath, self): # save_project in project_service.py needs to handle self.current_po_metadata
             self.current_project_file_path = project_filepath
             self.add_to_recent_files(project_filepath)
             self.mark_project_modified(False)
@@ -1874,6 +1926,300 @@ class OverwatchLocalizerApp:
             messagebox.showerror("导入错误", f"处理Excel文件时出错 (可能是列名问题): {ve}", parent=self.root)
         except Exception as e:
             messagebox.showerror("导入错误", f"无法从Excel导入项目翻译: {e}", parent=self.root)
+
+    def export_project_translations_to_json(self):
+        if not self.translatable_objects:
+            messagebox.showinfo("提示", "无数据可导出。", parent=self.root)
+            return
+
+        default_filename = "project_translations.json"
+        if self.current_project_file_path:
+            base, _ = os.path.splitext(os.path.basename(self.current_project_file_path))
+            default_filename = f"{base}_translations.json"
+        elif self.current_code_file_path:
+            base, _ = os.path.splitext(os.path.basename(self.current_code_file_path))
+            default_filename = f"{base}_translations.json"
+        elif self.current_selected_ts_id:  # Fallback if loaded from PO
+            default_filename = "po_export.json"
+
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=(("JSON files", "*.json"), ("All Files", "*.*")),
+            initialfile=default_filename,
+            title="导出项目翻译到JSON",
+            parent=self.root
+        )
+        if not filepath: return
+
+        try:
+            # Pass self to allow service to access displayed_string_ids or all objects
+            export_service.export_to_json(filepath, self.translatable_objects, self.displayed_string_ids,
+                                          app_instance=self)
+            self.update_statusbar(f"项目翻译已导出到: {os.path.basename(filepath)}")
+        except Exception as e:
+            messagebox.showerror("导出错误", f"无法导出项目翻译到JSON: {e}", parent=self.root)
+
+    def export_project_translations_to_yaml(self):
+        if not self.translatable_objects:
+            messagebox.showinfo("提示", "无数据可导出。", parent=self.root)
+            return
+
+        default_filename = "project_translations.yaml"
+        if self.current_project_file_path:
+            base, _ = os.path.splitext(os.path.basename(self.current_project_file_path))
+            default_filename = f"{base}_translations.yaml"
+        elif self.current_code_file_path:
+            base, _ = os.path.splitext(os.path.basename(self.current_code_file_path))
+            default_filename = f"{base}_translations.yaml"
+        elif self.current_selected_ts_id:  # Fallback if loaded from PO
+            default_filename = "po_export.yaml"
+
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".yaml",
+            filetypes=(("YAML files", "*.yaml;*.yml"), ("All Files", "*.*")),
+            initialfile=default_filename,
+            title="导出项目翻译到YAML",
+            parent=self.root
+        )
+        if not filepath: return
+
+        try:
+            export_service.export_to_yaml(filepath, self.translatable_objects, self.displayed_string_ids,
+                                          app_instance=self)
+            self.update_statusbar(f"项目翻译已导出到: {os.path.basename(filepath)}")
+        except Exception as e:
+            messagebox.showerror("导出错误", f"无法导出项目翻译到YAML: {e}", parent=self.root)
+
+    def extract_to_pot_dialog(self):
+        # No current project needs to be saved before this, it's a utility
+        code_filepath = filedialog.askopenfilename(
+            title="选择要提取POT的代码文件",
+            filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
+            initialdir=self.config.get("last_dir", os.getcwd()),
+            parent=self.root
+        )
+        if not code_filepath: return
+
+        pot_save_filepath = filedialog.asksaveasfilename(
+            title="保存POT模板文件",
+            defaultextension=".pot",
+            filetypes=(("PO Template files", "*.pot"), ("All files", "*.*")),
+            initialfile=os.path.splitext(os.path.basename(code_filepath))[0] + ".pot",
+            parent=self.root
+        )
+        if not pot_save_filepath: return
+
+        try:
+            with open(code_filepath, 'r', encoding='utf-8', errors='replace') as f:
+                code_content = f.read()
+
+            extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+            project_name = os.path.basename(code_filepath)  # For POT metadata
+
+            pot_object = po_file_service.extract_to_pot(code_content, extraction_patterns, project_name, APP_VERSION,
+                                                        os.path.basename(code_filepath))
+            pot_object.save(pot_save_filepath)
+            self.update_statusbar(f"POT模板已保存到: {os.path.basename(pot_save_filepath)}")
+            self.config["last_dir"] = os.path.dirname(code_filepath)  # Update last_dir
+            self.save_config()
+        except Exception as e:
+            messagebox.showerror("POT提取错误", f"提取POT文件时出错: {e}", parent=self.root)
+
+    def import_po_file_dialog_with_path(self, po_filepath):
+        # This is a helper for drag-drop, directly uses the path
+        original_code_for_context = None
+        original_code_filepath_for_context = None
+        if messagebox.askyesno("关联代码文件?", "是否关联一个原始代码文件以获取上下文和行号信息?", parent=self.root):
+            code_context_filepath = filedialog.askopenfilename(
+                title="选择关联的代码文件 (用于上下文)",
+                filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
+                initialdir=os.path.dirname(po_filepath),
+                parent=self.root
+            )
+            if code_context_filepath:
+                try:
+                    with open(code_context_filepath, 'r', encoding='utf-8', errors='replace') as f:
+                        original_code_for_context = f.read()
+                    original_code_filepath_for_context = code_context_filepath
+                except Exception as e:
+                    messagebox.showwarning("代码文件加载失败", f"无法加载关联的代码文件: {e}", parent=self.root)
+        try:
+            self.translatable_objects, self.current_po_metadata = po_file_service.load_from_po(
+                po_filepath, original_code_for_context, original_code_filepath_for_context
+            )
+
+            self.original_raw_code_content = original_code_for_context if original_code_for_context else ""
+            self.current_code_file_path = original_code_filepath_for_context  # Store this
+            self.current_project_file_path = None  # Not a .owproj
+            self.project_custom_instructions = ""  # Reset
+
+            self.add_to_recent_files(po_filepath)
+            self.config["last_dir"] = os.path.dirname(po_filepath)
+            self.save_config()
+
+            self.undo_history.clear()
+            self.redo_history.clear()
+            self.current_selected_ts_id = None
+            self.mark_project_modified(False)
+
+            self.refresh_treeview()
+            self.update_statusbar(
+                f"已从PO文件 {os.path.basename(po_filepath)} 加载 {len(self.translatable_objects)} 个条目。",
+                persistent=True)
+            self.update_ui_state_after_file_load(file_or_project_loaded=True)
+
+        except Exception as e:
+            messagebox.showerror("PO导入错误", f"导入PO文件 '{os.path.basename(po_filepath)}' 时出错: {e}",
+                                 parent=self.root)
+            self._reset_app_state()
+            self.update_statusbar("PO文件加载失败", persistent=True)
+        self.update_counts_display()
+
+    def import_po_file_dialog(self):
+        if not self.prompt_save_if_modified(): return
+
+        po_filepath = filedialog.askopenfilename(
+            title="选择PO文件导入",
+            filetypes=(("PO files", "*.po"), ("POT files", "*.pot"), ("All files", "*.*")),
+            initialdir=self.config.get("last_dir", os.getcwd()),
+            parent=self.root
+        )
+        if not po_filepath: return
+        self.import_po_file_dialog_with_path(po_filepath)
+
+    def export_to_po_file_dialog(self):
+        if not self.translatable_objects:
+            messagebox.showinfo("提示", "无数据可导出到PO文件。", parent=self.root)
+            return
+
+        default_filename = "translations.po"
+        # Suggest a name based on current context
+        if self.current_project_file_path:
+            base, _ = os.path.splitext(os.path.basename(self.current_project_file_path))
+            default_filename = f"{base}.po"
+        elif self.current_code_file_path:
+            base, _ = os.path.splitext(os.path.basename(self.current_code_file_path))
+            default_filename = f"{base}.po"
+        elif self.recent_files and (
+                self.recent_files[0].lower().endswith(".po") or self.recent_files[0].lower().endswith(".pot")):
+            default_filename = os.path.basename(self.recent_files[0])
+
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".po",
+            filetypes=(("PO files", "*.po"), ("All Files", "*.*")),
+            initialfile=default_filename,
+            title="导出翻译到PO文件",
+            parent=self.root
+        )
+        if not filepath: return
+
+        try:
+            original_file_name_for_po = os.path.basename(
+                self.current_code_file_path) if self.current_code_file_path else "source_code"
+            po_file_service.save_to_po(filepath, self.translatable_objects, self.current_po_metadata,
+                                       original_file_name_for_po)
+            self.update_statusbar(f"翻译已导出到PO文件: {os.path.basename(filepath)}")
+            self.mark_project_modified(False)
+        except Exception as e:
+            messagebox.showerror("导出错误", f"无法导出到PO文件: {e}", parent=self.root)
+
+    def show_extraction_pattern_dialog(self):
+        from dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
+        # Pass self (app_instance) to the dialog
+        dialog = ExtractionPatternManagerDialog(self.root, "提取规则管理器", self)
+        if dialog.result:  # Check if dialog applied changes
+            # Optionally, ask user if they want to reload text now
+            if self.original_raw_code_content:
+                if messagebox.askyesno("规则已更新", "提取规则已更新。是否立即使用新规则重新加载当前代码的翻译文本？",
+                                       parent=self.root):
+                    self.reload_translatable_text()
+
+    def reload_translatable_text(self, event=None):
+        if not self.original_raw_code_content and not self.current_code_file_path:
+            messagebox.showinfo("提示", "没有已加载的代码内容可供重新加载。", parent=self.root)
+            return
+
+        # If there's a current code file path, prefer re-reading from disk
+        # to ensure the latest version of the file is used with new patterns.
+        current_content_to_reextract = self.original_raw_code_content
+        source_name = "当前内存中的代码"
+        if self.current_code_file_path and os.path.exists(self.current_code_file_path):
+            try:
+                with open(self.current_code_file_path, 'r', encoding='utf-8', errors='replace') as f:
+                    current_content_to_reextract = f.read()
+                source_name = f"文件 '{os.path.basename(self.current_code_file_path)}'"
+            except Exception as e:
+                messagebox.showwarning("文件读取错误",
+                                       f"无法从磁盘重新读取 {self.current_code_file_path}。\n将使用内存中的版本。\n错误: {e}",
+                                       parent=self.root)
+
+        if not current_content_to_reextract:
+            messagebox.showerror("错误", "无法获取用于重新提取的代码内容。", parent=self.root)
+            return
+
+        # Preserve current translations before re-extracting
+        old_translations_map = {ts.original_semantic: {
+            'translation': ts.translation,
+            'comment': ts.comment,
+            'is_reviewed': ts.is_reviewed,
+            'is_ignored': ts.is_ignored,
+            'was_auto_ignored': ts.was_auto_ignored
+        } for ts in self.translatable_objects}
+
+        if self.current_project_modified or old_translations_map:  # Check if any data exists
+            if not messagebox.askyesno("确认重新加载",
+                                       f"将使用新规则从 {source_name} 重新提取字符串。\n"
+                                       "现有翻译将尝试根据原文匹配保留，但未匹配项的翻译和状态可能会丢失。\n"
+                                       "此操作会清空撤销历史。确定要继续吗？",
+                                       parent=self.root):
+                return
+
+        try:
+            self.update_statusbar("正在使用新规则重新提取字符串...", persistent=True)
+            self.root.update_idletasks()
+
+            extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+
+            # Update original_raw_code_content if re-read from disk
+            self.original_raw_code_content = current_content_to_reextract
+
+            self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
+                                                                     extraction_patterns)
+
+            # Attempt to restore translations and states
+            restored_count = 0
+            for ts_obj in self.translatable_objects:
+                if ts_obj.original_semantic in old_translations_map:
+                    saved_state = old_translations_map[ts_obj.original_semantic]
+                    ts_obj.set_translation_internal(saved_state['translation'])
+                    ts_obj.comment = saved_state['comment']
+                    ts_obj.is_reviewed = saved_state['is_reviewed']
+                    # Only restore manual ignore, not auto-ignore, as auto-ignore logic will re-run
+                    if not saved_state['was_auto_ignored'] and saved_state['is_ignored']:
+                        ts_obj.is_ignored = True
+                        ts_obj.was_auto_ignored = False  # Ensure it's marked as manual
+                    restored_count += 1
+
+            if restored_count > 0:
+                self.update_statusbar(f"尝试恢复了 {restored_count} 项的旧翻译/状态。", persistent=False)
+
+            self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
+
+            self.undo_history.clear()
+            self.redo_history.clear()
+            self.current_selected_ts_id = None
+            self.mark_project_modified(True)
+
+            self.refresh_treeview()
+            self.update_statusbar(
+                f"已使用新规则从 {source_name} 重新提取 {len(self.translatable_objects)} 个字符串。",
+                persistent=True)
+            self.update_ui_state_after_file_load(file_or_project_loaded=True)
+
+        except Exception as e:
+            messagebox.showerror("重新加载错误", f"重新加载翻译文本时出错: {e}", parent=self.root)
+            self.update_statusbar("重新加载失败。", persistent=True)
+        self.update_counts_display()
 
     def _get_default_tm_excel_path(self):
         return os.path.join(os.getcwd(), TM_FILE_EXCEL)
@@ -2930,9 +3276,9 @@ class OverwatchLocalizerApp:
             self.update_statusbar("正在解析新文件...", persistent=True)
             self.root.update_idletasks()
 
-            new_strings = extract_translatable_strings(new_code_content)
+            extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+            new_strings = extract_translatable_strings(new_code_content, extraction_patterns)
             old_strings = self.translatable_objects
-
             old_map = {s.original_semantic: s for s in old_strings}
             new_map = {s.original_semantic: s for s in new_strings}
 
