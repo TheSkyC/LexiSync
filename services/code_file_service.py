@@ -1,4 +1,6 @@
-# services/code_file_service.py
+# Copyright (c) 2025, TheSkyC
+# SPDX-License-Identifier: Apache-2.0
+
 import re
 import os
 import shutil

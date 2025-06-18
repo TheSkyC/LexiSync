@@ -1,3 +1,6 @@
+# Copyright (c) 2025, TheSkyC
+# SPDX-License-Identifier: Apache-2.0
+
 import uuid
 from utils.constants import APP_NAMESPACE_UUID, MAX_UNDO_HISTORY
 

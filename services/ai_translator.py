@@ -1,4 +1,5 @@
-# In services/ai_translator.py
+# Copyright (c) 2025, TheSkyC
+# SPDX-License-Identifier: Apache-2.0
 
 import json
 from utils.constants import DEFAULT_API_URL

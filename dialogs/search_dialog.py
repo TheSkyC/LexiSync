@@ -1,3 +1,6 @@
+# Copyright (c) 2025, TheSkyC
+# SPDX-License-Identifier: Apache-2.0
+
 import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox
 import re
