@@ -38,7 +38,7 @@ def load_config():
     config_data.setdefault("ai_context_neighbors", 0)
     config_data.setdefault("ai_use_original_context", True)
     config_data.setdefault("ai_original_context_neighbors", 3)
-    config_data.setdefault("language", "en_us")
+
     config_data.setdefault("ai_prompt_structure", deepcopy(DEFAULT_PROMPT_STRUCTURE))
     config_data.pop("ai_prompt_template", None)
 
@@ -62,7 +62,6 @@ def save_config(app_instance):
     config["show_unreviewed"] = app_instance.show_unreviewed_var.get()
     config["auto_save_tm"] = app_instance.auto_save_tm_var.get()
     config["auto_backup_tm_on_save"] = app_instance.auto_backup_tm_on_save_var.get()
-    config["language"] = app_instance.i18n.current_lang
     config['extraction_patterns'] = app_instance.config.get("extraction_patterns", deepcopy(DEFAULT_EXTRACTION_PATTERNS))
 
     if 'keybindings' in app_instance.config:

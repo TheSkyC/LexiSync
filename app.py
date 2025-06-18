@@ -24,9 +24,10 @@ from services.code_file_service import extract_translatable_strings, save_transl
 from services.project_service import load_project, save_project
 from services.prompt_service import generate_prompt_from_structure
 
-from utils.localization import LocalizationManager
 from utils import config_manager
 from utils.constants import *
+from utils import config_manager
+from utils.localization import setup_translation, get_available_languages, _
 
 from utils.constants import DEFAULT_EXTRACTION_PATTERNS, EXTRACTION_PATTERN_PRESET_EXTENSION
 
@@ -42,36 +43,38 @@ except ImportError:
     requests = None
     print("提示: requests 未找到, AI翻译功能不可用。pip install requests")
 
+initial_config = config_manager.load_config()
+language_code = initial_config.get('language', 'en_US')
+setup_translation(language_code)
 
 class OverwatchLocalizerApp:
     def __init__(self, root):
         self.root = root
+        self.config = initial_config
         if TkinterDnD and isinstance(root, TkinterDnD.Tk):
             pass
         elif TkinterDnD:
             self.root = TkinterDnD.DnDWrapper(self.root)
 
-        self.config = config_manager.load_config()
-        self.loc_manager = LocalizationManager(self)
-        _ = self.loc_manager.get
 
-        self.root.title(f"Overwatch Localizer - v{APP_VERSION}")
+
+        self.root.title(_("Overwatch Localizer - v{version}").format(version=APP_VERSION))
         self.root.geometry("1600x900")
 
         self.ACTION_MAP = {
-            'open_code_file': {'method': self.open_code_file_dialog, 'desc': _('menu.file.open_code_file')},
-            'open_project': {'method': self.open_project_dialog, 'desc': _('menu.file.open_project')},
-            'save_project': {'method': self.save_project_dialog, 'desc': _('menu.file.save_project')},
-            'save_code_file': {'method': self.save_code_file, 'desc': _('menu.file.save_code_file')},
-            'undo': {'method': self.undo_action, 'desc': _('menu.edit.undo')},
-            'redo': {'method': self.redo_action, 'desc': _('menu.edit.redo')},
-            'find_replace': {'method': self.show_advanced_search_dialog, 'desc': _('menu.edit.find_replace')},
-            'copy_original': {'method': self.copy_selected_original_text_menu, 'desc': _('menu.edit.copy_original')},
-            'paste_translation': {'method': self.paste_clipboard_to_selected_translation_menu, 'desc': _('menu.edit.paste_translation')},
-            'ai_translate_selected': {'method': self.ai_translate_selected_from_menu, 'desc': _('menu.tools.ai_translate_selected')},
-            'toggle_reviewed': {'method': self.cm_toggle_reviewed_status, 'desc': _('menu.view.show_unreviewed')},
-            'toggle_ignored': {'method': self.cm_toggle_ignored_status, 'desc': _('menu.view.show_ignored')},
-            'apply_and_next': {'method': self.apply_and_select_next_untranslated, 'desc': _('details_pane.apply_button')},
+            'open_code_file': {'method': self.open_code_file_dialog, 'desc': _('Open Code File')},
+            'open_project': {'method': self.open_project_dialog, 'desc': _('Open Project')},
+            'save_project': {'method': self.save_project_dialog, 'desc': _('Save Project')},
+            'save_code_file': {'method': self.save_code_file, 'desc': _('Save to New Code File')},
+            'undo': {'method': self.undo_action, 'desc': _('Undo')},
+            'redo': {'method': self.redo_action, 'desc': _('Redo')},
+            'find_replace': {'method': self.show_advanced_search_dialog, 'desc': _('Find/Replace')},
+            'copy_original': {'method': self.copy_selected_original_text_menu, 'desc': _('Copy Original')},
+            'paste_translation': {'method': self.paste_clipboard_to_selected_translation_menu, 'desc': _('Paste to Translation')},
+            'ai_translate_selected': {'method': self.ai_translate_selected_from_menu, 'desc': _('AI Translate Selected')},
+            'toggle_reviewed': {'method': self.cm_toggle_reviewed_status, 'desc': _('Toggle Reviewed Status')},
+            'toggle_ignored': {'method': self.cm_toggle_ignored_status, 'desc': _('Toggle Ignored Status')},
+            'apply_and_next': {'method': self.apply_and_select_next_untranslated, 'desc': _('Apply and Go to Next Untranslated')},
         }
         self.current_code_file_path = None
         self.current_project_file_path = None
@@ -91,7 +94,6 @@ class OverwatchLocalizerApp:
         self.current_selected_ts_id = None
 
         self.config = config_manager.load_config()
-
         self.ai_translator = AITranslator(
             api_key=self.config.get("ai_api_key"),
             model_name=self.config.get("ai_model_name", "deepseek-chat"),
@@ -136,9 +138,7 @@ class OverwatchLocalizerApp:
         self.update_ai_related_ui_state()
         self.update_counts_display()
         self.update_title()
-        self.loc_manager.update_all_ui_text()
         self.update_recent_files_menu()
-
 
     def _load_icons(self):
         return {}
@@ -186,12 +186,15 @@ class OverwatchLocalizerApp:
                             if self.prompt_save_if_modified():
                                 self.import_po_file_dialog_with_path(filepath)
                         else:
-                            self.update_statusbar(f"拖放失败: 无效的文件类型 '{os.path.basename(filepath)}'")
+                            self.update_statusbar(_("Drag and drop failed: Invalid file type '{filename}'").format(
+                                filename=os.path.basename(filepath)))
                     else:
-                        self.update_statusbar(f"拖放失败: '{os.path.basename(filepath)}' 不是一个文件。")
+                        self.update_statusbar(_("Drag and drop failed: '{filename}' is not a file.").format(
+                            filename=os.path.basename(filepath)))
             except Exception as e:
-                messagebox.showerror("拖放错误", f"处理拖放文件时出错: {e}", parent=self.root)
-                self.update_statusbar("拖放处理错误")
+                messagebox.showerror(_("Drag and Drop Error"),
+                                     _("Error processing dropped file: {error}").format(error=e), parent=self.root)
+                self.update_statusbar(_("Drag and drop processing error"))
 
     def save_config(self):
         config_manager.save_config(self)
@@ -210,18 +213,19 @@ class OverwatchLocalizerApp:
         self.recent_files_menu.delete(0, tk.END)
         recent_files = self.config.get("recent_files", [])
         if not recent_files:
-            self.recent_files_menu.add_command(label="无历史记录", state=tk.DISABLED)
+            self.recent_files_menu.add_command(label=_("No History"), state=tk.DISABLED)
             return
 
         for i, filepath in enumerate(recent_files):
             label = f"{i + 1}: {filepath}"
             self.recent_files_menu.add_command(label=label, command=lambda p=filepath: self.open_recent_file(p))
         self.recent_files_menu.add_separator()
-        self.recent_files_menu.add_command(label="清除历史记录", command=self.clear_recent_files)
+        self.recent_files_menu.add_command(label = _("Clear History"), command=self.clear_recent_files)
 
     def open_recent_file(self, filepath):
         if not os.path.exists(filepath):
-            messagebox.showerror("文件未找到", f"文件 '{filepath}' 不存在。", parent=self.root)
+            messagebox.showerror(_("File not found"), _("File '{filepath}' does not exist.").format(filepath=filepath),
+                                 parent=self.root)
             recent_files = self.config.get("recent_files", [])
             if filepath in recent_files:
                 recent_files.remove(filepath)
@@ -238,24 +242,28 @@ class OverwatchLocalizerApp:
             self.open_code_file_path(filepath)
 
     def clear_recent_files(self):
-        if messagebox.askyesno("确认", "确定要清除所有最近文件历史记录吗？", parent=self.root):
+        if messagebox.askyesno(_("Confirmation"), _("Are you sure you want to clear all recent file history?"),
+                               parent=self.root):
             self.config["recent_files"] = []
             self.update_recent_files_menu()
             self.save_config()
 
     def about(self):
-        _ = self.loc_manager.get
-        messagebox.showinfo(_("app.about_title"),
-                            _("app.about_message", version=APP_VERSION),
-                            parent=self.root)
+        messagebox.showinfo(_("About Overwatch Localizer"),
+                            _("Overwatch Custom Code Translation Tool\n\n"
+                              "Version: {version}\n"
+                              "Author: TheSkyC\n"
+                              "China Server ID: 小鸟游六花#56683 / Asia Server: 小鳥游六花#31665").format(
+                                version=APP_VERSION), parent=self.root)
 
     def on_closing(self):
         if not self.prompt_save_if_modified():
             return
 
         if self.is_ai_translating_batch:
-            if messagebox.askyesno("AI翻译进行中",
-                                   "AI批量翻译仍在进行中。确定要退出吗？\n未完成的翻译将丢失。", parent=self.root):
+            if messagebox.askyesno(_("AI Translation in Progress"),
+                                   _("AI batch translation is still in progress. Are you sure you want to exit?\nUnfinished translations will be lost."),
+                                   parent=self.root):
                 self.stop_batch_ai_translation(silent=True)
             else:
                 return
@@ -275,98 +283,119 @@ class OverwatchLocalizerApp:
         self.root.config(menu=menubar)
 
         file_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="文件", menu=file_menu)
-        file_menu.add_command(label="打开代码文件...", command=self.ACTION_MAP['open_code_file']['method'])
-        file_menu.add_command(label="打开项目...", command=self.ACTION_MAP['open_project']['method'])
+        menubar.add_cascade(label=_("File"), menu=file_menu)
+        file_menu.add_command(label=_("Open Code File..."), command=self.ACTION_MAP['open_code_file']['method'])
+        file_menu.add_command(label=_("Open Project..."), command=self.ACTION_MAP['open_project']['method'])
         file_menu.add_separator()
-        file_menu.add_command(label="版本对比/导入新版代码...", command=self.compare_with_new_version,
+        file_menu.add_command(label=_("Compare/Import New Version..."), command=self.compare_with_new_version,
                               state=tk.DISABLED)
         file_menu.add_separator()
-        file_menu.add_command(label="保存项目", command=self.ACTION_MAP['save_project']['method'], state=tk.DISABLED)
-        file_menu.add_command(label="项目另存为...", command=self.save_project_as_dialog, state=tk.DISABLED)
+        file_menu.add_command(label=_("Save Project"), command=self.ACTION_MAP['save_project']['method'],
+                              state=tk.DISABLED)
+        file_menu.add_command(label=_("Save Project As..."), command=self.save_project_as_dialog, state=tk.DISABLED)
         file_menu.add_separator()
-        file_menu.add_command(label="保存翻译到新代码文件", command=self.ACTION_MAP['save_code_file']['method'],
+        file_menu.add_command(label=_("Save Translation to New Code File"),
+                              command=self.ACTION_MAP['save_code_file']['method'],
+                              state=tk.DISABLED)
+
+        file_menu.add_separator()
+        file_menu.add_command(label=_("Import Translations from Excel"), command=self.import_project_translations_from_excel,
+                              state=tk.DISABLED)
+        file_menu.add_command(label=_("Export to Excel"), command=self.export_project_translations_to_excel,
+                              state=tk.DISABLED)
+        file_menu.add_command(label=_("Export to JSON"), command=self.export_project_translations_to_json,
+                              state=tk.DISABLED)
+        file_menu.add_command(label=_("Export to YAML"), command=self.export_project_translations_to_yaml,
                               state=tk.DISABLED)
         file_menu.add_separator()
-        file_menu.add_command(label="导入Excel翻译", command=self.import_project_translations_from_excel,
-                              state=tk.DISABLED)
-        file_menu.add_command(label="导出到Excel", command=self.export_project_translations_to_excel,
-                              state=tk.DISABLED)
-        file_menu.add_command(label="导出到JSON", command=self.export_project_translations_to_json,
-                              state=tk.DISABLED)
-        file_menu.add_command(label="导出到YAML", command=self.export_project_translations_to_yaml,
-                              state=tk.DISABLED)
+        file_menu.add_command(label=_("Extract POT Template from Code..."), command=self.extract_to_pot_dialog)
+        file_menu.add_command(label=_("Import Translations from PO File..."), command=self.import_po_file_dialog)
+        file_menu.add_command(label=_("Export to PO File..."), command=self.export_to_po_file_dialog, state=tk.DISABLED)
         file_menu.add_separator()
-        file_menu.add_command(label="从代码文件提取POT模板...", command=self.extract_to_pot_dialog)
-        file_menu.add_command(label="从PO文件导入翻译...", command=self.import_po_file_dialog)
-        file_menu.add_command(label="导出到PO文件...", command=self.export_to_po_file_dialog, state=tk.DISABLED)
-        file_menu.add_separator()
-        file_menu.add_command(label="导入翻译记忆库 (Excel)", command=self.import_tm_excel_dialog)
-        file_menu.add_command(label="导出当前记忆库 (Excel)", command=self.export_tm_excel_dialog)
+        file_menu.add_command(label=_("Import Translation Memory (Excel)"), command=self.import_tm_excel_dialog)
+        file_menu.add_command(label=_("Export Current TM (Excel)"), command=self.export_tm_excel_dialog)
         file_menu.add_separator()
         self.recent_files_menu = tk.Menu(file_menu, tearoff=0)
-        file_menu.add_cascade(label="最近打开文件", menu=self.recent_files_menu)
+        file_menu.add_cascade(label=_("Recent Files"), menu=self.recent_files_menu)
         file_menu.add_separator()
-        file_menu.add_command(label="退出", command=self.on_closing)
+        file_menu.add_command(label=_("Exit"), command=self.on_closing)
         self.file_menu = file_menu
 
         edit_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="编辑", menu=edit_menu)
-        edit_menu.add_command(label="撤销", command=self.ACTION_MAP['undo']['method'], state=tk.DISABLED)
-        edit_menu.add_command(label="恢复", command=self.ACTION_MAP['redo']['method'], state=tk.DISABLED)
+        menubar.add_cascade(label=_("Edit"), menu=edit_menu)
+        edit_menu.add_command(label=_("Undo"), command=self.ACTION_MAP['undo']['method'], state=tk.DISABLED)
+        edit_menu.add_command(label=_("Redo"), command=self.ACTION_MAP['redo']['method'], state=tk.DISABLED)
         edit_menu.add_separator()
-        edit_menu.add_command(label="查找/替换...", command=self.ACTION_MAP['find_replace']['method'],
+        edit_menu.add_command(label=_("Find/Replace..."), command=self.ACTION_MAP['find_replace']['method'],
                               state=tk.DISABLED)
         edit_menu.add_separator()
-        edit_menu.add_command(label="复制原文", command=self.ACTION_MAP['copy_original']['method'], state=tk.DISABLED)
-        edit_menu.add_command(label="粘贴到译文", command=self.ACTION_MAP['paste_translation']['method'],
+        edit_menu.add_command(label=_("Copy Original"), command=self.ACTION_MAP['copy_original']['method'],
+                              state=tk.DISABLED)
+        edit_menu.add_command(label=_("Paste to Translation"), command=self.ACTION_MAP['paste_translation']['method'],
                               state=tk.DISABLED)
         self.edit_menu = edit_menu
 
         view_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="视图", menu=view_menu)
-        view_menu.add_checkbutton(label="去重显示", variable=self.deduplicate_strings_var,
+        menubar.add_cascade(label=_("View"), menu=view_menu)
+        view_menu.add_checkbutton(label=_("Deduplicate Strings"), variable=self.deduplicate_strings_var,
                                   command=self.refresh_treeview_preserve_selection)
-        view_menu.add_checkbutton(label="显示已忽略项", variable=self.show_ignored_var,
+        view_menu.add_checkbutton(label=_("Show Ignored"), variable=self.show_ignored_var,
                                   command=self.refresh_treeview_preserve_selection)
-        view_menu.add_checkbutton(label="显示未翻译项", variable=self.show_untranslated_var,
+        view_menu.add_checkbutton(label=_("Show Untranslated"), variable=self.show_untranslated_var,
                                   command=self.refresh_treeview_preserve_selection)
-        view_menu.add_checkbutton(label="显示已翻译项", variable=self.show_translated_var,
+        view_menu.add_checkbutton(label=_("Show Translated"), variable=self.show_translated_var,
                                   command=self.refresh_treeview_preserve_selection)
-        view_menu.add_checkbutton(label="显示未审阅项", variable=self.show_unreviewed_var,
+        view_menu.add_checkbutton(label=_("Show Unreviewed"), variable=self.show_unreviewed_var,
                                   command=self.refresh_treeview_preserve_selection)
 
         tools_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="工具", menu=tools_menu)
-        tools_menu.add_command(label="应用记忆库到未翻译项",
+        menubar.add_cascade(label=_("Tools"), menu=tools_menu)
+        tools_menu.add_command(label=_("Apply TM to Untranslated"),
                                command=lambda: self.apply_tm_to_all_current_strings(only_if_empty=True, confirm=True),
                                state=tk.DISABLED)
-        tools_menu.add_command(label="清空翻译记忆库 (内存)", command=self.clear_entire_translation_memory)
+        tools_menu.add_command(label=_("Clear Translation Memory (in-memory)"),
+                               command=self.clear_entire_translation_memory)
         tools_menu.add_separator()
-        tools_menu.add_command(label="使用AI翻译选中项", command=self.ACTION_MAP['ai_translate_selected']['method'],
+        tools_menu.add_command(label=_("AI Translate Selected"),
+                               command=self.ACTION_MAP['ai_translate_selected']['method'],
                                state=tk.DISABLED)
-        tools_menu.add_command(label="使用AI翻译未翻译项", command=self.ai_translate_all_untranslated,
+        tools_menu.add_command(label=_("AI Translate All Untranslated"), command=self.ai_translate_all_untranslated,
                                state=tk.DISABLED)
-        tools_menu.add_command(label="停止AI批量翻译", command=lambda: self.stop_batch_ai_translation(),
+        tools_menu.add_command(label=_("Stop AI Batch Translation"), command=lambda: self.stop_batch_ai_translation(),
                                state=tk.DISABLED)
         tools_menu.add_separator()
-        tools_menu.add_command(label="项目个性化翻译设置...", command=self.show_project_custom_instructions_dialog,
+        tools_menu.add_command(label=_("Project-specific Instructions..."),
+                               command=self.show_project_custom_instructions_dialog,
                                state=tk.DISABLED)
-        tools_menu.add_command(label="AI翻译设置...", command=self.show_ai_settings_dialog)
+        tools_menu.add_command(label=_("AI Settings..."), command=self.show_ai_settings_dialog)
         tools_menu.add_separator()
-        tools_menu.add_command(label="提取规则管理器...", command=self.show_extraction_pattern_dialog)
-        tools_menu.add_command(label="重新加载翻译文本", command=self.reload_translatable_text, state=tk.DISABLED)
+        tools_menu.add_command(label=_("Extraction Rule Manager..."), command=self.show_extraction_pattern_dialog)
+        tools_menu.add_command(label=_("Reload Translatable Text"), command=self.reload_translatable_text,
+                               state=tk.DISABLED)
         self.tools_menu = tools_menu
 
         settings_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="设置", menu=settings_menu)
-        settings_menu.add_checkbutton(label="保存时自动备份记忆库", variable=self.auto_backup_tm_on_save_var,
+        menubar.add_cascade(label=_("Settings"), menu=settings_menu)
+        settings_menu.add_checkbutton(label=_("Auto-backup TM on Save"), variable=self.auto_backup_tm_on_save_var,
                                       command=self.save_config)
-        settings_menu.add_command(label="快捷键设置...", command=self.show_keybinding_dialog)
+        self.language_var = tk.StringVar(value=self.config.get('language', 'zh_CN'))
+        language_menu = tk.Menu(settings_menu, tearoff=0)
+        settings_menu.add_cascade(label=_("Language"), menu=language_menu)
+
+        available_langs = get_available_languages()
+        for lang_code in available_langs:
+            lang_name = {'en_US': 'English', 'zh_CN': '简体中文'}.get(lang_code, lang_code)
+            language_menu.add_radiobutton(
+                label=lang_name,
+                variable=self.language_var,
+                value=lang_code,
+                command=self.change_language
+            )
+        settings_menu.add_command(label=_("Keybinding Settings..."), command=self.show_keybinding_dialog)
 
         help_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="帮助", menu=help_menu)
-        help_menu.add_command(label="关于", command=self.about)
+        menubar.add_cascade(label=_("Help"), menu=help_menu)
+        help_menu.add_command(label=_("About"), command=self.about)
 
         self._setup_keybindings()
         self.update_menu_accelerators()
@@ -385,22 +414,35 @@ class OverwatchLocalizerApp:
 
     def update_menu_accelerators(self):
         bindings = self.config.get('keybindings', {})
-        self.file_menu.entryconfig("打开代码文件...", accelerator=bindings.get('open_code_file', ''))
-        self.file_menu.entryconfig("打开项目...", accelerator=bindings.get('open_project', ''))
-        self.file_menu.entryconfig("保存项目", accelerator=bindings.get('save_project', ''))
-        self.file_menu.entryconfig("保存翻译到新代码文件", accelerator=bindings.get('save_code_file', ''))
+        self.file_menu.entryconfig(_("Open Code File..."), accelerator=bindings.get('open_code_file', ''))
+        self.file_menu.entryconfig(_("Open Project..."), accelerator=bindings.get('open_project', ''))
+        self.file_menu.entryconfig(_("Save Project"), accelerator=bindings.get('save_project', ''))
+        self.file_menu.entryconfig(_("Save Translation to New Code File"),
+                                   accelerator=bindings.get('save_code_file', ''))
 
-        self.edit_menu.entryconfig("撤销", accelerator=bindings.get('undo', ''))
-        self.edit_menu.entryconfig("恢复", accelerator=bindings.get('redo', ''))
-        self.edit_menu.entryconfig("查找/替换...", accelerator=bindings.get('find_replace', ''))
-        self.edit_menu.entryconfig("复制原文", accelerator=bindings.get('copy_original', ''))
-        self.edit_menu.entryconfig("粘贴到译文", accelerator=bindings.get('paste_translation', ''))
+        self.edit_menu.entryconfig(_("Undo"), accelerator=bindings.get('undo', ''))
+        self.edit_menu.entryconfig(_("Redo"), accelerator=bindings.get('redo', ''))
+        self.edit_menu.entryconfig(_("Find/Replace..."), accelerator=bindings.get('find_replace', ''))
+        self.edit_menu.entryconfig(_("Copy Original"), accelerator=bindings.get('copy_original', ''))
+        self.edit_menu.entryconfig(_("Paste to Translation"), accelerator=bindings.get('paste_translation', ''))
 
-        self.tools_menu.entryconfig("使用AI翻译选中项", accelerator=bindings.get('ai_translate_selected', ''))
+        self.tools_menu.entryconfig(_("AI Translate Selected"),
+                                    accelerator=bindings.get('ai_translate_selected', ''))
 
     def show_keybinding_dialog(self):
         from dialogs.keybinding_dialog import KeybindingDialog
-        KeybindingDialog(self.root, "快捷键设置", self)
+        KeybindingDialog(self.root, _("Keybinding Settings"), self)
+
+    def change_language(self):
+        new_lang = self.language_var.get()
+        if new_lang != self.config.get('language'):
+            self.config['language'] = new_lang
+            self.save_config()
+            messagebox.showinfo(
+                _("Restart Required"),
+                _("Language settings have been changed. Please restart the application for the changes to take effect."),
+                parent=self.root
+            )
 
     def _setup_main_layout(self):
         main_frame = ttk.Frame(self.root, padding="5")
@@ -423,16 +465,16 @@ class OverwatchLocalizerApp:
         toolbar = ttk.Frame(parent, style="Filter.TFrame", padding=5)
         toolbar.pack(side=tk.TOP, fill=tk.X, pady=(0, 5))
 
-        ttk.Label(toolbar, text="筛选:").pack(side=tk.LEFT, padx=(0, 10))
-        ttk.Checkbutton(toolbar, text="去重", variable=self.deduplicate_strings_var,
+        ttk.Label(toolbar, text=_("Filter:")).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Checkbutton(toolbar, text=_("Deduplicate"), variable=self.deduplicate_strings_var,
                         command=self.refresh_treeview_preserve_selection).pack(side=tk.LEFT, padx=3)
-        ttk.Checkbutton(toolbar, text="已忽略", variable=self.show_ignored_var,
+        ttk.Checkbutton(toolbar, text=_("Ignored"), variable=self.show_ignored_var,
                         command=self.refresh_treeview_preserve_selection).pack(side=tk.LEFT, padx=3)
-        ttk.Checkbutton(toolbar, text="未翻译", variable=self.show_untranslated_var,
+        ttk.Checkbutton(toolbar, text=_("Untranslated"), variable=self.show_untranslated_var,
                         command=self.refresh_treeview_preserve_selection).pack(side=tk.LEFT, padx=3)
-        ttk.Checkbutton(toolbar, text="已翻译", variable=self.show_translated_var,
+        ttk.Checkbutton(toolbar, text=_("Translated"), variable=self.show_translated_var,
                         command=self.refresh_treeview_preserve_selection).pack(side=tk.LEFT, padx=3)
-        ttk.Checkbutton(toolbar, text="未审阅", variable=self.show_unreviewed_var,
+        ttk.Checkbutton(toolbar, text=_("Unreviewed"), variable=self.show_unreviewed_var,
                         command=self.refresh_treeview_preserve_selection).pack(side=tk.LEFT, padx=3)
 
         search_frame = ttk.Frame(toolbar)
@@ -447,7 +489,7 @@ class OverwatchLocalizerApp:
 
         self.on_search_focus_out(None)  # 调用一次以设置初始状态
 
-        search_button = ttk.Button(search_frame, text="查找", command=self.find_string_from_toolbar,
+        search_button = ttk.Button(search_frame, text=_("Find"), command=self.find_string_from_toolbar,
                                    style="Toolbar.TButton")
         search_button.pack(side=tk.LEFT)
 
@@ -477,8 +519,8 @@ class OverwatchLocalizerApp:
                       "line": 50}
         col_align = {"seq_id": tk.E, "status": tk.CENTER, "original": tk.W, "translation": tk.W, "comment": tk.W,
                      "reviewed": tk.CENTER, "line": tk.CENTER}
-        col_headings = {"seq_id": "#", "status": "S", "original": "原文", "translation": "译文", "comment": "注释",
-                        "reviewed": "✔", "line": "行号"}
+        col_headings = {"seq_id": "#", "status": "S", "original": _("col_original"), "translation": _("col_translation"), "comment": _("col_comment"),
+                        "reviewed": "✔", "line": _("col_line")}
 
         for col_key in cols:
             self.tree.heading(col_key, text=col_headings.get(col_key, col_key.capitalize()),
@@ -493,21 +535,27 @@ class OverwatchLocalizerApp:
 
     def _setup_treeview_context_menu(self):
         self.tree_context_menu = tk.Menu(self.tree, tearoff=0)
-        self.tree_context_menu.add_command(label="复制原文", command=self.cm_copy_original)
-        self.tree_context_menu.add_command(label="复制译文", command=self.cm_copy_translation)
+        self.tree_context_menu.add_command(label=_("Copy Original"), command=self.cm_copy_original)
+        self.tree_context_menu.add_command(label=_("Copy Translation"), command=self.cm_copy_translation)
         self.tree_context_menu.add_separator()
-        self.tree_context_menu.add_command(label="标记为已忽略", command=lambda: self.cm_set_ignored_status(True))
-        self.tree_context_menu.add_command(label="取消标记已忽略", command=lambda: self.cm_set_ignored_status(False))
+        self.tree_context_menu.add_command(label=_("Mark as Ignored"), command=lambda: self.cm_set_ignored_status(True))
+        self.tree_context_menu.add_command(label=_("Unmark as Ignored"),
+                                           command=lambda: self.cm_set_ignored_status(False))
         self.tree_context_menu.add_separator()
-        self.tree_context_menu.add_command(label="标记为已审阅", command=lambda: self.cm_set_reviewed_status(True))
-        self.tree_context_menu.add_command(label="标记为未审阅", command=lambda: self.cm_set_reviewed_status(False))
+        self.tree_context_menu.add_command(label=_("Mark as Reviewed"),
+                                           command=lambda: self.cm_set_reviewed_status(True))
+        self.tree_context_menu.add_command(label=_("Mark as Unreviewed"),
+                                           command=lambda: self.cm_set_reviewed_status(False))
         self.tree_context_menu.add_separator()
-        self.tree_context_menu.add_command(label="编辑注释...", command=self.cm_edit_comment)
+        self.tree_context_menu.add_command(label=_("Edit Comment..."), command=self.cm_edit_comment)
         self.tree_context_menu.add_separator()
-        self.tree_context_menu.add_command(label="应用记忆库到选中项", command=self.cm_apply_tm_to_selected)
-        self.tree_context_menu.add_command(label="清除选中项译文", command=self.cm_clear_selected_translations)
+        self.tree_context_menu.add_command(label=_("Apply Memory to Selected Items"),
+                                           command=self.cm_apply_tm_to_selected)
+        self.tree_context_menu.add_command(label=_("Clear Selected Translations"),
+                                           command=self.cm_clear_selected_translations)
         self.tree_context_menu.add_separator()
-        self.tree_context_menu.add_command(label="使用AI翻译选中项", command=self.cm_ai_translate_selected)
+        self.tree_context_menu.add_command(label=_("Use AI to Translate Selected Items"),
+                                           command=self.cm_ai_translate_selected)
 
     def show_treeview_context_menu(self, event):
         selected_iids = self.tree.selection()
@@ -545,7 +593,7 @@ class OverwatchLocalizerApp:
         self.tree.heading(col, command=lambda: self._sort_treeview_column(col, not reverse))
 
     def _setup_details_pane(self, parent_frame):
-        details_outer_frame = ttk.LabelFrame(parent_frame, text="编辑与详细信息", padding="5")
+        details_outer_frame = ttk.LabelFrame(parent_frame, text=_("Edit & Details"), padding="5")
         details_outer_frame.pack(expand=True, fill=tk.BOTH, padx=5, pady=0)
 
         details_paned_window = ttk.PanedWindow(details_outer_frame, orient=tk.VERTICAL)
@@ -555,7 +603,7 @@ class OverwatchLocalizerApp:
         details_paned_window.add(top_section_frame, weight=4)
         top_section_frame.columnconfigure(0, weight=1)
 
-        ttk.Label(top_section_frame, text="原文 (Ctrl+Shift+C 复制):").pack(anchor=tk.W, padx=5, pady=(0, 2))
+        ttk.Label(top_section_frame, text=_("Original (Ctrl+Shift+C to copy):")).pack(anchor=tk.W, padx=5, pady=(0, 2))
         orig_frame = ttk.Frame(top_section_frame)
         orig_frame.pack(fill=tk.X, expand=False, padx=5, pady=(0, 5))
         orig_frame.grid_rowconfigure(0, weight=1)
@@ -569,7 +617,7 @@ class OverwatchLocalizerApp:
         orig_scrollbar.grid(row=0, column=1, sticky="ns")
         self.original_text_display.config(yscrollcommand=orig_scrollbar.set)
 
-        ttk.Label(top_section_frame, text="译文 (Ctrl+Shift+V 粘贴):").pack(anchor=tk.W, padx=5, pady=(5, 2))
+        ttk.Label(top_section_frame, text=_("Translation (Ctrl+Shift+V to paste):")).pack(anchor=tk.W, padx=5, pady=(5, 2))
         trans_frame = ttk.Frame(top_section_frame)
         trans_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=(0, 5))
         trans_frame.grid_rowconfigure(0, weight=1)
@@ -587,15 +635,15 @@ class OverwatchLocalizerApp:
 
         trans_actions_frame = ttk.Frame(top_section_frame)
         trans_actions_frame.pack(fill=tk.X, padx=5, pady=(0, 5))
-        self.apply_btn = ttk.Button(trans_actions_frame, text="应用翻译", command=self.apply_translation_from_button,
+        self.apply_btn = ttk.Button(trans_actions_frame, text=_("Apply Translation"), command=self.apply_translation_from_button,
                                     state=tk.DISABLED, style="Toolbar.TButton")
         self.apply_btn.pack(side=tk.LEFT, padx=(0, 10))
-        self.ai_translate_current_btn = ttk.Button(trans_actions_frame, text="AI翻译选中项",
+        self.ai_translate_current_btn = ttk.Button(trans_actions_frame, text=_("AI Translate Selected"),
                                                    command=self.ai_translate_selected_from_button, state=tk.DISABLED,
                                                    style="Toolbar.TButton")
         self.ai_translate_current_btn.pack(side=tk.RIGHT, padx=5)
 
-        ttk.Label(top_section_frame, text="注释:").pack(anchor=tk.W, padx=5, pady=(5, 2))
+        ttk.Label(top_section_frame, text=_("Comment:")).pack(anchor=tk.W, padx=5, pady=(5, 2))
         comment_frame = ttk.Frame(top_section_frame)
         comment_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=(0, 5))
         comment_frame.grid_rowconfigure(0, weight=1)
@@ -612,7 +660,7 @@ class OverwatchLocalizerApp:
 
         comment_actions_frame = ttk.Frame(top_section_frame)
         comment_actions_frame.pack(fill=tk.X, padx=5, pady=(0, 5))
-        self.apply_comment_btn = ttk.Button(comment_actions_frame, text="应用注释",
+        self.apply_comment_btn = ttk.Button(comment_actions_frame, text=_("Apply Comment"),
                                             command=self.apply_comment_from_button, state=tk.DISABLED,
                                             style="Toolbar.TButton")
         self.apply_comment_btn.pack(side=tk.LEFT)
@@ -620,11 +668,11 @@ class OverwatchLocalizerApp:
         status_frame = ttk.Frame(top_section_frame)
         status_frame.pack(fill=tk.X, padx=5, pady=5)
         self.ignore_var = tk.BooleanVar()
-        self.toggle_ignore_btn = ttk.Checkbutton(status_frame, text="忽略此字符串", variable=self.ignore_var,
+        self.toggle_ignore_btn = ttk.Checkbutton(status_frame, text=_("Ignore this string"), variable=self.ignore_var,
                                                  command=self.toggle_ignore_selected_checkbox, state=tk.DISABLED)
         self.toggle_ignore_btn.pack(side=tk.LEFT, padx=5)
         self.reviewed_var = tk.BooleanVar()
-        self.toggle_reviewed_btn = ttk.Checkbutton(status_frame, text="已审阅", variable=self.reviewed_var,
+        self.toggle_reviewed_btn = ttk.Checkbutton(status_frame, text=_("Reviewed"), variable=self.reviewed_var,
                                                    command=self.toggle_reviewed_selected_checkbox, state=tk.DISABLED)
         self.toggle_reviewed_btn.pack(side=tk.LEFT, padx=15)
 
@@ -632,7 +680,7 @@ class OverwatchLocalizerApp:
         details_paned_window.add(context_section_frame, weight=2)
         context_section_frame.columnconfigure(0, weight=1)
         context_section_frame.rowconfigure(1, weight=1)
-        ttk.Label(context_section_frame, text="上下文预览:").pack(anchor=tk.W, padx=5, pady=(0, 2))
+        ttk.Label(context_section_frame, text=_("Context Preview:")).pack(anchor=tk.W, padx=5, pady=(0, 2))
 
         ctx_frame = ttk.Frame(context_section_frame)
         ctx_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=(0, 5))
@@ -652,18 +700,18 @@ class OverwatchLocalizerApp:
         details_paned_window.add(tm_section_frame, weight=1)
         tm_section_frame.columnconfigure(0, weight=1)
         tm_section_frame.rowconfigure(1, weight=1)
-        ttk.Label(tm_section_frame, text="翻译记忆库匹配:").pack(anchor=tk.W, pady=(0, 2), padx=5)
+        ttk.Label(tm_section_frame, text=_("Translation Memory Matches:")).pack(anchor=tk.W, pady=(0, 2), padx=5)
         self.tm_suggestions_listbox = tk.Listbox(tm_section_frame, height=4, relief=tk.SOLID, borderwidth=1,
                                                  font=('Segoe UI', 10))
         self.tm_suggestions_listbox.pack(fill=tk.BOTH, expand=True, pady=(0, 5), padx=5)
         self.tm_suggestions_listbox.bind("<Double-1>", self.apply_tm_suggestion_from_listbox)
         tm_actions_frame = ttk.Frame(tm_section_frame)
         tm_actions_frame.pack(fill=tk.X, pady=(0, 0), padx=5)
-        self.update_selected_tm_btn = ttk.Button(tm_actions_frame, text="更新选中项记忆",
+        self.update_selected_tm_btn = ttk.Button(tm_actions_frame, text=_("Update TM for Selected"),
                                                  command=self.update_tm_for_selected_string, state=tk.DISABLED,
                                                  style="Toolbar.TButton")
         self.update_selected_tm_btn.pack(side=tk.LEFT, padx=(0, 5))
-        self.clear_selected_tm_btn = ttk.Button(tm_actions_frame, text="清除选中项记忆",
+        self.clear_selected_tm_btn = ttk.Button(tm_actions_frame, text=_("Clear TM for Selected"),
                                                 command=self.clear_tm_for_selected_string, state=tk.DISABLED,
                                                 style="Toolbar.TButton")
         self.clear_selected_tm_btn.pack(side=tk.LEFT, padx=5)
@@ -678,7 +726,7 @@ class OverwatchLocalizerApp:
         self.statusbar_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
         self.statusbar_text = tk.StringVar()
-        self.statusbar_text.set("准备就绪")
+        self.statusbar_text.set(_("Ready"))
         statusbar_label = ttk.Label(self.statusbar_frame, textvariable=self.statusbar_text, anchor=tk.W, padding=(5, 2))
         statusbar_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
@@ -692,9 +740,10 @@ class OverwatchLocalizerApp:
         self.update_counts_display()
 
         extra_info = []
-        if not TkinterDnD: extra_info.append("tkinterdnd2 未找到 (无拖放功能)")
-        if not requests: extra_info.append("requests 未找到 (无AI翻译功能)")
-        if extra_info: self.update_statusbar(self.statusbar_text.get() + " | 提示: " + ", ".join(extra_info) + "。")
+        if not TkinterDnD: extra_info.append(_("Hint: tkinterdnd2 not found, drag & drop is disabled."))
+        if not requests: extra_info.append(_("Hint: requests not found, AI translation is disabled."))
+        if extra_info: self.update_statusbar(
+            self.statusbar_text.get() + " | " + _("Hint: ") + ", ".join(extra_info) + ".")
 
     def update_statusbar(self, text, persistent=False):
         self.statusbar_text.set(text)
@@ -704,11 +753,11 @@ class OverwatchLocalizerApp:
 
     def clear_statusbar_if_unchanged(self, original_text):
         if self.statusbar_text.get() == original_text:
-            self.statusbar_text.set("准备就绪")
+            self.statusbar_text.set(_("Ready"))
 
     def update_counts_display(self):
         if not hasattr(self, 'translatable_objects'):
-            self.counts_text.set("显示: 0/0 | 已译: 0 | 未译: 0 | 已忽略: 0")
+            self.counts_text.set(_("Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"))
             return
 
         displayed_count = len(self.displayed_string_ids)
@@ -729,7 +778,13 @@ class OverwatchLocalizerApp:
                     untranslated_visible += 1
 
         self.counts_text.set(
-            f"显示: {displayed_count}/{total_count} | 已译: {translated_visible} | 未译: {untranslated_visible} | 已忽略: {ignored_visible}"
+            _("Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}").format(
+                displayed_count=displayed_count,
+                total_count=total_count,
+                translated_visible=translated_visible,
+                untranslated_visible=untranslated_visible,
+                ignored_visible=ignored_visible
+            )
         )
 
     def update_title(self):
@@ -743,7 +798,7 @@ class OverwatchLocalizerApp:
         modified_indicator = "*" if self.current_project_modified else ""
 
         if file_name_part:
-            self.root.title(f"{base_title} - {file_name_part}{modified_indicator}")
+            self.root.title(_(f"{base_title} - {file_name_part}{modified_indicator}"))
         else:
             self.root.title(base_title)
 
@@ -751,36 +806,36 @@ class OverwatchLocalizerApp:
         has_content = bool(self.translatable_objects) and file_or_project_loaded
         state = tk.NORMAL if has_content else tk.DISABLED
 
-        self.file_menu.entryconfig("版本对比/导入新版代码...",
+        self.file_menu.entryconfig(_("Compare/Import New Version..."),
                                    state=tk.NORMAL if self.current_code_file_path and has_content else tk.DISABLED)
 
         can_save_to_code = self.original_raw_code_content and has_content
-        self.file_menu.entryconfig("保存翻译到新代码文件", state=tk.NORMAL if can_save_to_code else tk.DISABLED)
+        self.file_menu.entryconfig(_("Save Translation to New Code File"), state=tk.NORMAL if can_save_to_code else tk.DISABLED)
 
-        self.file_menu.entryconfig("保存项目",
+        self.file_menu.entryconfig(_("Save Project"),
                                    state=tk.NORMAL if self.current_code_file_path or self.current_project_file_path or self.original_raw_code_content else tk.DISABLED)
-        self.file_menu.entryconfig("项目另存为...",
+        self.file_menu.entryconfig(_("Save Project As..."),
                                    state=tk.NORMAL if has_content or self.original_raw_code_content else tk.DISABLED)
 
-        self.file_menu.entryconfig("导入Excel翻译", state=state)
-        self.file_menu.entryconfig("导出到Excel", state=state)
-        self.file_menu.entryconfig("导出到JSON", state=state)
-        self.file_menu.entryconfig("导出到YAML", state=state)
-        self.file_menu.entryconfig("导出到PO文件...", state=state)
+        self.file_menu.entryconfig(_("Import Translations from Excel"), state=state)
+        self.file_menu.entryconfig(_("Export to Excel"), state=state)
+        self.file_menu.entryconfig(_("Export to JSON"), state=state)
+        self.file_menu.entryconfig(_("Export to YAML"), state=state)
+        self.file_menu.entryconfig(_("Export to PO File..."), state=state)
 
-        self.edit_menu.entryconfig("查找/替换...", state=state)
-        self.edit_menu.entryconfig("复制原文", state=tk.DISABLED if not has_content else (
+        self.edit_menu.entryconfig(_("Find/Replace..."), state=state)
+        self.edit_menu.entryconfig(_("Copy Original"), state=tk.DISABLED if not has_content else (
             tk.NORMAL if self.current_selected_ts_id else tk.DISABLED))
-        self.edit_menu.entryconfig("粘贴到译文", state=tk.DISABLED if not has_content else (
+        self.edit_menu.entryconfig(_("Paste to Translation"), state=tk.DISABLED if not has_content else (
             tk.NORMAL if self.current_selected_ts_id else tk.DISABLED))
 
-        self.edit_menu.entryconfig("撤销", state=tk.NORMAL if self.undo_history else tk.DISABLED)
-        self.edit_menu.entryconfig("恢复", state=tk.NORMAL if self.redo_history else tk.DISABLED)
+        self.edit_menu.entryconfig(_("Undo"), state=tk.NORMAL if self.undo_history else tk.DISABLED)
+        self.edit_menu.entryconfig(_("Redo"), state=tk.NORMAL if self.redo_history else tk.DISABLED)
 
-        self.tools_menu.entryconfig("应用记忆库到未翻译项", state=state)
-        self.tools_menu.entryconfig("项目个性化翻译设置...",
+        self.tools_menu.entryconfig(_("Apply TM to Untranslated"), state=state)
+        self.tools_menu.entryconfig(_("Project-specific Instructions..."),
                                     state=tk.NORMAL if self.current_project_file_path else tk.DISABLED)
-        self.tools_menu.entryconfig("重新加载翻译文本",
+        self.tools_menu.entryconfig(_("Reload Translatable Text"),
                                     state=tk.NORMAL if self.original_raw_code_content or self.current_code_file_path else tk.DISABLED)
 
         self.update_ai_related_ui_state()
@@ -792,13 +847,13 @@ class OverwatchLocalizerApp:
         item_selected = self.current_selected_ts_id is not None
         can_start_ai_ops = ai_available and file_loaded_and_has_strings and not self.is_ai_translating_batch
         try:
-            self.tools_menu.entryconfig("使用AI翻译选中项",
+            self.tools_menu.entryconfig(_("AI Translate Selected"),
                                         state=tk.NORMAL if can_start_ai_ops and item_selected else tk.DISABLED)
-            self.tools_menu.entryconfig("使用AI翻译未翻译项",
+            self.tools_menu.entryconfig(_("AI Translate All Untranslated"),
                                         state=tk.NORMAL if can_start_ai_ops else tk.DISABLED)
-            self.tools_menu.entryconfig("停止AI批量翻译",
+            self.tools_menu.entryconfig(_("Stop AI Batch Translation"),
                                         state=tk.NORMAL if self.is_ai_translating_batch else tk.DISABLED)
-            self.tools_menu.entryconfig("AI翻译设置...",
+            self.tools_menu.entryconfig(_("AI Settings..."),
                                         state=tk.NORMAL if ai_available else tk.DISABLED)
         except tk.TclError as e:
             print(f"Error updating AI menu states: {e}")
@@ -826,8 +881,8 @@ class OverwatchLocalizerApp:
             self.undo_history.pop(0)
         self.redo_history.clear()
         try:
-            self.edit_menu.entryconfig("撤销", state=tk.NORMAL)
-            self.edit_menu.entryconfig("恢复", state=tk.DISABLED)
+            self.edit_menu.entryconfig(_("Undo"), state=tk.NORMAL)
+            self.edit_menu.entryconfig(_("Redo"), state=tk.DISABLED)
         except tk.TclError:
             pass
         self.mark_project_modified()
@@ -856,7 +911,7 @@ class OverwatchLocalizerApp:
                     pass
 
         if not self.undo_history:
-            self.update_statusbar("没有可撤销的操作")
+            self.update_statusbar(_("No more actions to undo"))
             return
 
         action_log = self.undo_history.pop()
@@ -882,11 +937,13 @@ class OverwatchLocalizerApp:
                 redo_payload_data = {'string_id': obj_id, 'field': field,
                                      'old_value': val_to_restore,
                                      'new_value': current_val_before_undo}
-                self.update_statusbar(f"撤销: ID {str(obj_id)[:8]}... '{field}' -> '{str(val_to_restore)[:30]}'")
+                self.update_statusbar(
+                    _("Undo: {field} for ID {id} -> '{value}'").format(field=field, id=str(obj_id)[:8] + "...",
+                                                                       value=str(val_to_restore)[:30]))
                 changed_ids.add(obj_id)
             else:
-                self.update_statusbar(f"撤销错误: 未找到对象ID {obj_id}")
-                self.edit_menu.entryconfig("恢复", state=tk.NORMAL if self.redo_history else tk.DISABLED)
+                self.update_statusbar(_("Undo error: Object ID {obj_id} not found").format(obj_id=obj_id))
+                self.edit_menu.entryconfig(_("Redo"), state=tk.NORMAL if self.redo_history else tk.DISABLED)
                 return
 
         elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu',
@@ -907,7 +964,7 @@ class OverwatchLocalizerApp:
                                               'new_value': current_val_before_undo})
                     changed_ids.add(obj_id)
             redo_payload_data = {'changes': temp_redo_changes}
-            self.update_statusbar(f"撤销: 批量更改 ({len(temp_redo_changes)} 项)")
+            self.update_statusbar(_("Undo: Bulk change ({count} items)").format(count=len(temp_redo_changes)))
 
         if redo_payload_data:
             self.redo_history.append({'type': action_type, 'data': redo_payload_data})
@@ -917,8 +974,8 @@ class OverwatchLocalizerApp:
         if self.current_selected_ts_id in changed_ids:
             self.on_tree_select(None)
 
-        if not self.undo_history: self.edit_menu.entryconfig("撤销", state=tk.DISABLED)
-        self.edit_menu.entryconfig("恢复", state=tk.NORMAL if self.redo_history else tk.DISABLED)
+        if not self.undo_history: self.edit_menu.entryconfig(_("Undo"), state=tk.DISABLED)
+        self.edit_menu.entryconfig(_("Redo"), state=tk.NORMAL if self.redo_history else tk.DISABLED)
         self.mark_project_modified()
 
     def redo_action(self, event=None):
@@ -939,7 +996,7 @@ class OverwatchLocalizerApp:
                     pass
 
         if not self.redo_history:
-            self.update_statusbar("没有可恢复的操作")
+            self.update_statusbar(_("No more actions to redo"))
             return
 
         action_log = self.redo_history.pop()
@@ -966,11 +1023,13 @@ class OverwatchLocalizerApp:
                 undo_payload_data = {'string_id': obj_id, 'field': field,
                                      'old_value': current_val_before_redo,
                                      'new_value': val_to_set}
-                self.update_statusbar(f"恢复: ID {str(obj_id)[:8]}... '{field}' -> '{str(val_to_set)[:30]}'")
+                self.update_statusbar(
+                    _("Redo: {field} for ID {id} -> '{value}'").format(field=field, id=str(obj_id)[:8] + "...",
+                                                                       value=str(val_to_set)[:30]))
                 changed_ids.add(obj_id)
             else:
-                self.update_statusbar(f"恢复错误: 未找到对象ID {obj_id}")
-                self.edit_menu.entryconfig("撤销", state=tk.NORMAL if self.undo_history else tk.DISABLED)
+                self.update_statusbar(_("Redo error: Object ID {obj_id} not found").format(obj_id=obj_id))
+                self.edit_menu.entryconfig(_("Undo"), state=tk.NORMAL if self.undo_history else tk.DISABLED)
                 return
 
         elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu',
@@ -991,7 +1050,7 @@ class OverwatchLocalizerApp:
                                               'new_value': val_to_set})
                     changed_ids.add(obj_id)
             undo_payload_data = {'changes': temp_undo_changes}
-            self.update_statusbar(f"恢复: 批量更改 ({len(temp_undo_changes)} 项)")
+            self.update_statusbar(_("Redo: Bulk change ({count} items)").format(count=len(temp_undo_changes)))
 
         if undo_payload_data:
             self.undo_history.append({'type': action_type, 'data': undo_payload_data})
@@ -1002,15 +1061,15 @@ class OverwatchLocalizerApp:
         if self.current_selected_ts_id in changed_ids:
             self.on_tree_select(None)
 
-        if not self.redo_history: self.edit_menu.entryconfig("恢复", state=tk.DISABLED)
-        self.edit_menu.entryconfig("撤销", state=tk.NORMAL if self.undo_history else tk.DISABLED)
+        if not self.redo_history: self.edit_menu.entryconfig(_("Redo"), state=tk.DISABLED)
+        self.edit_menu.entryconfig(_("Undo"), state=tk.NORMAL if self.undo_history else tk.DISABLED)
         self.mark_project_modified()
 
     def open_code_file_dialog(self, event=None):
         if not self.prompt_save_if_modified(): return
 
         filepath = filedialog.askopenfilename(
-            title="选择守望先锋自定义代码文件",
+            title = _("Open Code File"),
             filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
             initialdir=self.config.get("last_dir", os.getcwd()),
             parent=self.root
@@ -1020,7 +1079,7 @@ class OverwatchLocalizerApp:
 
     def open_code_file_path(self, filepath):
         if self.is_ai_translating_batch:
-            messagebox.showwarning("操作受限", "AI批量翻译正在进行中。请等待其完成或停止后再打开新文件。",
+            messagebox.showwarning(_("Operation Restricted"), _("AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."),
                                    parent=self.root)
             return
 
@@ -1035,7 +1094,7 @@ class OverwatchLocalizerApp:
             self.config["last_dir"] = os.path.dirname(filepath)
             self.save_config()
 
-            self.update_statusbar("正在提取字符串...", persistent=True)
+            self.update_statusbar(_("Extracting strings..."), persistent=True)
             self.root.update_idletasks()
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
             self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
@@ -1048,25 +1107,26 @@ class OverwatchLocalizerApp:
             self.redo_history.clear()
             self.current_selected_ts_id = None
             self.mark_project_modified(False)
-
             self.refresh_treeview()
             self.update_statusbar(
-                f"已加载 {len(self.translatable_objects)} 个可翻译字符串从 {os.path.basename(filepath)}",
+                _("Loaded {count} translatable strings from {filename}").format(count=len(self.translatable_objects),
+                                                                                filename=os.path.basename(filepath)),
                 persistent=True)
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
-            messagebox.showerror("错误", f"无法打开或解析代码文件 '{os.path.basename(filepath)}': {e}",
+            messagebox.showerror(_("Error"), _("Could not open or parse code file '{filename}': {error}").format(
+                filename=os.path.basename(filepath), error=e),
                                  parent=self.root)
             self._reset_app_state()
-            self.update_statusbar("代码文件加载失败", persistent=True)
+            self.update_statusbar(_("Code file loading failed"), persistent=True)
         self.update_counts_display()
 
     def open_project_dialog(self, event=None):
         if not self.prompt_save_if_modified(): return
 
         filepath = filedialog.askopenfilename(
-            title="打开项目文件",
+            title = _("Open Project File"),
             filetypes=(("Overwatch Project Files", f"*{PROJECT_FILE_EXTENSION}"), ("All Files", "*.*")),
             initialdir=self.config.get("last_dir", os.getcwd()),
             parent=self.root
@@ -1076,7 +1136,7 @@ class OverwatchLocalizerApp:
 
     def open_project_file(self, project_filepath):
         if self.is_ai_translating_batch:
-            messagebox.showwarning("操作受限", "AI批量翻译正在进行中。", parent=self.root)
+            messagebox.showwarning(_("Operation Restricted"), _("AI batch translation is in progress."), parent=self.root)
             return
 
         try:
@@ -1093,7 +1153,7 @@ class OverwatchLocalizerApp:
             if tm_path_from_project and os.path.exists(tm_path_from_project):
                 self.load_tm_from_excel(tm_path_from_project, silent=True)
             elif tm_path_from_project:
-                messagebox.showwarning("项目警告", f"项目关联的翻译记忆库文件 '{tm_path_from_project}' 未找到。",
+                messagebox.showwarning(_("Project Warning"), _("Project's associated Translation Memory file '{tm_path}' not found.").format(tm_path=tm_path_from_project),
                                        parent=self.root)
 
             filter_settings = project_data.get("filter_settings", {})
@@ -1125,14 +1185,15 @@ class OverwatchLocalizerApp:
                 self.tree.see(selected_id_from_proj)
                 self.on_tree_select(None)
 
-            self.update_statusbar(f"项目 '{os.path.basename(project_filepath)}' 已加载。", persistent=True)
+            self.update_statusbar(_("Project '{filename}' loaded.").format(filename=os.path.basename(project_filepath)),
+                                  persistent=True)
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
-            messagebox.showerror("打开项目错误", f"无法加载项目文件 '{os.path.basename(project_filepath)}': {e}",
+            messagebox.showerror(_("Open Project Error"), _("Could not load project file '{filename}': {error}").format(filename=os.path.basename(project_filepath), error=e),
                                  parent=self.root)
             self._reset_app_state()
-            self.update_statusbar("项目文件加载失败。", persistent=True)
+            self.update_statusbar(_("Project file loading failed."), persistent=True)
         self.update_counts_display()
 
     def _reset_app_state(self):
@@ -1152,8 +1213,8 @@ class OverwatchLocalizerApp:
 
     def prompt_save_if_modified(self):
         if self.current_project_modified:
-            response = messagebox.askyesnocancel("未保存的更改",
-                                                 "当前项目有未保存的更改。是否保存？",
+            response = messagebox.askyesnocancel(_("Unsaved Changes"),
+                                                 _("The current project has unsaved changes. Do you want to save?"),
                                                  parent=self.root)
             if response is True:
                 return self.save_project_dialog()
@@ -1219,7 +1280,8 @@ class OverwatchLocalizerApp:
         processed_originals_for_dedup = set()
         seq_id_counter = 1
         search_term = self.search_var.get().lower()
-        if search_term == "快速搜索...": search_term = ""
+        if search_term == _("Quick search...").lower():
+            search_term = ""
 
         for ts_obj in self.translatable_objects:
             if self.deduplicate_strings_var.get():
@@ -1296,7 +1358,7 @@ class OverwatchLocalizerApp:
 
     def find_string_from_toolbar(self):
         search_term = self.search_var.get()
-        if search_term == "快速搜索...":
+        if search_term == "Quick search...":
             self.search_var.set("")
 
         self.refresh_treeview_preserve_selection()
@@ -1308,24 +1370,24 @@ class OverwatchLocalizerApp:
                 self.tree.focus(first_match_id)
                 self.tree.see(first_match_id)
                 self.on_tree_select(None)
-            self.update_statusbar(f"已按 '{self.search_var.get()}' 筛选。")
-        elif self.search_var.get() and self.search_var.get() != "快速搜索...":
-            self.update_statusbar(f"当前筛选条件下未找到 '{self.search_var.get()}'")
+            self.update_statusbar(_("Filtered by '{search_term}'.").format(search_term=self.search_var.get()))
+        elif self.search_var.get() and self.search_var.get() != _("Quick search..."):
+            self.update_statusbar(_("No matches found for '{search_term}' under current filters.").format(search_term=self.search_var.get()))
         else:
-            self.update_statusbar("搜索已清除。")
+            self.update_statusbar(_("Search cleared."))
 
         if not self.search_var.get() and hasattr(self.search_entry, 'insert'):
-            self.search_entry.insert(0, "快速搜索...")
+            self.search_entry.insert(0, _("Quick search..."))
             self.search_entry.config(foreground="grey")
 
     def on_search_focus_in(self, event):
-        if self.search_var.get() == "快速搜索...":
+        if self.search_var.get() == _("Quick search..."):
             self.search_var.set("")
             self.search_entry.config(foreground="black")
 
     def on_search_focus_out(self, event):
         if not self.search_var.get():
-            self.search_var.set("快速搜索...")
+            self.search_var.set("Quick search...")
             self.search_entry.config(foreground="grey")
 
     def _get_ts_obj_from_tree_iid(self, tree_iid):
@@ -1388,9 +1450,9 @@ class OverwatchLocalizerApp:
         self.context_text_display.config(state=tk.DISABLED)
 
         self.ignore_var.set(ts_obj.is_ignored)
-        ignore_label = "忽略此字符串"
+        ignore_label = _("Ignore this string")
         if ts_obj.is_ignored and ts_obj.was_auto_ignored:
-            ignore_label += " (自动)"
+            ignore_label += _(" (Auto)")
         self.toggle_ignore_btn.config(text=ignore_label)
 
         self.reviewed_var.set(ts_obj.is_reviewed)
@@ -1401,8 +1463,12 @@ class OverwatchLocalizerApp:
                 state=tk.NORMAL if ts_obj.original_semantic in self.translation_memory else tk.DISABLED)
 
         self.update_statusbar(
-            f"选中: \"{ts_obj.original_semantic[:30].replace(chr(10), '↵')}...\" (行: {ts_obj.line_num_in_file})",
-            persistent=True)
+            _("Selected: \"{text}...\" (Line: {line_num})").format(
+                text=ts_obj.original_semantic[:30].replace(chr(10), '↵'),
+                line_num=ts_obj.line_num_in_file
+            ),
+            persistent=True
+        )
         self.update_ui_state_for_selection(self.current_selected_ts_id)
 
     def schedule_placeholder_validation(self, event=None):
@@ -1454,8 +1520,8 @@ class OverwatchLocalizerApp:
         state = tk.NORMAL if selected_id else tk.DISABLED
 
         try:
-            self.edit_menu.entryconfig("复制原文", state=state)
-            self.edit_menu.entryconfig("粘贴到译文", state=state)
+            self.edit_menu.entryconfig(_("Copy Original"), state=state)
+            self.edit_menu.entryconfig(_("Paste to Translation"), state=state)
         except tk.TclError:
             pass
 
@@ -1541,7 +1607,8 @@ class OverwatchLocalizerApp:
             return primary_change_data
 
         self.refresh_treeview(preserve_selection=True)
-        self.update_statusbar(f"翻译已应用: \"{ts_obj.original_semantic[:20].replace(chr(10), '↵')}...\"")
+        self.update_statusbar(_("Translation applied: \"{original_semantic}...\"").format(
+            original_semantic=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
 
         if self.current_selected_ts_id == ts_obj.id:
             tm_exists_for_selected = ts_obj.original_semantic in self.translation_memory
@@ -1599,7 +1666,7 @@ class OverwatchLocalizerApp:
             'old_value': old_comment, 'new_value': new_comment
         })
         self.refresh_treeview(preserve_selection=True)
-        self.update_statusbar(f"注释已更新 for ID {str(ts_obj.id)[:8]}...")
+        self.update_statusbar(_("Comment updated for ID {id}...").format(id=str(ts_obj.id)[:8]))
         self.mark_project_modified()
         return True
 
@@ -1641,7 +1708,7 @@ class OverwatchLocalizerApp:
 
         self.refresh_treeview_and_select_neighbor(ts_obj.id)
 
-        self.update_statusbar(f"ID {str(ts_obj.id)[:8]}... 忽略状态 -> {'是' if new_ignore_state else '否'}")
+        self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_('Yes') if new_ignore_state else _('No')))
         self.mark_project_modified()
 
     def toggle_reviewed_selected_checkbox(self):
@@ -1660,7 +1727,7 @@ class OverwatchLocalizerApp:
             'old_value': old_reviewed_state, 'new_value': new_reviewed_state
         })
         self.refresh_treeview_and_select_neighbor(ts_obj.id)
-        self.update_statusbar(f"ID {str(ts_obj.id)[:8]}... 审阅状态 -> {'是' if new_reviewed_state else '否'}")
+        self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_('Yes') if new_reviewed_state else _('No')))
         self.mark_project_modified()
 
     def refresh_treeview_and_select_neighbor(self, removed_item_id):
@@ -1680,32 +1747,32 @@ class OverwatchLocalizerApp:
 
     def save_code_file_content(self, filepath_to_save):
         if not self.original_raw_code_content:
-            messagebox.showerror("错误", "没有原始代码文件内容可用于保存。\n请确保项目关联的代码文件已加载。",
+            messagebox.showerror(_("Error"), _("There is no original code file content to save.\nPlease ensure the code file associated with the project is loaded."),
                                  parent=self.root)
             return False
         try:
             save_translated_code(filepath_to_save, self.original_raw_code_content, self.translatable_objects, self)
-            self.update_statusbar(f"代码文件已保存到: {os.path.basename(filepath_to_save)}", persistent=True)
+            self.update_statusbar(_("Code file saved to: {filename}").format(filename=os.path.basename(filepath_to_save)), persistent=True)
             return True
         except Exception as e_save:
-            messagebox.showerror("保存错误", f"无法保存代码文件: {e_save}", parent=self.root)
+            messagebox.showerror(_("Save Error"), _("Could not save code file: {error}").format(error=e_save), parent=self.root)
             return False
 
     def save_code_file(self, event=None):
         if not self.current_code_file_path:
-            messagebox.showerror("错误", "无原始代码文件路径。", parent=self.root)
+            messagebox.showerror(_("Error"), _("No original code file path."), parent=self.root)
             return
 
         if not self.original_raw_code_content:
-            messagebox.showerror("错误", "无原始代码内容可保存。", parent=self.root)
+            messagebox.showerror(_("Error"), _("No original code content to save."), parent=self.root)
             return
 
         base, ext = os.path.splitext(self.current_code_file_path)
         new_filepath = f"{base}_translated{ext}"
 
         if os.path.exists(new_filepath):
-            if not messagebox.askyesno("确认覆盖",
-                                       f"文件 '{os.path.basename(new_filepath)}' 已存在。是否覆盖？\n将会创建一个备份文件 (.bak)。",
+            if not messagebox.askyesno(_("Confirm Overwrite"),
+                                       _("File '{filename}' already exists. Overwrite? A backup file (.bak) will be created.").format(filename=os.path.basename(new_filepath)),
                                        parent=self.root):
                 return
 
@@ -1719,7 +1786,7 @@ class OverwatchLocalizerApp:
 
     def save_project_as_dialog(self, event=None):
         if not self.translatable_objects and not self.current_code_file_path:
-            messagebox.showinfo("提示", "没有内容可保存为项目。\n请先打开一个代码文件。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("There is no content to save as a project. Please open a code file first."), parent=self.root)
             return False
 
         initial_dir = os.path.dirname(
@@ -1738,7 +1805,7 @@ class OverwatchLocalizerApp:
             filetypes=(("Overwatch Project Files", f"*{PROJECT_FILE_EXTENSION}"), ("All Files", "*.*")),
             initialdir=initial_dir,
             initialfile=initial_file,
-            title="项目另存为",
+            title = _("Save Project As"),
             parent=self.root
         )
         if filepath:
@@ -1760,7 +1827,7 @@ class OverwatchLocalizerApp:
                 "show_unreviewed": self.show_unreviewed_var.get(),
             },
             "ui_state": {
-                "search_term": self.search_var.get() if self.search_var.get() != "快速搜索..." else "",
+                "search_term": self.search_var.get() if self.search_var.get() != "Quick search..." else "",
                 "selected_ts_id": self.current_selected_ts_id or ""
             },
         }
@@ -1771,32 +1838,33 @@ class OverwatchLocalizerApp:
             self.current_project_file_path = project_filepath
             self.add_to_recent_files(project_filepath)
             self.mark_project_modified(False)
-            self.update_statusbar(f"项目已保存到: {os.path.basename(project_filepath)}", persistent=True)
+            self.update_statusbar(_("Project saved to: {filename}").format(filename=os.path.basename(project_filepath)),
+                                  persistent=True)
             self.update_title()
             self.config["last_dir"] = os.path.dirname(project_filepath)
             self.save_config()
-            self.tools_menu.entryconfig("项目个性化翻译设置...", state=tk.NORMAL)
+            self.tools_menu.entryconfig(_("Project-specific Instructions..."), state=tk.NORMAL)
             return True
         return False
 
     def export_project_translations_to_excel(self):
         if not self.translatable_objects:
-            messagebox.showinfo("提示", "无数据可导出。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("No data to export."), parent=self.root)
             return
 
         default_filename = "project_translations.xlsx"
         if self.current_project_file_path:
-            base, _ = os.path.splitext(os.path.basename(self.current_project_file_path))
+            base, _extension  = os.path.splitext(os.path.basename(self.current_project_file_path))
             default_filename = f"{base}_translations.xlsx"
         elif self.current_code_file_path:
-            base, _ = os.path.splitext(os.path.basename(self.current_code_file_path))
+            base, _extension = os.path.splitext(os.path.basename(self.current_code_file_path))
             default_filename = f"{base}_translations.xlsx"
 
         filepath = filedialog.asksaveasfilename(
             defaultextension=".xlsx",
             filetypes=(("Excel files", "*.xlsx"),),
             initialfile=default_filename,
-            title="导出项目翻译到Excel",
+            title=_("Export Project Translations to Excel"),
             parent=self.root
         )
         if not filepath: return
@@ -1804,8 +1872,8 @@ class OverwatchLocalizerApp:
         wb = Workbook()
         ws = wb.active
         ws.title = "Translations"
-        headers = ["UUID", "类型", "原文 (Semantic)", "译文", "注释", "是否审阅", "是否忽略", "源文件行号",
-                   "原文 (Raw)"]
+        headers = ["UUID", "Type", _("Original (Semantic)"), _("Translation"), _("Comment"), _("Reviewed"), _("Ignored"), _("Source Line"),
+                   _("Original (Raw)")]
         ws.append(headers)
 
         items_to_export = [self._find_ts_obj_by_id(ts_id) for ts_id in self.displayed_string_ids if
@@ -1820,25 +1888,28 @@ class OverwatchLocalizerApp:
                 ts_obj.original_semantic,
                 ts_obj.get_translation_for_storage_and_tm(),
                 ts_obj.comment,
-                "是" if ts_obj.is_reviewed else "否",
-                "是" if ts_obj.is_ignored else "否",
+                _("Yes") if ts_obj.is_reviewed else _("No"),
+                _("Yes") if ts_obj.is_ignored else _("No"),
                 ts_obj.line_num_in_file,
                 ts_obj.original_raw
             ])
         try:
             wb.save(filepath)
-            self.update_statusbar(f"项目翻译已导出到: {os.path.basename(filepath)}")
+            self.update_statusbar(
+                _("Project translations exported to: {filename}").format(filename=os.path.basename(filepath)))
         except Exception as e:
-            messagebox.showerror("导出错误", f"无法导出项目翻译到Excel: {e}", parent=self.root)
+            messagebox.showerror(_("Export Error"),
+                                 _("Could not export project translations to Excel: {error}").format(error=e),
+                                 parent=self.root)
 
     def import_project_translations_from_excel(self):
         if not self.translatable_objects:
-            messagebox.showinfo("提示", "请先加载代码文件或项目以匹配导入的翻译。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("Please load a code file or project first to match imported translations."), parent=self.root)
             return
 
         filepath = filedialog.askopenfilename(
             filetypes=(("Excel files", "*.xlsx"),),
-            title="从Excel导入项目翻译",
+            title=_("Import Translations from Excel"),
             parent=self.root
         )
         if not filepath: return
@@ -1849,20 +1920,22 @@ class OverwatchLocalizerApp:
 
             header_row_values = [cell.value for cell in ws[1]]
             if not header_row_values or not all(isinstance(h, str) for h in header_row_values if h is not None):
-                messagebox.showerror("导入错误", "Excel表头格式不正确或为空。", parent=self.root)
+                messagebox.showerror(_("Import Error"), _("Excel header format is incorrect or empty."), parent=self.root)
                 return
 
             try:
                 uuid_col_idx = header_row_values.index("UUID")
-                trans_col_idx = header_row_values.index("译文")
-                comment_col_idx = header_row_values.index("注释") if "注释" in header_row_values else -1
-                reviewed_col_idx = header_row_values.index("是否审阅") if "是否审阅" in header_row_values else -1
-                ignored_col_idx = header_row_values.index("是否忽略") if "是否忽略" in header_row_values else -1
+                trans_col_idx = header_row_values.index(_("Translation"))
+                comment_col_idx = header_row_values.index(_("Comment")) if _("Comment") in header_row_values else -1
+                reviewed_col_idx = header_row_values.index(_("Reviewed")) if _("Reviewed") in header_row_values else -1
+                ignored_col_idx = header_row_values.index(_("Ignored")) if _("Ignored") in header_row_values else -1
                 orig_col_idx = header_row_values.index(
-                    "原文 (Semantic)") if "原文 (Semantic)" in header_row_values else -1
+                    _("Original (Semantic)")) if _("Original (Semantic)") in header_row_values else -1
             except ValueError:
-                messagebox.showerror("导入错误",
-                                     "Excel表头必须包含 'UUID' 和 '译文' 列。\n可选列: '注释', '是否审阅', '是否忽略', '原文 (Semantic)'。",
+                messagebox.showerror(_("Import Error"),
+                                     _("Excel header must contain 'UUID' and '{translation_col}' columns.\nOptional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'.").format(
+                                         translation_col=_("Translation"), comment_col=_("Comment"), reviewed_col=_("Reviewed"),
+                                         ignored_col=_("Ignored"), original_semantic_col=_("Original (Semantic)")),
                                      parent=self.root)
                 return
 
@@ -1881,7 +1954,8 @@ class OverwatchLocalizerApp:
                     if orig_col_idx != -1 and row_cells[orig_col_idx] is not None:
                         if ts_obj.original_semantic != str(row_cells[orig_col_idx]):
                             print(
-                                f"警告: Excel行 {r_idx + 2}, UUID {obj_id_from_excel} - 原文与Excel中的不匹配。仍将导入数据。")
+                                _("Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported.").format(
+                                    row_num=r_idx + 2, uuid=obj_id_from_excel))
 
                     translation_from_excel_raw = str(row_cells[trans_col_idx]) if row_cells[
                                                                                       trans_col_idx] is not None else ""
@@ -1906,7 +1980,7 @@ class OverwatchLocalizerApp:
 
                     if reviewed_col_idx != -1 and row_cells[reviewed_col_idx] is not None:
                         reviewed_str = str(row_cells[reviewed_col_idx]).lower()
-                        is_reviewed_excel = reviewed_str in ["是", "true", "yes", "1"]
+                        is_reviewed_excel = reviewed_str in [_("Yes").lower(), "true", "yes", "1"]
                         if ts_obj.is_reviewed != is_reviewed_excel:
                             changes_for_undo.append(
                                 {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': ts_obj.is_reviewed,
@@ -1916,7 +1990,7 @@ class OverwatchLocalizerApp:
 
                     if ignored_col_idx != -1 and row_cells[ignored_col_idx] is not None:
                         ignored_str = str(row_cells[ignored_col_idx]).lower()
-                        is_ignored_excel = ignored_str in ["是", "true", "yes", "1"]
+                        is_ignored_excel = ignored_str in [_("Yes").lower(), "true", "yes", "1"]
                         if ts_obj.is_ignored != is_ignored_excel:
                             changes_for_undo.append(
                                 {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': ts_obj.is_ignored,
@@ -1926,7 +2000,7 @@ class OverwatchLocalizerApp:
                             if not imported_count: imported_count = 1
 
                 except Exception as cell_err:
-                    print(f"处理 Excel 行 {r_idx + 2} 时出错: {cell_err}。跳过此行。")
+                    print(_("Error processing Excel row {row_num}: {error}. Skipping this row.").format(row_num=r_idx + 2, error=cell_err))
 
             if changes_for_undo:
                 self.add_to_undo_history('bulk_excel_import', {'changes': changes_for_undo})
@@ -1935,24 +2009,24 @@ class OverwatchLocalizerApp:
             self.refresh_treeview(preserve_selection=True)
             if self.current_selected_ts_id: self.on_tree_select(None)
 
-            self.update_statusbar(f"从Excel导入/更新了 {len(changes_for_undo)} 个字段 ({imported_count} 个项目受影响)。")
+            self.update_statusbar(_("Imported/updated {field_count} fields for {item_count} items from Excel.").format(field_count=len(changes_for_undo), item_count=imported_count))
 
         except ValueError as ve:
-            messagebox.showerror("导入错误", f"处理Excel文件时出错 (可能是列名问题): {ve}", parent=self.root)
+            messagebox.showerror(_("Import Error"), _("Error processing Excel file (possibly column names issue): {error}").format(error=ve), parent=self.root)
         except Exception as e:
-            messagebox.showerror("导入错误", f"无法从Excel导入项目翻译: {e}", parent=self.root)
+            messagebox.showerror(_("Import Error"), _("Could not import project translations from Excel: {error}").format(error=e), parent=self.root)
 
     def export_project_translations_to_json(self):
         if not self.translatable_objects:
-            messagebox.showinfo("提示", "无数据可导出。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("No data to export."), parent=self.root)
             return
 
         default_filename = "project_translations.json"
         if self.current_project_file_path:
-            base, _ = os.path.splitext(os.path.basename(self.current_project_file_path))
+            base, _extension = os.path.splitext(os.path.basename(self.current_project_file_path))
             default_filename = f"{base}_translations.json"
         elif self.current_code_file_path:
-            base, _ = os.path.splitext(os.path.basename(self.current_code_file_path))
+            base, __extension = os.path.splitext(os.path.basename(self.current_code_file_path))
             default_filename = f"{base}_translations.json"
         elif self.current_selected_ts_id:
             default_filename = "po_export.json"
@@ -1961,7 +2035,7 @@ class OverwatchLocalizerApp:
             defaultextension=".json",
             filetypes=(("JSON files", "*.json"), ("All Files", "*.*")),
             initialfile=default_filename,
-            title="导出项目翻译到JSON",
+            title = _("Export Project Translations to JSON"),
             parent=self.root
         )
         if not filepath: return
@@ -1969,21 +2043,24 @@ class OverwatchLocalizerApp:
         try:
             export_service.export_to_json(filepath, self.translatable_objects, self.displayed_string_ids,
                                           app_instance=self)
-            self.update_statusbar(f"项目翻译已导出到: {os.path.basename(filepath)}")
+            self.update_statusbar(
+                _("Project translations exported to: {filename}").format(filename=os.path.basename(filepath)))
         except Exception as e:
-            messagebox.showerror("导出错误", f"无法导出项目翻译到JSON: {e}", parent=self.root)
+            messagebox.showerror(_("Export Error"),
+                                 _("Could not export project translations to JSON: {error}").format(error=e),
+                                 parent=self.root)
 
     def export_project_translations_to_yaml(self):
         if not self.translatable_objects:
-            messagebox.showinfo("提示", "无数据可导出。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("No data to export."), parent=self.root)
             return
 
         default_filename = "project_translations.yaml"
         if self.current_project_file_path:
-            base, _ = os.path.splitext(os.path.basename(self.current_project_file_path))
+            base, _extension = os.path.splitext(os.path.basename(self.current_project_file_path))
             default_filename = f"{base}_translations.yaml"
         elif self.current_code_file_path:
-            base, _ = os.path.splitext(os.path.basename(self.current_code_file_path))
+            base, _extension = os.path.splitext(os.path.basename(self.current_code_file_path))
             default_filename = f"{base}_translations.yaml"
         elif self.current_selected_ts_id:
             default_filename = "po_export.yaml"
@@ -1992,7 +2069,7 @@ class OverwatchLocalizerApp:
             defaultextension=".yaml",
             filetypes=(("YAML files", "*.yaml;*.yml"), ("All Files", "*.*")),
             initialfile=default_filename,
-            title="导出项目翻译到YAML",
+            title=_("Export Project Translations to YAML"),
             parent=self.root
         )
         if not filepath: return
@@ -2000,13 +2077,13 @@ class OverwatchLocalizerApp:
         try:
             export_service.export_to_yaml(filepath, self.translatable_objects, self.displayed_string_ids,
                                           app_instance=self)
-            self.update_statusbar(f"项目翻译已导出到: {os.path.basename(filepath)}")
+            self.update_statusbar(_("Project translations exported to: {filename}").format(filename=os.path.basename(filepath)))
         except Exception as e:
-            messagebox.showerror("导出错误", f"无法导出项目翻译到YAML: {e}", parent=self.root)
+            messagebox.showerror(_("Export Error"), _("Could not export project translations to YAML: {error}").format(error=e), parent=self.root)
 
     def extract_to_pot_dialog(self):
         code_filepath = filedialog.askopenfilename(
-            title="选择要提取POT的代码文件",
+            title=_("Select Code File to Extract POT From"),
             filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
             initialdir=self.config.get("last_dir", os.getcwd()),
             parent=self.root
@@ -2014,7 +2091,7 @@ class OverwatchLocalizerApp:
         if not code_filepath: return
 
         pot_save_filepath = filedialog.asksaveasfilename(
-            title="保存POT模板文件",
+            title=_("Save POT Template File"),
             defaultextension=".pot",
             filetypes=(("PO Template files", "*.pot"), ("All files", "*.*")),
             initialfile=os.path.splitext(os.path.basename(code_filepath))[0] + ".pot",
@@ -2032,18 +2109,19 @@ class OverwatchLocalizerApp:
             pot_object = po_file_service.extract_to_pot(code_content, extraction_patterns, project_name, APP_VERSION,
                                                         os.path.basename(code_filepath))
             pot_object.save(pot_save_filepath)
-            self.update_statusbar(f"POT模板已保存到: {os.path.basename(pot_save_filepath)}")
+            self.update_statusbar(
+                _("POT template saved to: {filename}").format(filename=os.path.basename(pot_save_filepath)))
             self.config["last_dir"] = os.path.dirname(code_filepath)
             self.save_config()
         except Exception as e:
-            messagebox.showerror("POT提取错误", f"提取POT文件时出错: {e}", parent=self.root)
+            messagebox.showerror(_("POT Extraction Error"), _("Error extracting POT file: {error}").format(error=e), parent=self.root)
 
     def import_po_file_dialog_with_path(self, po_filepath):
         original_code_for_context = None
         original_code_filepath_for_context = None
-        if messagebox.askyesno("关联代码文件?", "是否关联一个原始代码文件以获取上下文和行号信息?", parent=self.root):
+        if messagebox.askyesno(_("Associate Code File?"), _("Do you want to associate an original code file to get context and line number information?"), parent=self.root):
             code_context_filepath = filedialog.askopenfilename(
-                title="选择关联的代码文件 (用于上下文)",
+                title=_("Select Associated Code File (for context)"),
                 filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
                 initialdir=os.path.dirname(po_filepath),
                 parent=self.root
@@ -2054,7 +2132,9 @@ class OverwatchLocalizerApp:
                         original_code_for_context = f.read()
                     original_code_filepath_for_context = code_context_filepath
                 except Exception as e:
-                    messagebox.showwarning("代码文件加载失败", f"无法加载关联的代码文件: {e}", parent=self.root)
+                    messagebox.showwarning(_("Code File Load Failed"),
+                                           _("Could not load associated code file: {error}").format(error=e),
+                                           parent=self.root)
         try:
             self.translatable_objects, self.current_po_metadata = po_file_service.load_from_po(
                 po_filepath, original_code_for_context, original_code_filepath_for_context
@@ -2076,22 +2156,23 @@ class OverwatchLocalizerApp:
 
             self.refresh_treeview()
             self.update_statusbar(
-                f"已从PO文件 {os.path.basename(po_filepath)} 加载 {len(self.translatable_objects)} 个条目。",
+                _("Loaded {count} entries from PO file {filename}.").format(count=len(self.translatable_objects),
+                                                                            filename=os.path.basename(po_filepath)),
                 persistent=True)
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
-            messagebox.showerror("PO导入错误", f"导入PO文件 '{os.path.basename(po_filepath)}' 时出错: {e}",
+            messagebox.showerror(_("PO Import Error"), _("Error importing PO file '{filename}': {error}").format(filename=os.path.basename(po_filepath), error=e),
                                  parent=self.root)
             self._reset_app_state()
-            self.update_statusbar("PO文件加载失败", persistent=True)
+            self.update_statusbar(_("PO file loading failed"), persistent=True)
         self.update_counts_display()
 
     def import_po_file_dialog(self):
         if not self.prompt_save_if_modified(): return
 
         po_filepath = filedialog.askopenfilename(
-            title="选择PO文件导入",
+            title = _("Select PO File to Import"),
             filetypes=(("PO files", "*.po"), ("POT files", "*.pot"), ("All files", "*.*")),
             initialdir=self.config.get("last_dir", os.getcwd()),
             parent=self.root
@@ -2101,15 +2182,15 @@ class OverwatchLocalizerApp:
 
     def export_to_po_file_dialog(self):
         if not self.translatable_objects:
-            messagebox.showinfo("提示", "无数据可导出到PO文件。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("No data to export."), parent=self.root)
             return
 
         default_filename = "translations.po"
         if self.current_project_file_path:
-            base, _ = os.path.splitext(os.path.basename(self.current_project_file_path))
+            base, _extension = os.path.splitext(os.path.basename(self.current_project_file_path))
             default_filename = f"{base}.po"
         elif self.current_code_file_path:
-            base, _ = os.path.splitext(os.path.basename(self.current_code_file_path))
+            base, _extension = os.path.splitext(os.path.basename(self.current_code_file_path))
             default_filename = f"{base}.po"
         elif self.recent_files and (
                 self.recent_files[0].lower().endswith(".po") or self.recent_files[0].lower().endswith(".pot")):
@@ -2119,7 +2200,7 @@ class OverwatchLocalizerApp:
             defaultextension=".po",
             filetypes=(("PO files", "*.po"), ("All Files", "*.*")),
             initialfile=default_filename,
-            title="导出翻译到PO文件",
+            title=_("Export to PO File..."),
             parent=self.root
         )
         if not filepath: return
@@ -2129,39 +2210,39 @@ class OverwatchLocalizerApp:
                 self.current_code_file_path) if self.current_code_file_path else "source_code"
             po_file_service.save_to_po(filepath, self.translatable_objects, self.current_po_metadata,
                                        original_file_name_for_po)
-            self.update_statusbar(f"翻译已导出到PO文件: {os.path.basename(filepath)}")
+            self.update_statusbar(_("Translations exported to PO file: {filename}").format(filename=os.path.basename(filepath)))
             self.mark_project_modified(False)
         except Exception as e:
-            messagebox.showerror("导出错误", f"无法导出到PO文件: {e}", parent=self.root)
+            messagebox.showerror(_("Export Error"), _("Failed to export to PO file: {error}").format(error=e), parent=self.root)
 
     def show_extraction_pattern_dialog(self):
         from dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
-        dialog = ExtractionPatternManagerDialog(self.root, "提取规则管理器", self)
+        dialog = ExtractionPatternManagerDialog(self.root, _("Extraction Rule Manager"), self)
         if dialog.result:
             if self.original_raw_code_content:
-                if messagebox.askyesno("规则已更新", "提取规则已更新。是否立即使用新规则重新加载当前代码的翻译文本？",
+                if messagebox.askyesno(_("Extraction Rules Updated"), _("Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"),
                                        parent=self.root):
                     self.reload_translatable_text()
 
     def reload_translatable_text(self, event=None):
         if not self.original_raw_code_content and not self.current_code_file_path:
-            messagebox.showinfo("提示", "没有已加载的代码内容可供重新加载。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("No code content loaded to reload."), parent=self.root)
             return
 
         current_content_to_reextract = self.original_raw_code_content
-        source_name = "当前内存中的代码"
+        source_name = _("current in-memory code")
         if self.current_code_file_path and os.path.exists(self.current_code_file_path):
             try:
                 with open(self.current_code_file_path, 'r', encoding='utf-8', errors='replace') as f:
                     current_content_to_reextract = f.read()
-                source_name = f"文件 '{os.path.basename(self.current_code_file_path)}'"
+                source_name = _("file '{filename}'").format(filename=os.path.basename(self.current_code_file_path))
             except Exception as e:
-                messagebox.showwarning("文件读取错误",
-                                       f"无法从磁盘重新读取 {self.current_code_file_path}。\n将使用内存中的版本。\n错误: {e}",
+                messagebox.showwarning(_("File Read Error"),
+                                       _("Could not re-read {filepath} from disk.\nUsing in-memory version.\nError: {error}").format(filepath=self.current_code_file_path, error=e),
                                        parent=self.root)
 
         if not current_content_to_reextract:
-            messagebox.showerror("错误", "无法获取用于重新提取的代码内容。", parent=self.root)
+            messagebox.showerror(_("Error"), _("Could not get code content for re-extraction."), parent=self.root)
             return
 
         old_translations_map = {ts.original_semantic: {
@@ -2173,15 +2254,15 @@ class OverwatchLocalizerApp:
         } for ts in self.translatable_objects}
 
         if self.current_project_modified or old_translations_map:
-            if not messagebox.askyesno("确认重新加载",
-                                       f"将使用新规则从 {source_name} 重新提取字符串。\n"
-                                       "现有翻译将尝试根据原文匹配保留，但未匹配项的翻译和状态可能会丢失。\n"
-                                       "此操作会清空撤销历史。确定要继续吗？",
+            if not messagebox.askyesno(_("Confirm Reload"),
+                                       _("This will re-extract strings from {source} using the new rules.\n"
+                                         "Existing translations will be preserved where the original text matches, but unmatched translations and statuses may be lost.\n"
+                                         "This action will clear the undo history. Continue?").format(source=source_name),
                                        parent=self.root):
                 return
 
         try:
-            self.update_statusbar("正在使用新规则重新提取字符串...", persistent=True)
+            self.update_statusbar(_("Re-extracting strings with new rules..."), persistent=True)
             self.root.update_idletasks()
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
             self.original_raw_code_content = current_content_to_reextract
@@ -2200,7 +2281,7 @@ class OverwatchLocalizerApp:
                     restored_count += 1
 
             if restored_count > 0:
-                self.update_statusbar(f"尝试恢复了 {restored_count} 项的旧翻译/状态。", persistent=False)
+                self.update_statusbar(_("Attempted to restore {count} old translations/statuses.").format(count=restored_count), persistent=False)
 
             self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
 
@@ -2211,13 +2292,13 @@ class OverwatchLocalizerApp:
 
             self.refresh_treeview()
             self.update_statusbar(
-                f"已使用新规则从 {source_name} 重新提取 {len(self.translatable_objects)} 个字符串。",
+                _("Reloaded {count} strings from {source} using new rules.").format(count=len(self.translatable_objects), source=source_name),
                 persistent=True)
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
-            messagebox.showerror("重新加载错误", f"重新加载翻译文本时出错: {e}", parent=self.root)
-            self.update_statusbar("重新加载失败。", persistent=True)
+            messagebox.showerror(_("Reload Error"), _("Error reloading translatable text: {error}").format(error=e), parent=self.root)
+            self.update_statusbar(_("Reload failed."), persistent=True)
         self.update_counts_display()
 
     def _get_default_tm_excel_path(self):
@@ -2241,16 +2322,17 @@ class OverwatchLocalizerApp:
             if header and len(header) >= 2:
                 for i, col_name in enumerate(header):
                     if isinstance(col_name, str):
-                        if "original" in col_name.lower() or "原文" in col_name:
+                        col_name_lower = col_name.lower()
+                        if "original" in col_name_lower or _("original") in col_name_lower:
                             original_col_idx = i
-                        if "translation" in col_name.lower() or "译文" in col_name:
+                        if "translation" in col_name_lower or _("translation") in col_name_lower:
                             translation_col_idx = i
 
             if original_col_idx == -1 or translation_col_idx == -1:
                 if not silent:
-                    messagebox.showwarning("TM加载警告",
-                                           f"无法从 '{os.path.basename(filepath)}' 的表头确定原文/译文列。"
-                                           f"将尝试默认使用前两列 (A=原文, B=译文)。", parent=self.root)
+                    messagebox.showwarning(_("TM Load Warning"),
+                                           _("Could not determine original/translation columns from '{filename}' header. "
+                                             "Will try to use the first two columns by default (A=Original, B=Translation).").format(filename=os.path.basename(filepath)), parent=self.root)
                 original_col_idx, translation_col_idx = 0, 1
 
             start_row = 2 if header else 1
@@ -2269,21 +2351,21 @@ class OverwatchLocalizerApp:
             self.translation_memory.update(new_tm_data)
 
             if not silent:
-                messagebox.showinfo("翻译记忆库",
-                                    f"从 '{os.path.basename(filepath)}' 加载/合并了 {loaded_count} 条Excel记忆库记录。",
+                messagebox.showinfo(_("Translation Memory"),
+                                    _("Loaded/merged {count} Excel TM records from '{filename}'.").format(count=loaded_count, filename=os.path.basename(filepath)),
                                     parent=self.root)
             self.current_tm_file = filepath
-            self.update_statusbar(f"翻译记忆库已从 '{os.path.basename(filepath)}' (Excel) 加载。")
+            self.update_statusbar(_("Translation Memory loaded from '{filename}' (Excel).").format(filename=os.path.basename(filepath)))
 
         except Exception as e:
             if not silent:
-                messagebox.showerror("错误", f"无法加载Excel翻译记忆库: {e}", parent=self.root)
-            self.update_statusbar(f"加载Excel翻译记忆库失败: {e}")
+                messagebox.showerror(_("Error"), _("Failed to load Excel Translation Memory: {error}").format(error=e), parent=self.root)
+            self.update_statusbar(_("Failed to load Excel Translation Memory: {error}").format(error=e))
 
     def save_tm_to_excel(self, filepath_to_save, silent=False, backup=True):
         if not self.translation_memory:
             if not silent:
-                messagebox.showinfo("翻译记忆库", "记忆库为空，无需保存。", parent=self.root)
+                messagebox.showinfo(_("Translation Memory"), _("Translation Memory is empty, nothing to export."), parent=self.root)
             return
 
         if backup and self.auto_backup_tm_on_save_var.get() and os.path.exists(filepath_to_save):
@@ -2300,7 +2382,7 @@ class OverwatchLocalizerApp:
             except Exception as e_backup:
                 if not silent:
                     if self.root.winfo_exists():
-                        messagebox.showwarning("备份失败", f"无法为记忆库创建备份: {e_backup}", parent=self.root)
+                        messagebox.showwarning(_("Backup Failed"), _("Could not create backup for TM: {error}").format(error=e_backup), parent=self.root)
 
         workbook = Workbook()
         sheet = workbook.active
@@ -2317,17 +2399,17 @@ class OverwatchLocalizerApp:
         try:
             workbook.save(filepath_to_save)
             if not silent:
-                messagebox.showinfo("翻译记忆库", f"记忆库已保存到 '{os.path.basename(filepath_to_save)}'.",
+                messagebox.showinfo(_("Translation Memory"), _("Translation Memory saved to '{filename}'.").format(filename=os.path.basename(filepath_to_save)),
                                     parent=self.root)
             self.current_tm_file = filepath_to_save
-            self.update_statusbar(f"记忆库已保存到 '{os.path.basename(filepath_to_save)}'.")
+            self.update_statusbar(_("Translation Memory saved to '{filename}'.").format(filename=os.path.basename(filepath_to_save)))
         except Exception as e_save:
             if not silent:
-                messagebox.showerror("错误", f"无法保存翻译记忆库: {e_save}", parent=self.root)
+                messagebox.showerror(_("Error"), _("Failed to save Translation Memory: {error}").format(error=e_save), parent=self.root)
 
     def import_tm_excel_dialog(self):
         filepath = filedialog.askopenfilename(
-            title="导入翻译记忆库 (Excel)",
+            title=_("Import Translation Memory (Excel)"),
             filetypes=(("Excel files", "*.xlsx"), ("All files", "*.*")),
             defaultextension=".xlsx",
             parent=self.root
@@ -2337,19 +2419,19 @@ class OverwatchLocalizerApp:
         self.load_tm_from_excel(filepath)
 
         if self.translatable_objects and \
-                messagebox.askyesno("应用记忆库", "记忆库已导入。是否立即将其应用于当前项目中未翻译的字符串？",
+                messagebox.askyesno(_("Apply Translation Memory"), _("Translation Memory imported. Do you want to apply it to untranslated strings in the current project immediately?"),
                                     parent=self.root):
             self.apply_tm_to_all_current_strings(only_if_empty=True)
 
     def export_tm_excel_dialog(self):
         if not self.translation_memory:
-            messagebox.showinfo("翻译记忆库", "当前记忆库为空，无法导出。", parent=self.root)
+            messagebox.showinfo(_("Translation Memory"), _("Translation Memory is empty, nothing to export."), parent=self.root)
             return
 
         initial_tm_filename = os.path.basename(
             self.current_tm_file if self.current_tm_file else self._get_default_tm_excel_path())
         filepath = filedialog.asksaveasfilename(
-            title="导出/另存为当前记忆库 (Excel)",
+            title=_("Export Current TM (Excel)"),
             filetypes=(("Excel files", "*.xlsx"), ("All files", "*.*")),
             defaultextension=".xlsx",
             initialfile=initial_tm_filename,
@@ -2360,14 +2442,14 @@ class OverwatchLocalizerApp:
 
     def clear_entire_translation_memory(self):
         if not self.translation_memory:
-            messagebox.showinfo("清除记忆库", "翻译记忆库已经为空。", parent=self.root)
+            messagebox.showinfo(_("Clear Translation Memory"), _("Translation Memory is already empty."), parent=self.root)
             return
 
-        if messagebox.askyesno("确认清除",
-                               "确定要清除内存中所有的翻译记忆库条目吗？\n"
-                               "此操作无法撤销，但不会立即修改磁盘上的TM文件（除非之后保存）。", parent=self.root):
+        if messagebox.askyesno(_("Confirm Clear"),
+                               _("Are you sure you want to clear all entries from the in-memory Translation Memory?\n"
+                                 "This cannot be undone."), parent=self.root):
             self.translation_memory.clear()
-            self.update_statusbar("整个翻译记忆库已在内存中清空。")
+            self.update_statusbar(_("In-memory Translation Memory has been cleared."))
 
             if self.current_selected_ts_id:
                 ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
@@ -2378,28 +2460,28 @@ class OverwatchLocalizerApp:
 
     def update_tm_for_selected_string(self):
         if not self.current_selected_ts_id:
-            messagebox.showinfo("提示", "请先选择一个字符串。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("Please select an item first."), parent=self.root)
             return
 
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj:
-            messagebox.showerror("错误", "未找到选中的项目数据。", parent=self.root)
+            messagebox.showerror(_("Error"), _("Could not find data for the selected item."), parent=self.root)
             return
         current_translation_ui = self.translation_edit_text.get("1.0", tk.END).rstrip('\n')
 
         if not current_translation_ui.strip():
-            if messagebox.askyesno("确认更新记忆库",
-                                   f"当前译文为空。是否要用空译文更新/覆盖记忆库中对于:\n'{ts_obj.original_semantic[:100].replace(chr(10), '↵')}...' \n的条目？\n(这通常意味着将来此原文会自动翻译为空)",
+            if messagebox.askyesno(_("Confirm Update TM"),
+                                   _("The current translation is empty. Do you want to update the TM entry for:\n'{text}...' with an empty translation?").format(text=ts_obj.original_semantic[:100].replace(chr(10), '↵')),
                                    parent=self.root, icon='warning'):
                 translation_for_tm_storage = ""
             else:
-                self.update_statusbar("更新记忆库已取消。")
+                self.update_statusbar(_("TM update cancelled."))
                 return
         else:
             translation_for_tm_storage = current_translation_ui.replace("\n", "\\n")
 
         self.translation_memory[ts_obj.original_semantic] = translation_for_tm_storage
-        self.update_statusbar(f"记忆库已为原文 '{ts_obj.original_semantic[:30].replace(chr(10), '↵')}...' 更新。")
+        self.update_statusbar(_("TM updated for original: '{text}...'").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
         self.update_tm_suggestions_for_text(ts_obj.original_semantic)
         if hasattr(self, 'clear_selected_tm_btn'): self.clear_selected_tm_btn.config(
             state=tk.NORMAL)
@@ -2413,23 +2495,23 @@ class OverwatchLocalizerApp:
 
     def clear_tm_for_selected_string(self):
         if not self.current_selected_ts_id:
-            messagebox.showinfo("提示", "请先选择一个字符串。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("Please select an item first."), parent=self.root)
             return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return
 
         if ts_obj.original_semantic in self.translation_memory:
-            if messagebox.askyesno("确认清除",
-                                   f"确定要从记忆库中移除原文为:\n'{ts_obj.original_semantic[:100].replace(chr(10), '↵')}...' \n的条目吗?",
+            if messagebox.askyesno(_("Confirm Clear"),
+                                   _("Are you sure you want to remove the TM entry for:\n'{text}...'?").format(text=ts_obj.original_semantic[:100].replace(chr(10), '↵')),
                                    parent=self.root):
                 del self.translation_memory[ts_obj.original_semantic]
-                self.update_statusbar(f"已为选中项清除记忆库条目。")
+                self.update_statusbar(_("TM entry cleared for selected item."))
                 self.update_tm_suggestions_for_text(ts_obj.original_semantic)
                 if hasattr(self, 'clear_selected_tm_btn'): self.clear_selected_tm_btn.config(
                     state=tk.DISABLED)
                 self.mark_project_modified()
         else:
-            messagebox.showinfo("提示", "当前选中项在翻译记忆库中没有条目。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("The selected item has no entry in the Translation Memory."), parent=self.root)
 
     def update_tm_suggestions_for_text(self, original_semantic_text):
         self.tm_suggestions_listbox.delete(0, tk.END)
@@ -2438,14 +2520,14 @@ class OverwatchLocalizerApp:
         if original_semantic_text in self.translation_memory:
             suggestion_from_tm = self.translation_memory[original_semantic_text]
             suggestion_for_ui = suggestion_from_tm.replace("\\n", "\n")
-            self.tm_suggestions_listbox.insert(tk.END, f"(100% 精确匹配): {suggestion_for_ui}")
+            self.tm_suggestions_listbox.insert(tk.END, f"(100% Exact Match): {suggestion_for_ui}")
             self.tm_suggestions_listbox.itemconfig(tk.END, {'fg': 'darkgreen'})
 
         original_lower = original_semantic_text.lower()
         for tm_orig, tm_trans_with_slash_n in self.translation_memory.items():
             if tm_orig.lower() == original_lower and tm_orig != original_semantic_text:
                 suggestion_for_ui = tm_trans_with_slash_n.replace("\\n", "\n")
-                self.tm_suggestions_listbox.insert(tk.END, f"(大小写不符): {suggestion_for_ui}")
+                self.tm_suggestions_listbox.insert(tk.END, f"(Case Mismatch): {suggestion_for_ui}")
                 self.tm_suggestions_listbox.itemconfig(tk.END, {'fg': 'orange red'})
                 break
 
@@ -2486,18 +2568,18 @@ class OverwatchLocalizerApp:
             if ts_obj:
                 self._apply_translation_to_model(ts_obj, translation_text_ui, source="tm_suggestion")
 
-        self.update_statusbar("已应用翻译记忆库建议。")
+        self.update_statusbar(_("Translation Memory suggestion applied."))
 
     def apply_tm_to_all_current_strings(self, silent=False, only_if_empty=False, confirm=False):
         if not self.translatable_objects:
-            if not silent: messagebox.showinfo("信息", "没有字符串可应用记忆库。", parent=self.root)
+            if not silent: messagebox.showinfo(_("Info"), _("No strings to apply TM to."), parent=self.root)
             return 0
         if not self.translation_memory:
-            if not silent: messagebox.showinfo("信息", "翻译记忆库为空。", parent=self.root)
+            if not silent: messagebox.showinfo(_("Info"), _("Translation Memory is empty."), parent=self.root)
             return 0
 
         if confirm and not only_if_empty:
-            if not messagebox.askyesno("确认操作", "这将使用记忆库中的翻译覆盖所有匹配的现有翻译。\n确定要继续吗？",
+            if not messagebox.askyesno(_("Confirm Operation"), _("This will apply TM to all matching strings, overwriting existing translations. Continue?"),
                                        parent=self.root):
                 return 0
 
@@ -2533,18 +2615,18 @@ class OverwatchLocalizerApp:
             if self.current_selected_ts_id: self.on_tree_select(None)
 
             if not silent:
-                messagebox.showinfo("翻译记忆库", f"已向 {applied_count} 个字符串应用记忆库翻译。", parent=self.root)
-            self.update_statusbar(f"已向 {applied_count} 个字符串应用记忆库翻译。")
+                messagebox.showinfo(_("Translation Memory"), _("Applied TM to {count} strings.").format(count=applied_count), parent=self.root)
+            self.update_statusbar(_("Applied TM to {count} strings.").format(count=applied_count))
         elif not silent:
-            messagebox.showinfo("翻译记忆库", "没有可自动应用的翻译 (或无需更改)。", parent=self.root)
+            messagebox.showinfo(_("Translation Memory"), _("No applicable translations found in TM (or no changes needed)."), parent=self.root)
 
         return applied_count
 
     def show_advanced_search_dialog(self, event=None):
         if not self.translatable_objects:
-            messagebox.showinfo("提示", "请先加载文件或项目。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("Please load a file or project first."), parent=self.root)
             return
-        AdvancedSearchDialog(self.root, "查找与替换", self)
+        AdvancedSearchDialog(self.root, _("Find and Replace"), self)
 
     def copy_selected_original_text_menu(self, event=None):
         self.cm_copy_original()
@@ -2556,36 +2638,36 @@ class OverwatchLocalizerApp:
 
     def show_project_custom_instructions_dialog(self):
         if not self.current_project_file_path:
-            messagebox.showerror("错误", "此功能仅在打开项目文件后可用。", parent=self.root)
+            messagebox.showerror(_("Error"), _("This feature is only available when a project file is open."), parent=self.root)
             return
 
-        new_instructions = simpledialog.askstring("项目个性化翻译设置",
-                                                  "输入此项目的特定翻译指令 (例如：'将“英雄”翻译为“干员”'，'风格要活泼可爱')。\n这些指令将在AI翻译时使用。",
+        new_instructions = simpledialog.askstring(_("Project-specific Instructions"),
+                                                  _("Enter specific translation instructions for this project (e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a lively and cute style').\nThese instructions will be used during AI translation."),
                                                   initialvalue=self.project_custom_instructions,
                                                   parent=self.root)
 
         if new_instructions is not None and new_instructions != self.project_custom_instructions:
             self.project_custom_instructions = new_instructions
             self.mark_project_modified()
-            self.update_statusbar("项目个性化翻译设置已更新。")
+            self.update_statusbar(_("Project-specific translation settings updated."))
 
     def show_ai_settings_dialog(self):
         if not requests:
-            messagebox.showerror("功能不可用", "requests库未安装，AI翻译功能无法使用。\n请运行: pip install requests",
+            messagebox.showerror(_("Feature Unavailable"), _("The 'requests' library is not installed, AI translation is unavailable.\nPlease run: pip install requests"),
                                  parent=self.root)
             return
-        AISettingsDialog(self.root, "AI设置", self.config, self.save_config, self.ai_translator, self)
+        AISettingsDialog(self.root, _("AI Settings"), self.config, self.save_config, self.ai_translator, self)
 
     def _check_ai_prerequisites(self, show_error=True):
         if not requests:
             if show_error:
-                messagebox.showerror("AI功能不可用",
-                                     "Python 'requests' 库未找到。请安装它 (pip install requests) 以使用AI翻译功能。",
+                messagebox.showerror(_("AI Feature Unavailable"),
+                                     _("Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."),
                                      parent=self.root)
             return False
         if not self.config.get("ai_api_key"):
             if show_error:
-                messagebox.showerror("API Key缺失", "API Key 未设置。请前往“工具 > AI翻译设置”进行配置。",
+                messagebox.showerror(_("API Key Missing"), _("API Key is not set. Please configure it in 'Tools > AI Settings'."),
                                      parent=self.root)
             return False
         return True
@@ -2625,7 +2707,7 @@ class OverwatchLocalizerApp:
             self.on_tree_select(None)
             self.translation_edit_text.focus_set()
         else:
-            self.update_statusbar("没有更多未翻译项。")
+            self.update_statusbar(_("No more untranslated items."))
 
     def _generate_ai_context_strings(self, current_ts_id_to_exclude):
         contexts = {
@@ -2704,7 +2786,7 @@ class OverwatchLocalizerApp:
 
     def show_prompt_manager_dialog(self):
         from dialogs.prompt_manager_dialog import PromptManagerDialog
-        PromptManagerDialog(self.root, "AI提示词管理器", self)
+        PromptManagerDialog(self.root, _("AI Prompt Manager"), self)
 
     def _initiate_single_ai_translation(self, ts_id_to_translate, called_from_cm=False):
 
@@ -2720,23 +2802,24 @@ class OverwatchLocalizerApp:
 
         if ts_obj.is_ignored:
             if not called_from_cm:
-                messagebox.showinfo("已忽略", "选中的字符串已被标记为忽略，不会进行AI翻译。", parent=self.root)
+                messagebox.showinfo(_("Ignored"), _("The selected string is marked as ignored and will not be AI translated."), parent=self.root)
             return False
 
         if ts_obj.translation.strip():
             if called_from_cm and len(self.tree.selection()) > 1:
                 return False
 
-            if not messagebox.askyesno("覆盖确认",
-                                       f"字符串 \"{ts_obj.original_semantic[:50]}...\" 已有翻译。\n是否使用AI翻译覆盖现有译文？",
+            if not messagebox.askyesno(_("Overwrite Confirmation"),
+                                       _("String \"{text}...\" already has a translation. Overwrite with AI translation?").format(text=ts_obj.original_semantic[:50]),
                                        parent=self.root):
                 return False
 
         if not called_from_cm:
-            self.update_statusbar(f"AI正在翻译: \"{ts_obj.original_semantic[:30].replace(chr(10), '↵')}...\"")
+            self.update_statusbar(_("AI is translating: \"{text}...\"").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
 
         context_dict = self._generate_ai_context_strings(ts_obj.id)
-        target_language = self.config.get("ai_target_language", "中文")
+        target_language = self.config.get("ai_target_language", _("Target_Languege"))
+
 
         thread = threading.Thread(target=self._perform_ai_translation_threaded,
                                   args=(ts_obj.id, ts_obj.original_semantic, target_language,
@@ -2766,12 +2849,12 @@ class OverwatchLocalizerApp:
             ts_obj = self._find_ts_obj_by_id(ts_id)
 
             self.update_statusbar(
-                f"AI批量: 处理中 {current_item_idx + 1}/{self.ai_batch_total_items} (并发: {self.ai_batch_active_threads})...",
+                _("AI Batch: Processing {current}/{total} (Concurrency: {threads})...").format(current=current_item_idx + 1, total=self.ai_batch_total_items, threads=self.ai_batch_active_threads),
                 persistent=True)
 
             if ts_obj and not ts_obj.is_ignored and not ts_obj.translation.strip():
                 context_dict = self._generate_ai_context_strings(ts_obj.id)
-                target_language = self.config.get("ai_target_language", "中文")
+                target_language = self.config.get("ai_target_language", _("Target_Languege"))
 
 
                 thread = threading.Thread(target=self._perform_ai_translation_threaded,
@@ -2821,11 +2904,11 @@ class OverwatchLocalizerApp:
             return
 
         if error_object:
-            error_msg = f"AI翻译失败 for \"{ts_obj.original_semantic[:20].replace(chr(10), '↵')}...\": {error_object}"
+            error_msg = _("AI translation failed for \"{text}...\": {error}").format(text=ts_obj.original_semantic[:20].replace(chr(10), '↵'), error=error_object)
             self.update_statusbar(error_msg)
             if not is_batch_item:
-                messagebox.showerror("AI翻译错误",
-                                     f"对 \"{ts_obj.original_semantic[:50]}...\" 的AI翻译失败:\n{error_object}",
+                messagebox.showerror(_("AI Translation Error"),
+                                     _("AI translation failed for \"{text}...\":\n{error}").format(text=ts_obj.original_semantic[:50], error=error_object),
                                      parent=self.root)
         elif translated_text is not None and translated_text.strip():
             apply_source = "ai_batch_item" if is_batch_item else "ai_selected"
@@ -2862,10 +2945,10 @@ class OverwatchLocalizerApp:
                         state=tk.NORMAL if ts_obj.original_semantic in self.translation_memory else tk.DISABLED)
 
             if not is_batch_item:
-                self.update_statusbar(f"AI翻译成功: \"{ts_obj.original_semantic[:20].replace(chr(10), '↵')}...\"")
+                self.update_statusbar(_("AI translation successful: \"{text}...\"").format(text=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
 
         elif translated_text is not None and not translated_text.strip():
-            self.update_statusbar(f"AI返回空翻译 for \"{ts_obj.original_semantic[:20].replace(chr(10), '↵')}...\"")
+            self.update_statusbar(_("AI returned empty translation for \"{text}...\"").format(text=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
             if not is_batch_item and self.current_selected_ts_id == ts_obj.id:
                 self.translation_edit_text.delete("1.0", tk.END)
                 self._apply_translation_to_model(ts_obj, "", source="ai_selected_empty")
@@ -2879,7 +2962,7 @@ class OverwatchLocalizerApp:
                 progress_percent = 0
 
             self.update_statusbar(
-                f"AI批量: {self.ai_batch_completed_count}/{self.ai_batch_total_items} 完成 ({progress_percent:.0f}%).",
+                _("AI Batch: {current}/{total} completed ({progress_percent:.0f}%).").format(current=self.ai_batch_completed_count, total=self.ai_batch_total_items, progress_percent=progress_percent),
                 persistent=True)
 
             if self.ai_batch_completed_count >= self.ai_batch_total_items and self.ai_batch_active_threads == 0:
@@ -2897,7 +2980,7 @@ class OverwatchLocalizerApp:
     def ai_translate_all_untranslated(self):
         if not self._check_ai_prerequisites(): return
         if self.is_ai_translating_batch:
-            messagebox.showwarning("AI翻译进行中", "AI批量翻译已在进行中。", parent=self.root)
+            messagebox.showwarning(_("AI Translation in Progress"), _("AI batch translation is already in progress."), parent=self.root)
             return
 
         self.ai_translation_batch_ids_queue = [
@@ -2906,7 +2989,7 @@ class OverwatchLocalizerApp:
         ]
 
         if not self.ai_translation_batch_ids_queue:
-            messagebox.showinfo("无需翻译", "没有找到未翻译且未忽略的字符串。", parent=self.root)
+            messagebox.showinfo(_("No Translation Needed"), _("No untranslated and non-ignored strings found."), parent=self.root)
             return
 
         self.ai_batch_total_items = len(self.ai_translation_batch_ids_queue)
@@ -2916,18 +2999,18 @@ class OverwatchLocalizerApp:
         avg_api_time_estimate_s = 3.0
         if max_concurrency == 1:
             estimated_time_s = self.ai_batch_total_items * (avg_api_time_estimate_s + api_interval_ms / 1000.0)
-            concurrency_text = "顺序执行"
+            concurrency_text = _("sequential execution")
         else:
             estimated_time_s = (self.ai_batch_total_items / max_concurrency) * avg_api_time_estimate_s + \
                                (self.ai_batch_total_items / max_concurrency) * (
                                        api_interval_ms / 1000.0)
-            concurrency_text = f"最多 {max_concurrency} 并发"
+            concurrency_text = _("up to {max_concurrency} concurrent").format(max_concurrency=max_concurrency)
 
-        if not messagebox.askyesno("确认批量翻译",
-                                   f"将对 {self.ai_batch_total_items} 个未翻译字符串进行AI翻译 ({concurrency_text})。\n"
-                                   f"API调用间隔 {api_interval_ms}ms (并发时为任务间最小间隔)。\n"
-                                   f"预计耗时约 {estimated_time_s:.1f} 秒。\n"
-                                   f"是否继续？", parent=self.root):
+        if not messagebox.askyesno(_("Confirm Batch Translation"),
+                                   _("This will start AI translation for {count} untranslated strings ({concurrency_info}).\n"
+                                     "API call interval {api_interval_ms}ms (minimum interval between tasks when concurrent).\n"
+                                     "Estimated time: ~{time_s:.1f} seconds.\n"
+                                     "Continue?").format(count=self.ai_batch_total_items, concurrency_info=concurrency_text, api_interval_ms=api_interval_ms, time_s=estimated_time_s), parent=self.root):
             self.ai_translation_batch_ids_queue = []
             return
 
@@ -2940,9 +3023,9 @@ class OverwatchLocalizerApp:
 
         if hasattr(self, 'progress_bar'): self.progress_bar['value'] = 0
         self.update_ai_related_ui_state()
-        self.update_statusbar(f"AI批量翻译开始 ({concurrency_text})...", persistent=True)
+        self.update_statusbar(_("AI batch translation started ({concurrency_info})...").format(concurrency_info=concurrency_text), persistent=True)
 
-        for _ in range(max_concurrency):
+        for _extension in range(max_concurrency):
             if self.ai_batch_next_item_index < self.ai_batch_total_items:
                 self._dispatch_next_ai_batch_item()
             else:
@@ -2961,7 +3044,7 @@ class OverwatchLocalizerApp:
         processed_items = self.ai_batch_completed_count
 
         self.update_statusbar(
-            f"AI批量翻译完成。成功翻译 {success_count}/{processed_items} 项 (共 {self.ai_batch_total_items} 项计划)。",
+            _("AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned).").format(success_count=success_count, processed_count=processed_items, total_items=self.ai_batch_total_items),
             persistent=True)
 
         self.is_ai_translating_batch = False
@@ -2989,12 +3072,12 @@ class OverwatchLocalizerApp:
                 mismatched_items.append(ts_obj)
 
         if mismatched_items:
-            msg = f"AI批量翻译后，发现 {len(mismatched_items)} 项的占位符不匹配。\n是否为这些项批量添加注释“占位符不匹配”？"
-            if messagebox.askyesno("占位符不匹配", msg, parent=self.root):
+            msg = _("After AI batch translation, {count} items were found with placeholder mismatches.\nDo you want to add the comment \"Placeholder Mismatch\" to these items in bulk?").format(count=len(mismatched_items))
+            if messagebox.askyesno(_("Placeholder Mismatch"), msg, parent=self.root):
                 bulk_comment_changes = []
                 for ts_obj in mismatched_items:
                     old_comment = ts_obj.comment
-                    new_comment = (old_comment + " 占位符不匹配").strip()
+                    new_comment = (old_comment + " " + _("Placeholder Mismatch")).strip()
                     if ts_obj.comment != new_comment:
                         ts_obj.comment = new_comment
                         bulk_comment_changes.append({
@@ -3004,21 +3087,21 @@ class OverwatchLocalizerApp:
                 if bulk_comment_changes:
                     self.add_to_undo_history('bulk_context_menu', {'changes': bulk_comment_changes})
                     self.refresh_treeview_preserve_selection()
-                    self.update_statusbar(f"为 {len(bulk_comment_changes)} 个占位符不匹配项添加了注释。")
+                    self.update_statusbar(_("Added comments to {count} placeholder mismatched items.").format(count=len(bulk_comment_changes)))
 
     def stop_batch_ai_translation(self, silent=False):
         if not self.is_ai_translating_batch:
             if not silent:
-                messagebox.showinfo("提示", "没有正在进行的AI批量翻译任务。", parent=self.root)
+                messagebox.showinfo(_("Info"), _("No AI batch translation task is in progress."), parent=self.root)
             return
 
         was_translating = self.is_ai_translating_batch
         self.is_ai_translating_batch = False
 
         if not silent:
-            messagebox.showinfo("AI批量翻译", "AI批量翻译已请求停止。\n已派发的任务将继续完成，请稍候。", parent=self.root)
+            messagebox.showinfo(_("AI Batch Translation"), _("AI batch translation stop requested.\nDispatched tasks will continue to complete, please wait."), parent=self.root)
 
-        self.update_statusbar("AI批量翻译正在停止...等待已派发任务完成。", persistent=True)
+        self.update_statusbar(_("AI batch translation stop requested. Finishing dispatched tasks..."), persistent=True)
 
         if was_translating and self.ai_batch_active_threads == 0:
             self._finalize_batch_ai_translation()
@@ -3037,9 +3120,9 @@ class OverwatchLocalizerApp:
         try:
             self.root.clipboard_clear()
             self.root.clipboard_append(text_to_copy)
-            self.update_statusbar(f"复制了 {len(selected_objs)} 项原文到剪贴板。")
+            self.update_statusbar(_("Copied {count} original strings to clipboard.").format(count=len(selected_objs)))
         except tk.TclError:
-            self.update_statusbar("复制失败。无法访问剪贴板。")
+            self.update_statusbar(_("Copy failed. Could not access clipboard."))
 
     def cm_copy_translation(self):
         selected_objs = self._get_selected_ts_objects()
@@ -3048,13 +3131,13 @@ class OverwatchLocalizerApp:
         try:
             self.root.clipboard_clear()
             self.root.clipboard_append(text_to_copy)
-            self.update_statusbar(f"复制了 {len(selected_objs)} 项译文到剪贴板。")
+            self.update_statusbar(_("Copied {count} translations to clipboard.").format(count=len(selected_objs)))
         except tk.TclError:
-            self.update_statusbar("复制失败。无法访问剪贴板。")
+            self.update_statusbar(_("Copy failed. Could not access clipboard."))
 
     def cm_paste_to_translation(self):
         if not self.current_selected_ts_id:
-            self.update_statusbar("请选中一个项目。")
+            self.update_statusbar(_("Please select an item."))
             return
 
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
@@ -3063,7 +3146,7 @@ class OverwatchLocalizerApp:
         try:
             clipboard_content = self.root.clipboard_get()
         except tk.TclError:
-            self.update_statusbar("从剪贴板粘贴失败。")
+            self.update_statusbar(_("Paste failed from clipboard."))
             return
 
         if isinstance(clipboard_content, str):
@@ -3071,9 +3154,9 @@ class OverwatchLocalizerApp:
             self.translation_edit_text.insert('1.0', clipboard_content)
             cleaned_content = clipboard_content.rstrip('\n')
             self._apply_translation_to_model(ts_obj, cleaned_content, source="manual_paste")
-            self.update_statusbar(f"剪贴板内容已粘贴到译文。")
+            self.update_statusbar(_("Clipboard content pasted to translation."))
         else:
-            self.update_statusbar("粘贴失败：剪贴板内容非文本。")
+            self.update_statusbar(_("Paste failed: Clipboard content is not text."))
 
     def cm_set_ignored_status(self, ignore_flag):
         selected_objs = self._get_selected_ts_objects()
@@ -3091,7 +3174,7 @@ class OverwatchLocalizerApp:
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.refresh_treeview_and_select_neighbor(selected_objs[0].id)
-            self.update_statusbar(f"{len(bulk_changes)} 项忽略状态已更新。")
+            self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
             self.mark_project_modified()
 
     def cm_set_reviewed_status(self, reviewed_flag):
@@ -3109,7 +3192,7 @@ class OverwatchLocalizerApp:
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.refresh_treeview_and_select_neighbor(selected_objs[0].id)
-            self.update_statusbar(f"{len(bulk_changes)} 项审阅状态已更新。")
+            self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
             self.mark_project_modified()
 
     def cm_edit_comment(self):
@@ -3117,10 +3200,10 @@ class OverwatchLocalizerApp:
         if not selected_objs: return
 
         initial_comment = selected_objs[0].comment if len(selected_objs) == 1 else ""
-        prompt_text = f"为选中的 {len(selected_objs)} 项输入注释:" if len(
-            selected_objs) > 1 else f"原文:\n{selected_objs[0].original_semantic[:100]}...\n\n输入注释:"
+        prompt_text = _("Enter comment for {count} selected items:").format(count=len(selected_objs)) if len(
+            selected_objs) > 1 else _("Original:\n{original_semantic}...\n\nEnter comment:").format(original_semantic=selected_objs[0].original_semantic[:100])
 
-        new_comment = simpledialog.askstring("编辑注释", prompt_text,
+        new_comment = simpledialog.askstring(_("Edit Comment..."), prompt_text,
                                              initialvalue=initial_comment, parent=self.root)
 
         if new_comment is not None:
@@ -3140,14 +3223,14 @@ class OverwatchLocalizerApp:
                 if self.current_selected_ts_id in [c['string_id'] for c in bulk_changes]:
                     self.comment_edit_text.delete("1.0", tk.END)
                     self.comment_edit_text.insert("1.0", new_comment)
-                self.update_statusbar(f"为 {len(bulk_changes)} 项更新了注释。")
+                self.update_statusbar(_("Updated comments for {count} items.").format(count=len(bulk_changes)))
                 self.mark_project_modified()
 
     def cm_apply_tm_to_selected(self):
         selected_objs = self._get_selected_ts_objects()
         if not selected_objs: return
         if not self.translation_memory:
-            messagebox.showinfo("提示", "翻译记忆库为空。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("Translation Memory is empty."), parent=self.root)
             return
 
         applied_count = 0
@@ -3168,17 +3251,17 @@ class OverwatchLocalizerApp:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.refresh_treeview_preserve_selection()
             self.on_tree_select(None)
-            self.update_statusbar(f"向 {applied_count} 个选中项应用了记忆库翻译。")
+            self.update_statusbar(_("Applied TM to {count} selected items.").format(count=applied_count))
             self.mark_project_modified()
         elif selected_objs:
-            messagebox.showinfo("提示", "选中项无匹配记忆或无需更新。", parent=self.root)
+            messagebox.showinfo(_("Info"), _("No matching TM entries or no changes needed for selected items."), parent=self.root)
 
     def cm_clear_selected_translations(self):
         selected_objs = self._get_selected_ts_objects()
         if not selected_objs:
             return
 
-        if not messagebox.askyesno("确认清除", f"确定要清除选中的 {len(selected_objs)} 项的译文吗？", parent=self.root):
+        if not messagebox.askyesno(_("Confirm Clear"), _("Are you sure you want to clear the translations for the {count} selected items?").format(count=len(selected_objs)), parent=self.root):
             return
 
         bulk_changes = []
@@ -3197,7 +3280,7 @@ class OverwatchLocalizerApp:
                 cleared_ids.add(ts_obj.id)
 
         if not bulk_changes:
-            self.update_statusbar("选中的项目译文已为空，无需清除。")
+            self.update_statusbar(_("Translations for selected items are already empty, no clearing needed."))
             return
         self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
         self.mark_project_modified()
@@ -3205,18 +3288,18 @@ class OverwatchLocalizerApp:
             self.translation_edit_text.delete('1.0', tk.END)
             self.translation_edit_text.edit_reset()
         self.refresh_treeview_preserve_selection()
-        self.update_statusbar(f"清除了 {len(bulk_changes)} 项译文。")
+        self.update_statusbar(_("Cleared {count} translations.").format(count=len(bulk_changes)))
 
     def cm_ai_translate_selected(self, event=None):
         selected_objs = self._get_selected_ts_objects()
         if not selected_objs:
-            self.update_statusbar("没有选中的项目可供AI翻译。")
+            self.update_statusbar(_("No items selected for AI translation."))
             return
 
         if not self._check_ai_prerequisites(): return
 
         if self.is_ai_translating_batch:
-            messagebox.showwarning("AI翻译进行中", "AI批量翻译正在进行中。请等待其完成或停止。", parent=self.root)
+            messagebox.showwarning(_("AI Translation in Progress"), _("AI batch translation is in progress. Please wait for it to complete or stop it."), parent=self.root)
             return
 
         items_actually_translated_count = 0
@@ -3248,17 +3331,17 @@ class OverwatchLocalizerApp:
                 self.root.update_idletasks()
 
         if items_actually_translated_count > 0:
-            self.update_statusbar(f"已为 {items_actually_translated_count} 个选中项启动AI翻译。")
+            self.update_statusbar(_("Started AI translation for {count} selected items.").format(count=items_actually_translated_count))
         elif selected_objs:
-            self.update_statusbar("没有符合条件的选中项可供AI翻译。")
+            self.update_statusbar(_("No eligible selected items for AI translation."))
 
     def compare_with_new_version(self, event=None):
         if not self.current_code_file_path or not self.translatable_objects:
-            messagebox.showerror("错误", "请先打开一个已保存的项目或代码文件。", parent=self.root)
+            messagebox.showerror(_("Error"), _("Please open a saved project or code file first."), parent=self.root)
             return
 
         filepath = filedialog.askopenfilename(
-            title="选择新版本的代码文件进行对比",
+            title=_("Select new version code file for comparison"),
             filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
             initialdir=os.path.dirname(self.current_code_file_path),
             parent=self.root
@@ -3272,7 +3355,7 @@ class OverwatchLocalizerApp:
 
             self.progress_bar.pack(side=tk.RIGHT, padx=5, pady=2, before=self.counts_label_widget)
             self.progress_bar['value'] = 0
-            self.update_statusbar("正在解析新文件...", persistent=True)
+            self.update_statusbar(_("Parsing new file..."), persistent=True)
             self.root.update_idletasks()
 
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
@@ -3291,7 +3374,7 @@ class OverwatchLocalizerApp:
             total_steps = len(old_map) + len(new_map)
             current_step = 0
 
-            self.update_statusbar("步骤 1/3: 正在匹配完全相同的字符串...", persistent=True)
+            self.update_statusbar(_("Step 1/3: Matching exact strings..."), persistent=True)
             for old_semantic, old_obj in old_map.items():
                 current_step += 1
                 if old_semantic in new_map:
@@ -3304,7 +3387,7 @@ class OverwatchLocalizerApp:
                 self.progress_bar['value'] = (current_step / total_steps) * 100
                 if current_step % 20 == 0: self.root.update_idletasks()
 
-            self.update_statusbar("步骤 2/3: 正在匹配高度相似的字符串...", persistent=True)
+            self.update_statusbar(_("Step 2/3: Matching highly similar strings..."), persistent=True)
             unmatched_old = [s for s in old_strings if s.original_semantic not in new_map]
             unmatched_new = [s for s in new_strings if s.original_semantic not in old_map]
             new_pool = unmatched_new[:]
@@ -3322,7 +3405,7 @@ class OverwatchLocalizerApp:
 
                 if highest_similarity >= 0.95 and best_match:
                     best_match.translation = old_obj.translation
-                    best_match.comment = f"[继承自旧版] {old_obj.comment}".strip()
+                    best_match.comment = f"[{_('Inherited from old version')}] {old_obj.comment}".strip()
                     best_match.is_ignored = old_obj.is_ignored
                     best_match.is_reviewed = False
 
@@ -3338,30 +3421,30 @@ class OverwatchLocalizerApp:
                 self.progress_bar['value'] = (current_step / total_steps) * 100
                 if i % 10 == 0: self.root.update_idletasks()
 
-            self.update_statusbar("步骤 3/3: 正在识别新增和移除的字符串...", persistent=True)
+            self.update_statusbar(_("Step 3/3: Identifying added and removed strings..."), persistent=True)
             for new_obj in new_pool:
                 current_step += 1
                 diff_results['added'].append({'new_obj': new_obj})
                 self.progress_bar['value'] = (current_step / total_steps) * 100
 
             self.progress_bar['value'] = 100
-            self.update_statusbar("对比完成，正在生成报告...", persistent=True)
+            self.update_statusbar(_("Comparison complete, generating report..."), persistent=True)
 
             summary = (
-                f"对比完成。发现 "
-                f"{len(diff_results['added'])} 个新增项, "
-                f"{len(diff_results['removed'])} 个移除项, "
-                f"以及 {len(diff_results['modified'])} 个修改/继承项。"
+                _("Comparison complete. Found ")
+                + _("{added} new items, ").format(added=len(diff_results['added']))
+                + _("{removed} removed items, ").format(removed=len(diff_results['removed']))
+                + _("and {modified} modified/inherited items.").format(modified=len(diff_results['modified']))
             )
             diff_results['summary'] = summary
 
             from dialogs.diff_dialog import DiffDialog
-            dialog = DiffDialog(self.root, "版本对比结果", diff_results)
+            dialog = DiffDialog(self.root, _("Version Comparison Results"), diff_results)
 
             self.progress_bar.pack_forget()
 
             if dialog.result:
-                self.update_statusbar("正在应用更新...", persistent=True)
+                self.update_statusbar(_("Applying updates..."), persistent=True)
 
                 self.translatable_objects = new_strings
                 self.original_raw_code_content = new_code_content
@@ -3371,11 +3454,11 @@ class OverwatchLocalizerApp:
 
                 self.mark_project_modified()
                 self.refresh_treeview()
-                self.update_statusbar(f"项目已更新至新版本: {os.path.basename(filepath)}", persistent=True)
+                self.update_statusbar(_("Project updated to new version: {filename}").format(filename=os.path.basename(filepath)), persistent=True)
             else:
-                self.update_statusbar("版本更新已取消。")
+                self.update_statusbar(_("Version update cancelled."))
 
         except Exception as e:
             self.progress_bar.pack_forget()
-            messagebox.showerror("对比失败", f"处理文件或对比时发生错误: {e}", parent=self.root)
-            self.update_statusbar("版本对比失败。")
+            messagebox.showerror(_("Comparison Failed"), _("An error occurred while processing or comparing files: {error}").format(error=e), parent=self.root)
+            self.update_statusbar(_("Version comparison failed."))
