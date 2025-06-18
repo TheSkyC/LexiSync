@@ -2,8 +2,10 @@ import json
 import os
 from copy import deepcopy
 from utils.constants import (
-    CONFIG_FILE, DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS
+    CONFIG_FILE, DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS,
+    DEFAULT_EXTRACTION_PATTERNS
 )
+
 
 
 def load_config():
@@ -13,7 +15,6 @@ def load_config():
     except (FileNotFoundError, json.JSONDecodeError):
         config_data = {}
 
-    # ... (other setdefault calls remain the same) ...
     config_data.setdefault("deduplicate", False)
     config_data.setdefault("show_ignored", True)
     config_data.setdefault("show_untranslated", False)
@@ -35,12 +36,11 @@ def load_config():
     config_data.setdefault("ai_use_original_context", True)
     config_data.setdefault("ai_original_context_neighbors", 3)
 
-    # --- Use new prompt structure ---
     config_data.setdefault("ai_prompt_structure", deepcopy(DEFAULT_PROMPT_STRUCTURE))
-    # Remove old template if it exists for clean-up
     config_data.pop("ai_prompt_template", None)
 
-    # Keybindings
+    config_data.setdefault("extraction_patterns", deepcopy(DEFAULT_EXTRACTION_PATTERNS))
+
     if 'keybindings' not in config_data:
         config_data['keybindings'] = DEFAULT_KEYBINDINGS.copy()
     else:
@@ -59,6 +59,7 @@ def save_config(app_instance):
     config["show_unreviewed"] = app_instance.show_unreviewed_var.get()
     config["auto_save_tm"] = app_instance.auto_save_tm_var.get()
     config["auto_backup_tm_on_save"] = app_instance.auto_backup_tm_on_save_var.get()
+    config['extraction_patterns'] = app_instance.config.get("extraction_patterns", deepcopy(DEFAULT_EXTRACTION_PATTERNS))
 
     if 'keybindings' in app_instance.config:
         config['keybindings'] = app_instance.config['keybindings']

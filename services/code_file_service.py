@@ -1,8 +1,10 @@
+# services/code_file_service.py
 import re
 import os
 import shutil
 import datetime
 from models.translatable_string import TranslatableString
+
 
 def unescape_overwatch_string(s):
     res = []
@@ -32,24 +34,9 @@ def unescape_overwatch_string(s):
     return "".join(res)
 
 
-def extract_translatable_strings(code_content):
+def extract_translatable_strings(code_content, extraction_patterns):
     strings = []
     full_code_lines = code_content.splitlines()
-
-    pattern_custom_string_start_str = r'(?:自定义字符串|Custom String)\s*\(\s*\"'
-    pattern_custom_string_start = re.compile(pattern_custom_string_start_str, re.IGNORECASE)
-
-    pattern_description_start_str = r'(?:Description|描述)\s*:\s*\"'
-    pattern_description_start = re.compile(pattern_description_start_str, re.IGNORECASE)
-
-    pattern_mode_name_start_str = r'(?:Mode Name|模式名称)\s*:\s*\"'
-    pattern_mode_name_start = re.compile(pattern_mode_name_start_str, re.IGNORECASE)
-
-    all_patterns_to_check = [
-        ("Custom String", pattern_custom_string_start),
-        ("Description", pattern_description_start),
-        ("Mode Name", pattern_mode_name_start),
-    ]
 
     regex_all_digits = re.compile(r'^\d+$')
     regex_ow_placeholder = re.compile(r'^\{\d+\}$')
@@ -63,10 +50,26 @@ def extract_translatable_strings(code_content):
         "X", "Y", "Z", "A", "B", "C", "N/A"
     }
 
-    for string_type, compiled_pattern in all_patterns_to_check:
+    for pattern_config in extraction_patterns:
+        if not pattern_config.get("enabled", True):
+            continue
+
+        pattern_name = pattern_config.get("name", "Unknown Pattern")
+        regex_str = pattern_config.get("regex_pattern_str")
+        string_type_from_pattern = pattern_config.get("string_type", "Custom")
+
+        if not regex_str:
+            print(f"Warning: Skipping pattern '{pattern_name}' due to missing regex string.")
+            continue
+
+        try:
+            compiled_pattern = re.compile(regex_str, re.IGNORECASE)
+        except re.error as e:
+            print(f"Warning: Invalid regex for pattern '{pattern_name}': {e}. Skipping.")
+            continue
+
         for match in compiled_pattern.finditer(code_content):
-            open_quote_idx_in_content = match.end() - 1
-            string_content_start_file_idx = open_quote_idx_in_content + 1
+            string_content_start_file_idx = match.end()
 
             current_raw_string_content_chars = []
             ptr = string_content_start_file_idx
@@ -86,7 +89,7 @@ def extract_translatable_strings(code_content):
                     string_closed_properly = True
                     closing_quote_file_idx = ptr
                     break
-                elif char == '\n' and string_type == "Custom String":
+                elif char == '\n' and string_type_from_pattern == "Custom String":
                     string_closed_properly = False
                     break
                 else:
@@ -97,7 +100,7 @@ def extract_translatable_strings(code_content):
                 raw_content = "".join(current_raw_string_content_chars)
                 semantic_content = unescape_overwatch_string(raw_content)
 
-                line_num = code_content.count('\n', 0, string_content_start_file_idx) + 1
+                line_num = code_content.count('\n', 0, match.start()) + 1
 
                 ts = TranslatableString(
                     original_raw=raw_content,
@@ -106,13 +109,11 @@ def extract_translatable_strings(code_content):
                     char_pos_start_in_file=string_content_start_file_idx,
                     char_pos_end_in_file=closing_quote_file_idx,
                     full_code_lines=full_code_lines,
-                    string_type=string_type
+                    string_type=string_type_from_pattern
                 )
 
-                if string_type == "Description":
-                    ts.comment = "Description"
-                elif string_type == "Mode Name":
-                    ts.comment = "Mode Name"
+                if string_type_from_pattern and string_type_from_pattern not in ["Custom String", "Custom", ""]:
+                    ts.comment = string_type_from_pattern
 
                 s_semantic_stripped = semantic_content.strip()
                 s_len_stripped = len(s_semantic_stripped)
@@ -156,6 +157,7 @@ def extract_translatable_strings(code_content):
     strings.sort(key=lambda s: s.char_pos_start_in_file)
     return strings
 
+
 def save_translated_code(filepath_to_save, original_raw_code_content, translatable_objects, app_instance):
     content_chars = list(original_raw_code_content)
     sorted_ts_objects = sorted(translatable_objects, key=lambda ts: ts.char_pos_start_in_file, reverse=True)
@@ -176,9 +178,12 @@ def save_translated_code(filepath_to_save, original_raw_code_content, translatab
             app_instance.update_statusbar(f"已创建备份: {os.path.basename(backup_path)}")
         except Exception as e_backup:
             from tkinter import messagebox
-            messagebox.showwarning("备份失败",
-                                   f"无法创建代码文件备份 '{os.path.basename(backup_path)}': {e_backup}",
-                                   parent=app_instance.root)
+            if app_instance and app_instance.root:
+                messagebox.showwarning("备份失败",
+                                       f"无法创建代码文件备份 '{os.path.basename(backup_path)}': {e_backup}",
+                                       parent=app_instance.root)
+            else:
+                print(f"备份失败: {e_backup}")
 
     with open(filepath_to_save, 'w', encoding='utf-8') as f:
         f.write(final_content)

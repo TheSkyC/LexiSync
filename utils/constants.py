@@ -10,6 +10,7 @@ MAX_UNDO_HISTORY = 30
 DEFAULT_API_URL = "https://api.deepseek.com/chat/completions"
 APP_VERSION = "1.0.2"
 PROMPT_PRESET_EXTENSION = ".owprompt"
+EXTRACTION_PATTERN_PRESET_EXTENSION = ".owextract"
 
 STRUCTURAL = "结构化内容"
 STATIC = "静态指令"
@@ -50,6 +51,24 @@ DEFAULT_PROMPT_STRUCTURE = [
     {
         "id": str(uuid.uuid4()), "type": STRUCTURAL, "enabled": True,
         "content": "重要：你的回答[必须且仅能包含翻译后的文本内容]，不要添加任何额外的解释、说明。"
+    }
+]
+
+DEFAULT_EXTRACTION_PATTERNS = [
+    {
+        "id": str(uuid.uuid4()), "name": "Custom String (EN/CN)", "enabled": True,
+        "regex_pattern_str": r'(?:自定义字符串|Custom String)\s*\(\s*\"', # Note: The regex should end just BEFORE the opening quote of the content
+        "string_type": "Custom String"
+    },
+    {
+        "id": str(uuid.uuid4()), "name": "Description (EN/CN)", "enabled": True,
+        "regex_pattern_str": r'(?:Description|描述)\s*:\s*\"',
+        "string_type": "Description"
+    },
+    {
+        "id": str(uuid.uuid4()), "name": "Mode Name (EN/CN)", "enabled": True,
+        "regex_pattern_str": r'(?:Mode Name|模式名称)\s*:\s*\"',
+        "string_type": "Mode Name"
     }
 ]
 
