@@ -283,16 +283,16 @@ class OverwatchLocalizerApp:
         file_menu.add_command(label="保存翻译到新代码文件", command=self.ACTION_MAP['save_code_file']['method'],
                               state=tk.DISABLED)
         file_menu.add_separator()
-        file_menu.add_command(label="导入Excel翻译 (项目)", command=self.import_project_translations_from_excel,
+        file_menu.add_command(label="导入Excel翻译", command=self.import_project_translations_from_excel,
                               state=tk.DISABLED)
-        file_menu.add_command(label="导出到Excel (项目)", command=self.export_project_translations_to_excel,
+        file_menu.add_command(label="导出到Excel", command=self.export_project_translations_to_excel,
                               state=tk.DISABLED)
-        file_menu.add_command(label="导出到JSON (项目)", command=self.export_project_translations_to_json,
+        file_menu.add_command(label="导出到JSON", command=self.export_project_translations_to_json,
                               state=tk.DISABLED)
-        file_menu.add_command(label="导出到YAML (项目)", command=self.export_project_translations_to_yaml,
+        file_menu.add_command(label="导出到YAML", command=self.export_project_translations_to_yaml,
                               state=tk.DISABLED)
         file_menu.add_separator()
-        file_menu.add_command(label="提取为POT模板...", command=self.extract_to_pot_dialog)
+        file_menu.add_command(label="从代码文件提取POT模板...", command=self.extract_to_pot_dialog)
         file_menu.add_command(label="从PO文件导入翻译...", command=self.import_po_file_dialog)
         file_menu.add_command(label="导出到PO文件...", command=self.export_to_po_file_dialog, state=tk.DISABLED)
         file_menu.add_separator()
@@ -324,11 +324,11 @@ class OverwatchLocalizerApp:
                                   command=self.refresh_treeview_preserve_selection)
         view_menu.add_checkbutton(label="显示已忽略项", variable=self.show_ignored_var,
                                   command=self.refresh_treeview_preserve_selection)
-        view_menu.add_checkbutton(label="仅显示未翻译", variable=self.show_untranslated_var,
+        view_menu.add_checkbutton(label="显示未翻译项", variable=self.show_untranslated_var,
                                   command=self.refresh_treeview_preserve_selection)
-        view_menu.add_checkbutton(label="仅显示已翻译", variable=self.show_translated_var,
+        view_menu.add_checkbutton(label="显示已翻译项", variable=self.show_translated_var,
                                   command=self.refresh_treeview_preserve_selection)
-        view_menu.add_checkbutton(label="仅显示未审阅", variable=self.show_unreviewed_var,
+        view_menu.add_checkbutton(label="显示未审阅项", variable=self.show_unreviewed_var,
                                   command=self.refresh_treeview_preserve_selection)
 
         tools_menu = tk.Menu(menubar, tearoff=0)
@@ -338,9 +338,9 @@ class OverwatchLocalizerApp:
                                state=tk.DISABLED)
         tools_menu.add_command(label="清空翻译记忆库 (内存)", command=self.clear_entire_translation_memory)
         tools_menu.add_separator()
-        tools_menu.add_command(label="使用AI翻译 (选中项)", command=self.ACTION_MAP['ai_translate_selected']['method'],
+        tools_menu.add_command(label="使用AI翻译选中项", command=self.ACTION_MAP['ai_translate_selected']['method'],
                                state=tk.DISABLED)
-        tools_menu.add_command(label="使用AI翻译 (所有未翻译项)", command=self.ai_translate_all_untranslated,
+        tools_menu.add_command(label="使用AI翻译未翻译项", command=self.ai_translate_all_untranslated,
                                state=tk.DISABLED)
         tools_menu.add_command(label="停止AI批量翻译", command=lambda: self.stop_batch_ai_translation(),
                                state=tk.DISABLED)
@@ -391,7 +391,7 @@ class OverwatchLocalizerApp:
         self.edit_menu.entryconfig("复制原文", accelerator=bindings.get('copy_original', ''))
         self.edit_menu.entryconfig("粘贴到译文", accelerator=bindings.get('paste_translation', ''))
 
-        self.tools_menu.entryconfig("使用AI翻译 (选中项)", accelerator=bindings.get('ai_translate_selected', ''))
+        self.tools_menu.entryconfig("使用AI翻译选中项", accelerator=bindings.get('ai_translate_selected', ''))
 
     def show_keybinding_dialog(self):
         from dialogs.keybinding_dialog import KeybindingDialog
@@ -759,10 +759,10 @@ class OverwatchLocalizerApp:
         self.file_menu.entryconfig("项目另存为...",
                                    state=tk.NORMAL if has_content or self.original_raw_code_content else tk.DISABLED)
 
-        self.file_menu.entryconfig("导入Excel翻译 (项目)", state=state)
-        self.file_menu.entryconfig("导出到Excel (项目)", state=state)
-        self.file_menu.entryconfig("导出到JSON (项目)", state=state)
-        self.file_menu.entryconfig("导出到YAML (项目)", state=state)
+        self.file_menu.entryconfig("导入Excel翻译", state=state)
+        self.file_menu.entryconfig("导出到Excel", state=state)
+        self.file_menu.entryconfig("导出到JSON", state=state)
+        self.file_menu.entryconfig("导出到YAML", state=state)
         self.file_menu.entryconfig("导出到PO文件...", state=state)
 
         self.edit_menu.entryconfig("查找/替换...", state=state)
@@ -789,9 +789,9 @@ class OverwatchLocalizerApp:
         item_selected = self.current_selected_ts_id is not None
         can_start_ai_ops = ai_available and file_loaded_and_has_strings and not self.is_ai_translating_batch
         try:
-            self.tools_menu.entryconfig("使用AI翻译 (选中项)",
+            self.tools_menu.entryconfig("使用AI翻译选中项",
                                         state=tk.NORMAL if can_start_ai_ops and item_selected else tk.DISABLED)
-            self.tools_menu.entryconfig("使用AI翻译 (所有未翻译项)",
+            self.tools_menu.entryconfig("使用AI翻译未翻译项",
                                         state=tk.NORMAL if can_start_ai_ops else tk.DISABLED)
             self.tools_menu.entryconfig("停止AI批量翻译",
                                         state=tk.NORMAL if self.is_ai_translating_batch else tk.DISABLED)
