@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox, filedialog
 import json
 import uuid
+import re
 from copy import deepcopy
 from utils.constants import EXTRACTION_PATTERN_PRESET_EXTENSION, DEFAULT_EXTRACTION_PATTERNS
 
@@ -24,7 +25,7 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
             self.title(title)
 
         self.parent = parent
-        self.geometry("800x600")
+        self.geometry("900x600")
 
         main_container = ttk.Frame(self)
         main_container.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
@@ -51,7 +52,6 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
     def body(self, master):
         toolbar = ttk.Frame(master)
         toolbar.grid(row=1, column=0, sticky="ew", padx=5, pady=(5, 0))
-
         ttk.Button(toolbar, text="新增", command=self.add_item).pack(side=tk.LEFT, padx=2)
         ttk.Button(toolbar, text="删除选中", command=self.delete_item).pack(side=tk.LEFT, padx=2)
         ttk.Button(toolbar, text="恢复默认", command=self.reset_to_defaults).pack(side=tk.LEFT, padx=2)
@@ -63,7 +63,7 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
         tree_frame.grid_rowconfigure(0, weight=1)
         tree_frame.grid_columnconfigure(0, weight=1)
 
-        cols = ("enabled", "name", "string_type", "regex_pattern")
+        cols = ("enabled", "name", "string_type", "left_delimiter", "right_delimiter")
         self.tree = ttk.Treeview(tree_frame, columns=cols, show="headings", selectmode="browse")
         vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=vsb.set)
@@ -74,12 +74,14 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
         self.tree.heading("enabled", text="启用")
         self.tree.heading("name", text="规则名称")
         self.tree.heading("string_type", text="字符串类型")
-        self.tree.heading("regex_pattern", text="正则表达式")
+        self.tree.heading("left_delimiter", text="左定界符 (正则)")
+        self.tree.heading("right_delimiter", text="右定界符 (正则)")
 
         self.tree.column("enabled", width=50, anchor=tk.CENTER, stretch=False)
         self.tree.column("name", width=150, anchor=tk.W)
         self.tree.column("string_type", width=150, anchor=tk.W)
-        self.tree.column("regex_pattern", width=400)
+        self.tree.column("left_delimiter", width=250)
+        self.tree.column("right_delimiter", width=100)
 
         self.tree.bind("<Double-1>", self.edit_item)
         self.tree.bind("<ButtonPress-1>", self.on_press)
@@ -98,7 +100,8 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
                 enabled_char,
                 pattern.get("name", "未命名规则"),
                 pattern.get("string_type", "Custom"),
-                pattern.get("regex_pattern_str", "")
+                pattern.get("left_delimiter", ""),
+                pattern.get("right_delimiter", "")
             ))
 
     def on_press(self, event):
@@ -112,7 +115,6 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
         dragged_item_iid = self.drag_data.get("item_iid")
         if not dragged_item_iid:
             return
-
         target_item_iid = self.tree.identify_row(event.y)
         if target_item_iid and target_item_iid != dragged_item_iid:
             self.tree.move(dragged_item_iid, "", self.tree.index(target_item_iid))
@@ -120,12 +122,10 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
     def on_release(self, event):
         if not self.drag_data.get("item_iid"):
             return
-
         new_order_ids = self.tree.get_children()
         patterns_map = {p["id"]: p for p in self.patterns_buffer}
         self.patterns_buffer = [patterns_map[iid] for iid in new_order_ids if iid in patterns_map]
         self.drag_data["item_iid"] = None
-
 
     def add_item(self):
         new_pattern = {
@@ -133,21 +133,22 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
             "name": "新规则",
             "enabled": True,
             "string_type": "Custom",
-            "regex_pattern_str": ""
+            "left_delimiter": "",
+            "right_delimiter": '"'
         }
 
-        self.patterns_buffer.append(new_pattern)
-        self.populate_tree()
-        self.tree.selection_set(new_pattern["id"])
-        self.tree.see(new_pattern["id"])
-        self.edit_item_by_id(new_pattern["id"])
+        dialog = ExtractionPatternItemEditor(self, "新增提取规则", new_pattern)
+        if dialog.result:
+            self.patterns_buffer.append(dialog.result)
+            self.populate_tree()
+            self.tree.selection_set(dialog.result["id"])
+            self.tree.see(dialog.result["id"])
 
     def delete_item(self):
         selected_id_tuple = self.tree.selection()
         if not selected_id_tuple:
             return
         selected_id = selected_id_tuple[0]
-
         self.patterns_buffer = [p for p in self.patterns_buffer if p["id"] != selected_id]
         self.populate_tree()
 
@@ -187,15 +188,12 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 preset = json.load(f)
-            if isinstance(preset, list) and all("name" in p and "regex_pattern_str" in p for p in preset):
+            if isinstance(preset, list) and all("name" in p and "left_delimiter" in p for p in preset):
                 for p_item in preset:
-                    if "id" not in p_item:
-                        p_item["id"] = str(uuid.uuid4())
-                    if "enabled" not in p_item:
-                        p_item["enabled"] = True
-                    if "string_type" not in p_item:
-                        p_item["string_type"] = "Custom"
-
+                    if "id" not in p_item: p_item["id"] = str(uuid.uuid4())
+                    if "enabled" not in p_item: p_item["enabled"] = True
+                    if "string_type" not in p_item: p_item["string_type"] = "Custom"
+                    if "right_delimiter" not in p_item: p_item["right_delimiter"] = '"'
                 self.patterns_buffer = preset
                 self.populate_tree()
                 messagebox.showinfo("成功", "预设已成功导入。", parent=self)
@@ -236,7 +234,6 @@ class ExtractionPatternManagerDialog(tk.Toplevel):
         self.destroy()
 
     def apply_changes(self):
-
         if self.patterns_buffer != self.app.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS):
             self.app.config["extraction_patterns"] = deepcopy(self.patterns_buffer)
             self.app.save_config()
@@ -254,7 +251,6 @@ class ExtractionPatternItemEditor(simpledialog.Dialog):
     def body(self, master):
         self.geometry("700x350")
         master.columnconfigure(1, weight=1)
-        master.rowconfigure(3, weight=1)
 
         ttk.Label(master, text="规则名称:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
         self.name_var = tk.StringVar(value=self.initial_data.get("name", ""))
@@ -262,25 +258,38 @@ class ExtractionPatternItemEditor(simpledialog.Dialog):
         name_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
 
         self.enabled_var = tk.BooleanVar(value=self.initial_data.get("enabled", True))
-        enabled_check = ttk.Checkbutton(master, text="启用此规则", variable=self.enabled_var)
-        enabled_check.grid(row=0, column=2, padx=5, pady=5, sticky="w")
+        ttk.Checkbutton(master, text="启用此规则", variable=self.enabled_var).grid(row=0, column=2, padx=5, pady=5,
+                                                                                   sticky="w")
 
         ttk.Label(master, text="字符串类型:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
         self.string_type_var = tk.StringVar(value=self.initial_data.get("string_type", "Custom"))
-        string_type_entry = ttk.Entry(master, textvariable=self.string_type_var)
-        string_type_entry.grid(row=1, column=1, columnspan=2, sticky="ew", padx=5, pady=5)
-        ttk.Label(master, text="(用于TranslatableString分类)").grid(row=2, column=1, columnspan=2, sticky="w", padx=5,
-                                                                    pady=2)
-        ttk.Label(master, text="正则表达式:").grid(row=3, column=0, sticky="nw", padx=5, pady=5)
-        self.regex_text = tk.Text(master, wrap=tk.WORD, height=8)
-        self.regex_text.grid(row=3, column=1, columnspan=2, sticky="nsew", padx=5, pady=5)
-        self.regex_text.insert("1.0", self.initial_data.get("regex_pattern_str", ""))
+        ttk.Entry(master, textvariable=self.string_type_var).grid(row=1, column=1, columnspan=2, sticky="ew", padx=5,
+                                                                  pady=5)
 
-        regex_info = "示例: (?:自定义字符串|Custom String)\\s*\\(\\s*\\\"  (必须以捕获引号前的部分结束，如 \\s*\\(\\s*\\\")"
-        ttk.Label(master, text=regex_info, wraplength=450, justify=tk.LEFT).grid(row=4, column=1, columnspan=2,
-                                                                                 sticky="w", padx=5, pady=2)
+        ttk.Label(master, text="左定界符:").grid(row=2, column=0, sticky="nw", padx=5, pady=5)
+        self.left_text = tk.Text(master, wrap=tk.WORD, height=4)
+        self.left_text.grid(row=2, column=1, columnspan=2, sticky="nsew", padx=5, pady=5)
+        self.left_text.insert("1.0", self.initial_data.get("left_delimiter", ""))
+
+        ttk.Label(master, text="右定界符:").grid(row=3, column=0, sticky="nw", padx=5, pady=5)
+        self.right_text = tk.Text(master, wrap=tk.WORD, height=4)
+        self.right_text.grid(row=3, column=1, columnspan=2, sticky="nsew", padx=5, pady=5)
+        self.right_text.insert("1.0", self.initial_data.get("right_delimiter", ""))
+
+        button_frame = ttk.Frame(master)
+        button_frame.grid(row=4, column=1, columnspan=2, sticky="w", padx=5)
+        ttk.Button(button_frame, text="转为正则 (左)", command=lambda: self.convert_to_regex('left')).pack(side=tk.LEFT)
+        ttk.Button(button_frame, text="转为正则 (右)", command=lambda: self.convert_to_regex('right')).pack(
+            side=tk.LEFT, padx=5)
 
         return name_entry
+
+    def convert_to_regex(self, target):
+        widget = self.left_text if target == 'left' else self.right_text
+        current_text = widget.get("1.0", tk.END).strip()
+        escaped_text = re.escape(current_text)
+        widget.delete("1.0", tk.END)
+        widget.insert("1.0", escaped_text)
 
     def apply(self):
         self.result = {
@@ -288,13 +297,14 @@ class ExtractionPatternItemEditor(simpledialog.Dialog):
             "name": self.name_var.get().strip(),
             "enabled": self.enabled_var.get(),
             "string_type": self.string_type_var.get().strip() or "Custom",
-            "regex_pattern_str": self.regex_text.get("1.0", tk.END).strip()
+            "left_delimiter": self.left_text.get("1.0", tk.END).strip(),
+            "right_delimiter": self.right_text.get("1.0", tk.END).strip()
         }
         if not self.result["name"]:
             messagebox.showerror("错误", "规则名称不能为空。", parent=self)
             self.result = None
             return
-        if not self.result["regex_pattern_str"]:
-            messagebox.showerror("错误", "正则表达式不能为空。", parent=self)
+        if not self.result["left_delimiter"] or not self.result["right_delimiter"]:
+            messagebox.showerror("错误", "左、右定界符均不能为空。", parent=self)
             self.result = None
             return
