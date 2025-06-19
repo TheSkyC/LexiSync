@@ -27,7 +27,7 @@ from services.prompt_service import generate_prompt_from_structure
 
 from utils.constants import *
 from utils import config_manager
-from utils.localization import lang_manager, _, get_available_languages
+from utils.localization import lang_manager, _
 from utils.constants import DEFAULT_EXTRACTION_PATTERNS, EXTRACTION_PATTERN_PRESET_EXTENSION
 
 try:
@@ -43,7 +43,12 @@ except ImportError:
     print("提示: requests 未找到, AI翻译功能不可用。pip install requests")
 
 initial_config = config_manager.load_config()
-language_code = initial_config.get('language', 'en_US')
+language_code = initial_config.get('language')
+lang_manager.setup_translation(language_code)
+if not language_code:
+    language_code = lang_manager.get_best_match_language()
+    initial_config['language'] = language_code
+
 lang_manager.setup_translation(language_code)
 
 class OverwatchLocalizerApp:
@@ -377,11 +382,11 @@ class OverwatchLocalizerApp:
         menubar.add_cascade(label=_("Settings"), menu=settings_menu)
         settings_menu.add_checkbutton(label=_("Auto-backup TM on Save"), variable=self.auto_backup_tm_on_save_var,
                                       command=self.save_config)
-        self.language_var = tk.StringVar(value=self.config.get('language', 'zh_CN'))
+        self.language_var = tk.StringVar(value=self.config.get('language', 'en_US'))
         language_menu = tk.Menu(settings_menu, tearoff=0)
         settings_menu.add_cascade(label=_("Language"), menu=language_menu)
 
-        available_langs = get_available_languages()
+        available_langs = lang_manager.get_available_languages()
         for lang_code in available_langs:
             lang_name = {'en_US': 'English', 'zh_CN': '简体中文'}.get(lang_code, lang_code)
             language_menu.add_radiobutton(

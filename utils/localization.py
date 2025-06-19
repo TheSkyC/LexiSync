@@ -3,27 +3,64 @@
 
 import gettext
 import os
-
-APP_NAME = "overwatch_localizer"
-LOCALE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'locales')
-
-
+import locale
 
 
 class LanguageManager:
     def __init__(self):
-        # 默认的翻译函数，只会返回原文
         self.translator = lambda s: s
+        self.app_name = "overwatch_localizer"
+        self.locale_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'locales')
+        self.supported_languages = self._get_supported_languages()
+        self.default_lang = 'en_US'
+
+    def _get_supported_languages(self):
+        languages = []
+        if os.path.isdir(self.locale_dir):
+            for name in os.listdir(self.locale_dir):
+                if os.path.isdir(os.path.join(self.locale_dir, name)):
+                    mo_path = os.path.join(self.locale_dir, name, 'LC_MESSAGES', f'{self.app_name}.mo')
+                    if os.path.exists(mo_path):
+                        languages.append(name)
+        return languages
+
+    def get_system_language(self):
+        try:
+            system_lang, encoding = locale.getdefaultlocale()
+            if system_lang:
+                return system_lang
+        except Exception:
+            pass
+
+        env_lang = os.getenv('LANG')
+        if env_lang:
+            return env_lang.split('.')[0]
+
+        return None
+
+    def get_best_match_language(self):
+        system_lang = self.get_system_language()
+        if not system_lang:
+            return self.default_lang
+
+        system_lang_lower = system_lang.lower().replace('-', '_')
+
+        if system_lang_lower in self.supported_languages:
+            return system_lang
+
+        base_lang = system_lang_lower.split('_')[0]
+        for lang in self.supported_languages:
+            if lang.lower().startswith(base_lang):
+                return lang
+
+        return self.default_lang
 
     def setup_translation(self, lang_code=None):
-        APP_NAME = "overwatch_localizer"
-        LOCALE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'locales')
-
         if lang_code is None:
-            lang_code = 'en_US'
+            lang_code = self.get_best_match_language()
 
         try:
-            lang = gettext.translation(APP_NAME, localedir=LOCALE_DIR, languages=[lang_code])
+            lang = gettext.translation(self.app_name, localedir=self.locale_dir, languages=[lang_code])
             self.translator = lang.gettext
             print(f"Successfully set up translation for '{lang_code}'")
         except FileNotFoundError:
@@ -33,32 +70,12 @@ class LanguageManager:
     def get_translator(self):
         return self.translator
 
+    def get_available_languages(self):
+        available = list(self.supported_languages)
+        if self.default_lang not in available:
+            available.insert(0, self.default_lang)
+        return sorted(available)
+
+
 lang_manager = LanguageManager()
-
 _ = lambda s: lang_manager.get_translator()(s)
-
-def setup_translation(lang_code=None):
-    if lang_code is None:
-        lang_code = 'en_US'
-
-    try:
-        lang = gettext.translation(APP_NAME, localedir=LOCALE_DIR, languages=[lang_code])
-        return lang.gettext
-    except FileNotFoundError:
-        print(f"Warning: Translation for '{lang_code}' not found. Falling back to default.")
-        return lambda s: s
-
-def get_available_languages():
-    APP_NAME = "overwatch_localizer"
-    LOCALE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'locales')
-    DEFAULT_LANG = 'en_US'
-    languages = []
-    if os.path.isdir(LOCALE_DIR):
-        for name in os.listdir(LOCALE_DIR):
-            if os.path.isdir(os.path.join(LOCALE_DIR, name)):
-                mo_path = os.path.join(LOCALE_DIR, name, 'LC_MESSAGES', f'{APP_NAME}.mo')
-                if os.path.exists(mo_path):
-                    languages.append(name)
-    if DEFAULT_LANG not in languages:
-        languages.insert(0, DEFAULT_LANG)
-    return sorted(languages)
