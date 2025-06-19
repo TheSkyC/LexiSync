@@ -77,19 +77,22 @@ jobs:
     - name: Build with PyInstaller for ${{ matrix.os_name }}
       shell: bash
       run: |
-        PYINSTALLER_ARGS="--name ${{ env.APP_NAME }} --onefile --windowed --noconfirm"
+        PYINSTALLER_ARGS="--name ${{ env.APP_NAME }} --windowed --noconfirm"
         
-        if [[ "${{ runner.os }}" == "macOS" ]]; then
-          echo "Building for macOS. Python arch: ${{ steps.mac_arch.outputs.python_arch_for_macos }}"
+        DATA_SEPARATOR=':'
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          DATA_SEPARATOR=';'
         fi
         
+        PYINSTALLER_ARGS="$PYINSTALLER_ARGS --add-data \"locales${DATA_SEPARATOR}locales\""
+        echo "Building for ${{ matrix.os_name }}. Python arch: ${{ (matrix.os_name == 'macos' && steps.mac_arch.outputs.python_arch_for_macos) || matrix.python_arch }}"
         pyinstaller $PYINSTALLER_ARGS main.py
 
     - name: Prepare Artifacts (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        Compress-Archive -Path dist/${{ env.APP_NAME }}.exe -DestinationPath ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}
+        Compress-Archive -Path dist/${{ env.APP_NAME }} -DestinationPath ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}
 
     - name: Prepare Artifacts (Linux)
       if: runner.os == 'Linux'
@@ -102,18 +105,13 @@ jobs:
       shell: bash
       run: |
         APP_BUNDLE_PATH="dist/${{ env.APP_NAME }}.app"
-        FINAL_EXECUTABLE_PATH="dist/${{ env.APP_NAME }}"
-
+        
         if [ -d "$APP_BUNDLE_PATH" ]; then
           echo "Found .app bundle: $APP_BUNDLE_PATH"
           hdiutil create -volname "${{ env.APP_NAME }}" -srcfolder "$APP_BUNDLE_PATH" -ov -format UDZO "${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
           echo "Created DMG: ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
-        elif [ -f "$FINAL_EXECUTABLE_PATH" ]; then
-          echo "Found single executable: $FINAL_EXECUTABLE_PATH. Zipping it."
-          zip -j ${{ env.APP_NAME }}-${{ matrix.asset_suffix }} "$FINAL_EXECUTABLE_PATH"
-          echo "Created ZIP: ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
         else
-          echo "Error: Neither .app bundle nor single executable found in dist/ for macOS."
+          echo "Error: .app bundle not found in dist/ for macOS."
           exit 1
         fi
 
