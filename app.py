@@ -388,7 +388,12 @@ class OverwatchLocalizerApp:
 
         available_langs = lang_manager.get_available_languages()
         for lang_code in available_langs:
-            lang_name = {'en_US': 'English', 'zh_CN': '简体中文'}.get(lang_code, lang_code)
+            lang_name = {
+                'en_US': 'English',
+                'zh_CN': '简体中文',
+                'ja_JP': '日本語',
+                'ko_KR': '한국어'
+            }.get(lang_code, lang_code)
             language_menu.add_radiobutton(
                 label=lang_name,
                 variable=self.language_var,
