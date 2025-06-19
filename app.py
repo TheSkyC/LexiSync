@@ -396,11 +396,11 @@ class OverwatchLocalizerApp:
                 'fr_FR': 'le français',#Support
                 'de_DE': 'Deutsch',#Support
                 'ru_RU': 'русский язык',#Support
-                'es_ES': 'español (España)',
+                'es_ES': 'español (España)',#Support
                 'es_MX': 'español (Latinoamérica)',
                 'pt_BR': 'português (Brasil)',
                 'pt_PT': 'português (Portugal)',
-                'it_IT': 'italiano',
+                'it_IT': 'italiano',#Support
                 'pl_PL': 'polski',
                 'tr_TR': 'Türkçe',
                 'ar_SA': 'العربية',

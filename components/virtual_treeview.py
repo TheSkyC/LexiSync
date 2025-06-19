@@ -50,7 +50,6 @@ class VirtualTreeview(ttk.Frame):
         self._tree.bind("<Button-4>", self._on_mousewheel)
         self._tree.bind("<Button-5>", self._on_mousewheel)
 
-
         self._tree.bind("<Up>", self._on_key_press)
         self._tree.bind("<Down>", self._on_key_press)
         self._tree.bind("<Prior>", self._on_key_press)
@@ -64,6 +63,7 @@ class VirtualTreeview(ttk.Frame):
         self._visible_rows = 0
         self._row_height = 20
 
+        self._redraw_job = None
         self.after(10, self._calculate_row_height)
 
     def xview(self, *args):
@@ -96,17 +96,11 @@ class VirtualTreeview(ttk.Frame):
         elif action == "scroll":
             self._first_visible_index += int(value)
 
-        if total_rows > self._visible_rows:
-            max_start_index = total_rows - self._visible_rows + 1
-            max_start_index = min(max_start_index, total_rows - 1)
-        else:
-            max_start_index = 0
-
-        self._first_visible_index = max(0, min(self._first_visible_index, max_start_index))
-        self._redraw_view()
+        self._clamp_visible_index()
+        self._schedule_redraw()
 
     def _on_mousewheel(self, event):
-        if not self._ordered_iids: return
+        if not self._ordered_iids: return "break"
 
         if event.num == 5 or event.delta < 0:
             delta = 1
@@ -114,18 +108,26 @@ class VirtualTreeview(ttk.Frame):
             delta = -1
 
         self._first_visible_index += delta
+        self._clamp_visible_index()
+        self._schedule_redraw()
+        return "break"
+
+    def _schedule_redraw(self):
+        if self._redraw_job:
+            return
+        self._redraw_job = self.after(16, self._throttled_redraw)
+
+    def _throttled_redraw(self):
+        self._redraw_job = None
+        self._redraw_view()
+
+    def _clamp_visible_index(self):
         total_rows = len(self._ordered_iids)
-
-
         if total_rows > self._visible_rows:
-            max_start_index = total_rows - self._visible_rows + 1
-            max_start_index = min(max_start_index, total_rows - 1)
+            max_start_index = total_rows - self._visible_rows
         else:
             max_start_index = 0
-
         self._first_visible_index = max(0, min(self._first_visible_index, max_start_index))
-        self._redraw_view()
-        return "break"
 
     def _on_button1_press(self, event):
         iid = self._tree.identify_row(event.y)
@@ -155,11 +157,13 @@ class VirtualTreeview(ttk.Frame):
         if region in ('heading', 'separator'):
             return
         return "break"
+
     def _on_key_press(self, event):
         if not self._ordered_iids: return
 
         current_focus = self.focus()
         if not current_focus:
+            if not self._ordered_iids: return
             current_focus = self._ordered_iids[0]
 
         try:
@@ -186,9 +190,11 @@ class VirtualTreeview(ttk.Frame):
                 self.event_generate("<<TreeviewSelect>>")
                 return "break"
         except ValueError:
-            self._handle_single_select(self._ordered_iids[0])
-            self.event_generate("<<TreeviewSelect>>")
+            if self._ordered_iids:
+                self._handle_single_select(self._ordered_iids[0])
+                self.event_generate("<<TreeviewSelect>>")
             return "break"
+
     def _handle_single_select(self, iid):
         self._selection = {iid}
         self._focus = iid
@@ -243,7 +249,7 @@ class VirtualTreeview(ttk.Frame):
             return
 
         start = self._first_visible_index
-        end = min(start + self._visible_rows , total_rows)
+        end = min(start + self._visible_rows, total_rows)
 
         visible_iids = []
         for i in range(start, end):
@@ -363,7 +369,11 @@ class VirtualTreeview(ttk.Frame):
         if not (self._first_visible_index <= index < self._first_visible_index + self._visible_rows):
             self._first_visible_index = max(0, index - self._visible_rows // 2)
             total_rows = len(self._ordered_iids)
-            self._first_visible_index = max(0, min(self._first_visible_index, total_rows - self._visible_rows))
+            if total_rows > self._visible_rows:
+                max_start_index = total_rows - self._visible_rows
+            else:
+                max_start_index = 0
+            self._first_visible_index = max(0, min(self._first_visible_index, max_start_index))
             self._redraw_view()
 
         if self._tree.exists(iid):
