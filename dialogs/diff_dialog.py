@@ -3,7 +3,7 @@
 
 import tkinter as tk
 from tkinter import ttk, simpledialog
-from utils.localization import setup_translation, get_available_languages, _
+from utils.localization import _
 
 class DiffDialog(simpledialog.Dialog):
     def __init__(self, parent, title, diff_results):

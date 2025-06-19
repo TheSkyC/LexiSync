@@ -8,7 +8,7 @@ import uuid
 import re
 from copy import deepcopy
 from utils.constants import EXTRACTION_PATTERN_PRESET_EXTENSION, DEFAULT_EXTRACTION_PATTERNS
-from utils.localization import setup_translation, get_available_languages, _
+from utils.localization import _
 
 class ExtractionPatternManagerDialog(tk.Toplevel):
     def __init__(self, parent, title, app_instance):

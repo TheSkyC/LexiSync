@@ -6,9 +6,11 @@ from tkinter import ttk, simpledialog, messagebox
 import threading
 from services.ai_translator import AITranslator
 from utils.constants import DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE
-from utils.localization import setup_translation, get_available_languages, _
+from utils.localization import _
 from services.prompt_service import generate_prompt_from_structure
 from dialogs.prompt_manager_dialog import PromptManagerDialog
+
+
 
 class AISettingsDialog(tk.Toplevel):
     def __init__(self, parent, title, app_config_ref, save_config_callback, ai_translator_ref, app_instance):

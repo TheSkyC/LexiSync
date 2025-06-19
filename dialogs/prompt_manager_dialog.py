@@ -7,7 +7,7 @@ import json
 import uuid
 from copy import deepcopy
 from utils.constants import PROMPT_PRESET_EXTENSION, DEFAULT_PROMPT_STRUCTURE, STRUCTURAL, STATIC, DYNAMIC
-from utils.localization import setup_translation, get_available_languages, _
+from utils.localization import _
 
 class PromptManagerDialog(tk.Toplevel):
     def __init__(self, parent, title, app_instance):

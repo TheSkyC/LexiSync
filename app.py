@@ -27,8 +27,7 @@ from services.prompt_service import generate_prompt_from_structure
 
 from utils.constants import *
 from utils import config_manager
-from utils.localization import setup_translation, get_available_languages
-
+from utils.localization import lang_manager, _, get_available_languages
 from utils.constants import DEFAULT_EXTRACTION_PATTERNS, EXTRACTION_PATTERN_PRESET_EXTENSION
 
 try:
@@ -45,7 +44,7 @@ except ImportError:
 
 initial_config = config_manager.load_config()
 language_code = initial_config.get('language', 'en_US')
-_ = setup_translation(language_code)
+lang_manager.setup_translation(language_code)
 
 class OverwatchLocalizerApp:
     def __init__(self, root):

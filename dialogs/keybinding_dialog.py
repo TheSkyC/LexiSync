@@ -4,7 +4,7 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox
 from utils.constants import DEFAULT_KEYBINDINGS
-from utils.localization import setup_translation, get_available_languages, _
+from utils.localization import _
 
 class KeybindingDialog(simpledialog.Dialog):
     def __init__(self, parent, title, app_instance):
