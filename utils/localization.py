@@ -8,7 +8,7 @@ APP_NAME = "overwatch_localizer"
 LOCALE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'locales')
 
 DEFAULT_LANG = 'en_US'
-
+print(f"DEBUG: Trying to load locales from: {LOCALE_DIR}")
 _ = lambda s: s
 
 def setup_translation(lang_code=None):

@@ -45,7 +45,9 @@ except ImportError:
 
 initial_config = config_manager.load_config()
 language_code = initial_config.get('language', 'en_US')
+print(f"DEBUG: Attempting to set language to: {language_code}")
 setup_translation(language_code)
+
 
 class OverwatchLocalizerApp:
     def __init__(self, root):
@@ -65,7 +67,7 @@ class OverwatchLocalizerApp:
             'open_code_file': {'method': self.open_code_file_dialog, 'desc': _('Open Code File')},
             'open_project': {'method': self.open_project_dialog, 'desc': _('Open Project')},
             'save_project': {'method': self.save_project_dialog, 'desc': _('Save Project')},
-            'save_code_file': {'method': self.save_code_file, 'desc': _('Save to New Code File')},
+            'save_code_file': {'method': self.save_code_file, 'desc': _('Save Translation to New Code File')},
             'undo': {'method': self.undo_action, 'desc': _('Undo')},
             'redo': {'method': self.redo_action, 'desc': _('Redo')},
             'find_replace': {'method': self.show_advanced_search_dialog, 'desc': _('Find/Replace')},
@@ -312,7 +314,7 @@ class OverwatchLocalizerApp:
         file_menu.add_command(label=_("Import Translations from PO File..."), command=self.import_po_file_dialog)
         file_menu.add_command(label=_("Export to PO File..."), command=self.export_to_po_file_dialog, state=tk.DISABLED)
         file_menu.add_separator()
-        file_menu.add_command(label=_("Import Translation Memory (Excel)"), command=self.import_tm_excel_dialog)
+        file_menu.add_command(label=_("Import TM (Excel)"), command=self.import_tm_excel_dialog)
         file_menu.add_command(label=_("Export Current TM (Excel)"), command=self.export_tm_excel_dialog)
         file_menu.add_separator()
         self.recent_files_menu = tk.Menu(file_menu, tearoff=0)
@@ -353,7 +355,7 @@ class OverwatchLocalizerApp:
         tools_menu.add_command(label=_("Apply TM to Untranslated"),
                                command=lambda: self.apply_tm_to_all_current_strings(only_if_empty=True, confirm=True),
                                state=tk.DISABLED)
-        tools_menu.add_command(label=_("Clear Translation Memory (in-memory)"),
+        tools_menu.add_command(label=_("Clear TM (in-memory)"),
                                command=self.clear_entire_translation_memory)
         tools_menu.add_separator()
         tools_menu.add_command(label=_("AI Translate Selected"),
@@ -1153,7 +1155,7 @@ class OverwatchLocalizerApp:
             if tm_path_from_project and os.path.exists(tm_path_from_project):
                 self.load_tm_from_excel(tm_path_from_project, silent=True)
             elif tm_path_from_project:
-                messagebox.showwarning(_("Project Warning"), _("Project's associated Translation Memory file '{tm_path}' not found.").format(tm_path=tm_path_from_project),
+                messagebox.showwarning(_("Project Warning"), _("Project's associated TM file '{tm_path}' not found.").format(tm_path=tm_path_from_project),
                                        parent=self.root)
 
             filter_settings = project_data.get("filter_settings", {})
@@ -2351,21 +2353,21 @@ class OverwatchLocalizerApp:
             self.translation_memory.update(new_tm_data)
 
             if not silent:
-                messagebox.showinfo(_("Translation Memory"),
+                messagebox.showinfo(_("TM"),
                                     _("Loaded/merged {count} Excel TM records from '{filename}'.").format(count=loaded_count, filename=os.path.basename(filepath)),
                                     parent=self.root)
             self.current_tm_file = filepath
-            self.update_statusbar(_("Translation Memory loaded from '{filename}' (Excel).").format(filename=os.path.basename(filepath)))
+            self.update_statusbar(_("TM loaded from '{filename}' (Excel).").format(filename=os.path.basename(filepath)))
 
         except Exception as e:
             if not silent:
-                messagebox.showerror(_("Error"), _("Failed to load Excel Translation Memory: {error}").format(error=e), parent=self.root)
-            self.update_statusbar(_("Failed to load Excel Translation Memory: {error}").format(error=e))
+                messagebox.showerror(_("Error"), _("Failed to load Excel TM: {error}").format(error=e), parent=self.root)
+            self.update_statusbar(_("Failed to load Excel TM: {error}").format(error=e))
 
     def save_tm_to_excel(self, filepath_to_save, silent=False, backup=True):
         if not self.translation_memory:
             if not silent:
-                messagebox.showinfo(_("Translation Memory"), _("Translation Memory is empty, nothing to export."), parent=self.root)
+                messagebox.showinfo(_("TM"), _("TM is empty, nothing to export."), parent=self.root)
             return
 
         if backup and self.auto_backup_tm_on_save_var.get() and os.path.exists(filepath_to_save):
@@ -2399,17 +2401,17 @@ class OverwatchLocalizerApp:
         try:
             workbook.save(filepath_to_save)
             if not silent:
-                messagebox.showinfo(_("Translation Memory"), _("Translation Memory saved to '{filename}'.").format(filename=os.path.basename(filepath_to_save)),
+                messagebox.showinfo(_("TM"), _("TM saved to '{filename}'.").format(filename=os.path.basename(filepath_to_save)),
                                     parent=self.root)
             self.current_tm_file = filepath_to_save
-            self.update_statusbar(_("Translation Memory saved to '{filename}'.").format(filename=os.path.basename(filepath_to_save)))
+            self.update_statusbar(_("TM saved to '{filename}'.").format(filename=os.path.basename(filepath_to_save)))
         except Exception as e_save:
             if not silent:
-                messagebox.showerror(_("Error"), _("Failed to save Translation Memory: {error}").format(error=e_save), parent=self.root)
+                messagebox.showerror(_("Error"), _("Failed to save TM: {error}").format(error=e_save), parent=self.root)
 
     def import_tm_excel_dialog(self):
         filepath = filedialog.askopenfilename(
-            title=_("Import Translation Memory (Excel)"),
+            title=_("Import TM (Excel)"),
             filetypes=(("Excel files", "*.xlsx"), ("All files", "*.*")),
             defaultextension=".xlsx",
             parent=self.root
@@ -2419,13 +2421,13 @@ class OverwatchLocalizerApp:
         self.load_tm_from_excel(filepath)
 
         if self.translatable_objects and \
-                messagebox.askyesno(_("Apply Translation Memory"), _("Translation Memory imported. Do you want to apply it to untranslated strings in the current project immediately?"),
+                messagebox.askyesno(_("Apply TM"), _("TM imported. Do you want to apply it to untranslated strings in the current project immediately?"),
                                     parent=self.root):
             self.apply_tm_to_all_current_strings(only_if_empty=True)
 
     def export_tm_excel_dialog(self):
         if not self.translation_memory:
-            messagebox.showinfo(_("Translation Memory"), _("Translation Memory is empty, nothing to export."), parent=self.root)
+            messagebox.showinfo(_("TM"), _("TM is empty, nothing to export."), parent=self.root)
             return
 
         initial_tm_filename = os.path.basename(
@@ -2442,14 +2444,14 @@ class OverwatchLocalizerApp:
 
     def clear_entire_translation_memory(self):
         if not self.translation_memory:
-            messagebox.showinfo(_("Clear Translation Memory"), _("Translation Memory is already empty."), parent=self.root)
+            messagebox.showinfo(_("Clear TM"), _("TM is already empty."), parent=self.root)
             return
 
         if messagebox.askyesno(_("Confirm Clear"),
-                               _("Are you sure you want to clear all entries from the in-memory Translation Memory?\n"
+                               _("Are you sure you want to clear all entries from the in-memory TM?\n"
                                  "This cannot be undone."), parent=self.root):
             self.translation_memory.clear()
-            self.update_statusbar(_("In-memory Translation Memory has been cleared."))
+            self.update_statusbar(_("In-memory TM has been cleared."))
 
             if self.current_selected_ts_id:
                 ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
@@ -2511,7 +2513,7 @@ class OverwatchLocalizerApp:
                     state=tk.DISABLED)
                 self.mark_project_modified()
         else:
-            messagebox.showinfo(_("Info"), _("The selected item has no entry in the Translation Memory."), parent=self.root)
+            messagebox.showinfo(_("Info"), _("The selected item has no entry in the TM."), parent=self.root)
 
     def update_tm_suggestions_for_text(self, original_semantic_text):
         self.tm_suggestions_listbox.delete(0, tk.END)
@@ -2568,14 +2570,14 @@ class OverwatchLocalizerApp:
             if ts_obj:
                 self._apply_translation_to_model(ts_obj, translation_text_ui, source="tm_suggestion")
 
-        self.update_statusbar(_("Translation Memory suggestion applied."))
+        self.update_statusbar(_("TM suggestion applied."))
 
     def apply_tm_to_all_current_strings(self, silent=False, only_if_empty=False, confirm=False):
         if not self.translatable_objects:
             if not silent: messagebox.showinfo(_("Info"), _("No strings to apply TM to."), parent=self.root)
             return 0
         if not self.translation_memory:
-            if not silent: messagebox.showinfo(_("Info"), _("Translation Memory is empty."), parent=self.root)
+            if not silent: messagebox.showinfo(_("Info"), _("TM is empty."), parent=self.root)
             return 0
 
         if confirm and not only_if_empty:
@@ -2615,10 +2617,10 @@ class OverwatchLocalizerApp:
             if self.current_selected_ts_id: self.on_tree_select(None)
 
             if not silent:
-                messagebox.showinfo(_("Translation Memory"), _("Applied TM to {count} strings.").format(count=applied_count), parent=self.root)
+                messagebox.showinfo(_("TM"), _("Applied TM to {count} strings.").format(count=applied_count), parent=self.root)
             self.update_statusbar(_("Applied TM to {count} strings.").format(count=applied_count))
         elif not silent:
-            messagebox.showinfo(_("Translation Memory"), _("No applicable translations found in TM (or no changes needed)."), parent=self.root)
+            messagebox.showinfo(_("TM"), _("No applicable translations found in TM (or no changes needed)."), parent=self.root)
 
         return applied_count
 
@@ -3230,7 +3232,7 @@ class OverwatchLocalizerApp:
         selected_objs = self._get_selected_ts_objects()
         if not selected_objs: return
         if not self.translation_memory:
-            messagebox.showinfo(_("Info"), _("Translation Memory is empty."), parent=self.root)
+            messagebox.showinfo(_("Info"), _("TM is empty."), parent=self.root)
             return
 
         applied_count = 0
