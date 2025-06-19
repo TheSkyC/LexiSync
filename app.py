@@ -24,10 +24,10 @@ from services.code_file_service import extract_translatable_strings, save_transl
 from services.project_service import load_project, save_project
 from services.prompt_service import generate_prompt_from_structure
 
-from utils import config_manager
+
 from utils.constants import *
 from utils import config_manager
-from utils.localization import setup_translation, get_available_languages, _
+from utils.localization import setup_translation, get_available_languages
 
 from utils.constants import DEFAULT_EXTRACTION_PATTERNS, EXTRACTION_PATTERN_PRESET_EXTENSION
 
@@ -45,9 +45,7 @@ except ImportError:
 
 initial_config = config_manager.load_config()
 language_code = initial_config.get('language', 'en_US')
-print(f"DEBUG: Attempting to set language to: {language_code}")
-setup_translation(language_code)
-
+_ = setup_translation(language_code)
 
 class OverwatchLocalizerApp:
     def __init__(self, root):
@@ -1360,7 +1358,7 @@ class OverwatchLocalizerApp:
 
     def find_string_from_toolbar(self):
         search_term = self.search_var.get()
-        if search_term == "Quick search...":
+        if search_term == _("Quick search..."):
             self.search_var.set("")
 
         self.refresh_treeview_preserve_selection()
@@ -1389,7 +1387,7 @@ class OverwatchLocalizerApp:
 
     def on_search_focus_out(self, event):
         if not self.search_var.get():
-            self.search_var.set("Quick search...")
+            self.search_var.set(_("Quick search..."))
             self.search_entry.config(foreground="grey")
 
     def _get_ts_obj_from_tree_iid(self, tree_iid):
@@ -1829,7 +1827,7 @@ class OverwatchLocalizerApp:
                 "show_unreviewed": self.show_unreviewed_var.get(),
             },
             "ui_state": {
-                "search_term": self.search_var.get() if self.search_var.get() != "Quick search..." else "",
+                "search_term": self.search_var.get() if self.search_var.get() != _("Quick search...") else "",
                 "selected_ts_id": self.current_selected_ts_id or ""
             },
         }

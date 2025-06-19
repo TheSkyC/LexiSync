@@ -8,22 +8,18 @@ APP_NAME = "overwatch_localizer"
 LOCALE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'locales')
 
 DEFAULT_LANG = 'en_US'
-print(f"DEBUG: Trying to load locales from: {LOCALE_DIR}")
 _ = lambda s: s
 
 def setup_translation(lang_code=None):
-    global _
     if lang_code is None:
-        lang_code = DEFAULT_LANG
+        lang_code = 'en_US'
 
     try:
         lang = gettext.translation(APP_NAME, localedir=LOCALE_DIR, languages=[lang_code])
-        lang.install()
-        _ = lang.gettext
+        return lang.gettext
     except FileNotFoundError:
-        print(f"Warning: Translation for '{lang_code}' not found in '{LOCALE_DIR}'. Falling back to default.")
-        gettext.NullTranslations().install()
-        _ = gettext.gettext
+        print(f"Warning: Translation for '{lang_code}' not found. Falling back to default.")
+        return lambda s: s
 
 def get_available_languages():
     languages = []
