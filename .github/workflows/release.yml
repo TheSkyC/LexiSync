@@ -77,16 +77,43 @@ jobs:
     - name: Build with PyInstaller for ${{ matrix.os_name }}
       shell: bash
       run: |
-        PYINSTALLER_ARGS="--name ${{ env.APP_NAME }} --windowed --noconfirm"
+        echo "Preparing clean locales directory for packaging..."
+        python -c "
+        import os, shutil
+        source_dir = 'locales'
+        target_dir = 'dist_locales'
+        if os.path.exists(target_dir):
+            shutil.rmtree(target_dir)
+        for root, dirs, files in os.walk(source_dir):
+            for file in files:
+                if file.endswith('.mo'):
+                    source_path = os.path.join(root, file)
+                    relative_path = os.path.relpath(source_path, source_dir)
+                    target_path = os.path.join(target_dir, relative_path)
+                    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                    shutil.copy2(source_path, target_path)
+        "
+        
+        echo "Temporary locales directory content:"
+        if command -v find &> /dev/null; then
+            find dist_locales -print
+        else
+            ls -R dist_locales
+        fi
         
         DATA_SEPARATOR=':'
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           DATA_SEPARATOR=';'
         fi
         
-        PYINSTALLER_ARGS="$PYINSTALLER_ARGS --add-data \"locales${DATA_SEPARATOR}locales\""
-        echo "Building for ${{ matrix.os_name }}. Python arch: ${{ (matrix.os_name == 'macos' && steps.mac_arch.outputs.python_arch_for_macos) || matrix.python_arch }}"
-        pyinstaller $PYINSTALLER_ARGS main.py
+        echo "Building for ${{ matrix.os_name }}..."
+        
+        pyinstaller \
+          --name "${{ env.APP_NAME }}" \
+          --windowed \
+          --noconfirm \
+          --add-data "dist_locales${DATA_SEPARATOR}locales" \
+          main.py
 
     - name: Prepare Artifacts (Windows)
       if: runner.os == 'Windows'
