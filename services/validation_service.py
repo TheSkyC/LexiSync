@@ -60,11 +60,9 @@ def validate_string(ts_obj):
     original_stripped = original.strip()
     translation_stripped = translation.strip()
 
-    # Helper function to check if a character is a relevant punctuation mark
     def is_punc(char):
         return char in all_punc
 
-    # Helper function to check for equivalence
     def are_equivalent(char1, char2):
         if char1 == char2:
             return True
@@ -72,35 +70,29 @@ def validate_string(ts_obj):
             return True
         return False
 
-    # Check starting characters
     if original_stripped and translation_stripped:
         start_orig_char = original_stripped[0]
         start_trans_char = translation_stripped[0]
         orig_starts_with_punc = is_punc(start_orig_char)
         trans_starts_with_punc = is_punc(start_trans_char)
 
-        # Warn if one starts with punctuation but the other doesn't
         if orig_starts_with_punc and not trans_starts_with_punc:
             warnings.append(f"Original starts with '{start_orig_char}', but translation does not start with punctuation.")
         elif not orig_starts_with_punc and trans_starts_with_punc:
             warnings.append(f"Translation starts with '{start_trans_char}', but original does not start with punctuation.")
-        # Optional: Warn if both are punctuation but not equivalent
         elif orig_starts_with_punc and trans_starts_with_punc and not are_equivalent(start_orig_char, start_trans_char):
             warnings.append(f"Starting punctuation mismatch: '{start_orig_char}' vs '{start_trans_char}'.")
 
-    # Check ending characters
     if original_stripped and translation_stripped:
         end_orig_char = original_stripped[-1]
         end_trans_char = translation_stripped[-1]
         orig_ends_with_punc = is_punc(end_orig_char)
         trans_ends_with_punc = is_punc(end_trans_char)
 
-        # Warn if one ends with punctuation but the other doesn't
         if orig_ends_with_punc and not trans_ends_with_punc:
             warnings.append(f"Original ends with '{end_orig_char}', but translation does not end with punctuation.")
         elif not orig_ends_with_punc and trans_ends_with_punc:
             warnings.append(f"Translation ends with '{end_trans_char}', but original does not end with punctuation.")
-        # Optional: Warn if both are punctuation but not equivalent
         elif orig_ends_with_punc and trans_ends_with_punc and not are_equivalent(end_orig_char, end_trans_char):
             warnings.append(f"Ending punctuation mismatch: '{end_orig_char}' vs '{end_trans_char}'.")
 

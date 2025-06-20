@@ -8,7 +8,6 @@ import os
 import shutil
 import json
 import datetime
-import tkinter.font
 import time
 import threading
 from copy import deepcopy
@@ -18,6 +17,7 @@ import tksheet
 
 from dialogs.ai_settings_dialog import AISettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
+from dialogs.font_settings_dialog import FontSettingsDialog
 from services import export_service, po_file_service
 from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
@@ -123,6 +123,34 @@ class OverwatchLocalizerApp:
         self.auto_save_tm_var = tk.BooleanVar(value=self.config.get("auto_save_tm", False))
         self.auto_backup_tm_on_save_var = tk.BooleanVar(value=self.config.get("auto_backup_tm_on_save", True))
 
+        font_settings = self.config["font_settings"]
+        if font_settings["override_default_fonts"]:
+            lang_code = lang_manager.get_current_language()
+            script_type = 'latin'
+            if lang_code.startswith('zh') or lang_code.startswith('ja') or lang_code.startswith('ko'):
+                script_type = 'cjk'
+            elif lang_code.startswith('ru'):
+                script_type = 'cyrillic'
+
+            main_cfg = font_settings["scripts"].get(script_type, font_settings["scripts"]["latin"])
+            code_cfg = font_settings["code_context"]
+
+            self.app_font = (main_cfg["family"], main_cfg["size"], main_cfg["style"])
+            self.search_font = (main_cfg["family"], main_cfg["size"] - 1, main_cfg["style"])
+            self.context_font = (code_cfg["family"], code_cfg["size"], code_cfg["style"])
+        else:
+            try:
+                primary_font_family = "Source Han Sans"
+                tk.font.Font(family=primary_font_family, size=10).actual()
+            except tk.TclError:
+                primary_font_family = "TkDefaultFont"
+            self.app_font = (primary_font_family, 10, "normal")
+            self.app_font_header = (primary_font_family, 10, "bold")
+            self.search_font = (primary_font_family, 9, "normal")
+            self.context_font = ("Consolas", 9, "normal")
+
+        self.app_font_bold = (self.app_font[0], self.app_font[1], "bold")
+
         self._ignored_tag_font = None
         self.icons = self._load_icons()
         self.placeholder_regex = enhanced_placeholder_regex
@@ -163,8 +191,8 @@ class OverwatchLocalizerApp:
             elif 'alt' in available_themes:
                 style.theme_use('alt')
 
-            style.configure("Treeview.Heading", font=('Segoe UI', 10, 'bold'))
-            style.configure("TNotebook.Tab", padding=[10, 5], font=('Segoe UI', 10))
+            style.configure("Treeview.Heading", font=(self.app_font, 10, 'bold'))
+            style.configure("TNotebook.Tab", padding=[10, 5], font=(self.app_font, 10))
             style.configure("Status.TFrame", relief=tk.SUNKEN, borderwidth=1)
             style.configure("Filter.TFrame")
             style.configure("Toolbar.TButton", padding=5)
@@ -417,7 +445,7 @@ class OverwatchLocalizerApp:
                 command=self.change_language
             )
         settings_menu.add_command(label=_("Keybinding Settings..."), command=self.show_keybinding_dialog)
-
+        settings_menu.add_command(label=_("Font Settings..."), command=self.show_font_settings_dialog)
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label=_("Help"), menu=help_menu)
         help_menu.add_command(label=_("About"), command=self.about)
@@ -457,6 +485,9 @@ class OverwatchLocalizerApp:
     def show_keybinding_dialog(self):
         from dialogs.keybinding_dialog import KeybindingDialog
         KeybindingDialog(self.root, _("Keybinding Settings"), self)
+
+    def show_font_settings_dialog(self):
+        FontSettingsDialog(self.root, _("Font Settings"), self)
 
     def change_language(self):
         new_lang = self.language_var.get()
@@ -505,7 +536,7 @@ class OverwatchLocalizerApp:
         search_frame = ttk.Frame(toolbar)
         search_frame.pack(side=tk.RIGHT, padx=5)
 
-        self.search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=25, font=('Segoe UI', 9))
+        self.search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=25, font=(self.app_font, 9))
         self.search_entry.pack(side=tk.LEFT, padx=(0, 5))
         self.search_entry.bind("<Return>", lambda e: self.find_string_from_toolbar())
 
@@ -525,6 +556,8 @@ class OverwatchLocalizerApp:
         self.sheet = tksheet.Sheet(
             sheet_frame,
             headers=["#", "S", _("col_original"), _("col_translation"), _("col_comment"), "✔", _("col_line")],
+            font=self.app_font,
+            header_font=self.app_font_bold,
             show_x_scrollbar=True,
             show_y_scrollbar=True,
             show_top_left=False,
@@ -545,20 +578,15 @@ class OverwatchLocalizerApp:
             "drag_select",
         )
 
-        # --- REVISED EVENT BINDING ---
         self.sheet.extra_bindings([
             ("column_header_select", self._sort_sheet_column)
-            # We removed the right_click_popup_menu binding from here
         ])
 
-        # Use the most direct and reliable Tkinter binding for right-clicks
         self.sheet.bind("<ButtonRelease-3>", self.show_sheet_context_menu)
         self.sheet.bind("<Double-1>", self.on_sheet_double_click)
-        # Keep these for selection updates
         self.sheet.bind("<ButtonRelease-1>", self.on_sheet_select)
         self.sheet.bind("<KeyRelease-Up>", self.on_sheet_select)
         self.sheet.bind("<KeyRelease-Down>", self.on_sheet_select)
-        # --- END OF REVISED BINDING ---
 
         self.sheet.column_width(column=0, width=40)
         self.sheet.column_width(column=1, width=30)
@@ -605,30 +633,22 @@ class OverwatchLocalizerApp:
         clicked_row = self.sheet.identify_row(event=event, allow_end=False)
         if clicked_row is None:
             return
-
-        # Get all visually selected rows by checking selection boxes
         selection_boxes = self.sheet.get_all_selection_boxes_with_types()
         selected_rows = set()
         for box, _ in selection_boxes:
             for r in range(box[0], box[2]):
                 selected_rows.add(r)
 
-        # If the right-clicked row is NOT part of the existing selection,
-        # then clear everything and select only the clicked row.
         if clicked_row not in selected_rows:
             self.sheet.deselect("all")
             self.sheet.select_row(row=clicked_row)
-            # Manually trigger on_sheet_select to update the details pane
             self.on_sheet_select()
-
-        # If the clicked row IS part of an existing multi-selection, do nothing to the selection.
 
         self.sheet_context_menu.post(event.x_root, event.y_root)
 
     def on_sheet_double_click(self, event):
         clicked_col = self.sheet.identify_column(event=event)
 
-        # Column 2: Original, 3: Translation, 4: Comment
         if clicked_col == 2:
             self.original_text_display.focus_set()
         elif clicked_col == 3:
@@ -695,7 +715,7 @@ class OverwatchLocalizerApp:
         orig_frame.grid_columnconfigure(0, weight=1)
 
         self.original_text_display = tk.Text(orig_frame, height=3, wrap=tk.WORD, state=tk.DISABLED, relief=tk.SOLID,
-                                             borderwidth=1, font=('Segoe UI', 10))
+                                             borderwidth=1, font=self.app_font)
         self.original_text_display.grid(row=0, column=0, sticky="nsew")
 
         orig_scrollbar = ttk.Scrollbar(orig_frame, orient="vertical", command=self.original_text_display.yview)
@@ -710,7 +730,7 @@ class OverwatchLocalizerApp:
         trans_frame.grid_columnconfigure(0, weight=1)
 
         self.translation_edit_text = tk.Text(trans_frame, height=5, wrap=tk.WORD, relief=tk.SOLID, borderwidth=1,
-                                             undo=True, font=('Segoe UI', 10))
+                                             undo=True, font=self.app_font)
         self.translation_edit_text.grid(row=0, column=0, sticky="nsew")
         self.translation_edit_text.bind("<FocusOut>", self.apply_translation_focus_out)
         self.translation_edit_text.bind("<KeyRelease>", self.schedule_placeholder_validation)
@@ -737,7 +757,7 @@ class OverwatchLocalizerApp:
         comment_frame.grid_columnconfigure(0, weight=1)
 
         self.comment_edit_text = tk.Text(comment_frame, height=3, wrap=tk.WORD, relief=tk.SOLID, borderwidth=1,
-                                         undo=True, font=('Segoe UI', 10))
+                                         undo=True, font=self.app_font)
         self.comment_edit_text.grid(row=0, column=0, sticky="nsew")
         self.comment_edit_text.bind("<FocusOut>", self.apply_comment_focus_out)
 
@@ -789,7 +809,7 @@ class OverwatchLocalizerApp:
         tm_section_frame.rowconfigure(1, weight=1)
         ttk.Label(tm_section_frame, text=_("Translation Memory Matches:")).pack(anchor=tk.W, pady=(0, 2), padx=5)
         self.tm_suggestions_listbox = tk.Listbox(tm_section_frame, height=4, relief=tk.SOLID, borderwidth=1,
-                                                 font=('Segoe UI', 10))
+                                                 font=self.app_font)
         self.tm_suggestions_listbox.pack(fill=tk.BOTH, expand=True, pady=(0, 5), padx=5)
         self.tm_suggestions_listbox.bind("<Double-1>", self.apply_tm_suggestion_from_listbox)
         tm_actions_frame = ttk.Frame(tm_section_frame)
@@ -803,10 +823,12 @@ class OverwatchLocalizerApp:
                                                 style="Toolbar.TButton")
         self.clear_selected_tm_btn.pack(side=tk.LEFT, padx=5)
 
-        self.original_text_display.tag_configure('placeholder', foreground='mediumseagreen', font=('Segoe UI', 10))
+        self.original_text_display.tag_configure('placeholder', foreground='orange red')
         self.original_text_display.tag_configure('placeholder_missing', background='#FFDDDD', foreground='red')
-        self.translation_edit_text.tag_configure('placeholder', foreground='mediumseagreen', font=('Segoe UI', 10))
-        self.translation_edit_text.tag_configure('placeholder_extra', background='#FFEBCD', foreground='orange red')
+        self.translation_edit_text.tag_configure('placeholder', foreground='orange red')
+        self.translation_edit_text.tag_configure('placeholder_extra', background='#FFDDDD', foreground='red')
+
+
 
     def _setup_statusbar(self):
         self.statusbar_frame = ttk.Frame(self.root, style="Status.TFrame")
@@ -1322,33 +1344,23 @@ class OverwatchLocalizerApp:
         old_selected_id = self.current_selected_ts_id
         if item_to_reselect_after:
             old_selected_id = item_to_reselect_after
-
-        # --- REVISED MULTI-LEVEL SORTING LOGIC ---
         if self.translatable_objects:
             def sort_key(ts_obj):
-                # Primary sort key: Warning status
-                # 0 for active warnings, 1 for normal, 2 for ignored
                 if ts_obj.warnings and not ts_obj.is_warning_ignored:
                     primary_key = 0
                 elif ts_obj.is_ignored:
                     primary_key = 2
                 else:
                     primary_key = 1
-
-                # Secondary sort key: Original line number in the file
                 secondary_key = ts_obj.line_num_in_file
 
                 return (primary_key, secondary_key)
 
             self.translatable_objects.sort(key=sort_key)
-        # --- END OF REVISED SORTING LOGIC ---
 
-        # The rest of the method remains exactly the same
-        # It will now build the sheet based on the new, stable sort order
 
         filtered_objects = []
         processed_originals_for_dedup = set()
-        # ... (your existing filtering logic) ...
         for ts_obj in self.translatable_objects:
             if self.deduplicate_strings_var.get():
                 if ts_obj.original_semantic in processed_originals_for_dedup:
@@ -1429,13 +1441,9 @@ class OverwatchLocalizerApp:
         for row_idx, ts_id in enumerate(self.displayed_string_ids):
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if not ts_obj: continue
-
             fg = "black"
-
-            # --- MODIFICATION: Add warning color ---
             if ts_obj.warnings and not ts_obj.is_warning_ignored:
                 fg = "orange red"
-            # --- END OF MODIFICATION ---
             elif ts_obj.is_ignored:
                 fg = "#707070"
                 if ts_obj.was_auto_ignored:
@@ -1482,48 +1490,33 @@ class OverwatchLocalizerApp:
             self.search_entry.config(foreground="grey")
 
     def refresh_ui_for_current_selection(self):
-        # This method simulates a re-selection of the current item
-        # to force a full UI refresh for the details pane.
         current_id = self.current_selected_ts_id
         if current_id:
-            # Temporarily deselect to ensure on_sheet_select will run
             self.current_selected_ts_id = None
-
-            # Find the row index of the current item
             try:
                 row_idx = self.displayed_string_ids.index(current_id)
-
-                # Create a mock selection object that on_sheet_select can use
                 class MockSelection:
                     def __init__(self, row, col):
                         self.row = row
                         self.column = col
 
-                # Manually call on_sheet_select with the mock selection
-                self.sheet.set_currently_selected(row_idx, 2)  # Select a valid column
+                self.sheet.set_currently_selected(row_idx, 2)
                 self.on_sheet_select()
 
             except (ValueError, IndexError):
-                # If item not visible, just clear the pane
                 self.clear_details_pane()
 
     def force_refresh_ui_for_current_selection(self):
-        """
-        This method simulates a re-selection of the current item
-        to force a full UI refresh for the details pane.
-        """
         current_id = self.current_selected_ts_id
         if not current_id:
             self.clear_details_pane()
             return
 
-        # Find the object and update the UI directly from its current state
         ts_obj = self._find_ts_obj_by_id(current_id)
         if not ts_obj:
             self.clear_details_pane()
             return
 
-        # This block is a simplified version of on_sheet_select's update logic
         self.original_text_display.config(state=tk.NORMAL)
         self.original_text_display.delete("1.0", tk.END)
         self.original_text_display.insert("1.0", ts_obj.original_semantic)
@@ -1574,10 +1567,9 @@ class OverwatchLocalizerApp:
         self.current_selected_ts_id = newly_selected_ts_id
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj:
-            self.clear_details_pane()  # Clear pane if object not found
+            self.clear_details_pane()
             return
 
-        # --- Update the details pane ---
         self.original_text_display.config(state=tk.NORMAL)
         self.original_text_display.delete("1.0", tk.END)
         self.original_text_display.insert("1.0", ts_obj.original_semantic)
@@ -1629,7 +1621,6 @@ class OverwatchLocalizerApp:
             warning_text = "⚠️ " + " | ".join(ts_obj.warnings)
             self.update_statusbar(warning_text, persistent=True)
         else:
-            # If no warnings, show the standard selection info
             self.update_statusbar(
                 _("Selected: \"{text}...\" (Line: {line_num})").format(
                     text=ts_obj.original_semantic[:30].replace(chr(10), '↵'),
@@ -1658,8 +1649,8 @@ class OverwatchLocalizerApp:
 
         self.original_text_display.tag_configure('whitespace', background='#DDEEFF')
         self.translation_edit_text.tag_configure('whitespace', background='#DDEEFF')
-        self.original_text_display.tag_configure('newline', foreground='#007ACC', font=('Segoe UI', 10, 'italic'))
-        self.translation_edit_text.tag_configure('newline', foreground='#007ACC', font=('Segoe UI', 10, 'italic'))
+        self.original_text_display.tag_configure('newline', foreground='#007ACC', font=(self.app_font, 10, 'italic'))
+        self.translation_edit_text.tag_configure('newline', foreground='#007ACC', font=(self.app_font, 10, 'italic'))
 
         self._highlight_specific_chars(self.original_text_display, original_text)
         self._highlight_specific_chars(self.translation_edit_text, translated_text)
@@ -1716,9 +1707,6 @@ class OverwatchLocalizerApp:
             start = end
 
     def _highlight_specific_chars(self, text_widget, text_content):
-        # Helper function to apply highlighting
-
-        # Leading/Trailing spaces
         if text_content.startswith(' '):
             text_widget.tag_add('whitespace', '1.0', f'1.{len(text_content) - len(text_content.lstrip())}')
         if text_content.endswith(' '):
@@ -1726,7 +1714,6 @@ class OverwatchLocalizerApp:
             start_index = len(text_content.rstrip())
             text_widget.tag_add('whitespace', f'1.{start_index}', f'1.{end_index}')
 
-        # Newlines
         for match in re.finditer(r'\\n', text_content):
             start, end = match.span()
             text_widget.tag_add('newline', f'1.0+{start}c', f'1.0+{end}c')
@@ -1776,19 +1763,15 @@ class OverwatchLocalizerApp:
         self.tm_suggestions_listbox.delete(0, tk.END)
 
     def _run_and_refresh_with_validation(self):
-        """A helper method to run validation and refresh the UI."""
         if not self.translatable_objects:
             return
         run_validation_on_all(self.translatable_objects)
         self.refresh_sheet_preserve_selection()
-        # After refresh, we might need to update the details for the selected item
         self.refresh_ui_for_current_selection()
 
     def cm_set_warning_ignored_status(self, ignore_flag):
-        """Handles the context menu action to ignore/un-ignore warnings, with Undo/Redo and status updates."""
         selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs:
-            # Provide feedback even if nothing is selected
             self.update_statusbar(_("No items selected to modify warning status."))
             return
 
@@ -1809,17 +1792,13 @@ class OverwatchLocalizerApp:
         if changes_for_undo:
             self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
             self.mark_project_modified()
-
-            # --- STATUS BAR UPDATE ---
             count = len(changes_for_undo)
             if ignore_flag:
                 status_message = _("Ignored warnings for {count} item(s).").format(count=count)
             else:
                 status_message = _("Un-ignored warnings for {count} item(s).").format(count=count)
             self.update_statusbar(status_message)
-            # --- END OF STATUS BAR UPDATE ---
         else:
-            # Provide feedback if no changes were needed
             self.update_statusbar(_("Selected item(s) already have the desired warning status."))
 
         self._run_and_refresh_with_validation()
@@ -1985,18 +1964,10 @@ class OverwatchLocalizerApp:
 
         new_reviewed_state = self.reviewed_var.get()
         if new_reviewed_state == ts_obj.is_reviewed: return
-
-        # --- NEW LOGIC: Link 'reviewed' status with 'warning_ignored' status ---
         old_reviewed_state = ts_obj.is_reviewed
         old_warning_ignored_state = ts_obj.is_warning_ignored
-
         ts_obj.is_reviewed = new_reviewed_state
-
-        # If an item is marked as reviewed, automatically ignore any warnings.
-        # If review is removed, re-evaluate warnings (un-ignore them).
         ts_obj.is_warning_ignored = new_reviewed_state
-
-        # --- UNDO/REDO HANDLING FOR BOTH PROPERTIES ---
         changes_for_undo = [
             {
                 'string_id': ts_obj.id, 'field': 'is_reviewed',
@@ -2009,9 +1980,6 @@ class OverwatchLocalizerApp:
         ]
 
         self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
-        # --- END OF UNDO/REDO ---
-
-        # We need to refresh the whole sheet to reflect potential changes in sorting and status icons
         self._run_and_refresh_with_validation()
 
         self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
@@ -3471,26 +3439,18 @@ class OverwatchLocalizerApp:
             self.update_ai_related_ui_state()
 
     def _get_selected_ts_objects_from_sheet(self):
-        # This is the new, robust way to get all selected objects.
         selected_objs = []
-
-        # get_all_selection_boxes() returns coordinates of all visual selection boxes.
-        # e.g., ((row_start, col_start, row_end, col_end), "cells" or "rows")
         selection_boxes = self.sheet.get_all_selection_boxes_with_types()
-
         if not selection_boxes:
-            # If no visual selection, fall back to the logically selected item
             if self.current_selected_ts_id:
                 ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
                 if ts_obj:
                     return [ts_obj]
             return []
 
-        # Use a set to avoid adding duplicate objects if selection overlaps
         added_ids = set()
 
         for box, box_type in selection_boxes:
-            # box is a tuple: (start_row, start_col, end_row, end_col)
             start_row, _, end_row, _ = box
             for row_idx in range(start_row, end_row):
                 if row_idx < len(self.displayed_string_ids):
@@ -3506,9 +3466,7 @@ class OverwatchLocalizerApp:
     def select_sheet_row_by_id(self, ts_id, see=False):
         try:
             row_idx = self.displayed_string_ids.index(ts_id)
-            # --- CORRECTED CODE ---
-            self.sheet.select_row(row=row_idx)  # Removed the invalid keyword argument
-            # --- END OF CORRECTION ---
+            self.sheet.select_row(row=row_idx)
             if see:
                 self.sheet.see(row=row_idx, keep_xscroll=True)
         except (ValueError, IndexError):

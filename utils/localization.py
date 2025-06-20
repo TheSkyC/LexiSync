@@ -13,6 +13,7 @@ class LanguageManager:
         self.locale_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'locales')
         self.supported_languages = self._get_supported_languages()
         self.default_lang = 'en_US'
+        self.current_lang_code = self.default_lang
 
     def _get_supported_languages(self):
         languages = []
@@ -58,6 +59,8 @@ class LanguageManager:
     def setup_translation(self, lang_code=None):
         if lang_code is None:
             lang_code = self.get_best_match_language()
+        self.current_lang_code = lang_code
+
 
         try:
             lang = gettext.translation(self.app_name, localedir=self.locale_dir, languages=[lang_code])
@@ -69,6 +72,9 @@ class LanguageManager:
 
     def get_translator(self):
         return self.translator
+
+    def get_current_language(self):
+        return self.current_lang_code
 
     def get_available_languages(self):
         available = list(self.supported_languages)

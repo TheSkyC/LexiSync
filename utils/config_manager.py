@@ -9,6 +9,16 @@ from utils.constants import (
     DEFAULT_EXTRACTION_PATTERNS
 )
 
+def get_default_font_settings():
+    return {
+        "override_default_fonts": False,
+        "scripts": {
+            "latin": {"family": "Segoe UI", "size": 10, "style": "normal"},
+            "cjk": {"family": "Microsoft YaHei UI", "size": 10, "style": "normal"},
+            "cyrillic": {"family": "Segoe UI", "size": 10, "style": "normal"},
+        },
+        "code_context": {"family": "Consolas", "size": 9, "style": "normal"}
+    }
 
 
 def load_config():
@@ -50,6 +60,15 @@ def load_config():
         for key, value in DEFAULT_KEYBINDINGS.items():
             config_data['keybindings'].setdefault(key, value)
 
+    default_fonts = get_default_font_settings()
+    if "font_settings" not in config_data:
+        config_data["font_settings"] = default_fonts
+    else:
+        config_data["font_settings"].setdefault("override_default_fonts", default_fonts["override_default_fonts"])
+        config_data["font_settings"].setdefault("scripts", default_fonts["scripts"])
+        config_data["font_settings"].setdefault("code_context", default_fonts["code_context"])
+        for script, settings in default_fonts["scripts"].items():
+            config_data["font_settings"]["scripts"].setdefault(script, settings)
     return config_data
 
 
