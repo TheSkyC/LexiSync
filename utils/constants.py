@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import uuid
+from utils.localization import _
 
 APP_NAMESPACE_UUID = uuid.UUID('c2e02333-2f1d-48ba-bc8d-90d49da373af')
 CONFIG_FILE = "localization_tool_config.json"
@@ -13,9 +14,9 @@ APP_VERSION = "1.0.5"
 PROMPT_PRESET_EXTENSION = ".owprompt"
 EXTRACTION_PATTERN_PRESET_EXTENSION = ".owextract"
 
-STRUCTURAL = "结构化内容"
-STATIC = "静态指令"
-DYNAMIC = "动态指令"
+STRUCTURAL = _("Structural Content") #结构化内容
+STATIC = _("Static Instruction") #静态指令
+DYNAMIC = _("Dynamic Instruction") #动态指令
 DEFAULT_PROMPT_STRUCTURE = [
     {
         "id": str(uuid.uuid4()), "type": STRUCTURAL, "enabled": True,

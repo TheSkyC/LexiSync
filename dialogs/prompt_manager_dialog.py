@@ -216,8 +216,17 @@ class PromptItemEditor(simpledialog.Dialog):
         master.columnconfigure(1, weight=1)
 
         ttk.Label(master, text=_("Type:")).grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        self.type_var = tk.StringVar(value=self.initial_data["type"])
-        type_menu = ttk.Combobox(master, textvariable=self.type_var, values=[STRUCTURAL, STATIC, DYNAMIC],
+
+        self.display_values = {
+            "Structural Content": _("Structural Content"),
+            "Static Instruction": _("Static Instruction"),
+            "Dynamic Instruction": _("Dynamic Instruction")
+        }
+        self.type_var = tk.StringVar(
+            value=self.display_values.get(self.initial_data["type"], self.initial_data["type"]))
+
+        type_menu = ttk.Combobox(master, textvariable=self.type_var,
+                                 values=list(self.display_values.values()),
                                  state="readonly")
         type_menu.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
 
@@ -233,8 +242,15 @@ class PromptItemEditor(simpledialog.Dialog):
         return self.content_text
 
     def apply(self):
+        selected_display_value = self.type_var.get()
+        internal_key = self.initial_data["type"]
+        for key, display_val in self.display_values.items():
+            if display_val == selected_display_value:
+                internal_key = key
+                break
+
         self.result = {
-            "type": self.type_var.get(),
+            "type": internal_key,
             "enabled": self.enabled_var.get(),
             "content": self.content_text.get("1.0", tk.END).strip()
         }
