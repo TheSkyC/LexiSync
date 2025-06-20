@@ -6,6 +6,7 @@ from tkinter import ttk, simpledialog, messagebox
 import re
 from utils.localization import _
 
+
 class AdvancedSearchDialog(simpledialog.Dialog):
     def __init__(self, parent, title, app_instance):
         self.app = app_instance
@@ -15,8 +16,8 @@ class AdvancedSearchDialog(simpledialog.Dialog):
         self.regex_var = tk.BooleanVar(value=False)
         self.whole_word_var = tk.BooleanVar(value=False)
 
-        self.last_found_tree_iid = None
-        self.search_results_iids = []
+        self.last_found_row_index = -1
+        self.search_results_indices = []
         self.current_search_index = -1
 
         super().__init__(parent, title)
@@ -35,9 +36,11 @@ class AdvancedSearchDialog(simpledialog.Dialog):
 
         options_frame = ttk.Frame(master)
         options_frame.grid(row=2, column=0, columnspan=3, sticky=tk.W, padx=5, pady=5)
-        ttk.Checkbutton(options_frame, text=_("Case sensitive"), variable=self.case_sensitive_var).pack(side=tk.LEFT, padx=2)
-        ttk.Checkbutton(options_frame, text=_("Regular expression"), variable=self.regex_var, state=tk.DISABLED).pack(side=tk.LEFT,
-                                                                                                           padx=2)
+        ttk.Checkbutton(options_frame, text=_("Case sensitive"), variable=self.case_sensitive_var).pack(side=tk.LEFT,
+                                                                                                        padx=2)
+        ttk.Checkbutton(options_frame, text=_("Regular expression"), variable=self.regex_var, state=tk.DISABLED).pack(
+            side=tk.LEFT,
+            padx=2)
         ttk.Checkbutton(options_frame, text=_("Whole word"), variable=self.whole_word_var, state=tk.DISABLED).pack(
             side=tk.LEFT, padx=2)
 
@@ -51,20 +54,24 @@ class AdvancedSearchDialog(simpledialog.Dialog):
 
         ttk.Button(box, text=_("Find Next"), command=self._find_next).pack(side=tk.LEFT, padx=5, pady=5)
         ttk.Button(box, text=_("Replace"), command=self._replace_current).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(box, text=_("Replace All (Visible)"), command=lambda: self._replace_all(in_view=True)).pack(side=tk.LEFT,
-                                                                                                        padx=5, pady=5)
-        ttk.Button(box, text=_("Replace All (Document)"), command=lambda: self._replace_all(in_view=False)).pack(side=tk.LEFT,
-                                                                                                       padx=5, pady=5)
+        ttk.Button(box, text=_("Replace All (Visible)"), command=lambda: self._replace_all(in_view=True)).pack(
+            side=tk.LEFT,
+            padx=5, pady=5)
+        ttk.Button(box, text=_("Replace All (Document)"), command=lambda: self._replace_all(in_view=False)).pack(
+            side=tk.LEFT,
+            padx=5, pady=5)
         ttk.Button(box, text=_("Close"), command=self.ok).pack(side=tk.LEFT, padx=5, pady=5)
 
         self.bind("<Escape>", self.cancel)
         box.pack(pady=5)
 
     def _clear_search_highlights(self):
-        self.app.tree.tag_configure('search_highlight', background='')
+        self.app.sheet.dehighlight_all()
+        self.app._apply_row_highlighting()
+        self.app.sheet.redraw()
 
     def _perform_search(self):
-        self.search_results_iids = []
+        self.search_results_indices = []
         self.current_search_index = -1
         self._clear_search_highlights()
 
@@ -74,9 +81,11 @@ class AdvancedSearchDialog(simpledialog.Dialog):
             return
 
         case_sensitive = self.case_sensitive_var.get()
-        items_to_search = self.app.translatable_objects
 
-        for ts_obj in items_to_search:
+        for row_idx, ts_id in enumerate(self.app.displayed_string_ids):
+            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+            if not ts_obj: continue
+
             original_text = ts_obj.original_semantic
             translated_text = ts_obj.get_translation_for_ui()
 
@@ -95,13 +104,13 @@ class AdvancedSearchDialog(simpledialog.Dialog):
                     match_in_translation = True
 
             if match_in_original or match_in_translation:
-                self.search_results_iids.append(ts_obj.id)
-                if self.app.tree.exists(ts_obj.id):
-                    self.app.tree.item(ts_obj.id, tags=('search_highlight',))
+                self.search_results_indices.append(row_idx)
+                self.app.sheet.highlight_cells(row=row_idx, bg='yellow', fg='black', redraw=False)
 
-        if self.search_results_iids:
-            self.results_label.config(text=_("Found {count} matches.").format(count=len(self.search_results_iids)))
-            self.app.tree.tag_configure('search_highlight', background='yellow', foreground='black')
+        self.app.sheet.redraw()
+
+        if self.search_results_indices:
+            self.results_label.config(text=_("Found {count} matches.").format(count=len(self.search_results_indices)))
         else:
             self.results_label.config(text=_("No matches found."))
 
@@ -111,50 +120,38 @@ class AdvancedSearchDialog(simpledialog.Dialog):
             self.results_label.config(text=_("Please enter a search term."))
             return
 
-        if not self.search_results_iids:
+        if not self.search_results_indices:
             self._perform_search()
 
-        if not self.search_results_iids:
+        if not self.search_results_indices:
             return
 
         self.current_search_index += 1
-        if self.current_search_index >= len(self.search_results_iids):
+        if self.current_search_index >= len(self.search_results_indices):
             self.current_search_index = 0
 
-        if self.search_results_iids:
-            target_iid = self.search_results_iids[self.current_search_index]
-            if self.app.tree.exists(target_iid):
-                self.app.tree.selection_set(target_iid)
-                self.app.tree.focus(target_iid)
-                self.app.tree.see(target_iid)
-                self.app.on_tree_select(None)
-                self.last_found_tree_iid = target_iid
-                self.results_label.config(
-                    text=_("Match {current}/{total}").format(current=self.current_search_index + 1, total=len(self.search_results_iids)))
-            else:
-                self.results_label.config(
-                    text=_("Match {current}/{total} (currently not visible)").format(current=self.current_search_index + 1, total=len(self.search_results_iids)))
-                start_idx = self.current_search_index
-                for i in range(len(self.search_results_iids)):
-                    next_idx = (start_idx + i) % len(self.search_results_iids)
-                    potential_iid = self.search_results_iids[next_idx]
-                    if self.app.tree.exists(potential_iid):
-                        self.current_search_index = next_idx
-                        self.app.tree.selection_set(potential_iid)
-                        self.app.tree.focus(potential_iid)
-                        self.app.tree.see(potential_iid)
-                        self.app.on_tree_select(None)
-                        self.last_found_tree_iid = potential_iid
-                        self.results_label.config(
-                            text=_("Match {current}/{total}").format(current=self.current_search_index + 1, total=len(self.search_results_iids)))
-                        break
+        if self.search_results_indices:
+            target_row_index = self.search_results_indices[self.current_search_index]
+
+            self.app.sheet.select_row(target_row_index, add_to_selection=False)
+            self.app.sheet.see(row=target_row_index, keep_xscroll=True)
+            self.app.on_sheet_select(None)
+            self.last_found_row_index = target_row_index
+
+            self.results_label.config(
+                text=_("Match {current}/{total}").format(current=self.current_search_index + 1,
+                                                         total=len(self.search_results_indices)))
 
     def _replace_current(self):
-        if not self.last_found_tree_iid or not self.app.tree.exists(self.last_found_tree_iid):
+        if self.last_found_row_index == -1:
             messagebox.showinfo(_("No Selection"), _("Please find an item to replace first."), parent=self)
             return
 
-        ts_obj = self.app._find_ts_obj_by_id(self.last_found_tree_iid)
+        if self.last_found_row_index >= len(self.app.displayed_string_ids):
+            return
+
+        ts_id = self.app.displayed_string_ids[self.last_found_row_index]
+        ts_obj = self.app._find_ts_obj_by_id(ts_id)
         if not ts_obj: return
 
         search_term = self.search_term_var.get()
@@ -213,7 +210,8 @@ class AdvancedSearchDialog(simpledialog.Dialog):
             return
 
         scope_text = _("visible items") if in_view else _("the entire document")
-        confirm_msg = _("Are you sure you want to replace all \"{search_term}\" with \"{replace_term}\" in {scope}?\nThis operation will affect translations.").format(
+        confirm_msg = _(
+            "Are you sure you want to replace all \"{search_term}\" with \"{replace_term}\" in {scope}?\nThis operation will affect translations.").format(
             search_term=search_term, replace_term=replace_term, scope=scope_text
         )
         if not messagebox.askyesno(_("Confirm Replace All"), confirm_msg, parent=self):
@@ -238,7 +236,8 @@ class AdvancedSearchDialog(simpledialog.Dialog):
                     pattern = re.compile(re.escape(search_term), re.IGNORECASE)
                     new_translation_ui = pattern.sub(replace_term, current_translation_ui)
                 except re.error:
-                    messagebox.showerror(_("Error"), _("Find what cannot be compiled into a valid regular expression."), parent=self)
+                    messagebox.showerror(_("Error"), _("Find what cannot be compiled into a valid regular expression."),
+                                         parent=self)
                     return
 
             if new_translation_ui != current_translation_ui:
@@ -256,15 +255,17 @@ class AdvancedSearchDialog(simpledialog.Dialog):
 
         if bulk_changes_for_undo:
             self.app.add_to_undo_history('bulk_replace_all', {'changes': bulk_changes_for_undo})
-            self.app.refresh_treeview_preserve_selection()
+            self.app.refresh_sheet_preserve_selection()
             if self.app.current_selected_ts_id:
-                self.app.on_tree_select(None)
-            messagebox.showinfo(_("Replace All Complete"), _("Replaced in {count} items' translations.").format(count=replaced_count), parent=self)
+                self.app.on_sheet_select(None)
+            messagebox.showinfo(_("Replace All Complete"),
+                                _("Replaced in {count} items' translations.").format(count=replaced_count), parent=self)
         else:
-            messagebox.showinfo(_("Replace All"), _("No replaceable matches found (or no change after replace)."), parent=self)
+            messagebox.showinfo(_("Replace All"), _("No replaceable matches found (or no change after replace)."),
+                                parent=self)
 
         self._perform_search()
 
     def apply(self):
         self._clear_search_highlights()
-        self.app.refresh_treeview_preserve_selection()
+        self.app.refresh_sheet_preserve_selection()

@@ -14,8 +14,8 @@ import threading
 from copy import deepcopy
 from difflib import SequenceMatcher
 from openpyxl import Workbook, load_workbook
+import tksheet
 
-from components.virtual_treeview import VirtualTreeview
 from dialogs.ai_settings_dialog import AISettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
 from services import export_service, po_file_service
@@ -23,7 +23,6 @@ from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
 from services.project_service import load_project, save_project
 from services.prompt_service import generate_prompt_from_structure
-
 
 from utils.constants import *
 from utils import config_manager
@@ -51,6 +50,7 @@ if not language_code:
 
 lang_manager.setup_translation(language_code)
 
+
 class OverwatchLocalizerApp:
     def __init__(self, root):
         self.root = root
@@ -59,8 +59,6 @@ class OverwatchLocalizerApp:
             pass
         elif TkinterDnD:
             self.root = TkinterDnD.DnDWrapper(self.root)
-
-
 
         self.root.title(_("Overwatch Localizer - v{version}").format(version=APP_VERSION))
         self.root.geometry("1600x900")
@@ -74,11 +72,14 @@ class OverwatchLocalizerApp:
             'redo': {'method': self.redo_action, 'desc': _('Redo')},
             'find_replace': {'method': self.show_advanced_search_dialog, 'desc': _('Find/Replace')},
             'copy_original': {'method': self.copy_selected_original_text_menu, 'desc': _('Copy Original')},
-            'paste_translation': {'method': self.paste_clipboard_to_selected_translation_menu, 'desc': _('Paste to Translation')},
-            'ai_translate_selected': {'method': self.ai_translate_selected_from_menu, 'desc': _('AI Translate Selected')},
+            'paste_translation': {'method': self.paste_clipboard_to_selected_translation_menu,
+                                  'desc': _('Paste to Translation')},
+            'ai_translate_selected': {'method': self.ai_translate_selected_from_menu,
+                                      'desc': _('AI Translate Selected')},
             'toggle_reviewed': {'method': self.cm_toggle_reviewed_status, 'desc': _('Toggle Reviewed Status')},
             'toggle_ignored': {'method': self.cm_toggle_ignored_status, 'desc': _('Toggle Ignored Status')},
-            'apply_and_next': {'method': self.apply_and_select_next_untranslated, 'desc': _('Apply and Go to Next Untranslated')},
+            'apply_and_next': {'method': self.apply_and_select_next_untranslated,
+                               'desc': _('Apply and Go to Next Untranslated')},
         }
         self.current_code_file_path = None
         self.current_project_file_path = None
@@ -128,12 +129,15 @@ class OverwatchLocalizerApp:
         self.placeholder_regex = re.compile(r'\{(\d+)\}')
         self._placeholder_validation_job = None
 
+        self.last_sort_column = "seq_id"
+        self.last_sort_reverse = False
+
         self._apply_theme()
         self._setup_menu()
         self._setup_main_layout()
         self._setup_statusbar()
         self._setup_drag_drop()
-        self._setup_treeview_context_menu()
+        self._setup_sheet_context_menu()
 
         self._load_default_tm_excel()
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -224,7 +228,7 @@ class OverwatchLocalizerApp:
             label = f"{i + 1}: {filepath}"
             self.recent_files_menu.add_command(label=label, command=lambda p=filepath: self.open_recent_file(p))
         self.recent_files_menu.add_separator()
-        self.recent_files_menu.add_command(label = _("Clear History"), command=self.clear_recent_files)
+        self.recent_files_menu.add_command(label=_("Clear History"), command=self.clear_recent_files)
 
     def open_recent_file(self, filepath):
         if not os.path.exists(filepath):
@@ -303,7 +307,8 @@ class OverwatchLocalizerApp:
                               state=tk.DISABLED)
 
         file_menu.add_separator()
-        file_menu.add_command(label=_("Import Translations from Excel"), command=self.import_project_translations_from_excel,
+        file_menu.add_command(label=_("Import Translations from Excel"),
+                              command=self.import_project_translations_from_excel,
                               state=tk.DISABLED)
         file_menu.add_command(label=_("Export to Excel"), command=self.export_project_translations_to_excel,
                               state=tk.DISABLED)
@@ -342,15 +347,15 @@ class OverwatchLocalizerApp:
         view_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label=_("View"), menu=view_menu)
         view_menu.add_checkbutton(label=_("Deduplicate Strings"), variable=self.deduplicate_strings_var,
-                                  command=self.refresh_treeview_preserve_selection)
+                                  command=self.refresh_sheet_preserve_selection)
         view_menu.add_checkbutton(label=_("Show Ignored"), variable=self.show_ignored_var,
-                                  command=self.refresh_treeview_preserve_selection)
+                                  command=self.refresh_sheet_preserve_selection)
         view_menu.add_checkbutton(label=_("Show Untranslated"), variable=self.show_untranslated_var,
-                                  command=self.refresh_treeview_preserve_selection)
+                                  command=self.refresh_sheet_preserve_selection)
         view_menu.add_checkbutton(label=_("Show Translated"), variable=self.show_translated_var,
-                                  command=self.refresh_treeview_preserve_selection)
+                                  command=self.refresh_sheet_preserve_selection)
         view_menu.add_checkbutton(label=_("Show Unreviewed"), variable=self.show_unreviewed_var,
-                                  command=self.refresh_treeview_preserve_selection)
+                                  command=self.refresh_sheet_preserve_selection)
 
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label=_("Tools"), menu=tools_menu)
@@ -389,18 +394,18 @@ class OverwatchLocalizerApp:
         available_langs = lang_manager.get_available_languages()
         for lang_code in available_langs:
             lang_name = {
-                'en_US': 'English',#Support
-                'zh_CN': '简体中文',#Support
-                'ja_JP': '日本語',#Support
-                'ko_KR': '한국어',#Support
-                'fr_FR': 'le français',#Support
-                'de_DE': 'Deutsch',#Support
-                'ru_RU': 'русский язык',#Support
-                'es_ES': 'español (España)',#Support
+                'en_US': 'English',  # Support
+                'zh_CN': '简体中文',  # Support
+                'ja_JP': '日本語',  # Support
+                'ko_KR': '한국어',  # Support
+                'fr_FR': 'le français',  # Support
+                'de_DE': 'Deutsch',  # Support
+                'ru_RU': 'русский язык',  # Support
+                'es_ES': 'español (España)',  # Support
                 'es_MX': 'español (Latinoamérica)',
                 'pt_BR': 'português (Brasil)',
                 'pt_PT': 'português (Portugal)',
-                'it_IT': 'italiano',#Support
+                'it_IT': 'italiano',  # Support
                 'pl_PL': 'polski',
                 'tr_TR': 'Türkçe',
                 'ar_SA': 'العربية',
@@ -476,7 +481,7 @@ class OverwatchLocalizerApp:
         self.paned_window.add(self.left_pane, weight=7)
 
         self._setup_filter_toolbar(self.left_pane)
-        self._setup_treeview_panel(self.left_pane)
+        self._setup_sheet_panel(self.left_pane)
 
         self.right_pane = ttk.Frame(self.paned_window)
         self.paned_window.add(self.right_pane, weight=3)
@@ -488,15 +493,15 @@ class OverwatchLocalizerApp:
 
         ttk.Label(toolbar, text=_("Filter:")).pack(side=tk.LEFT, padx=(0, 10))
         ttk.Checkbutton(toolbar, text=_("Deduplicate"), variable=self.deduplicate_strings_var,
-                        command=self.refresh_treeview_preserve_selection).pack(side=tk.LEFT, padx=3)
+                        command=self.refresh_sheet_preserve_selection).pack(side=tk.LEFT, padx=3)
         ttk.Checkbutton(toolbar, text=_("Ignored"), variable=self.show_ignored_var,
-                        command=self.refresh_treeview_preserve_selection).pack(side=tk.LEFT, padx=3)
+                        command=self.refresh_sheet_preserve_selection).pack(side=tk.LEFT, padx=3)
         ttk.Checkbutton(toolbar, text=_("Untranslated"), variable=self.show_untranslated_var,
-                        command=self.refresh_treeview_preserve_selection).pack(side=tk.LEFT, padx=3)
+                        command=self.refresh_sheet_preserve_selection).pack(side=tk.LEFT, padx=3)
         ttk.Checkbutton(toolbar, text=_("Translated"), variable=self.show_translated_var,
-                        command=self.refresh_treeview_preserve_selection).pack(side=tk.LEFT, padx=3)
+                        command=self.refresh_sheet_preserve_selection).pack(side=tk.LEFT, padx=3)
         ttk.Checkbutton(toolbar, text=_("Unreviewed"), variable=self.show_unreviewed_var,
-                        command=self.refresh_treeview_preserve_selection).pack(side=tk.LEFT, padx=3)
+                        command=self.refresh_sheet_preserve_selection).pack(side=tk.LEFT, padx=3)
 
         search_frame = ttk.Frame(toolbar)
         search_frame.pack(side=tk.RIGHT, padx=5)
@@ -508,110 +513,167 @@ class OverwatchLocalizerApp:
         self.search_entry.bind("<FocusIn>", self.on_search_focus_in)
         self.search_entry.bind("<FocusOut>", self.on_search_focus_out)
 
-        self.on_search_focus_out(None)  # 调用一次以设置初始状态
+        self.on_search_focus_out(None)
 
         search_button = ttk.Button(search_frame, text=_("Find"), command=self.find_string_from_toolbar,
                                    style="Toolbar.TButton")
         search_button.pack(side=tk.LEFT)
 
-    def _setup_treeview_panel(self, parent):
-        tree_frame = ttk.Frame(parent)
-        tree_frame.pack(expand=True, fill=tk.BOTH, padx=0, pady=0)
+    def _setup_sheet_panel(self, parent):
+        sheet_frame = ttk.Frame(parent)
+        sheet_frame.pack(expand=True, fill=tk.BOTH, padx=0, pady=0)
 
-        tree_frame.grid_rowconfigure(0, weight=1)
-        tree_frame.grid_columnconfigure(0, weight=1)
-        cols = ("seq_id", "status", "original", "translation", "comment", "reviewed", "line")
-        hsb = ttk.Scrollbar(tree_frame, orient=tk.HORIZONTAL)
-        self.tree = VirtualTreeview(
-            tree_frame,
-            columns=cols,
-            show="headings",
-            selectmode="extended",
-            right_click_callback=self.show_treeview_context_menu,
-            xscrollcommand=hsb.set
+        self.sheet = tksheet.Sheet(
+            sheet_frame,
+            headers=["#", "S", _("col_original"), _("col_translation"), _("col_comment"), "✔", _("col_line")],
+            show_x_scrollbar=True,
+            show_y_scrollbar=True,
+            show_top_left=False,
+            show_row_index=False,
+            show_header=True,
+            show_headings=True,
+            right_click_select_row=False,
+            data=[]
+        )
+        self.sheet.pack(expand=True, fill=tk.BOTH)
+
+        self.sheet.enable_bindings(
+            "single_select",
+            "row_select",
+            "arrowkeys",
+            "column_header_select",
+            "column_width_resize",
+            "drag_select",
         )
 
-        hsb.config(command=self.tree.xview)
+        # --- REVISED EVENT BINDING ---
+        self.sheet.extra_bindings([
+            ("column_header_select", self._sort_sheet_column)
+            # We removed the right_click_popup_menu binding from here
+        ])
 
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        hsb.grid(row=1, column=0, sticky="ew")
+        # Use the most direct and reliable Tkinter binding for right-clicks
+        self.sheet.bind("<ButtonRelease-3>", self.show_sheet_context_menu)
+        self.sheet.bind("<Double-1>", self.on_sheet_double_click)
+        # Keep these for selection updates
+        self.sheet.bind("<ButtonRelease-1>", self.on_sheet_select)
+        self.sheet.bind("<KeyRelease-Up>", self.on_sheet_select)
+        self.sheet.bind("<KeyRelease-Down>", self.on_sheet_select)
+        # --- END OF REVISED BINDING ---
 
-        col_widths = {"seq_id": 40, "status": 30, "original": 300, "translation": 300, "comment": 150, "reviewed": 30,
-                      "line": 50}
-        col_align = {"seq_id": tk.E, "status": tk.CENTER, "original": tk.W, "translation": tk.W, "comment": tk.W,
-                     "reviewed": tk.CENTER, "line": tk.CENTER}
-        col_headings = {"seq_id": "#", "status": "S", "original": _("col_original"), "translation": _("col_translation"), "comment": _("col_comment"),
-                        "reviewed": "✔", "line": _("col_line")}
+        self.sheet.column_width(column=0, width=40)
+        self.sheet.column_width(column=1, width=30)
+        self.sheet.column_width(column=2, width=300)
+        self.sheet.column_width(column=3, width=300)
+        self.sheet.column_width(column=4, width=150)
+        self.sheet.column_width(column=5, width=30)
+        self.sheet.column_width(column=6, width=50)
 
-        for col_key in cols:
-            self.tree.heading(col_key, text=col_headings.get(col_key, col_key.capitalize()),
-                              command=lambda c=col_key: self._sort_treeview_column(c, False))
-            self.tree.column(col_key, width=col_widths.get(col_key, 100),
-                             anchor=col_align.get(col_key, tk.W),
-                             stretch=(col_key not in ["seq_id", "status", "reviewed", "line"]))
+        self.sheet.align_columns(columns=[0], align="e")
+        self.sheet.align_columns(columns=[1, 5, 6], align="center")
 
-        self.tree.bind("<<TreeviewSelect>>", self.on_tree_select)
+        self.sheet.readonly_columns(list(range(7)))
 
-        self._configure_treeview_tags()
+    def _setup_sheet_context_menu(self):
+        self.sheet_context_menu = tk.Menu(self.sheet, tearoff=0)
+        self.sheet_context_menu.add_command(label=_("Copy Original"), command=self.cm_copy_original)
+        self.sheet_context_menu.add_command(label=_("Copy Translation"), command=self.cm_copy_translation)
+        self.sheet_context_menu.add_separator()
+        self.sheet_context_menu.add_command(label=_("Mark as Ignored"),
+                                            command=lambda: self.cm_set_ignored_status(True))
+        self.sheet_context_menu.add_command(label=_("Unmark as Ignored"),
+                                            command=lambda: self.cm_set_ignored_status(False))
+        self.sheet_context_menu.add_separator()
+        self.sheet_context_menu.add_command(label=_("Mark as Reviewed"),
+                                            command=lambda: self.cm_set_reviewed_status(True))
+        self.sheet_context_menu.add_command(label=_("Mark as Unreviewed"),
+                                            command=lambda: self.cm_set_reviewed_status(False))
+        self.sheet_context_menu.add_separator()
+        self.sheet_context_menu.add_command(label=_("Edit Comment..."), command=self.cm_edit_comment)
+        self.sheet_context_menu.add_separator()
+        self.sheet_context_menu.add_command(label=_("Apply Memory to Selected Items"),
+                                            command=self.cm_apply_tm_to_selected)
+        self.sheet_context_menu.add_command(label=_("Clear Selected Translations"),
+                                            command=self.cm_clear_selected_translations)
+        self.sheet_context_menu.add_separator()
+        self.sheet_context_menu.add_command(label=_("Use AI to Translate Selected Items"),
+                                            command=self.cm_ai_translate_selected)
 
-    def _setup_treeview_context_menu(self):
-        self.tree_context_menu = tk.Menu(self.tree, tearoff=0)
-        self.tree_context_menu.add_command(label=_("Copy Original"), command=self.cm_copy_original)
-        self.tree_context_menu.add_command(label=_("Copy Translation"), command=self.cm_copy_translation)
-        self.tree_context_menu.add_separator()
-        self.tree_context_menu.add_command(label=_("Mark as Ignored"), command=lambda: self.cm_set_ignored_status(True))
-        self.tree_context_menu.add_command(label=_("Unmark as Ignored"),
-                                           command=lambda: self.cm_set_ignored_status(False))
-        self.tree_context_menu.add_separator()
-        self.tree_context_menu.add_command(label=_("Mark as Reviewed"),
-                                           command=lambda: self.cm_set_reviewed_status(True))
-        self.tree_context_menu.add_command(label=_("Mark as Unreviewed"),
-                                           command=lambda: self.cm_set_reviewed_status(False))
-        self.tree_context_menu.add_separator()
-        self.tree_context_menu.add_command(label=_("Edit Comment..."), command=self.cm_edit_comment)
-        self.tree_context_menu.add_separator()
-        self.tree_context_menu.add_command(label=_("Apply Memory to Selected Items"),
-                                           command=self.cm_apply_tm_to_selected)
-        self.tree_context_menu.add_command(label=_("Clear Selected Translations"),
-                                           command=self.cm_clear_selected_translations)
-        self.tree_context_menu.add_separator()
-        self.tree_context_menu.add_command(label=_("Use AI to Translate Selected Items"),
-                                           command=self.cm_ai_translate_selected)
-
-    def show_treeview_context_menu(self, event):
-        selected_iids = self.tree.selection()
-        if not selected_iids:
+    def show_sheet_context_menu(self, event):
+        clicked_row = self.sheet.identify_row(event=event, allow_end=False)
+        if clicked_row is None:
             return
 
-        self.tree_context_menu.post(event.x_root, event.y_root)
+        # Get all visually selected rows by checking selection boxes
+        selection_boxes = self.sheet.get_all_selection_boxes_with_types()
+        selected_rows = set()
+        for box, _ in selection_boxes:
+            for r in range(box[0], box[2]):
+                selected_rows.add(r)
 
-    def _sort_treeview_column(self, col, reverse):
-        if not self.tree._data: return
+        # If the right-clicked row is NOT part of the existing selection,
+        # then clear everything and select only the clicked row.
+        if clicked_row not in selected_rows:
+            self.sheet.deselect("all")
+            self.sheet.select_row(row=clicked_row)
+            # Manually trigger on_sheet_select to update the details pane
+            self.on_sheet_select()
 
-        col_index = -1
-        try:
-            col_index = self.tree.columns.index(col)
-        except ValueError:
+        # If the clicked row IS part of an existing multi-selection, do nothing to the selection.
+
+        self.sheet_context_menu.post(event.x_root, event.y_root)
+
+    def on_sheet_double_click(self, event):
+        clicked_col = self.sheet.identify_column(event=event)
+
+        # Column 2: Original, 3: Translation, 4: Comment
+        if clicked_col == 2:
+            self.original_text_display.focus_set()
+        elif clicked_col == 3:
+            self.translation_edit_text.focus_set()
+        elif clicked_col == 4:
+            self.comment_edit_text.focus_set()
+
+    def _sort_sheet_column(self, event=None, column_index=None):
+        if event:
+            column_index = event.column
+
+        if column_index is None:
             return
 
-        def get_sort_key(iid):
-            try:
-                values = self.tree._data[iid]['values']
-                value = values[col_index]
-                if col in ("seq_id", "line"):
-                    return int(value)
-                elif col == "reviewed":
-                    return 1 if value == "✔" else 0
-                elif isinstance(value, str):
-                    return value.lower()
-                return value
-            except (ValueError, TypeError, IndexError):
-                return 0
+        col_map = {0: "seq_id", 1: "status", 2: "original", 3: "translation", 4: "comment", 5: "reviewed", 6: "line"}
+        col_key = col_map.get(column_index)
+        if not col_key:
+            return
 
-        sorted_iids = sorted(self.tree._ordered_iids, key=get_sort_key, reverse=reverse)
+        if self.last_sort_column == col_key:
+            self.last_sort_reverse = not self.last_sort_reverse
+        else:
+            self.last_sort_reverse = False
+        self.last_sort_column = col_key
 
-        self.tree._sync_data_order(sorted_iids)
-        self.tree.heading(col, command=lambda: self._sort_treeview_column(col, not reverse))
+        def get_sort_key(ts_obj):
+            if col_key == "seq_id":
+                return self.displayed_string_ids.index(ts_obj.id) if ts_obj.id in self.displayed_string_ids else float(
+                    'inf')
+            elif col_key == "line":
+                return ts_obj.line_num_in_file
+            elif col_key == "reviewed":
+                return ts_obj.is_reviewed
+            elif col_key == "status":
+                if ts_obj.is_ignored: return 3
+                if ts_obj.translation.strip(): return 2
+                return 1
+            elif col_key == "original":
+                return ts_obj.original_semantic.lower()
+            elif col_key == "translation":
+                return ts_obj.get_translation_for_ui().lower()
+            elif col_key == "comment":
+                return ts_obj.comment.lower()
+            return 0
+
+        self.translatable_objects.sort(key=get_sort_key, reverse=self.last_sort_reverse)
+        self.refresh_sheet(preserve_selection=True)
 
     def _setup_details_pane(self, parent_frame):
         details_outer_frame = ttk.LabelFrame(parent_frame, text=_("Edit & Details"), padding="5")
@@ -638,7 +700,8 @@ class OverwatchLocalizerApp:
         orig_scrollbar.grid(row=0, column=1, sticky="ns")
         self.original_text_display.config(yscrollcommand=orig_scrollbar.set)
 
-        ttk.Label(top_section_frame, text=_("Translation (Ctrl+Shift+V to paste):")).pack(anchor=tk.W, padx=5, pady=(5, 2))
+        ttk.Label(top_section_frame, text=_("Translation (Ctrl+Shift+V to paste):")).pack(anchor=tk.W, padx=5,
+                                                                                          pady=(5, 2))
         trans_frame = ttk.Frame(top_section_frame)
         trans_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=(0, 5))
         trans_frame.grid_rowconfigure(0, weight=1)
@@ -656,7 +719,8 @@ class OverwatchLocalizerApp:
 
         trans_actions_frame = ttk.Frame(top_section_frame)
         trans_actions_frame.pack(fill=tk.X, padx=5, pady=(0, 5))
-        self.apply_btn = ttk.Button(trans_actions_frame, text=_("Apply Translation"), command=self.apply_translation_from_button,
+        self.apply_btn = ttk.Button(trans_actions_frame, text=_("Apply Translation"),
+                                    command=self.apply_translation_from_button,
                                     state=tk.DISABLED, style="Toolbar.TButton")
         self.apply_btn.pack(side=tk.LEFT, padx=(0, 10))
         self.ai_translate_current_btn = ttk.Button(trans_actions_frame, text=_("AI Translate Selected"),
@@ -831,7 +895,8 @@ class OverwatchLocalizerApp:
                                    state=tk.NORMAL if self.current_code_file_path and has_content else tk.DISABLED)
 
         can_save_to_code = self.original_raw_code_content and has_content
-        self.file_menu.entryconfig(_("Save Translation to New Code File"), state=tk.NORMAL if can_save_to_code else tk.DISABLED)
+        self.file_menu.entryconfig(_("Save Translation to New Code File"),
+                                   state=tk.NORMAL if can_save_to_code else tk.DISABLED)
 
         self.file_menu.entryconfig(_("Save Project"),
                                    state=tk.NORMAL if self.current_code_file_path or self.current_project_file_path or self.original_raw_code_content else tk.DISABLED)
@@ -990,10 +1055,10 @@ class OverwatchLocalizerApp:
         if redo_payload_data:
             self.redo_history.append({'type': action_type, 'data': redo_payload_data})
 
-        self.refresh_treeview(preserve_selection=True)
+        self.refresh_sheet(preserve_selection=True)
 
         if self.current_selected_ts_id in changed_ids:
-            self.on_tree_select(None)
+            self.on_sheet_select(None)
 
         if not self.undo_history: self.edit_menu.entryconfig(_("Undo"), state=tk.DISABLED)
         self.edit_menu.entryconfig(_("Redo"), state=tk.NORMAL if self.redo_history else tk.DISABLED)
@@ -1078,9 +1143,9 @@ class OverwatchLocalizerApp:
             if len(self.undo_history) > MAX_UNDO_HISTORY:
                 self.undo_history.pop(0)
 
-        self.refresh_treeview(preserve_selection=True)
+        self.refresh_sheet(preserve_selection=True)
         if self.current_selected_ts_id in changed_ids:
-            self.on_tree_select(None)
+            self.on_sheet_select(None)
 
         if not self.redo_history: self.edit_menu.entryconfig(_("Redo"), state=tk.DISABLED)
         self.edit_menu.entryconfig(_("Undo"), state=tk.NORMAL if self.undo_history else tk.DISABLED)
@@ -1090,7 +1155,7 @@ class OverwatchLocalizerApp:
         if not self.prompt_save_if_modified(): return
 
         filepath = filedialog.askopenfilename(
-            title = _("Open Code File"),
+            title=_("Open Code File"),
             filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
             initialdir=self.config.get("last_dir", os.getcwd()),
             parent=self.root
@@ -1100,7 +1165,8 @@ class OverwatchLocalizerApp:
 
     def open_code_file_path(self, filepath):
         if self.is_ai_translating_batch:
-            messagebox.showwarning(_("Operation Restricted"), _("AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."),
+            messagebox.showwarning(_("Operation Restricted"),
+                                   _("AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."),
                                    parent=self.root)
             return
 
@@ -1128,7 +1194,7 @@ class OverwatchLocalizerApp:
             self.redo_history.clear()
             self.current_selected_ts_id = None
             self.mark_project_modified(False)
-            self.refresh_treeview()
+            self.refresh_sheet()
             self.update_statusbar(
                 _("Loaded {count} translatable strings from {filename}").format(count=len(self.translatable_objects),
                                                                                 filename=os.path.basename(filepath)),
@@ -1147,7 +1213,7 @@ class OverwatchLocalizerApp:
         if not self.prompt_save_if_modified(): return
 
         filepath = filedialog.askopenfilename(
-            title = _("Open Project File"),
+            title=_("Open Project File"),
             filetypes=(("Overwatch Project Files", f"*{PROJECT_FILE_EXTENSION}"), ("All Files", "*.*")),
             initialdir=self.config.get("last_dir", os.getcwd()),
             parent=self.root
@@ -1157,7 +1223,8 @@ class OverwatchLocalizerApp:
 
     def open_project_file(self, project_filepath):
         if self.is_ai_translating_batch:
-            messagebox.showwarning(_("Operation Restricted"), _("AI batch translation is in progress."), parent=self.root)
+            messagebox.showwarning(_("Operation Restricted"), _("AI batch translation is in progress."),
+                                   parent=self.root)
             return
 
         try:
@@ -1174,7 +1241,9 @@ class OverwatchLocalizerApp:
             if tm_path_from_project and os.path.exists(tm_path_from_project):
                 self.load_tm_from_excel(tm_path_from_project, silent=True)
             elif tm_path_from_project:
-                messagebox.showwarning(_("Project Warning"), _("Project's associated TM file '{tm_path}' not found.").format(tm_path=tm_path_from_project),
+                messagebox.showwarning(_("Project Warning"),
+                                       _("Project's associated TM file '{tm_path}' not found.").format(
+                                           tm_path=tm_path_from_project),
                                        parent=self.root)
 
             filter_settings = project_data.get("filter_settings", {})
@@ -1197,21 +1266,20 @@ class OverwatchLocalizerApp:
             ui_state = project_data.get("ui_state", {})
             self.search_var.set(ui_state.get("search_term", ""))
 
-            self.refresh_treeview()
+            self.refresh_sheet()
 
             selected_id_from_proj = ui_state.get("selected_ts_id")
-            if selected_id_from_proj and self.tree.exists(selected_id_from_proj):
-                self.tree.selection_set(selected_id_from_proj)
-                self.tree.focus(selected_id_from_proj)
-                self.tree.see(selected_id_from_proj)
-                self.on_tree_select(None)
+            if selected_id_from_proj:
+                self.select_sheet_row_by_id(selected_id_from_proj, see=True)
+                self.on_sheet_select(None)
 
             self.update_statusbar(_("Project '{filename}' loaded.").format(filename=os.path.basename(project_filepath)),
                                   persistent=True)
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
-            messagebox.showerror(_("Open Project Error"), _("Could not load project file '{filename}': {error}").format(filename=os.path.basename(project_filepath), error=e),
+            messagebox.showerror(_("Open Project Error"), _("Could not load project file '{filename}': {error}").format(
+                filename=os.path.basename(project_filepath), error=e),
                                  parent=self.root)
             self._reset_app_state()
             self.update_statusbar(_("Project file loading failed."), persistent=True)
@@ -1227,7 +1295,7 @@ class OverwatchLocalizerApp:
         self.redo_history.clear()
         self.current_selected_ts_id = None
         self.mark_project_modified(False)
-        self.refresh_treeview()
+        self.refresh_sheet()
         self.clear_details_pane()
         self.update_ui_state_after_file_load(file_or_project_loaded=False)
         self.update_title()
@@ -1245,57 +1313,15 @@ class OverwatchLocalizerApp:
                 return False
         return True
 
-    def refresh_treeview_preserve_selection(self, item_to_reselect_after=None):
-        self.refresh_treeview(preserve_selection=True, item_to_reselect_after=item_to_reselect_after)
+    def refresh_sheet_preserve_selection(self, item_to_reselect_after=None):
+        self.refresh_sheet(preserve_selection=True, item_to_reselect_after=item_to_reselect_after)
 
-    def _configure_treeview_tags(self):
-        try:
-            if self._ignored_tag_font is None and hasattr(self.tree, 'cget'):
-                font_description = self.tree.cget("font")
-                if font_description:
-                    base_font = tkinter.font.nametofont(font_description)
-                    self._ignored_tag_font = tkinter.font.Font(
-                        family=base_font.actual("family"),
-                        size=base_font.actual("size"),
-                        slant="italic"
-                    )
+    def refresh_sheet(self, preserve_selection=True, item_to_reselect_after=None):
+        old_selected_id = self.current_selected_ts_id
+        if item_to_reselect_after:
+            old_selected_id = item_to_reselect_after
 
-            ignored_fg = "#707070"
-
-            if self._ignored_tag_font:
-                self.tree.tag_configure('ignored_row_visual', font=self._ignored_tag_font, foreground=ignored_fg)
-            else:
-                self.tree.tag_configure('ignored_row_visual', foreground=ignored_fg)
-
-            self.tree.tag_configure('auto_ignored_visual', foreground="#a0a0a0",
-                                    font=self._ignored_tag_font if self._ignored_tag_font else None)
-            self.tree.tag_configure('translated_row_visual', foreground="darkblue")
-            self.tree.tag_configure('untranslated_row_visual', foreground="darkred")
-            self.tree.tag_configure('reviewed_visual',
-                                    foreground="darkgreen")
-            self.tree.tag_configure('search_highlight', background='yellow', foreground='black')
-
-            self.original_text_display.tag_configure('placeholder', foreground='darkblue',
-                                                     font=('Segoe UI', 10, 'bold'))
-            self.original_text_display.tag_configure('placeholder_missing', background='#FFDDDD', foreground='red')
-            self.translation_edit_text.tag_configure('placeholder', foreground='darkblue',
-                                                     font=('Segoe UI', 10, 'bold'))
-            self.translation_edit_text.tag_configure('placeholder_extra', background='#FFEBCD', foreground='orange red')
-
-
-        except Exception as e:
-            print(f"Error configuring treeview tags/font: {e}")
-            self.tree.tag_configure('ignored_row_visual', foreground="#777777")
-            self.tree.tag_configure('translated_row_visual', foreground="blue")
-            self.tree.tag_configure('untranslated_row_visual', foreground="red")
-            self.tree.tag_configure('reviewed_visual', foreground="green")
-            self.tree.tag_configure('search_highlight', background='yellow', foreground='black')
-
-    def refresh_treeview(self, preserve_selection=True, item_to_reselect_after=None):
-        old_selection = self.tree.selection()
-        old_focus = self.tree.focus()
-
-        self.tree.delete(*self.tree.get_children())
+        data_for_sheet = []
         self.displayed_string_ids = []
 
         processed_originals_for_dedup = set()
@@ -1304,7 +1330,9 @@ class OverwatchLocalizerApp:
         if search_term == _("Quick search...").lower():
             search_term = ""
 
+        filtered_objects = []
         for ts_obj in self.translatable_objects:
+            # ... (the existing filtering logic remains the same) ...
             if self.deduplicate_strings_var.get():
                 if ts_obj.original_semantic in processed_originals_for_dedup:
                     continue
@@ -1326,74 +1354,91 @@ class OverwatchLocalizerApp:
             if self.deduplicate_strings_var.get():
                 processed_originals_for_dedup.add(ts_obj.original_semantic)
 
-            tags = []
+            filtered_objects.append(ts_obj)
+
+        for ts_obj in filtered_objects:
+            # ... (the existing data row creation logic remains the same) ...
             status_char = ""
             if ts_obj.is_ignored:
-                tags.append('ignored_row_visual')
                 status_char = "I"
                 if ts_obj.was_auto_ignored:
-                    tags.append('auto_ignored_visual')
                     status_char = "A"
             elif ts_obj.translation.strip():
-                tags.append('translated_row_visual')
                 status_char = "T"
-                if ts_obj.is_reviewed:
-                    tags.append('reviewed_visual')
             else:
-                tags.append('untranslated_row_visual')
                 status_char = "U"
-                if ts_obj.is_reviewed:
-                    tags.append('reviewed_visual')
 
-            values = (
+            row_data = [
                 seq_id_counter, status_char,
                 ts_obj.original_semantic.replace("\n", "↵"),
                 ts_obj.get_translation_for_ui().replace("\n", "↵"),
                 ts_obj.comment.replace("\n", "↵")[:50],
                 "✔" if ts_obj.is_reviewed else "",
                 ts_obj.line_num_in_file
-            )
-
-            self.tree.insert("", "end", iid=ts_obj.id, values=values, tags=tuple(tags))
+            ]
+            data_for_sheet.append(row_data)
             self.displayed_string_ids.append(ts_obj.id)
             seq_id_counter += 1
 
-        if preserve_selection:
-            if item_to_reselect_after and self.tree.exists(item_to_reselect_after):
-                self.tree.selection_set((item_to_reselect_after,))
-                self.tree.focus(item_to_reselect_after)
-                self.tree.see(item_to_reselect_after)
-            else:
-                new_selection = [iid for iid in old_selection if self.tree.exists(iid)]
-                if new_selection:
-                    self.tree.selection_set(tuple(new_selection))
-                    if old_focus and self.tree.exists(old_focus):
-                        self.tree.focus(old_focus)
-                        self.tree.see(old_focus)
-                    else:
-                        self.tree.focus(new_selection[0])
-                        self.tree.see(new_selection[0])
+        self.sheet.set_sheet_data(data=data_for_sheet, redraw=False)
+
+        # --- NEW CODE TO RE-APPLY SETTINGS ---
+        # Re-apply column widths and alignments after data is set
+        self.sheet.column_width(column=0, width=40)
+        self.sheet.column_width(column=1, width=30)
+        self.sheet.column_width(column=2, width=300)
+        self.sheet.column_width(column=3, width=300)
+        self.sheet.column_width(column=4, width=150)
+        self.sheet.column_width(column=5, width=30)
+        self.sheet.column_width(column=6, width=50)
+        self.sheet.align_columns(columns=[0], align="e")
+        self.sheet.align_columns(columns=[1, 5, 6], align="center")
+        # --- END OF NEW CODE ---
+
+        self._apply_row_highlighting()
+        self.sheet.redraw()
+
+        if preserve_selection and old_selected_id:
+            self.select_sheet_row_by_id(old_selected_id, see=True)
 
         self.update_counts_display()
-        self.on_tree_select(None)
+        self.on_sheet_select(None)
+
+    def _apply_row_highlighting(self):
+        for row_idx, ts_id in enumerate(self.displayed_string_ids):
+            ts_obj = self._find_ts_obj_by_id(ts_id)
+            if not ts_obj: continue
+
+            fg = "black"
+
+            if ts_obj.is_ignored:
+                fg = "#707070"
+                if ts_obj.was_auto_ignored:
+                    fg = "#a0a0a0"
+            elif ts_obj.translation.strip():
+                fg = "darkblue"
+                if ts_obj.is_reviewed:
+                    fg = "darkgreen"
+            else:
+                fg = "darkred"
+
+            self.sheet.highlight_rows(rows=[row_idx], fg=fg, redraw=False)
 
     def find_string_from_toolbar(self):
         search_term = self.search_var.get()
         if search_term == _("Quick search..."):
             self.search_var.set("")
 
-        self.refresh_treeview_preserve_selection()
+        self.refresh_sheet_preserve_selection()
 
         if self.displayed_string_ids:
             first_match_id = self.displayed_string_ids[0]
-            if self.tree.exists(first_match_id) and self.tree.focus() != first_match_id:
-                self.tree.selection_set(first_match_id)
-                self.tree.focus(first_match_id)
-                self.tree.see(first_match_id)
-                self.on_tree_select(None)
+            self.select_sheet_row_by_id(first_match_id, see=True)
+            self.on_sheet_select(None)
             self.update_statusbar(_("Filtered by '{search_term}'.").format(search_term=self.search_var.get()))
         elif self.search_var.get() and self.search_var.get() != _("Quick search..."):
-            self.update_statusbar(_("No matches found for '{search_term}' under current filters.").format(search_term=self.search_var.get()))
+            self.update_statusbar(_("No matches found for '{search_term}' under current filters.").format(
+                search_term=self.search_var.get()))
         else:
             self.update_statusbar(_("Search cleared."))
 
@@ -1411,12 +1456,45 @@ class OverwatchLocalizerApp:
             self.search_var.set(_("Quick search..."))
             self.search_entry.config(foreground="grey")
 
-    def _get_ts_obj_from_tree_iid(self, tree_iid):
-        if not tree_iid: return None
-        return self._find_ts_obj_by_id(tree_iid)
+    def refresh_ui_for_current_selection(self):
+        # This method simulates a re-selection of the current item
+        # to force a full UI refresh for the details pane.
+        current_id = self.current_selected_ts_id
+        if current_id:
+            # Temporarily deselect to ensure on_sheet_select will run
+            self.current_selected_ts_id = None
 
-    def on_tree_select(self, event):
-        if self.current_selected_ts_id:
+            # Find the row index of the current item
+            try:
+                row_idx = self.displayed_string_ids.index(current_id)
+
+                # Create a mock selection object that on_sheet_select can use
+                class MockSelection:
+                    def __init__(self, row, col):
+                        self.row = row
+                        self.column = col
+
+                # Manually call on_sheet_select with the mock selection
+                self.sheet.set_currently_selected(row_idx, 2)  # Select a valid column
+                self.on_sheet_select()
+
+            except (ValueError, IndexError):
+                # If item not visible, just clear the pane
+                self.clear_details_pane()
+
+    def on_sheet_select(self, event=None):
+        current_selection = self.sheet.get_currently_selected()
+        if not current_selection or current_selection.row is None:
+            return
+
+        focused_row_index = current_selection.row
+
+        if focused_row_index >= len(self.displayed_string_ids):
+            return
+
+        newly_selected_ts_id = self.displayed_string_ids[focused_row_index]
+
+        if self.current_selected_ts_id and self.current_selected_ts_id != newly_selected_ts_id:
             ts_obj_before_change = self._find_ts_obj_by_id(self.current_selected_ts_id)
             if ts_obj_before_change:
                 current_editor_text = self.translation_edit_text.get("1.0", tk.END).rstrip('\n')
@@ -1424,25 +1502,16 @@ class OverwatchLocalizerApp:
                     self._apply_translation_to_model(ts_obj_before_change, current_editor_text,
                                                      source="manual_focus_out")
 
-        focused_iid = self.tree.focus()
-        if self.current_selected_ts_id == focused_iid and event is not None:
+        if self.current_selected_ts_id == newly_selected_ts_id:
             return
 
-        if not focused_iid:
-            self.clear_details_pane()
-            self.current_selected_ts_id = None
-            self.update_ui_state_for_selection(None)
-            return
-
-        ts_obj = self._find_ts_obj_by_id(focused_iid)
+        self.current_selected_ts_id = newly_selected_ts_id
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj:
-            self.clear_details_pane()
-            self.current_selected_ts_id = None
-            self.update_ui_state_for_selection(None)
+            self.clear_details_pane()  # Clear pane if object not found
             return
 
-        self.current_selected_ts_id = ts_obj.id
-
+        # --- Update the details pane ---
         self.original_text_display.config(state=tk.NORMAL)
         self.original_text_display.delete("1.0", tk.END)
         self.original_text_display.insert("1.0", ts_obj.original_semantic)
@@ -1627,7 +1696,7 @@ class OverwatchLocalizerApp:
         else:
             return primary_change_data
 
-        self.refresh_treeview(preserve_selection=True)
+        self.refresh_sheet(preserve_selection=True)
         self.update_statusbar(_("Translation applied: \"{original_semantic}...\"").format(
             original_semantic=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
 
@@ -1686,7 +1755,7 @@ class OverwatchLocalizerApp:
             'string_id': ts_obj.id, 'field': 'comment',
             'old_value': old_comment, 'new_value': new_comment
         })
-        self.refresh_treeview(preserve_selection=True)
+        self.refresh_sheet(preserve_selection=True)
         self.update_statusbar(_("Comment updated for ID {id}...").format(id=str(ts_obj.id)[:8]))
         self.mark_project_modified()
         return True
@@ -1727,9 +1796,10 @@ class OverwatchLocalizerApp:
 
         self.add_to_undo_history(undo_action_type, undo_data_payload)
 
-        self.refresh_treeview_and_select_neighbor(ts_obj.id)
+        self.refresh_sheet_and_select_neighbor(ts_obj.id)
 
-        self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_('Yes') if new_ignore_state else _('No')))
+        self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
+            'Yes') if new_ignore_state else _('No')))
         self.mark_project_modified()
 
     def toggle_reviewed_selected_checkbox(self):
@@ -1747,12 +1817,13 @@ class OverwatchLocalizerApp:
             'string_id': ts_obj.id, 'field': 'is_reviewed',
             'old_value': old_reviewed_state, 'new_value': new_reviewed_state
         })
-        self.refresh_treeview_and_select_neighbor(ts_obj.id)
-        self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_('Yes') if new_reviewed_state else _('No')))
+        self.refresh_sheet_and_select_neighbor(ts_obj.id)
+        self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
+            'Yes') if new_reviewed_state else _('No')))
         self.mark_project_modified()
 
-    def refresh_treeview_and_select_neighbor(self, removed_item_id):
-        all_iids_before = list(self.tree.get_children(''))
+    def refresh_sheet_and_select_neighbor(self, removed_item_id):
+        all_iids_before = self.displayed_string_ids
         neighbor_to_select = None
         if removed_item_id in all_iids_before:
             try:
@@ -1764,19 +1835,23 @@ class OverwatchLocalizerApp:
             except ValueError:
                 pass
 
-        self.refresh_treeview(preserve_selection=True, item_to_reselect_after=neighbor_to_select)
+        self.refresh_sheet(preserve_selection=True, item_to_reselect_after=neighbor_to_select)
 
     def save_code_file_content(self, filepath_to_save):
         if not self.original_raw_code_content:
-            messagebox.showerror(_("Error"), _("There is no original code file content to save.\nPlease ensure the code file associated with the project is loaded."),
+            messagebox.showerror(_("Error"),
+                                 _("There is no original code file content to save.\nPlease ensure the code file associated with the project is loaded."),
                                  parent=self.root)
             return False
         try:
             save_translated_code(filepath_to_save, self.original_raw_code_content, self.translatable_objects, self)
-            self.update_statusbar(_("Code file saved to: {filename}").format(filename=os.path.basename(filepath_to_save)), persistent=True)
+            self.update_statusbar(
+                _("Code file saved to: {filename}").format(filename=os.path.basename(filepath_to_save)),
+                persistent=True)
             return True
         except Exception as e_save:
-            messagebox.showerror(_("Save Error"), _("Could not save code file: {error}").format(error=e_save), parent=self.root)
+            messagebox.showerror(_("Save Error"), _("Could not save code file: {error}").format(error=e_save),
+                                 parent=self.root)
             return False
 
     def save_code_file(self, event=None):
@@ -1793,7 +1868,8 @@ class OverwatchLocalizerApp:
 
         if os.path.exists(new_filepath):
             if not messagebox.askyesno(_("Confirm Overwrite"),
-                                       _("File '{filename}' already exists. Overwrite? A backup file (.bak) will be created.").format(filename=os.path.basename(new_filepath)),
+                                       _("File '{filename}' already exists. Overwrite? A backup file (.bak) will be created.").format(
+                                           filename=os.path.basename(new_filepath)),
                                        parent=self.root):
                 return
 
@@ -1807,7 +1883,9 @@ class OverwatchLocalizerApp:
 
     def save_project_as_dialog(self, event=None):
         if not self.translatable_objects and not self.current_code_file_path:
-            messagebox.showinfo(_("Info"), _("There is no content to save as a project. Please open a code file first."), parent=self.root)
+            messagebox.showinfo(_("Info"),
+                                _("There is no content to save as a project. Please open a code file first."),
+                                parent=self.root)
             return False
 
         initial_dir = os.path.dirname(
@@ -1826,7 +1904,7 @@ class OverwatchLocalizerApp:
             filetypes=(("Overwatch Project Files", f"*{PROJECT_FILE_EXTENSION}"), ("All Files", "*.*")),
             initialdir=initial_dir,
             initialfile=initial_file,
-            title = _("Save Project As"),
+            title=_("Save Project As"),
             parent=self.root
         )
         if filepath:
@@ -1875,7 +1953,7 @@ class OverwatchLocalizerApp:
 
         default_filename = "project_translations.xlsx"
         if self.current_project_file_path:
-            base, _extension  = os.path.splitext(os.path.basename(self.current_project_file_path))
+            base, _extension = os.path.splitext(os.path.basename(self.current_project_file_path))
             default_filename = f"{base}_translations.xlsx"
         elif self.current_code_file_path:
             base, _extension = os.path.splitext(os.path.basename(self.current_code_file_path))
@@ -1893,7 +1971,8 @@ class OverwatchLocalizerApp:
         wb = Workbook()
         ws = wb.active
         ws.title = "Translations"
-        headers = ["UUID", "Type", _("Original (Semantic)"), _("Translation"), _("Comment"), _("Reviewed"), _("Ignored"), _("Source Line"),
+        headers = ["UUID", "Type", _("Original (Semantic)"), _("Translation"), _("Comment"), _("Reviewed"),
+                   _("Ignored"), _("Source Line"),
                    _("Original (Raw)")]
         ws.append(headers)
 
@@ -1925,7 +2004,9 @@ class OverwatchLocalizerApp:
 
     def import_project_translations_from_excel(self):
         if not self.translatable_objects:
-            messagebox.showinfo(_("Info"), _("Please load a code file or project first to match imported translations."), parent=self.root)
+            messagebox.showinfo(_("Info"),
+                                _("Please load a code file or project first to match imported translations."),
+                                parent=self.root)
             return
 
         filepath = filedialog.askopenfilename(
@@ -1941,7 +2022,8 @@ class OverwatchLocalizerApp:
 
             header_row_values = [cell.value for cell in ws[1]]
             if not header_row_values or not all(isinstance(h, str) for h in header_row_values if h is not None):
-                messagebox.showerror(_("Import Error"), _("Excel header format is incorrect or empty."), parent=self.root)
+                messagebox.showerror(_("Import Error"), _("Excel header format is incorrect or empty."),
+                                     parent=self.root)
                 return
 
             try:
@@ -1955,7 +2037,8 @@ class OverwatchLocalizerApp:
             except ValueError:
                 messagebox.showerror(_("Import Error"),
                                      _("Excel header must contain 'UUID' and '{translation_col}' columns.\nOptional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'.").format(
-                                         translation_col=_("Translation"), comment_col=_("Comment"), reviewed_col=_("Reviewed"),
+                                         translation_col=_("Translation"), comment_col=_("Comment"),
+                                         reviewed_col=_("Reviewed"),
                                          ignored_col=_("Ignored"), original_semantic_col=_("Original (Semantic)")),
                                      parent=self.root)
                 return
@@ -2021,21 +2104,28 @@ class OverwatchLocalizerApp:
                             if not imported_count: imported_count = 1
 
                 except Exception as cell_err:
-                    print(_("Error processing Excel row {row_num}: {error}. Skipping this row.").format(row_num=r_idx + 2, error=cell_err))
+                    print(
+                        _("Error processing Excel row {row_num}: {error}. Skipping this row.").format(row_num=r_idx + 2,
+                                                                                                      error=cell_err))
 
             if changes_for_undo:
                 self.add_to_undo_history('bulk_excel_import', {'changes': changes_for_undo})
                 self.mark_project_modified()
 
-            self.refresh_treeview(preserve_selection=True)
-            if self.current_selected_ts_id: self.on_tree_select(None)
+            self.refresh_sheet(preserve_selection=True)
+            if self.current_selected_ts_id: self.on_sheet_select(None)
 
-            self.update_statusbar(_("Imported/updated {field_count} fields for {item_count} items from Excel.").format(field_count=len(changes_for_undo), item_count=imported_count))
+            self.update_statusbar(_("Imported/updated {field_count} fields for {item_count} items from Excel.").format(
+                field_count=len(changes_for_undo), item_count=imported_count))
 
         except ValueError as ve:
-            messagebox.showerror(_("Import Error"), _("Error processing Excel file (possibly column names issue): {error}").format(error=ve), parent=self.root)
+            messagebox.showerror(_("Import Error"),
+                                 _("Error processing Excel file (possibly column names issue): {error}").format(
+                                     error=ve), parent=self.root)
         except Exception as e:
-            messagebox.showerror(_("Import Error"), _("Could not import project translations from Excel: {error}").format(error=e), parent=self.root)
+            messagebox.showerror(_("Import Error"),
+                                 _("Could not import project translations from Excel: {error}").format(error=e),
+                                 parent=self.root)
 
     def export_project_translations_to_json(self):
         if not self.translatable_objects:
@@ -2056,7 +2146,7 @@ class OverwatchLocalizerApp:
             defaultextension=".json",
             filetypes=(("JSON files", "*.json"), ("All Files", "*.*")),
             initialfile=default_filename,
-            title = _("Export Project Translations to JSON"),
+            title=_("Export Project Translations to JSON"),
             parent=self.root
         )
         if not filepath: return
@@ -2098,9 +2188,12 @@ class OverwatchLocalizerApp:
         try:
             export_service.export_to_yaml(filepath, self.translatable_objects, self.displayed_string_ids,
                                           app_instance=self)
-            self.update_statusbar(_("Project translations exported to: {filename}").format(filename=os.path.basename(filepath)))
+            self.update_statusbar(
+                _("Project translations exported to: {filename}").format(filename=os.path.basename(filepath)))
         except Exception as e:
-            messagebox.showerror(_("Export Error"), _("Could not export project translations to YAML: {error}").format(error=e), parent=self.root)
+            messagebox.showerror(_("Export Error"),
+                                 _("Could not export project translations to YAML: {error}").format(error=e),
+                                 parent=self.root)
 
     def extract_to_pot_dialog(self):
         code_filepath = filedialog.askopenfilename(
@@ -2135,12 +2228,15 @@ class OverwatchLocalizerApp:
             self.config["last_dir"] = os.path.dirname(code_filepath)
             self.save_config()
         except Exception as e:
-            messagebox.showerror(_("POT Extraction Error"), _("Error extracting POT file: {error}").format(error=e), parent=self.root)
+            messagebox.showerror(_("POT Extraction Error"), _("Error extracting POT file: {error}").format(error=e),
+                                 parent=self.root)
 
     def import_po_file_dialog_with_path(self, po_filepath):
         original_code_for_context = None
         original_code_filepath_for_context = None
-        if messagebox.askyesno(_("Associate Code File?"), _("Do you want to associate an original code file to get context and line number information?"), parent=self.root):
+        if messagebox.askyesno(_("Associate Code File?"),
+                               _("Do you want to associate an original code file to get context and line number information?"),
+                               parent=self.root):
             code_context_filepath = filedialog.askopenfilename(
                 title=_("Select Associated Code File (for context)"),
                 filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
@@ -2175,7 +2271,7 @@ class OverwatchLocalizerApp:
             self.current_selected_ts_id = None
             self.mark_project_modified(False)
 
-            self.refresh_treeview()
+            self.refresh_sheet()
             self.update_statusbar(
                 _("Loaded {count} entries from PO file {filename}.").format(count=len(self.translatable_objects),
                                                                             filename=os.path.basename(po_filepath)),
@@ -2183,7 +2279,8 @@ class OverwatchLocalizerApp:
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
-            messagebox.showerror(_("PO Import Error"), _("Error importing PO file '{filename}': {error}").format(filename=os.path.basename(po_filepath), error=e),
+            messagebox.showerror(_("PO Import Error"), _("Error importing PO file '{filename}': {error}").format(
+                filename=os.path.basename(po_filepath), error=e),
                                  parent=self.root)
             self._reset_app_state()
             self.update_statusbar(_("PO file loading failed"), persistent=True)
@@ -2193,7 +2290,7 @@ class OverwatchLocalizerApp:
         if not self.prompt_save_if_modified(): return
 
         po_filepath = filedialog.askopenfilename(
-            title = _("Select PO File to Import"),
+            title=_("Select PO File to Import"),
             filetypes=(("PO files", "*.po"), ("POT files", "*.pot"), ("All files", "*.*")),
             initialdir=self.config.get("last_dir", os.getcwd()),
             parent=self.root
@@ -2231,17 +2328,20 @@ class OverwatchLocalizerApp:
                 self.current_code_file_path) if self.current_code_file_path else "source_code"
             po_file_service.save_to_po(filepath, self.translatable_objects, self.current_po_metadata,
                                        original_file_name_for_po)
-            self.update_statusbar(_("Translations exported to PO file: {filename}").format(filename=os.path.basename(filepath)))
+            self.update_statusbar(
+                _("Translations exported to PO file: {filename}").format(filename=os.path.basename(filepath)))
             self.mark_project_modified(False)
         except Exception as e:
-            messagebox.showerror(_("Export Error"), _("Failed to export to PO file: {error}").format(error=e), parent=self.root)
+            messagebox.showerror(_("Export Error"), _("Failed to export to PO file: {error}").format(error=e),
+                                 parent=self.root)
 
     def show_extraction_pattern_dialog(self):
         from dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
         dialog = ExtractionPatternManagerDialog(self.root, _("Extraction Rule Manager"), self)
         if dialog.result:
             if self.original_raw_code_content:
-                if messagebox.askyesno(_("Extraction Rules Updated"), _("Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"),
+                if messagebox.askyesno(_("Extraction Rules Updated"),
+                                       _("Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"),
                                        parent=self.root):
                     self.reload_translatable_text()
 
@@ -2259,7 +2359,8 @@ class OverwatchLocalizerApp:
                 source_name = _("file '{filename}'").format(filename=os.path.basename(self.current_code_file_path))
             except Exception as e:
                 messagebox.showwarning(_("File Read Error"),
-                                       _("Could not re-read {filepath} from disk.\nUsing in-memory version.\nError: {error}").format(filepath=self.current_code_file_path, error=e),
+                                       _("Could not re-read {filepath} from disk.\nUsing in-memory version.\nError: {error}").format(
+                                           filepath=self.current_code_file_path, error=e),
                                        parent=self.root)
 
         if not current_content_to_reextract:
@@ -2278,7 +2379,8 @@ class OverwatchLocalizerApp:
             if not messagebox.askyesno(_("Confirm Reload"),
                                        _("This will re-extract strings from {source} using the new rules.\n"
                                          "Existing translations will be preserved where the original text matches, but unmatched translations and statuses may be lost.\n"
-                                         "This action will clear the undo history. Continue?").format(source=source_name),
+                                         "This action will clear the undo history. Continue?").format(
+                                           source=source_name),
                                        parent=self.root):
                 return
 
@@ -2302,7 +2404,9 @@ class OverwatchLocalizerApp:
                     restored_count += 1
 
             if restored_count > 0:
-                self.update_statusbar(_("Attempted to restore {count} old translations/statuses.").format(count=restored_count), persistent=False)
+                self.update_statusbar(
+                    _("Attempted to restore {count} old translations/statuses.").format(count=restored_count),
+                    persistent=False)
 
             self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
 
@@ -2311,14 +2415,16 @@ class OverwatchLocalizerApp:
             self.current_selected_ts_id = None
             self.mark_project_modified(True)
 
-            self.refresh_treeview()
+            self.refresh_sheet()
             self.update_statusbar(
-                _("Reloaded {count} strings from {source} using new rules.").format(count=len(self.translatable_objects), source=source_name),
+                _("Reloaded {count} strings from {source} using new rules.").format(
+                    count=len(self.translatable_objects), source=source_name),
                 persistent=True)
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
-            messagebox.showerror(_("Reload Error"), _("Error reloading translatable text: {error}").format(error=e), parent=self.root)
+            messagebox.showerror(_("Reload Error"), _("Error reloading translatable text: {error}").format(error=e),
+                                 parent=self.root)
             self.update_statusbar(_("Reload failed."), persistent=True)
         self.update_counts_display()
 
@@ -2353,7 +2459,8 @@ class OverwatchLocalizerApp:
                 if not silent:
                     messagebox.showwarning(_("TM Load Warning"),
                                            _("Could not determine original/translation columns from '{filename}' header. "
-                                             "Will try to use the first two columns by default (A=Original, B=Translation).").format(filename=os.path.basename(filepath)), parent=self.root)
+                                             "Will try to use the first two columns by default (A=Original, B=Translation).").format(
+                                               filename=os.path.basename(filepath)), parent=self.root)
                 original_col_idx, translation_col_idx = 0, 1
 
             start_row = 2 if header else 1
@@ -2373,14 +2480,16 @@ class OverwatchLocalizerApp:
 
             if not silent:
                 messagebox.showinfo(_("TM"),
-                                    _("Loaded/merged {count} Excel TM records from '{filename}'.").format(count=loaded_count, filename=os.path.basename(filepath)),
+                                    _("Loaded/merged {count} Excel TM records from '{filename}'.").format(
+                                        count=loaded_count, filename=os.path.basename(filepath)),
                                     parent=self.root)
             self.current_tm_file = filepath
             self.update_statusbar(_("TM loaded from '{filename}' (Excel).").format(filename=os.path.basename(filepath)))
 
         except Exception as e:
             if not silent:
-                messagebox.showerror(_("Error"), _("Failed to load Excel TM: {error}").format(error=e), parent=self.root)
+                messagebox.showerror(_("Error"), _("Failed to load Excel TM: {error}").format(error=e),
+                                     parent=self.root)
             self.update_statusbar(_("Failed to load Excel TM: {error}").format(error=e))
 
     def save_tm_to_excel(self, filepath_to_save, silent=False, backup=True):
@@ -2403,7 +2512,9 @@ class OverwatchLocalizerApp:
             except Exception as e_backup:
                 if not silent:
                     if self.root.winfo_exists():
-                        messagebox.showwarning(_("Backup Failed"), _("Could not create backup for TM: {error}").format(error=e_backup), parent=self.root)
+                        messagebox.showwarning(_("Backup Failed"),
+                                               _("Could not create backup for TM: {error}").format(error=e_backup),
+                                               parent=self.root)
 
         workbook = Workbook()
         sheet = workbook.active
@@ -2420,7 +2531,8 @@ class OverwatchLocalizerApp:
         try:
             workbook.save(filepath_to_save)
             if not silent:
-                messagebox.showinfo(_("TM"), _("TM saved to '{filename}'.").format(filename=os.path.basename(filepath_to_save)),
+                messagebox.showinfo(_("TM"),
+                                    _("TM saved to '{filename}'.").format(filename=os.path.basename(filepath_to_save)),
                                     parent=self.root)
             self.current_tm_file = filepath_to_save
             self.update_statusbar(_("TM saved to '{filename}'.").format(filename=os.path.basename(filepath_to_save)))
@@ -2440,7 +2552,8 @@ class OverwatchLocalizerApp:
         self.load_tm_from_excel(filepath)
 
         if self.translatable_objects and \
-                messagebox.askyesno(_("Apply TM"), _("TM imported. Do you want to apply it to untranslated strings in the current project immediately?"),
+                messagebox.askyesno(_("Apply TM"),
+                                    _("TM imported. Do you want to apply it to untranslated strings in the current project immediately?"),
                                     parent=self.root):
             self.apply_tm_to_all_current_strings(only_if_empty=True)
 
@@ -2492,7 +2605,8 @@ class OverwatchLocalizerApp:
 
         if not current_translation_ui.strip():
             if messagebox.askyesno(_("Confirm Update TM"),
-                                   _("The current translation is empty. Do you want to update the TM entry for:\n'{text}...' with an empty translation?").format(text=ts_obj.original_semantic[:100].replace(chr(10), '↵')),
+                                   _("The current translation is empty. Do you want to update the TM entry for:\n'{text}...' with an empty translation?").format(
+                                       text=ts_obj.original_semantic[:100].replace(chr(10), '↵')),
                                    parent=self.root, icon='warning'):
                 translation_for_tm_storage = ""
             else:
@@ -2502,7 +2616,8 @@ class OverwatchLocalizerApp:
             translation_for_tm_storage = current_translation_ui.replace("\n", "\\n")
 
         self.translation_memory[ts_obj.original_semantic] = translation_for_tm_storage
-        self.update_statusbar(_("TM updated for original: '{text}...'").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
+        self.update_statusbar(
+            _("TM updated for original: '{text}...'").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
         self.update_tm_suggestions_for_text(ts_obj.original_semantic)
         if hasattr(self, 'clear_selected_tm_btn'): self.clear_selected_tm_btn.config(
             state=tk.NORMAL)
@@ -2523,7 +2638,8 @@ class OverwatchLocalizerApp:
 
         if ts_obj.original_semantic in self.translation_memory:
             if messagebox.askyesno(_("Confirm Clear"),
-                                   _("Are you sure you want to remove the TM entry for:\n'{text}...'?").format(text=ts_obj.original_semantic[:100].replace(chr(10), '↵')),
+                                   _("Are you sure you want to remove the TM entry for:\n'{text}...'?").format(
+                                       text=ts_obj.original_semantic[:100].replace(chr(10), '↵')),
                                    parent=self.root):
                 del self.translation_memory[ts_obj.original_semantic]
                 self.update_statusbar(_("TM entry cleared for selected item."))
@@ -2600,7 +2716,8 @@ class OverwatchLocalizerApp:
             return 0
 
         if confirm and not only_if_empty:
-            if not messagebox.askyesno(_("Confirm Operation"), _("This will apply TM to all matching strings, overwriting existing translations. Continue?"),
+            if not messagebox.askyesno(_("Confirm Operation"),
+                                       _("This will apply TM to all matching strings, overwriting existing translations. Continue?"),
                                        parent=self.root):
                 return 0
 
@@ -2632,14 +2749,16 @@ class OverwatchLocalizerApp:
                 self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})
                 self.mark_project_modified()
 
-            self.refresh_treeview(preserve_selection=True)
-            if self.current_selected_ts_id: self.on_tree_select(None)
+            self.refresh_sheet(preserve_selection=True)
+            if self.current_selected_ts_id: self.on_sheet_select(None)
 
             if not silent:
-                messagebox.showinfo(_("TM"), _("Applied TM to {count} strings.").format(count=applied_count), parent=self.root)
+                messagebox.showinfo(_("TM"), _("Applied TM to {count} strings.").format(count=applied_count),
+                                    parent=self.root)
             self.update_statusbar(_("Applied TM to {count} strings.").format(count=applied_count))
         elif not silent:
-            messagebox.showinfo(_("TM"), _("No applicable translations found in TM (or no changes needed)."), parent=self.root)
+            messagebox.showinfo(_("TM"), _("No applicable translations found in TM (or no changes needed)."),
+                                parent=self.root)
 
         return applied_count
 
@@ -2659,7 +2778,8 @@ class OverwatchLocalizerApp:
 
     def show_project_custom_instructions_dialog(self):
         if not self.current_project_file_path:
-            messagebox.showerror(_("Error"), _("This feature is only available when a project file is open."), parent=self.root)
+            messagebox.showerror(_("Error"), _("This feature is only available when a project file is open."),
+                                 parent=self.root)
             return
 
         new_instructions = simpledialog.askstring(_("Project-specific Instructions"),
@@ -2674,7 +2794,8 @@ class OverwatchLocalizerApp:
 
     def show_ai_settings_dialog(self):
         if not requests:
-            messagebox.showerror(_("Feature Unavailable"), _("The 'requests' library is not installed, AI translation is unavailable.\nPlease run: pip install requests"),
+            messagebox.showerror(_("Feature Unavailable"),
+                                 _("The 'requests' library is not installed, AI translation is unavailable.\nPlease run: pip install requests"),
                                  parent=self.root)
             return
         AISettingsDialog(self.root, _("AI Settings"), self.config, self.save_config, self.ai_translator, self)
@@ -2688,7 +2809,8 @@ class OverwatchLocalizerApp:
             return False
         if not self.config.get("ai_api_key"):
             if show_error:
-                messagebox.showerror(_("API Key Missing"), _("API Key is not set. Please configure it in 'Tools > AI Settings'."),
+                messagebox.showerror(_("API Key Missing"),
+                                     _("API Key is not set. Please configure it in 'Tools > AI Settings'."),
                                      parent=self.root)
             return False
         return True
@@ -2722,10 +2844,8 @@ class OverwatchLocalizerApp:
                     break
 
         if next_untranslated_id:
-            self.tree.selection_set(next_untranslated_id)
-            self.tree.focus(next_untranslated_id)
-            self.tree.see(next_untranslated_id)
-            self.on_tree_select(None)
+            self.select_sheet_row_by_id(next_untranslated_id, see=True)
+            self.on_sheet_select(None)
             self.translation_edit_text.focus_set()
         else:
             self.update_statusbar(_("No more untranslated items."))
@@ -2823,24 +2943,27 @@ class OverwatchLocalizerApp:
 
         if ts_obj.is_ignored:
             if not called_from_cm:
-                messagebox.showinfo(_("Ignored"), _("The selected string is marked as ignored and will not be AI translated."), parent=self.root)
+                messagebox.showinfo(_("Ignored"),
+                                    _("The selected string is marked as ignored and will not be AI translated."),
+                                    parent=self.root)
             return False
 
         if ts_obj.translation.strip():
-            if called_from_cm and len(self.tree.selection()) > 1:
+            if called_from_cm and len(self._get_selected_ts_objects_from_sheet()) > 1:
                 return False
 
             if not messagebox.askyesno(_("Overwrite Confirmation"),
-                                       _("String \"{text}...\" already has a translation. Overwrite with AI translation?").format(text=ts_obj.original_semantic[:50]),
+                                       _("String \"{text}...\" already has a translation. Overwrite with AI translation?").format(
+                                           text=ts_obj.original_semantic[:50]),
                                        parent=self.root):
                 return False
 
         if not called_from_cm:
-            self.update_statusbar(_("AI is translating: \"{text}...\"").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
+            self.update_statusbar(
+                _("AI is translating: \"{text}...\"").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
 
         context_dict = self._generate_ai_context_strings(ts_obj.id)
         target_language = self.config.get("ai_target_language", _("Target Language"))
-
 
         thread = threading.Thread(target=self._perform_ai_translation_threaded,
                                   args=(ts_obj.id, ts_obj.original_semantic, target_language,
@@ -2870,13 +2993,14 @@ class OverwatchLocalizerApp:
             ts_obj = self._find_ts_obj_by_id(ts_id)
 
             self.update_statusbar(
-                _("AI Batch: Processing {current}/{total} (Concurrency: {threads})...").format(current=current_item_idx + 1, total=self.ai_batch_total_items, threads=self.ai_batch_active_threads),
+                _("AI Batch: Processing {current}/{total} (Concurrency: {threads})...").format(
+                    current=current_item_idx + 1, total=self.ai_batch_total_items,
+                    threads=self.ai_batch_active_threads),
                 persistent=True)
 
             if ts_obj and not ts_obj.is_ignored and not ts_obj.translation.strip():
                 context_dict = self._generate_ai_context_strings(ts_obj.id)
                 target_language = self.config.get("ai_target_language", _("Target Language"))
-
 
                 thread = threading.Thread(target=self._perform_ai_translation_threaded,
                                           args=(ts_obj.id, ts_obj.original_semantic, target_language,
@@ -2925,11 +3049,13 @@ class OverwatchLocalizerApp:
             return
 
         if error_object:
-            error_msg = _("AI translation failed for \"{text}...\": {error}").format(text=ts_obj.original_semantic[:20].replace(chr(10), '↵'), error=error_object)
+            error_msg = _("AI translation failed for \"{text}...\": {error}").format(
+                text=ts_obj.original_semantic[:20].replace(chr(10), '↵'), error=error_object)
             self.update_statusbar(error_msg)
             if not is_batch_item:
                 messagebox.showerror(_("AI Translation Error"),
-                                     _("AI translation failed for \"{text}...\":\n{error}").format(text=ts_obj.original_semantic[:50], error=error_object),
+                                     _("AI translation failed for \"{text}...\":\n{error}").format(
+                                         text=ts_obj.original_semantic[:50], error=error_object),
                                      parent=self.root)
         elif translated_text is not None and translated_text.strip():
             apply_source = "ai_batch_item" if is_batch_item else "ai_selected"
@@ -2950,11 +3076,13 @@ class OverwatchLocalizerApp:
             else:
                 change_applied = self._apply_translation_to_model(ts_obj, cleaned_translation, source=apply_source)
 
-            if self.tree.exists(ts_obj.id):
-                current_values = list(self.tree.item(ts_obj.id, 'values'))
-                current_values[1] = "T"
-                current_values[3] = cleaned_translation.replace("\n", "↵")
-                self.tree.item(ts_obj.id, values=tuple(current_values), tags=('translated_row_visual',))
+            try:
+                row_idx = self.displayed_string_ids.index(ts_obj.id)
+                self.sheet.set_cell_data(row_idx, 1, "T")
+                self.sheet.set_cell_data(row_idx, 3, cleaned_translation.replace("\n", "↵"))
+                self.sheet.highlight_rows(rows=[row_idx], fg="darkblue", redraw=True)
+            except (ValueError, IndexError):
+                pass
 
             if self.current_selected_ts_id == ts_obj.id:
                 self.translation_edit_text.delete("1.0", tk.END)
@@ -2966,10 +3094,12 @@ class OverwatchLocalizerApp:
                         state=tk.NORMAL if ts_obj.original_semantic in self.translation_memory else tk.DISABLED)
 
             if not is_batch_item:
-                self.update_statusbar(_("AI translation successful: \"{text}...\"").format(text=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
+                self.update_statusbar(_("AI translation successful: \"{text}...\"").format(
+                    text=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
 
         elif translated_text is not None and not translated_text.strip():
-            self.update_statusbar(_("AI returned empty translation for \"{text}...\"").format(text=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
+            self.update_statusbar(_("AI returned empty translation for \"{text}...\"").format(
+                text=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
             if not is_batch_item and self.current_selected_ts_id == ts_obj.id:
                 self.translation_edit_text.delete("1.0", tk.END)
                 self._apply_translation_to_model(ts_obj, "", source="ai_selected_empty")
@@ -2983,7 +3113,9 @@ class OverwatchLocalizerApp:
                 progress_percent = 0
 
             self.update_statusbar(
-                _("AI Batch: {current}/{total} completed ({progress_percent:.0f}%).").format(current=self.ai_batch_completed_count, total=self.ai_batch_total_items, progress_percent=progress_percent),
+                _("AI Batch: {current}/{total} completed ({progress_percent:.0f}%).").format(
+                    current=self.ai_batch_completed_count, total=self.ai_batch_total_items,
+                    progress_percent=progress_percent),
                 persistent=True)
 
             if self.ai_batch_completed_count >= self.ai_batch_total_items and self.ai_batch_active_threads == 0:
@@ -3001,7 +3133,8 @@ class OverwatchLocalizerApp:
     def ai_translate_all_untranslated(self):
         if not self._check_ai_prerequisites(): return
         if self.is_ai_translating_batch:
-            messagebox.showwarning(_("AI Translation in Progress"), _("AI batch translation is already in progress."), parent=self.root)
+            messagebox.showwarning(_("AI Translation in Progress"), _("AI batch translation is already in progress."),
+                                   parent=self.root)
             return
 
         self.ai_translation_batch_ids_queue = [
@@ -3010,7 +3143,8 @@ class OverwatchLocalizerApp:
         ]
 
         if not self.ai_translation_batch_ids_queue:
-            messagebox.showinfo(_("No Translation Needed"), _("No untranslated and non-ignored strings found."), parent=self.root)
+            messagebox.showinfo(_("No Translation Needed"), _("No untranslated and non-ignored strings found."),
+                                parent=self.root)
             return
 
         self.ai_batch_total_items = len(self.ai_translation_batch_ids_queue)
@@ -3031,7 +3165,10 @@ class OverwatchLocalizerApp:
                                    _("This will start AI translation for {count} untranslated strings ({concurrency_info}).\n"
                                      "API call interval {api_interval_ms}ms (minimum interval between tasks when concurrent).\n"
                                      "Estimated time: ~{time_s:.1f} seconds.\n"
-                                     "Continue?").format(count=self.ai_batch_total_items, concurrency_info=concurrency_text, api_interval_ms=api_interval_ms, time_s=estimated_time_s), parent=self.root):
+                                     "Continue?").format(count=self.ai_batch_total_items,
+                                                         concurrency_info=concurrency_text,
+                                                         api_interval_ms=api_interval_ms, time_s=estimated_time_s),
+                                   parent=self.root):
             self.ai_translation_batch_ids_queue = []
             return
 
@@ -3044,7 +3181,9 @@ class OverwatchLocalizerApp:
 
         if hasattr(self, 'progress_bar'): self.progress_bar['value'] = 0
         self.update_ai_related_ui_state()
-        self.update_statusbar(_("AI batch translation started ({concurrency_info})...").format(concurrency_info=concurrency_text), persistent=True)
+        self.update_statusbar(
+            _("AI batch translation started ({concurrency_info})...").format(concurrency_info=concurrency_text),
+            persistent=True)
 
         for _extension in range(max_concurrency):
             if self.ai_batch_next_item_index < self.ai_batch_total_items:
@@ -3065,7 +3204,8 @@ class OverwatchLocalizerApp:
         processed_items = self.ai_batch_completed_count
 
         self.update_statusbar(
-            _("AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned).").format(success_count=success_count, processed_count=processed_items, total_items=self.ai_batch_total_items),
+            _("AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned).").format(
+                success_count=success_count, processed_count=processed_items, total_items=self.ai_batch_total_items),
             persistent=True)
 
         self.is_ai_translating_batch = False
@@ -3078,7 +3218,7 @@ class OverwatchLocalizerApp:
         self.ai_batch_completed_count = 0
 
         self.update_ai_related_ui_state()
-        self.refresh_treeview(preserve_selection=True)
+        self.refresh_sheet(preserve_selection=True)
 
     def check_batch_placeholder_mismatches(self):
         mismatched_items = []
@@ -3093,7 +3233,9 @@ class OverwatchLocalizerApp:
                 mismatched_items.append(ts_obj)
 
         if mismatched_items:
-            msg = _("After AI batch translation, {count} items were found with placeholder mismatches.\nDo you want to add the comment \"Placeholder Mismatch\" to these items in bulk?").format(count=len(mismatched_items))
+            msg = _(
+                "After AI batch translation, {count} items were found with placeholder mismatches.\nDo you want to add the comment \"Placeholder Mismatch\" to these items in bulk?").format(
+                count=len(mismatched_items))
             if messagebox.askyesno(_("Placeholder Mismatch"), msg, parent=self.root):
                 bulk_comment_changes = []
                 for ts_obj in mismatched_items:
@@ -3107,8 +3249,9 @@ class OverwatchLocalizerApp:
                         })
                 if bulk_comment_changes:
                     self.add_to_undo_history('bulk_context_menu', {'changes': bulk_comment_changes})
-                    self.refresh_treeview_preserve_selection()
-                    self.update_statusbar(_("Added comments to {count} placeholder mismatched items.").format(count=len(bulk_comment_changes)))
+                    self.refresh_sheet_preserve_selection()
+                    self.update_statusbar(_("Added comments to {count} placeholder mismatched items.").format(
+                        count=len(bulk_comment_changes)))
 
     def stop_batch_ai_translation(self, silent=False):
         if not self.is_ai_translating_batch:
@@ -3120,7 +3263,9 @@ class OverwatchLocalizerApp:
         self.is_ai_translating_batch = False
 
         if not silent:
-            messagebox.showinfo(_("AI Batch Translation"), _("AI batch translation stop requested.\nDispatched tasks will continue to complete, please wait."), parent=self.root)
+            messagebox.showinfo(_("AI Batch Translation"),
+                                _("AI batch translation stop requested.\nDispatched tasks will continue to complete, please wait."),
+                                parent=self.root)
 
         self.update_statusbar(_("AI batch translation stop requested. Finishing dispatched tasks..."), persistent=True)
 
@@ -3129,13 +3274,52 @@ class OverwatchLocalizerApp:
         else:
             self.update_ai_related_ui_state()
 
-    def _get_selected_ts_objects(self):
-        selected_iids = self.tree.selection()
-        if not selected_iids: return []
-        return [self._find_ts_obj_by_id(iid) for iid in selected_iids if self._find_ts_obj_by_id(iid)]
+    def _get_selected_ts_objects_from_sheet(self):
+        # This is the new, robust way to get all selected objects.
+        selected_objs = []
+
+        # get_all_selection_boxes() returns coordinates of all visual selection boxes.
+        # e.g., ((row_start, col_start, row_end, col_end), "cells" or "rows")
+        selection_boxes = self.sheet.get_all_selection_boxes_with_types()
+
+        if not selection_boxes:
+            # If no visual selection, fall back to the logically selected item
+            if self.current_selected_ts_id:
+                ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+                if ts_obj:
+                    return [ts_obj]
+            return []
+
+        # Use a set to avoid adding duplicate objects if selection overlaps
+        added_ids = set()
+
+        for box, box_type in selection_boxes:
+            # box is a tuple: (start_row, start_col, end_row, end_col)
+            start_row, _, end_row, _ = box
+            for row_idx in range(start_row, end_row):
+                if row_idx < len(self.displayed_string_ids):
+                    ts_id = self.displayed_string_ids[row_idx]
+                    if ts_id not in added_ids:
+                        ts_obj = self._find_ts_obj_by_id(ts_id)
+                        if ts_obj:
+                            selected_objs.append(ts_obj)
+                            added_ids.add(ts_id)
+
+        return selected_objs
+
+    def select_sheet_row_by_id(self, ts_id, see=False):
+        try:
+            row_idx = self.displayed_string_ids.index(ts_id)
+            # --- CORRECTED CODE ---
+            self.sheet.select_row(row=row_idx)  # Removed the invalid keyword argument
+            # --- END OF CORRECTION ---
+            if see:
+                self.sheet.see(row=row_idx, keep_xscroll=True)
+        except (ValueError, IndexError):
+            self.sheet.deselect("all")
 
     def cm_copy_original(self):
-        selected_objs = self._get_selected_ts_objects()
+        selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
         text_to_copy = "\n".join([ts.original_semantic for ts in selected_objs])
         try:
@@ -3146,7 +3330,7 @@ class OverwatchLocalizerApp:
             self.update_statusbar(_("Copy failed. Could not access clipboard."))
 
     def cm_copy_translation(self):
-        selected_objs = self._get_selected_ts_objects()
+        selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
         text_to_copy = "\n".join([ts.get_translation_for_ui() for ts in selected_objs])
         try:
@@ -3180,7 +3364,7 @@ class OverwatchLocalizerApp:
             self.update_statusbar(_("Paste failed: Clipboard content is not text."))
 
     def cm_set_ignored_status(self, ignore_flag):
-        selected_objs = self._get_selected_ts_objects()
+        selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
 
         bulk_changes = []
@@ -3194,12 +3378,12 @@ class OverwatchLocalizerApp:
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.refresh_treeview_and_select_neighbor(selected_objs[0].id)
+            self.refresh_sheet_and_select_neighbor(selected_objs[0].id)
             self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
             self.mark_project_modified()
 
     def cm_set_reviewed_status(self, reviewed_flag):
-        selected_objs = self._get_selected_ts_objects()
+        selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
 
         bulk_changes = []
@@ -3212,17 +3396,18 @@ class OverwatchLocalizerApp:
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.refresh_treeview_and_select_neighbor(selected_objs[0].id)
+            self.refresh_sheet_and_select_neighbor(selected_objs[0].id)
             self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
             self.mark_project_modified()
 
     def cm_edit_comment(self):
-        selected_objs = self._get_selected_ts_objects()
+        selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
 
         initial_comment = selected_objs[0].comment if len(selected_objs) == 1 else ""
         prompt_text = _("Enter comment for {count} selected items:").format(count=len(selected_objs)) if len(
-            selected_objs) > 1 else _("Original:\n{original_semantic}...\n\nEnter comment:").format(original_semantic=selected_objs[0].original_semantic[:100])
+            selected_objs) > 1 else _("Original:\n{original_semantic}...\n\nEnter comment:").format(
+            original_semantic=selected_objs[0].original_semantic[:100])
 
         new_comment = simpledialog.askstring(_("Edit Comment..."), prompt_text,
                                              initialvalue=initial_comment, parent=self.root)
@@ -3240,7 +3425,7 @@ class OverwatchLocalizerApp:
 
             if bulk_changes:
                 self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-                self.refresh_treeview_preserve_selection()
+                self.refresh_sheet_preserve_selection()
                 if self.current_selected_ts_id in [c['string_id'] for c in bulk_changes]:
                     self.comment_edit_text.delete("1.0", tk.END)
                     self.comment_edit_text.insert("1.0", new_comment)
@@ -3248,7 +3433,7 @@ class OverwatchLocalizerApp:
                 self.mark_project_modified()
 
     def cm_apply_tm_to_selected(self):
-        selected_objs = self._get_selected_ts_objects()
+        selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
         if not self.translation_memory:
             messagebox.showinfo(_("Info"), _("TM is empty."), parent=self.root)
@@ -3270,19 +3455,22 @@ class OverwatchLocalizerApp:
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.refresh_treeview_preserve_selection()
-            self.on_tree_select(None)
+            self.refresh_sheet_preserve_selection()
+            self.on_sheet_select(None)
             self.update_statusbar(_("Applied TM to {count} selected items.").format(count=applied_count))
             self.mark_project_modified()
         elif selected_objs:
-            messagebox.showinfo(_("Info"), _("No matching TM entries or no changes needed for selected items."), parent=self.root)
+            messagebox.showinfo(_("Info"), _("No matching TM entries or no changes needed for selected items."),
+                                parent=self.root)
 
     def cm_clear_selected_translations(self):
-        selected_objs = self._get_selected_ts_objects()
+        selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs:
             return
 
-        if not messagebox.askyesno(_("Confirm Clear"), _("Are you sure you want to clear the translations for the {count} selected items?").format(count=len(selected_objs)), parent=self.root):
+        if not messagebox.askyesno(_("Confirm Clear"),
+                                   _("Are you sure you want to clear the translations for the {count} selected items?").format(
+                                           count=len(selected_objs)), parent=self.root):
             return
 
         bulk_changes = []
@@ -3308,11 +3496,11 @@ class OverwatchLocalizerApp:
         if self.current_selected_ts_id in cleared_ids:
             self.translation_edit_text.delete('1.0', tk.END)
             self.translation_edit_text.edit_reset()
-        self.refresh_treeview_preserve_selection()
+        self.refresh_sheet_preserve_selection()
         self.update_statusbar(_("Cleared {count} translations.").format(count=len(bulk_changes)))
 
     def cm_ai_translate_selected(self, event=None):
-        selected_objs = self._get_selected_ts_objects()
+        selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs:
             self.update_statusbar(_("No items selected for AI translation."))
             return
@@ -3320,7 +3508,9 @@ class OverwatchLocalizerApp:
         if not self._check_ai_prerequisites(): return
 
         if self.is_ai_translating_batch:
-            messagebox.showwarning(_("AI Translation in Progress"), _("AI batch translation is in progress. Please wait for it to complete or stop it."), parent=self.root)
+            messagebox.showwarning(_("AI Translation in Progress"),
+                                   _("AI batch translation is in progress. Please wait for it to complete or stop it."),
+                                   parent=self.root)
             return
 
         items_actually_translated_count = 0
@@ -3334,13 +3524,8 @@ class OverwatchLocalizerApp:
                                                      source="multi_ai_intermediate_save")
 
             if self.current_selected_ts_id != ts_obj.id:
-                if self.tree.exists(ts_obj.id):
-                    self.tree.selection_set(ts_obj.id)
-                    self.tree.focus(ts_obj.id)
-                    self.tree.see(ts_obj.id)
-                    self.on_tree_select(None)
-                else:
-                    continue
+                self.select_sheet_row_by_id(ts_obj.id, see=True)
+                self.on_sheet_select(None)
 
             initiated = self._initiate_single_ai_translation(ts_obj.id, called_from_cm=True)
             if initiated:
@@ -3352,7 +3537,8 @@ class OverwatchLocalizerApp:
                 self.root.update_idletasks()
 
         if items_actually_translated_count > 0:
-            self.update_statusbar(_("Started AI translation for {count} selected items.").format(count=items_actually_translated_count))
+            self.update_statusbar(
+                _("Started AI translation for {count} selected items.").format(count=items_actually_translated_count))
         elif selected_objs:
             self.update_statusbar(_("No eligible selected items for AI translation."))
 
@@ -3452,10 +3638,10 @@ class OverwatchLocalizerApp:
             self.update_statusbar(_("Comparison complete, generating report..."), persistent=True)
 
             summary = (
-                _("Comparison complete. Found ")
-                + _("{added} new items, ").format(added=len(diff_results['added']))
-                + _("{removed} removed items, ").format(removed=len(diff_results['removed']))
-                + _("and {modified} modified/inherited items.").format(modified=len(diff_results['modified']))
+                    _("Comparison complete. Found ")
+                    + _("{added} new items, ").format(added=len(diff_results['added']))
+                    + _("{removed} removed items, ").format(removed=len(diff_results['removed']))
+                    + _("and {modified} modified/inherited items.").format(modified=len(diff_results['modified']))
             )
             diff_results['summary'] = summary
 
@@ -3474,12 +3660,16 @@ class OverwatchLocalizerApp:
                 self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
 
                 self.mark_project_modified()
-                self.refresh_treeview()
-                self.update_statusbar(_("Project updated to new version: {filename}").format(filename=os.path.basename(filepath)), persistent=True)
+                self.refresh_sheet()
+                self.update_statusbar(
+                    _("Project updated to new version: {filename}").format(filename=os.path.basename(filepath)),
+                    persistent=True)
             else:
                 self.update_statusbar(_("Version update cancelled."))
 
         except Exception as e:
             self.progress_bar.pack_forget()
-            messagebox.showerror(_("Comparison Failed"), _("An error occurred while processing or comparing files: {error}").format(error=e), parent=self.root)
+            messagebox.showerror(_("Comparison Failed"),
+                                 _("An error occurred while processing or comparing files: {error}").format(error=e),
+                                 parent=self.root)
             self.update_statusbar(_("Version comparison failed."))
