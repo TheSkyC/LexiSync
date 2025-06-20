@@ -17,10 +17,13 @@ class TranslatableString:
         self.line_num_in_file = line_num
         self.char_pos_start_in_file = char_pos_start_in_file
         self.char_pos_end_in_file = char_pos_end_in_file
+        self.warnings = []
+        self.is_warning_ignored = False
 
         self.string_type = string_type
         self.comment = ""
         self.is_reviewed = False
+
 
         context_radius = 2
         start_line_idx = max(0, line_num - 1 - context_radius)

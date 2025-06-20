@@ -23,6 +23,7 @@ from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
 from services.project_service import load_project, save_project
 from services.prompt_service import generate_prompt_from_structure
+from services.validation_service import run_validation_on_all, placeholder_regex as enhanced_placeholder_regex
 
 from utils.constants import *
 from utils import config_manager
@@ -47,9 +48,7 @@ lang_manager.setup_translation(language_code)
 if not language_code:
     language_code = lang_manager.get_best_match_language()
     initial_config['language'] = language_code
-
 lang_manager.setup_translation(language_code)
-
 
 class OverwatchLocalizerApp:
     def __init__(self, root):
@@ -126,7 +125,7 @@ class OverwatchLocalizerApp:
 
         self._ignored_tag_font = None
         self.icons = self._load_icons()
-        self.placeholder_regex = re.compile(r'\{(\d+)\}')
+        self.placeholder_regex = enhanced_placeholder_regex
         self._placeholder_validation_job = None
 
         self.last_sort_column = "seq_id"
@@ -565,7 +564,7 @@ class OverwatchLocalizerApp:
         self.sheet.column_width(column=1, width=30)
         self.sheet.column_width(column=2, width=300)
         self.sheet.column_width(column=3, width=300)
-        self.sheet.column_width(column=4, width=150)
+        self.sheet.column_width(column=4, width=90)
         self.sheet.column_width(column=5, width=30)
         self.sheet.column_width(column=6, width=50)
 
@@ -598,6 +597,9 @@ class OverwatchLocalizerApp:
         self.sheet_context_menu.add_separator()
         self.sheet_context_menu.add_command(label=_("Use AI to Translate Selected Items"),
                                             command=self.cm_ai_translate_selected)
+        self.sheet_context_menu.add_separator()
+        self.sheet_context_menu.add_command(label=_("Ignore Warnings for Selected"), command=lambda: self.cm_set_warning_ignored_status(True))
+        self.sheet_context_menu.add_command(label=_("Un-ignore Warnings for Selected"), command=lambda: self.cm_set_warning_ignored_status(False))
 
     def show_sheet_context_menu(self, event):
         clicked_row = self.sheet.identify_row(event=event, allow_end=False)
@@ -1058,7 +1060,7 @@ class OverwatchLocalizerApp:
         self.refresh_sheet(preserve_selection=True)
 
         if self.current_selected_ts_id in changed_ids:
-            self.on_sheet_select(None)
+            self.force_refresh_ui_for_current_selection()
 
         if not self.undo_history: self.edit_menu.entryconfig(_("Undo"), state=tk.DISABLED)
         self.edit_menu.entryconfig(_("Redo"), state=tk.NORMAL if self.redo_history else tk.DISABLED)
@@ -1145,7 +1147,7 @@ class OverwatchLocalizerApp:
 
         self.refresh_sheet(preserve_selection=True)
         if self.current_selected_ts_id in changed_ids:
-            self.on_sheet_select(None)
+            self.force_refresh_ui_for_current_selection()
 
         if not self.redo_history: self.edit_menu.entryconfig(_("Redo"), state=tk.DISABLED)
         self.edit_menu.entryconfig(_("Undo"), state=tk.NORMAL if self.undo_history else tk.DISABLED)
@@ -1187,8 +1189,8 @@ class OverwatchLocalizerApp:
             self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
                                                                      extraction_patterns)
             self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
+            self._run_and_refresh_with_validation()
 
-            self.undo_history.clear()
 
             self.undo_history.clear()
             self.redo_history.clear()
@@ -1257,7 +1259,7 @@ class OverwatchLocalizerApp:
             self.add_to_recent_files(project_filepath)
             self.config["last_dir"] = os.path.dirname(project_filepath)
             self.save_config()
-
+            self._run_and_refresh_with_validation()
             self.undo_history.clear()
             self.redo_history.clear()
             self.current_selected_ts_id = None
@@ -1321,18 +1323,33 @@ class OverwatchLocalizerApp:
         if item_to_reselect_after:
             old_selected_id = item_to_reselect_after
 
-        data_for_sheet = []
-        self.displayed_string_ids = []
+        # --- REVISED MULTI-LEVEL SORTING LOGIC ---
+        if self.translatable_objects:
+            def sort_key(ts_obj):
+                # Primary sort key: Warning status
+                # 0 for active warnings, 1 for normal, 2 for ignored
+                if ts_obj.warnings and not ts_obj.is_warning_ignored:
+                    primary_key = 0
+                elif ts_obj.is_ignored:
+                    primary_key = 2
+                else:
+                    primary_key = 1
 
-        processed_originals_for_dedup = set()
-        seq_id_counter = 1
-        search_term = self.search_var.get().lower()
-        if search_term == _("Quick search...").lower():
-            search_term = ""
+                # Secondary sort key: Original line number in the file
+                secondary_key = ts_obj.line_num_in_file
+
+                return (primary_key, secondary_key)
+
+            self.translatable_objects.sort(key=sort_key)
+        # --- END OF REVISED SORTING LOGIC ---
+
+        # The rest of the method remains exactly the same
+        # It will now build the sheet based on the new, stable sort order
 
         filtered_objects = []
+        processed_originals_for_dedup = set()
+        # ... (your existing filtering logic) ...
         for ts_obj in self.translatable_objects:
-            # ... (the existing filtering logic remains the same) ...
             if self.deduplicate_strings_var.get():
                 if ts_obj.original_semantic in processed_originals_for_dedup:
                     continue
@@ -1345,7 +1362,8 @@ class OverwatchLocalizerApp:
                 continue
             if self.show_unreviewed_var.get() and ts_obj.is_reviewed:
                 continue
-            if search_term:
+            search_term = self.search_var.get().lower()
+            if search_term and search_term != _("Quick search...").lower():
                 if not (search_term in ts_obj.original_semantic.lower() or
                         search_term in ts_obj.get_translation_for_ui().lower() or
                         search_term in ts_obj.comment.lower()):
@@ -1356,10 +1374,14 @@ class OverwatchLocalizerApp:
 
             filtered_objects.append(ts_obj)
 
+        data_for_sheet = []
+        self.displayed_string_ids = []
+        seq_id_counter = 1
         for ts_obj in filtered_objects:
-            # ... (the existing data row creation logic remains the same) ...
             status_char = ""
-            if ts_obj.is_ignored:
+            if ts_obj.warnings and not ts_obj.is_warning_ignored:
+                status_char = "⚠️"
+            elif ts_obj.is_ignored:
                 status_char = "I"
                 if ts_obj.was_auto_ignored:
                     status_char = "A"
@@ -1367,6 +1389,8 @@ class OverwatchLocalizerApp:
                 status_char = "T"
             else:
                 status_char = "U"
+
+
 
             row_data = [
                 seq_id_counter, status_char,
@@ -1382,18 +1406,15 @@ class OverwatchLocalizerApp:
 
         self.sheet.set_sheet_data(data=data_for_sheet, redraw=False)
 
-        # --- NEW CODE TO RE-APPLY SETTINGS ---
-        # Re-apply column widths and alignments after data is set
         self.sheet.column_width(column=0, width=40)
         self.sheet.column_width(column=1, width=30)
         self.sheet.column_width(column=2, width=300)
         self.sheet.column_width(column=3, width=300)
-        self.sheet.column_width(column=4, width=150)
+        self.sheet.column_width(column=4, width=90)
         self.sheet.column_width(column=5, width=30)
         self.sheet.column_width(column=6, width=50)
         self.sheet.align_columns(columns=[0], align="e")
         self.sheet.align_columns(columns=[1, 5, 6], align="center")
-        # --- END OF NEW CODE ---
 
         self._apply_row_highlighting()
         self.sheet.redraw()
@@ -1411,7 +1432,11 @@ class OverwatchLocalizerApp:
 
             fg = "black"
 
-            if ts_obj.is_ignored:
+            # --- MODIFICATION: Add warning color ---
+            if ts_obj.warnings and not ts_obj.is_warning_ignored:
+                fg = "orange red"
+            # --- END OF MODIFICATION ---
+            elif ts_obj.is_ignored:
                 fg = "#707070"
                 if ts_obj.was_auto_ignored:
                     fg = "#a0a0a0"
@@ -1481,6 +1506,47 @@ class OverwatchLocalizerApp:
             except (ValueError, IndexError):
                 # If item not visible, just clear the pane
                 self.clear_details_pane()
+
+    def force_refresh_ui_for_current_selection(self):
+        """
+        This method simulates a re-selection of the current item
+        to force a full UI refresh for the details pane.
+        """
+        current_id = self.current_selected_ts_id
+        if not current_id:
+            self.clear_details_pane()
+            return
+
+        # Find the object and update the UI directly from its current state
+        ts_obj = self._find_ts_obj_by_id(current_id)
+        if not ts_obj:
+            self.clear_details_pane()
+            return
+
+        # This block is a simplified version of on_sheet_select's update logic
+        self.original_text_display.config(state=tk.NORMAL)
+        self.original_text_display.delete("1.0", tk.END)
+        self.original_text_display.insert("1.0", ts_obj.original_semantic)
+        self.original_text_display.config(state=tk.DISABLED)
+
+        self.translation_edit_text.delete("1.0", tk.END)
+        self.translation_edit_text.insert("1.0", ts_obj.get_translation_for_ui())
+        self.translation_edit_text.edit_reset()
+
+        self._update_placeholder_highlights()
+
+        self.comment_edit_text.delete("1.0", tk.END)
+        self.comment_edit_text.insert("1.0", ts_obj.comment)
+        self.comment_edit_text.edit_reset()
+
+        self.ignore_var.set(ts_obj.is_ignored)
+        ignore_label = _("Ignore this string")
+        if ts_obj.is_ignored and ts_obj.was_auto_ignored:
+            ignore_label += _(" (Auto)")
+        self.toggle_ignore_btn.config(text=ignore_label)
+
+        self.reviewed_var.set(ts_obj.is_reviewed)
+        self.update_tm_suggestions_for_text(ts_obj.original_semantic)
 
     def on_sheet_select(self, event=None):
         current_selection = self.sheet.get_currently_selected()
@@ -1559,6 +1625,19 @@ class OverwatchLocalizerApp:
             ),
             persistent=True
         )
+        if ts_obj.warnings and not ts_obj.is_warning_ignored:
+            warning_text = "⚠️ " + " | ".join(ts_obj.warnings)
+            self.update_statusbar(warning_text, persistent=True)
+        else:
+            # If no warnings, show the standard selection info
+            self.update_statusbar(
+                _("Selected: \"{text}...\" (Line: {line_num})").format(
+                    text=ts_obj.original_semantic[:30].replace(chr(10), '↵'),
+                    line_num=ts_obj.line_num_in_file
+                ),
+                persistent=True
+            )
+
         self.update_ui_state_for_selection(self.current_selected_ts_id)
 
     def schedule_placeholder_validation(self, event=None):
@@ -1576,6 +1655,14 @@ class OverwatchLocalizerApp:
 
         original_text = ts_obj.original_semantic
         translated_text = self.translation_edit_text.get("1.0", tk.END)
+
+        self.original_text_display.tag_configure('whitespace', background='#DDEEFF')
+        self.translation_edit_text.tag_configure('whitespace', background='#DDEEFF')
+        self.original_text_display.tag_configure('newline', foreground='#007ACC', font=('Segoe UI', 10, 'italic'))
+        self.translation_edit_text.tag_configure('newline', foreground='#007ACC', font=('Segoe UI', 10, 'italic'))
+
+        self._highlight_specific_chars(self.original_text_display, original_text)
+        self._highlight_specific_chars(self.translation_edit_text, translated_text)
 
         original_placeholders = set(self.placeholder_regex.findall(original_text))
         translated_placeholders = set(self.placeholder_regex.findall(translated_text))
@@ -1605,6 +1692,44 @@ class OverwatchLocalizerApp:
             self.translation_edit_text.tag_add(tag, start_coord, end_coord)
 
         self.root.update_idletasks()
+
+    def _highlight_specific_chars(self, text_widget, text_content):
+        text_widget.tag_remove('whitespace', '1.0', tk.END)
+        text_widget.tag_remove('newline', '1.0', tk.END)
+
+        if text_content.startswith(' '):
+            end_offset = len(text_content) - len(text_content.lstrip(' '))
+            text_widget.tag_add('whitespace', '1.0', f'1.{end_offset}')
+
+        if text_content.endswith(' '):
+            start_offset = len(text_content.rstrip(' '))
+            if start_offset < len(text_content):
+                text_widget.tag_add('whitespace', f'1.{start_offset}', 'end-1c')
+
+        start = "1.0"
+        while True:
+            pos = text_widget.search(r'\n', start, stopindex=tk.END, regexp=True)
+            if not pos:
+                break
+            end = f"{pos}+1c"
+            text_widget.tag_add('newline', pos, end)
+            start = end
+
+    def _highlight_specific_chars(self, text_widget, text_content):
+        # Helper function to apply highlighting
+
+        # Leading/Trailing spaces
+        if text_content.startswith(' '):
+            text_widget.tag_add('whitespace', '1.0', f'1.{len(text_content) - len(text_content.lstrip())}')
+        if text_content.endswith(' '):
+            end_index = len(text_content)
+            start_index = len(text_content.rstrip())
+            text_widget.tag_add('whitespace', f'1.{start_index}', f'1.{end_index}')
+
+        # Newlines
+        for match in re.finditer(r'\\n', text_content):
+            start, end = match.span()
+            text_widget.tag_add('newline', f'1.0+{start}c', f'1.0+{end}c')
 
     def update_ui_state_for_selection(self, selected_id):
         state = tk.NORMAL if selected_id else tk.DISABLED
@@ -1649,6 +1774,55 @@ class OverwatchLocalizerApp:
         self.toggle_ignore_btn["state"] = tk.DISABLED
         self.toggle_reviewed_btn["state"] = tk.DISABLED
         self.tm_suggestions_listbox.delete(0, tk.END)
+
+    def _run_and_refresh_with_validation(self):
+        """A helper method to run validation and refresh the UI."""
+        if not self.translatable_objects:
+            return
+        run_validation_on_all(self.translatable_objects)
+        self.refresh_sheet_preserve_selection()
+        # After refresh, we might need to update the details for the selected item
+        self.refresh_ui_for_current_selection()
+
+    def cm_set_warning_ignored_status(self, ignore_flag):
+        """Handles the context menu action to ignore/un-ignore warnings, with Undo/Redo and status updates."""
+        selected_objs = self._get_selected_ts_objects_from_sheet()
+        if not selected_objs:
+            # Provide feedback even if nothing is selected
+            self.update_statusbar(_("No items selected to modify warning status."))
+            return
+
+        changes_for_undo = []
+        for ts_obj in selected_objs:
+            if ts_obj.is_warning_ignored != ignore_flag:
+                old_value = ts_obj.is_warning_ignored
+
+                changes_for_undo.append({
+                    'string_id': ts_obj.id,
+                    'field': 'is_warning_ignored',
+                    'old_value': old_value,
+                    'new_value': ignore_flag
+                })
+
+                ts_obj.is_warning_ignored = ignore_flag
+
+        if changes_for_undo:
+            self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
+            self.mark_project_modified()
+
+            # --- STATUS BAR UPDATE ---
+            count = len(changes_for_undo)
+            if ignore_flag:
+                status_message = _("Ignored warnings for {count} item(s).").format(count=count)
+            else:
+                status_message = _("Un-ignored warnings for {count} item(s).").format(count=count)
+            self.update_statusbar(status_message)
+            # --- END OF STATUS BAR UPDATE ---
+        else:
+            # Provide feedback if no changes were needed
+            self.update_statusbar(_("Selected item(s) already have the desired warning status."))
+
+        self._run_and_refresh_with_validation()
 
     def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual"):
         if new_translation_from_ui == ts_obj.translation:
@@ -1705,7 +1879,9 @@ class OverwatchLocalizerApp:
             self.clear_selected_tm_btn.config(state=tk.NORMAL if tm_exists_for_selected else tk.DISABLED)
             self.update_tm_suggestions_for_text(ts_obj.original_semantic)
 
+        self._run_and_refresh_with_validation()
         self.mark_project_modified()
+        return True
         return True
 
     def apply_translation_from_button(self):
@@ -1810,14 +1986,34 @@ class OverwatchLocalizerApp:
         new_reviewed_state = self.reviewed_var.get()
         if new_reviewed_state == ts_obj.is_reviewed: return
 
+        # --- NEW LOGIC: Link 'reviewed' status with 'warning_ignored' status ---
         old_reviewed_state = ts_obj.is_reviewed
+        old_warning_ignored_state = ts_obj.is_warning_ignored
+
         ts_obj.is_reviewed = new_reviewed_state
 
-        self.add_to_undo_history('single_change', {
-            'string_id': ts_obj.id, 'field': 'is_reviewed',
-            'old_value': old_reviewed_state, 'new_value': new_reviewed_state
-        })
-        self.refresh_sheet_and_select_neighbor(ts_obj.id)
+        # If an item is marked as reviewed, automatically ignore any warnings.
+        # If review is removed, re-evaluate warnings (un-ignore them).
+        ts_obj.is_warning_ignored = new_reviewed_state
+
+        # --- UNDO/REDO HANDLING FOR BOTH PROPERTIES ---
+        changes_for_undo = [
+            {
+                'string_id': ts_obj.id, 'field': 'is_reviewed',
+                'old_value': old_reviewed_state, 'new_value': new_reviewed_state
+            },
+            {
+                'string_id': ts_obj.id, 'field': 'is_warning_ignored',
+                'old_value': old_warning_ignored_state, 'new_value': ts_obj.is_warning_ignored
+            }
+        ]
+
+        self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
+        # --- END OF UNDO/REDO ---
+
+        # We need to refresh the whole sheet to reflect potential changes in sorting and status icons
+        self._run_and_refresh_with_validation()
+
         self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
             'Yes') if new_reviewed_state else _('No')))
         self.mark_project_modified()
@@ -2256,7 +2452,7 @@ class OverwatchLocalizerApp:
             self.translatable_objects, self.current_po_metadata = po_file_service.load_from_po(
                 po_filepath, original_code_for_context, original_code_filepath_for_context
             )
-
+            self._run_and_refresh_with_validation()
             self.original_raw_code_content = original_code_for_context if original_code_for_context else ""
             self.current_code_file_path = original_code_filepath_for_context
             self.current_project_file_path = None
@@ -3658,7 +3854,7 @@ class OverwatchLocalizerApp:
                 self.current_code_file_path = filepath
 
                 self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
-
+                self._run_and_refresh_with_validation()
                 self.mark_project_modified()
                 self.refresh_sheet()
                 self.update_statusbar(
