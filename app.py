@@ -1638,7 +1638,6 @@ class OverwatchLocalizerApp:
         self.translation_edit_text.insert("1.0", ts_obj.get_translation_for_ui())
         self.translation_edit_text.edit_reset()
 
-        self._update_placeholder_highlights()
 
         self.comment_edit_text.delete("1.0", tk.END)
         if self.is_po_mode:
@@ -1696,83 +1695,138 @@ class OverwatchLocalizerApp:
                 ),
                 persistent=True
             )
-
+        self._update_all_highlights()
         self.update_ui_state_for_selection(self.current_selected_ts_id)
 
     def schedule_placeholder_validation(self, event=None):
         if self._placeholder_validation_job:
             self.root.after_cancel(self._placeholder_validation_job)
-        self._placeholder_validation_job = self.root.after(150, self._update_placeholder_highlights)
+        self._placeholder_validation_job = self.root.after(150, self._update_all_highlights)
 
-    def _update_placeholder_highlights(self):
+    def _update_all_highlights(self):
         if not self.current_selected_ts_id:
             return
-
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj:
             return
 
-        original_text = ts_obj.original_semantic
-        translated_text = self.translation_edit_text.get("1.0", tk.END)
+        # --- UNIFIED HIGHLIGHTING LOGIC ---
 
-        self.original_text_display.tag_configure('whitespace', background='#DDEEFF')
-        self.translation_edit_text.tag_configure('whitespace', background='#DDEEFF')
-        self.original_text_display.tag_configure('newline', foreground='#007ACC', font=(self.app_font, 10, 'italic'))
-        self.translation_edit_text.tag_configure('newline', foreground='#007ACC', font=(self.app_font, 10, 'italic'))
+        # 1. Configure all tags
+        placeholder_font = (self.app_font[0], self.app_font[1])
+        whitespace_color = "#DDEEFF"
+        newline_font = (self.app_font[0], self.app_font[1], 'italic')
 
-        self._highlight_specific_chars(self.original_text_display, original_text)
-        self._highlight_specific_chars(self.translation_edit_text, translated_text)
+        for widget in [self.original_text_display, self.translation_edit_text]:
+            widget.tag_configure('placeholder', foreground='orange red', font=placeholder_font)
+            widget.tag_configure('whitespace', background=whitespace_color)
+            widget.tag_configure('newline', foreground='#007ACC', font=newline_font)
+            widget.tag_remove('placeholder', '1.0', tk.END)
+            widget.tag_remove('whitespace', '1.0', tk.END)
+            widget.tag_remove('newline', '1.0', tk.END)
+            for window in widget.window_names():
+                widget.delete(window)
 
-        original_placeholders = set(self.placeholder_regex.findall(original_text))
-        translated_placeholders = set(self.placeholder_regex.findall(translated_text))
-        missing_in_translation = original_placeholders - translated_placeholders
-        extra_in_translation = translated_placeholders - original_placeholders
+        self.original_text_display.tag_configure('placeholder_missing', background='#FFDDDD', foreground='red')
+        self.translation_edit_text.tag_configure('placeholder_extra', background='#FFDDDD', foreground='red')
+        self.original_text_display.tag_remove('placeholder_missing', '1.0', tk.END)
+        self.translation_edit_text.tag_remove('placeholder_extra', '1.0', tk.END)
 
+        # 2. Process each widget (Original and Translation)
+        original_placeholders = set(self.placeholder_regex.findall(ts_obj.original_semantic))
+        translated_placeholders = set(self.placeholder_regex.findall(self.translation_edit_text.get("1.0", "end-1c")))
+
+        # --- Process Original Text Box ---
         self.original_text_display.config(state=tk.NORMAL)
         try:
-            self.original_text_display.tag_remove('placeholder', '1.0', tk.END)
-            self.original_text_display.tag_remove('placeholder_missing', '1.0', tk.END)
-            for match in self.placeholder_regex.finditer(original_text):
-                start, end = match.span()
-                tag = 'placeholder_missing' if match.group(1) in missing_in_translation else 'placeholder'
-                start_coord = f"1.0+{start}c"
-                end_coord = f"1.0+{end}c"
-                self.original_text_display.tag_add(tag, start_coord, end_coord)
+            # Highlight placeholders
+            for p_text in original_placeholders:
+                tag = 'placeholder_missing' if p_text not in translated_placeholders else 'placeholder'
+                self._apply_tag_to_all_occurrences(self.original_text_display, f"{{{p_text}}}", tag)
+            # Highlight whitespace and newlines
+            self._apply_whitespace_and_newline_tags(self.original_text_display)
         finally:
             self.original_text_display.config(state=tk.DISABLED)
 
-        self.translation_edit_text.tag_remove('placeholder', '1.0', tk.END)
-        self.translation_edit_text.tag_remove('placeholder_extra', '1.0', tk.END)
-        for match in self.placeholder_regex.finditer(translated_text):
-            start, end = match.span()
-            tag = 'placeholder_extra' if match.group(1) in extra_in_translation else 'placeholder'
-            start_coord = f"1.0+{start}c"
-            end_coord = f"1.0+{end}c"
-            self.translation_edit_text.tag_add(tag, start_coord, end_coord)
+        # --- Process Translation Text Box ---
+        # Highlight placeholders
+        all_placeholders = original_placeholders.union(translated_placeholders)
+        for p_text in all_placeholders:
+            if p_text in original_placeholders and p_text in translated_placeholders:
+                tag = 'placeholder'
+            elif p_text in translated_placeholders:
+                tag = 'placeholder_extra'
+            else:  # in original but not translation
+                continue  # This is handled by the original box's highlighting
+            self._apply_tag_to_all_occurrences(self.translation_edit_text, f"{{{p_text}}}", tag)
+        # Highlight whitespace and newlines
+        self._apply_whitespace_and_newline_tags(self.translation_edit_text)
 
         self.root.update_idletasks()
 
-    def _highlight_specific_chars(self, text_widget, text_content):
-        text_widget.tag_remove('whitespace', '1.0', tk.END)
-        text_widget.tag_remove('newline', '1.0', tk.END)
-
-        if text_content.startswith(' '):
-            end_offset = len(text_content) - len(text_content.lstrip(' '))
-            text_widget.tag_add('whitespace', '1.0', f'1.{end_offset}')
-
-        if text_content.endswith(' '):
-            start_offset = len(text_content.rstrip(' '))
-            if start_offset < len(text_content):
-                text_widget.tag_add('whitespace', f'1.{start_offset}', 'end-1c')
-
-        start = "1.0"
+    def _apply_tag_to_all_occurrences(self, widget, pattern, tag):
+        """Helper to apply a tag to all occurrences of a pattern in a text widget."""
+        start_index = "1.0"
         while True:
-            pos = text_widget.search(r'\\n', start, stopindex=tk.END, regexp=True)
+            pos = widget.search(pattern, start_index, stopindex=tk.END)
             if not pos:
                 break
-            end = f"{pos}+2c"
-            text_widget.tag_add('newline', pos, end)
-            start = end
+            end_index = f"{pos}+{len(pattern)}c"
+            widget.tag_add(tag, pos, end_index)
+            start_index = end_index
+
+    def _apply_whitespace_and_newline_tags(self, widget):
+        """Helper to apply whitespace and newline tags."""
+
+        # --- DEBUGGING AND FIX FOR INFINITE LOOP ---
+        widget_name = widget.winfo_class()
+        print(f"\n--- Applying whitespace/newline tags for: {widget_name} ---")
+
+        # --- Whitespace logic (remains the same, it's safe) ---
+        num_lines = int(widget.index('end-1c').split('.')[0])
+        for i in range(1, num_lines + 1):
+            line_start, line_end = f"{i}.0", f"{i}.end"
+            line_content = widget.get(line_start, line_end)
+            if not line_content: continue
+
+            if line_content.startswith(' '):
+                offset = len(line_content) - len(line_content.lstrip(' '))
+                widget.tag_add('whitespace', line_start, f"{line_start}+{offset}c")
+            if line_content.endswith(' '):
+                offset = len(line_content.rstrip(' '))
+                widget.tag_add('whitespace', f"{line_start}+{offset}c", line_end)
+
+        # --- FINAL ROBUST NEWLINE LOGIC (Replaces the while loop) ---
+        # This new logic iterates through the text content character by character,
+        # which is immune to the `search` method's buggy behavior.
+
+        s = ttk.Style()
+        symbol_font = (self.app_font[0], self.app_font[1] - 2, "normal")
+        s.configure("Newline.TLabel", foreground="blue", font=symbol_font)
+
+        # Get the entire content once
+        full_content = widget.get("1.0", "end-1c")
+
+        # Iterate through the content to find newline characters
+        current_line = 1
+        current_col = 0
+        for char in full_content:
+            if char == '\n':
+                # Found a newline, create a label at the current index
+                current_index = f"{current_line}.{current_col}"
+                print(f"DEBUG: Found newline at index {current_index}")
+                label = ttk.Label(widget, text="↵", style="Newline.TLabel")
+                widget.window_create(current_index, window=label)
+
+                # After a newline, the line number increases and column resets
+                current_line += 1
+                current_col = 0
+            else:
+                # If not a newline, just advance the column counter
+                current_col += 1
+
+        print("--- Finished applying tags ---")
+
 
     def update_ui_state_for_selection(self, selected_id):
         state = tk.NORMAL if selected_id else tk.DISABLED
@@ -1916,7 +1970,6 @@ class OverwatchLocalizerApp:
 
         self._run_and_refresh_with_validation()
         self.mark_project_modified()
-        return True
         return True
 
     def apply_translation_from_button(self):
@@ -3925,18 +3978,3 @@ class OverwatchLocalizerApp:
                                               parent=self.root)
         if filepath:
             self._run_comparison_logic(filepath)
-
-    def handle_pot_file_drop(self, pot_filepath):
-        if not self.translatable_objects:
-            if self.prompt_save_if_modified():
-                self.import_po_file_dialog_with_path(pot_filepath)
-            return
-
-        from dialogs.pot_drop_dialog import POTDropDialog
-        dialog = POTDropDialog(self.root, title=_("POT File Detected"))
-
-        if dialog.result == "update":
-            self._run_comparison_logic(pot_filepath)
-        elif dialog.result == "import":
-            if self.prompt_save_if_modified():
-                self.import_po_file_dialog_with_path(pot_filepath)

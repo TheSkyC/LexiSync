@@ -24,14 +24,14 @@ def unescape_overwatch_string(s):
                 elif char_after_backslash == '\\':
                     res.append('\\')
                 else:
-                    res.append('\\');
+                    res.append('\\')
                     res.append(char_after_backslash)
                 i += 2
             else:
-                res.append('\\');
+                res.append('\\')
                 i += 1
         else:
-            res.append(s[i]);
+            res.append(s[i])
             i += 1
     return "".join(res)
 
@@ -98,28 +98,28 @@ def extract_translatable_strings(code_content, extraction_patterns):
             s_len_stripped = len(s_semantic_stripped)
 
             if not s_semantic_stripped:
-                ts.was_auto_ignored = True;
+                ts.was_auto_ignored = True
                 ts.is_ignored = True
             elif regex_all_digits.fullmatch(s_semantic_stripped):
-                ts.was_auto_ignored = True;
+                ts.was_auto_ignored = True
                 ts.is_ignored = True
             elif regex_ow_placeholder.fullmatch(s_semantic_stripped):
-                ts.was_auto_ignored = True;
+                ts.was_auto_ignored = True
                 ts.is_ignored = True
             elif s_len_stripped == 1 and 'a' <= s_semantic_stripped.lower() <= 'z' and s_semantic_stripped.isascii():
-                ts.was_auto_ignored = True;
+                ts.was_auto_ignored = True
                 ts.is_ignored = True
             elif regex_only_symbols_and_whitespace.fullmatch(semantic_content):
-                ts.was_auto_ignored = True;
+                ts.was_auto_ignored = True
                 ts.is_ignored = True
             elif s_len_stripped >= 2 and regex_repeating_char.fullmatch(s_semantic_stripped):
-                ts.was_auto_ignored = True;
+                ts.was_auto_ignored = True
                 ts.is_ignored = True
             elif s_semantic_stripped.upper() in known_untranslatable_short_words:
-                ts.was_auto_ignored = True;
+                ts.was_auto_ignored = True
                 ts.is_ignored = True
             elif s_len_stripped > 2 and regex_progress_bar_like.fullmatch(s_semantic_stripped):
-                ts.was_auto_ignored = True;
+                ts.was_auto_ignored = True
                 ts.is_ignored = True
             else:
                 if regex_placeholder_like.search(s_semantic_stripped):
@@ -127,7 +127,7 @@ def extract_translatable_strings(code_content, extraction_patterns):
                     content_text_only = re.sub(f"[{re.escape(allowed_symbols_and_whitespace_chars)}]", '',
                                                content_no_placeholders).strip()
                     if len(content_text_only) < 2:
-                        ts.was_auto_ignored = True;
+                        ts.was_auto_ignored = True
                         ts.is_ignored = True
 
             strings.append(ts)

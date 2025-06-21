@@ -3,6 +3,7 @@
 
 import re
 import os
+from utils.localization import _
 
 placeholder_regex = re.compile(r'\{([^{}]+)\}')
 
@@ -33,22 +34,22 @@ def validate_string(ts_obj):
     if original_placeholders != translated_placeholders:
         missing = original_placeholders - translated_placeholders
         extra = translated_placeholders - original_placeholders
-        warning_msg = "Placeholder mismatch."
+        warning_msg = _("Placeholder mismatch.")
         if missing:
-            warning_msg += f" Missing: {', '.join(missing)}."
+            warning_msg += f" " + _("Missing:") + f" {', '.join(missing)}."
         if extra:
-            warning_msg += f" Extra: {', '.join(extra)}."
+            warning_msg += f" " + _("Extra:") + f" {', '.join(extra)}."
         warnings.append(warning_msg)
 
     if original.count('\n') != translation.count('\n'):
-        warnings.append("Line count differs from original.")
+        warnings.append(_("Line count differs from original."))
 
     if (original.startswith(' ') and not translation.startswith(' ')) or \
             (not original.startswith(' ') and translation.startswith(' ')):
-        warnings.append("Leading whitespace mismatch.")
+        warnings.append(_("Leading whitespace mismatch."))
     if (original.endswith(' ') and not translation.endswith(' ')) or \
             (not original.endswith(' ') and translation.endswith(' ')):
-        warnings.append("Trailing whitespace mismatch.")
+        warnings.append(_("Trailing whitespace mismatch."))
 
     punctuation_map = {
         '.': '。', '。': '.', ',': '，', '，': ',', '?': '？', '？': '?',
@@ -73,13 +74,14 @@ def validate_string(ts_obj):
         orig_starts_with_punc = is_punc(start_orig_char)
         trans_starts_with_punc = is_punc(start_trans_char)
         if orig_starts_with_punc and not trans_starts_with_punc:
-            warnings.append(
-                f"Original starts with '{start_orig_char}', but translation does not start with punctuation.")
+            warnings.append(_("Original starts with '{char}', but translation does not start with punctuation.").format(
+                char=start_orig_char))
         elif not orig_starts_with_punc and trans_starts_with_punc:
-            warnings.append(
-                f"Translation starts with '{start_trans_char}', but original does not start with punctuation.")
+            warnings.append(_("Translation starts with '{char}', but original does not start with punctuation.").format(
+                char=start_trans_char))
         elif orig_starts_with_punc and trans_starts_with_punc and not are_equivalent(start_orig_char, start_trans_char):
-            warnings.append(f"Starting punctuation mismatch: '{start_orig_char}' vs '{start_trans_char}'.")
+            warnings.append(_("Starting punctuation mismatch: '{char1}' vs '{char2}'.").format(char1=start_orig_char,
+                                                                                               char2=start_trans_char))
 
     if original_stripped and translation_stripped:
         end_orig_char = original_stripped[-1]
@@ -87,23 +89,25 @@ def validate_string(ts_obj):
         orig_ends_with_punc = is_punc(end_orig_char)
         trans_ends_with_punc = is_punc(end_trans_char)
         if orig_ends_with_punc and not trans_ends_with_punc:
-            warnings.append(f"Original ends with '{end_orig_char}', but translation does not end with punctuation.")
+            warnings.append(_("Original ends with '{char}', but translation does not end with punctuation.").format(
+                char=end_orig_char))
         elif not orig_ends_with_punc and trans_ends_with_punc:
-            warnings.append(f"Translation ends with '{end_trans_char}', but original does not end with punctuation.")
+            warnings.append(_("Translation ends with '{char}', but original does not end with punctuation.").format(
+                char=end_trans_char))
         elif orig_ends_with_punc and trans_ends_with_punc and not are_equivalent(end_orig_char, end_trans_char):
-            warnings.append(f"Ending punctuation mismatch: '{end_orig_char}' vs '{end_trans_char}'.")
+            warnings.append(_("Ending punctuation mismatch: '{char1}' vs '{char2}'.").format(char1=end_orig_char,
+                                                                                             char2=end_trans_char))
+
 
     common_prefix = os.path.commonprefix([original, translation])
-
     core_original = original[len(common_prefix):]
     core_translation = translation[len(common_prefix):]
-
     first_char_original = get_starting_cased_char(core_original)
     first_char_translation = get_starting_cased_char(core_translation)
 
     if first_char_original and first_char_translation:
         if first_char_original.isupper() != first_char_translation.isupper():
-            warnings.append("Initial capitalization mismatch.")
+            warnings.append(_("Initial capitalization mismatch."))
 
     return warnings
 
