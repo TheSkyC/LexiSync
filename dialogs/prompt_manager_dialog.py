@@ -91,7 +91,12 @@ class PromptManagerDialog(tk.Toplevel):
             self.tree.delete(item)
         for part in self.prompt_structure:
             enabled_char = "✔" if part.get("enabled", True) else "✖"
-            self.tree.insert("", "end", iid=part["id"], values=(enabled_char, part["type"], part["content"]))
+            display_type = _(part["type"])
+            self.tree.insert("", "end", iid=part["id"], values=(
+                enabled_char,
+                display_type,
+                part["content"]
+            ))
 
     def on_press(self, event):
         item = self.tree.identify_row(event.y)
