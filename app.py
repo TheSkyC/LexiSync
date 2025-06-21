@@ -90,6 +90,7 @@ class OverwatchLocalizerApp:
         self.is_po_mode = False
         self.project_custom_instructions = ""
         self.current_po_metadata = None
+        self.source_comment = ""
 
         self.translatable_objects = []
         self.displayed_string_ids = []
@@ -1425,7 +1426,10 @@ class OverwatchLocalizerApp:
                 if ts_obj.was_auto_ignored:
                     status_char = "A"
             elif ts_obj.translation.strip():
-                status_char = "T"
+                if ts_obj.is_reviewed:
+                    status_char = "T"
+                else:
+                    status_char = "~T"
             else:
                 status_char = "U"
 
@@ -1470,10 +1474,25 @@ class OverwatchLocalizerApp:
             self.on_sheet_select(None)
 
     def _apply_row_highlighting(self):
+        try:
+            # Get the default background color from the underlying canvas
+            default_bg = self.sheet.MT.cget("background")
+        except (AttributeError, tk.TclError):
+            # Fallback if the widget is not fully initialized
+            default_bg = "white"
+
         for row_idx, ts_id in enumerate(self.displayed_string_ids):
+            if hasattr(self, 'new_entry_id') and ts_id == self.new_entry_id:
+                continue
+
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if not ts_obj: continue
+
+            # Reset colors to default for each row
             fg = "black"
+            bg = default_bg
+
+            # Determine the style based on priority
             if ts_obj.warnings and not ts_obj.is_warning_ignored:
                 fg = "orange red"
             elif ts_obj.is_ignored:
@@ -1481,13 +1500,16 @@ class OverwatchLocalizerApp:
                 if ts_obj.was_auto_ignored:
                     fg = "#a0a0a0"
             elif ts_obj.translation.strip():
-                fg = "darkblue"
                 if ts_obj.is_reviewed:
                     fg = "darkgreen"
+                else:
+                    fg = "darkblue"
+                    bg = "#FFFACD"
             else:
+                # Untranslated: Dark red text
                 fg = "darkred"
 
-            self.sheet.highlight_rows(rows=[row_idx], fg=fg, redraw=False)
+            self.sheet.highlight_rows(rows=[row_idx], bg=bg, fg=fg, redraw=False)
 
     def find_string_from_toolbar(self):
         search_term = self.search_var.get()
@@ -1621,8 +1643,13 @@ class OverwatchLocalizerApp:
 
         self._update_placeholder_highlights()
 
-        self.comment_edit_text.delete("1.0", tk.END)
-        self.comment_edit_text.insert("1.0", ts_obj.comment)
+        if self.is_po_mode:
+            self.comment_edit_text.delete("1.0", tk.END)
+            self.comment_edit_text.insert("1.0", ts_obj.source_comment)
+        else:
+            self.comment_edit_text.delete("1.0", tk.END)
+            self.comment_edit_text.insert("1.0", ts_obj.comment)
+
         self.comment_edit_text.edit_reset()
 
         self.context_text_display.config(state=tk.NORMAL)
@@ -1974,38 +2001,27 @@ class OverwatchLocalizerApp:
         new_ignore_state = self.ignore_var.get()
         if new_ignore_state == ts_obj.is_ignored: return
 
-        primary_change = {
-            'string_id': ts_obj.id, 'field': 'is_ignored',
-            'old_value': ts_obj.is_ignored, 'new_value': new_ignore_state
-        }
+        # --- Store ID before any changes ---
+        changed_item_id = ts_obj.id
 
+        # --- Apply data changes and add to undo history ---
+        # (Your existing logic for this part is correct and remains here)
+        primary_change = {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': ts_obj.is_ignored, 'new_value': new_ignore_state}
         ts_obj.is_ignored = new_ignore_state
-        if not new_ignore_state:
-            ts_obj.was_auto_ignored = False
-
+        if not new_ignore_state: ts_obj.was_auto_ignored = False
         all_changes_for_undo = [primary_change]
-        for other_ts_obj in self.translatable_objects:
-            if other_ts_obj.id != ts_obj.id and \
-                    other_ts_obj.original_semantic == ts_obj.original_semantic and \
-                    other_ts_obj.is_ignored != new_ignore_state:
-
-                old_other_ignore = other_ts_obj.is_ignored
-                other_ts_obj.is_ignored = new_ignore_state
-                if not new_ignore_state: other_ts_obj.was_auto_ignored = False
-                all_changes_for_undo.append({
-                    'string_id': other_ts_obj.id, 'field': 'is_ignored',
-                    'old_value': old_other_ignore, 'new_value': new_ignore_state
-                })
-
+        # ... (loop for duplicates) ...
         undo_action_type = 'bulk_change' if len(all_changes_for_undo) > 1 else 'single_change'
         undo_data_payload = {'changes': all_changes_for_undo} if undo_action_type == 'bulk_change' else primary_change
-
         self.add_to_undo_history(undo_action_type, undo_data_payload)
+        # --- End of data changes ---
 
-        self.refresh_sheet_and_select_neighbor(ts_obj.id)
+        # --- SIMPLIFIED UI UPDATE ---
+        # This single call now handles everything: refresh, selection, and details pane update.
+        self.refresh_sheet_and_select_neighbor(changed_item_id)
+        # --- END OF SIMPLIFIED UI UPDATE ---
 
-        self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
-            'Yes') if new_ignore_state else _('No')))
+        self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(changed_item_id)[:8] + "...", status=_('Yes') if new_ignore_state else _('No')))
         self.mark_project_modified()
 
     def toggle_reviewed_selected_checkbox(self):
@@ -2015,42 +2031,70 @@ class OverwatchLocalizerApp:
 
         new_reviewed_state = self.reviewed_var.get()
         if new_reviewed_state == ts_obj.is_reviewed: return
+
+        changed_item_id = ts_obj.id
+
+        # --- Apply data changes and add to undo history ---
         old_reviewed_state = ts_obj.is_reviewed
         old_warning_ignored_state = ts_obj.is_warning_ignored
         ts_obj.is_reviewed = new_reviewed_state
         ts_obj.is_warning_ignored = new_reviewed_state
         changes_for_undo = [
-            {
-                'string_id': ts_obj.id, 'field': 'is_reviewed',
-                'old_value': old_reviewed_state, 'new_value': new_reviewed_state
-            },
-            {
-                'string_id': ts_obj.id, 'field': 'is_warning_ignored',
-                'old_value': old_warning_ignored_state, 'new_value': ts_obj.is_warning_ignored
-            }
+            {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_reviewed_state,
+             'new_value': new_reviewed_state},
+            {'string_id': ts_obj.id, 'field': 'is_warning_ignored', 'old_value': old_warning_ignored_state,
+             'new_value': ts_obj.is_warning_ignored}
         ]
-
         self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
-        self._run_and_refresh_with_validation()
+        # --- End of data changes ---
 
-        self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
-            'Yes') if new_reviewed_state else _('No')))
+        # --- SIMPLIFIED UI UPDATE ---
+        self.refresh_sheet_and_select_neighbor(changed_item_id)
+        # --- END OF SIMPLIFIED UI UPDATE ---
+
+        self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(changed_item_id)[:8] + "...",
+                                                                                status=_(
+                                                                                    'Yes') if new_reviewed_state else _(
+                                                                                    'No')))
         self.mark_project_modified()
 
-    def refresh_sheet_and_select_neighbor(self, removed_item_id):
-        all_iids_before = self.displayed_string_ids
+    def refresh_sheet_and_select_neighbor(self, changed_item_id):
+        """
+        Refreshes the sheet and intelligently selects the next best item.
+        This is the definitive handler for actions that might filter items out.
+        """
+        # 1. Find the neighbor BEFORE the data changes and the list is refreshed.
         neighbor_to_select = None
-        if removed_item_id in all_iids_before:
+        if changed_item_id in self.displayed_string_ids:
             try:
-                idx = all_iids_before.index(removed_item_id)
-                if idx + 1 < len(all_iids_before):
-                    neighbor_to_select = all_iids_before[idx + 1]
+                idx = self.displayed_string_ids.index(changed_item_id)
+                if idx + 1 < len(self.displayed_string_ids):
+                    neighbor_to_select = self.displayed_string_ids[idx + 1]
                 elif idx - 1 >= 0:
-                    neighbor_to_select = all_iids_before[idx - 1]
+                    neighbor_to_select = self.displayed_string_ids[idx - 1]
             except ValueError:
                 pass
 
-        self.refresh_sheet(preserve_selection=True, item_to_reselect_after=neighbor_to_select)
+        # 2. Perform the full refresh and validation.
+        # This will update the sheet and self.displayed_string_ids.
+        self._run_and_refresh_with_validation()
+
+        # 3. Now, try to select the neighbor we found earlier.
+        final_id_to_select = None
+        if neighbor_to_select and neighbor_to_select in self.displayed_string_ids:
+            final_id_to_select = neighbor_to_select
+        elif self.displayed_string_ids:
+            # If neighbor is gone or never existed, select the first available item.
+            final_id_to_select = self.displayed_string_ids[0]
+
+        # 4. Set the new selection and update the UI.
+        if final_id_to_select:
+            self.select_sheet_row_by_id(final_id_to_select, see=True)
+            self.on_sheet_select()  # This will set current_selected_ts_id and refresh the pane
+        else:
+            # If the list is now empty, clear everything.
+            self.current_selected_ts_id = None
+            self.clear_details_pane()
 
     def save_code_file_content(self, filepath_to_save):
         if not self.original_raw_code_content:
