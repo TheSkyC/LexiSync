@@ -6,7 +6,7 @@ import os
 import datetime
 from models.translatable_string import TranslatableString
 from services.code_file_service import extract_translatable_strings
-from utils.constants import DEFAULT_EXTRACTION_PATTERNS, APP_VERSION
+from utils.constants import APP_VERSION
 
 
 def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_path=None):
@@ -15,9 +15,8 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
 
     if hasattr(entry, 'occurrences') and entry.occurrences:
         try:
-            last_occurrence_part = entry.occurrences[-1]
-            path, lnum_str = last_occurrence_part
-
+            # Use the first occurrence to get the line number
+            path, lnum_str = entry.occurrences[0]
             if lnum_str.isdigit():
                 line_num = int(lnum_str)
         except (ValueError, IndexError, TypeError):
@@ -39,13 +38,10 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
     all_comments = []
     if entry.comment:
         all_comments.append(entry.comment)
-
-    extracted = getattr(entry, 'extracted_comments', '')
-    if extracted:
-        all_comments.append(extracted)
+    if hasattr(entry, 'tcomment') and entry.tcomment:
+        all_comments.append(entry.tcomment)
 
     ts.comment = "\n".join(all_comments).strip()
-
     ts.is_reviewed = not ('fuzzy' in entry.flags)
 
     if "# OWLocalizer:ignored" in ts.comment:
@@ -88,13 +84,22 @@ def load_from_po(filepath, original_code_content_for_context=None, original_file
     if original_code_content_for_context:
         full_code_lines = original_code_content_for_context.splitlines()
 
+    # --- REVISED LOADING LOGIC ---
     for entry in po_file:
-        if entry.obsolete or entry.msgid == "":
+        # Skip only obsolete entries.
+        # We allow entries with empty msgid to be loaded,
+        # because the metadata header has an empty msgid, and we want to preserve it.
+        # The main app logic will handle how to display/edit them.
+        if entry.obsolete:
+            continue
+
+        # The first entry with an empty msgid is the header, we skip creating a string for it.
+        if entry.msgid == "" and not translatable_objects:
             continue
 
         ts = _po_entry_to_translatable_string(entry, full_code_lines, original_file_path_for_context)
         translatable_objects.append(ts)
-
+    # --- END OF REVISED LOGIC ---
 
     translatable_objects.sort(
         key=lambda x: (x.line_num_in_file if x.line_num_in_file > 0 else float('inf'), x.original_semantic))
@@ -123,6 +128,10 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         }
 
     for ts_obj in translatable_objects:
+        # Skip creating entries for special internal objects like the "NEW" row
+        if ts_obj.id == "##NEW_ENTRY##":
+            continue
+
         entry_occurrences = []
         if ts_obj.line_num_in_file > 0:
             entry_occurrences.append((original_file_name, str(ts_obj.line_num_in_file)))

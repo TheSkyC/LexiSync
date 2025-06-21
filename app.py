@@ -14,7 +14,9 @@ from copy import deepcopy
 from difflib import SequenceMatcher
 from openpyxl import Workbook, load_workbook
 import tksheet
+import polib
 
+from models.translatable_string import TranslatableString
 from dialogs.ai_settings_dialog import AISettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
 from dialogs.font_settings_dialog import FontSettingsDialog
@@ -65,7 +67,7 @@ class OverwatchLocalizerApp:
         self.ACTION_MAP = {
             'open_code_file': {'method': self.open_code_file_dialog, 'desc': _('Open Code File')},
             'open_project': {'method': self.open_project_dialog, 'desc': _('Open Project')},
-            'save_project': {'method': self.save_project_dialog, 'desc': _('Save Project')},
+            'save_current_file': {'method': self.save_current_file, 'desc': _('Save')},
             'save_code_file': {'method': self.save_code_file, 'desc': _('Save Translation to New Code File')},
             'undo': {'method': self.undo_action, 'desc': _('Undo')},
             'redo': {'method': self.redo_action, 'desc': _('Redo')},
@@ -82,8 +84,10 @@ class OverwatchLocalizerApp:
         }
         self.current_code_file_path = None
         self.current_project_file_path = None
+        self.current_po_file_path = None
         self.original_raw_code_content = ""
         self.current_project_modified = False
+        self.is_po_mode = False
         self.project_custom_instructions = ""
         self.current_po_metadata = None
 
@@ -211,7 +215,10 @@ class OverwatchLocalizerApp:
                 if files:
                     filepath = files[0]
                     if os.path.isfile(filepath):
-                        if filepath.lower().endswith((".ow", ".txt")):
+                        if filepath.lower().endswith(".pot"):
+                            self.handle_pot_file_drop(filepath)
+                            return
+                        elif filepath.lower().endswith((".ow", ".txt")):
                             if self.prompt_save_if_modified():
                                 self.open_code_file_path(filepath)
                         elif filepath.lower().endswith(PROJECT_FILE_EXTENSION):
@@ -325,9 +332,8 @@ class OverwatchLocalizerApp:
         file_menu.add_command(label=_("Compare/Import New Version..."), command=self.compare_with_new_version,
                               state=tk.DISABLED)
         file_menu.add_separator()
-        file_menu.add_command(label=_("Save Project"), command=self.ACTION_MAP['save_project']['method'],
-                              state=tk.DISABLED)
-        file_menu.add_command(label=_("Save Project As..."), command=self.save_project_as_dialog, state=tk.DISABLED)
+        file_menu.add_command(label=_("Save"), command=self.save_current_file, state=tk.DISABLED)
+        file_menu.add_command(label=_("Save As..."), command=self.save_current_file_as, state=tk.DISABLED)
         file_menu.add_separator()
         file_menu.add_command(label=_("Save Translation to New Code File"),
                               command=self.ACTION_MAP['save_code_file']['method'],
@@ -469,7 +475,7 @@ class OverwatchLocalizerApp:
         bindings = self.config.get('keybindings', {})
         self.file_menu.entryconfig(_("Open Code File..."), accelerator=bindings.get('open_code_file', ''))
         self.file_menu.entryconfig(_("Open Project..."), accelerator=bindings.get('open_project', ''))
-        self.file_menu.entryconfig(_("Save Project"), accelerator=bindings.get('save_project', ''))
+        self.file_menu.entryconfig(_("Save"), accelerator=bindings.get('save_current_file', ''))
         self.file_menu.entryconfig(_("Save Translation to New Code File"),
                                    accelerator=bindings.get('save_code_file', ''))
 
@@ -915,17 +921,17 @@ class OverwatchLocalizerApp:
         has_content = bool(self.translatable_objects) and file_or_project_loaded
         state = tk.NORMAL if has_content else tk.DISABLED
 
-        self.file_menu.entryconfig(_("Compare/Import New Version..."),
-                                   state=tk.NORMAL if self.current_code_file_path and has_content else tk.DISABLED)
+        self.file_menu.entryconfig(_("Save"), state=state)
+        self.file_menu.entryconfig(_("Save As..."), state=state)
 
-        can_save_to_code = self.original_raw_code_content and has_content
-        self.file_menu.entryconfig(_("Save Translation to New Code File"),
-                                   state=tk.NORMAL if can_save_to_code else tk.DISABLED)
+        self.file_menu.entryconfig(_("Compare/Import New Version..."), state=state)
 
-        self.file_menu.entryconfig(_("Save Project"),
-                                   state=tk.NORMAL if self.current_code_file_path or self.current_project_file_path or self.original_raw_code_content else tk.DISABLED)
-        self.file_menu.entryconfig(_("Save Project As..."),
-                                   state=tk.NORMAL if has_content or self.original_raw_code_content else tk.DISABLED)
+        if self.is_po_mode:
+            self.file_menu.entryconfig(_("Save Translation to New Code File"), state=tk.DISABLED)
+        else:
+            can_save_to_code = self.original_raw_code_content and has_content
+            self.file_menu.entryconfig(_("Save Translation to New Code File"),
+                                       state=tk.NORMAL if can_save_to_code else tk.DISABLED)
 
         self.file_menu.entryconfig(_("Import Translations from Excel"), state=state)
         self.file_menu.entryconfig(_("Export to Excel"), state=state)
@@ -1218,6 +1224,7 @@ class OverwatchLocalizerApp:
             self.redo_history.clear()
             self.current_selected_ts_id = None
             self.mark_project_modified(False)
+            self.is_po_mode = False
             self.refresh_sheet()
             self.update_statusbar(
                 _("Loaded {count} translatable strings from {filename}").format(count=len(self.translatable_objects),
@@ -1289,7 +1296,7 @@ class OverwatchLocalizerApp:
 
             ui_state = project_data.get("ui_state", {})
             self.search_var.set(ui_state.get("search_term", ""))
-
+            self.is_po_mode = False
             self.refresh_sheet()
 
             selected_id_from_proj = ui_state.get("selected_ts_id")
@@ -1324,6 +1331,24 @@ class OverwatchLocalizerApp:
         self.update_ui_state_after_file_load(file_or_project_loaded=False)
         self.update_title()
 
+    def handle_pot_file_drop(self, pot_filepath):
+        if not self.translatable_objects:
+            if self.prompt_save_if_modified():
+                self.import_po_file_dialog_with_path(pot_filepath)
+            return
+
+        from dialogs.pot_drop_dialog import POTDropDialog
+        dialog = POTDropDialog(self.root, title=_("POT File Detected"))
+
+        if dialog.result == "update":
+            self.run_comparison_with_file(pot_filepath)
+        elif dialog.result == "import":
+            if self.prompt_save_if_modified():
+                self.import_po_file_dialog_with_path(pot_filepath)
+
+    def run_comparison_with_file(self, filepath):
+        print(f"Running comparison with {filepath}")
+
     def prompt_save_if_modified(self):
         if self.current_project_modified:
             response = messagebox.askyesnocancel(_("Unsaved Changes"),
@@ -1344,6 +1369,7 @@ class OverwatchLocalizerApp:
         old_selected_id = self.current_selected_ts_id
         if item_to_reselect_after:
             old_selected_id = item_to_reselect_after
+
         if self.translatable_objects:
             def sort_key(ts_obj):
                 if ts_obj.warnings and not ts_obj.is_warning_ignored:
@@ -1353,20 +1379,21 @@ class OverwatchLocalizerApp:
                 else:
                     primary_key = 1
                 secondary_key = ts_obj.line_num_in_file
-
                 return (primary_key, secondary_key)
 
             self.translatable_objects.sort(key=sort_key)
 
-
         filtered_objects = []
         processed_originals_for_dedup = set()
+        search_term = self.search_var.get().lower()
+        is_searching = search_term and search_term != _("Quick search...").lower()
+
         for ts_obj in self.translatable_objects:
-            if self.deduplicate_strings_var.get():
-                if ts_obj.original_semantic in processed_originals_for_dedup:
-                    continue
+            if self.deduplicate_strings_var.get() and ts_obj.original_semantic in processed_originals_for_dedup:
+                continue
             if not self.show_ignored_var.get() and ts_obj.is_ignored:
                 continue
+
             has_translation = bool(ts_obj.translation.strip())
             if self.show_untranslated_var.get() and has_translation and not ts_obj.is_ignored:
                 continue
@@ -1374,8 +1401,8 @@ class OverwatchLocalizerApp:
                 continue
             if self.show_unreviewed_var.get() and ts_obj.is_reviewed:
                 continue
-            search_term = self.search_var.get().lower()
-            if search_term and search_term != _("Quick search...").lower():
+
+            if is_searching:
                 if not (search_term in ts_obj.original_semantic.lower() or
                         search_term in ts_obj.get_translation_for_ui().lower() or
                         search_term in ts_obj.comment.lower()):
@@ -1402,8 +1429,6 @@ class OverwatchLocalizerApp:
             else:
                 status_char = "U"
 
-
-
             row_data = [
                 seq_id_counter, status_char,
                 ts_obj.original_semantic.replace("\n", "↵"),
@@ -1416,15 +1441,21 @@ class OverwatchLocalizerApp:
             self.displayed_string_ids.append(ts_obj.id)
             seq_id_counter += 1
 
+        if self.is_po_mode:  # Check is_po_mode instead of metadata
+            self.new_entry_id = "##NEW_ENTRY##"
+            new_row_data = ["NEW", "", "", "", "", "", ""]
+            data_for_sheet.append(new_row_data)
+            self.displayed_string_ids.append(self.new_entry_id)
+
         self.sheet.set_sheet_data(data=data_for_sheet, redraw=False)
 
         self.sheet.column_width(column=0, width=40)
         self.sheet.column_width(column=1, width=30)
         self.sheet.column_width(column=2, width=300)
         self.sheet.column_width(column=3, width=300)
-        self.sheet.column_width(column=4, width=90)
+        self.sheet.column_width(column=4, width=150)
         self.sheet.column_width(column=5, width=30)
-        self.sheet.column_width(column=6, width=50)
+        self.sheet.column_width(column=6, width=70)
         self.sheet.align_columns(columns=[0], align="e")
         self.sheet.align_columns(columns=[1, 5, 6], align="center")
 
@@ -1435,7 +1466,8 @@ class OverwatchLocalizerApp:
             self.select_sheet_row_by_id(old_selected_id, see=True)
 
         self.update_counts_display()
-        self.on_sheet_select(None)
+        if not self.current_selected_ts_id:
+            self.on_sheet_select(None)
 
     def _apply_row_highlighting(self):
         for row_idx, ts_id in enumerate(self.displayed_string_ids):
@@ -1547,24 +1579,32 @@ class OverwatchLocalizerApp:
             return
 
         focused_row_index = current_selection.row
-
         if focused_row_index >= len(self.displayed_string_ids):
             return
 
         newly_selected_ts_id = self.displayed_string_ids[focused_row_index]
+
+        if self.current_selected_ts_id == newly_selected_ts_id:
+            return
 
         if self.current_selected_ts_id and self.current_selected_ts_id != newly_selected_ts_id:
             ts_obj_before_change = self._find_ts_obj_by_id(self.current_selected_ts_id)
             if ts_obj_before_change:
                 current_editor_text = self.translation_edit_text.get("1.0", tk.END).rstrip('\n')
                 if current_editor_text != ts_obj_before_change.get_translation_for_ui():
-                    self._apply_translation_to_model(ts_obj_before_change, current_editor_text,
-                                                     source="manual_focus_out")
-
-        if self.current_selected_ts_id == newly_selected_ts_id:
-            return
+                    self._apply_translation_to_model(ts_obj_before_change, current_editor_text, source="manual_focus_out")
 
         self.current_selected_ts_id = newly_selected_ts_id
+
+        if self.current_selected_ts_id == getattr(self, 'new_entry_id', None):
+            self.clear_details_pane()
+            self.original_text_display.config(state=tk.NORMAL)
+            self.original_text_display.focus_set()
+            self.update_ui_state_for_selection(self.new_entry_id)
+            return
+        else:
+            self.original_text_display.config(state=tk.DISABLED)
+
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj:
             self.clear_details_pane()
@@ -1699,24 +1739,12 @@ class OverwatchLocalizerApp:
 
         start = "1.0"
         while True:
-            pos = text_widget.search(r'\n', start, stopindex=tk.END, regexp=True)
+            pos = text_widget.search(r'\\n', start, stopindex=tk.END, regexp=True)
             if not pos:
                 break
-            end = f"{pos}+1c"
+            end = f"{pos}+2c"
             text_widget.tag_add('newline', pos, end)
             start = end
-
-    def _highlight_specific_chars(self, text_widget, text_content):
-        if text_content.startswith(' '):
-            text_widget.tag_add('whitespace', '1.0', f'1.{len(text_content) - len(text_content.lstrip())}')
-        if text_content.endswith(' '):
-            end_index = len(text_content)
-            start_index = len(text_content.rstrip())
-            text_widget.tag_add('whitespace', f'1.{start_index}', f'1.{end_index}')
-
-        for match in re.finditer(r'\\n', text_content):
-            start, end = match.span()
-            text_widget.tag_add('newline', f'1.0+{start}c', f'1.0+{end}c')
 
     def update_ui_state_for_selection(self, selected_id):
         state = tk.NORMAL if selected_id else tk.DISABLED
@@ -1865,6 +1893,28 @@ class OverwatchLocalizerApp:
 
     def apply_translation_from_button(self):
         if not self.current_selected_ts_id: return
+        if self.current_selected_ts_id == self.new_entry_id:
+            new_original = self.original_text_display.get("1.0", tk.END).strip()
+            if not new_original:
+                messagebox.showerror(_("Error"), _("Original text cannot be empty for a new entry."), parent=self.root)
+                return
+
+            if any(ts.original_semantic == new_original for ts in self.translatable_objects):
+                messagebox.showerror(_("Error"), _("This original text already exists."), parent=self.root)
+                return
+
+            new_ts = TranslatableString(
+                original_raw=new_original, original_semantic=new_original,
+                line_num=0, char_pos_start_in_file=0, char_pos_end_in_file=0, full_code_lines=[]
+            )
+            new_ts.translation = self.translation_edit_text.get("1.0", tk.END).strip()
+            new_ts.comment = self.comment_edit_text.get("1.0", tk.END).strip()
+
+            self.translatable_objects.append(new_ts)
+            self.mark_project_modified()
+            self._run_and_refresh_with_validation()
+            self.select_sheet_row_by_id(new_ts.id, see=True)
+            return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return
 
@@ -2039,13 +2089,39 @@ class OverwatchLocalizerApp:
 
         self.save_code_file_content(new_filepath)
 
-    def save_project_dialog(self, event=None):
-        if self.current_project_file_path:
-            return self.save_project_file(self.current_project_file_path)
+    def save_current_file(self, event=None):
+        if self.is_po_mode:
+            if self.current_po_file_path:
+                return self.save_po_file(self.current_po_file_path)
+            else:
+                return self.save_po_as_dialog()
+        else:
+            if self.current_project_file_path:
+                return self.save_project_file(self.current_project_file_path)
+            else:
+                return self.save_project_as_dialog()
+
+    def save_current_file_as(self, event=None):
+        if self.is_po_mode:
+            return self.save_po_as_dialog()
         else:
             return self.save_project_as_dialog()
 
+    def save_project_dialog(self, event=None):
+        if self.is_po_mode:
+            if self.current_po_file_path:
+                return self.save_po_file(self.current_po_file_path)
+            else:
+                return self.save_po_as_dialog()
+        else:
+            if self.current_project_file_path:
+                return self.save_project_file(self.current_project_file_path)
+            else:
+                return self.save_project_as_dialog()
+
     def save_project_as_dialog(self, event=None):
+        if self.is_po_mode:
+            return self.save_po_as_dialog()
         if not self.translatable_objects and not self.current_code_file_path:
             messagebox.showinfo(_("Info"),
                                 _("There is no content to save as a project. Please open a code file first."),
@@ -2073,6 +2149,35 @@ class OverwatchLocalizerApp:
         )
         if filepath:
             return self.save_project_file(filepath)
+        return False
+
+    def save_po_file(self, filepath):
+        try:
+            original_file_name = os.path.basename(self.current_code_file_path or "source_code")
+            po_file_service.save_to_po(filepath, self.translatable_objects, self.current_po_metadata,
+                                       original_file_name)
+
+            self.current_po_file_path = filepath
+            self.mark_project_modified(False)
+            self.update_statusbar(_("PO file saved to: {filename}").format(filename=os.path.basename(filepath)),
+                                  persistent=True)
+            self.update_title()
+            return True
+        except Exception as e:
+            messagebox.showerror(_("Save PO Error"), _("Failed to save PO file: {error}").format(error=e),
+                                 parent=self.root)
+            return False
+
+    def save_po_as_dialog(self, event=None):
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".po",
+            filetypes=(("PO files", "*.po"), ("All Files", "*.*")),
+            initialdir=self.config.get("last_dir", os.getcwd()),
+            title=_("Save PO File As"),
+            parent=self.root
+        )
+        if filepath:
+            return self.save_po_file(filepath)
         return False
 
     def save_project_file(self, project_filepath):
@@ -2434,7 +2539,8 @@ class OverwatchLocalizerApp:
             self.redo_history.clear()
             self.current_selected_ts_id = None
             self.mark_project_modified(False)
-
+            self.is_po_mode = True
+            self.current_po_file_path = po_filepath
             self.refresh_sheet()
             self.update_statusbar(
                 _("Loaded {count} entries from PO file {filename}.").format(count=len(self.translatable_objects),
@@ -3697,98 +3803,100 @@ class OverwatchLocalizerApp:
             self.update_statusbar(_("No eligible selected items for AI translation."))
 
     def compare_with_new_version(self, event=None):
-        if not self.current_code_file_path or not self.translatable_objects:
-            messagebox.showerror(_("Error"), _("Please open a saved project or code file first."), parent=self.root)
+        if not self.translatable_objects:
+            messagebox.showerror(_("Error"), _("Please open a project or file first."), parent=self.root)
             return
 
-        filepath = filedialog.askopenfilename(
-            title=_("Select new version code file for comparison"),
-            filetypes=(("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*")),
-            initialdir=os.path.dirname(self.current_code_file_path),
-            parent=self.root
-        )
+        is_po_mode = self.is_po_mode
+
+        if is_po_mode:
+            title = _("Select new POT template for comparison")
+            filetypes = (("PO Template Files", "*.pot"), ("All Files", "*.*"))
+            initial_dir = os.path.dirname(self.current_po_file_path) if self.current_po_file_path else self.config.get(
+                "last_dir", os.getcwd())
+        else:
+            title = _("Select new version code file for comparison")
+            filetypes = (("Overwatch Workshop Files", "*.ow;*.txt"), ("All Files", "*.*"))
+            initial_dir = os.path.dirname(
+                self.current_code_file_path) if self.current_code_file_path else self.config.get("last_dir",
+                                                                                                 os.getcwd())
+
+        filepath = filedialog.askopenfilename(title=title, filetypes=filetypes, initialdir=initial_dir,
+                                              parent=self.root)
         if not filepath:
             return
 
         try:
-            with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-                new_code_content = f.read()
-
             self.progress_bar.pack(side=tk.RIGHT, padx=5, pady=2, before=self.counts_label_widget)
-            self.progress_bar['value'] = 0
             self.update_statusbar(_("Parsing new file..."), persistent=True)
             self.root.update_idletasks()
 
-            extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
-            new_strings = extract_translatable_strings(new_code_content, extraction_patterns)
+            new_strings = []
+            new_code_content = None
+
+            if is_po_mode:
+                if not filepath.lower().endswith(".pot"):
+                    messagebox.showerror(_("Error"), _("Please select a valid .pot template file."), parent=self.root)
+                    self.progress_bar.pack_forget()
+                    return
+                pot_file = polib.pofile(filepath, encoding='utf-8')
+                new_strings = [TranslatableString(original_raw=entry.msgid, original_semantic=entry.msgid, line_num=0,
+                                                  char_pos_start_in_file=0, char_pos_end_in_file=0, full_code_lines=[])
+                               for entry in pot_file if not entry.obsolete]
+            else:
+                with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+                    new_code_content = f.read()
+                extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+                new_strings = extract_translatable_strings(new_code_content, extraction_patterns)
+
+            # --- RE-INSTATED UNIVERSAL COMPARISON AND DIALOG LOGIC ---
+            self.update_statusbar(_("Comparing versions..."), persistent=True)
+
             old_strings = self.translatable_objects
             old_map = {s.original_semantic: s for s in old_strings}
             new_map = {s.original_semantic: s for s in new_strings}
 
-            diff_results = {
-                'added': [],
-                'removed': [],
-                'modified': [],
-                'unchanged': []
-            }
+            diff_results = {'added': [], 'removed': [], 'modified': [], 'unchanged': []}
 
-            total_steps = len(old_map) + len(new_map)
-            current_step = 0
-
-            self.update_statusbar(_("Step 1/3: Matching exact strings..."), persistent=True)
-            for old_semantic, old_obj in old_map.items():
-                current_step += 1
-                if old_semantic in new_map:
-                    new_obj = new_map[old_semantic]
+            # Find unchanged and modified strings
+            for new_obj in new_strings:
+                if new_obj.original_semantic in old_map:
+                    old_obj = old_map[new_obj.original_semantic]
                     new_obj.translation = old_obj.translation
                     new_obj.comment = old_obj.comment
                     new_obj.is_ignored = old_obj.is_ignored
                     new_obj.is_reviewed = old_obj.is_reviewed
                     diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': new_obj})
-                self.progress_bar['value'] = (current_step / total_steps) * 100
-                if current_step % 20 == 0: self.root.update_idletasks()
-
-            self.update_statusbar(_("Step 2/3: Matching highly similar strings..."), persistent=True)
-            unmatched_old = [s for s in old_strings if s.original_semantic not in new_map]
-            unmatched_new = [s for s in new_strings if s.original_semantic not in old_map]
-            new_pool = unmatched_new[:]
-
-            for i, old_obj in enumerate(unmatched_old):
-                current_step += 1
-                best_match = None
-                highest_similarity = 0.0
-
-                for new_obj in new_pool:
-                    similarity = SequenceMatcher(None, old_obj.original_semantic, new_obj.original_semantic).ratio()
-                    if similarity > highest_similarity:
-                        highest_similarity = similarity
-                        best_match = new_obj
-
-                if highest_similarity >= 0.95 and best_match:
-                    best_match.translation = old_obj.translation
-                    best_match.comment = f"[{_('Inherited from old version')}] {old_obj.comment}".strip()
-                    best_match.is_ignored = old_obj.is_ignored
-                    best_match.is_reviewed = False
-
-                    diff_results['modified'].append({
-                        'old_obj': old_obj,
-                        'new_obj': best_match,
-                        'similarity': highest_similarity
-                    })
-                    new_pool.remove(best_match)
                 else:
-                    diff_results['removed'].append({'old_obj': old_obj})
+                    # Fuzzy matching for potentially modified strings
+                    best_match_score = 0
+                    best_match_old_s = None
+                    for old_s in old_strings:
+                        if old_s.original_semantic not in new_map:  # Only match with otherwise removed strings
+                            score = SequenceMatcher(None, new_obj.original_semantic, old_s.original_semantic).ratio()
+                            if score > best_match_score:
+                                best_match_score = score
+                                best_match_old_s = old_s
 
-                self.progress_bar['value'] = (current_step / total_steps) * 100
-                if i % 10 == 0: self.root.update_idletasks()
+                    if best_match_score >= 0.85 and best_match_old_s:
+                        new_obj.translation = best_match_old_s.translation
+                        new_obj.comment = f"[{_('Inherited from old version')}] {best_match_old_s.comment}".strip()
+                        new_obj.is_reviewed = False
+                        if new_obj.translation:
+                            new_obj.warnings.append("Fuzzy match, please review.")
+                        diff_results['modified'].append(
+                            {'old_obj': best_match_old_s, 'new_obj': new_obj, 'similarity': best_match_score})
+                    else:
+                        diff_results['added'].append({'new_obj': new_obj})
 
-            self.update_statusbar(_("Step 3/3: Identifying added and removed strings..."), persistent=True)
-            for new_obj in new_pool:
-                current_step += 1
-                diff_results['added'].append({'new_obj': new_obj})
-                self.progress_bar['value'] = (current_step / total_steps) * 100
+            # Find removed strings
+            for old_obj in old_strings:
+                if old_obj.original_semantic not in new_map:
+                    # Check if it was part of a modification
+                    was_modified = any(res['old_obj'] is old_obj for res in diff_results['modified'])
+                    if not was_modified:
+                        diff_results['removed'].append({'old_obj': old_obj})
 
-            self.progress_bar['value'] = 100
             self.update_statusbar(_("Comparison complete, generating report..."), persistent=True)
 
             summary = (
@@ -3801,6 +3909,7 @@ class OverwatchLocalizerApp:
 
             from dialogs.diff_dialog import DiffDialog
             dialog = DiffDialog(self.root, _("Version Comparison Results"), diff_results)
+            # --- END OF RE-INSTATED LOGIC ---
 
             self.progress_bar.pack_forget()
 
@@ -3808,22 +3917,19 @@ class OverwatchLocalizerApp:
                 self.update_statusbar(_("Applying updates..."), persistent=True)
 
                 self.translatable_objects = new_strings
-                self.original_raw_code_content = new_code_content
-                self.current_code_file_path = filepath
+                if not is_po_mode and new_code_content is not None:
+                    self.original_raw_code_content = new_code_content
+                    self.current_code_file_path = filepath
 
                 self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
                 self._run_and_refresh_with_validation()
                 self.mark_project_modified()
-                self.refresh_sheet()
-                self.update_statusbar(
-                    _("Project updated to new version: {filename}").format(filename=os.path.basename(filepath)),
-                    persistent=True)
+                self.update_statusbar(_("Project updated to new version."), persistent=True)
             else:
                 self.update_statusbar(_("Version update cancelled."))
 
         except Exception as e:
             self.progress_bar.pack_forget()
-            messagebox.showerror(_("Comparison Failed"),
-                                 _("An error occurred while processing or comparing files: {error}").format(error=e),
+            messagebox.showerror(_("Comparison Failed"), _("An error occurred: {error}").format(error=e),
                                  parent=self.root)
             self.update_statusbar(_("Version comparison failed."))

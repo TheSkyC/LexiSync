@@ -80,8 +80,8 @@ DEFAULT_EXTRACTION_PATTERNS = [
 DEFAULT_KEYBINDINGS = {
     'open_code_file': '<Control-o>',
     'open_project': '<Control-Shift-O>',
-    'save_project': '<Control-p>',
-    'save_code_file': '<Control-s>',
+    'save_current_file': '<Control-s>',
+    'save_code_file': '<Control-Shift-S>',
     'undo': '<Control-z>',
     'redo': '<Control-y>',
     'find_replace': '<Control-Shift-F>',
