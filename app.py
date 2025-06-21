@@ -1621,7 +1621,7 @@ class OverwatchLocalizerApp:
         if self.current_selected_ts_id == getattr(self, 'new_entry_id', None):
             self.clear_details_pane()
             self.original_text_display.config(state=tk.NORMAL)
-            self.original_text_display.focus_set()
+            #self.original_text_display.focus_set()
             self.update_ui_state_for_selection(self.new_entry_id)
             return
         else:
