@@ -1441,7 +1441,7 @@ class OverwatchLocalizerApp:
             self.displayed_string_ids.append(ts_obj.id)
             seq_id_counter += 1
 
-        if self.is_po_mode:  # Check is_po_mode instead of metadata
+        if self.is_po_mode:
             self.new_entry_id = "##NEW_ENTRY##"
             new_row_data = ["NEW", "", "", "", "", "", ""]
             data_for_sheet.append(new_row_data)
@@ -1914,6 +1914,7 @@ class OverwatchLocalizerApp:
             self.mark_project_modified()
             self._run_and_refresh_with_validation()
             self.select_sheet_row_by_id(new_ts.id, see=True)
+            self.on_sheet_select()
             return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return
@@ -3802,13 +3803,100 @@ class OverwatchLocalizerApp:
         elif selected_objs:
             self.update_statusbar(_("No eligible selected items for AI translation."))
 
+    def _run_comparison_logic(self, new_filepath):
+        try:
+            is_po_mode = self.is_po_mode
+
+            self.progress_bar.pack(side=tk.RIGHT, padx=5, pady=2, before=self.counts_label_widget)
+            self.update_statusbar(_("Parsing new file..."), persistent=True)
+            self.root.update_idletasks()
+
+            new_strings = []
+            new_code_content = None
+
+            if is_po_mode:
+                pot_file = polib.pofile(new_filepath, encoding='utf-8')
+                new_strings = [TranslatableString(original_raw=entry.msgid, original_semantic=entry.msgid, line_num=0,
+                                                  char_pos_start_in_file=0, char_pos_end_in_file=0, full_code_lines=[])
+                               for entry in pot_file if not entry.obsolete]
+            else:
+                with open(new_filepath, 'r', encoding='utf-8', errors='replace') as f:
+                    new_code_content = f.read()
+                extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+                new_strings = extract_translatable_strings(new_code_content, extraction_patterns)
+
+            self.update_statusbar(_("Comparing versions..."), persistent=True)
+            old_strings = self.translatable_objects
+            old_map = {s.original_semantic: s for s in old_strings}
+            new_map = {s.original_semantic: s for s in new_strings}
+            diff_results = {'added': [], 'removed': [], 'modified': [], 'unchanged': []}
+            for new_obj in new_strings:
+                if new_obj.original_semantic in old_map:
+                    old_obj = old_map[new_obj.original_semantic]
+                    new_obj.translation = old_obj.translation
+                    new_obj.comment = old_obj.comment
+                    new_obj.is_ignored = old_obj.is_ignored
+                    new_obj.is_reviewed = old_obj.is_reviewed
+                    diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': new_obj})
+                else:
+                    best_match_score = 0
+                    best_match_old_s = None
+                    for old_s in old_strings:
+                        if old_s.original_semantic not in new_map:
+                            score = SequenceMatcher(None, new_obj.original_semantic, old_s.original_semantic).ratio()
+                            if score > best_match_score:
+                                best_match_score = score
+                                best_match_old_s = old_s
+                    if best_match_score >= 0.85 and best_match_old_s:
+                        new_obj.translation = best_match_old_s.translation
+                        new_obj.comment = f"[{_('Inherited from old version')}] {best_match_old_s.comment}".strip()
+                        new_obj.is_reviewed = False
+                        if new_obj.translation:
+                            new_obj.warnings.append("Fuzzy match, please review.")
+                        diff_results['modified'].append(
+                            {'old_obj': best_match_old_s, 'new_obj': new_obj, 'similarity': best_match_score})
+                    else:
+                        diff_results['added'].append({'new_obj': new_obj})
+            for old_obj in old_strings:
+                if old_obj.original_semantic not in new_map:
+                    was_modified = any(res['old_obj'] is old_obj for res in diff_results['modified'])
+                    if not was_modified:
+                        diff_results['removed'].append({'old_obj': old_obj})
+            summary = (_("Comparison complete. Found ") + _("{added} new items, ").format(
+                added=len(diff_results['added'])) + _("{removed} removed items, ").format(
+                removed=len(diff_results['removed'])) + _("and {modified} modified/inherited items.").format(
+                modified=len(diff_results['modified'])))
+            diff_results['summary'] = summary
+            from dialogs.diff_dialog import DiffDialog
+            dialog = DiffDialog(self.root, _("Version Comparison Results"), diff_results)
+
+            self.progress_bar.pack_forget()
+
+            if dialog.result:
+                self.update_statusbar(_("Applying updates..."), persistent=True)
+                self.translatable_objects = new_strings
+                if not is_po_mode and new_code_content is not None:
+                    self.original_raw_code_content = new_code_content
+                    self.current_code_file_path = new_filepath
+                self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
+                self._run_and_refresh_with_validation()
+                self.mark_project_modified()
+                self.update_statusbar(_("Project updated to new version."), persistent=True)
+            else:
+                self.update_statusbar(_("Version update cancelled."))
+
+        except Exception as e:
+            self.progress_bar.pack_forget()
+            messagebox.showerror(_("Comparison Failed"), _("An error occurred: {error}").format(error=e),
+                                 parent=self.root)
+            self.update_statusbar(_("Version comparison failed."))
+
     def compare_with_new_version(self, event=None):
         if not self.translatable_objects:
             messagebox.showerror(_("Error"), _("Please open a project or file first."), parent=self.root)
             return
 
         is_po_mode = self.is_po_mode
-
         if is_po_mode:
             title = _("Select new POT template for comparison")
             filetypes = (("PO Template Files", "*.pot"), ("All Files", "*.*"))
@@ -3823,113 +3911,20 @@ class OverwatchLocalizerApp:
 
         filepath = filedialog.askopenfilename(title=title, filetypes=filetypes, initialdir=initial_dir,
                                               parent=self.root)
-        if not filepath:
+        if filepath:
+            self._run_comparison_logic(filepath)
+
+    def handle_pot_file_drop(self, pot_filepath):
+        if not self.translatable_objects:
+            if self.prompt_save_if_modified():
+                self.import_po_file_dialog_with_path(pot_filepath)
             return
 
-        try:
-            self.progress_bar.pack(side=tk.RIGHT, padx=5, pady=2, before=self.counts_label_widget)
-            self.update_statusbar(_("Parsing new file..."), persistent=True)
-            self.root.update_idletasks()
+        from dialogs.pot_drop_dialog import POTDropDialog
+        dialog = POTDropDialog(self.root, title=_("POT File Detected"))
 
-            new_strings = []
-            new_code_content = None
-
-            if is_po_mode:
-                if not filepath.lower().endswith(".pot"):
-                    messagebox.showerror(_("Error"), _("Please select a valid .pot template file."), parent=self.root)
-                    self.progress_bar.pack_forget()
-                    return
-                pot_file = polib.pofile(filepath, encoding='utf-8')
-                new_strings = [TranslatableString(original_raw=entry.msgid, original_semantic=entry.msgid, line_num=0,
-                                                  char_pos_start_in_file=0, char_pos_end_in_file=0, full_code_lines=[])
-                               for entry in pot_file if not entry.obsolete]
-            else:
-                with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-                    new_code_content = f.read()
-                extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
-                new_strings = extract_translatable_strings(new_code_content, extraction_patterns)
-
-            # --- RE-INSTATED UNIVERSAL COMPARISON AND DIALOG LOGIC ---
-            self.update_statusbar(_("Comparing versions..."), persistent=True)
-
-            old_strings = self.translatable_objects
-            old_map = {s.original_semantic: s for s in old_strings}
-            new_map = {s.original_semantic: s for s in new_strings}
-
-            diff_results = {'added': [], 'removed': [], 'modified': [], 'unchanged': []}
-
-            # Find unchanged and modified strings
-            for new_obj in new_strings:
-                if new_obj.original_semantic in old_map:
-                    old_obj = old_map[new_obj.original_semantic]
-                    new_obj.translation = old_obj.translation
-                    new_obj.comment = old_obj.comment
-                    new_obj.is_ignored = old_obj.is_ignored
-                    new_obj.is_reviewed = old_obj.is_reviewed
-                    diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': new_obj})
-                else:
-                    # Fuzzy matching for potentially modified strings
-                    best_match_score = 0
-                    best_match_old_s = None
-                    for old_s in old_strings:
-                        if old_s.original_semantic not in new_map:  # Only match with otherwise removed strings
-                            score = SequenceMatcher(None, new_obj.original_semantic, old_s.original_semantic).ratio()
-                            if score > best_match_score:
-                                best_match_score = score
-                                best_match_old_s = old_s
-
-                    if best_match_score >= 0.85 and best_match_old_s:
-                        new_obj.translation = best_match_old_s.translation
-                        new_obj.comment = f"[{_('Inherited from old version')}] {best_match_old_s.comment}".strip()
-                        new_obj.is_reviewed = False
-                        if new_obj.translation:
-                            new_obj.warnings.append("Fuzzy match, please review.")
-                        diff_results['modified'].append(
-                            {'old_obj': best_match_old_s, 'new_obj': new_obj, 'similarity': best_match_score})
-                    else:
-                        diff_results['added'].append({'new_obj': new_obj})
-
-            # Find removed strings
-            for old_obj in old_strings:
-                if old_obj.original_semantic not in new_map:
-                    # Check if it was part of a modification
-                    was_modified = any(res['old_obj'] is old_obj for res in diff_results['modified'])
-                    if not was_modified:
-                        diff_results['removed'].append({'old_obj': old_obj})
-
-            self.update_statusbar(_("Comparison complete, generating report..."), persistent=True)
-
-            summary = (
-                    _("Comparison complete. Found ")
-                    + _("{added} new items, ").format(added=len(diff_results['added']))
-                    + _("{removed} removed items, ").format(removed=len(diff_results['removed']))
-                    + _("and {modified} modified/inherited items.").format(modified=len(diff_results['modified']))
-            )
-            diff_results['summary'] = summary
-
-            from dialogs.diff_dialog import DiffDialog
-            dialog = DiffDialog(self.root, _("Version Comparison Results"), diff_results)
-            # --- END OF RE-INSTATED LOGIC ---
-
-            self.progress_bar.pack_forget()
-
-            if dialog.result:
-                self.update_statusbar(_("Applying updates..."), persistent=True)
-
-                self.translatable_objects = new_strings
-                if not is_po_mode and new_code_content is not None:
-                    self.original_raw_code_content = new_code_content
-                    self.current_code_file_path = filepath
-
-                self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
-                self._run_and_refresh_with_validation()
-                self.mark_project_modified()
-                self.update_statusbar(_("Project updated to new version."), persistent=True)
-            else:
-                self.update_statusbar(_("Version update cancelled."))
-
-        except Exception as e:
-            self.progress_bar.pack_forget()
-            messagebox.showerror(_("Comparison Failed"), _("An error occurred: {error}").format(error=e),
-                                 parent=self.root)
-            self.update_statusbar(_("Version comparison failed."))
+        if dialog.result == "update":
+            self._run_comparison_logic(pot_filepath)
+        elif dialog.result == "import":
+            if self.prompt_save_if_modified():
+                self.import_po_file_dialog_with_path(pot_filepath)
