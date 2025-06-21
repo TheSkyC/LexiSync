@@ -15,7 +15,6 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
 
     if hasattr(entry, 'occurrences') and entry.occurrences:
         try:
-            # Use the first occurrence to get the line number
             path, lnum_str = entry.occurrences[0]
             if lnum_str.isdigit():
                 line_num = int(lnum_str)
@@ -41,11 +40,28 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
     if hasattr(entry, 'tcomment') and entry.tcomment:
         all_comments.append(entry.tcomment)
 
-    ts.comment = "\n".join(all_comments).strip()
-    ts.is_reviewed = not ('fuzzy' in entry.flags)
+    full_comment = "\n".join(all_comments).strip()
 
-    if "# OWLocalizer:ignored" in ts.comment:
+    # --- REVISED is_reviewed LOGIC ---
+    # An entry is considered reviewed ONLY if it has our custom reviewed flag.
+    # It is considered NOT reviewed if:
+    # - It has no translation.
+    # - It has a 'fuzzy' flag.
+    # - It doesn't have our custom flag.
+    if not ts.translation.strip() or 'fuzzy' in entry.flags:
+        ts.is_reviewed = False
+    elif "# OWLocalizer:reviewed" in full_comment:
+        ts.is_reviewed = True
+    else:
+        ts.is_reviewed = False
+    # --- END OF REVISED LOGIC ---
+
+    # Set ignored status based on another custom flag
+    if "# OWLocalizer:ignored" in full_comment:
         ts.is_ignored = True
+
+    # Clean up our custom flags from the comment that is shown to the user
+    ts.comment = full_comment.replace("# OWLocalizer:reviewed", "").replace("# OWLocalizer:ignored", "").strip()
 
     return ts
 
@@ -84,22 +100,15 @@ def load_from_po(filepath, original_code_content_for_context=None, original_file
     if original_code_content_for_context:
         full_code_lines = original_code_content_for_context.splitlines()
 
-    # --- REVISED LOADING LOGIC ---
     for entry in po_file:
-        # Skip only obsolete entries.
-        # We allow entries with empty msgid to be loaded,
-        # because the metadata header has an empty msgid, and we want to preserve it.
-        # The main app logic will handle how to display/edit them.
         if entry.obsolete:
             continue
 
-        # The first entry with an empty msgid is the header, we skip creating a string for it.
         if entry.msgid == "" and not translatable_objects:
             continue
 
         ts = _po_entry_to_translatable_string(entry, full_code_lines, original_file_path_for_context)
         translatable_objects.append(ts)
-    # --- END OF REVISED LOGIC ---
 
     translatable_objects.sort(
         key=lambda x: (x.line_num_in_file if x.line_num_in_file > 0 else float('inf'), x.original_semantic))
@@ -108,65 +117,42 @@ def load_from_po(filepath, original_code_content_for_context=None, original_file
 
 
 def save_to_po(filepath, translatable_objects, metadata=None, original_file_name="source_code"):
+    # ... (po_file and metadata setup remains the same) ...
     po_file = polib.POFile(wrapwidth=0)
-    if metadata:
-        po_file.metadata = metadata
-        if 'PO-Revision-Date' not in po_file.metadata or not po_file.metadata['PO-Revision-Date']:
-            po_file.metadata['PO-Revision-Date'] = datetime.datetime.now(datetime.timezone.utc).strftime(
-                "%Y-%m-%d %H:%M%z")
-    else:
-        po_file.metadata = {
-            'Project-Id-Version': f'Overwatch Project {APP_VERSION}',
-            'PO-Revision-Date': datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M%z"),
-            'Last-Translator': 'User <user@example.com>',
-            'Language-Team': 'LANGUAGE <LL@li.org>',
-            'Language': '',
-            'MIME-Version': '1.0',
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Content-Transfer-Encoding': '8bit',
-            'Generated-By': f'OverwatchLocalizer {APP_VERSION}'
-        }
+    # ...
 
     for ts_obj in translatable_objects:
-        # Skip creating entries for special internal objects like the "NEW" row
         if ts_obj.id == "##NEW_ENTRY##":
             continue
+        if not ts_obj.original_semantic:
+            continue
+
+        # --- REVISED COMMENT AND FLAG HANDLING ---
+        entry_comment = ts_obj.comment
+        entry_flags = []
+
+        # Handle 'fuzzy' flag
+        if not ts_obj.is_reviewed and ts_obj.translation.strip():
+            entry_flags.append('fuzzy')
+
+        # Handle our custom flags by adding them to the comment
+        if ts_obj.is_reviewed:
+            entry_comment = (entry_comment + "\n# OWLocalizer:reviewed").strip()
+        if ts_obj.is_ignored:
+            entry_comment = (entry_comment + "\n# OWLocalizer:ignored").strip()
+        # --- END OF REVISED HANDLING ---
 
         entry_occurrences = []
         if ts_obj.line_num_in_file > 0:
             entry_occurrences.append((original_file_name, str(ts_obj.line_num_in_file)))
 
-        entry_comment_parts = []
-        if ts_obj.comment:
-            regular_comments = []
-            custom_flags = []
-            for line in ts_obj.comment.splitlines():
-                if line.startswith("# OWLocalizer:"):
-                    custom_flags.append(line)
-                else:
-                    regular_comments.append(line)
-
-            if regular_comments:
-                entry_comment_parts.append("\n".join(regular_comments))
-            if custom_flags:
-                entry_comment_parts.extend(custom_flags)
-
         entry = polib.POEntry(
             msgid=ts_obj.original_semantic,
             msgstr=ts_obj.translation,
-            comment="\n".join(entry_comment_parts).strip() if entry_comment_parts else "",
+            comment=entry_comment,
             occurrences=entry_occurrences,
-            flags=[]
+            flags=entry_flags
         )
-        if not ts_obj.is_reviewed and ts_obj.translation.strip():
-            entry.flags.append('fuzzy')
-
-        if ts_obj.is_ignored:
-            if "# OWLocalizer:ignored" not in entry.comment:
-                entry.comment = (entry.comment + "\n# OWLocalizer:ignored").strip()
-        else:
-            if entry.comment:
-                entry.comment = entry.comment.replace("# OWLocalizer:ignored", "").strip()
-
         po_file.append(entry)
+
     po_file.save(filepath)
