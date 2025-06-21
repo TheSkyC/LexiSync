@@ -559,7 +559,7 @@ class OverwatchLocalizerApp:
 
         self.sheet = tksheet.Sheet(
             sheet_frame,
-            headers=["#", "S", _("Original"), _("Translation"), _("Comment"), "✔", _("col_line")],
+            headers=["#", "S", _("Original"), _("Translation"), _("Comment"), "✔", _("Line")],
             font=self.app_font,
             header_font=self.app_font_bold,
             show_x_scrollbar=True,
