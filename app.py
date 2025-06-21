@@ -44,18 +44,16 @@ except ImportError:
     requests = None
     print("提示: requests 未找到, AI翻译功能不可用。pip install requests")
 
-initial_config = config_manager.load_config()
-language_code = initial_config.get('language')
-lang_manager.setup_translation(language_code)
-if not language_code:
-    language_code = lang_manager.get_best_match_language()
-    initial_config['language'] = language_code
-lang_manager.setup_translation(language_code)
-
 class OverwatchLocalizerApp:
     def __init__(self, root):
         self.root = root
-        self.config = initial_config
+        self.config = config_manager.load_config()
+        language_code = self.config.get('language')
+        if not language_code:
+            language_code = lang_manager.get_best_match_language()
+            self.config['language'] = language_code
+        lang_manager.setup_translation(language_code)
+        self.root = root
         if TkinterDnD and isinstance(root, TkinterDnD.Tk):
             pass
         elif TkinterDnD:
@@ -130,11 +128,11 @@ class OverwatchLocalizerApp:
 
         font_settings = self.config["font_settings"]
         if font_settings["override_default_fonts"]:
-            lang_code = lang_manager.get_current_language()
+            current_lang = lang_manager.get_current_language()
             script_type = 'latin'
-            if lang_code.startswith('zh') or lang_code.startswith('ja') or lang_code.startswith('ko'):
+            if current_lang.startswith('zh') or current_lang.startswith('ja') or current_lang.startswith('ko'):
                 script_type = 'cjk'
-            elif lang_code.startswith('ru'):
+            elif current_lang.startswith('ru'):
                 script_type = 'cyrillic'
 
             main_cfg = font_settings["scripts"].get(script_type, font_settings["scripts"]["latin"])
@@ -145,12 +143,11 @@ class OverwatchLocalizerApp:
             self.context_font = (code_cfg["family"], code_cfg["size"], code_cfg["style"])
         else:
             try:
-                primary_font_family = "Source Han Sans"
+                primary_font_family = "Microsoft YaHei UI"
                 tk.font.Font(family=primary_font_family, size=10).actual()
             except tk.TclError:
                 primary_font_family = "TkDefaultFont"
             self.app_font = (primary_font_family, 10, "normal")
-            self.app_font_header = (primary_font_family, 10, "bold")
             self.search_font = (primary_font_family, 9, "normal")
             self.context_font = ("Consolas", 9, "normal")
 
