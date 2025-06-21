@@ -1644,12 +1644,10 @@ class OverwatchLocalizerApp:
         self._update_placeholder_highlights()
 
         if self.is_po_mode:
-            self.comment_edit_text.delete("1.0", tk.END)
-            self.comment_edit_text.insert("1.0", ts_obj.source_comment)
+            comment_to_display = getattr(ts_obj, 'source_comment', ts_obj.comment)
+            self.comment_edit_text.insert("1.0", comment_to_display)
         else:
-            self.comment_edit_text.delete("1.0", tk.END)
             self.comment_edit_text.insert("1.0", ts_obj.comment)
-
         self.comment_edit_text.edit_reset()
 
         self.context_text_display.config(state=tk.NORMAL)

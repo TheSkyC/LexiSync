@@ -22,6 +22,7 @@ class TranslatableString:
         self.is_warning_ignored = False
 
         self.string_type = string_type
+        self.source_comment = ""
         self.comment = ""
         self.is_reviewed = False
 
