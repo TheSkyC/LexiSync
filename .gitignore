@@ -27,6 +27,7 @@ MANIFEST
 
 .ipynb_checkpoints
 
+translation_diffs/
 .env
 .venv
 env/
