@@ -597,8 +597,8 @@ class OverwatchLocalizerApp:
 
         self.sheet.column_width(column=0, width=40)
         self.sheet.column_width(column=1, width=30)
-        self.sheet.column_width(column=2, width=300)
-        self.sheet.column_width(column=3, width=300)
+        self.sheet.column_width(column=2, width=280)
+        self.sheet.column_width(column=3, width=280)
         self.sheet.column_width(column=4, width=90)
         self.sheet.column_width(column=5, width=30)
         self.sheet.column_width(column=6, width=50)
@@ -1455,11 +1455,11 @@ class OverwatchLocalizerApp:
 
         self.sheet.column_width(column=0, width=40)
         self.sheet.column_width(column=1, width=30)
-        self.sheet.column_width(column=2, width=300)
-        self.sheet.column_width(column=3, width=300)
-        self.sheet.column_width(column=4, width=150)
+        self.sheet.column_width(column=2, width=280)
+        self.sheet.column_width(column=3, width=280)
+        self.sheet.column_width(column=4, width=90)
         self.sheet.column_width(column=5, width=30)
-        self.sheet.column_width(column=6, width=70)
+        self.sheet.column_width(column=6, width=50)
         self.sheet.align_columns(columns=[0], align="e")
         self.sheet.align_columns(columns=[1, 5, 6], align="center")
 
