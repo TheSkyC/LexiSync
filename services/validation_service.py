@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
+import os
 
 placeholder_regex = re.compile(r'\{([^{}]+)\}')
 
@@ -10,13 +11,12 @@ def has_case(char):
     return char.lower() != char.upper()
 
 
-def get_first_cased_char_from_first_cased_block(s):
-    cased_blocks = re.findall(r'[\w\u00C0-\u017F]+', s)
-
-    for block in cased_blocks:
-        if block and has_case(block[0]):
-            return block[0]
-
+def get_starting_cased_char(s):
+    stripped_s = s.lstrip()
+    if stripped_s:
+        first_char = stripped_s[0]
+        if has_case(first_char):
+            return first_char
     return None
 
 
@@ -56,7 +56,6 @@ def validate_string(ts_obj):
         '(': '（', '（': '(', ')': '）', '）': ')',
     }
     all_punc = set(punctuation_map.keys())
-
     original_stripped = original.strip()
     translation_stripped = translation.strip()
 
@@ -64,10 +63,8 @@ def validate_string(ts_obj):
         return char in all_punc
 
     def are_equivalent(char1, char2):
-        if char1 == char2:
-            return True
-        if punctuation_map.get(char1) == char2:
-            return True
+        if char1 == char2: return True
+        if punctuation_map.get(char1) == char2: return True
         return False
 
     if original_stripped and translation_stripped:
@@ -75,11 +72,12 @@ def validate_string(ts_obj):
         start_trans_char = translation_stripped[0]
         orig_starts_with_punc = is_punc(start_orig_char)
         trans_starts_with_punc = is_punc(start_trans_char)
-
         if orig_starts_with_punc and not trans_starts_with_punc:
-            warnings.append(f"Original starts with '{start_orig_char}', but translation does not start with punctuation.")
+            warnings.append(
+                f"Original starts with '{start_orig_char}', but translation does not start with punctuation.")
         elif not orig_starts_with_punc and trans_starts_with_punc:
-            warnings.append(f"Translation starts with '{start_trans_char}', but original does not start with punctuation.")
+            warnings.append(
+                f"Translation starts with '{start_trans_char}', but original does not start with punctuation.")
         elif orig_starts_with_punc and trans_starts_with_punc and not are_equivalent(start_orig_char, start_trans_char):
             warnings.append(f"Starting punctuation mismatch: '{start_orig_char}' vs '{start_trans_char}'.")
 
@@ -88,7 +86,6 @@ def validate_string(ts_obj):
         end_trans_char = translation_stripped[-1]
         orig_ends_with_punc = is_punc(end_orig_char)
         trans_ends_with_punc = is_punc(end_trans_char)
-
         if orig_ends_with_punc and not trans_ends_with_punc:
             warnings.append(f"Original ends with '{end_orig_char}', but translation does not end with punctuation.")
         elif not orig_ends_with_punc and trans_ends_with_punc:
@@ -96,8 +93,13 @@ def validate_string(ts_obj):
         elif orig_ends_with_punc and trans_ends_with_punc and not are_equivalent(end_orig_char, end_trans_char):
             warnings.append(f"Ending punctuation mismatch: '{end_orig_char}' vs '{end_trans_char}'.")
 
-    first_char_original = get_first_cased_char_from_first_cased_block(original)
-    first_char_translation = get_first_cased_char_from_first_cased_block(translation)
+    common_prefix = os.path.commonprefix([original, translation])
+
+    core_original = original[len(common_prefix):]
+    core_translation = translation[len(common_prefix):]
+
+    first_char_original = get_starting_cased_char(core_original)
+    first_char_translation = get_starting_cased_char(core_translation)
 
     if first_char_original and first_char_translation:
         if first_char_original.isupper() != first_char_translation.isupper():
