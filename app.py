@@ -1475,10 +1475,8 @@ class OverwatchLocalizerApp:
 
     def _apply_row_highlighting(self):
         try:
-            # Get the default background color from the underlying canvas
             default_bg = self.sheet.MT.cget("background")
         except (AttributeError, tk.TclError):
-            # Fallback if the widget is not fully initialized
             default_bg = "white"
 
         for row_idx, ts_id in enumerate(self.displayed_string_ids):
@@ -1488,25 +1486,27 @@ class OverwatchLocalizerApp:
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if not ts_obj: continue
 
-            # Reset colors to default for each row
             fg = "black"
             bg = default_bg
 
-            # Determine the style based on priority
             if ts_obj.warnings and not ts_obj.is_warning_ignored:
                 fg = "orange red"
             elif ts_obj.is_ignored:
                 fg = "#707070"
                 if ts_obj.was_auto_ignored:
                     fg = "#a0a0a0"
+            elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
+                bg = "#FFFACD"
+                if ts_obj.translation.strip():
+                    fg = "darkblue"
+                else:
+                    fg = "darkred"
             elif ts_obj.translation.strip():
                 if ts_obj.is_reviewed:
                     fg = "darkgreen"
                 else:
                     fg = "darkblue"
-                    bg = "#FFFACD"
             else:
-                # Untranslated: Dark red text
                 fg = "darkred"
 
             self.sheet.highlight_rows(rows=[row_idx], bg=bg, fg=fg, redraw=False)
@@ -1684,9 +1684,14 @@ class OverwatchLocalizerApp:
             ),
             persistent=True
         )
+        status_message = ""
         if ts_obj.warnings and not ts_obj.is_warning_ignored:
-            warning_text = "⚠️ " + " | ".join(ts_obj.warnings)
-            self.update_statusbar(warning_text, persistent=True)
+            status_message = "⚠️ " + " | ".join(ts_obj.warnings)
+        elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
+            status_message = "💡 " + " | ".join(ts_obj.minor_warnings)
+
+        if status_message:
+            self.update_statusbar(status_message, persistent=True)
         else:
             self.update_statusbar(
                 _("Selected: \"{text}...\" (Line: {line_num})").format(
@@ -2000,27 +2005,15 @@ class OverwatchLocalizerApp:
 
         new_ignore_state = self.ignore_var.get()
         if new_ignore_state == ts_obj.is_ignored: return
-
-        # --- Store ID before any changes ---
         changed_item_id = ts_obj.id
-
-        # --- Apply data changes and add to undo history ---
-        # (Your existing logic for this part is correct and remains here)
         primary_change = {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': ts_obj.is_ignored, 'new_value': new_ignore_state}
         ts_obj.is_ignored = new_ignore_state
         if not new_ignore_state: ts_obj.was_auto_ignored = False
         all_changes_for_undo = [primary_change]
-        # ... (loop for duplicates) ...
         undo_action_type = 'bulk_change' if len(all_changes_for_undo) > 1 else 'single_change'
         undo_data_payload = {'changes': all_changes_for_undo} if undo_action_type == 'bulk_change' else primary_change
         self.add_to_undo_history(undo_action_type, undo_data_payload)
-        # --- End of data changes ---
-
-        # --- SIMPLIFIED UI UPDATE ---
-        # This single call now handles everything: refresh, selection, and details pane update.
         self.refresh_sheet_and_select_neighbor(changed_item_id)
-        # --- END OF SIMPLIFIED UI UPDATE ---
-
         self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(changed_item_id)[:8] + "...", status=_('Yes') if new_ignore_state else _('No')))
         self.mark_project_modified()
 
@@ -2028,13 +2021,9 @@ class OverwatchLocalizerApp:
         if not self.current_selected_ts_id: return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return
-
         new_reviewed_state = self.reviewed_var.get()
         if new_reviewed_state == ts_obj.is_reviewed: return
-
         changed_item_id = ts_obj.id
-
-        # --- Apply data changes and add to undo history ---
         old_reviewed_state = ts_obj.is_reviewed
         old_warning_ignored_state = ts_obj.is_warning_ignored
         ts_obj.is_reviewed = new_reviewed_state
@@ -2046,12 +2035,7 @@ class OverwatchLocalizerApp:
              'new_value': ts_obj.is_warning_ignored}
         ]
         self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
-        # --- End of data changes ---
-
-        # --- SIMPLIFIED UI UPDATE ---
         self.refresh_sheet_and_select_neighbor(changed_item_id)
-        # --- END OF SIMPLIFIED UI UPDATE ---
-
         self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(changed_item_id)[:8] + "...",
                                                                                 status=_(
                                                                                     'Yes') if new_reviewed_state else _(
@@ -2059,11 +2043,6 @@ class OverwatchLocalizerApp:
         self.mark_project_modified()
 
     def refresh_sheet_and_select_neighbor(self, changed_item_id):
-        """
-        Refreshes the sheet and intelligently selects the next best item.
-        This is the definitive handler for actions that might filter items out.
-        """
-        # 1. Find the neighbor BEFORE the data changes and the list is refreshed.
         neighbor_to_select = None
         if changed_item_id in self.displayed_string_ids:
             try:
@@ -2075,24 +2054,17 @@ class OverwatchLocalizerApp:
             except ValueError:
                 pass
 
-        # 2. Perform the full refresh and validation.
-        # This will update the sheet and self.displayed_string_ids.
         self._run_and_refresh_with_validation()
-
-        # 3. Now, try to select the neighbor we found earlier.
         final_id_to_select = None
         if neighbor_to_select and neighbor_to_select in self.displayed_string_ids:
             final_id_to_select = neighbor_to_select
         elif self.displayed_string_ids:
-            # If neighbor is gone or never existed, select the first available item.
             final_id_to_select = self.displayed_string_ids[0]
 
-        # 4. Set the new selection and update the UI.
         if final_id_to_select:
             self.select_sheet_row_by_id(final_id_to_select, see=True)
-            self.on_sheet_select()  # This will set current_selected_ts_id and refresh the pane
+            self.on_sheet_select()
         else:
-            # If the list is now empty, clear everything.
             self.current_selected_ts_id = None
             self.clear_details_pane()
 

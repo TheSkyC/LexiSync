@@ -7,13 +7,14 @@ import datetime
 from models.translatable_string import TranslatableString
 from services.code_file_service import extract_translatable_strings
 from utils.constants import APP_VERSION
+from utils.localization import _
 
 
 def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_path=None):
     line_num = 0
     if hasattr(entry, 'occurrences') and entry.occurrences:
         try:
-            _, lnum_str = entry.occurrences[0]
+            _path, lnum_str = entry.occurrences[0]
             if lnum_str.isdigit():
                 line_num = int(lnum_str)
         except (ValueError, IndexError, TypeError):
@@ -47,12 +48,16 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
     ts.source_comment = "\n".join(source_comments)
     ts.comment = entry.comment or ""
 
+    if 'fuzzy' in entry.flags:
+        ts.minor_warnings.append(_("Translation is marked as fuzzy and needs review."))
+
     if not ts.translation.strip() or 'fuzzy' in entry.flags:
         ts.is_reviewed = False
     elif "# OWLocalizer:reviewed" in ts.source_comment:
         ts.is_reviewed = True
     else:
         ts.is_reviewed = False
+
     if "# OWLocalizer:ignored" in ts.source_comment:
         ts.is_ignored = True
 

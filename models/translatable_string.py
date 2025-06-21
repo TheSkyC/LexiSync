@@ -18,6 +18,7 @@ class TranslatableString:
         self.char_pos_start_in_file = char_pos_start_in_file
         self.char_pos_end_in_file = char_pos_end_in_file
         self.warnings = []
+        self.minor_warnings = []
         self.is_warning_ignored = False
 
         self.string_type = string_type
