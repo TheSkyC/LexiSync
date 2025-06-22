@@ -64,21 +64,25 @@ class TMPanel(QWidget):
             item = QListWidgetItem(f"(100% Exact Match): {suggestion_for_ui}")
             item.setForeground(QColor("darkgreen"))
             self.tm_suggestions_listbox.addItem(item)
+
         original_lower = original_semantic_text.lower()
+        case_insensitive_match = None
+        for tm_orig, tm_trans in translation_memory.items():
+            if tm_orig.lower() == original_lower and tm_orig != original_semantic_text:
+                case_insensitive_match = tm_trans
+                break  # 找到一个就够了
+
+        if case_insensitive_match:
+            suggestion_for_ui = case_insensitive_match.replace("\\n", "\n")
+            item = QListWidgetItem(f"(Case Mismatch): {suggestion_for_ui}")
+            item.setForeground(QColor("orange red"))
+            self.tm_suggestions_listbox.addItem(item)
+
+        # 3. Fuzzy Matches (现在只对剩下的进行计算)
         fuzzy_matches = []
-        case_mismatch_found = False
-
         for tm_orig, tm_trans_with_slash_n in translation_memory.items():
-            if tm_orig == original_semantic_text:
-                continue
-
-            if not case_mismatch_found and tm_orig.lower() == original_lower:
-                suggestion_for_ui = tm_trans_with_slash_n.replace("\\n", "\n")
-                item = QListWidgetItem(f"(Case Mismatch): {suggestion_for_ui}")
-                item.setForeground(QColor("orange red"))
-                self.tm_suggestions_listbox.addItem(item)
-                case_mismatch_found = True
-                continue
+            if tm_orig == original_semantic_text or tm_orig.lower() == original_lower:
+                continue  # 跳过已经处理过的
 
             ratio = SequenceMatcher(None, original_semantic_text, tm_orig).ratio()
             if ratio > 0.65:

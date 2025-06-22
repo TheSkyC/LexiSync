@@ -28,14 +28,12 @@ from PySide6.QtGui import QAction, QKeySequence, QFont, QFontDatabase,QPalette, 
 
 from models.translatable_string import TranslatableString
 from models.translatable_strings_model import TranslatableStringsModel, TranslatableStringsProxyModel
-from ui_components.border_delegate import BorderDelegate
 from ui_components.details_panel import DetailsPanel
 from ui_components.context_panel import ContextPanel
 from ui_components.tm_panel import TMPanel
-from ui_components.newline_delegate import NewlineDelegate
+from ui_components.custom_cell_delegate import CustomCellDelegate
 from ui_components.newline_text_edit import NewlineTextEdit
-
-
+from ui_components.custom_table_view import CustomTableView
 
 from dialogs.ai_settings_dialog import AISettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
@@ -56,6 +54,8 @@ from services.validation_service import run_validation_on_all, placeholder_regex
 from utils.constants import *
 from utils import config_manager
 from utils.localization import lang_manager, _
+#Debug
+import cProfile, pstats
 
 try:
     import requests
@@ -90,6 +90,11 @@ class OverwatchLocalizerApp(QMainWindow):
         self.current_po_metadata = None
         self.source_comment = ""
         self.current_focused_ts_id = None
+
+        self.tm_update_timer = QTimer(self)
+        self.tm_update_timer.setSingleShot(True)
+        self.tm_update_timer.timeout.connect(self.perform_tm_update)
+        self.last_tm_query = ""
 
         self.translatable_objects = []
         self.translation_memory = {}
@@ -495,6 +500,7 @@ class OverwatchLocalizerApp(QMainWindow):
             action.setChecked(value)
         if checkbox and checkbox.isChecked() != value:
             checkbox.setChecked(value)
+
         self.refresh_sheet_preserve_selection()
         self.save_config()
 
@@ -622,10 +628,13 @@ class OverwatchLocalizerApp(QMainWindow):
         main_layout.addWidget(toolbar_frame)
 
         # Table View
-        self.table_view = QTableView()
+        self.table_view = CustomTableView(self, self)
         palette = self.table_view.palette()
-        palette.setColor(QPalette.Highlight, QColor(51, 153, 255, 70))  # 淡蓝色
+        palette.setColor(QPalette.Base, QColor("white"))
+        palette.setColor(QPalette.AlternateBase, QColor("#f7f7f7"))
+        palette.setColor(QPalette.Highlight, QColor(0, 0, 0, 0))  # 透明色
         self.table_view.setPalette(palette)
+        self.table_view.setAlternatingRowColors(True)
 
         self.sheet_model = TranslatableStringsModel(self.translatable_objects, self)
 
@@ -655,8 +664,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.table_view.selectionModel().currentChanged.connect(self.on_sheet_select)
         self.table_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table_view.customContextMenuRequested.connect(self.show_sheet_context_menu)
-        self.table_view.setItemDelegateForColumn(2, NewlineDelegate(self.table_view))
-        self.table_view.setItemDelegateForColumn(3, NewlineDelegate(self.table_view))
+        self.table_view.setItemDelegate(CustomCellDelegate(self.table_view, self))
         main_layout.addWidget(self.table_view)
 
     def eventFilter(self, obj, event):
@@ -1347,13 +1355,9 @@ class OverwatchLocalizerApp(QMainWindow):
         self.refresh_sheet(preserve_selection=True, item_to_reselect_after=item_to_reselect_after)
 
     def refresh_sheet(self, preserve_selection=True, item_to_reselect_after=None):
-        # 这个方法保持优化后的状态，只负责筛选和视图更新
-
         old_selected_id = self.current_selected_ts_id
         if item_to_reselect_after:
             old_selected_id = item_to_reselect_after
-
-        # 1. 告诉代理模型新的筛选条件是什么
         self.proxy_model.set_filters(
             deduplicate=self.deduplicate_checkbox.isChecked(),
             show_ignored=self.ignored_checkbox.isChecked(),
@@ -1363,14 +1367,8 @@ class OverwatchLocalizerApp(QMainWindow):
             search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
             is_po_mode=self.is_po_mode
         )
-
-        # 2. 触发代理模型重新应用这些过滤器
         self.proxy_model.invalidateFilter()
-
-        # 3. 更新状态栏的计数
         self.update_counts_display()
-
-        # 4. 恢复之前的选择
         if preserve_selection and old_selected_id:
             self.select_sheet_row_by_id(old_selected_id, see=True)
         elif not self.current_selected_ts_id and self.proxy_model.rowCount() > 0:
@@ -1494,104 +1492,51 @@ class OverwatchLocalizerApp(QMainWindow):
         elif col == 4:  # Comment
             self.details_panel.comment_edit_text.setFocus()
 
-    def on_sheet_select(self, current_index=None, previous_index=None):
-        if not self.details_panel or not self.details_panel.isVisible():
-            if current_index and current_index.isValid():
-                ts_obj = self.proxy_model.data(current_index, Qt.UserRole)
-                if ts_obj:
-                    self.current_selected_ts_id = ts_obj.id
-            else:
-                self.current_selected_ts_id = None
+    def on_sheet_select(self, current_index, previous_index):
+        if self.table_view.is_dragging:
             return
+        old_focused_id = self.current_focused_ts_id
 
-        if not current_index or not current_index.isValid():
-            self.current_selected_ts_id = None
-            self.clear_details_pane()
-            self.update_ui_state_for_selection(None)
-            return
-
-        ts_obj = self.proxy_model.data(current_index, Qt.UserRole)
-        if not ts_obj:
+        if not current_index.isValid():
             self.current_selected_ts_id = None
             self.current_focused_ts_id = None
             self.clear_details_pane()
             self.update_ui_state_for_selection(None)
-            self.table_view.viewport().update()
-            return
-
-        newly_selected_ts_id = ts_obj.id
-        self.current_focused_ts_id = newly_selected_ts_id
-        self.table_view.viewport().update()
-
-        if self.current_selected_ts_id == newly_selected_ts_id:
-            return
-
-        newly_selected_ts_id = ts_obj.id
-
-        if self.current_selected_ts_id == newly_selected_ts_id:
-            return
-
-        if self.current_selected_ts_id:
-            ts_obj_before_change = self._find_ts_obj_by_id(self.current_selected_ts_id)
-            if ts_obj_before_change:
-                current_editor_text = self.details_panel.translation_edit_text.toPlainText()
-                if current_editor_text != ts_obj_before_change.get_translation_for_ui():
-                    self._apply_translation_to_model(ts_obj_before_change, current_editor_text,
-                                                     source="manual_focus_out")
-
-        self.current_selected_ts_id = newly_selected_ts_id
-
-        if self.current_selected_ts_id == "##NEW_ENTRY##":
-            self.clear_details_pane()
-            self.details_panel.original_text_display.setReadOnly(False)
-            self.details_panel.original_text_display.setFocus()
-            self.update_ui_state_for_selection("##NEW_ENTRY##")
-            return
         else:
-            self.details_panel.original_text_display.setReadOnly(True)
+            ts_obj = self.proxy_model.data(current_index, Qt.UserRole)
+            if not ts_obj:
+                self.current_selected_ts_id = None
+                self.current_focused_ts_id = None
+                self.clear_details_pane()
+                self.update_ui_state_for_selection(None)
+                return
 
-        self.details_panel.original_text_display.setPlainText(ts_obj.original_semantic)
-        self.details_panel.translation_edit_text.setPlainText(ts_obj.get_translation_for_ui())
-        self.details_panel.translation_edit_text.document().setModified(False)
-        self.details_panel.comment_edit_text.setPlainText(ts_obj.comment)
-        self.details_panel.comment_edit_text.document().setModified(False)
+            newly_focused_id = ts_obj.id
+            self.current_focused_ts_id = newly_focused_id
+            if self.current_selected_ts_id != newly_focused_id:
+                self.current_selected_ts_id = newly_focused_id
+                self.force_refresh_ui_for_current_selection()
+                self.update_ui_state_for_selection(self.current_selected_ts_id)
+        old_source_index = self.sheet_model.index_from_id(old_focused_id)
+        new_source_index = self.sheet_model.index_from_id(self.current_focused_ts_id)
 
-        self.details_panel.ignore_checkbox.setChecked(ts_obj.is_ignored)
-        ignore_label = _("Ignore this string")
-        if ts_obj.is_ignored and ts_obj.was_auto_ignored:
-            ignore_label += _(" (Auto)")
-        self.details_panel.ignore_checkbox.setText(ignore_label)
-        self.details_panel.reviewed_checkbox.setChecked(ts_obj.is_reviewed)
-        self.context_panel.set_context(ts_obj.context_lines, ts_obj.current_line_in_context_idx)
-        self.tm_panel.update_tm_suggestions_for_text(ts_obj.original_semantic, self.translation_memory)
-        tm_exists_for_selected = ts_obj.original_semantic in self.translation_memory
-        self.tm_panel.clear_selected_tm_btn.setEnabled(tm_exists_for_selected)
-
-        self.update_statusbar(
-            _("Selected: \"{text}...\" (Line: {line_num})").format(
-                text=ts_obj.original_semantic[:30].replace(chr(10), '↵'),
-                line_num=ts_obj.line_num_in_file
-            ),
-            persistent=True
+        if old_source_index.isValid():
+            self.sheet_model.dataChanged.emit(old_source_index,
+                                              old_source_index.siblingAtColumn(self.sheet_model.columnCount() - 1))
+        if new_source_index.isValid():
+            self.sheet_model.dataChanged.emit(new_source_index,
+                                              new_source_index.siblingAtColumn(self.sheet_model.columnCount() - 1))
+        status_message = _("Selected: \"{text}...\" (Line: {line_num})").format(
+            text=ts_obj.original_semantic[:30].replace(chr(10), '↵'),
+            line_num=ts_obj.line_num_in_file
         )
-        status_message = ""
+        warning_message = ""
         if ts_obj.warnings and not ts_obj.is_warning_ignored:
-            status_message = "⚠️ " + " | ".join(ts_obj.warnings)
+            warning_message = "⚠️ " + " | ".join(ts_obj.warnings)
         elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
-            status_message = "💡 " + " | ".join(ts_obj.minor_warnings)
+            warning_message = "💡 " + " | ".join(ts_obj.minor_warnings)
+        self.update_statusbar(warning_message if warning_message else status_message, persistent=True)
 
-        if status_message:
-            self.update_statusbar(status_message, persistent=True)
-        else:
-            self.update_statusbar(
-                _("Selected: \"{text}...\" (Line: {line_num})").format(
-                    text=ts_obj.original_semantic[:30].replace(chr(10), '↵'),
-                    line_num=ts_obj.line_num_in_file
-                ),
-                persistent=True
-            )
-        self.schedule_placeholder_validation()
-        self.update_ui_state_for_selection(self.current_selected_ts_id)
 
     def schedule_placeholder_validation(self):
         if self._placeholder_validation_job:
@@ -1658,18 +1603,11 @@ class OverwatchLocalizerApp(QMainWindow):
             self.sheet_model.set_translatable_objects([])
             self.proxy_model.invalidate()
             return
-
-        # 1. 对新数据运行验证
         run_validation_on_all(self.translatable_objects)
-
-        # --- 关键修复：在这里更新源模型的数据 ---
-        # 在刷新表格之前，确保源模型拥有了最新的数据列表。
+        for ts_obj in self.translatable_objects:
+            ts_obj.update_style_cache()
         self.sheet_model.set_translatable_objects(self.translatable_objects)
-
-        # 2. 刷新表格（现在它只会应用过滤器，因为源模型数据已最新）
         self.refresh_sheet_preserve_selection()
-
-        # 3. 刷新UI的其他部分
         self.force_refresh_ui_for_current_selection()
 
     def cm_set_warning_ignored_status(self, ignore_flag):
@@ -3391,31 +3329,30 @@ class OverwatchLocalizerApp(QMainWindow):
             self.table_view.selectionModel().clearSelection()
 
     def force_refresh_ui_for_current_selection(self):
-        if not self.current_selected_ts_id:
-            self.clear_details_pane()
-            return
+            if not self.current_selected_ts_id:
+                self.clear_details_pane()
+                return
 
-        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if not ts_obj:
-            self.clear_details_pane()
-            return
+            ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+            if not ts_obj:
+                self.clear_details_pane()
+                return
+            self.details_panel.original_text_display.setPlainText(ts_obj.original_semantic)
+            self.details_panel.translation_edit_text.setPlainText(ts_obj.get_translation_for_ui())
+            self.details_panel.comment_edit_text.setPlainText(ts_obj.comment)
+            self.details_panel.reviewed_checkbox.setChecked(ts_obj.is_reviewed)
+            self.details_panel.ignore_checkbox.setChecked(ts_obj.is_ignored)
+            self.context_panel.set_context(ts_obj.context_lines, ts_obj.current_line_in_context_idx)
+            self.schedule_tm_update(ts_obj.original_semantic)
+            self.schedule_placeholder_validation()
 
-        self.details_panel.original_text_display.setPlainText(ts_obj.original_semantic)
-        self.details_panel.translation_edit_text.setPlainText(ts_obj.get_translation_for_ui())
-        self.details_panel.translation_edit_text.document().setModified(False)
-        self.details_panel.comment_edit_text.setPlainText(ts_obj.comment)
-        self.details_panel.comment_edit_text.document().setModified(False)
+    def schedule_tm_update(self, original_text):
+            self.last_tm_query = original_text
+            self.tm_update_timer.start(250)
 
-        self.details_panel.ignore_checkbox.setChecked(ts_obj.is_ignored)
-        ignore_label = _("Ignore this string")
-        if ts_obj.is_ignored and ts_obj.was_auto_ignored:
-            ignore_label += _(" (Auto)")
-        self.details_panel.ignore_checkbox.setText(ignore_label)
-
-        self.details_panel.reviewed_checkbox.setChecked(ts_obj.is_reviewed)
-        self.tm_panel.update_tm_suggestions_for_text(ts_obj.original_semantic, self.translation_memory)
-
-        self.schedule_placeholder_validation()
+    def perform_tm_update(self):
+            if self.last_tm_query:
+                self.tm_panel.update_tm_suggestions_for_text(self.last_tm_query, self.translation_memory)
 
     def cm_edit_comment(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()

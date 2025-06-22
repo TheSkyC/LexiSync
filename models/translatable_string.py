@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import uuid
+from PySide6.QtGui import QColor, QFont
 from utils.constants import APP_NAMESPACE_UUID, MAX_UNDO_HISTORY
 from utils.localization import _
 
@@ -26,7 +27,7 @@ class TranslatableString:
         self.source_comment = ""
         self.comment = ""
         self.is_reviewed = False
-
+        self.ui_style_cache = {}
 
         context_radius = 2
         start_line_idx = max(0, line_num - 1 - context_radius)
@@ -102,3 +103,36 @@ class TranslatableString:
         ts._translation_history_pointer = data.get('_translation_history_pointer',
                                                    len(ts._translation_edit_history) - 1 if ts._translation_edit_history else 0)
         return ts
+
+
+    def update_style_cache(self, all_strings_map=None):
+        self.ui_style_cache = {}  # 重置缓存
+
+        # 缓存颜色和字体
+        if self.warnings and not self.is_warning_ignored:
+            self.ui_style_cache['background'] = QColor("#FFDDDD")
+            self.ui_style_cache['foreground'] = QColor("red")
+        elif self.minor_warnings and not self.is_warning_ignored:
+            self.ui_style_cache['background'] = QColor("#FFFACD")
+        elif self.is_ignored:
+            self.ui_style_cache['background'] = QColor("#F0F0F0")
+            self.ui_style_cache['foreground'] = QColor("#707070")
+            font = QFont()
+            font.setItalic(True)
+            self.ui_style_cache['font'] = font
+        elif self.translation.strip():
+            if self.is_reviewed:
+                self.ui_style_cache['foreground'] = QColor("darkgreen")
+            else:
+                self.ui_style_cache['foreground'] = QColor("darkblue")
+        else:
+            self.ui_style_cache['foreground'] = QColor("darkred")
+
+        original_has_newline = '\n' in self.original_semantic
+        translation_has_newline = '\n' in self.translation
+
+        if original_has_newline or translation_has_newline:
+            if original_has_newline and translation_has_newline:
+                self.ui_style_cache['newline_color'] = QColor(34, 177, 76, 180)  # Green
+            else:
+                self.ui_style_cache['newline_color'] = QColor(237, 28, 36, 180)  # Red

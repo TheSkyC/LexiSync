@@ -8,6 +8,7 @@ import re
 from utils.localization import _
 from services.validation_service import placeholder_regex
 
+NewlineColorRole = Qt.UserRole + 1
 
 class TranslatableStringsModel(QAbstractTableModel):
     def __init__(self, data, parent=None):
@@ -30,16 +31,23 @@ class TranslatableStringsModel(QAbstractTableModel):
         return len(self.headers)
 
     def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid():
-            return None
-
-        row = index.row()
-        col = index.column()
-
-        if row >= len(self._data):
-            return None
-
+        if not index.isValid(): return None
+        row, col = index.row(), index.column()
+        if row >= len(self._data): return None
         ts_obj = self._data[row]
+        if role == Qt.BackgroundRole:
+            return ts_obj.ui_style_cache.get('background')
+
+        if role == Qt.ForegroundRole:
+            return ts_obj.ui_style_cache.get('foreground')
+
+        if role == Qt.FontRole:
+            return ts_obj.ui_style_cache.get('font')
+
+        if role == NewlineColorRole:
+            if col in [2, 3]:
+                return ts_obj.ui_style_cache.get('newline_color')
+            return None
 
         if role == Qt.DisplayRole:
             if col == 0:
@@ -54,47 +62,18 @@ class TranslatableStringsModel(QAbstractTableModel):
                 else:
                     return "U"
             elif col == 2:
-                return ts_obj.original_semantic.replace("\n", "↵")
+                return ts_obj.original_semantic
             elif col == 3:
-                return ts_obj.get_translation_for_ui().replace("\n", "↵")
+                return ts_obj.get_translation_for_ui()
             elif col == 4:
-                return ts_obj.comment.replace("\n", "↵")[:50]
+                return ts_obj.comment
             elif col == 5:
                 return "✔" if ts_obj.is_reviewed else ""
             elif col == 6:
                 return ts_obj.line_num_in_file
 
-        elif role == Qt.UserRole:
+        if role == Qt.UserRole:
             return ts_obj
-
-
-        elif role == Qt.BackgroundRole:
-            if ts_obj.warnings and not ts_obj.is_warning_ignored:
-                return QColor("#FFDDDD")  # 严重警告 - 浅红色背景
-            elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
-                return QColor("#FFFACD")  # 次级警告 - 浅黄色背景
-            elif ts_obj.is_ignored:
-                return QColor("#F0F0F0")  # 已忽略 - 浅灰色背景
-            return None
-
-        elif role == Qt.ForegroundRole:
-            if ts_obj.warnings and not ts_obj.is_warning_ignored:
-                return QColor("red")  # 严重警告 - 红色文字
-            elif ts_obj.is_ignored:
-                return QColor("#707070")  # 已忽略 - 深灰色文字
-            elif ts_obj.translation.strip():
-                if ts_obj.is_reviewed:
-                    return QColor("darkgreen")  # 已审阅 - 深绿色
-                else:
-                    return QColor("darkblue")  # 已翻译 - 深蓝色
-            else:
-                return QColor("darkred")  # 未翻译 - 暗红色
-
-        elif role == Qt.FontRole:
-            if ts_obj.is_ignored:
-                font = QFont()
-                font.setItalic(True)
-                return font
 
         return None
 
