@@ -1710,9 +1710,6 @@ class OverwatchLocalizerApp:
         if not ts_obj:
             return
 
-        # --- UNIFIED HIGHLIGHTING LOGIC ---
-
-        # 1. Configure all tags
         placeholder_font = (self.app_font[0], self.app_font[1])
         whitespace_color = "#DDEEFF"
         newline_font = (self.app_font[0], self.app_font[1], 'italic')
@@ -1732,40 +1729,30 @@ class OverwatchLocalizerApp:
         self.original_text_display.tag_remove('placeholder_missing', '1.0', tk.END)
         self.translation_edit_text.tag_remove('placeholder_extra', '1.0', tk.END)
 
-        # 2. Process each widget (Original and Translation)
         original_placeholders = set(self.placeholder_regex.findall(ts_obj.original_semantic))
         translated_placeholders = set(self.placeholder_regex.findall(self.translation_edit_text.get("1.0", "end-1c")))
-
-        # --- Process Original Text Box ---
         self.original_text_display.config(state=tk.NORMAL)
         try:
-            # Highlight placeholders
             for p_text in original_placeholders:
                 tag = 'placeholder_missing' if p_text not in translated_placeholders else 'placeholder'
                 self._apply_tag_to_all_occurrences(self.original_text_display, f"{{{p_text}}}", tag)
-            # Highlight whitespace and newlines
             self._apply_whitespace_and_newline_tags(self.original_text_display)
         finally:
             self.original_text_display.config(state=tk.DISABLED)
-
-        # --- Process Translation Text Box ---
-        # Highlight placeholders
         all_placeholders = original_placeholders.union(translated_placeholders)
         for p_text in all_placeholders:
             if p_text in original_placeholders and p_text in translated_placeholders:
                 tag = 'placeholder'
             elif p_text in translated_placeholders:
                 tag = 'placeholder_extra'
-            else:  # in original but not translation
-                continue  # This is handled by the original box's highlighting
+            else:
+                continue
             self._apply_tag_to_all_occurrences(self.translation_edit_text, f"{{{p_text}}}", tag)
-        # Highlight whitespace and newlines
         self._apply_whitespace_and_newline_tags(self.translation_edit_text)
 
         self.root.update_idletasks()
 
     def _apply_tag_to_all_occurrences(self, widget, pattern, tag):
-        """Helper to apply a tag to all occurrences of a pattern in a text widget."""
         start_index = "1.0"
         while True:
             pos = widget.search(pattern, start_index, stopindex=tk.END)
@@ -1776,13 +1763,8 @@ class OverwatchLocalizerApp:
             start_index = end_index
 
     def _apply_whitespace_and_newline_tags(self, widget):
-        """Helper to apply whitespace and newline tags."""
-
-        # --- DEBUGGING AND FIX FOR INFINITE LOOP ---
         widget_name = widget.winfo_class()
         print(f"\n--- Applying whitespace/newline tags for: {widget_name} ---")
-
-        # --- Whitespace logic (remains the same, it's safe) ---
         num_lines = int(widget.index('end-1c').split('.')[0])
         for i in range(1, num_lines + 1):
             line_start, line_end = f"{i}.0", f"{i}.end"
@@ -1796,33 +1778,21 @@ class OverwatchLocalizerApp:
                 offset = len(line_content.rstrip(' '))
                 widget.tag_add('whitespace', f"{line_start}+{offset}c", line_end)
 
-        # --- FINAL ROBUST NEWLINE LOGIC (Replaces the while loop) ---
-        # This new logic iterates through the text content character by character,
-        # which is immune to the `search` method's buggy behavior.
-
         s = ttk.Style()
         symbol_font = (self.app_font[0], self.app_font[1] - 2, "normal")
         s.configure("Newline.TLabel", foreground="blue", font=symbol_font)
-
-        # Get the entire content once
         full_content = widget.get("1.0", "end-1c")
-
-        # Iterate through the content to find newline characters
         current_line = 1
         current_col = 0
         for char in full_content:
             if char == '\n':
-                # Found a newline, create a label at the current index
                 current_index = f"{current_line}.{current_col}"
                 print(f"DEBUG: Found newline at index {current_index}")
                 label = ttk.Label(widget, text="↵", style="Newline.TLabel")
                 widget.window_create(current_index, window=label)
-
-                # After a newline, the line number increases and column resets
                 current_line += 1
                 current_col = 0
             else:
-                # If not a newline, just advance the column counter
                 current_col += 1
 
         print("--- Finished applying tags ---")
