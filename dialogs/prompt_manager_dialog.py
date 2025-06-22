@@ -1,253 +1,264 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import tkinter as tk
-from tkinter import ttk, simpledialog, messagebox, filedialog
+from PySide6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QCheckBox, QTreeWidget, QTreeWidgetItem, QHeaderView, QMessageBox,
+    QFileDialog, QWidget, QTextEdit, QComboBox
+)
+from PySide6.QtCore import Qt, Signal
 import json
 import uuid
 from copy import deepcopy
 from utils.constants import PROMPT_PRESET_EXTENSION, DEFAULT_PROMPT_STRUCTURE, STRUCTURAL, STATIC, DYNAMIC
 from utils.localization import _
 
-class PromptManagerDialog(tk.Toplevel):
+class PromptManagerDialog(QDialog):
     def __init__(self, parent, title, app_instance):
         super().__init__(parent)
         self.app = app_instance
         self.prompt_structure = deepcopy(self.app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE))
-        self.drag_data = {"item": None, "y": 0}
         self.result = None
 
-        self.withdraw()
-        if parent.winfo_viewable():
-            self.transient(parent)
-        if title:
-            self.title(title)
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.resize(1000, 700)
 
-        self.parent = parent
-        self.geometry("1000x700")
+        self.setup_ui()
 
-        main_container = ttk.Frame(self)
-        main_container.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
-        main_container.grid_rowconfigure(0, weight=1)
-        main_container.grid_columnconfigure(0, weight=1)
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
 
-        self.initial_focus = self.body(main_container)
-        self.buttonbox(main_container)
+        # Toolbar
+        toolbar = QHBoxLayout()
+        add_btn = QPushButton(_("Add"))
+        add_btn.clicked.connect(self.add_item)
+        toolbar.addWidget(add_btn)
 
-        self.protocol("WM_DELETE_WINDOW", self.cancel)
-        if self.parent is not None:
-            self.geometry(f"+{parent.winfo_rootx() + 50}+{parent.winfo_rooty() + 50}")
+        delete_btn = QPushButton(_("Delete Selected"))
+        delete_btn.clicked.connect(self.delete_item)
+        toolbar.addWidget(delete_btn)
 
-        self.deiconify()
-        if self.initial_focus:
-            self.initial_focus.focus_set()
+        reset_btn = QPushButton(_("Reset to Defaults"))
+        reset_btn.clicked.connect(self.reset_to_defaults)
+        toolbar.addWidget(reset_btn)
 
-        self.wait_visibility()
-        self.grab_set()
-        self.wait_window(self)
+        toolbar.addStretch(1)
 
-    def body(self, master):
-        toolbar = ttk.Frame(master)
-        toolbar.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
+        import_btn = QPushButton(_("Import Preset"))
+        import_btn.clicked.connect(self.import_preset)
+        toolbar.addWidget(import_btn)
 
-        ttk.Button(toolbar, text=_("Add"), command=self.add_item).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text=_("Delete Selected"), command=self.delete_item).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text=_("Reset to Defaults"), command=self.reset_to_defaults).pack(side=tk.LEFT, padx=2)
-        ttk.Button(toolbar, text=_("Import Preset"), command=self.import_preset).pack(side=tk.RIGHT, padx=2)
-        ttk.Button(toolbar, text=_("Export Preset"), command=self.export_preset).pack(side=tk.RIGHT, padx=2)
+        export_btn = QPushButton(_("Export Preset"))
+        export_btn.clicked.connect(self.export_preset)
+        toolbar.addWidget(export_btn)
+        main_layout.addLayout(toolbar)
 
-        tree_frame = ttk.Frame(master)
-        tree_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
-        tree_frame.grid_rowconfigure(0, weight=1)
-        tree_frame.grid_columnconfigure(0, weight=1)
-
-        cols = ("enabled", "type", "content")
-        self.tree = ttk.Treeview(tree_frame, columns=cols, show="headings", selectmode="browse")
-
-        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=vsb.set)
-
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-
-        self.tree.heading("enabled", text=_("Enabled"))
-        self.tree.heading("type", text=_("Type"))
-        self.tree.heading("content", text=_("Content"))
-
-        self.tree.column("enabled", width=50, anchor=tk.CENTER, stretch=False)
-        self.tree.column("type", width=100, anchor=tk.W, stretch=False)
-        self.tree.column("content", width=600)
-
-        self.tree.bind("<Double-1>", self.edit_item)
-        self.tree.bind("<ButtonPress-1>", self.on_press)
-        self.tree.bind("<B1-Motion>", self.on_motion)
-        self.tree.bind("<ButtonRelease-1>", self.on_release)
+        # Tree View
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabels([_("Enabled"), _("Type"), _("Content")])
+        self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.tree.header().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.tree.setSelectionBehavior(QTreeWidget.SelectRows)
+        self.tree.setDragDropMode(QTreeWidget.InternalMove)
+        self.tree.itemDoubleClicked.connect(self.edit_item)
+        main_layout.addWidget(self.tree)
 
         self.populate_tree()
-        return self.tree
+
+        # Buttons
+        button_box = QHBoxLayout()
+        button_box.addStretch(1)
+        ok_btn = QPushButton(_("OK"))
+        ok_btn.clicked.connect(self.accept)
+        button_box.addWidget(ok_btn)
+
+        cancel_btn = QPushButton(_("Cancel"))
+        cancel_btn.clicked.connect(self.reject)
+        button_box.addWidget(cancel_btn)
+        main_layout.addLayout(button_box)
 
     def populate_tree(self):
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+        self.tree.clear()
         for part in self.prompt_structure:
             enabled_char = "✔" if part.get("enabled", True) else "✖"
-            display_type = _(part["type"])
-            self.tree.insert("", "end", iid=part["id"], values=(
+            display_type = self.get_display_type(part["type"])
+            item = QTreeWidgetItem(self.tree, [
                 enabled_char,
                 display_type,
                 part["content"]
-            ))
+            ])
+            item.setData(0, Qt.UserRole, part["id"])
+            item.setFlags(item.flags() | Qt.ItemIsEditable)
+            self.tree.addTopLevelItem(item)
 
-    def on_press(self, event):
-        item = self.tree.identify_row(event.y)
-        if item:
-            self.drag_data["item"] = item
-            self.drag_data["y"] = event.y
+    def get_display_type(self, internal_type):
+        if internal_type == STRUCTURAL: return _("Structural Content")
+        if internal_type == STATIC: return _("Static Instruction")
+        if internal_type == DYNAMIC: return _("Dynamic Instruction")
+        return internal_type
 
-    def on_motion(self, event):
-        dragged_item = self.drag_data.get("item")
-        if not dragged_item:
-            return
+    def get_internal_type(self, display_type):
 
-        target_item = self.tree.identify_row(event.y)
+        if display_type == _("Structural Content"): return STRUCTURAL
+        if display_type == _("Static Instruction"): return STATIC
+        if display_type == _("Dynamic Instruction"): return DYNAMIC
+        return display_type
 
-        if target_item and target_item != dragged_item:
-            self.tree.move(dragged_item, "", self.tree.index(target_item))
-
-    def on_release(self, event):
-        if not self.drag_data["item"]:
-            return
-        new_order_ids = self.tree.get_children()
-        self.prompt_structure.sort(key=lambda p: new_order_ids.index(p["id"]))
-        self.drag_data["item"] = None
+    def get_current_order_from_tree(self):
+        new_order = []
+        for i in range(self.tree.topLevelItemCount()):
+            item = self.tree.topLevelItem(i)
+            item_id = item.data(0, Qt.UserRole)
+            original_part = next((p for p in self.prompt_structure if p["id"] == item_id), None)
+            if original_part:
+                new_order.append(original_part)
+        self.prompt_structure = new_order
 
     def add_item(self):
         new_part = {"id": str(uuid.uuid4()), "type": STATIC, "enabled": True, "content": _("New Instruction")}
-        self.prompt_structure.append(new_part)
-        self.populate_tree()
-        self.tree.selection_set(new_part["id"])
-        self.tree.see(new_part["id"])
+        dialog = PromptItemEditor(self, _("Add Prompt Fragment"), new_part)
+        if dialog.exec():
+            self.prompt_structure.append(dialog.result)
+            self.populate_tree()
+            for i in range(self.tree.topLevelItemCount()):
+                item = self.tree.topLevelItem(i)
+                if item.data(0, Qt.UserRole) == dialog.result["id"]:
+                    self.tree.setCurrentItem(item)
+                    self.tree.scrollToItem(item)
+                    break
 
     def delete_item(self):
-        selected_id = self.tree.selection()
-        if not selected_id:
+        selected_items = self.tree.selectedItems()
+        if not selected_items:
             return
-        selected_id = selected_id[0]
+        selected_id = selected_items[0].data(0, Qt.UserRole)
         self.prompt_structure = [p for p in self.prompt_structure if p["id"] != selected_id]
         self.populate_tree()
 
-    def edit_item(self, event):
-        item_id = self.tree.identify_row(event.y)
-        if not item_id:
-            return
-
+    def edit_item(self, item, column):
+        item_id = item.data(0, Qt.UserRole)
         part_to_edit = next((p for p in self.prompt_structure if p["id"] == item_id), None)
         if not part_to_edit:
             return
 
         dialog = PromptItemEditor(self, _("Edit Prompt Fragment"), part_to_edit)
-        if dialog.result:
-            part_to_edit.update(dialog.result)
+        if dialog.exec():
+            for i, p_item in enumerate(self.prompt_structure):
+                if p_item["id"] == item_id:
+                    self.prompt_structure[i] = dialog.result
+                    break
             self.populate_tree()
 
     def reset_to_defaults(self):
-        if messagebox.askyesno(_("Confirm"), _("Are you sure you want to reset the prompt to its default settings?\nAll current customizations will be lost."), parent=self):
+        reply = QMessageBox.question(self, _("Confirm"), _("Are you sure you want to reset the prompt to its default settings?\nAll current customizations will be lost."),
+                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
             self.prompt_structure = deepcopy(DEFAULT_PROMPT_STRUCTURE)
             self.populate_tree()
 
     def import_preset(self):
-        filepath = filedialog.askopenfilename(
-            title=_("Import Prompt Preset"),
-            filetypes=(("Overwatch Prompt Files", f"*{PROMPT_PRESET_EXTENSION}"), ("All Files", "*.*")),
-            defaultextension=PROMPT_PRESET_EXTENSION,
-            parent=self
+        filepath, selected_filter = QFileDialog.getOpenFileName(
+            self,
+            _("Import Prompt Preset"),
+            "",
+            _("Overwatch Prompt Files (*{ext});;All Files (*.*)").format(ext=PROMPT_PRESET_EXTENSION)
         )
         if not filepath: return
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 preset = json.load(f)
             if isinstance(preset, list) and all("content" in p for p in preset):
+                for p_item in preset:
+                    if "id" not in p_item: p_item["id"] = str(uuid.uuid4())
+                    if "enabled" not in p_item: p_item["enabled"] = True
+                    if "type" not in p_item: p_item["type"] = STATIC
                 self.prompt_structure = preset
                 self.populate_tree()
-                messagebox.showinfo(_("Success"), _("Preset imported successfully."), parent=self)
+                QMessageBox.information(self, _("Success"), _("Preset imported successfully."))
             else:
-                messagebox.showerror(_("Error"), _("Preset file format is incorrect."), parent=self)
+                QMessageBox.critical(self, _("Error"), _("Preset file format is incorrect."))
         except Exception as e:
-            messagebox.showerror(_("Import Failed"), _("Could not load preset file: {error}").format(error=e), parent=self)
+            QMessageBox.critical(self, _("Import Failed"), _("Could not load preset file: {error}").format(error=e))
 
     def export_preset(self):
-        filepath = filedialog.asksaveasfilename(
-            title=_("Export Prompt Preset"),
-            filetypes=(("Overwatch Prompt Files", f"*{PROMPT_PRESET_EXTENSION}"), ("All Files", "*.*")),
-            defaultextension=PROMPT_PRESET_EXTENSION,
-            initialfile="my_prompt_preset.owprompt",
-            parent=self
+        filepath, selected_filter = QFileDialog.getSaveFileName(
+            self,
+            _("Export Prompt Preset"),
+            "my_prompt_preset.owprompt",
+            _("Overwatch Prompt Files (*{ext});;All Files (*.*)").format(ext=PROMPT_PRESET_EXTENSION)
         )
         if not filepath: return
         try:
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(self.prompt_structure, f, indent=4, ensure_ascii=False)
-            messagebox.showinfo(_("Success"), _("Preset exported successfully."), parent=self)
+            QMessageBox.information(self, _("Success"), _("Preset exported successfully."))
         except Exception as e:
-            messagebox.showerror(_("Export Failed"), _("Could not save preset file: {error}").format(error=e), parent=self)
+            QMessageBox.critical(self, _("Export Failed"), _("Could not save preset file: {error}").format(error=e))
 
-    def buttonbox(self, master):
-        box = ttk.Frame(master)
-        ttk.Button(box, text=_("OK"), width=10, command=self.ok, default=tk.ACTIVE).pack(side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(box, text=_("Cancel"), width=10, command=self.cancel).pack(side=tk.LEFT, padx=5, pady=5)
-        box.grid(row=2, column=0, sticky="e", padx=5, pady=5)
-
-    def ok(self, event=None):
-        self.apply()
-        self.destroy()
-
-    def cancel(self, event=None):
-        self.destroy()
-
-    def apply(self):
+    def accept(self):
+        self.get_current_order_from_tree()
         self.app.config["ai_prompt_structure"] = self.prompt_structure
         self.app.save_config()
         self.app.update_statusbar(_("AI prompt structure updated."))
+        super().accept()
+
+    def reject(self):
+        super().reject()
 
 
-class PromptItemEditor(simpledialog.Dialog):
+class PromptItemEditor(QDialog):
     def __init__(self, parent, title, initial_data):
+        super().__init__(parent)
         self.initial_data = initial_data
-        super().__init__(parent, title)
+        self.result = None
 
-    def body(self, master):
-        self.geometry("600x400")
-        master.rowconfigure(1, weight=1)
-        master.columnconfigure(1, weight=1)
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.resize(600, 400)
 
-        ttk.Label(master, text=_("Type:")).grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        self.setup_ui()
 
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
+        type_layout = QHBoxLayout()
+        type_layout.addWidget(QLabel(_("Type:")))
+        self.type_combo = QComboBox()
         self.display_values = {
-            "Structural Content": _("Structural Content"),
-            "Static Instruction": _("Static Instruction"),
-            "Dynamic Instruction": _("Dynamic Instruction")
+            STRUCTURAL: _("Structural Content"),
+            STATIC: _("Static Instruction"),
+            DYNAMIC: _("Dynamic Instruction")
         }
-        self.type_var = tk.StringVar(
-            value=self.display_values.get(self.initial_data["type"], self.initial_data["type"]))
+        self.type_combo.addItems(list(self.display_values.values()))
+        self.type_combo.setCurrentText(self.display_values.get(self.initial_data["type"], self.initial_data["type"]))
+        type_layout.addWidget(self.type_combo)
 
-        type_menu = ttk.Combobox(master, textvariable=self.type_var,
-                                 values=list(self.display_values.values()),
-                                 state="readonly")
-        type_menu.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
+        self.enabled_checkbox = QCheckBox(_("Enable this fragment"))
+        self.enabled_checkbox.setChecked(self.initial_data.get("enabled", True))
+        type_layout.addWidget(self.enabled_checkbox)
+        type_layout.addStretch(1)
+        main_layout.addLayout(type_layout)
 
-        self.enabled_var = tk.BooleanVar(value=self.initial_data.get("enabled", True))
-        enabled_check = ttk.Checkbutton(master, text=_("Enable this fragment"), variable=self.enabled_var)
-        enabled_check.grid(row=0, column=2, padx=5, pady=5)
+        # Content editor
+        main_layout.addWidget(QLabel(_("Content:")))
+        self.content_text_edit = QTextEdit(self.initial_data["content"])
+        main_layout.addWidget(self.content_text_edit)
 
-        ttk.Label(master, text=_("Content:")).grid(row=1, column=0, sticky="nw", padx=5, pady=5)
-        self.content_text = tk.Text(master, wrap=tk.WORD, height=10)
-        self.content_text.grid(row=1, column=1, columnspan=2, sticky="nsew", padx=5, pady=5)
-        self.content_text.insert("1.0", self.initial_data["content"])
+        # OK/Cancel Buttons
+        dialog_buttons = QHBoxLayout()
+        dialog_buttons.addStretch(1)
+        ok_btn = QPushButton(_("OK"))
+        ok_btn.clicked.connect(self.accept)
+        dialog_buttons.addWidget(ok_btn)
 
-        return self.content_text
+        cancel_btn = QPushButton(_("Cancel"))
+        cancel_btn.clicked.connect(self.reject)
+        dialog_buttons.addWidget(cancel_btn)
+        main_layout.addLayout(dialog_buttons)
 
-    def apply(self):
-        selected_display_value = self.type_var.get()
+    def accept(self):
+        selected_display_value = self.type_combo.currentText()
         internal_key = self.initial_data["type"]
         for key, display_val in self.display_values.items():
             if display_val == selected_display_value:
@@ -255,7 +266,13 @@ class PromptItemEditor(simpledialog.Dialog):
                 break
 
         self.result = {
+            "id": self.initial_data["id"],
             "type": internal_key,
-            "enabled": self.enabled_var.get(),
-            "content": self.content_text.get("1.0", tk.END).strip()
+            "enabled": self.enabled_checkbox.isChecked(),
+            "content": self.content_text_edit.toPlainText().strip()
         }
+        super().accept()
+
+    def reject(self):
+        self.result = None
+        super().reject()

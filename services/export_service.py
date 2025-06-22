@@ -11,9 +11,9 @@ def export_to_json(filepath, translatable_objects, displayed_ids_order=None, app
     if displayed_ids_order and app_instance:
         obj_map = {obj.id: obj for obj in app_instance.translatable_objects}
         export_obj_list = [obj_map[ts_id] for ts_id in displayed_ids_order if ts_id in obj_map]
-    elif app_instance:
+    elif app_instance: # Fallback to all if no specific order/filter is provided
         export_obj_list = app_instance.translatable_objects
-    else:
+    else: # If no app_instance, assume translatable_objects is the full list
         export_obj_list = translatable_objects
 
     for ts_obj in export_obj_list:
@@ -40,9 +40,9 @@ def export_to_yaml(filepath, translatable_objects, displayed_ids_order=None, app
     if displayed_ids_order and app_instance:
         obj_map = {obj.id: obj for obj in app_instance.translatable_objects}
         export_obj_list = [obj_map[ts_id] for ts_id in displayed_ids_order if ts_id in obj_map]
-    elif app_instance:
+    elif app_instance: # Fallback to all if no specific order/filter is provided
         export_obj_list = app_instance.translatable_objects
-    else:
+    else: # If no app_instance, assume translatable_objects is the full list
         export_obj_list = translatable_objects
 
     for ts_obj in export_obj_list:

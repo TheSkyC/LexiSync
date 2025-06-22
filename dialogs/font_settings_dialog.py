@@ -1,98 +1,126 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import tkinter as tk
-from tkinter import ttk, font, messagebox
+from PySide6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QCheckBox, QSpinBox, QMessageBox, QWidget, QComboBox, QTabWidget
+)
+from PySide6.QtGui import QFont, QFontDatabase
+from PySide6.QtCore import Qt
 from utils.localization import _
 from utils.config_manager import get_default_font_settings
 
 
-class FontSettingsDialog(tk.Toplevel):
+class FontSettingsDialog(QDialog):
     def __init__(self, parent, title, app_instance):
         super().__init__(parent)
         self.app = app_instance
         self.config = app_instance.config
         self.font_settings_buffer = self.config["font_settings"].copy()
 
-        self.withdraw()
-        self.transient(parent)
-        self.title(title)
-        self.geometry("600x450")
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.resize(600, 450)
 
-        self.available_fonts = sorted([f for f in font.families() if not f.startswith('@')])
+        self.available_fonts = sorted(QFontDatabase().families())
 
-        main_frame = ttk.Frame(self, padding="10")
-        main_frame.pack(expand=True, fill="both")
+        self.setup_ui()
 
-        self.create_widgets(main_frame)
-        self.protocol("WM_DELETE_WINDOW", self.cancel)
-        self.deiconify()
-        self.wait_window(self)
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
 
-    def create_widgets(self, master):
-        self.override_var = tk.BooleanVar(value=self.font_settings_buffer["override_default_fonts"])
-        override_check = ttk.Checkbutton(master, text=_("Override default font settings"), variable=self.override_var,
-                                         command=self.toggle_controls)
-        override_check.pack(anchor="w", pady=(0, 10))
+        self.override_checkbox = QCheckBox(_("Override default font settings"))
+        self.override_checkbox.setChecked(self.font_settings_buffer["override_default_fonts"])
+        self.override_checkbox.stateChanged.connect(self.toggle_controls)
+        main_layout.addWidget(self.override_checkbox)
 
-        self.notebook = ttk.Notebook(master)
-        self.notebook.pack(expand=True, fill="both")
+        self.notebook = QTabWidget()
+        main_layout.addWidget(self.notebook)
 
         self.script_tabs = {}
         scripts = self.font_settings_buffer["scripts"]
         for script_name, settings in scripts.items():
-            frame = ttk.Frame(self.notebook, padding="10")
-            self.notebook.add(frame, text=script_name.capitalize())
+            frame = QWidget()
+            self.notebook.addTab(frame, script_name.capitalize())
             self.create_font_selector(frame, script_name, settings)
 
-        code_frame = ttk.Frame(self.notebook, padding="10")
+        code_frame = QWidget()
+        self.notebook.addTab(code_frame, _("Code Context"))
         self.create_font_selector(code_frame, "code_context", self.font_settings_buffer["code_context"])
 
-        button_frame = ttk.Frame(master)
-        button_frame.pack(fill="x", pady=(10, 0))
+        button_frame = QHBoxLayout()
+        reset_btn = QPushButton(_("Reset to Defaults"))
+        reset_btn.clicked.connect(self.reset_to_defaults)
+        button_frame.addWidget(reset_btn)
+        button_frame.addStretch(1)
 
-        ttk.Button(button_frame, text=_("Reset to Defaults"), command=self.reset_to_defaults).pack(side="left")
-        ttk.Button(button_frame, text=_("OK"), command=self.ok).pack(side="right", padx=5)
-        ttk.Button(button_frame, text=_("Cancel"), command=self.cancel).pack(side="right")
+        ok_btn = QPushButton(_("OK"))
+        ok_btn.clicked.connect(self.accept)
+        button_frame.addWidget(ok_btn)
+
+        cancel_btn = QPushButton(_("Cancel"))
+        cancel_btn.clicked.connect(self.reject)
+        button_frame.addWidget(cancel_btn)
+        main_layout.addLayout(button_frame)
 
         self.toggle_controls()
 
-    def create_font_selector(self, parent, script_name, settings):
-        parent.columnconfigure(1, weight=1)
-        ttk.Label(parent, text=_("Font Family:")).grid(row=0, column=0, sticky="w", pady=5)
-        family_var = tk.StringVar(value=settings["family"])
-        family_combo = ttk.Combobox(parent, textvariable=family_var, values=self.available_fonts)
-        family_combo.grid(row=0, column=1, sticky="ew", padx=5)
+    def create_font_selector(self, parent_widget, script_name, settings):
+        layout = QVBoxLayout(parent_widget)
+        layout.setContentsMargins(10, 10, 10, 10)
 
-        ttk.Label(parent, text=_("Size:")).grid(row=1, column=0, sticky="w", pady=5)
-        size_var = tk.IntVar(value=settings["size"])
-        size_spin = ttk.Spinbox(parent, from_=6, to=72, textvariable=size_var, width=5)
-        size_spin.grid(row=1, column=1, sticky="w", padx=5)
+        # Font Family
+        family_layout = QHBoxLayout()
+        family_layout.addWidget(QLabel(_("Font Family:")))
+        family_combo = QComboBox()
+        family_combo.addItems(self.available_fonts)
+        family_combo.setCurrentText(settings["family"])
+        family_layout.addWidget(family_combo)
+        layout.addLayout(family_layout)
 
-        ttk.Label(parent, text=_("Style:")).grid(row=2, column=0, sticky="w", pady=5)
-        style_var = tk.StringVar(value=settings["style"])
-        style_combo = ttk.Combobox(parent, textvariable=style_var, values=["normal", "bold", "italic", "bold italic"],
-                                   state="readonly", width=12)
-        style_combo.grid(row=2, column=1, sticky="w", padx=5)
+        # Size
+        size_layout = QHBoxLayout()
+        size_layout.addWidget(QLabel(_("Size:")))
+        size_spin = QSpinBox()
+        size_spin.setRange(6, 72)
+        size_spin.setValue(settings["size"])
+        size_layout.addWidget(size_spin)
+        size_layout.addStretch(1)
+        layout.addLayout(size_layout)
+
+        # Style
+        style_layout = QHBoxLayout()
+        style_layout.addWidget(QLabel(_("Style:")))
+        style_combo = QComboBox()
+        style_combo.addItems(["normal", "bold", "italic", "bold italic"])
+        style_combo.setCurrentText(settings["style"])
+        style_layout.addWidget(style_combo)
+        style_layout.addStretch(1)
+        layout.addLayout(style_layout)
+
+        layout.addStretch(1)
 
         self.script_tabs[script_name] = {
-            "frame": parent,
-            "family": family_var,
-            "size": size_var,
-            "style": style_var
+            "frame": parent_widget,
+            "family_combo": family_combo,
+            "size_spin": size_spin,
+            "style_combo": style_combo
         }
 
     def toggle_controls(self):
-        state = "normal" if self.override_var.get() else "disabled"
-        for child in self.notebook.winfo_children():
-            for widget in child.winfo_children():
-                widget.configure(state=state)
+        enabled = self.override_checkbox.isChecked()
+        for script_name, controls in self.script_tabs.items():
+            controls["family_combo"].setEnabled(enabled)
+            controls["size_spin"].setEnabled(enabled)
+            controls["style_combo"].setEnabled(enabled)
 
     def reset_to_defaults(self):
-        if messagebox.askyesno(_("Confirmation"), _("Reset all font settings to default?"), parent=self):
+        reply = QMessageBox.question(self, _("Confirmation"), _("Reset all font settings to default?"),
+                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
             default_settings = get_default_font_settings()
             self.font_settings_buffer = default_settings.copy()
-            self.override_var.set(default_settings["override_default_fonts"])
+            self.override_checkbox.setChecked(default_settings["override_default_fonts"])
             for script, controls in self.script_tabs.items():
                 if script in default_settings["scripts"]:
                     settings = default_settings["scripts"][script]
@@ -100,14 +128,14 @@ class FontSettingsDialog(tk.Toplevel):
                     settings = default_settings["code_context"]
                 else:
                     continue
-                controls["family"].set(settings["family"])
-                controls["size"].set(settings["size"])
-                controls["style"].set(settings["style"])
+                controls["family_combo"].setCurrentText(settings["family"])
+                controls["size_spin"].setValue(settings["size"])
+                controls["style_combo"].setCurrentText(settings["style"])
             self.toggle_controls()
 
-    def apply(self):
+    def accept(self):
         new_settings = self.font_settings_buffer.copy()
-        new_settings["override_default_fonts"] = self.override_var.get()
+        new_settings["override_default_fonts"] = self.override_checkbox.isChecked()
         for script, controls in self.script_tabs.items():
             if script in new_settings["scripts"]:
                 target = new_settings["scripts"][script]
@@ -115,20 +143,13 @@ class FontSettingsDialog(tk.Toplevel):
                 target = new_settings["code_context"]
             else:
                 continue
-            target["family"] = controls["family"].get()
-            target["size"] = controls["size"].get()
-            target["style"] = controls["style"].get()
+            target["family"] = controls["family_combo"].currentText()
+            target["size"] = controls["size_spin"].value()
+            target["style"] = controls["style_combo"].currentText()
 
         self.config["font_settings"] = new_settings
         self.app.save_config()
-        messagebox.showinfo(_("Restart Required"),
-                            _("Font settings have been changed. Please restart the application for the changes to take effect."),
-                            parent=self)
-        return True
+        super().accept()
 
-    def ok(self):
-        if self.apply():
-            self.destroy()
-
-    def cancel(self):
-        self.destroy()
+    def reject(self):
+        super().reject()

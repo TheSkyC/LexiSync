@@ -1,128 +1,94 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import tkinter as tk
-from tkinter import ttk, simpledialog
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTreeWidget, QTreeWidgetItem, QHeaderView
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from utils.localization import _
 
-class DiffDialog(simpledialog.Dialog):
+class DiffDialog(QDialog):
     def __init__(self, parent, title, diff_results):
+        super().__init__(parent)
         self.diff_results = diff_results
-
-        self.parent = parent
         self.result = None
 
-        tk.Toplevel.__init__(self, parent)
-        self.withdraw()
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.resize(1200, 700)
 
-        if parent.winfo_viewable():
-            self.transient(parent)
+        self.setup_ui()
 
-        if title:
-            super().title(title)
-
-        main_container = ttk.Frame(self)
-        self.initial_focus = self.body(main_container)
-        main_container.pack(padx=5, pady=5, expand=True, fill=tk.BOTH)
-
-        main_container.grid_rowconfigure(0, weight=0)
-        main_container.grid_rowconfigure(1, weight=1)
-        main_container.grid_columnconfigure(0, weight=1)
-
-        self.buttonbox(main_container)
-
-        if not self.initial_focus:
-            self.initial_focus = self
-
-        self.protocol("WM_DELETE_WINDOW", self.cancel)
-
-        if self.parent is not None:
-            self.geometry(f"1200x700+{parent.winfo_rootx() + 50}+{parent.winfo_rooty() + 50}")
-
-        self.deiconify()
-        self.focus_set()
-        self.wait_visibility()
-        self.grab_set()
-        self.wait_window(self)
-
-    def body(self, master):
-        master.grid_rowconfigure(0, weight=0)
-        master.grid_rowconfigure(1, weight=1)
-        master.grid_columnconfigure(0, weight=1)
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
 
         summary_text = self.diff_results.get('summary', _('Comparison Results Summary'))
-        summary_label = ttk.Label(
-            master,
-            text=summary_text,
-            wraplength=1100,
-            justify=tk.LEFT,
-            font=('Segoe UI', 10, 'bold')
-        )
-        summary_label.grid(row=0, column=0, sticky="ew", padx=5, pady=(0, 10))
+        summary_label = QLabel(summary_text)
+        summary_label.setWordWrap(True)
+        summary_label.setStyleSheet("font-weight: bold;")
+        main_layout.addWidget(summary_label)
 
-        tree_container = ttk.Frame(master)
-        tree_container.grid(row=1, column=0, sticky="nsew")
-
-        tree_container.grid_rowconfigure(0, weight=1)
-        tree_container.grid_columnconfigure(0, weight=1)
-
-        cols = ("status", "old_text", "new_text", "similarity")
-
-        self.tree = ttk.Treeview(tree_container, columns=cols, show="headings")
-        vsb = ttk.Scrollbar(tree_container, orient="vertical", command=self.tree.yview)
-        hsb = ttk.Scrollbar(tree_container, orient="horizontal", command=self.tree.xview)
-        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, sticky="ew")
-
-        self.tree.heading("status", text=_("Status"))
-        self.tree.heading("old_text", text=_("Old Version Original"))
-        self.tree.heading("new_text", text=_("New Version Original"))
-        self.tree.heading("similarity", text=_("Similarity"))
-
-        self.tree.column("status", width=80, anchor=tk.W)
-        self.tree.column("old_text", width=500, anchor=tk.W)
-        self.tree.column("new_text", width=500, anchor=tk.W)
-        self.tree.column("similarity", width=80, anchor=tk.CENTER)
-
-        self.tree.tag_configure('added', background='#DFF0D8', foreground='#3C763D')
-        self.tree.tag_configure('removed', background='#F2DEDE', foreground='#A94442')
-        self.tree.tag_configure('modified', background='#FCF8E3', foreground='#8A6D3B')
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabels([_("Status"), _("Old Version Original"), _("New Version Original"), _("Similarity")])
+        self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.tree.header().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.tree.header().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.tree.header().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        main_layout.addWidget(self.tree)
 
         self.populate_tree()
 
-        return self.tree
+        button_box = QHBoxLayout()
+        confirm_btn = QPushButton(_("Confirm and Update Project"))
+        confirm_btn.clicked.connect(self.accept)
+        button_box.addWidget(confirm_btn)
 
-    def buttonbox(self, master):
-        box = ttk.Frame(master)
-        ttk.Button(box, text=_("Confirm and Update Project"), width=18, command=self.ok, default=tk.ACTIVE).pack(
-            side=tk.LEFT, padx=5, pady=5)
-        ttk.Button(box, text=_("Cancel"), width=10, command=self.cancel).pack(
-            side=tk.LEFT, padx=5, pady=5)
-        box.grid(row=2, column=0, sticky="e", pady=(5, 0))
+        cancel_btn = QPushButton(_("Cancel"))
+        cancel_btn.clicked.connect(self.reject)
+        button_box.addWidget(cancel_btn)
 
-        self.bind("<Escape>", self.cancel)
-        self.bind("<Return>", self.ok)
+        main_layout.addLayout(button_box)
 
     def populate_tree(self):
-        for item in self.diff_results['added']:
-            self.tree.insert("", "end",
-                             values=(_("Added"), "", item['new_obj'].original_semantic, "N/A"),
-                             tags=('added',))
+        for item_data in self.diff_results['added']:
+            item = QTreeWidgetItem(self.tree, [_("Added"), "", item_data['new_obj'].original_semantic, "N/A"])
+            item.setBackground(0, QColor("#DFF0D8"))
+            item.setForeground(0, QColor("#3C763D"))
+            item.setBackground(1, QColor("#DFF0D8"))
+            item.setForeground(1, QColor("#3C763D"))
+            item.setBackground(2, QColor("#DFF0D8"))
+            item.setForeground(2, QColor("#3C763D"))
+            item.setBackground(3, QColor("#DFF0D8"))
+            item.setForeground(3, QColor("#3C763D"))
 
-        for item in self.diff_results['removed']:
-            self.tree.insert("", "end",
-                             values=(_("Removed"), item['old_obj'].original_semantic, "", "N/A"),
-                             tags=('removed',))
 
-        for item in self.diff_results['modified']:
-            sim_str = f"{item['similarity']:.2%}"
-            self.tree.insert("", "end",
-                             values=(_("Modified/Inherited"), item['old_obj'].original_semantic,
-                                     item['new_obj'].original_semantic, sim_str),
-                             tags=('modified',))
+        for item_data in self.diff_results['removed']:
+            item = QTreeWidgetItem(self.tree, [_("Removed"), item_data['old_obj'].original_semantic, "", "N/A"])
+            item.setBackground(0, QColor("#F2DEDE"))
+            item.setForeground(0, QColor("#A94442"))
+            item.setBackground(1, QColor("#F2DEDE"))
+            item.setForeground(1, QColor("#A94442"))
+            item.setBackground(2, QColor("#F2DEDE"))
+            item.setForeground(2, QColor("#A94442"))
+            item.setBackground(3, QColor("#F2DEDE"))
+            item.setForeground(3, QColor("#A94442"))
 
-    def apply(self):
+        for item_data in self.diff_results['modified']:
+            sim_str = f"{item_data['similarity']:.2%}"
+            item = QTreeWidgetItem(self.tree, [_("Modified/Inherited"), item_data['old_obj'].original_semantic,
+                                             item_data['new_obj'].original_semantic, sim_str])
+            item.setBackground(0, QColor("#FCF8E3"))
+            item.setForeground(0, QColor("#8A6D3B"))
+            item.setBackground(1, QColor("#FCF8E3"))
+            item.setForeground(1, QColor("#8A6D3B"))
+            item.setBackground(2, QColor("#FCF8E3"))
+            item.setForeground(2, QColor("#8A6D3B"))
+            item.setBackground(3, QColor("#FCF8E3"))
+            item.setForeground(3, QColor("#8A6D3B"))
+
+    def accept(self):
         self.result = True
+        super().accept()
+
+    def reject(self):
+        self.result = False
+        super().reject()

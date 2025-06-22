@@ -3,6 +3,7 @@
 
 import json
 from utils.constants import DEFAULT_API_URL
+from utils.localization import _ # Import _ for localization
 
 try:
     import requests
@@ -17,9 +18,9 @@ class AITranslator:
 
     def translate(self, text_to_translate, system_prompt):
         if not self.api_key:
-            raise ValueError("API Key 未设置。")
+            raise ValueError(_("API Key 未设置。"))
         if not requests:
-            raise ImportError("requests库未找到。AI翻译功能不可用。")
+            raise ImportError(_("requests库未找到。AI翻译功能不可用。"))
 
         headers = {
             "Content-Type": "application/json",
@@ -44,25 +45,25 @@ class AITranslator:
                 translation = result["choices"][0].get("message", {}).get("content", "").strip()
                 return translation
             else:
-                error_message = result.get("error", {}).get("message", "Unknown API error structure")
+                error_message = result.get("error", {}).get("message", _("Unknown API error structure"))
                 if not error_message and result.get("choices") and len(result["choices"]) > 0 and "message" not in \
                         result["choices"][0]:
                     error_message = result["choices"][0].get("finish_reason",
-                                                             "No content in message")
-                raise Exception(f"API Error: {error_message}. Response: {result}")
+                                                             _("No content in message"))
+                raise Exception(f"{_('API Error')}: {error_message}. {_('Response')}: {result}")
         except requests.exceptions.Timeout:
-            raise Exception("API请求超时。")
+            raise Exception(_("API请求超时。"))
         except requests.exceptions.RequestException as e:
-            raise Exception(f"网络错误或API请求失败: {e}")
+            raise Exception(f"{_('网络错误或API请求失败')}: {e}")
         except json.JSONDecodeError:
             raise Exception(
-                f"无法解码API响应。响应文本: {response.text if 'response' in locals() else 'No response object'}")
+                f"{_('无法解码API响应。响应文本')}: {response.text if 'response' in locals() else _('No response object')}")
         except Exception as e:
-            raise Exception(f"翻译时发生未知错误: {e}")
+            raise Exception(f"{_('翻译时发生未知错误')}: {e}")
 
     def test_connection(self, test_text="Hello, OverWatch.", system_prompt="Translate to Chinese:"):
         try:
             translation = self.translate(test_text, system_prompt)
-            return True, f"连接成功。测试翻译 ('{test_text}' -> '{translation[:30]}...')"
+            return True, f"{_('连接成功。测试翻译')} ('{test_text}' -> '{translation[:30]}...')"
         except Exception as e:
-            return False, f"连接失败: {e}"
+            return False, f"{_('连接失败')}: {e}"

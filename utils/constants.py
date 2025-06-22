@@ -10,13 +10,14 @@ PROJECT_FILE_EXTENSION = ".owproj"
 TM_FILE_EXCEL = "ow_translator_tm.xlsx"
 MAX_UNDO_HISTORY = 30
 DEFAULT_API_URL = "https://api.deepseek.com/chat/completions"
-APP_VERSION = "1.0.5"
+APP_VERSION = "1.1.0"
 PROMPT_PRESET_EXTENSION = ".owprompt"
 EXTRACTION_PATTERN_PRESET_EXTENSION = ".owextract"
 
-STRUCTURAL = _("Structural Content") #结构化内容
-STATIC = _("Static Instruction") #静态指令
-DYNAMIC = _("Dynamic Instruction") #动态指令
+STRUCTURAL = "Structural Content"
+STATIC = "Static Instruction"
+DYNAMIC = "Dynamic Instruction"
+
 DEFAULT_PROMPT_STRUCTURE = [
     {
         "id": str(uuid.uuid4()), "type": STRUCTURAL, "enabled": True,
@@ -78,17 +79,17 @@ DEFAULT_EXTRACTION_PATTERNS = [
 ]
 
 DEFAULT_KEYBINDINGS = {
-    'open_code_file': '<Control-o>',
-    'open_project': '<Control-Shift-O>',
-    'save_current_file': '<Control-s>',
-    'save_code_file': '<Control-Shift-S>',
-    'undo': '<Control-z>',
-    'redo': '<Control-y>',
-    'find_replace': '<Control-Shift-F>',
-    'copy_original': '<Control-Shift-C>',
-    'paste_translation': '<Control-Shift-V>',
-    'ai_translate_selected': '<Control-t>',
-    'toggle_reviewed': '<Control-r>',
-    'toggle_ignored': '<Control-i>',
-    'apply_and_next': '<Control-Return>',
+    'open_code_file': 'Control+O',
+    'open_project': 'Control+Shift+O',
+    'save_current_file': 'Control+S',
+    'save_code_file': 'Control+Shift+S',
+    'undo': 'Control+Z',
+    'redo': 'Control+Y',
+    'find_replace': 'Control+Shift+F',
+    'copy_original': 'Control+Shift+C',
+    'paste_translation': 'Control+Shift+V',
+    'ai_translate_selected': 'Control+T',
+    'toggle_reviewed': 'Control+R',
+    'toggle_ignored': 'Control+I',
+    'apply_and_next': 'Control+Return',
 }

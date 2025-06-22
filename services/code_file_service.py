@@ -6,7 +6,7 @@ import os
 import shutil
 import datetime
 from models.translatable_string import TranslatableString
-
+from utils.localization import _ # Import _ for localization
 
 def unescape_overwatch_string(s):
     res = []
@@ -153,13 +153,12 @@ def save_translated_code(filepath_to_save, original_raw_code_content, translatab
         backup_path = filepath_to_save + ".bak." + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         try:
             shutil.copy2(filepath_to_save, backup_path)
-            app_instance.update_statusbar(f"已创建备份: {os.path.basename(backup_path)}")
+            app_instance.update_statusbar(_("已创建备份: {filename}").format(filename=os.path.basename(backup_path)))
         except Exception as e_backup:
-            from tkinter import messagebox
-            if app_instance and app_instance.root:
-                messagebox.showwarning("备份失败",
-                                       f"无法创建代码文件备份 '{os.path.basename(backup_path)}': {e_backup}",
-                                       parent=app_instance.root)
+            from PySide6.QtWidgets import QMessageBox
+            if app_instance and app_instance.isVisible(): # Check if app is still running
+                QMessageBox.warning(app_instance, _("备份失败"),
+                                       _("无法创建代码文件备份 '{filename}': {error}").format(filename=os.path.basename(backup_path), error=e_backup))
             else:
                 print(f"备份失败: {e_backup}")
 

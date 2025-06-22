@@ -1,91 +1,124 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import tkinter as tk
-from tkinter import ttk, simpledialog, messagebox
+from PySide6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+    QCheckBox, QWidget, QMessageBox, QGroupBox
+)
+from PySide6.QtCore import Qt, QItemSelectionModel
 import re
 from utils.localization import _
 
 
-class AdvancedSearchDialog(simpledialog.Dialog):
+class AdvancedSearchDialog(QDialog):
     def __init__(self, parent, title, app_instance):
+        super().__init__(parent)
         self.app = app_instance
 
-        self.search_term_var = tk.StringVar()
-        self.replace_term_var = tk.StringVar()
-        self.case_sensitive_var = tk.BooleanVar(value=False)
-        self.search_in_original_var = tk.BooleanVar(value=True)
-        self.search_in_translation_var = tk.BooleanVar(value=True)
-        self.search_in_comment_var = tk.BooleanVar(value=True)
+        self.setWindowTitle(title)
+        self.setModal(False)
+
+        self.search_term_entry = QLineEdit()
+        self.replace_term_entry = QLineEdit()
+        self.case_sensitive_checkbox = QCheckBox(_("Case sensitive"))
+        self.search_in_original_checkbox = QCheckBox(_("Original"))
+        self.search_in_translation_checkbox = QCheckBox(_("Translation"))
+        self.search_in_comment_checkbox = QCheckBox(_("Comment"))
 
         self.search_results = []
         self.current_result_index = -1
         self.last_search_options = {}
 
-        super().__init__(parent, title)
+        self.setup_ui()
 
-    def body(self, master):
-        master.columnconfigure(1, weight=1)
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
 
-        ttk.Label(master, text=_("Find what:")).grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
-        self.search_entry = ttk.Entry(master, textvariable=self.search_term_var, width=40)
-        self.search_entry.grid(row=0, column=1, columnspan=2, sticky=tk.EW, padx=5, pady=2)
-        self.search_entry.bind("<Return>", lambda e: self._find_next())
-        self.search_term_var.trace_add("write", self._on_search_term_changed)
+        # Find what
+        find_layout = QHBoxLayout()
+        find_layout.addWidget(QLabel(_("Find what:")))
+        find_layout.addWidget(self.search_term_entry)
+        main_layout.addLayout(find_layout)
+        self.search_term_entry.textChanged.connect(self._on_search_term_changed)
+        self.search_term_entry.returnPressed.connect(self._find_next)
 
-        ttk.Label(master, text=_("Replace with:")).grid(row=1, column=0, sticky=tk.W, padx=5, pady=2)
-        self.replace_entry = ttk.Entry(master, textvariable=self.replace_term_var, width=40)
-        self.replace_entry.grid(row=1, column=1, columnspan=2, sticky=tk.EW, padx=5, pady=2)
+        # Replace with
+        replace_layout = QHBoxLayout()
+        replace_layout.addWidget(QLabel(_("Replace with:")))
+        replace_layout.addWidget(self.replace_term_entry)
+        main_layout.addLayout(replace_layout)
 
-        options_frame = ttk.LabelFrame(master, text=_("Options"), padding=5)
-        options_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=5, pady=5)
+        # Options
+        options_group = QGroupBox(_("Options"))
+        options_layout = QHBoxLayout(options_group)
+        options_layout.addWidget(self.case_sensitive_checkbox)
 
-        ttk.Checkbutton(options_frame, text=_("Case sensitive"), variable=self.case_sensitive_var).pack(side=tk.LEFT,
-                                                                                                        padx=5)
+        search_in_group = QWidget()
+        search_in_layout = QHBoxLayout(search_in_group)
+        search_in_layout.setContentsMargins(0,0,0,0)
+        search_in_layout.addWidget(QLabel(_("Search in:")))
+        search_in_layout.addWidget(self.search_in_original_checkbox)
+        search_in_layout.addWidget(self.search_in_translation_checkbox)
+        search_in_layout.addWidget(self.search_in_comment_checkbox)
+        search_in_layout.addStretch(1)
+        options_layout.addWidget(search_in_group)
+        options_layout.addStretch(1)
+        main_layout.addWidget(options_group)
 
-        search_in_frame = ttk.Frame(options_frame)
-        search_in_frame.pack(side=tk.LEFT, padx=10)
-        ttk.Label(search_in_frame, text=_("Search in:")).pack(side=tk.LEFT)
-        ttk.Checkbutton(search_in_frame, text=_("Original"), variable=self.search_in_original_var).pack(side=tk.LEFT)
-        ttk.Checkbutton(search_in_frame, text=_("Translation"), variable=self.search_in_translation_var).pack(
-            side=tk.LEFT)
-        ttk.Checkbutton(search_in_frame, text=_("Comment"), variable=self.search_in_comment_var).pack(side=tk.LEFT)
+        self.results_label = QLabel("")
+        main_layout.addWidget(self.results_label)
 
-        self.results_label = ttk.Label(master, text="")
-        self.results_label.grid(row=3, column=0, columnspan=3, sticky=tk.W, padx=5, pady=2)
+        # Buttons
+        button_box = QHBoxLayout()
+        find_next_btn = QPushButton(_("Find Next"))
+        find_next_btn.clicked.connect(self._find_next)
+        button_box.addWidget(find_next_btn)
 
-        return self.search_entry
+        find_prev_btn = QPushButton(_("Find Previous"))
+        find_prev_btn.clicked.connect(self._find_prev)
+        button_box.addWidget(find_prev_btn)
 
-    def buttonbox(self):
-        box = ttk.Frame(self)
-        ttk.Button(box, text=_("Find Next"), command=self._find_next).pack(side=tk.LEFT, padx=2)
-        ttk.Button(box, text=_("Find Previous"), command=self._find_prev).pack(side=tk.LEFT, padx=2)
-        ttk.Button(box, text=_("Replace"), command=self._replace_current).pack(side=tk.LEFT, padx=2)
-        ttk.Button(box, text=_("Replace All"), command=self._replace_all).pack(side=tk.LEFT, padx=2)
-        ttk.Button(box, text=_("Close"), command=self.destroy).pack(side=tk.RIGHT, padx=5)
-        self.bind("<Escape>", lambda e: self.destroy())
-        box.pack(pady=5)
+        replace_btn = QPushButton(_("Replace"))
+        replace_btn.clicked.connect(self._replace_current)
+        button_box.addWidget(replace_btn)
 
-    def destroy(self):
+        replace_all_btn = QPushButton(_("Replace All"))
+        replace_all_btn.clicked.connect(self._replace_all)
+        button_box.addWidget(replace_all_btn)
+
+        button_box.addStretch(1)
+
+        close_btn = QPushButton(_("Close"))
+        close_btn.clicked.connect(self.close)
+        button_box.addWidget(close_btn)
+        main_layout.addLayout(button_box)
+
+        # Set initial checkbox states
+        self.search_in_original_checkbox.setChecked(True)
+        self.search_in_translation_checkbox.setChecked(True)
+        self.search_in_comment_checkbox.setChecked(True)
+
+    def closeEvent(self, event):
         self._clear_all_highlights()
-        super().destroy()
+        super().closeEvent(event)
 
-    def _on_search_term_changed(self, *args):
+    def _on_search_term_changed(self, text):
         self.last_search_options = {}
-        self.results_label.config(text="")
+        self.results_label.setText("")
+        self._clear_all_highlights()
 
     def _get_current_search_options(self):
         return {
-            "term": self.search_term_var.get(),
-            "case": self.case_sensitive_var.get(),
-            "in_orig": self.search_in_original_var.get(),
-            "in_trans": self.search_in_translation_var.get(),
-            "in_comment": self.search_in_comment_var.get()
+            "term": self.search_term_entry.text(),
+            "case": self.case_sensitive_checkbox.isChecked(),
+            "in_orig": self.search_in_original_checkbox.isChecked(),
+            "in_trans": self.search_in_translation_checkbox.isChecked(),
+            "in_comment": self.search_in_comment_checkbox.isChecked()
         }
 
     def _perform_search(self):
         current_options = self._get_current_search_options()
-        if self.last_search_options == current_options:
+        if self.last_search_options == current_options and self.search_results:
             return True
 
         self._clear_all_highlights()
@@ -94,76 +127,67 @@ class AdvancedSearchDialog(simpledialog.Dialog):
 
         term = current_options["term"]
         if not term:
-            self.results_label.config(text=_("Please enter a search term."))
+            self.results_label.setText(_("Please enter a search term."))
             return False
 
         flags = 0 if current_options["case"] else re.IGNORECASE
         try:
             pattern = re.compile(re.escape(term), flags)
         except re.error:
-            self.results_label.config(text=_("Invalid search term."))
+            self.results_label.setText(_("Invalid search term."))
             return False
 
-        for row_idx, ts_id in enumerate(self.app.displayed_string_ids):
-            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+        for row_idx in range(self.app.proxy_model.rowCount()):
+            proxy_index = self.app.proxy_model.index(row_idx, 0)
+            ts_obj = self.app.proxy_model.data(proxy_index, Qt.UserRole)
             if not ts_obj: continue
 
             if current_options["in_orig"] and pattern.search(ts_obj.original_semantic):
-                self.search_results.append({"row": row_idx, "col": 2, "id": ts_id})
+                self.search_results.append({"row": row_idx, "col": 2, "id": ts_obj.id})
             if current_options["in_trans"] and pattern.search(ts_obj.get_translation_for_ui()):
-                self.search_results.append({"row": row_idx, "col": 3, "id": ts_id})
+                self.search_results.append({"row": row_idx, "col": 3, "id": ts_obj.id})
             if current_options["in_comment"] and pattern.search(ts_obj.comment):
-                self.search_results.append({"row": row_idx, "col": 4, "id": ts_id})
+                self.search_results.append({"row": row_idx, "col": 4, "id": ts_obj.id})
 
         self.search_results.sort(key=lambda r: (r["row"], r["col"]))
         self.last_search_options = current_options
         self._highlight_all_matches()
 
         if self.search_results:
-            self.results_label.config(text=_("Found {count} matches.").format(count=len(self.search_results)))
+            self.results_label.setText(_("Found {count} matches.").format(count=len(self.search_results)))
         else:
-            self.results_label.config(text=_("No matches found."))
+            self.results_label.setText(_("No matches found."))
 
         return bool(self.search_results)
 
     def _clear_all_highlights(self):
-        self.app.sheet.dehighlight_all()
-        self.app._apply_row_highlighting()
-        self.app.sheet.redraw()
+        self.app.table_view.clearSelection()
+        self.app.sheet_model.dataChanged.emit(self.app.sheet_model.index(0,0), self.app.sheet_model.index(self.app.sheet_model.rowCount()-1, self.app.sheet_model.columnCount()-1), [Qt.BackgroundRole, Qt.ForegroundRole])
+        self.app.table_view.viewport().update()
 
     def _highlight_all_matches(self):
-        self.app.sheet.dehighlight_all()
-        self.app._apply_row_highlighting()
-
-        unique_rows = {res["row"] for res in self.search_results}
-        if unique_rows:
-            self.app.sheet.highlight_rows(rows=list(unique_rows), bg='#FFFACD', redraw=False)
-
-        for res in self.search_results:
-            self.app.sheet.highlight_cells(row=res["row"], column=res["col"], bg='#FFDAB9', redraw=False)
-
-        self.app.sheet.redraw()
+        pass
 
     def _update_current_selection_highlight(self):
-        self._highlight_all_matches()
         if self.current_result_index != -1 and self.search_results:
             res = self.search_results[self.current_result_index]
-            self.app.sheet.highlight_cells(row=res["row"], column=res["col"], bg='#7CFC00', fg='black', redraw=True)
+            proxy_index = self.app.proxy_model.index(res["row"], res["col"])
+            if proxy_index.isValid():
+                self.app.table_view.selectionModel().clearSelection()
+                self.app.table_view.selectionModel().setCurrentIndex(proxy_index, QItemSelectionModel.ClearAndSelect)
+                self.app.table_view.scrollTo(proxy_index, self.app.table_view.PositionAtCenter)
+                self.app.on_sheet_select(proxy_index, proxy_index)
 
     def _navigate_to_result(self):
         if not self.search_results:
             return
 
-        res = self.search_results[self.current_result_index]
-        self.app.sheet.select_cell(row=res["row"], column=res["col"])
-        self.app.sheet.see(row=res["row"], column=res["col"], keep_xscroll=False)
-        self.app.on_sheet_select()
+        self._update_current_selection_highlight()
 
-        self.results_label.config(
-            text=_("Match {current}/{total}").format(current=self.current_result_index + 1,
+        self.results_label.setText(
+            _("Match {current}/{total}").format(current=self.current_result_index + 1,
                                                      total=len(self.search_results))
         )
-        self._update_current_selection_highlight()
 
     def _find_next(self):
         if not self._perform_search() or not self.search_results:
@@ -183,58 +207,56 @@ class AdvancedSearchDialog(simpledialog.Dialog):
     def _replace_current(self):
         if self.current_result_index < 0 or self.current_result_index >= len(self.search_results):
             self._find_next()
-            return
+            if self.current_result_index < 0:
+                return
 
         res = self.search_results[self.current_result_index]
         ts_obj = self.app._find_ts_obj_by_id(res["id"])
         if not ts_obj: return
 
-        term = self.search_term_var.get()
-        replace_with = self.replace_term_var.get()
+        term = self.search_term_entry.text()
+        replace_with = self.replace_term_entry.text()
         if not term: return
 
-        flags = 0 if self.case_sensitive_var.get() else re.IGNORECASE
+        flags = 0 if self.case_sensitive_checkbox.isChecked() else re.IGNORECASE
         pattern = re.compile(re.escape(term), flags)
 
-        # --- NEW LOGIC: Handle replacement based on column ---
         target_column_index = res["col"]
 
-        if target_column_index == 3:  # Translation column
+        if target_column_index == 3:
             current_text = ts_obj.get_translation_for_ui()
             new_text, num_replacements = pattern.subn(replace_with, current_text, count=1)
             if num_replacements > 0:
                 self.app._apply_translation_to_model(ts_obj, new_text, source="replace_current")
 
-        elif target_column_index == 4:  # Comment column
+        elif target_column_index == 4:
             current_text = ts_obj.comment
             new_text, num_replacements = pattern.subn(replace_with, current_text, count=1)
             if num_replacements > 0:
                 self.app._apply_comment_to_model(ts_obj, new_text)
 
-        else:  # Original column or other
-            messagebox.showinfo(_("Info"), _("Match is not in a replaceable column (Translation or Comment)."),
-                                parent=self)
-        # --- END OF NEW LOGIC ---
-
+        else:
+            QMessageBox.information(self, _("Info"), _("Match is not in a replaceable column (Translation or Comment)."))
+            self._find_next()
+            return
+        self.last_search_options = {}
+        self._perform_search()
         self._find_next()
 
     def _replace_all(self):
         if not self._perform_search() or not self.search_results:
-            messagebox.showinfo(_("Replace All"), _("No matches found to replace."), parent=self)
+            QMessageBox.information(self, _("Replace All"), _("No matches found to replace."))
             return
 
-        term = self.search_term_var.get()
-        replace_with = self.replace_term_var.get()
-
-        # Filter results for replaceable columns (3: Translation, 4: Comment)
+        term = self.search_term_entry.text()
+        replace_with = self.replace_term_entry.text()
         trans_results = [res for res in self.search_results if res["col"] == 3]
         comment_results = [res for res in self.search_results if res["col"] == 4]
 
         if not trans_results and not comment_results:
-            messagebox.showinfo(_("Replace All"), _("No matches found in Translation or Comment columns."), parent=self)
+            QMessageBox.information(self, _("Replace All"), _("No matches found in Translation or Comment columns."))
             return
 
-        # Build confirmation message
         msg_parts = []
         if trans_results:
             msg_parts.append(_("{count} in Translation").format(count=len(trans_results)))
@@ -243,16 +265,14 @@ class AdvancedSearchDialog(simpledialog.Dialog):
 
         confirm_msg = _("Are you sure you want to replace all occurrences?\nFound: {details}.").format(
             details=", ".join(msg_parts))
-        if not messagebox.askyesno(_("Confirm Replace All"), confirm_msg, parent=self):
+        reply = QMessageBox.question(self, _("Confirm Replace All"), confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.No:
             return
 
-        flags = 0 if self.case_sensitive_var.get() else re.IGNORECASE
+        flags = 0 if self.case_sensitive_checkbox.isChecked() else re.IGNORECASE
         pattern = re.compile(re.escape(term), flags)
 
         bulk_changes = []
-
-        # --- NEW: Process both translation and comment replacements ---
-        # Use a set to process each object only once per field type
         processed_ids_trans = set()
         for res in trans_results:
             if res["id"] in processed_ids_trans: continue
@@ -280,17 +300,16 @@ class AdvancedSearchDialog(simpledialog.Dialog):
                 bulk_changes.append(
                     {'string_id': ts_obj.id, 'field': 'comment', 'old_value': old_text, 'new_value': new_text})
             processed_ids_comment.add(res["id"])
-        # --- END OF NEW LOGIC ---
 
         if bulk_changes:
             self.app.add_to_undo_history('bulk_replace_all', {'changes': bulk_changes})
             self.app.mark_project_modified()
             self.app._run_and_refresh_with_validation()
-            messagebox.showinfo(_("Replace All Complete"),
-                                _("Changes made to {count} field(s).").format(count=len(bulk_changes)), parent=self)
+            QMessageBox.information(self, _("Replace All Complete"),
+                                _("Changes made to {count} field(s).").format(count=len(bulk_changes)))
         else:
-            messagebox.showinfo(_("Replace All"), _("No occurrences were replaced."), parent=self)
+            QMessageBox.information(self, _("Replace All"), _("No occurrences were replaced."))
 
         self.last_search_options = {}
-        self.results_label.config(text=_("Replacement complete."))
+        self.results_label.setText(_("Replacement complete."))
         self._clear_all_highlights()

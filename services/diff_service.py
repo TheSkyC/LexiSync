@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from difflib import SequenceMatcher
+from utils.localization import _ # Import _ for localization
 
 
 def diff_and_merge_strings(old_strings, new_strings, similarity_threshold=0.95):
@@ -31,7 +32,7 @@ def diff_and_merge_strings(old_strings, new_strings, similarity_threshold=0.95):
             new_s.translation = best_match_old_s.translation
             new_s.is_ignored = best_match_old_s.is_ignored
             new_s.is_reviewed = False
-            new_s.comment = f"[继承自相似度 {best_match_score:.2f}% 的原文] {best_match_old_s.comment}".strip()
+            new_s.comment = f"[{_('Inherited from old version')}] {best_match_old_s.comment}".strip()
             merged_strings.append(new_s)
             continue
         merged_strings.append(new_s)

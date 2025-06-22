@@ -4,13 +4,16 @@
 import gettext
 import os
 import locale
+from PySide6.QtCore import QObject, Signal
 
+class LanguageManager(QObject):
+    language_changed = Signal()
 
-class LanguageManager:
     def __init__(self):
+        super().__init__()
         self.translator = lambda s: s
         self.app_name = "overwatch_localizer"
-        self.locale_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'locales')
+        self.locale_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'locales')
         self.supported_languages = self._get_supported_languages()
         self.default_lang = 'en_US'
         self.current_lang_code = self.default_lang
@@ -61,13 +64,13 @@ class LanguageManager:
             lang_code = self.get_best_match_language()
         self.current_lang_code = lang_code
 
-
         try:
-            lang = gettext.translation(self.app_name, localedir=self.locale_dir, languages=[lang_code])
+            lang = gettext.translation(self.app_name, localedir=self.locale_dir, languages=[lang_code], fallback=True)
+            lang.install()
             self.translator = lang.gettext
             print(f"Successfully set up translation for '{lang_code}'")
-        except FileNotFoundError:
-            print(f"Warning: Translation for '{lang_code}' not found. Falling back to default.")
+        except Exception as e:
+            print(f"Warning: Translation for '{lang_code}' not found or failed to load: {e}. Falling back to default.")
             self.translator = lambda s: s
 
     def get_translator(self):

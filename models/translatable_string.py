@@ -3,6 +3,7 @@
 
 import uuid
 from utils.constants import APP_NAMESPACE_UUID, MAX_UNDO_HISTORY
+from utils.localization import _
 
 class TranslatableString:
     def __init__(self, original_raw, original_semantic, line_num, char_pos_start_in_file, char_pos_end_in_file,

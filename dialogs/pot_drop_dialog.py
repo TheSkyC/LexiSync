@@ -1,32 +1,40 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import tkinter as tk
-from tkinter import ttk, simpledialog
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtCore import Qt
 from utils.localization import _
 
+class POTDropDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.result = None
 
-class POTDropDialog(simpledialog.Dialog):
-    def body(self, master):
-        ttk.Label(master, text=_("A POT file was dropped. What would you like to do?")).pack(pady=10, padx=10)
-        return None
+        self.setWindowTitle(_("POT File Detected"))
+        self.setModal(True)
 
-    def buttonbox(self):
-        box = ttk.Frame(self)
+        self.setup_ui()
 
-        update_btn = ttk.Button(box, text=_("Update from POT"), command=lambda: self.done("update"))
-        update_btn.pack(side=tk.LEFT, padx=5, pady=5)
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(QLabel(_("A POT file was dropped. What would you like to do?")))
 
-        import_btn = ttk.Button(box, text=_("Import as New File"), command=lambda: self.done("import"))
-        import_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        button_box = QHBoxLayout()
 
-        cancel_btn = ttk.Button(box, text=_("Cancel"), command=self.cancel)
-        cancel_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        update_btn = QPushButton(_("Update from POT"))
+        update_btn.clicked.connect(lambda: self.done("update"))
+        button_box.addWidget(update_btn)
 
-        self.bind("<Escape>", self.cancel)
+        import_btn = QPushButton(_("Import as New File"))
+        import_btn.clicked.connect(lambda: self.done("import"))
+        button_box.addWidget(import_btn)
 
-        box.pack()
+        cancel_btn = QPushButton(_("Cancel"))
+        cancel_btn.clicked.connect(self.reject)
+        button_box.addWidget(cancel_btn)
+
+        main_layout.addLayout(button_box)
 
     def done(self, result):
         self.result = result
-        self.destroy()
+        self.accept()

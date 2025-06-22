@@ -17,23 +17,20 @@ def generate_prompt_from_structure(prompt_structure, placeholders):
         content = part["content"]
         part_type = part["type"]
 
+        # Check for dynamic content validity
         if part_type == DYNAMIC:
             found_placeholders = placeholder_pattern.findall(content)
-            if not found_placeholders:
-                final_prompt_parts.append(f"{numbered_instruction_index}. {content}")
-                numbered_instruction_index += 1
-                continue
-
             is_valid = True
             for ph in found_placeholders:
                 full_ph = f"[{ph}]"
+                # If a dynamic placeholder is in the content but its value is empty, skip this part
                 if not placeholders.get(full_ph, "").strip():
                     is_valid = False
                     break
-
             if not is_valid:
                 continue
 
+        # Replace placeholders in content
         for ph_full, ph_value in placeholders.items():
             content = content.replace(ph_full, ph_value)
 
