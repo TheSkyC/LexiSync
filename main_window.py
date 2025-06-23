@@ -510,12 +510,17 @@ class OverwatchLocalizerApp(QMainWindow):
         self.save_config()
 
     def _setup_keybindings(self):
-        for action in self.menuBar().actions():
-            for sub_action in action.menu().actions():
-                sub_action.setShortcut(QKeySequence())
-
         bindings = self.config.get('keybindings', DEFAULT_KEYBINDINGS)
-
+        self.action_open_code_file.setShortcut(QKeySequence(bindings.get('open_code_file', '')))
+        self.action_open_project.setShortcut(QKeySequence(bindings.get('open_project', '')))
+        self.action_save_current_file.setShortcut(QKeySequence(bindings.get('save_current_file', '')))
+        self.action_save_code_file.setShortcut(QKeySequence(bindings.get('save_code_file', '')))
+        self.action_undo.setShortcut(QKeySequence(bindings.get('undo', '')))
+        self.action_redo.setShortcut(QKeySequence(bindings.get('redo', '')))
+        self.action_find_replace.setShortcut(QKeySequence(bindings.get('find_replace', '')))
+        self.action_copy_original.setShortcut(QKeySequence(bindings.get('copy_original', '')))
+        self.action_paste_translation.setShortcut(QKeySequence(bindings.get('paste_translation', '')))
+        self.action_ai_translate_selected.setShortcut(QKeySequence(bindings.get('ai_translate_selected', '')))
         self.ACTION_MAP_FOR_DIALOG = {
             'open_code_file': self.action_open_code_file,
             'open_project': self.action_open_project,
@@ -529,23 +534,26 @@ class OverwatchLocalizerApp(QMainWindow):
             'ai_translate_selected': self.action_ai_translate_selected,
         }
 
-        action_toggle_reviewed = QAction(_("Toggle Reviewed Status"), self)
-        action_toggle_reviewed.setShortcut(QKeySequence(bindings.get('toggle_reviewed', '')))
-        action_toggle_reviewed.triggered.connect(self.cm_toggle_reviewed_status)
-        self.addAction(action_toggle_reviewed)
-        self.ACTION_MAP_FOR_DIALOG['toggle_reviewed'] = action_toggle_reviewed
+        global_actions = {
+            'toggle_reviewed': self.cm_toggle_reviewed_status,
+            'toggle_ignored': self.cm_toggle_ignored_status,
+            'apply_and_next': self.apply_and_select_next_untranslated,
+        }
 
-        action_toggle_ignored = QAction(_("Toggle Ignored Status"), self)
-        action_toggle_ignored.setShortcut(QKeySequence(bindings.get('toggle_ignored', '')))
-        action_toggle_ignored.triggered.connect(self.cm_toggle_ignored_status)
-        self.addAction(action_toggle_ignored)
-        self.ACTION_MAP_FOR_DIALOG['toggle_ignored'] = action_toggle_ignored
+        for name, slot in global_actions.items():
+            shortcut_str = bindings.get(name, '')
+            if not shortcut_str:
+                continue
 
-        action_apply_and_next = QAction(_("Apply and Go to Next Untranslated"), self)
-        action_apply_and_next.setShortcut(QKeySequence(bindings.get('apply_and_next', '')))
-        action_apply_and_next.triggered.connect(self.apply_and_select_next_untranslated)
-        self.addAction(action_apply_and_next)
-        self.ACTION_MAP_FOR_DIALOG['apply_and_next'] = action_apply_and_next
+
+            action = QAction(self)  # 父对象是主窗口
+            action.setShortcut(QKeySequence(shortcut_str))
+            action.triggered.connect(slot)
+
+
+            self.addAction(action)
+
+            self.ACTION_MAP_FOR_DIALOG[name] = action
 
 
     def show_keybinding_dialog(self):
