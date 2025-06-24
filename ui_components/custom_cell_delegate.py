@@ -25,18 +25,39 @@ class CustomCellDelegate(QStyledItemDelegate):
         if index.column() in [2, 3] and original_text and '\n' in original_text:
             display_option.text = original_text.replace('\n', '↵')
 
+        background_color = index.data(Qt.BackgroundRole)
+        if background_color and isinstance(background_color, QColor):
+            painter.fillRect(option.rect, background_color)
+
         super().paint(painter, display_option, index)
+
+        source_index = index.model().mapToSource(index)
+        is_search_result = (source_index.row(), source_index.column()) in index.model().search_results_indices
+
+        if is_search_result:
+            painter.fillRect(option.rect, QColor(147, 112, 219, 70))  # 半透明紫色
 
         ts_obj = index.data(Qt.UserRole)
         if not ts_obj: return
-        is_focused = (self.app and ts_obj.id == self.app.current_focused_ts_id)
-        is_selected = option.state & self.parent().style().StateFlag.State_Selected
 
-        if is_selected:
+        is_selected = option.state & self.parent().style().StateFlag.State_Selected
+        is_focused = (self.app and ts_obj.id == self.app.current_focused_ts_id)
+        if is_selected or is_focused or is_search_result:
             painter.save()
-            pen = self.focus_border_pen if is_focused else self.selection_border_pen
+
+            if is_focused:
+                pen = self.focus_border_pen
+            elif is_selected:
+                pen = self.selection_border_pen
+            else:
+                search_pen = QPen(QColor(255, 165, 0), 1)
+                search_pen.setStyle(Qt.PenStyle.DotLine)
+                pen = search_pen
+
+
             painter.setPen(pen)
             rect = option.rect
+
             painter.drawLine(rect.topLeft(), rect.topRight())
             painter.drawLine(rect.bottomLeft().x(), rect.bottomLeft().y() - 1, rect.bottomRight().x(),
                              rect.bottomRight().y() - 1)

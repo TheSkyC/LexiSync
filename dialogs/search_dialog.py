@@ -3,9 +3,9 @@
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QCheckBox, QWidget, QMessageBox, QGroupBox
+    QCheckBox, QWidget, QMessageBox, QGroupBox, QAbstractItemView
 )
-from PySide6.QtCore import Qt, QItemSelectionModel
+from PySide6.QtCore import Qt, QItemSelectionModel, QModelIndex, QTimer
 import re
 from utils.localization import _
 
@@ -99,7 +99,7 @@ class AdvancedSearchDialog(QDialog):
         self.search_in_comment_checkbox.setChecked(True)
 
     def closeEvent(self, event):
-        self._clear_all_highlights()
+        self.app.proxy_model.set_search_term("")
         super().closeEvent(event)
 
     def _on_search_term_changed(self, text):
@@ -117,48 +117,18 @@ class AdvancedSearchDialog(QDialog):
         }
 
     def _perform_search(self):
-        current_options = self._get_current_search_options()
-        if self.last_search_options == current_options and self.search_results:
-            return True
-
-        self._clear_all_highlights()
-        self.search_results = []
-        self.current_result_index = -1
-
-        term = current_options["term"]
+        term = self.search_term_entry.text()
         if not term:
+            self.app.proxy_model.set_search_term("")
             self.results_label.setText(_("Please enter a search term."))
             return False
-
-        flags = 0 if current_options["case"] else re.IGNORECASE
-        try:
-            pattern = re.compile(re.escape(term), flags)
-        except re.error:
-            self.results_label.setText(_("Invalid search term."))
-            return False
-
-        for row_idx in range(self.app.proxy_model.rowCount()):
-            proxy_index = self.app.proxy_model.index(row_idx, 0)
-            ts_obj = self.app.proxy_model.data(proxy_index, Qt.UserRole)
-            if not ts_obj: continue
-
-            if current_options["in_orig"] and pattern.search(ts_obj.original_semantic):
-                self.search_results.append({"row": row_idx, "col": 2, "id": ts_obj.id})
-            if current_options["in_trans"] and pattern.search(ts_obj.get_translation_for_ui()):
-                self.search_results.append({"row": row_idx, "col": 3, "id": ts_obj.id})
-            if current_options["in_comment"] and pattern.search(ts_obj.comment):
-                self.search_results.append({"row": row_idx, "col": 4, "id": ts_obj.id})
-
-        self.search_results.sort(key=lambda r: (r["row"], r["col"]))
-        self.last_search_options = current_options
-        self._highlight_all_matches()
-
-        if self.search_results:
-            self.results_label.setText(_("Found {count} matches.").format(count=len(self.search_results)))
+        self.app.proxy_model.set_search_term(term)
+        count = len(self.app.proxy_model.search_results_indices)
+        if count > 0:
+            self.results_label.setText(_("Found {count} matches.").format(count=count))
         else:
             self.results_label.setText(_("No matches found."))
-
-        return bool(self.search_results)
+        return count > 0
 
     def _clear_all_highlights(self):
         self.app.table_view.clearSelection()
@@ -175,43 +145,67 @@ class AdvancedSearchDialog(QDialog):
             if proxy_index.isValid():
                 self.app.table_view.selectionModel().clearSelection()
                 self.app.table_view.selectionModel().setCurrentIndex(proxy_index, QItemSelectionModel.ClearAndSelect)
-                self.app.table_view.scrollTo(proxy_index, self.app.table_view.PositionAtCenter)
-                self.app.on_sheet_select(proxy_index, proxy_index)
+                self.app.table_view.scrollTo(proxy_index, QAbstractItemView.ScrollHint.PositionAtCenter)
+                self.app.on_sheet_select(proxy_index, QModelIndex())
+
+    def _get_sorted_search_results(self):
+        if not self.app.proxy_model.search_results_indices:
+            return []
+        return sorted(list(self.app.proxy_model.search_results_indices), key=lambda item: (item[0], item[1]))
 
     def _navigate_to_result(self):
-        if not self.search_results:
+        sorted_results = self._get_sorted_search_results()
+        if not sorted_results or self.current_result_index < 0 or self.current_result_index >= len(sorted_results):
             return
+        source_row, source_col = sorted_results[self.current_result_index]
+        source_index = self.app.sheet_model.index(source_row, source_col)
+        proxy_index = self.app.proxy_model.mapFromSource(source_index)
 
-        self._update_current_selection_highlight()
+        if proxy_index.isValid():
+            self.app.table_view.selectionModel().clearSelection()
+            self.app.table_view.selectionModel().setCurrentIndex(proxy_index, QItemSelectionModel.ClearAndSelect)
+            self.app.table_view.scrollTo(proxy_index, QAbstractItemView.ScrollHint.PositionAtCenter)
 
         self.results_label.setText(
             _("Match {current}/{total}").format(current=self.current_result_index + 1,
-                                                     total=len(self.search_results))
+                                                total=len(sorted_results))
         )
 
     def _find_next(self):
-        if not self._perform_search() or not self.search_results:
+        if not self._perform_search():
             return
 
-        self.current_result_index = (self.current_result_index + 1) % len(self.search_results)
+        sorted_results = self._get_sorted_search_results()
+        if not sorted_results:
+            return
+
+        self.current_result_index = (self.current_result_index + 1) % len(sorted_results)
         self._navigate_to_result()
 
     def _find_prev(self):
-        if not self._perform_search() or not self.search_results:
+        if not self._perform_search():
             return
 
-        self.current_result_index = (self.current_result_index - 1 + len(self.search_results)) % len(
-            self.search_results)
+        sorted_results = self._get_sorted_search_results()
+        if not sorted_results:
+            return
+
+        self.current_result_index = (self.current_result_index - 1 + len(sorted_results)) % len(sorted_results)
         self._navigate_to_result()
 
     def _replace_current(self):
-        if self.current_result_index < 0 or self.current_result_index >= len(self.search_results):
-            self._find_next()
-            if self.current_result_index < 0:
-                return
+        sorted_results = self._get_sorted_search_results()
 
-        res = self.search_results[self.current_result_index]
-        ts_obj = self.app._find_ts_obj_by_id(res["id"])
+        if not sorted_results or self.current_result_index < 0:
+            self._find_next()
+            if self.current_result_index < 0: return
+
+        sorted_results = self._get_sorted_search_results()
+        if not sorted_results or self.current_result_index >= len(sorted_results):
+            return
+
+        source_row, source_col = sorted_results[self.current_result_index]
+        ts_obj = self.app.sheet_model.data(self.app.sheet_model.index(source_row, 0), Qt.UserRole)
         if not ts_obj: return
 
         term = self.search_term_entry.text()
@@ -221,37 +215,51 @@ class AdvancedSearchDialog(QDialog):
         flags = 0 if self.case_sensitive_checkbox.isChecked() else re.IGNORECASE
         pattern = re.compile(re.escape(term), flags)
 
-        target_column_index = res["col"]
-
-        if target_column_index == 3:
+        if source_col == 3:  # Translation
             current_text = ts_obj.get_translation_for_ui()
             new_text, num_replacements = pattern.subn(replace_with, current_text, count=1)
             if num_replacements > 0:
                 self.app._apply_translation_to_model(ts_obj, new_text, source="replace_current")
-
-        elif target_column_index == 4:
+        elif source_col == 4:  # Comment
             current_text = ts_obj.comment
             new_text, num_replacements = pattern.subn(replace_with, current_text, count=1)
             if num_replacements > 0:
-                self.app._apply_comment_to_model(ts_obj, new_text)
-
+                ts_obj.comment = new_text
+                self.app._save_comment_from_ui()
         else:
-            QMessageBox.information(self, _("Info"), _("Match is not in a replaceable column (Translation or Comment)."))
+            QMessageBox.information(self, _("Info"),
+                                    _("Match is not in a replaceable column (Translation or Comment)."))
             self._find_next()
             return
-        self.last_search_options = {}
-        self._perform_search()
-        self._find_next()
+        def find_next_after_update():
+            self.app.proxy_model.search_results_indices.discard((source_row, source_col))
+            new_sorted_results = self._get_sorted_search_results()
+            self.results_label.setText(
+                _("Match {current}/{total}").format(current=self.current_result_index + 1,
+                                                    total=len(new_sorted_results))
+            )
+            if new_sorted_results and self.current_result_index < len(new_sorted_results):
+                self._navigate_to_result()
+            elif new_sorted_results:
+                self.current_result_index = 0
+                self._navigate_to_result()
+            else:
+                self.results_label.setText(_("No more matches."))
+                self.app.table_view.clearSelection()
+
+        QTimer.singleShot(100, find_next_after_update)
 
     def _replace_all(self):
-        if not self._perform_search() or not self.search_results:
+        if not self._perform_search():
             QMessageBox.information(self, _("Replace All"), _("No matches found to replace."))
             return
 
         term = self.search_term_entry.text()
         replace_with = self.replace_term_entry.text()
-        trans_results = [res for res in self.search_results if res["col"] == 3]
-        comment_results = [res for res in self.search_results if res["col"] == 4]
+
+        sorted_results = self._get_sorted_search_results()
+        trans_results = [res for res in sorted_results if res[1] == 3]  # Translation column
+        comment_results = [res for res in sorted_results if res[1] == 4]  # Comment column
 
         if not trans_results and not comment_results:
             QMessageBox.information(self, _("Replace All"), _("No matches found in Translation or Comment columns."))
@@ -262,54 +270,61 @@ class AdvancedSearchDialog(QDialog):
             msg_parts.append(_("{count} in Translation").format(count=len(trans_results)))
         if comment_results:
             msg_parts.append(_("{count} in Comment").format(count=len(comment_results)))
-
         confirm_msg = _("Are you sure you want to replace all occurrences?\nFound: {details}.").format(
             details=", ".join(msg_parts))
-        reply = QMessageBox.question(self, _("Confirm Replace All"), confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(self, _("Confirm Replace All"), confirm_msg, QMessageBox.Yes | QMessageBox.No,
+                                     QMessageBox.No)
         if reply == QMessageBox.No:
             return
-
         flags = 0 if self.case_sensitive_checkbox.isChecked() else re.IGNORECASE
         pattern = re.compile(re.escape(term), flags)
-
         bulk_changes = []
-        processed_ids_trans = set()
-        for res in trans_results:
-            if res["id"] in processed_ids_trans: continue
-            ts_obj = self.app._find_ts_obj_by_id(res["id"])
+        modified_ts_ids = set()
+        trans_changes = {}
+        for row, col in trans_results:
+            ts_obj = self.app.sheet_model.data(self.app.sheet_model.index(row, 0), Qt.UserRole)
             if not ts_obj or ts_obj.is_ignored: continue
+            current_text = trans_changes.get(ts_obj.id, ts_obj.get_translation_for_ui())
+            trans_changes[ts_obj.id] = pattern.sub(replace_with, current_text)
 
-            old_text = ts_obj.get_translation_for_storage_and_tm()
-            new_text = pattern.sub(replace_with, ts_obj.get_translation_for_ui())
-            if new_text != ts_obj.get_translation_for_ui():
+        for ts_id, new_text in trans_changes.items():
+            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+            if ts_obj and new_text != ts_obj.get_translation_for_ui():
+                old_val = ts_obj.get_translation_for_storage_and_tm()
                 ts_obj.set_translation_internal(new_text)
-                bulk_changes.append({'string_id': ts_obj.id, 'field': 'translation', 'old_value': old_text,
+                bulk_changes.append({'string_id': ts_id, 'field': 'translation', 'old_value': old_val,
                                      'new_value': ts_obj.get_translation_for_storage_and_tm()})
-            processed_ids_trans.add(res["id"])
-
-        processed_ids_comment = set()
-        for res in comment_results:
-            if res["id"] in processed_ids_comment: continue
-            ts_obj = self.app._find_ts_obj_by_id(res["id"])
+                modified_ts_ids.add(ts_id)
+        comment_changes = {}
+        for row, col in comment_results:
+            ts_obj = self.app.sheet_model.data(self.app.sheet_model.index(row, 0), Qt.UserRole)
             if not ts_obj: continue
 
-            old_text = ts_obj.comment
-            new_text = pattern.sub(replace_with, old_text)
-            if new_text != old_text:
+            current_text = comment_changes.get(ts_obj.id, ts_obj.comment)
+            comment_changes[ts_obj.id] = pattern.sub(replace_with, current_text)
+
+        for ts_id, new_text in comment_changes.items():
+            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+            if ts_obj and new_text != ts_obj.comment:
+                old_val = ts_obj.comment
                 ts_obj.comment = new_text
                 bulk_changes.append(
-                    {'string_id': ts_obj.id, 'field': 'comment', 'old_value': old_text, 'new_value': new_text})
-            processed_ids_comment.add(res["id"])
-
+                    {'string_id': ts_id, 'field': 'comment', 'old_value': old_val, 'new_value': new_text})
+                modified_ts_ids.add(ts_id)
         if bulk_changes:
+            for ts_id in modified_ts_ids:
+                ts_obj = self.app._find_ts_obj_by_id(ts_id)
+                if ts_obj:
+                    ts_obj.update_style_cache()
+
             self.app.add_to_undo_history('bulk_replace_all', {'changes': bulk_changes})
             self.app.mark_project_modified()
-            self.app._run_and_refresh_with_validation()
+            self.app.force_full_refresh(id_to_reselect=self.app.current_selected_ts_id)
+
             QMessageBox.information(self, _("Replace All Complete"),
-                                _("Changes made to {count} field(s).").format(count=len(bulk_changes)))
+                                    _("Replaced occurrences in {count} item(s).").format(count=len(modified_ts_ids)))
         else:
             QMessageBox.information(self, _("Replace All"), _("No occurrences were replaced."))
-
-        self.last_search_options = {}
+        self.app.proxy_model.set_search_term("")
         self.results_label.setText(_("Replacement complete."))
-        self._clear_all_highlights()
+        self.close()

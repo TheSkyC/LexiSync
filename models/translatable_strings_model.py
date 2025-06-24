@@ -110,9 +110,22 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         self.show_translated = False
         self.show_unreviewed = False
         self.search_term = ""
+        self.search_results_indices = set()
         self.is_po_mode = False
         self._current_filter_seen_originals = set()
         self.new_entry_id = "##NEW_ENTRY##"
+
+    def set_search_term(self, term):
+        self.search_term = term.lower()
+        self.search_results_indices.clear()
+        if self.search_term:
+            for row in range(self.sourceModel().rowCount()):
+                for col in range(self.sourceModel().columnCount()):
+                    index = self.sourceModel().index(row, col)
+                    text = self.sourceModel().data(index, Qt.DisplayRole)
+                    if text and self.search_term in str(text).lower():
+                        self.search_results_indices.add((row, col))
+        self.layoutChanged.emit()
 
     def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term,
                     is_po_mode):
@@ -137,12 +150,6 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         if self.show_untranslated and has_translation and not ts_obj.is_ignored: return False
         if self.show_translated and not has_translation and not ts_obj.is_ignored: return False
         if self.show_unreviewed and ts_obj.is_reviewed: return False
-
-        if self.search_term:
-            if not (self.search_term in ts_obj.original_semantic.lower() or
-                    self.search_term in ts_obj.get_translation_for_ui().lower() or
-                    self.search_term in ts_obj.comment.lower()):
-                return False
 
         return True
 

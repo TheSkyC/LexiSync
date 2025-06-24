@@ -1137,8 +1137,11 @@ class OverwatchLocalizerApp(QMainWindow):
         self.config["show_unreviewed"] = self.unreviewed_checkbox.isChecked()
         self.config["auto_save_tm"] = self.auto_save_tm_var
         self.config["auto_backup_tm_on_save"] = self.auto_backup_tm_on_save_var
-        self.config["ui_state"]["search_term"] = self.search_entry.text() if self.search_entry.text() != _(
-            "Quick search...") else ""
+        current_search_text = self.search_entry.text()
+        if current_search_text == _("Quick search..."):
+            self.config["ui_state"]["search_term"] = ""
+        else:
+            self.config["ui_state"]["search_term"] = current_search_text
         self.config["ui_state"]["selected_ts_id"] = self.current_selected_ts_id or ""
 
         config_manager.save_config(self)

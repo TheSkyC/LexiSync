@@ -205,8 +205,8 @@ class DetailsPanel(QWidget):
         QTextEdit.focusOutEvent(self.comment_edit_text, event)
 
     def update_ui_texts(self):
-        self.findChild(QLabel, "original_label").setText(_("Original (Ctrl+Shift+C to copy):"))
-        self.findChild(QLabel, "translation_label").setText(_("Translation (Ctrl+Shift+V to paste):"))
+        self.findChild(QLabel, "original_label").setText(_("Original:"))
+        self.findChild(QLabel, "translation_label").setText(_("Translation:"))
         self.findChild(QPushButton, "apply_btn").setText(_("Apply Translation"))
         self.findChild(QPushButton, "ai_translate_current_btn").setText(_("AI Translate Selected"))
         self.findChild(QLabel, "comment_label").setText(_("Comment:"))
