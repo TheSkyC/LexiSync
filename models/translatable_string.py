@@ -27,6 +27,8 @@ class TranslatableString:
         self.source_comment = ""
         self.comment = ""
         self.is_reviewed = False
+        self.is_fuzzy = False
+        self.po_comment = ""
         self.ui_style_cache = {}
 
         context_radius = 2
@@ -78,6 +80,8 @@ class TranslatableString:
             'string_type': self.string_type,
             'comment': self.comment,
             'is_reviewed': self.is_reviewed,
+            'is_fuzzy': self.is_fuzzy,
+            'po_comment': self.po_comment,
             '_translation_edit_history': self._translation_edit_history,
             '_translation_history_pointer': self._translation_history_pointer,
         }
@@ -99,6 +103,8 @@ class TranslatableString:
         ts.was_auto_ignored = data.get('was_auto_ignored', False)
         ts.comment = data.get('comment', "")
         ts.is_reviewed = data.get('is_reviewed', False)
+        ts.is_fuzzy = data.get('is_fuzzy', False)
+        ts.po_comment = data.get('po_comment', "")
         ts._translation_edit_history = data.get('_translation_edit_history', [ts.translation])
         ts._translation_history_pointer = data.get('_translation_history_pointer',
                                                    len(ts._translation_edit_history) - 1 if ts._translation_edit_history else 0)

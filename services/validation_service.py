@@ -22,18 +22,17 @@ def get_starting_cased_char(s):
 
 
 def validate_string(ts_obj):
-    # Only validate if there's a translation and it's not ignored
     if not ts_obj.translation or ts_obj.is_ignored:
         ts_obj.warnings = []
         ts_obj.minor_warnings = []
-        return []
+        return
 
     warnings = []
     minor_warnings = []
     original = ts_obj.original_semantic
     translation = ts_obj.translation
 
-    # Placeholder mismatch
+    # 严重警告：占位符不匹配
     original_placeholders = set(placeholder_regex.findall(original))
     translated_placeholders = set(placeholder_regex.findall(translation))
     if original_placeholders != translated_placeholders:
@@ -46,25 +45,21 @@ def validate_string(ts_obj):
             warning_msg += f" " + _("Extra:") + f" {', '.join(extra)}."
         warnings.append(warning_msg)
 
-    # Line count differs
+    # 严重警告：换行符数量不匹配
     if original.count('\n') != translation.count('\n'):
         warnings.append(_("Line count differs from original."))
 
-    # Leading/Trailing whitespace mismatch
+    # 严重警告：首尾空格不匹配
     if (original.startswith(' ') and not translation.startswith(' ')) or \
             (not original.startswith(' ') and translation.startswith(' ')):
-        minor_warnings.append(_("Leading whitespace mismatch."))
+        warnings.append(_("Leading whitespace mismatch."))
     if (original.endswith(' ') and not translation.endswith(' ')) or \
             (not original.endswith(' ') and translation.endswith(' ')):
-        minor_warnings.append(_("Trailing whitespace mismatch."))
+        warnings.append(_("Trailing whitespace mismatch."))
 
-    # Punctuation at start/end mismatch
-    punctuation_map = {
-        '.': '。', '。': '.', ',': '，', '，': ',', '?': '？', '？': '?',
-        '!': '！', '！': '!', ':': '：', '：': ':', ';': '；', '；': ';',
-        '(': '（', '（': '(', ')': '）', '）': ')',
-    }
-    all_punc = set(punctuation_map.keys()).union(set(punctuation_map.values())) # Include both English and Chinese
+    # 严重警告：首尾标点不匹配
+    punctuation_map = {'.': '。', '。': '.', ',': '，', '，': ',', '?': '？', '？': '?', '!': '！', '！': '!', ':': '：', '：': ':', ';': '；', '；': ';', '(': '（', '（': '(', ')': '）', '）': ')'}
+    all_punc = set(punctuation_map.keys()).union(set(punctuation_map.values()))
     original_stripped = original.strip()
     translation_stripped = translation.strip()
 
@@ -72,10 +67,35 @@ def validate_string(ts_obj):
         return char in all_punc
 
     def are_equivalent(char1, char2):
-        if char1 == char2: return True
-        if punctuation_map.get(char1) == char2: return True
-        if punctuation_map.get(char2) == char1: return True # Check reverse mapping too
-        return False
+        return char1 == char2 or punctuation_map.get(char1) == char2 or punctuation_map.get(char2) == char1
+
+    if original_stripped and translation_stripped:
+        start_orig_char, start_trans_char = original_stripped[0], translation_stripped[0]
+        if is_punc(start_orig_char) != is_punc(start_trans_char) or (
+                is_punc(start_orig_char) and not are_equivalent(start_orig_char, start_trans_char)):
+            warnings.append(_("Starting punctuation mismatch."))
+
+        end_orig_char, end_trans_char = original_stripped[-1], translation_stripped[-1]
+        if is_punc(end_orig_char) != is_punc(end_trans_char) or (
+                is_punc(end_orig_char) and not are_equivalent(end_orig_char, end_trans_char)):
+            warnings.append(_("Ending punctuation mismatch."))
+
+    # 严重警告：首字母大小写不匹配
+    common_prefix = os.path.commonprefix([original, translation])
+    core_original = original[len(common_prefix):]
+    core_translation = translation[len(common_prefix):]
+    first_char_original = get_starting_cased_char(core_original)
+    first_char_translation = get_starting_cased_char(core_translation)
+    if first_char_original and first_char_translation and (
+            first_char_original.isupper() != first_char_translation.isupper()):
+        warnings.append(_("Initial capitalization mismatch."))
+
+    # 次级警告：fuzzy 标记
+    if ts_obj.is_fuzzy:
+        minor_warnings.append(_("Translation is marked as fuzzy and needs review."))
+
+    ts_obj.warnings = warnings
+    ts_obj.minor_warnings = minor_warnings
 
     if original_stripped and translation_stripped:
         start_orig_char = original_stripped[0]
@@ -107,7 +127,6 @@ def validate_string(ts_obj):
             minor_warnings.append(_("Ending punctuation mismatch: '{char1}' vs '{char2}'.").format(char1=end_orig_char,
                                                                                              char2=end_trans_char))
 
-    # Initial capitalization mismatch (after common prefix)
     common_prefix = os.path.commonprefix([original, translation])
     core_original = original[len(common_prefix):]
     core_translation = translation[len(common_prefix):]
@@ -120,8 +139,8 @@ def validate_string(ts_obj):
 
     ts_obj.warnings = warnings
     ts_obj.minor_warnings = minor_warnings
-    return warnings + minor_warnings # Return combined list for simplicity, but store separately
+    return warnings + minor_warnings
 
 def run_validation_on_all(translatable_objects):
     for ts_obj in translatable_objects:
-        validate_string(ts_obj) # This function now updates ts_obj.warnings and ts_obj.minor_warnings directly
+        validate_string(ts_obj)
