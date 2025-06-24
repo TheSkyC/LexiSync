@@ -23,11 +23,6 @@ jobs:
             arch_display: x64
             python_arch: x64
             asset_suffix: win-x64.zip
-          - os_name: windows
-            os_image: windows-latest
-            arch_display: x86
-            python_arch: x86
-            asset_suffix: win-x86.zip
           # Linux
           - os_name: linux
             os_image: ubuntu-latest
