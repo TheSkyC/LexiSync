@@ -15,8 +15,6 @@ from services.validation_service import placeholder_regex
 class DetailsPanel(QWidget):
     apply_translation_signal = Signal()
     apply_comment_signal = Signal()
-    toggle_ignore_signal = Signal(bool)
-    toggle_reviewed_signal = Signal(bool)
     ai_translate_signal = Signal()
     translation_text_changed_signal = Signal()
     translation_focus_out_signal = Signal()
@@ -25,16 +23,21 @@ class DetailsPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app_instance = parent
+        self._ui_initialized = False
         self.setup_ui()
 
     def setup_ui(self):
+        if self._ui_initialized:
+            return
         layout = QVBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(5)
 
         # Original Text Display
-        layout.addWidget(QLabel(_("Original (Ctrl+Shift+C to copy):")))
-        self.original_text_display = NewlineTextEdit() # 在这里创建
+        self.original_label = QLabel(_("Original (Ctrl+Shift+C to copy):"))
+        self.original_label.setObjectName("original_label")
+        layout.addWidget(self.original_label)
+        self.original_text_display = NewlineTextEdit()
         self.original_text_display.setReadOnly(True)
         self.original_text_display.setLineWrapMode(NewlineTextEdit.WidgetWidth)
         self.original_text_display.setFixedHeight(70)
@@ -42,7 +45,9 @@ class DetailsPanel(QWidget):
         layout.addWidget(self.original_text_display)
 
         # Translation Edit Text
-        layout.addWidget(QLabel(_("Translation (Ctrl+Shift+V to paste):")))
+        self.translation_label = QLabel(_("Translation (Ctrl+Shift+V to paste):"))
+        self.translation_label.setObjectName("translation_label")
+        layout.addWidget(self.translation_label)
         self.translation_edit_text = NewlineTextEdit()
         self.translation_edit_text.setLineWrapMode(NewlineTextEdit.WidgetWidth)
         self.translation_edit_text.setFixedHeight(100)
@@ -56,18 +61,22 @@ class DetailsPanel(QWidget):
         trans_actions_layout = QHBoxLayout(trans_actions_frame)
         trans_actions_layout.setContentsMargins(0, 0, 0, 0)
         self.apply_btn = QPushButton(_("Apply Translation"))
+        self.apply_btn.setObjectName("apply_btn")
         self.apply_btn.clicked.connect(self.apply_translation_signal.emit)
         self.apply_btn.setEnabled(False)
         trans_actions_layout.addWidget(self.apply_btn)
         trans_actions_layout.addStretch(1)
         self.ai_translate_current_btn = QPushButton(_("AI Translate Selected"))
+        self.ai_translate_current_btn.setObjectName("ai_translate_current_btn")
         self.ai_translate_current_btn.clicked.connect(self.ai_translate_signal.emit)
         self.ai_translate_current_btn.setEnabled(False)
         trans_actions_layout.addWidget(self.ai_translate_current_btn)
         layout.addWidget(trans_actions_frame)
 
         # Comment Edit Text
-        layout.addWidget(QLabel(_("Comment:")))
+        self.comment_label = QLabel(_("Comment:"))
+        self.comment_label.setObjectName("comment_label")
+        layout.addWidget(self.comment_label)
         self.comment_edit_text = NewlineTextEdit()
         self.comment_edit_text.setLineWrapMode(NewlineTextEdit.WidgetWidth)
         self.comment_edit_text.setFixedHeight(70)
@@ -80,6 +89,7 @@ class DetailsPanel(QWidget):
         comment_actions_layout = QHBoxLayout(comment_actions_frame)
         comment_actions_layout.setContentsMargins(0, 0, 0, 0)
         self.apply_comment_btn = QPushButton(_("Apply Comment"))
+        self.apply_comment_btn.setObjectName("apply_comment_btn")
         self.apply_comment_btn.clicked.connect(self.apply_comment_signal.emit)
         self.apply_comment_btn.setEnabled(False)
         comment_actions_layout.addWidget(self.apply_comment_btn)
@@ -91,11 +101,11 @@ class DetailsPanel(QWidget):
         status_layout = QHBoxLayout(status_frame)
         status_layout.setContentsMargins(0, 0, 0, 0)
         self.ignore_checkbox = QCheckBox(_("Ignore this string"))
-        self.ignore_checkbox.stateChanged.connect(lambda state: self.toggle_ignore_signal.emit(bool(state)))
+        self.ignore_checkbox.setObjectName("ignore_checkbox")
         self.ignore_checkbox.setEnabled(False)
         status_layout.addWidget(self.ignore_checkbox)
         self.reviewed_checkbox = QCheckBox(_("Reviewed"))
-        self.reviewed_checkbox.stateChanged.connect(lambda state: self.toggle_reviewed_signal.emit(bool(state)))
+        self.reviewed_checkbox.setObjectName("reviewed_checkbox")
         self.reviewed_checkbox.setEnabled(False)
         status_layout.addWidget(self.reviewed_checkbox)
         status_layout.addStretch(1)
@@ -104,6 +114,7 @@ class DetailsPanel(QWidget):
         layout.addStretch(1)
 
         self.setup_text_formats()
+        self._ui_initialized = True
 
     def setup_text_formats(self):
         # Placeholder format
@@ -189,11 +200,18 @@ class DetailsPanel(QWidget):
         QTextEdit.focusOutEvent(self.comment_edit_text, event)
 
     def update_ui_texts(self):
-        self.findChild(QLabel, _("Original (Ctrl+Shift+C to copy):")).setText(_("Original (Ctrl+Shift+C to copy):"))
-        self.findChild(QLabel, _("Translation (Ctrl+Shift+V to paste):")).setText(_("Translation (Ctrl+Shift+V to paste):"))
-        self.findChild(QLabel, _("Comment:")).setText(_("Comment:"))
-        self.apply_btn.setText(_("Apply Translation"))
-        self.ai_translate_current_btn.setText(_("AI Translate Selected"))
-        self.apply_comment_btn.setText(_("Apply Comment"))
-        self.ignore_checkbox.setText(_("Ignore this string"))
-        self.reviewed_checkbox.setText(_("Reviewed"))
+        self.findChild(QLabel, "original_label").setText(_("Original (Ctrl+Shift+C to copy):"))
+        self.findChild(QLabel, "translation_label").setText(_("Translation (Ctrl+Shift+V to paste):"))
+        self.findChild(QPushButton, "apply_btn").setText(_("Apply Translation"))
+        self.findChild(QPushButton, "ai_translate_current_btn").setText(_("AI Translate Selected"))
+        self.findChild(QLabel, "comment_label").setText(_("Comment:"))
+        self.findChild(QPushButton, "apply_comment_btn").setText(_("Apply Comment"))
+
+        ignore_label_text = _("Ignore this string")
+        if self.ignore_checkbox.isChecked() and self.app_instance.current_selected_ts_id:
+            ts_obj = self.app_instance._find_ts_obj_by_id(self.app_instance.current_selected_ts_id)
+            if ts_obj and ts_obj.was_auto_ignored:
+                ignore_label_text += _(" (Auto)")
+        self.findChild(QCheckBox, "ignore_checkbox").setText(ignore_label_text)
+
+        self.findChild(QCheckBox, "reviewed_checkbox").setText(_("Reviewed"))

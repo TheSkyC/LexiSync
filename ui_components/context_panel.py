@@ -17,12 +17,13 @@ class ContextPanel(QWidget):
         layout.setSpacing(5)
 
         self.context_label = QLabel(_("Context Preview:"))
+        self.context_label.setObjectName("context_label")
         layout.addWidget(self.context_label)
 
         self.context_text_display = QTextEdit()
         self.context_text_display.setReadOnly(True)
-        self.context_text_display.setLineWrapMode(QTextEdit.NoWrap) # Code context usually no wrap
-        self.context_text_display.setFontFamily("Consolas") # Default code font
+        self.context_text_display.setLineWrapMode(QTextEdit.NoWrap)
+        self.context_text_display.setFontFamily("Consolas")
         self.context_text_display.setFontPointSize(9)
         self.context_text_display.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout.addWidget(self.context_text_display)
@@ -48,4 +49,4 @@ class ContextPanel(QWidget):
             self.context_text_display.ensureCursorVisible()
 
     def update_ui_texts(self):
-        self.context_label.setText(_("Context Preview:"))
+        self.findChild(QLabel, "context_label").setText(_("Context Preview:"))

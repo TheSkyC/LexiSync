@@ -22,6 +22,7 @@ class TMPanel(QWidget):
         layout.setSpacing(5)
 
         self.tm_label = QLabel(_("Translation Memory Matches:"))
+        self.tm_label.setObjectName("tm_label")
         layout.addWidget(self.tm_label)
 
         self.tm_suggestions_listbox = QListWidget()
@@ -34,11 +35,13 @@ class TMPanel(QWidget):
         tm_actions_layout = QHBoxLayout(tm_actions_frame)
         tm_actions_layout.setContentsMargins(0, 0, 0, 0)
         self.update_selected_tm_btn = QPushButton(_("Update TM for Selected"))
+        self.update_selected_tm_btn.setObjectName("update_selected_tm_btn")
         self.update_selected_tm_btn.clicked.connect(self.update_tm_signal.emit)
         self.update_selected_tm_btn.setEnabled(False)
         tm_actions_layout.addWidget(self.update_selected_tm_btn)
 
         self.clear_selected_tm_btn = QPushButton(_("Clear TM for Selected"))
+        self.clear_selected_tm_btn.setObjectName("clear_selected_tm_btn")
         self.clear_selected_tm_btn.clicked.connect(self.clear_tm_signal.emit)
         self.clear_selected_tm_btn.setEnabled(False)
         tm_actions_layout.addWidget(self.clear_selected_tm_btn)
@@ -70,7 +73,7 @@ class TMPanel(QWidget):
         for tm_orig, tm_trans in translation_memory.items():
             if tm_orig.lower() == original_lower and tm_orig != original_semantic_text:
                 case_insensitive_match = tm_trans
-                break  # 找到一个就够了
+                break
 
         if case_insensitive_match:
             suggestion_for_ui = case_insensitive_match.replace("\\n", "\n")
@@ -78,11 +81,10 @@ class TMPanel(QWidget):
             item.setForeground(QColor("orange red"))
             self.tm_suggestions_listbox.addItem(item)
 
-        # 3. Fuzzy Matches (现在只对剩下的进行计算)
         fuzzy_matches = []
         for tm_orig, tm_trans_with_slash_n in translation_memory.items():
             if tm_orig == original_semantic_text or tm_orig.lower() == original_lower:
-                continue  # 跳过已经处理过的
+                continue
 
             ratio = SequenceMatcher(None, original_semantic_text, tm_orig).ratio()
             if ratio > 0.65:
@@ -98,6 +100,6 @@ class TMPanel(QWidget):
             self.tm_suggestions_listbox.addItem(item)
 
     def update_ui_texts(self):
-        self.tm_label.setText(_("Translation Memory Matches:"))
-        self.update_selected_tm_btn.setText(_("Update TM for Selected"))
-        self.clear_selected_tm_btn.setText(_("Clear TM for Selected"))
+        self.findChild(QLabel, "tm_label").setText(_("Translation Memory Matches:"))
+        self.findChild(QPushButton, "update_selected_tm_btn").setText(_("Update TM for Selected"))
+        self.findChild(QPushButton, "clear_selected_tm_btn").setText(_("Clear TM for Selected"))

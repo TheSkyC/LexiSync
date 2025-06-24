@@ -11,6 +11,7 @@ from copy import deepcopy
 from difflib import SequenceMatcher
 from openpyxl import Workbook, load_workbook
 import polib
+import weakref
 from concurrent.futures import ThreadPoolExecutor
 
 from PySide6.QtWidgets import (
@@ -54,8 +55,7 @@ from services.validation_service import run_validation_on_all, placeholder_regex
 from utils.constants import *
 from utils import config_manager
 from utils.localization import lang_manager, _
-#Debug
-import cProfile, pstats
+
 
 try:
     import requests
@@ -64,10 +64,53 @@ except ImportError:
     print("提示: requests 未找到, AI翻译功能不可用。pip install requests")
 
 
-class OverwatchLocalizerApp(QMainWindow):
-    # Custom signal for language change
-    language_changed = Signal()
+class AITranslationWorker(QRunnable):
+    def __init__(self, app_instance, ts_id, original_text, target_language, context_dict, custom_instructions, is_batch_item):
+        super().__init__()
+        self.app_ref = weakref.ref(app_instance)
+        self.ts_id = ts_id
+        self.original_text = original_text
+        self.target_language = target_language
+        self.context_dict = context_dict
+        self.custom_instructions = custom_instructions
+        self.is_batch_item = is_batch_item
 
+    def run(self):
+        app = self.app_ref()
+        if not app:
+            return
+        app.running_workers.add(self)
+
+        try:
+            placeholders = {
+                '[Target Language]': self.target_language,
+                '[Custom Translate]': self.custom_instructions,
+                '[Untranslated Context]': self.context_dict.get("original_context", ""),
+                '[Translated Context]': self.context_dict.get("translation_context", "")
+            }
+            prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
+            final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
+
+            translated_text = app.ai_translator.translate(self.original_text, final_prompt)
+            app.thread_signals.handle_ai_result.emit(self.ts_id, translated_text, None, self.is_batch_item)
+        except Exception as e:
+            app = self.app_ref()
+            if app:
+                app.thread_signals.handle_ai_result.emit(self.ts_id, None, str(e), self.is_batch_item)
+        finally:
+            app = self.app_ref()
+            if app:
+                if self.is_batch_item and app.ai_batch_semaphore is not None:
+                    app.ai_batch_semaphore.release()
+                    app.thread_signals.decrement_active_threads.emit()
+                app.running_workers.discard(self)
+
+class ThreadSafeSignals(QObject):
+        handle_ai_result = Signal(str, str, str, bool)
+        decrement_active_threads = Signal()
+
+class OverwatchLocalizerApp(QMainWindow):
+    language_changed = Signal()
     def __init__(self):
         super().__init__()
         self.config = config_manager.load_config()
@@ -76,10 +119,12 @@ class OverwatchLocalizerApp(QMainWindow):
             language_code = lang_manager.get_best_match_language()
             self.config['language'] = language_code
         lang_manager.setup_translation(language_code)
-
         self.setWindowTitle(_("Overwatch Localizer - v{version}").format(version=APP_VERSION))
         self.setGeometry(100, 100, 1600, 900)
-
+        self.thread_signals = ThreadSafeSignals()
+        self.thread_signals.handle_ai_result.connect(self._handle_ai_translation_result)
+        self.thread_signals.decrement_active_threads.connect(self._decrement_active_threads_and_dispatch_more)
+        self.running_workers = set()
         self.current_code_file_path = None
         self.current_project_file_path = None
         self.current_po_file_path = None
@@ -90,11 +135,17 @@ class OverwatchLocalizerApp(QMainWindow):
         self.current_po_metadata = None
         self.source_comment = ""
         self.current_focused_ts_id = None
+        self.neighbor_select_timer = QTimer(self)
+        self.neighbor_select_timer.setSingleShot(True)
 
         self.tm_update_timer = QTimer(self)
         self.tm_update_timer.setSingleShot(True)
         self.tm_update_timer.timeout.connect(self.perform_tm_update)
         self.last_tm_query = ""
+
+        self.filter_update_timer = QTimer(self)
+        self.filter_update_timer.setSingleShot(True)
+        self.filter_update_timer.timeout.connect(self.refresh_sheet_preserve_selection)
 
         self.translatable_objects = []
         self.translation_memory = {}
@@ -119,11 +170,11 @@ class OverwatchLocalizerApp(QMainWindow):
         self.ai_batch_next_item_index = 0
         self.ai_batch_active_threads = 0
         self.ai_thread_pool = QThreadPool.globalInstance()
+        self.is_finalizing_batch_translation = False
 
 
         self.filter_actions = {}
         self.filter_checkboxes = {}
-        self.deduplicate_strings_var = self.config.get("deduplicate", False)
         self.show_ignored_var = self.config.get("show_ignored", True)
         self.show_untranslated_var = self.config.get("show_untranslated", False)
         self.show_translated_var = self.config.get("show_translated", False)
@@ -139,16 +190,20 @@ class OverwatchLocalizerApp(QMainWindow):
         self.last_sort_column = "seq_id"
         self.last_sort_reverse = False
 
+        self.restore_window_state()
+        self.language_changed.connect(self.update_ui_texts)
+        self.setAcceptDrops(True)
+
+        QTimer.singleShot(0, self.finish_initialization)
+
+
+    def finish_initialization(self):
         self._setup_ui()
         self._load_default_tm_excel()
         self.update_ui_state_after_file_load()
         self.update_ai_related_ui_state()
         self.update_counts_display()
         self.update_recent_files_menu()
-
-        self.restore_window_state()
-        self.language_changed.connect(self.update_ui_texts)
-        self.setAcceptDrops(True)
 
     def _setup_ui(self):
         self._setup_menu()
@@ -276,12 +331,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_paste_translation.setEnabled(False)
         self.edit_menu.addAction(self.action_paste_translation)
 
-        self.action_deduplicate = QAction(_("Deduplicate Strings"), self, checkable=True)
-        self.action_deduplicate.setChecked(self.deduplicate_strings_var)
-        self.action_deduplicate.triggered.connect(lambda checked: self.set_filter_var('deduplicate', checked))
-        self.view_menu.addAction(self.action_deduplicate)
-        self.filter_actions['deduplicate'] = self.action_deduplicate
-
         self.action_show_ignored = QAction(_("Show Ignored"), self, checkable=True)
         self.action_show_ignored.setChecked(self.show_ignored_var)
         self.action_show_ignored.triggered.connect(lambda checked: self.set_filter_var('show_ignored', checked))
@@ -403,11 +452,9 @@ class OverwatchLocalizerApp(QMainWindow):
             self.language_action_group.addAction(action)
 
     def update_ui_texts(self):
-        # Update window title
         self.setWindowTitle(_("Overwatch Localizer - v{version}").format(version=APP_VERSION))
         self.update_title()
 
-        # Update menu texts
         self.file_menu.setTitle(_("&File"))
         self.edit_menu.setTitle(_("&Edit"))
         self.view_menu.setTitle(_("&View"))
@@ -461,7 +508,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_font_settings.setText(_("Font Settings..."))
         self.action_about.setText(_("About"))
 
-        # Update table headers
         self.sheet_model.setHeaderData(0, Qt.Horizontal, "#")
         self.sheet_model.setHeaderData(1, Qt.Horizontal, "S")
         self.sheet_model.setHeaderData(2, Qt.Horizontal, _("Original"))
@@ -471,9 +517,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.sheet_model.setHeaderData(6, Qt.Horizontal, _("Line"))
         self.sheet_model.headerDataChanged.emit(Qt.Horizontal, 0, 6)
 
-        # Update filter toolbar
         self.filter_label.setText(_("Filter:"))
-        self.deduplicate_checkbox.setText(_("Deduplicate"))
         self.ignored_checkbox.setText(_("Ignored"))
         self.untranslated_checkbox.setText(_("Untranslated"))
         self.translated_checkbox.setText(_("Translated"))
@@ -482,26 +526,24 @@ class OverwatchLocalizerApp(QMainWindow):
         self.search_entry.setPlaceholderText(_("Quick search..."))
         self.on_search_focus_out()
 
-        # Update details panel
         self.details_panel.update_ui_texts()
         self.context_panel.update_ui_texts()
         self.tm_panel.update_ui_texts()
 
-        # Update status bar
         self.update_statusbar(_("Ready"), persistent=True)
         self.update_counts_display()
         self.update_recent_files_menu()
 
     def set_filter_var(self, var_name, value):
         setattr(self, f"{var_name}_var", value)
+
         action = self.filter_actions.get(var_name)
         checkbox = self.filter_checkboxes.get(var_name)
         if action and action.isChecked() != value:
             action.setChecked(value)
         if checkbox and checkbox.isChecked() != value:
             checkbox.setChecked(value)
-
-        self.refresh_sheet_preserve_selection()
+        self.filter_update_timer.start(150)
         self.save_config()
 
     def set_config_var(self, var_name, value):
@@ -546,7 +588,7 @@ class OverwatchLocalizerApp(QMainWindow):
                 continue
 
 
-            action = QAction(self)  # 父对象是主窗口
+            action = QAction(self)
             action.setShortcut(QKeySequence(shortcut_str))
             action.triggered.connect(slot)
 
@@ -589,11 +631,11 @@ class OverwatchLocalizerApp(QMainWindow):
         self.filter_label = QLabel(_("Filter:"))
         toolbar_layout.addWidget(self.filter_label)
 
-        self.deduplicate_checkbox = QCheckBox(_("Deduplicate"))
-        self.deduplicate_checkbox.setChecked(self.deduplicate_strings_var)
-        self.deduplicate_checkbox.stateChanged.connect(lambda state: self.set_filter_var('deduplicate', bool(state)))
-        toolbar_layout.addWidget(self.deduplicate_checkbox)
-        self.filter_checkboxes['deduplicate'] = self.deduplicate_checkbox
+        # self.deduplicate_checkbox = QCheckBox(_("Deduplicate"))
+        # self.deduplicate_checkbox.setChecked(self.deduplicate_strings_var)
+        # self.deduplicate_checkbox.stateChanged.connect(lambda state: self.set_filter_var('deduplicate', bool(state)))
+        # toolbar_layout.addWidget(self.deduplicate_checkbox)
+        # self.filter_checkboxes['deduplicate'] = self.deduplicate_checkbox
 
         self.ignored_checkbox = QCheckBox(_("Ignored"))
         self.ignored_checkbox.setChecked(self.show_ignored_var)
@@ -639,10 +681,10 @@ class OverwatchLocalizerApp(QMainWindow):
         self.table_view = CustomTableView(self, self)
         palette = self.table_view.palette()
         palette.setColor(QPalette.Base, QColor("white"))
-        palette.setColor(QPalette.AlternateBase, QColor("#f7f7f7"))
-        palette.setColor(QPalette.Highlight, QColor(0, 0, 0, 0))  # 透明色
+        #palette.setColor(QPalette.AlternateBase, QColor("#f7f7f7"))
+        palette.setColor(QPalette.Highlight, QColor(0, 0, 0, 0))  # 透明背景色(不知道为什么无法实现)
         self.table_view.setPalette(palette)
-        self.table_view.setAlternatingRowColors(True)
+        #self.table_view.setAlternatingRowColors(True)
 
         self.sheet_model = TranslatableStringsModel(self.translatable_objects, self)
 
@@ -654,6 +696,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.table_view.setSelectionBehavior(QTableView.SelectRows)
         self.table_view.setSelectionMode(QTableView.ExtendedSelection)
         self.table_view.setSortingEnabled(True)
+        self.table_view.sortByColumn(0, Qt.AscendingOrder)
         self.table_view.horizontalHeader().setStretchLastSection(True)
         self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.table_view.verticalHeader().setVisible(False)
@@ -692,12 +735,12 @@ class OverwatchLocalizerApp(QMainWindow):
         self.details_panel = DetailsPanel(self)
         self.details_panel.apply_translation_signal.connect(self.apply_translation_from_button)
         self.details_panel.apply_comment_signal.connect(self.apply_comment_from_button)
-        self.details_panel.toggle_ignore_signal.connect(self.toggle_ignore_selected_checkbox)
-        self.details_panel.toggle_reviewed_signal.connect(self.toggle_reviewed_selected_checkbox)
         self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
         self.details_panel.translation_text_changed_signal.connect(self.schedule_placeholder_validation)
         self.details_panel.translation_focus_out_signal.connect(self.apply_translation_focus_out)
         self.details_panel.comment_focus_out_signal.connect(self.apply_comment_focus_out)
+        self.details_panel.ignore_checkbox.stateChanged.connect(self.toggle_ignore_selected_checkbox)
+        self.details_panel.reviewed_checkbox.stateChanged.connect(self.toggle_reviewed_selected_checkbox)
 
         self.details_dock = QDockWidget(_("Edit & Details"), self)
         self.details_dock.setWidget(self.details_panel)
@@ -1061,7 +1104,7 @@ class OverwatchLocalizerApp(QMainWindow):
         event.accept()
 
     def save_config(self):
-        self.config["deduplicate"] = self.deduplicate_checkbox.isChecked()
+        # self.config["deduplicate"] = self.deduplicate_checkbox.isChecked()
         self.config["show_ignored"] = self.ignored_checkbox.isChecked()
         self.config["show_untranslated"] = self.untranslated_checkbox.isChecked()
         self.config["show_translated"] = self.translated_checkbox.isChecked()
@@ -1274,7 +1317,7 @@ class OverwatchLocalizerApp(QMainWindow):
                                         tm_path=tm_path_from_project))
 
             filter_settings = project_data.get("filter_settings", {})
-            self.deduplicate_checkbox.setChecked(filter_settings.get("deduplicate", False))
+            # self.deduplicate_checkbox.setChecked(filter_settings.get("deduplicate", False))
             self.ignored_checkbox.setChecked(filter_settings.get("show_ignored", True))
             self.untranslated_checkbox.setChecked(filter_settings.get("show_untranslated", False))
             self.translated_checkbox.setChecked(filter_settings.get("show_translated", False))
@@ -1367,7 +1410,7 @@ class OverwatchLocalizerApp(QMainWindow):
         if item_to_reselect_after:
             old_selected_id = item_to_reselect_after
         self.proxy_model.set_filters(
-            deduplicate=self.deduplicate_checkbox.isChecked(),
+            # deduplicate=self.deduplicate_checkbox.isChecked(),
             show_ignored=self.ignored_checkbox.isChecked(),
             show_untranslated=self.untranslated_checkbox.isChecked(),
             show_translated=self.translated_checkbox.isChecked(),
@@ -1390,7 +1433,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
     def search_filter_changed(self, text):
         self.proxy_model.set_filters(
-            deduplicate=self.deduplicate_checkbox.isChecked(),
+            # deduplicate=self.deduplicate_checkbox.isChecked(),
             show_ignored=self.ignored_checkbox.isChecked(),
             show_untranslated=self.untranslated_checkbox.isChecked(),
             show_translated=self.translated_checkbox.isChecked(),
@@ -1501,6 +1544,8 @@ class OverwatchLocalizerApp(QMainWindow):
             self.details_panel.comment_edit_text.setFocus()
 
     def on_sheet_select(self, current_index, previous_index):
+        if self.neighbor_select_timer.isActive():
+            self.neighbor_select_timer.stop()
         if self.table_view.is_dragging:
             return
         old_focused_id = self.current_focused_ts_id
@@ -1510,6 +1555,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.current_focused_ts_id = None
             self.clear_details_pane()
             self.update_ui_state_for_selection(None)
+            return
         else:
             ts_obj = self.proxy_model.data(current_index, Qt.UserRole)
             if not ts_obj:
@@ -1523,6 +1569,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.current_focused_ts_id = newly_focused_id
             if self.current_selected_ts_id != newly_focused_id:
                 self.current_selected_ts_id = newly_focused_id
+                #Debug
                 self.force_refresh_ui_for_current_selection()
                 self.update_ui_state_for_selection(self.current_selected_ts_id)
         old_source_index = self.sheet_model.index_from_id(old_focused_id)
@@ -1534,6 +1581,8 @@ class OverwatchLocalizerApp(QMainWindow):
         if new_source_index.isValid():
             self.sheet_model.dataChanged.emit(new_source_index,
                                               new_source_index.siblingAtColumn(self.sheet_model.columnCount() - 1))
+        if self.is_finalizing_batch_translation:
+            return
         status_message = _("Selected: \"{text}...\" (Line: {line_num})").format(
             text=ts_obj.original_semantic[:30].replace(chr(10), '↵'),
             line_num=ts_obj.line_num_in_file
@@ -1781,39 +1830,109 @@ class OverwatchLocalizerApp(QMainWindow):
         self.mark_project_modified()
         return True
 
+    def force_full_refresh(self, id_to_reselect=None):
+        self.sheet_model.set_translatable_objects(self.translatable_objects)
+
+        self.proxy_model.set_filters(
+            # deduplicate=self.deduplicate_checkbox.isChecked(),
+            show_ignored=self.ignored_checkbox.isChecked(),
+            show_untranslated=self.untranslated_checkbox.isChecked(),
+            show_translated=self.translated_checkbox.isChecked(),
+            show_unreviewed=self.unreviewed_checkbox.isChecked(),
+            search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
+            is_po_mode=self.is_po_mode
+        )
+
+        if id_to_reselect:
+            self.select_sheet_row_by_id(id_to_reselect, see=True)
+        self.force_refresh_ui_for_current_selection()
+        self.update_counts_display()
+
+    def _select_neighbor_or_first(self, removed_row_index):
+        print(f"--- _select_neighbor: Trying to select neighbor of removed row {removed_row_index} ---")
+        if removed_row_index < self.proxy_model.rowCount():
+            neighbor_index = self.proxy_model.index(removed_row_index, 0)
+        elif self.proxy_model.rowCount() > 0:
+            neighbor_index = self.proxy_model.index(self.proxy_model.rowCount() - 1, 0)
+        else:
+            self.table_view.clearSelection()
+            self.on_sheet_select(QModelIndex(), QModelIndex())
+            return
+        selected_obj = self.proxy_model.data(neighbor_index, Qt.UserRole)
+        print(f"    -> Neighbor found. New index row: {neighbor_index.row()}, ID: {selected_obj.id[:8]}")
+
+        self.table_view.setCurrentIndex(neighbor_index)
+        self.on_sheet_select(neighbor_index, QModelIndex())
+
+    def _deferred_select_neighbor(self, neighbor_row_in_proxy):
+        if self.neighbor_select_timer.isActive():
+            self.neighbor_select_timer.stop()
+        if neighbor_row_in_proxy < self.proxy_model.rowCount():
+            new_index = self.proxy_model.index(neighbor_row_in_proxy, 0)
+            self.table_view.setCurrentIndex(new_index)
+        elif self.proxy_model.rowCount() > 0:
+            new_index = self.proxy_model.index(self.proxy_model.rowCount() - 1, 0)
+            self.table_view.setCurrentIndex(new_index)
+
     def toggle_ignore_selected_checkbox(self, new_ignore_state):
         if not self.current_selected_ts_id: return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if not ts_obj: return
-
-        if new_ignore_state == ts_obj.is_ignored: return
+        if not ts_obj or new_ignore_state == ts_obj.is_ignored: return
+        neighbor_id_to_select = None
+        will_disappear = not self.ignored_checkbox.isChecked() and new_ignore_state
+        if will_disappear:
+            source_index = self.sheet_model.index_from_id(ts_obj.id)
+            proxy_index = self.proxy_model.mapFromSource(source_index)
+            if proxy_index.isValid():
+                current_row = proxy_index.row()
+                if current_row + 1 < self.proxy_model.rowCount():
+                    neighbor_proxy_index = self.proxy_model.index(current_row + 1, 0)
+                    neighbor_obj = self.proxy_model.data(neighbor_proxy_index, Qt.UserRole)
+                    if neighbor_obj: neighbor_id_to_select = neighbor_obj.id
+                elif current_row - 1 >= 0:
+                    neighbor_proxy_index = self.proxy_model.index(current_row - 1, 0)
+                    neighbor_obj = self.proxy_model.data(neighbor_proxy_index, Qt.UserRole)
+                    if neighbor_obj: neighbor_id_to_select = neighbor_obj.id
         primary_change = {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': ts_obj.is_ignored,
                           'new_value': new_ignore_state}
         self.add_to_undo_history('single_change', primary_change)
         ts_obj.is_ignored = new_ignore_state
         if not new_ignore_state: ts_obj.was_auto_ignored = False
-        if not self.ignored_checkbox.isChecked() and new_ignore_state:
-            self.refresh_sheet()
-        else:
-            source_index = self.sheet_model.index_from_id(ts_obj.id)
-            if source_index.isValid():
-                self.sheet_model.dataChanged.emit(source_index,
-                                                  source_index.siblingAtColumn(self.sheet_model.columnCount() - 1))
-
-        self.force_refresh_ui_for_current_selection()
+        ts_obj.update_style_cache()
         self.mark_project_modified()
         self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
             'Yes') if new_ignore_state else _('No')))
+        def deferred_refresh():
+            id_to_select_after = neighbor_id_to_select if will_disappear else ts_obj.id
+            self.force_full_refresh(id_to_reselect=id_to_select_after)
+
+        QTimer.singleShot(0, deferred_refresh)
 
     def toggle_reviewed_selected_checkbox(self, new_reviewed_state):
-        if not self.current_selected_ts_id: return
+        if not self.current_selected_ts_id:
+            return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if not ts_obj: return
-
-        if new_reviewed_state == ts_obj.is_reviewed: return
+        if not ts_obj or new_reviewed_state == ts_obj.is_reviewed:
+            return
+        neighbor_id_to_select = None
+        will_disappear = self.unreviewed_checkbox.isChecked() and new_reviewed_state
+        if will_disappear:
+            source_index = self.sheet_model.index_from_id(ts_obj.id)
+            proxy_index = self.proxy_model.mapFromSource(source_index)
+            if proxy_index.isValid():
+                current_row = proxy_index.row()
+                if current_row + 1 < self.proxy_model.rowCount():
+                    neighbor_proxy_index = self.proxy_model.index(current_row + 1, 0)
+                    neighbor_obj = self.proxy_model.data(neighbor_proxy_index, Qt.UserRole)
+                    if neighbor_obj:
+                        neighbor_id_to_select = neighbor_obj.id
+                elif current_row - 1 >= 0:
+                    neighbor_proxy_index = self.proxy_model.index(current_row - 1, 0)
+                    neighbor_obj = self.proxy_model.data(neighbor_proxy_index, Qt.UserRole)
+                    if neighbor_obj:
+                        neighbor_id_to_select = neighbor_obj.id
         old_reviewed_state = ts_obj.is_reviewed
         old_warning_ignored_state = ts_obj.is_warning_ignored
-
         changes_for_undo = [
             {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_reviewed_state,
              'new_value': new_reviewed_state},
@@ -1825,18 +1944,15 @@ class OverwatchLocalizerApp(QMainWindow):
         ts_obj.is_reviewed = new_reviewed_state
         ts_obj.is_warning_ignored = new_reviewed_state
 
-        if not self.unreviewed_checkbox.isChecked() and not new_reviewed_state:
-            self.refresh_sheet()
-        else:
-            source_index = self.sheet_model.index_from_id(ts_obj.id)
-            if source_index.isValid():
-                self.sheet_model.dataChanged.emit(source_index,
-                                                  source_index.siblingAtColumn(self.sheet_model.columnCount() - 1))
-
-        self.force_refresh_ui_for_current_selection()
+        ts_obj.update_style_cache()
         self.mark_project_modified()
         self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
             'Yes') if new_reviewed_state else _('No')))
+        def deferred_refresh():
+            id_to_select_after = neighbor_id_to_select if will_disappear else ts_obj.id
+            self.force_full_refresh(id_to_reselect=id_to_select_after)
+
+        QTimer.singleShot(0, deferred_refresh)
 
     def save_code_file_content(self, filepath_to_save):
         if not self.original_raw_code_content:
@@ -1963,7 +2079,6 @@ class OverwatchLocalizerApp(QMainWindow):
             "project_custom_instructions": self.project_custom_instructions,
             "current_tm_file_path": self.current_tm_file or "",
             "filter_settings": {
-                "deduplicate": self.deduplicate_checkbox.isChecked(),
                 "show_ignored": self.ignored_checkbox.isChecked(),
                 "show_untranslated": self.untranslated_checkbox.isChecked(),
                 "show_translated": self.translated_checkbox.isChecked(),
@@ -2841,6 +2956,22 @@ class OverwatchLocalizerApp(QMainWindow):
             return False
         return True
 
+    def _decrement_active_threads_and_dispatch_more(self):
+        if not self.is_ai_translating_batch:
+            if self.ai_batch_active_threads > 0:
+                self.ai_batch_active_threads -= 1
+            if self.ai_batch_active_threads == 0:
+                self._finalize_batch_ai_translation()
+            return
+
+        if self.ai_batch_active_threads > 0:
+            self.ai_batch_active_threads -= 1
+        if self.ai_batch_next_item_index < self.ai_batch_total_items:
+            interval = self.config.get("ai_api_interval", 200)
+            QTimer.singleShot(interval, self._dispatch_next_ai_batch_item)
+        elif self.ai_batch_active_threads == 0 and self.ai_batch_completed_count >= self.ai_batch_total_items:
+            self._finalize_batch_ai_translation()
+
     def apply_and_select_next_untranslated(self):
         if not self.current_selected_ts_id:
             return
@@ -2926,44 +3057,6 @@ class OverwatchLocalizerApp(QMainWindow):
 
         return contexts
 
-    class AITranslationWorker(QRunnable):
-        def __init__(self, app_instance, ts_id, original_text, target_language, context_dict, custom_instructions,
-                     is_batch_item):
-            super().__init__()
-            self.app_instance = app_instance
-            self.ts_id = ts_id
-            self.original_text = original_text
-            self.target_language = target_language
-            self.context_dict = context_dict
-            self.custom_instructions = custom_instructions
-            self.is_batch_item = is_batch_item
-
-        def run(self):
-            try:
-                placeholders = {
-                    '[Target Language]': self.target_language,
-                    '[Custom Translate]': self.custom_instructions,
-                    '[Untranslated Context]': self.context_dict.get("original_context", ""),
-                    '[Translated Context]': self.context_dict.get("translation_context", "")
-                }
-                prompt_structure = self.app_instance.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
-                final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
-
-                translated_text = self.app_instance.ai_translator.translate(self.original_text, final_prompt)
-                self.app_instance.thread_safe_handle_ai_result.emit(self.ts_id, translated_text, None,
-                                                                    self.is_batch_item)
-            except Exception as e:
-                self.app_instance.thread_safe_handle_ai_result.emit(self.ts_id, None, str(e), self.is_batch_item)
-            finally:
-                if self.is_batch_item and self.app_instance.ai_batch_semaphore is not None:
-                    self.app_instance.ai_batch_semaphore.release()
-                    self.app_instance.thread_safe_decrement_active_threads_and_dispatch_more.emit()
-
-    class ThreadSafeSignals(QObject):
-        thread_safe_handle_ai_result = Signal(str, str, str,
-                                              bool)
-        thread_safe_decrement_active_threads_and_dispatch_more = Signal()
-
     def _initiate_single_ai_translation(self, ts_id_to_translate, called_from_cm=False):
         if not ts_id_to_translate:
             return False
@@ -2999,7 +3092,7 @@ class OverwatchLocalizerApp(QMainWindow):
         context_dict = self._generate_ai_context_strings(ts_obj.id)
         target_language = self.config.get("ai_target_language", _("Target Language"))
 
-        worker = self.AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language,
+        worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language,
                                           context_dict, self.project_custom_instructions, False)
         self.ai_thread_pool.start(worker)
         return True
@@ -3030,11 +3123,11 @@ class OverwatchLocalizerApp(QMainWindow):
                     threads=self.ai_batch_active_threads),
                 persistent=True)
 
-            if ts_obj and not ts_obj.is_ignored and not ts_obj.translation.strip():
+            if ts_obj and not ts_obj.is_ignored:
                 context_dict = self._generate_ai_context_strings(ts_obj.id)
                 target_language = self.config.get("ai_target_language", _("Target Language"))
 
-                worker = self.AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language,
+                worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language,
                                                   context_dict, self.project_custom_instructions, True)
                 self.ai_thread_pool.start(worker)
             else:
@@ -3047,6 +3140,45 @@ class OverwatchLocalizerApp(QMainWindow):
                     elif self.ai_batch_active_threads == 0 and self.ai_batch_completed_count >= self.ai_batch_total_items:
                         self._finalize_batch_ai_translation()
 
+    def cm_set_ignored_status(self, ignore_flag):
+        selected_objs = self._get_selected_ts_objects_from_sheet()
+        if not selected_objs: return
+
+        bulk_changes = []
+        for ts_obj in selected_objs:
+            if ts_obj.is_ignored != ignore_flag:
+                old_val = ts_obj.is_ignored
+                ts_obj.is_ignored = ignore_flag
+                if not ignore_flag: ts_obj.was_auto_ignored = False
+                ts_obj.update_style_cache()
+                bulk_changes.append(
+                    {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': old_val, 'new_value': ignore_flag})
+
+        if bulk_changes:
+            self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
+            self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
+            self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
+            self.mark_project_modified()
+
+    def cm_set_reviewed_status(self, reviewed_flag):
+        selected_objs = self._get_selected_ts_objects_from_sheet()
+        if not selected_objs: return
+
+        bulk_changes = []
+        for ts_obj in selected_objs:
+            if ts_obj.is_reviewed != reviewed_flag:
+                old_val = ts_obj.is_reviewed
+                ts_obj.is_reviewed = reviewed_flag
+                ts_obj.update_style_cache()
+                bulk_changes.append(
+                    {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_val, 'new_value': reviewed_flag})
+
+        if bulk_changes:
+            self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
+            self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
+            self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
+            self.mark_project_modified()
+
     def cm_toggle_reviewed_status(self):
         if self.current_selected_ts_id:
             self.toggle_reviewed_selected_checkbox()
@@ -3055,8 +3187,8 @@ class OverwatchLocalizerApp(QMainWindow):
         if self.current_selected_ts_id:
             self.toggle_ignore_selected_checkbox()
 
-    def _decrement_active_threads_and_dispatch_more(self):
-        if not self.is_ai_translating_batch:
+    def __and_dispatch_more(self):
+        if not self.is_aidecrement_active_threads_translating_batch:
             if self.ai_batch_active_threads > 0: self.ai_batch_active_threads -= 1
             if self.ai_batch_active_threads == 0:
                 self._finalize_batch_ai_translation()
@@ -3071,108 +3203,87 @@ class OverwatchLocalizerApp(QMainWindow):
         elif self.ai_batch_active_threads == 0 and self.ai_batch_completed_count >= self.ai_batch_total_items:
             self._finalize_batch_ai_translation()
 
-    def _handle_ai_translation_result(self, ts_id, translated_text, error_message, is_batch_item):
-        ts_obj = self._find_ts_obj_by_id(ts_id)
-
-        if not ts_obj:
-            if is_batch_item: self.ai_batch_completed_count += 1
-            return
-
-        if error_message:
-            error_msg_display = _("AI translation failed for \"{text}...\": {error}").format(
-                text=ts_obj.original_semantic[:20].replace(chr(10), '↵'), error=error_message)
-            self.update_statusbar(error_msg_display)
-            if not is_batch_item:
-                QMessageBox.critical(self, _("AI Translation Error"),
-                                     _("AI translation failed for \"{text}...\":\n{error}").format(
-                                         text=ts_obj.original_semantic[:50], error=error_message))
-        elif translated_text is not None and translated_text.strip():
-            apply_source = "ai_batch_item" if is_batch_item else "ai_selected"
-            cleaned_translation = translated_text.strip()
-
-            if is_batch_item:
-                old_undo_val = ts_obj.get_translation_for_storage_and_tm()
-                ts_obj.set_translation_internal(cleaned_translation)
-                if cleaned_translation:
-                    self.translation_memory[ts_obj.original_semantic] = ts_obj.get_translation_for_storage_and_tm()
-                self.ai_batch_successful_translations_for_undo.append({
-                    'string_id': ts_obj.id,
-                    'field': 'translation',
-                    'old_value': old_undo_val,
-                    'new_value': ts_obj.get_translation_for_storage_and_tm()
-                })
-            else:
-                self._apply_translation_to_model(ts_obj, cleaned_translation, source=apply_source)
-            source_index = self.sheet_model.index_from_id(ts_obj.id)
-            if source_index.isValid():
-                self.sheet_model.dataChanged.emit(source_index, source_index,
-                                                  [Qt.DisplayRole, Qt.BackgroundRole, Qt.ForegroundRole])
-
-            if self.current_selected_ts_id == ts_obj.id:
-                self.details_panel.translation_edit_text.setPlainText(cleaned_translation)
-                self.schedule_placeholder_validation()
-                self.tm_panel.update_tm_suggestions_for_text(ts_obj.original_semantic, self.translation_memory)
-                self.tm_panel.clear_selected_tm_btn.setEnabled(ts_obj.original_semantic in self.translation_memory)
-
-            if not is_batch_item:
-                self.update_statusbar(_("AI translation successful: \"{text}...\"").format(
-                    text=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
-
-        elif translated_text is not None and not translated_text.strip():
-            self.update_statusbar(_("AI returned empty translation for \"{text}...\"").format(
-                text=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
-            if not is_batch_item and self.current_selected_ts_id == ts_obj.id:
-                self.details_panel.translation_edit_text.setPlainText("")
-                self._apply_translation_to_model(ts_obj, "", source="ai_selected_empty")
-
-        if is_batch_item:
-            self.ai_batch_completed_count += 1
-            if self.ai_batch_total_items > 0:
-                progress_percent = (self.ai_batch_completed_count / self.ai_batch_total_items) * 100
-                self.progress_bar.setValue(int(progress_percent))
-            else:
-                progress_percent = 0
-
-            self.update_statusbar(
-                _("AI Batch: {current}/{total} completed ({progress_percent:.0f}%).").format(
-                    current=self.ai_batch_completed_count, total=self.ai_batch_total_items,
-                    progress_percent=progress_percent),
-                persistent=True)
-
-            if self.ai_batch_completed_count >= self.ai_batch_total_items and self.ai_batch_active_threads == 0:
-                self._finalize_batch_ai_translation()
-
-        if not self.is_ai_translating_batch and not is_batch_item:
-            self.update_ai_related_ui_state()
-
     def ai_translate_selected_from_menu(self):
         self.cm_ai_translate_selected()
 
     def ai_translate_selected_from_button(self):
-        self._initiate_single_ai_translation(self.current_selected_ts_id)
+        if not self.current_selected_ts_id:
+            self.update_statusbar(_("Please select an item to AI translate."))
+            return
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+        if ts_obj:
+            self._start_ai_batch_translation([ts_obj])
 
     def ai_translate_all_untranslated(self):
-        if not self._check_ai_prerequisites(): return
-        if self.is_ai_translating_batch:
-            QMessageBox.warning(self, _("AI Translation in Progress"),
-                                _("AI batch translation is already in progress."))
-            return
-
-        self.ai_translation_batch_ids_queue = [
-            ts.id for ts in self.translatable_objects
+        untranslated_objs = [
+            ts for ts in self.translatable_objects
             if not ts.is_ignored and not ts.translation.strip()
         ]
-
-        if not self.ai_translation_batch_ids_queue:
+        if not untranslated_objs:
             QMessageBox.information(self, _("No Translation Needed"),
                                     _("No untranslated and non-ignored strings found."))
+            return
+
+        self._start_ai_batch_translation(untranslated_objs)
+
+    def _start_ai_batch_translation(self, items_to_translate):
+        if not self._check_ai_prerequisites(): return
+        if self.is_ai_translating_batch:
+            QMessageBox.warning(self, _("Operation Restricted"), _("AI batch translation is already in progress."))
+            return
+        untranslated_items = []
+        already_translated_items = []
+
+        for ts in items_to_translate:
+            if not ts.is_ignored:
+                if ts.translation.strip():
+                    already_translated_items.append(ts)
+                else:
+                    untranslated_items.append(ts)
+        items_to_process_after_confirmation = list(untranslated_items)
+
+        if already_translated_items:
+            if len(items_to_translate) == 1:
+                ts_obj = items_to_translate[0]
+                reply = QMessageBox.question(self, _("Overwrite Confirmation"),
+                                             _("String \"{text}...\" already has a translation. Overwrite with AI translation?").format(
+                                                 text=ts_obj.original_semantic[:50]),
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    items_to_process_after_confirmation.extend(already_translated_items)
+                else:
+                    return
+            else:
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle(_("Overwrite Confirmation"))
+                msg_box.setText(
+                    _("{count} item(s) already have translations.").format(count=len(already_translated_items)))
+                msg_box.setInformativeText(_("Do you want to overwrite them, skip them, or cancel the operation?"))
+                overwrite_btn = msg_box.addButton(_("Overwrite All"), QMessageBox.YesRole)
+                skip_btn = msg_box.addButton(_("Skip Translated"), QMessageBox.NoRole)
+                cancel_btn = msg_box.addButton(_("Cancel"), QMessageBox.RejectRole)
+                msg_box.exec()
+
+                if msg_box.clickedButton() == overwrite_btn:
+                    items_to_process_after_confirmation.extend(already_translated_items)
+                elif msg_box.clickedButton() == cancel_btn:
+                    return
+        unique_originals_to_translate = {}
+        for ts in items_to_process_after_confirmation:
+            if ts.original_semantic not in unique_originals_to_translate:
+                unique_originals_to_translate[ts.original_semantic] = ts
+
+        self.ai_translation_batch_ids_queue = [ts.id for ts in unique_originals_to_translate.values()]
+
+        if not self.ai_translation_batch_ids_queue:
+            QMessageBox.information(self, _("AI Translation"), _("No items to process."))
             return
 
         self.ai_batch_total_items = len(self.ai_translation_batch_ids_queue)
         api_interval_ms = self.config.get('ai_api_interval', 200)
         max_concurrency = self.config.get('ai_max_concurrent_requests', 1)
-
         avg_api_time_estimate_s = 3.0
+
         if max_concurrency == 1:
             estimated_time_s = self.ai_batch_total_items * (avg_api_time_estimate_s + api_interval_ms / 1000.0)
             concurrency_text = _("sequential execution")
@@ -3181,19 +3292,16 @@ class OverwatchLocalizerApp(QMainWindow):
                                (self.ai_batch_total_items / max_concurrency) * (
                                        api_interval_ms / 1000.0)
             concurrency_text = _("up to {max_concurrency} concurrent").format(max_concurrency=max_concurrency)
-
-        reply = QMessageBox.question(self, _("Confirm Batch Translation"),
-                                     _("This will start AI translation for {count} untranslated strings ({concurrency_info}).\n"
-                                       "API call interval {api_interval_ms}ms (minimum interval between tasks when concurrent).\n"
-                                       "Estimated time: ~{time_s:.1f} seconds.\n"
-                                       "Continue?").format(count=self.ai_batch_total_items,
-                                                           concurrency_info=concurrency_text,
-                                                           api_interval_ms=api_interval_ms, time_s=estimated_time_s),
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.No:
-            self.ai_translation_batch_ids_queue = []
-            return
-
+        if self.ai_batch_total_items > 50:
+            reply = QMessageBox.question(self, _("Confirm Batch Translation"),
+                                         _("You are about to AI translate {count} unique strings.\n"
+                                           "This will be applied to all identical original texts.\n"
+                                           "Estimated time: ~{time_s:.1f} seconds.\n"
+                                           "Continue?").format(count=self.ai_batch_total_items,
+                                                               time_s=estimated_time_s),
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.No:
+                return
         self.is_ai_translating_batch = True
         self.ai_batch_completed_count = 0
         self.ai_batch_successful_translations_for_undo = []
@@ -3204,14 +3312,8 @@ class OverwatchLocalizerApp(QMainWindow):
         self.progress_bar.setValue(0)
         self.update_ai_related_ui_state()
         self.update_statusbar(
-            _("AI batch translation started ({concurrency_info})...").format(concurrency_info=concurrency_text),
+            _("AI batch translation started for {count} unique strings...").format(count=self.ai_batch_total_items),
             persistent=True)
-
-        self.thread_safe_handle_ai_result = self.ThreadSafeSignals().thread_safe_handle_ai_result
-        self.thread_safe_handle_ai_result.connect(self._handle_ai_translation_result)
-        self.thread_safe_decrement_active_threads_and_dispatch_more = self.ThreadSafeSignals().thread_safe_decrement_active_threads_and_dispatch_more
-        self.thread_safe_decrement_active_threads_and_dispatch_more.connect(
-            self._decrement_active_threads_and_dispatch_more)
 
         for __ in range(max_concurrency):
             if self.ai_batch_next_item_index < self.ai_batch_total_items:
@@ -3219,34 +3321,95 @@ class OverwatchLocalizerApp(QMainWindow):
             else:
                 break
 
+
     def _finalize_batch_ai_translation(self):
         if not self.is_ai_translating_batch and self.ai_batch_active_threads > 0:
             return
+        self.is_finalizing_batch_translation = True
 
-        if self.ai_batch_successful_translations_for_undo:
-            self.add_to_undo_history('bulk_ai_translate', {'changes': self.ai_batch_successful_translations_for_undo})
-            self.mark_project_modified()
-            self.check_batch_placeholder_mismatches()
+        try:
+            if self.ai_batch_successful_translations_for_undo:
+                self.add_to_undo_history('bulk_ai_translate',
+                                         {'changes': self.ai_batch_successful_translations_for_undo})
+                self.mark_project_modified()
+                self.check_batch_placeholder_mismatches()
 
-        success_count = len(self.ai_batch_successful_translations_for_undo)
-        processed_items = self.ai_batch_completed_count
+            success_count = len(self.ai_batch_successful_translations_for_undo)
+            processed_items = self.ai_batch_total_items
+            self.update_statusbar(
+                _("AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned).").format(
+                    success_count=success_count, processed_count=processed_items,
+                    total_items=self.ai_batch_total_items),
+                persistent=True)
+            self.is_ai_translating_batch = False
+            self.ai_translation_batch_ids_queue = []
+            self.ai_batch_successful_translations_for_undo = []
+            self.ai_batch_semaphore = None
+            self.ai_batch_active_threads = 0
+            self.ai_batch_next_item_index = 0
+            self.ai_batch_completed_count = 0
 
-        self.update_statusbar(
-            _("AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned).").format(
-                success_count=success_count, processed_count=processed_items, total_items=self.ai_batch_total_items),
-            persistent=True)
+            self.update_ai_related_ui_state()
+            self._run_and_refresh_with_validation()
+        finally:
+            QTimer.singleShot(0, lambda: setattr(self, 'is_finalizing_batch_translation', False))
 
-        self.is_ai_translating_batch = False
-        self.ai_translation_batch_ids_queue = []
-        self.ai_batch_successful_translations_for_undo = []
-        self.ai_batch_semaphore = None
-        self.ai_batch_active_threads = 0
-        self.ai_batch_next_item_index = 0
-        self.ai_batch_total_items = 0
-        self.ai_batch_completed_count = 0
+    def _handle_ai_translation_result(self, ts_id, translated_text, error_message, is_batch_item):
+        trigger_ts_obj = self._find_ts_obj_by_id(ts_id)
 
-        self.update_ai_related_ui_state()
-        self._run_and_refresh_with_validation()
+        if not trigger_ts_obj:
+            if is_batch_item: self.ai_batch_completed_count += 1
+            return
+
+        if error_message:
+            error_msg_display = _("AI translation failed for \"{text}...\": {error}").format(
+                text=trigger_ts_obj.original_semantic[:20].replace('\n', '↵'), error=error_message)
+            self.update_statusbar(error_msg_display)
+            if self.ai_batch_total_items == 1:
+                QMessageBox.critical(self, _("AI Translation Error"),
+                                     _("AI translation failed for \"{text}...\":\n{error}").format(
+                                         text=trigger_ts_obj.original_semantic[:50], error=error_message))
+        elif translated_text is not None and translated_text.strip():
+            cleaned_translation = translated_text.strip()
+            original_text_to_match = trigger_ts_obj.original_semantic
+            for ts_obj in self.translatable_objects:
+                if ts_obj.original_semantic == original_text_to_match and \
+                        (not ts_obj.translation.strip() or ts_obj.id == trigger_ts_obj.id):
+                    old_undo_val = ts_obj.get_translation_for_storage_and_tm()
+                    self.ai_batch_successful_translations_for_undo.append({
+                        'string_id': ts_obj.id,
+                        'field': 'translation',
+                        'old_value': old_undo_val,
+                        'new_value': cleaned_translation.replace('\n', '\\n')
+                    })
+                    ts_obj.set_translation_internal(cleaned_translation)
+                    ts_obj.update_style_cache()
+                    source_index = self.sheet_model.index_from_id(ts_obj.id)
+                    if source_index.isValid():
+                        self.sheet_model.dataChanged.emit(source_index, source_index.siblingAtColumn(
+                            self.sheet_model.columnCount() - 1))
+            if cleaned_translation:
+                self.translation_memory[original_text_to_match] = cleaned_translation.replace('\n', '\\n')
+            if self.current_selected_ts_id == trigger_ts_obj.id:
+                self.force_refresh_ui_for_current_selection()
+            if self.ai_batch_total_items == 1:
+                self.update_statusbar(_("AI translation successful: \"{text}...\"").format(
+                    text=trigger_ts_obj.original_semantic[:20].replace('\n', '↵')))
+        if is_batch_item:
+            self.ai_batch_completed_count += 1
+            if self.ai_batch_total_items > 0:
+                progress_percent = (self.ai_batch_completed_count / self.ai_batch_total_items) * 100
+                self.progress_bar.setValue(int(progress_percent))
+
+            self.update_statusbar(
+                _("AI Batch: {current}/{total} completed ({progress_percent:.0f}%).").format(
+                    current=self.ai_batch_completed_count, total=self.ai_batch_total_items,
+                    progress_percent=progress_percent),
+                persistent=True)
+
+            if self.ai_batch_completed_count >= self.ai_batch_total_items and self.ai_batch_active_threads == 0:
+                self._finalize_batch_ai_translation()
+
 
     def check_batch_placeholder_mismatches(self):
         mismatched_items = []
@@ -3327,32 +3490,44 @@ class OverwatchLocalizerApp(QMainWindow):
             proxy_index = self.proxy_model.mapFromSource(source_index)
             if proxy_index.isValid():
                 self.table_view.selectionModel().clearSelection()
-                self.table_view.selectionModel().select(proxy_index,
-                                                        QItemSelectionModel.Select | QItemSelectionModel.Rows)
+                self.table_view.selectionModel().select(proxy_index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+                self.table_view.setCurrentIndex(proxy_index)
+
                 if see:
-                    self.table_view.scrollTo(proxy_index, QAbstractItemView.PositionAtCenter)
+                    self.table_view.scrollTo(proxy_index, QAbstractItemView.ScrollHint.EnsureVisible)
             else:
-                self.table_view.selectionModel().clearSelection()
+                self.table_view.clearSelection()
         else:
-            self.table_view.selectionModel().clearSelection()
+            self.table_view.clearSelection()
 
     def force_refresh_ui_for_current_selection(self):
-            if not self.current_selected_ts_id:
-                self.clear_details_pane()
-                return
+        if not self.current_selected_ts_id:
+            self.clear_details_pane()
+            return
 
-            ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-            if not ts_obj:
-                self.clear_details_pane()
-                return
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+        if not ts_obj:
+            self.clear_details_pane()
+            return
+        self.details_panel.original_text_display.blockSignals(True)
+        self.details_panel.translation_edit_text.blockSignals(True)
+        try:
             self.details_panel.original_text_display.setPlainText(ts_obj.original_semantic)
             self.details_panel.translation_edit_text.setPlainText(ts_obj.get_translation_for_ui())
-            self.details_panel.comment_edit_text.setPlainText(ts_obj.comment)
-            self.details_panel.reviewed_checkbox.setChecked(ts_obj.is_reviewed)
-            self.details_panel.ignore_checkbox.setChecked(ts_obj.is_ignored)
-            self.context_panel.set_context(ts_obj.context_lines, ts_obj.current_line_in_context_idx)
-            self.schedule_tm_update(ts_obj.original_semantic)
-            self.schedule_placeholder_validation()
+        finally:
+            self.details_panel.original_text_display.blockSignals(False)
+            self.details_panel.translation_edit_text.blockSignals(False)
+        self.details_panel.comment_edit_text.setPlainText(ts_obj.comment)
+        self.details_panel.reviewed_checkbox.setChecked(ts_obj.is_reviewed)
+        self.details_panel.ignore_checkbox.setChecked(ts_obj.is_ignored)
+
+        ignore_label = _("Ignore this string")
+        if ts_obj.is_ignored and ts_obj.was_auto_ignored:
+            ignore_label += _(" (Auto)")
+        self.details_panel.ignore_checkbox.setText(ignore_label)
+        self.context_panel.set_context(ts_obj.context_lines, ts_obj.current_line_in_context_idx)
+        self.schedule_tm_update(ts_obj.original_semantic)
+        self._update_all_highlights()
 
     def schedule_tm_update(self, original_text):
             self.last_tm_query = original_text
@@ -3466,33 +3641,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.update_statusbar(_("No items selected for AI translation."))
             return
 
-        if not self._check_ai_prerequisites(): return
-
-        if self.is_ai_translating_batch:
-            QMessageBox.warning(self, _("AI Translation in Progress"),
-                                _("AI batch translation is in progress. Please wait for it to complete or stop it."))
-            return
-
-        items_actually_translated_count = 0
-
-        for i, ts_obj in enumerate(selected_objs):
-            if self.current_selected_ts_id != ts_obj.id:
-                self.select_sheet_row_by_id(ts_obj.id, see=True)
-
-            initiated = self._initiate_single_ai_translation(ts_obj.id, called_from_cm=True)
-            if initiated:
-                items_actually_translated_count += 1
-
-            if initiated and i < len(selected_objs) - 1:
-                interval_ms = self.config.get("ai_api_interval", 200)
-                time.sleep(max(0.2, interval_ms / 1000.0 * 1.5))
-                QApplication.processEvents()
-
-        if items_actually_translated_count > 0:
-            self.update_statusbar(
-                _("Started AI translation for {count} selected items.").format(count=items_actually_translated_count))
-        elif selected_objs:
-            self.update_statusbar(_("No eligible selected items for AI translation."))
+        self._start_ai_batch_translation(selected_objs)
 
     def _run_comparison_logic(self, new_filepath):
         try:

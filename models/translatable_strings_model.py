@@ -102,18 +102,19 @@ class TranslatableStringsModel(QAbstractTableModel):
 class TranslatableStringsProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.deduplicate = False
+        # self.deduplicate = False
         self.show_ignored = True
         self.show_untranslated = False
         self.show_translated = False
         self.show_unreviewed = False
         self.search_term = ""
         self.is_po_mode = False
-        self.processed_originals_for_dedup = set()
+        self._current_filter_seen_originals = set()
         self.new_entry_id = "##NEW_ENTRY##"
 
-    def set_filters(self, deduplicate, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term, is_po_mode):
-        self.deduplicate = deduplicate
+    def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term,
+                    is_po_mode):
+        # self.deduplicate = deduplicate
         self.show_ignored = show_ignored
         self.show_untranslated = show_untranslated
         self.show_translated = show_translated
@@ -121,18 +122,12 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         self.search_term = search_term.lower()
         self.is_po_mode = is_po_mode
 
+        self.invalidateFilter()
+
     def filterAcceptsRow(self, source_row, source_parent):
         ts_obj = self.sourceModel().data(self.sourceModel().index(source_row, 0, source_parent), Qt.UserRole)
         if not ts_obj:
             return False
-
-        if self.is_po_mode and ts_obj.id == self.new_entry_id:
-            return True
-
-        if self.deduplicate:
-            if ts_obj.original_semantic in self.processed_originals_for_dedup:
-                return False
-            self.processed_originals_for_dedup.add(ts_obj.original_semantic)
 
         has_translation = bool(ts_obj.translation.strip())
 
@@ -191,7 +186,8 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         return False
 
     def invalidateFilter(self):
-        self.processed_originals_for_dedup.clear()
+        # --- 关键：在每次过滤开始前，重置去重集合 ---
+        self._current_filter_seen_originals.clear()
         super().invalidateFilter()
 
     def id_in_filtered_data(self, ts_id):
