@@ -20,7 +20,8 @@ class CustomCellDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
         original_text = index.data(Qt.DisplayRole)
         display_option = option
-
+        if index.column() == 1:
+            display_option.displayAlignment = Qt.AlignCenter
         if index.column() in [2, 3] and original_text and '\n' in original_text:
             display_option.text = original_text.replace('\n', '↵')
 

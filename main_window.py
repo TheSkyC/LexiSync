@@ -680,15 +680,28 @@ class OverwatchLocalizerApp(QMainWindow):
 
         # Table View
         self.table_view = CustomTableView(self, self)
+        self.table_view.setAttribute(Qt.WA_Hover, False)
         palette = self.table_view.palette()
         palette.setColor(QPalette.Base, QColor("white"))
-        #palette.setColor(QPalette.AlternateBase, QColor("#f7f7f7"))
-        palette.setColor(QPalette.Highlight, QColor(0, 0, 0, 0))  # 透明背景色(不知道为什么无法实现)
+        palette.setColor(QPalette.AlternateBase, QColor(247, 247, 247, 211))
         self.table_view.setPalette(palette)
-        #self.table_view.setAlternatingRowColors(True)
+        palette = self.table_view.palette()
+        palette.setColor(QPalette.Highlight, QColor(51, 153, 255, 45))
+        palette.setColor(QPalette.HighlightedText, palette.color(QPalette.Text))
+        self.table_view.setPalette(palette)
+        self.table_view.setStyleSheet("""
+            QTableView {
+                /* 隐藏默认的网格线 */
+                gridline-color: transparent;
+            }
 
-        self.sheet_model = TranslatableStringsModel(self.translatable_objects, self)
-
+            QTableView::item:hover {
+                /* 禁用悬停效果，让 Delegate 的背景色完全显示 */
+                background-color: none; 
+                /* 或者使用 palette(base) 也可以，但 none 更明确 */
+            }
+        """)
+        self.table_view.setAlternatingRowColors(True)
         self.sheet_model = TranslatableStringsModel(self.translatable_objects, self)
         self.proxy_model = TranslatableStringsProxyModel(self)
         self.proxy_model.setSourceModel(self.sheet_model)

@@ -58,6 +58,8 @@ class TranslatableStringsModel(QAbstractTableModel):
                 elif ts_obj.is_ignored:
                     return "I"
                 elif ts_obj.translation.strip():
+                    if ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
+                        return "*T"
                     return "T"
                 else:
                     return "U"
@@ -165,13 +167,24 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
                 return left_priority < right_priority
             return left_obj.line_num_in_file < right_obj.line_num_in_file
         elif column == 1:
-            left_status_val = 0 if (left_obj.warnings and not left_obj.is_warning_ignored) else \
-                1 if left_obj.is_ignored else \
-                    2 if left_obj.translation.strip() else 3
-            right_status_val = 0 if (right_obj.warnings and not right_obj.is_warning_ignored) else \
-                1 if right_obj.is_ignored else \
-                    2 if right_obj.translation.strip() else 3
-            return left_status_val < right_status_val
+            def get_status_weight(ts_obj):
+                if ts_obj.warnings and not ts_obj.is_warning_ignored:
+                    return 0
+                if ts_obj.minor_warnings and not ts_obj.is_warning_ignored and ts_obj.translation.strip():
+                    return 1
+                if not ts_obj.translation.strip():
+                    return 2
+                if ts_obj.is_ignored:
+                    return 4
+                return 3
+            left_weight = get_status_weight(left_obj)
+            right_weight = get_status_weight(right_obj)
+
+            if left_weight != right_weight:
+                return left_weight < right_weight
+            else:
+                # 如果权重相同，则按行号排序
+                return left_obj.line_num_in_file < right_obj.line_num_in_file
         elif column == 2:
             return left_obj.original_semantic.lower() < right_obj.original_semantic.lower()
         elif column == 3:
