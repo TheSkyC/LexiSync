@@ -469,3 +469,12 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+### PySide6 (LGPL v3)
+
+This product includes PySide6, which is the official Python binding for the Qt framework.
+
+- Copyright: Copyright (C) 2024 The Qt Company Ltd. and other contributors.
+- License: PySide6 is licensed under the GNU Lesser General Public License (LGPL), version 3.
+- License Text: A copy of the LGPLv3 can be found at: https://www.gnu.org/licenses/lgpl-3.0.html
+- Source Code: The source code for PySide6 is available at: https://code.qt.io/cgit/pyside/pyside-setup.git/
