@@ -1920,7 +1920,8 @@ class OverwatchLocalizerApp(QMainWindow):
             new_index = self.proxy_model.index(self.proxy_model.rowCount() - 1, 0)
             self.table_view.setCurrentIndex(new_index)
 
-    def toggle_ignore_selected_checkbox(self, new_ignore_state):
+    def toggle_ignore_selected_checkbox(self, state):
+        new_ignore_state = bool(state)
         if not self.current_selected_ts_id: return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj or new_ignore_state == ts_obj.is_ignored: return
@@ -1954,12 +1955,11 @@ class OverwatchLocalizerApp(QMainWindow):
 
         QTimer.singleShot(0, deferred_refresh)
 
-    def toggle_reviewed_selected_checkbox(self, new_reviewed_state):
-        if not self.current_selected_ts_id:
-            return
+    def toggle_reviewed_selected_checkbox(self, state):
+        new_reviewed_state = bool(state)
+        if not self.current_selected_ts_id: return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if not ts_obj or new_reviewed_state == ts_obj.is_reviewed:
-            return
+        if not ts_obj or new_reviewed_state == ts_obj.is_reviewed: return
         neighbor_id_to_select = None
         will_disappear = self.unreviewed_checkbox.isChecked() and new_reviewed_state
         if will_disappear:

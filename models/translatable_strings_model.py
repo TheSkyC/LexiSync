@@ -147,43 +147,37 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         return True
 
     def lessThan(self, left_index, right_index):
-
         left_obj = self.sourceModel().data(left_index, Qt.UserRole)
         right_obj = self.sourceModel().data(right_index, Qt.UserRole)
 
         if not left_obj or not right_obj:
             return False
-
         if self.is_po_mode:
             if left_obj.id == self.new_entry_id: return False
             if right_obj.id == self.new_entry_id: return True
-
         column = self.sortColumn()
-
         if column == 0:
-            left_priority = 0 if (left_obj.warnings and not left_obj.is_warning_ignored) else 1
-            right_priority = 0 if (right_obj.warnings and not right_obj.is_warning_ignored) else 1
-            if left_priority != right_priority:
-                return left_priority < right_priority
+            left_is_warning = bool(left_obj.warnings and not left_obj.is_warning_ignored)
+            right_is_warning = bool(right_obj.warnings and not right_obj.is_warning_ignored)
+            left_weight = 0 if left_is_warning else 1
+            right_weight = 0 if right_is_warning else 1
+            if left_weight != right_weight:
+                return left_weight < right_weight
             return left_obj.line_num_in_file < right_obj.line_num_in_file
-        elif column == 1:
+        elif column == 1 or column == 5:
             def get_status_weight(ts_obj):
-                if ts_obj.warnings and not ts_obj.is_warning_ignored:
-                    return 0
-                if ts_obj.minor_warnings and not ts_obj.is_warning_ignored and ts_obj.translation.strip():
-                    return 1
-                if not ts_obj.translation.strip():
-                    return 2
-                if ts_obj.is_ignored:
-                    return 4
-                return 3
+                if ts_obj.is_ignored: return 5
+                if ts_obj.warnings and not ts_obj.is_warning_ignored: return 0
+                if ts_obj.minor_warnings and not ts_obj.is_warning_ignored and ts_obj.translation.strip(): return 1
+                if not ts_obj.translation.strip(): return 2
+                if not ts_obj.is_reviewed: return 3
+                return 4
+
             left_weight = get_status_weight(left_obj)
             right_weight = get_status_weight(right_obj)
-
             if left_weight != right_weight:
                 return left_weight < right_weight
             else:
-                # 如果权重相同，则按行号排序
                 return left_obj.line_num_in_file < right_obj.line_num_in_file
         elif column == 2:
             return left_obj.original_semantic.lower() < right_obj.original_semantic.lower()
@@ -191,15 +185,12 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
             return left_obj.get_translation_for_ui().lower() < right_obj.get_translation_for_ui().lower()
         elif column == 4:
             return left_obj.comment.lower() < right_obj.comment.lower()
-        elif column == 5:
-            return left_obj.is_reviewed < right_obj.is_reviewed
         elif column == 6:
             return left_obj.line_num_in_file < right_obj.line_num_in_file
 
         return False
 
     def invalidateFilter(self):
-        # --- 关键：在每次过滤开始前，重置去重集合 ---
         self._current_filter_seen_originals.clear()
         super().invalidateFilter()
 
