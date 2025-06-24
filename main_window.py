@@ -1597,6 +1597,10 @@ class OverwatchLocalizerApp(QMainWindow):
                 self.current_selected_ts_id = newly_focused_id
                 self.force_refresh_ui_for_current_selection()
                 self.update_ui_state_for_selection(self.current_selected_ts_id)
+        tm_exists_for_selected = ts_obj.original_semantic in self.translation_memory
+
+
+        self.tm_panel.clear_selected_tm_btn.setEnabled(tm_exists_for_selected)
         old_source_index = self.sheet_model.index_from_id(old_focused_id)
         new_source_index = self.sheet_model.index_from_id(self.current_focused_ts_id)
 
