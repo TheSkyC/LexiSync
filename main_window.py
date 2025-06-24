@@ -1,6 +1,7 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+import re
 import os
 import shutil
 import json
@@ -106,8 +107,8 @@ class AITranslationWorker(QRunnable):
                 app.running_workers.discard(self)
 
 class ThreadSafeSignals(QObject):
-        handle_ai_result = Signal(str, str, str, bool)
-        decrement_active_threads = Signal()
+    handle_ai_result = Signal(str, str, str, bool)
+    decrement_active_threads = Signal()
 
 class OverwatchLocalizerApp(QMainWindow):
     language_changed = Signal()
@@ -486,7 +487,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_copy_original.setText(_("Copy Original"))
         self.action_paste_translation.setText(_("Paste to Translation"))
 
-        self.action_deduplicate.setText(_("Deduplicate Strings"))
+        #self.action_deduplicate.setText(_("Deduplicate Strings"))
         self.action_show_ignored.setText(_("Show Ignored"))
         self.action_show_untranslated.setText(_("Show Untranslated"))
         self.action_show_translated.setText(_("Show Translated"))
@@ -1569,7 +1570,6 @@ class OverwatchLocalizerApp(QMainWindow):
             self.current_focused_ts_id = newly_focused_id
             if self.current_selected_ts_id != newly_focused_id:
                 self.current_selected_ts_id = newly_focused_id
-                #Debug
                 self.force_refresh_ui_for_current_selection()
                 self.update_ui_state_for_selection(self.current_selected_ts_id)
         old_source_index = self.sheet_model.index_from_id(old_focused_id)
@@ -1799,21 +1799,48 @@ class OverwatchLocalizerApp(QMainWindow):
         if new_translation_ui != ts_obj.get_translation_for_ui():
             self._apply_translation_to_model(ts_obj, new_translation_ui, source="manual_focus_out")
 
+    def _save_comment_from_ui(self):
+        if not self.current_selected_ts_id: return False
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+        if not ts_obj: return False
+        full_comment_text = self.details_panel.comment_edit_text.toPlainText()
+        old_po_lines = ts_obj.po_comment.splitlines()
+        old_user_lines = ts_obj.comment.splitlines()
+        old_full_text = "\n".join(old_po_lines + old_user_lines)
+        if full_comment_text == old_full_text:
+            return False
+
+        lines = full_comment_text.splitlines()
+        new_po_lines = []
+        new_user_lines = []
+
+        for line in lines:
+            if line.strip().startswith('#'):
+                new_po_lines.append(line)
+            else:
+                new_user_lines.append(line)
+
+        new_po_comment = "\n".join(new_po_lines)
+        new_user_comment = "\n".join(new_user_lines)
+        self.add_to_undo_history('bulk_change', {
+            'changes': [
+                {'string_id': ts_obj.id, 'field': 'po_comment', 'old_value': ts_obj.po_comment,
+                 'new_value': new_po_comment},
+                {'string_id': ts_obj.id, 'field': 'comment', 'old_value': ts_obj.comment, 'new_value': new_user_comment}
+            ]
+        })
+
+        ts_obj.po_comment = new_po_comment
+        ts_obj.comment = new_user_comment
+
+        self.mark_project_modified()
+        self.update_statusbar(_("Comment updated."))
+        self.details_panel.highlighter.rehighlight()
+        return True
     def apply_comment_from_button(self):
-        if not self.current_selected_ts_id: return
-        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if not ts_obj: return
-        new_comment = self.details_panel.comment_edit_text.toPlainText()
-        self._apply_comment_to_model(ts_obj, new_comment)
-
+        self._save_comment_from_ui()
     def apply_comment_focus_out(self):
-        if not self.current_selected_ts_id: return
-
-        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if not ts_obj: return
-        new_comment = self.details_panel.comment_edit_text.toPlainText()
-        if new_comment != ts_obj.comment:
-            self._apply_comment_to_model(ts_obj, new_comment)
+        self._save_comment_from_ui()
 
     def _apply_comment_to_model(self, ts_obj, new_comment):
         if new_comment == ts_obj.comment: return False
@@ -3093,7 +3120,7 @@ class OverwatchLocalizerApp(QMainWindow):
         target_language = self.config.get("ai_target_language", _("Target Language"))
 
         worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language,
-                                          context_dict, self.project_custom_instructions, False)
+                                     context_dict, self.project_custom_instructions, False)
         self.ai_thread_pool.start(worker)
         return True
 
@@ -3128,7 +3155,7 @@ class OverwatchLocalizerApp(QMainWindow):
                 target_language = self.config.get("ai_target_language", _("Target Language"))
 
                 worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language,
-                                                  context_dict, self.project_custom_instructions, True)
+                                             context_dict, self.project_custom_instructions, True)
                 self.ai_thread_pool.start(worker)
             else:
                 self.ai_batch_semaphore.release()
@@ -3517,7 +3544,10 @@ class OverwatchLocalizerApp(QMainWindow):
         finally:
             self.details_panel.original_text_display.blockSignals(False)
             self.details_panel.translation_edit_text.blockSignals(False)
-        self.details_panel.comment_edit_text.setPlainText(ts_obj.comment)
+        po_comments = ts_obj.po_comment.splitlines()
+        user_comments = ts_obj.comment.splitlines()
+        all_comment_lines = po_comments + user_comments
+        self.details_panel.comment_edit_text.setPlainText("\n".join(all_comment_lines))
         self.details_panel.reviewed_checkbox.setChecked(ts_obj.is_reviewed)
         self.details_panel.ignore_checkbox.setChecked(ts_obj.is_ignored)
 
@@ -3530,12 +3560,12 @@ class OverwatchLocalizerApp(QMainWindow):
         self._update_all_highlights()
 
     def schedule_tm_update(self, original_text):
-            self.last_tm_query = original_text
-            self.tm_update_timer.start(250)
+        self.last_tm_query = original_text
+        self.tm_update_timer.start(250)
 
     def perform_tm_update(self):
-            if self.last_tm_query:
-                self.tm_panel.update_tm_suggestions_for_text(self.last_tm_query, self.translation_memory)
+        if self.last_tm_query:
+            self.tm_panel.update_tm_suggestions_for_text(self.last_tm_query, self.translation_memory)
 
     def cm_edit_comment(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()

@@ -11,6 +11,7 @@ import re
 from .newline_text_edit import NewlineTextEdit
 from utils.localization import _
 from services.validation_service import placeholder_regex
+from .po_comment_highlighter import PoCommentHighlighter
 
 class DetailsPanel(QWidget):
     apply_translation_signal = Signal()
@@ -18,6 +19,7 @@ class DetailsPanel(QWidget):
     ai_translate_signal = Signal()
     translation_text_changed_signal = Signal()
     translation_focus_out_signal = Signal()
+    apply_po_comment_signal = Signal()
     comment_focus_out_signal = Signal()
 
     def __init__(self, parent=None):
@@ -34,7 +36,7 @@ class DetailsPanel(QWidget):
         layout.setSpacing(5)
 
         # Original Text Display
-        self.original_label = QLabel(_("Original (Ctrl+Shift+C to copy):"))
+        self.original_label = QLabel(_("Original:"))
         self.original_label.setObjectName("original_label")
         layout.addWidget(self.original_label)
         self.original_text_display = NewlineTextEdit()
@@ -45,7 +47,7 @@ class DetailsPanel(QWidget):
         layout.addWidget(self.original_text_display)
 
         # Translation Edit Text
-        self.translation_label = QLabel(_("Translation (Ctrl+Shift+V to paste):"))
+        self.translation_label = QLabel(_("Translation:"))
         self.translation_label.setObjectName("translation_label")
         layout.addWidget(self.translation_label)
         self.translation_edit_text = NewlineTextEdit()
@@ -77,12 +79,15 @@ class DetailsPanel(QWidget):
         self.comment_label = QLabel(_("Comment:"))
         self.comment_label.setObjectName("comment_label")
         layout.addWidget(self.comment_label)
+
         self.comment_edit_text = NewlineTextEdit()
+        self.comment_edit_text.setObjectName("comment_edit_text")
         self.comment_edit_text.setLineWrapMode(NewlineTextEdit.WidgetWidth)
         self.comment_edit_text.setFixedHeight(70)
         self.comment_edit_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.comment_edit_text.focusOutEvent = self._comment_focus_out_event
         layout.addWidget(self.comment_edit_text)
+        self.highlighter = PoCommentHighlighter(self.comment_edit_text.document())
 
         # Comment Actions
         comment_actions_frame = QFrame()

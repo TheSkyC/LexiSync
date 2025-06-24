@@ -14,8 +14,6 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
     line_num = 0
     if hasattr(entry, 'occurrences') and entry.occurrences:
         try:
-            # occurrences is a list of (filename, line_number) tuples
-            # We take the first one for line number context
             _path, lnum_str = entry.occurrences[0]
             if lnum_str.isdigit():
                 line_num = int(lnum_str)
@@ -26,56 +24,45 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
         original_raw=entry.msgid,
         original_semantic=entry.msgid,
         line_num=line_num,
-        char_pos_start_in_file=0, # PO entries don't have char positions
-        char_pos_end_in_file=len(entry.msgid), # Approximate end position
+        char_pos_start_in_file=0,
+        char_pos_end_in_file=len(entry.msgid),
         full_code_lines=full_code_lines if full_code_lines else [],
         string_type="PO Import"
     )
     ts.translation = entry.msgstr
-
-    source_comments = []
+    po_comment_lines = []
+    if entry.comment:
+        po_comment_lines.extend([line.lstrip('# ').strip() for line in entry.comment.splitlines()])
     if entry.occurrences:
-        # Format occurrences for display
-        source_comments.append(f"#: {' '.join(f'{p}:{l}' for p, l in entry.occurrences)}")
-    if entry.tcomment: # Translator comments
-        source_comments.append(f"#. {entry.tcomment}")
-    if entry.comment: # Extracted comments (developer comments)
-        source_comments.append(f"# {entry.comment}")
+        po_comment_lines.append(f"#: {' '.join(f'{p}:{l}' for p, l in entry.occurrences)}")
     if entry.flags:
-        source_comments.append(f"#, {', '.join(entry.flags)}")
-    if entry.previous_msgid: # Obsolete entries' previous msgid
+        other_flags = [f for f in entry.flags if f != 'fuzzy']
+        if other_flags:
+            po_comment_lines.append(f"#, {', '.join(other_flags)}")
+    if entry.previous_msgid:
         previous_entries = entry.previous_msgid if isinstance(entry.previous_msgid, list) else [entry.previous_msgid]
         for p_msgid in previous_entries:
-            source_comments.append(f"#| msgid \"{p_msgid}\"")
+            po_comment_lines.append(f"#| msgid \"{p_msgid}\"")
 
-    ts.source_comment = "\n".join(source_comments)
-    ts.comment = entry.comment or "" # Use the developer comment as the primary comment field
+    ts.po_comment = "\n".join(po_comment_lines)
+    ts.comment = entry.tcomment or ""
+    user_comment_lines = ts.comment.splitlines()
+    ts.is_reviewed = "#OWLocalizer:reviewed" in user_comment_lines
+    ts.is_ignored = "#OWLocalizer:ignored" in user_comment_lines
+    ts.comment = "\n".join([line for line in user_comment_lines if not line.startswith('#OWLocalizer:')])
 
     if 'fuzzy' in entry.flags:
-        ts.minor_warnings.append(_("Translation is marked as fuzzy and needs review."))
-
-    # Determine reviewed status
-    if not ts.translation.strip() or 'fuzzy' in entry.flags:
-        ts.is_reviewed = False
-    elif "# OWLocalizer:reviewed" in ts.source_comment: # Custom flag for reviewed
-        ts.is_reviewed = True
-    else:
-        ts.is_reviewed = False # Default to unreviewed if no translation or fuzzy, or no explicit flag
-
-    # Determine ignored status
-    if "# OWLocalizer:ignored" in ts.source_comment: # Custom flag for ignored
-        ts.is_ignored = True
-        ts.was_auto_ignored = False # Not auto-ignored if explicitly marked
+        ts.is_fuzzy = True
 
     return ts
 
 
 def extract_to_pot(code_content, extraction_patterns, project_name="Untitled Project", app_version_from_app=APP_VERSION,
                    original_file_name="source_code"):
-    pot_file = polib.POFile(wrapwidth=0) # wrapwidth=0 to prevent line wrapping
+    pot_file = polib.POFile(wrapwidth=0)
     pot_file.metadata = {
         'Project-Id-Version': f'{project_name} {app_version_from_app}',
-        'Report-Msgid-Bugs-To': '', # Can be customized
+        'Report-Msgid-Bugs-To': '',
         'POT-Creation-Date': datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M%z"),
         'MIME-Version': '1.0',
         'Content-Type': 'text/plain; charset=utf-8',
@@ -86,9 +73,9 @@ def extract_to_pot(code_content, extraction_patterns, project_name="Untitled Pro
     for ts_obj in translatable_objects:
         entry = polib.POEntry(
             msgid=ts_obj.original_semantic,
-            msgstr='', # POT files have empty msgstr
+            msgstr='',
             occurrences=[(original_file_name, str(ts_obj.line_num_in_file))],
-            comment=ts_obj.comment # Use the comment field for developer comments
+            comment=ts_obj.comment
         )
         pot_file.append(entry)
     return pot_file
@@ -104,12 +91,11 @@ def load_from_po(filepath, original_code_content_for_context=None, original_file
     for entry in po_file:
         if entry.obsolete:
             continue
-        if entry.msgid == "" and not translatable_objects: # Skip the empty msgid for metadata if it's the first entry
+        if entry.msgid == "" and not translatable_objects:
             continue
         ts = _po_entry_to_translatable_string(entry, full_code_lines, original_file_path_for_context)
         translatable_objects.append(ts)
 
-    # Sort by line number for better display, but handle cases where line_num is 0 (e.g., new entries or unassociated)
     translatable_objects.sort(
         key=lambda x: (x.line_num_in_file if x.line_num_in_file > 0 else float('inf'), x.original_semantic))
     return translatable_objects, po_file.metadata
@@ -119,63 +105,41 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
     po_file = polib.POFile(wrapwidth=0)
     if metadata:
         po_file.metadata = metadata
-    # Update revision date
     po_file.metadata['PO-Revision-Date'] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M%z")
-    # Ensure Content-Type and Content-Transfer-Encoding are set for PO files
     po_file.metadata['Content-Type'] = 'text/plain; charset=utf-8'
     po_file.metadata['Content-Transfer-Encoding'] = '8bit'
-
     for ts_obj in translatable_objects:
-        if ts_obj.id == "##NEW_ENTRY##" or not ts_obj.original_semantic: # Skip the special new entry
+        if not ts_obj.original_semantic or ts_obj.id == "##NEW_ENTRY##":
             continue
-
         entry_flags = []
-        if not ts_obj.is_reviewed and ts_obj.translation.strip():
+        if ts_obj.is_fuzzy:
             entry_flags.append('fuzzy')
-
-        # Combine comments for PO file
-        translator_comment_lines = []
-        if ts_obj.comment:
-            translator_comment_lines.append(ts_obj.comment)
-
-        # Add custom OWLocalizer flags as comments
-        if ts_obj.is_reviewed:
-            translator_comment_lines.append("# OWLocalizer:reviewed")
-        if ts_obj.is_ignored:
-            translator_comment_lines.append("# OWLocalizer:ignored")
-
-        # The 'comment' field in POEntry is for extracted comments (developer comments),
-        # while 'tcomment' is for translator comments.
-        # We'll put our combined comments into 'tcomment' for clarity.
-        # The original 'comment' from extraction should ideally go into 'comment'.
-        # For simplicity, if ts_obj.comment is user-edited, we'll treat it as translator comment.
-        # If it was from extraction, it would be in ts_obj.source_comment (which is not saved back directly).
-
-        # Let's refine: if ts_obj.comment is not empty, it's a translator comment.
-        # If ts_obj.source_comment contains original PO comments, we should try to preserve them.
-        # This requires a more complex mapping. For now, let's assume ts_obj.comment is the primary user-facing comment.
-
-        # For simplicity, let's put all user-generated comments and internal flags into tcomment.
-        # The original extracted comment (if any) would have been part of ts_obj.source_comment
-        # but is not directly stored in ts_obj.comment for round-tripping.
-        # This is a limitation if you want to preserve original developer comments separately from translator comments.
-
-        # A better approach for round-tripping PO files would be to store original POEntry fields
-        # within TranslatableString, but that complicates the model.
-        # For now, we'll just use ts_obj.comment as the translator comment.
-
         entry_occurrences = []
         if ts_obj.line_num_in_file > 0:
             entry_occurrences.append((original_file_name, str(ts_obj.line_num_in_file)))
-
+        user_comment_lines = ts_obj.comment.splitlines()
+        if ts_obj.is_reviewed:
+            user_comment_lines.append("#OWLocalizer:reviewed")
+        if ts_obj.is_ignored:
+            user_comment_lines.append("#OWLocalizer:ignored")
+        translator_comment = "\n".join(user_comment_lines)
+        po_comment_lines = ts_obj.po_comment.splitlines()
+        developer_comment_lines = [
+            line for line in po_comment_lines
+            if not line.strip().startswith(('#:', '#,', '#|'))
+        ]
+        developer_comment = "\n".join(developer_comment_lines)
         entry = polib.POEntry(
             msgid=ts_obj.original_semantic,
             msgstr=ts_obj.translation,
-            tcomment="\n".join(translator_comment_lines) if translator_comment_lines else "", # Translator comments
+            tcomment=translator_comment,
+            comment=developer_comment,
             occurrences=entry_occurrences,
             flags=entry_flags
         )
-
         po_file.append(entry)
-
-    po_file.save(filepath)
+    try:
+        po_file.save(filepath)
+    except Exception as e:
+        print(f"Error saving PO file to {filepath}: {e}")
+        raise e

@@ -112,9 +112,7 @@ class TranslatableString:
 
 
     def update_style_cache(self, all_strings_map=None):
-        self.ui_style_cache = {}  # 重置缓存
-
-        # 缓存颜色和字体
+        self.ui_style_cache = {}
         if self.warnings and not self.is_warning_ignored:
             self.ui_style_cache['background'] = QColor("#FFDDDD")
             self.ui_style_cache['foreground'] = QColor("red")
