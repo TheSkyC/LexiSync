@@ -711,18 +711,24 @@ class OverwatchLocalizerApp(QMainWindow):
         self.table_view.setSelectionMode(QTableView.ExtendedSelection)
         self.table_view.setSortingEnabled(True)
         self.table_view.sortByColumn(0, Qt.AscendingOrder)
-        self.table_view.horizontalHeader().setStretchLastSection(True)
-        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-        self.table_view.verticalHeader().setVisible(False)
 
-        # Set initial column widths
+        header = self.table_view.horizontalHeader()
+        # 固定宽度的列
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)  # 原文
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)  # 译文
+        # 可以自由拉伸的列
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)  # #
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)  # S
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Interactive)  # 注释
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Interactive)  # ✔
+        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Interactive)  # Line
+
         self.table_view.setColumnWidth(0, 40)  # #
-        self.table_view.setColumnWidth(1, 30)  # S
-        self.table_view.setColumnWidth(2, 280) # Original
-        self.table_view.setColumnWidth(3, 280) # Translation
-        self.table_view.setColumnWidth(4, 90)  # Comment
+        self.table_view.setColumnWidth(1, 35)  # S
         self.table_view.setColumnWidth(5, 30)  # ✔
         self.table_view.setColumnWidth(6, 50)  # Line
+        self.table_view.setColumnWidth(4, 120)  # Comment
+        self.table_view.verticalHeader().setVisible(False)
 
         self.table_view.horizontalHeader().sectionClicked.connect(self._sort_sheet_column)
         self.table_view.doubleClicked.connect(self.on_sheet_double_click)
