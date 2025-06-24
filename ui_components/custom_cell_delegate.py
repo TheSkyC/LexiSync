@@ -29,8 +29,8 @@ class CustomCellDelegate(QStyledItemDelegate):
 
         ts_obj = index.data(Qt.UserRole)
         if not ts_obj: return
-        is_selected = option.state & self.parent().style().StateFlag.State_Selected
         is_focused = (self.app and ts_obj.id == self.app.current_focused_ts_id)
+        is_selected = option.state & self.parent().style().StateFlag.State_Selected
 
         if is_selected:
             painter.save()
@@ -50,6 +50,7 @@ class CustomCellDelegate(QStyledItemDelegate):
                                  rect.bottomRight().y() - 1)
 
             painter.restore()
+
         current_col = index.column()
         if current_col in [2, 3]:
             symbol_color = index.data(NewlineColorRole)

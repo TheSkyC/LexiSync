@@ -683,7 +683,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.table_view.setAttribute(Qt.WA_Hover, False)
         palette = self.table_view.palette()
         palette.setColor(QPalette.Base, QColor("white"))
-        palette.setColor(QPalette.AlternateBase, QColor(247, 247, 247, 211))
         self.table_view.setPalette(palette)
         palette = self.table_view.palette()
         palette.setColor(QPalette.Highlight, QColor(51, 153, 255, 45))
@@ -691,15 +690,22 @@ class OverwatchLocalizerApp(QMainWindow):
         self.table_view.setPalette(palette)
         self.table_view.setStyleSheet("""
             QTableView {
-                /* 隐藏默认的网格线 */
                 gridline-color: transparent;
+                alternate-background-color: rgba(247, 247, 247, 211);
+            }
+            /* 被选择行 */
+            QTableView::item:selected {
+                background-color: rgba(51, 153, 255, 45); /* 半透明蓝色背景 */
+                border: 1px solid (51, 153, 255, 145); /* 细边框 */
+                border-right: none;
+                border-left: none;
+            }
+            /* 焦点行 */
+            QTableView::item:selected:focus, QTableView::item:focus {
+                background-color: rgba(51, 153, 255, 255); /* 半透明蓝色 */
+                border: 1px solid rgba(255, 0, 0, 200); /* 红色边框 */
             }
 
-            QTableView::item:hover {
-                /* 禁用悬停效果，让 Delegate 的背景色完全显示 */
-                background-color: none; 
-                /* 或者使用 palette(base) 也可以，但 none 更明确 */
-            }
         """)
         self.table_view.setAlternatingRowColors(True)
         self.sheet_model = TranslatableStringsModel(self.translatable_objects, self)
@@ -2486,7 +2492,6 @@ class OverwatchLocalizerApp(QMainWindow):
 
             self.undo_history.clear()
             self.redo_history.clear()
-            self.current_selected_ts_id = None
             self.mark_project_modified(False)
             self.is_po_mode = True
             self.current_po_file_path = po_filepath
