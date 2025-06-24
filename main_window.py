@@ -1835,7 +1835,9 @@ class OverwatchLocalizerApp(QMainWindow):
         if not self.current_selected_ts_id: return False
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return False
+
         full_comment_text = self.details_panel.comment_edit_text.toPlainText()
+
         old_po_lines = ts_obj.po_comment.splitlines()
         old_user_lines = ts_obj.comment.splitlines()
         old_full_text = "\n".join(old_po_lines + old_user_lines)
@@ -1854,6 +1856,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         new_po_comment = "\n".join(new_po_lines)
         new_user_comment = "\n".join(new_user_lines)
+
         self.add_to_undo_history('bulk_change', {
             'changes': [
                 {'string_id': ts_obj.id, 'field': 'po_comment', 'old_value': ts_obj.po_comment,
@@ -1867,6 +1870,17 @@ class OverwatchLocalizerApp(QMainWindow):
 
         self.mark_project_modified()
         self.update_statusbar(_("Comment updated."))
+
+        # --- 关键修复：在这里通知表格更新 ---
+        # 找到被修改的行在源模型中的索引
+        source_index = self.sheet_model.index_from_id(ts_obj.id)
+        if source_index.isValid():
+            # 我们只需要更新注释列（第4列）
+            comment_column_index = source_index.siblingAtColumn(4)
+            # 发射信号，告诉视图这一格的数据变了
+            self.sheet_model.dataChanged.emit(comment_column_index, comment_column_index)
+
+        # 重新高亮右侧面板的注释框
         self.details_panel.highlighter.rehighlight()
         return True
     def apply_comment_from_button(self):
