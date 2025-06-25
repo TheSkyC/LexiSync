@@ -36,9 +36,7 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
     if entry.occurrences:
         po_comment_lines.append(f"#: {' '.join(f'{p}:{l}' for p, l in entry.occurrences)}")
     if entry.flags:
-        other_flags = [f for f in entry.flags if f != 'fuzzy']
-        if other_flags:
-            po_comment_lines.append(f"#, {', '.join(other_flags)}")
+        po_comment_lines.append(f"#, {', '.join(entry.flags)}")
     if entry.previous_msgid:
         previous_entries = entry.previous_msgid if isinstance(entry.previous_msgid, list) else [entry.previous_msgid]
         for p_msgid in previous_entries:
@@ -114,6 +112,14 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         entry_flags = []
         if ts_obj.is_fuzzy:
             entry_flags.append('fuzzy')
+
+        po_comment_lines = ts_obj.po_comment.splitlines()
+        flags_line = next((line for line in po_comment_lines if line.strip().startswith('#,')), None)
+        if flags_line:
+            flags_str = flags_line.replace('#,', '').strip()
+            entry_flags.extend([f.strip() for f in flags_str.split(',') if f.strip()])
+
+        entry_flags = sorted(list(set(entry_flags)))
         entry_occurrences = []
         if ts_obj.line_num_in_file > 0:
             entry_occurrences.append((original_file_name, str(ts_obj.line_num_in_file)))
