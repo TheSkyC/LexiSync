@@ -575,7 +575,11 @@ class OverwatchLocalizerApp(QMainWindow):
         self.translated_checkbox.setText(_("Translated"))
         self.unreviewed_checkbox.setText(_("Unreviewed"))
         self.search_button.setText(_("Find"))
+        self.search_entry.textChanged.disconnect(self.search_filter_changed)
+        self.search_entry.setText("")
+        self.search_entry.textChanged.connect(self.search_filter_changed)
         self.search_entry.setPlaceholderText(_("Quick search..."))
+        self.on_search_focus_out()
         self.on_search_focus_out()
 
         self.details_panel.update_ui_texts()
