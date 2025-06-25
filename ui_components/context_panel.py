@@ -20,9 +20,7 @@ class ContextPanel(QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(5)
 
-        self.context_label = QLabel(_("Context Preview:"))
-        self.context_label.setObjectName("context_label")
-        layout.addWidget(self.context_label)
+
 
         self.context_text_display = QTextEdit()
         self.context_text_display.setReadOnly(True)
@@ -60,5 +58,3 @@ class ContextPanel(QWidget):
 
     def update_ui_texts(self):
         label = self.findChild(QLabel, "context_label")
-        if label:
-            label.setText(_("Context Preview:"))

@@ -822,81 +822,87 @@ class OverwatchLocalizerApp(QMainWindow):
         return super().eventFilter(obj, event)
 
     def _setup_dock_widgets(self):
-        # Details Panel
         self.details_panel = DetailsPanel(self)
+        self.context_panel = ContextPanel(self)
+        self.tm_panel = TMPanel(self)
+        self.comment_status_panel = CommentStatusPanel(self)
+
+
+        # DetailsPanel
         self.details_panel.apply_translation_signal.connect(self.apply_translation_from_button)
         self.details_panel.translation_text_changed_signal.connect(self.schedule_placeholder_validation)
         self.details_panel.translation_focus_out_signal.connect(self.apply_translation_focus_out)
         self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
 
-        self.details_dock = QDockWidget(_("Edit && Details"), self)
+        # CommentStatusPanel
+        self.comment_status_panel.apply_comment_signal.connect(self.apply_comment_from_button)
+        self.comment_status_panel.comment_focus_out_signal.connect(self.apply_comment_focus_out)
+        self.comment_status_panel.ignore_checkbox.stateChanged.connect(self.toggle_ignore_selected_checkbox)
+        self.comment_status_panel.reviewed_checkbox.stateChanged.connect(self.toggle_reviewed_selected_checkbox)
+
+        # TMPanel
+        self.tm_panel.apply_tm_suggestion_signal.connect(self.apply_tm_suggestion_from_listbox)
+        self.tm_panel.update_tm_signal.connect(self.update_tm_for_selected_string)
+        self.tm_panel.clear_tm_signal.connect(self.clear_tm_for_selected_string)
+
+
+        # DetailsPanel
+        self.details_dock = QDockWidget(_("Edit & Details"), self)
         self.details_dock.setWidget(self.details_panel)
         self.details_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.details_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.details_dock)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.details_dock)  # <--- 修改停靠区域
 
-        # Context Panel
-        self.context_panel = ContextPanel(self)
+        # ContextPanel
         self.context_dock = QDockWidget(_("Context Preview"), self)
         self.context_dock.setWidget(self.context_panel)
         self.context_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.context_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.context_dock)
-        self.splitDockWidget(self.details_dock, self.context_dock, Qt.Vertical)
 
-        # TM Panel
-        self.tm_panel = TMPanel(self)
-        self.tm_panel.apply_tm_suggestion_signal.connect(self.apply_tm_suggestion_from_listbox)
-        self.tm_panel.update_tm_signal.connect(self.update_tm_for_selected_string)
-        self.tm_panel.clear_tm_signal.connect(self.clear_tm_for_selected_string)
-
+        # TMPanel
         self.tm_dock = QDockWidget(_("Translation Memory Matches"), self)
         self.tm_dock.setWidget(self.tm_panel)
         self.tm_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.tm_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.tm_dock)
-        self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)
+        self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)  # 将TM分割到Context下方
 
-        # Comment && Status Panel
-        self.comment_status_panel = CommentStatusPanel(self)
-        self.comment_status_panel.apply_comment_signal.connect(self.apply_comment_from_button)
-        self.comment_status_panel.comment_focus_out_signal.connect(self.apply_comment_focus_out)
-        self.comment_status_panel.ignore_checkbox.stateChanged.connect(self.toggle_ignore_selected_checkbox)
-        self.comment_status_panel.reviewed_checkbox.stateChanged.connect(self.toggle_reviewed_selected_checkbox)
+        # CommentStatusPanel
         self.comment_status_dock = QDockWidget(_("Comment && Status"), self)
         self.comment_status_dock.setWidget(self.comment_status_panel)
-        self.comment_status_dock.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
+        self.comment_status_dock.setFeatures(
+            QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.comment_status_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.comment_status_dock)
-        self.splitDockWidget(self.tm_dock, self.comment_status_dock, Qt.Vertical)
+        self.splitDockWidget(self.tm_dock, self.comment_status_dock, Qt.Vertical)  # 将Comment分割到TM下方
 
-        # Details Panel
         self.action_toggle_details_panel.setChecked(self.details_dock.isVisible())
         self.action_toggle_details_panel.triggered.connect(
             lambda checked: self.details_dock.setVisible(checked)
         )
         self.details_dock.visibilityChanged.connect(self.action_toggle_details_panel.setChecked)
 
-        # Context Panel
         self.action_toggle_context_panel.setChecked(self.context_dock.isVisible())
         self.action_toggle_context_panel.triggered.connect(
             lambda checked: self.context_dock.setVisible(checked)
         )
         self.context_dock.visibilityChanged.connect(self.action_toggle_context_panel.setChecked)
 
-        # TM Panel
         self.action_toggle_tm_panel.setChecked(self.tm_dock.isVisible())
         self.action_toggle_tm_panel.triggered.connect(
             lambda checked: self.tm_dock.setVisible(checked)
         )
         self.tm_dock.visibilityChanged.connect(self.action_toggle_tm_panel.setChecked)
+
         self.action_toggle_comment_status_panel.setChecked(self.comment_status_dock.isVisible())
         self.action_toggle_comment_status_panel.triggered.connect(
             lambda checked: self.comment_status_dock.setVisible(checked))
         self.comment_status_dock.visibilityChanged.connect(self.action_toggle_comment_status_panel.setChecked)
+
         if self.default_window_state is None:
             self.default_window_state = self.saveState()
 

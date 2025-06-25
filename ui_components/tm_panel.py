@@ -21,10 +21,6 @@ class TMPanel(QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(5)
 
-        self.tm_label = QLabel(_("Translation Memory Matches:"))
-        self.tm_label.setObjectName("tm_label")
-        layout.addWidget(self.tm_label)
-
         self.tm_suggestions_listbox = QListWidget()
         self.tm_suggestions_listbox.setFixedHeight(100)
         self.tm_suggestions_listbox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -100,6 +96,5 @@ class TMPanel(QWidget):
             self.tm_suggestions_listbox.addItem(item)
 
     def update_ui_texts(self):
-        self.findChild(QLabel, "tm_label").setText(_("Translation Memory Matches:"))
         self.findChild(QPushButton, "update_selected_tm_btn").setText(_("Update TM for Selected"))
         self.findChild(QPushButton, "clear_selected_tm_btn").setText(_("Clear TM for Selected"))
