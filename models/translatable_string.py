@@ -113,6 +113,14 @@ class TranslatableString:
 
     def update_style_cache(self, all_strings_map=None):
         self.ui_style_cache = {}
+        if self.is_fuzzy:
+            if _("Translation is marked as fuzzy and needs review.") not in self.minor_warnings:
+                 self.minor_warnings.append(_("Translation is marked as fuzzy and needs review."))
+        else:
+            try:
+                self.minor_warnings.remove(_("Translation is marked as fuzzy and needs review."))
+            except ValueError:
+                pass # 如果警告不存在，就什么都不做
         if self.warnings and not self.is_warning_ignored:
             self.ui_style_cache['background'] = QColor("#FFDDDD")
             self.ui_style_cache['foreground'] = QColor("red")

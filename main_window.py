@@ -1866,34 +1866,39 @@ class OverwatchLocalizerApp(QMainWindow):
         new_po_comment = "\n".join(new_po_lines)
         new_user_comment = "\n".join(new_user_lines)
 
-        self.add_to_undo_history('bulk_change', {
-            'changes': [
-                {'string_id': ts_obj.id, 'field': 'po_comment', 'old_value': ts_obj.po_comment,
-                 'new_value': new_po_comment},
-                {'string_id': ts_obj.id, 'field': 'comment', 'old_value': ts_obj.comment, 'new_value': new_user_comment}
-            ]
-        })
+        has_fuzzy_in_new_comment = any('fuzzy' in line for line in new_po_lines if line.strip().startswith('#,'))
 
-        ts_obj.po_comment = new_po_comment
-        ts_obj.comment = new_user_comment
+        old_is_fuzzy = ts_obj.is_fuzzy
+        new_is_fuzzy = has_fuzzy_in_new_comment
 
-        self.mark_project_modified()
-        self.update_statusbar(_("Comment updated."))
+        if new_po_comment != ts_obj.po_comment or new_user_comment != ts_obj.comment or new_is_fuzzy != old_is_fuzzy:
+            self.add_to_undo_history('bulk_change', {
+                'changes': [
+                    {'string_id': ts_obj.id, 'field': 'po_comment', 'old_value': ts_obj.po_comment,
+                     'new_value': new_po_comment},
+                    {'string_id': ts_obj.id, 'field': 'comment', 'old_value': ts_obj.comment,
+                     'new_value': new_user_comment},
+                    {'string_id': ts_obj.id, 'field': 'is_fuzzy', 'old_value': old_is_fuzzy, 'new_value': new_is_fuzzy}
+                ]
+            })
+            ts_obj.po_comment = new_po_comment
+            ts_obj.comment = new_user_comment
+            ts_obj.is_fuzzy = new_is_fuzzy
+            ts_obj.update_style_cache()
+            source_index = self.sheet_model.index_from_id(ts_obj.id)
+            if source_index.isValid():
+                first_col_index = source_index.siblingAtColumn(0)
+                last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
+                self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
+            self.mark_project_modified()
+            self.update_statusbar(_("Comment updated."))
+            self.details_panel.highlighter.rehighlight()
+            return True
+        return False
 
-        # --- 关键修复：在这里通知表格更新 ---
-        # 找到被修改的行在源模型中的索引
-        source_index = self.sheet_model.index_from_id(ts_obj.id)
-        if source_index.isValid():
-            # 我们只需要更新注释列（第4列）
-            comment_column_index = source_index.siblingAtColumn(4)
-            # 发射信号，告诉视图这一格的数据变了
-            self.sheet_model.dataChanged.emit(comment_column_index, comment_column_index)
-
-        # 重新高亮右侧面板的注释框
-        self.details_panel.highlighter.rehighlight()
-        return True
     def apply_comment_from_button(self):
         self._save_comment_from_ui()
+
     def apply_comment_focus_out(self):
         self._save_comment_from_ui()
 
