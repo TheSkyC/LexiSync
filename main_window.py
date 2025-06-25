@@ -156,6 +156,15 @@ class OverwatchLocalizerApp(QMainWindow):
         self.redo_history = []
         self.current_selected_ts_id = None
 
+        self.last_search_term = ""
+        self.last_replace_term = ""
+        self.last_search_options = {
+            "case_sensitive": False,
+            "in_original": True,
+            "in_translation": True,
+            "in_comment": True
+        }
+
         self.ai_translator = AITranslator(
             api_key=self.config.get("ai_api_key"),
             model_name=self.config.get("ai_model_name", "deepseek-chat"),

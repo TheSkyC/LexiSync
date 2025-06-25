@@ -3,7 +3,7 @@
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QCheckBox, QWidget, QMessageBox, QGroupBox, QAbstractItemView
+    QCheckBox, QWidget, QMessageBox, QGroupBox, QAbstractItemView, QApplication
 )
 from PySide6.QtCore import Qt, QItemSelectionModel, QModelIndex, QTimer
 import re
@@ -30,6 +30,9 @@ class AdvancedSearchDialog(QDialog):
         self.last_search_options = {}
 
         self.setup_ui()
+
+        self.load_last_search_settings()
+        self.paste_from_clipboard_if_needed()
 
     def setup_ui(self):
         main_layout = QVBoxLayout(self)
@@ -100,7 +103,37 @@ class AdvancedSearchDialog(QDialog):
 
     def closeEvent(self, event):
         self.app.proxy_model.set_search_term("")
+        self.save_current_search_settings()
         super().closeEvent(event)
+
+    def load_last_search_settings(self):
+        self.search_term_entry.setText(self.app.last_search_term)
+        self.replace_term_entry.setText(self.app.last_replace_term)
+
+        options = self.app.last_search_options
+        self.case_sensitive_checkbox.setChecked(options.get("case_sensitive", False))
+        self.search_in_original_checkbox.setChecked(options.get("in_original", True))
+        self.search_in_translation_checkbox.setChecked(options.get("in_translation", True))
+        self.search_in_comment_checkbox.setChecked(options.get("in_comment", True))
+
+    def save_current_search_settings(self):
+        self.app.last_search_term = self.search_term_entry.text()
+        self.app.last_replace_term = self.replace_term_entry.text()
+
+        self.app.last_search_options = {
+            "case_sensitive": self.case_sensitive_checkbox.isChecked(),
+            "in_original": self.search_in_original_checkbox.isChecked(),
+            "in_translation": self.search_in_translation_checkbox.isChecked(),
+            "in_comment": self.search_in_comment_checkbox.isChecked()
+        }
+
+    def paste_from_clipboard_if_needed(self):
+        if not self.search_term_entry.text():
+            clipboard = QApplication.clipboard()
+            clipboard_text = clipboard.text()
+            if clipboard_text and '\n' not in clipboard_text and 0 < len(clipboard_text) < 40:
+                self.search_term_entry.setText(clipboard_text)
+                self.search_term_entry.selectAll()
 
     def _on_search_term_changed(self, text):
         self.last_search_options = {}
@@ -122,12 +155,21 @@ class AdvancedSearchDialog(QDialog):
             self.app.proxy_model.set_search_term("")
             self.results_label.setText(_("Please enter a search term."))
             return False
-        self.app.proxy_model.set_search_term(term)
+
+        self.app.proxy_model.set_search_term(
+            term=term,
+            case_sensitive=self.case_sensitive_checkbox.isChecked(),
+            search_in_original=self.search_in_original_checkbox.isChecked(),
+            search_in_translation=self.search_in_translation_checkbox.isChecked(),
+            search_in_comment=self.search_in_comment_checkbox.isChecked()
+        )
+
         count = len(self.app.proxy_model.search_results_indices)
         if count > 0:
             self.results_label.setText(_("Found {count} matches.").format(count=count))
         else:
             self.results_label.setText(_("No matches found."))
+
         return count > 0
 
     def _clear_all_highlights(self):
@@ -172,38 +214,42 @@ class AdvancedSearchDialog(QDialog):
         )
 
     def _find_next(self):
-        if not self._perform_search():
-            return
+        if self.search_term_entry.text().lower() != self.app.proxy_model.search_term:
+            self.current_result_index = -1
+            if not self._perform_search():
+                return
 
         sorted_results = self._get_sorted_search_results()
         if not sorted_results:
             return
-
         self.current_result_index = (self.current_result_index + 1) % len(sorted_results)
         self._navigate_to_result()
 
     def _find_prev(self):
-        if not self._perform_search():
-            return
+        if self.search_term_entry.text().lower() != self.app.proxy_model.search_term:
+            self.current_result_index = -1
+            if not self._perform_search():
+                return
 
         sorted_results = self._get_sorted_search_results()
         if not sorted_results:
             return
-
         self.current_result_index = (self.current_result_index - 1 + len(sorted_results)) % len(sorted_results)
         self._navigate_to_result()
 
     def _replace_current(self):
+        if self.search_term_entry.text().lower() != self.app.proxy_model.search_term:
+            self.current_result_index = -1
+            if not self._perform_search(): return
+
         sorted_results = self._get_sorted_search_results()
 
-        if not sorted_results or self.current_result_index < 0:
+        if not sorted_results:
             self._find_next()
-            if self.current_result_index < 0: return
-
-        sorted_results = self._get_sorted_search_results()
-        if not sorted_results or self.current_result_index >= len(sorted_results):
-            return
-
+            sorted_results = self._get_sorted_search_results()
+            if not sorted_results: return
+        if self.current_result_index < 0 or self.current_result_index >= len(sorted_results):
+            self.current_result_index = 0
         source_row, source_col = sorted_results[self.current_result_index]
         ts_obj = self.app.sheet_model.data(self.app.sheet_model.index(source_row, 0), Qt.UserRole)
         if not ts_obj: return
@@ -214,40 +260,49 @@ class AdvancedSearchDialog(QDialog):
 
         flags = 0 if self.case_sensitive_checkbox.isChecked() else re.IGNORECASE
         pattern = re.compile(re.escape(term), flags)
-
-        if source_col == 3:  # Translation
+        if source_col == 3:  # Translation column
             current_text = ts_obj.get_translation_for_ui()
             new_text, num_replacements = pattern.subn(replace_with, current_text, count=1)
             if num_replacements > 0:
                 self.app._apply_translation_to_model(ts_obj, new_text, source="replace_current")
-        elif source_col == 4:  # Comment
-            current_text = ts_obj.comment
-            new_text, num_replacements = pattern.subn(replace_with, current_text, count=1)
+
+        elif source_col == 4:  # Comment column
+            old_po_comment = ts_obj.po_comment
+            old_user_comment = ts_obj.comment
+            full_comment_text = "\n".join(old_po_comment.splitlines() + old_user_comment.splitlines())
+
+            new_full_comment, num_replacements = pattern.subn(replace_with, full_comment_text, count=1)
+
             if num_replacements > 0:
-                ts_obj.comment = new_text
-                self.app._save_comment_from_ui()
+                lines = new_full_comment.splitlines()
+                new_po_lines = []
+                new_user_lines = []
+                for line in lines:
+                    if line.strip().startswith('#'):
+                        new_po_lines.append(line)
+                    else:
+                        new_user_lines.append(line)
+
+                new_po_comment = "\n".join(new_po_lines)
+                new_user_comment = "\n".join(new_user_lines)
+                self.app.add_to_undo_history('bulk_change', {
+                    'changes': [
+                        {'string_id': ts_obj.id, 'field': 'po_comment', 'old_value': old_po_comment,
+                         'new_value': new_po_comment},
+                        {'string_id': ts_obj.id, 'field': 'comment', 'old_value': old_user_comment,
+                         'new_value': new_user_comment}
+                    ]
+                })
+                ts_obj.po_comment = new_po_comment
+                ts_obj.comment = new_user_comment
+                self.app.mark_project_modified()
+                self.app.force_full_refresh(id_to_reselect=ts_obj.id)
         else:
             QMessageBox.information(self, _("Info"),
                                     _("Match is not in a replaceable column (Translation or Comment)."))
             self._find_next()
             return
-        def find_next_after_update():
-            self.app.proxy_model.search_results_indices.discard((source_row, source_col))
-            new_sorted_results = self._get_sorted_search_results()
-            self.results_label.setText(
-                _("Match {current}/{total}").format(current=self.current_result_index + 1,
-                                                    total=len(new_sorted_results))
-            )
-            if new_sorted_results and self.current_result_index < len(new_sorted_results):
-                self._navigate_to_result()
-            elif new_sorted_results:
-                self.current_result_index = 0
-                self._navigate_to_result()
-            else:
-                self.results_label.setText(_("No more matches."))
-                self.app.table_view.clearSelection()
-
-        QTimer.singleShot(100, find_next_after_update)
+        QTimer.singleShot(100, self._find_next)
 
     def _replace_all(self):
         if not self._perform_search():
