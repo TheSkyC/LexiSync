@@ -31,6 +31,7 @@ from PySide6.QtGui import QAction, QKeySequence, QFont, QFontDatabase,QPalette, 
 from models.translatable_string import TranslatableString
 from models.translatable_strings_model import TranslatableStringsModel, TranslatableStringsProxyModel
 from ui_components.details_panel import DetailsPanel
+from ui_components.comment_status_panel import CommentStatusPanel
 from ui_components.context_panel import ContextPanel
 from ui_components.tm_panel import TMPanel
 from ui_components.custom_cell_delegate import CustomCellDelegate
@@ -382,6 +383,9 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_toggle_details_panel = QAction(_("Edit && Details Panel"), self, checkable=True)
         self.view_menu.addAction(self.action_toggle_details_panel)
 
+        self.action_toggle_comment_status_panel = QAction(_("Comment & Status Panel"), self, checkable=True)
+        self.view_menu.addAction(self.action_toggle_comment_status_panel)
+
         self.action_toggle_context_panel = QAction(_("Context Preview Panel"), self, checkable=True)
         self.view_menu.addAction(self.action_toggle_context_panel)
 
@@ -582,7 +586,13 @@ class OverwatchLocalizerApp(QMainWindow):
         self.on_search_focus_out()
         self.on_search_focus_out()
 
+        self.details_dock.setWindowTitle(_("Edit && Details"))
+        self.context_dock.setWindowTitle(_("Context Preview"))
+        self.tm_dock.setWindowTitle(_("Translation Memory Matches"))
+        self.comment_status_dock.setWindowTitle(_("Comment && Status"))
+
         self.details_panel.update_ui_texts()
+        self.comment_status_panel.update_ui_texts()
         self.context_panel.update_ui_texts()
         self.tm_panel.update_ui_texts()
 
@@ -679,19 +689,12 @@ class OverwatchLocalizerApp(QMainWindow):
         main_layout.setContentsMargins(5, 5, 5, 5)
         main_layout.setSpacing(5)
 
-        # Filter Toolbar
         toolbar_frame = QWidget()
         toolbar_layout = QHBoxLayout(toolbar_frame)
         toolbar_layout.setContentsMargins(0, 0, 0, 0)
 
         self.filter_label = QLabel(_("Filter:"))
         toolbar_layout.addWidget(self.filter_label)
-
-        # self.deduplicate_checkbox = QCheckBox(_("Deduplicate"))
-        # self.deduplicate_checkbox.setChecked(self.deduplicate_strings_var)
-        # self.deduplicate_checkbox.stateChanged.connect(lambda state: self.set_filter_var('deduplicate', bool(state)))
-        # toolbar_layout.addWidget(self.deduplicate_checkbox)
-        # self.filter_checkboxes['deduplicate'] = self.deduplicate_checkbox
 
         self.ignored_checkbox = QCheckBox(_("Ignored"))
         self.ignored_checkbox.setChecked(self.show_ignored_var)
@@ -815,19 +818,14 @@ class OverwatchLocalizerApp(QMainWindow):
         # Details Panel
         self.details_panel = DetailsPanel(self)
         self.details_panel.apply_translation_signal.connect(self.apply_translation_from_button)
-        self.details_panel.apply_comment_signal.connect(self.apply_comment_from_button)
-        self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
         self.details_panel.translation_text_changed_signal.connect(self.schedule_placeholder_validation)
         self.details_panel.translation_focus_out_signal.connect(self.apply_translation_focus_out)
-        self.details_panel.comment_focus_out_signal.connect(self.apply_comment_focus_out)
-        self.details_panel.ignore_checkbox.stateChanged.connect(self.toggle_ignore_selected_checkbox)
-        self.details_panel.reviewed_checkbox.stateChanged.connect(self.toggle_reviewed_selected_checkbox)
+        self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
 
         self.details_dock = QDockWidget(_("Edit & Details"), self)
         self.details_dock.setWidget(self.details_panel)
         self.details_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.details_dock)
         self.details_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.details_dock)
 
@@ -855,6 +853,19 @@ class OverwatchLocalizerApp(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.tm_dock)
         self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)
 
+        # Comment & Status Panel
+        self.comment_status_panel = CommentStatusPanel(self)
+        self.comment_status_panel.apply_comment_signal.connect(self.apply_comment_from_button)
+        self.comment_status_panel.comment_focus_out_signal.connect(self.apply_comment_focus_out)
+        self.comment_status_panel.toggle_ignore_signal.connect(self.toggle_current_item_ignore_status)
+        self.comment_status_panel.toggle_reviewed_signal.connect(self.toggle_current_item_reviewed_status)
+        self.comment_status_dock = QDockWidget(_("Comment && Status"), self)
+        self.comment_status_dock.setWidget(self.comment_status_panel)
+        self.comment_status_dock.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
+        self.comment_status_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.comment_status_dock)
+        self.splitDockWidget(self.tm_dock, self.comment_status_dock, Qt.Vertical)
+
         # Details Panel
         self.action_toggle_details_panel.setChecked(self.details_dock.isVisible())
         self.action_toggle_details_panel.triggered.connect(
@@ -875,6 +886,10 @@ class OverwatchLocalizerApp(QMainWindow):
             lambda checked: self.tm_dock.setVisible(checked)
         )
         self.tm_dock.visibilityChanged.connect(self.action_toggle_tm_panel.setChecked)
+        self.action_toggle_comment_status_panel.setChecked(self.comment_status_dock.isVisible())
+        self.action_toggle_comment_status_panel.triggered.connect(
+            lambda checked: self.comment_status_dock.setVisible(checked))
+        self.comment_status_dock.visibilityChanged.connect(self.action_toggle_comment_status_panel.setChecked)
         if self.default_window_state is None:
             self.default_window_state = self.saveState()
 
@@ -1672,7 +1687,7 @@ class OverwatchLocalizerApp(QMainWindow):
         elif col == 3:  # Translation
             self.details_panel.translation_edit_text.setFocus()
         elif col == 4:  # Comment
-            self.details_panel.comment_edit_text.setFocus()
+            self.comment_status_panel.comment_edit_text.setFocus()
 
     def on_sheet_select(self, current_index, previous_index):
         if self.neighbor_select_timer.isActive():
@@ -1756,13 +1771,14 @@ class OverwatchLocalizerApp(QMainWindow):
     def update_ui_state_for_selection(self, selected_id):
         state = True if selected_id else False
 
-        self.action_copy_original.setEnabled(state)
-        self.action_paste_translation.setEnabled(state)
-
+        # DetailsPanel
         self.details_panel.apply_btn.setEnabled(state)
-        self.details_panel.ignore_checkbox.setEnabled(state)
-        self.details_panel.reviewed_checkbox.setEnabled(state)
-        self.details_panel.apply_comment_btn.setEnabled(state)
+        self.details_panel.ai_translate_current_btn.setEnabled(state and self.config.get("ai_api_key") and requests is not None)
+        # CommentPanel
+        self.comment_status_panel.apply_comment_btn.setEnabled(state)
+        self.comment_status_panel.ignore_checkbox.setEnabled(state)
+        self.comment_status_panel.reviewed_checkbox.setEnabled(state)
+        # TMPanel
         self.tm_panel.update_selected_tm_btn.setEnabled(state)
 
         if not selected_id:
@@ -1770,22 +1786,24 @@ class OverwatchLocalizerApp(QMainWindow):
         self.update_ai_related_ui_state()
 
     def clear_details_pane(self):
-        if not self.details_panel:
-            return
+        # 清空 DetailsPanel
         self.details_panel.original_text_display.setPlainText("")
         self.details_panel.translation_edit_text.setPlainText("")
-        self.details_panel.comment_edit_text.setPlainText("")
-        self.details_panel.reviewed_checkbox.setChecked(False)
-        self.details_panel.ignore_checkbox.setChecked(False)
-        self.details_panel.ignore_checkbox.setText(_("Ignore this string"))
+        self.details_panel.apply_btn.setEnabled(False)
+        self.details_panel.ai_translate_current_btn.setEnabled(False)
 
+        # 清空 CommentStatusPanel
+        self.comment_status_panel.comment_edit_text.setPlainText("")
+        self.comment_status_panel.apply_comment_btn.setEnabled(False)
+        self.comment_status_panel.ignore_checkbox.setChecked(False)
+        self.comment_status_panel.ignore_checkbox.setText(_("Ignore this string"))
+        self.comment_status_panel.reviewed_checkbox.setChecked(False)
+        self.comment_status_panel.ignore_checkbox.setEnabled(False)
+        self.comment_status_panel.reviewed_checkbox.setEnabled(False)
+
+        # 清空其他面板
         self.context_panel.set_context([], -1)
         self.tm_panel.update_tm_suggestions_for_text("", {})
-
-        self.details_panel.apply_btn.setEnabled(False)
-        self.details_panel.apply_comment_btn.setEnabled(False)
-        self.details_panel.ignore_checkbox.setEnabled(False)
-        self.details_panel.reviewed_checkbox.setEnabled(False)
         self.tm_panel.update_selected_tm_btn.setEnabled(False)
         self.tm_panel.clear_selected_tm_btn.setEnabled(False)
 
@@ -1910,7 +1928,7 @@ class OverwatchLocalizerApp(QMainWindow):
                 line_num=0, char_pos_start_in_file=0, char_pos_end_in_file=0, full_code_lines=[]
             )
             new_ts.translation = self.details_panel.translation_edit_text.toPlainText().strip()
-            new_ts.comment = self.details_panel.comment_edit_text.toPlainText().strip()
+            new_ts.comment = self.comment_status_panel.comment_edit_text.toPlainText().strip()
 
             self.translatable_objects.append(new_ts)
             self.mark_project_modified()
@@ -1937,7 +1955,7 @@ class OverwatchLocalizerApp(QMainWindow):
         if not self.current_selected_ts_id: return False
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return False
-        full_comment_text = self.details_panel.comment_edit_text.toPlainText()
+        full_comment_text = self.comment_status_panel.comment_edit_text.toPlainText()
         old_po_lines = ts_obj.po_comment.splitlines()
         old_user_lines = ts_obj.comment.splitlines()
         old_full_text = "\n".join(old_po_lines + old_user_lines)
@@ -1956,6 +1974,10 @@ class OverwatchLocalizerApp(QMainWindow):
         new_po_comment = "\n".join(new_po_lines)
         new_user_comment = "\n".join(new_user_lines)
         old_is_fuzzy = ts_obj.is_fuzzy
+        if full_comment_text == old_full_text and new_is_fuzzy == ts_obj.is_fuzzy:
+            if hasattr(self.comment_status_panel, 'highlighter'):
+                self.comment_status_panel.highlighter.rehighlight()
+            return False
         self.add_to_undo_history('bulk_change', {
             'changes': [
                 {'string_id': ts_obj.id, 'field': 'po_comment', 'old_value': ts_obj.po_comment,
@@ -1976,8 +1998,10 @@ class OverwatchLocalizerApp(QMainWindow):
             self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
         self.mark_project_modified()
         self.update_statusbar(_("Comment updated."))
-        self.details_panel.highlighter.rehighlight()
+        if hasattr(self.comment_status_panel, 'highlighter'):
+            self.comment_status_panel.highlighter.rehighlight()
         return True
+
 
     def apply_comment_from_button(self):
         self._save_comment_from_ui()
@@ -3411,6 +3435,61 @@ class OverwatchLocalizerApp(QMainWindow):
             self.force_full_refresh(id_to_reselect=self.current_focused_ts_id)
             self.update_statusbar(_("{count} items' review status updated.").format(count=len(selected_objs)))
 
+    def toggle_current_item_ignore_status(self, new_ignore_state):
+        if not self.current_selected_ts_id: return
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+        if not ts_obj: return
+        if new_ignore_state == ts_obj.is_ignored:
+            return
+        primary_change = {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': ts_obj.is_ignored,
+                          'new_value': new_ignore_state}
+        self.add_to_undo_history('single_change', primary_change)
+        ts_obj.is_ignored = new_ignore_state
+        if not new_ignore_state:
+            ts_obj.was_auto_ignored = False
+        ts_obj.update_style_cache()
+        self.mark_project_modified()
+        self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
+            'Yes') if new_ignore_state else _('No')))
+        source_index = self.sheet_model.index_from_id(ts_obj.id)
+        if source_index.isValid():
+            first_col_index = source_index.siblingAtColumn(0)
+            last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
+            self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
+        self.force_refresh_ui_for_current_selection()
+
+    def toggle_current_item_reviewed_status(self, new_reviewed_state):
+        if not self.current_selected_ts_id: return
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+        if not ts_obj: return
+
+        if new_reviewed_state == ts_obj.is_reviewed:
+            return
+
+        old_reviewed_state = ts_obj.is_reviewed
+        old_warning_ignored_state = ts_obj.is_warning_ignored
+        changes_for_undo = [
+            {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_reviewed_state,
+             'new_value': new_reviewed_state},
+            {'string_id': ts_obj.id, 'field': 'is_warning_ignored', 'old_value': old_warning_ignored_state,
+             'new_value': new_reviewed_state}
+        ]
+        self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
+
+        ts_obj.is_reviewed = new_reviewed_state
+        ts_obj.is_warning_ignored = new_reviewed_state
+
+        ts_obj.update_style_cache()
+        self.mark_project_modified()
+        self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
+            'Yes') if new_reviewed_state else _('No')))
+
+        source_index = self.sheet_model.index_from_id(ts_obj.id)
+        if source_index.isValid():
+            first_col_index = source_index.siblingAtColumn(0)
+            last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
+            self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
+        self.force_refresh_ui_for_current_selection()
 
     def __and_dispatch_more(self):
         if not self.is_aidecrement_active_threads_translating_batch:
@@ -3742,17 +3821,22 @@ class OverwatchLocalizerApp(QMainWindow):
         finally:
             self.details_panel.original_text_display.blockSignals(False)
             self.details_panel.translation_edit_text.blockSignals(False)
+
         po_comments = ts_obj.po_comment.splitlines()
         user_comments = ts_obj.comment.splitlines()
         all_comment_lines = po_comments + user_comments
-        self.details_panel.comment_edit_text.setPlainText("\n".join(all_comment_lines))
-        self.details_panel.reviewed_checkbox.setChecked(ts_obj.is_reviewed)
-        self.details_panel.ignore_checkbox.setChecked(ts_obj.is_ignored)
+        final_text = "\n".join(all_comment_lines)
+        self.comment_status_panel.comment_edit_text.setPlainText(final_text)
 
+        self.comment_status_panel.ignore_checkbox.setChecked(ts_obj.is_ignored)
         ignore_label = _("Ignore this string")
         if ts_obj.is_ignored and ts_obj.was_auto_ignored:
             ignore_label += _(" (Auto)")
-        self.details_panel.ignore_checkbox.setText(ignore_label)
+        self.comment_status_panel.ignore_checkbox.setText(ignore_label)
+
+        self.comment_status_panel.reviewed_checkbox.setChecked(ts_obj.is_reviewed)
+        self.comment_status_panel.highlighter.rehighlight()
+
         self.context_panel.set_context(ts_obj.context_lines, ts_obj.current_line_in_context_idx)
         self.schedule_tm_update(ts_obj.original_semantic)
         self._update_all_highlights()
@@ -3791,7 +3875,7 @@ class OverwatchLocalizerApp(QMainWindow):
                 self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
                 self._run_and_refresh_with_validation()
                 if self.current_selected_ts_id in [c['string_id'] for c in bulk_changes]:
-                    self.details_panel.comment_edit_text.setPlainText(new_comment)
+                    self.comment_status_panel.comment_edit_text.setPlainText(new_comment)
                 self.update_statusbar(_("Updated comments for {count} items.").format(count=len(bulk_changes)))
                 self.mark_project_modified()
 
