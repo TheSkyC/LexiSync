@@ -120,8 +120,11 @@ class OverwatchLocalizerApp(QMainWindow):
             language_code = lang_manager.get_best_match_language()
             self.config['language'] = language_code
         lang_manager.setup_translation(language_code)
+        if "window_geometry" in self.config and self.config["window_geometry"]:
+            self.restoreGeometry(QByteArray.fromBase64(self.config["window_geometry"].encode('utf-8')))
+        else:
+            self.setGeometry(100, 100, 1600, 900)
         self.setWindowTitle(_("Overwatch Localizer - v{version}").format(version=APP_VERSION))
-        self.setGeometry(100, 100, 1600, 900)
         self.thread_signals = ThreadSafeSignals()
         self.thread_signals.handle_ai_result.connect(self._handle_ai_translation_result)
         self.thread_signals.decrement_active_threads.connect(self._decrement_active_threads_and_dispatch_more)
@@ -136,6 +139,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.current_po_metadata = None
         self.source_comment = ""
         self.current_focused_ts_id = None
+        self.default_window_state = None
         self.neighbor_select_timer = QTimer(self)
         self.neighbor_select_timer.setSingleShot(True)
 
@@ -200,20 +204,21 @@ class OverwatchLocalizerApp(QMainWindow):
         self.last_sort_column = "seq_id"
         self.last_sort_reverse = False
 
-        self.restore_window_state()
+
         self.language_changed.connect(self.update_ui_texts)
         self.setAcceptDrops(True)
 
-        QTimer.singleShot(0, self.finish_initialization)
+        self.UI_initialization()
 
 
-    def finish_initialization(self):
+    def UI_initialization(self):
         self._setup_ui()
         self._load_default_tm_excel()
         self.update_ui_state_after_file_load()
         self.update_ai_related_ui_state()
         self.update_counts_display()
         self.update_recent_files_menu()
+        self.restore_window_state()
 
     def _setup_ui(self):
         self._setup_menu()
@@ -230,6 +235,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.settings_menu = self.menuBar().addMenu(_("&Settings"))
         self.help_menu = self.menuBar().addMenu(_("&Help"))
 
+        # File Menu
         self.action_open_code_file = QAction(_("Open Code File..."), self)
         self.action_open_code_file.triggered.connect(self.open_code_file_dialog)
         self.file_menu.addAction(self.action_open_code_file)
@@ -310,6 +316,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.file_menu.addMenu(self.recent_files_menu)
         self.file_menu.addSeparator()
 
+        # Edit Menu
         self.action_exit = QAction(_("Exit"), self)
         self.action_exit.triggered.connect(self.close)
         self.file_menu.addAction(self.action_exit)
@@ -341,6 +348,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_paste_translation.setEnabled(False)
         self.edit_menu.addAction(self.action_paste_translation)
 
+        # View Menu
         self.action_show_ignored = QAction(_("Show Ignored"), self, checkable=True)
         self.action_show_ignored.setChecked(self.show_ignored_var)
         self.action_show_ignored.triggered.connect(lambda checked: self.set_filter_var('show_ignored', checked))
@@ -364,7 +372,23 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_show_unreviewed.triggered.connect(lambda checked: self.set_filter_var('show_unreviewed', checked))
         self.view_menu.addAction(self.action_show_unreviewed)
         self.filter_actions['show_unreviewed'] = self.action_show_unreviewed
+        self.view_menu.addSeparator()
 
+        self.action_toggle_details_panel = QAction(_("Edit & Details Panel"), self, checkable=True)
+        self.view_menu.addAction(self.action_toggle_details_panel)
+
+        self.action_toggle_context_panel = QAction(_("Context Preview Panel"), self, checkable=True)
+        self.view_menu.addAction(self.action_toggle_context_panel)
+
+        self.action_toggle_tm_panel = QAction(_("Translation Memory Panel"), self, checkable=True)
+        self.view_menu.addAction(self.action_toggle_tm_panel)
+        self.view_menu.addSeparator()
+
+        self.action_restore_layout = QAction(_("Restore Default Layout"), self)
+        self.action_restore_layout.triggered.connect(self.restore_default_layout)
+        self.view_menu.addAction(self.action_restore_layout)
+
+        # Tools Menu
         self.action_apply_tm_to_untranslated = QAction(_("Apply TM to Untranslated"), self)
         self.action_apply_tm_to_untranslated.triggered.connect(lambda: self.apply_tm_to_all_current_strings(only_if_empty=True, confirm=True))
         self.action_apply_tm_to_untranslated.setEnabled(False)
@@ -410,6 +434,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_reload_translatable_text.setEnabled(False)
         self.tools_menu.addAction(self.action_reload_translatable_text)
 
+        # Settings Menu
         self.action_auto_backup_tm = QAction(_("Auto-backup TM on Save"), self, checkable=True)
         self.action_auto_backup_tm.setChecked(self.auto_backup_tm_on_save_var)
         self.action_auto_backup_tm.triggered.connect(
@@ -429,6 +454,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_font_settings.triggered.connect(self.show_font_settings_dialog)
         self.settings_menu.addAction(self.action_font_settings)
 
+        # Help Menu
         self.action_about = QAction(_("About"), self)
         self.action_about.triggered.connect(self.about)
         self.help_menu.addAction(self.action_about)
@@ -472,6 +498,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.settings_menu.setTitle(_("&Settings"))
         self.help_menu.setTitle(_("&Help"))
 
+        #File Menu
         self.action_open_code_file.setText(_("Open Code File..."))
         self.action_open_project.setText(_("Open Project..."))
         self.action_compare_new_version.setText(_("Compare/Import New Version..."))
@@ -490,18 +517,25 @@ class OverwatchLocalizerApp(QMainWindow):
         self.recent_files_menu.setTitle(_("Recent Files"))
         self.action_exit.setText(_("Exit"))
 
+        #Edit Menu
         self.action_undo.setText(_("Undo"))
         self.action_redo.setText(_("Redo"))
         self.action_find_replace.setText(_("Find/Replace..."))
         self.action_copy_original.setText(_("Copy Original"))
         self.action_paste_translation.setText(_("Paste to Translation"))
 
+        #View Menu
         #self.action_deduplicate.setText(_("Deduplicate Strings"))
         self.action_show_ignored.setText(_("Show Ignored"))
         self.action_show_untranslated.setText(_("Show Untranslated"))
         self.action_show_translated.setText(_("Show Translated"))
         self.action_show_unreviewed.setText(_("Show Unreviewed"))
+        self.action_toggle_details_panel.setText(_("Edit & Details Panel"))
+        self.action_toggle_context_panel.setText(_("Context Preview Panel"))
+        self.action_toggle_tm_panel.setText(_("Translation Memory Panel"))
+        self.action_restore_layout.setText(_("Restore Default Layout"))
 
+        #Tools Menu
         self.action_apply_tm_to_untranslated.setText(_("Apply TM to Untranslated"))
         self.action_clear_tm_in_memory.setText(_("Clear TM (in-memory)"))
         self.action_ai_translate_selected.setText(_("AI Translate Selected"))
@@ -512,10 +546,13 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_extraction_rule_manager.setText(_("Extraction Rule Manager..."))
         self.action_reload_translatable_text.setText(_("Reload Translatable Text"))
 
+        #Settings Menu
         self.action_auto_backup_tm.setText(_("Auto-backup TM on Save"))
         self.language_menu.setTitle(_("Language"))
         self.action_keybinding_settings.setText(_("Keybinding Settings..."))
         self.action_font_settings.setText(_("Font Settings..."))
+
+        #Help Menu
         self.action_about.setText(_("About"))
 
         self.sheet_model.setHeaderData(0, Qt.Horizontal, "#")
@@ -808,6 +845,43 @@ class OverwatchLocalizerApp(QMainWindow):
         self.tm_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.tm_dock)
         self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)
+
+        # 同步菜单项
+        # Details Panel
+        self.action_toggle_details_panel.setChecked(self.details_dock.isVisible())
+        # 当 action 被触发时，用它当前的勾选状态去调用 setVisible
+        self.action_toggle_details_panel.triggered.connect(
+            lambda checked: self.details_dock.setVisible(checked)
+        )
+        self.details_dock.visibilityChanged.connect(self.action_toggle_details_panel.setChecked)
+
+        # Context Panel
+        self.action_toggle_context_panel.setChecked(self.context_dock.isVisible())
+        self.action_toggle_context_panel.triggered.connect(
+            lambda checked: self.context_dock.setVisible(checked)
+        )
+        self.context_dock.visibilityChanged.connect(self.action_toggle_context_panel.setChecked)
+
+        # TM Panel
+        self.action_toggle_tm_panel.setChecked(self.tm_dock.isVisible())
+        self.action_toggle_tm_panel.triggered.connect(
+            lambda checked: self.tm_dock.setVisible(checked)
+        )
+        self.tm_dock.visibilityChanged.connect(self.action_toggle_tm_panel.setChecked)
+        if self.default_window_state is None:
+            self.default_window_state = self.saveState()
+
+    def restore_default_layout(self):
+        if self.default_window_state:
+            self.restoreState(self.default_window_state)
+            self.details_dock.setVisible(True)
+            self.context_dock.setVisible(True)
+            self.tm_dock.setVisible(True)
+            main_width = self.size().width()
+            initial_dock_width = int(main_width * 0.25)
+            initial_dock_width = max(300, min(initial_dock_width, 500))
+            self.resizeDocks([self.details_dock], [initial_dock_width], Qt.Horizontal)
+            self.update_statusbar(_("The layout has been restored to its default state."))
 
     def _setup_statusbar(self):
         self.statusBar = QStatusBar()
@@ -1161,10 +1235,14 @@ class OverwatchLocalizerApp(QMainWindow):
         config_manager.save_config(self)
 
     def restore_window_state(self):
-        if "window_geometry" in self.config:
-            self.restoreGeometry(QByteArray.fromBase64(self.config["window_geometry"].encode('utf-8')))
-        if "window_state" in self.config:
+        if "window_state" in self.config and self.config["window_state"]:
             self.restoreState(QByteArray.fromBase64(self.config["window_state"].encode('utf-8')))
+        if hasattr(self, 'details_dock') and self.details_dock:
+            main_width = self.size().width()
+            initial_dock_width = int(main_width * 0.25)
+            initial_dock_width = max(300, min(initial_dock_width, 500))
+            self.resizeDocks([self.details_dock], [initial_dock_width], Qt.Horizontal)
+
 
     def add_to_recent_files(self, filepath):
         if not filepath: return
