@@ -855,10 +855,8 @@ class OverwatchLocalizerApp(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.tm_dock)
         self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)
 
-        # 同步菜单项
         # Details Panel
         self.action_toggle_details_panel.setChecked(self.details_dock.isVisible())
-        # 当 action 被触发时，用它当前的勾选状态去调用 setVisible
         self.action_toggle_details_panel.triggered.connect(
             lambda checked: self.details_dock.setVisible(checked)
         )
@@ -3350,13 +3348,69 @@ class OverwatchLocalizerApp(QMainWindow):
             self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
             self.mark_project_modified()
 
-    def cm_toggle_reviewed_status(self):
-        if self.current_selected_ts_id:
-            self.toggle_reviewed_selected_checkbox()
-
     def cm_toggle_ignored_status(self):
-        if self.current_selected_ts_id:
-            self.toggle_ignore_selected_checkbox()
+        selected_objs = self._get_selected_ts_objects_from_sheet()
+        if not selected_objs:
+            return
+        focused_obj = self._find_ts_obj_by_id(self.current_focused_ts_id)
+        if not focused_obj or focused_obj not in selected_objs:
+            focused_obj = selected_objs[0]
+
+        target_ignore_state = not focused_obj.is_ignored
+
+        bulk_changes = []
+        for ts_obj in selected_objs:
+            if ts_obj.is_ignored != target_ignore_state:
+                old_val = ts_obj.is_ignored
+                ts_obj.is_ignored = target_ignore_state
+                if not target_ignore_state:
+                    ts_obj.was_auto_ignored = False
+                ts_obj.update_style_cache()
+                bulk_changes.append(
+                    {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': old_val,
+                     'new_value': target_ignore_state})
+
+        if bulk_changes:
+            self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
+            self.mark_project_modified()
+            self.force_full_refresh(id_to_reselect=self.current_focused_ts_id)
+            self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(selected_objs)))
+
+    def cm_toggle_reviewed_status(self):
+        selected_objs = self._get_selected_ts_objects_from_sheet()
+        if not selected_objs:
+            return
+        focused_obj = self._find_ts_obj_by_id(self.current_focused_ts_id)
+
+        if not focused_obj or focused_obj not in selected_objs:
+            focused_obj = selected_objs[0]
+
+        target_reviewed_state = not focused_obj.is_reviewed
+
+        bulk_changes = []
+        for ts_obj in selected_objs:
+            if ts_obj.is_reviewed != target_reviewed_state:
+                old_reviewed_val = ts_obj.is_reviewed
+                old_warning_ignored_val = ts_obj.is_warning_ignored
+
+                ts_obj.is_reviewed = target_reviewed_state
+                ts_obj.is_warning_ignored = target_reviewed_state
+                ts_obj.update_style_cache()
+
+                bulk_changes.append(
+                    {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_reviewed_val,
+                     'new_value': target_reviewed_state})
+                if old_warning_ignored_val != ts_obj.is_warning_ignored:
+                    bulk_changes.append(
+                        {'string_id': ts_obj.id, 'field': 'is_warning_ignored', 'old_value': old_warning_ignored_val,
+                         'new_value': ts_obj.is_warning_ignored})
+
+        if bulk_changes:
+            self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
+            self.mark_project_modified()
+            self.force_full_refresh(id_to_reselect=self.current_focused_ts_id)
+            self.update_statusbar(_("{count} items' review status updated.").format(count=len(selected_objs)))
+
 
     def __and_dispatch_more(self):
         if not self.is_aidecrement_active_threads_translating_batch:
