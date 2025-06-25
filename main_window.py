@@ -152,6 +152,11 @@ class OverwatchLocalizerApp(QMainWindow):
         self.filter_update_timer.setSingleShot(True)
         self.filter_update_timer.timeout.connect(self.refresh_sheet_preserve_selection)
 
+        self.quick_search_timer = QTimer(self)
+        self.quick_search_timer.setSingleShot(True)
+        self.quick_search_timer.timeout.connect(self._perform_delayed_search_filter)
+        self._last_quick_search_text = ""
+
         self.translatable_objects = []
         self.translation_memory = {}
         self.current_tm_file = None
@@ -1546,21 +1551,29 @@ class OverwatchLocalizerApp(QMainWindow):
         if not self.current_selected_ts_id:
             self.clear_details_pane()
 
-
     def search_filter_changed(self, text):
+        self._last_quick_search_text = text
+        self.quick_search_timer.start(80)
+
+    def _perform_delayed_search_filter(self):
+        search_term_to_use = self._last_quick_search_text
         self.proxy_model.set_filters(
-            # deduplicate=self.deduplicate_checkbox.isChecked(),
+            #deduplicate=self.deduplicate_checkbox.isChecked(),
             show_ignored=self.ignored_checkbox.isChecked(),
             show_untranslated=self.untranslated_checkbox.isChecked(),
             show_translated=self.translated_checkbox.isChecked(),
             show_unreviewed=self.unreviewed_checkbox.isChecked(),
-            search_term=text if text != _("Quick search...") else "",
+            search_term=search_term_to_use if search_term_to_use != _("Quick search...") else "",
             is_po_mode=self.is_po_mode
         )
-        self.proxy_model.invalidateRowsFilter()
+
         self.update_counts_display()
 
     def find_string_from_toolbar(self):
+        if self.quick_search_timer.isActive():
+            self.quick_search_timer.stop()
+        if self.search_entry.text().lower() != self.proxy_model.search_term:
+            self._perform_delayed_search_filter()
         if self.proxy_model.rowCount() > 0:
             first_index = self.proxy_model.index(0, 0)
             self.table_view.selectionModel().setCurrentIndex(first_index,

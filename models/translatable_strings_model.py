@@ -164,9 +164,14 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         ts_obj = self.sourceModel().data(self.sourceModel().index(source_row, 0, source_parent), Qt.UserRole)
         if not ts_obj:
             return False
-
+        if self.is_po_mode and ts_obj.id == self.new_entry_id:
+            return True
+        if self.search_term:
+            if not (self.search_term in ts_obj.original_semantic.lower() or
+                    self.search_term in ts_obj.get_translation_for_ui().lower() or
+                    self.search_term in ts_obj.comment.lower()):
+                return False
         has_translation = bool(ts_obj.translation.strip())
-
         if not self.show_ignored and ts_obj.is_ignored: return False
         if self.show_untranslated and has_translation and not ts_obj.is_ignored: return False
         if self.show_translated and not has_translation and not ts_obj.is_ignored: return False
