@@ -383,7 +383,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_toggle_details_panel = QAction(_("Edit && Details Panel"), self, checkable=True)
         self.view_menu.addAction(self.action_toggle_details_panel)
 
-        self.action_toggle_comment_status_panel = QAction(_("Comment & Status Panel"), self, checkable=True)
+        self.action_toggle_comment_status_panel = QAction(_("Comment && Status Panel"), self, checkable=True)
         self.view_menu.addAction(self.action_toggle_comment_status_panel)
 
         self.action_toggle_context_panel = QAction(_("Context Preview Panel"), self, checkable=True)
@@ -689,12 +689,19 @@ class OverwatchLocalizerApp(QMainWindow):
         main_layout.setContentsMargins(5, 5, 5, 5)
         main_layout.setSpacing(5)
 
+        # Filter Toolbar
         toolbar_frame = QWidget()
         toolbar_layout = QHBoxLayout(toolbar_frame)
         toolbar_layout.setContentsMargins(0, 0, 0, 0)
 
         self.filter_label = QLabel(_("Filter:"))
         toolbar_layout.addWidget(self.filter_label)
+
+        # self.deduplicate_checkbox = QCheckBox(_("Deduplicate"))
+        # self.deduplicate_checkbox.setChecked(self.deduplicate_strings_var)
+        # self.deduplicate_checkbox.stateChanged.connect(lambda state: self.set_filter_var('deduplicate', bool(state)))
+        # toolbar_layout.addWidget(self.deduplicate_checkbox)
+        # self.filter_checkboxes['deduplicate'] = self.deduplicate_checkbox
 
         self.ignored_checkbox = QCheckBox(_("Ignored"))
         self.ignored_checkbox.setChecked(self.show_ignored_var)
@@ -822,7 +829,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.details_panel.translation_focus_out_signal.connect(self.apply_translation_focus_out)
         self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
 
-        self.details_dock = QDockWidget(_("Edit & Details"), self)
+        self.details_dock = QDockWidget(_("Edit && Details"), self)
         self.details_dock.setWidget(self.details_panel)
         self.details_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
@@ -853,12 +860,12 @@ class OverwatchLocalizerApp(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.tm_dock)
         self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)
 
-        # Comment & Status Panel
+        # Comment && Status Panel
         self.comment_status_panel = CommentStatusPanel(self)
         self.comment_status_panel.apply_comment_signal.connect(self.apply_comment_from_button)
         self.comment_status_panel.comment_focus_out_signal.connect(self.apply_comment_focus_out)
-        self.comment_status_panel.toggle_ignore_signal.connect(self.toggle_current_item_ignore_status)
-        self.comment_status_panel.toggle_reviewed_signal.connect(self.toggle_current_item_reviewed_status)
+        self.comment_status_panel.ignore_checkbox.stateChanged.connect(self.toggle_ignore_selected_checkbox)
+        self.comment_status_panel.reviewed_checkbox.stateChanged.connect(self.toggle_reviewed_selected_checkbox)
         self.comment_status_dock = QDockWidget(_("Comment && Status"), self)
         self.comment_status_dock.setWidget(self.comment_status_panel)
         self.comment_status_dock.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
@@ -3434,62 +3441,6 @@ class OverwatchLocalizerApp(QMainWindow):
             self.mark_project_modified()
             self.force_full_refresh(id_to_reselect=self.current_focused_ts_id)
             self.update_statusbar(_("{count} items' review status updated.").format(count=len(selected_objs)))
-
-    def toggle_current_item_ignore_status(self, new_ignore_state):
-        if not self.current_selected_ts_id: return
-        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if not ts_obj: return
-        if new_ignore_state == ts_obj.is_ignored:
-            return
-        primary_change = {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': ts_obj.is_ignored,
-                          'new_value': new_ignore_state}
-        self.add_to_undo_history('single_change', primary_change)
-        ts_obj.is_ignored = new_ignore_state
-        if not new_ignore_state:
-            ts_obj.was_auto_ignored = False
-        ts_obj.update_style_cache()
-        self.mark_project_modified()
-        self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
-            'Yes') if new_ignore_state else _('No')))
-        source_index = self.sheet_model.index_from_id(ts_obj.id)
-        if source_index.isValid():
-            first_col_index = source_index.siblingAtColumn(0)
-            last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
-            self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
-        self.force_refresh_ui_for_current_selection()
-
-    def toggle_current_item_reviewed_status(self, new_reviewed_state):
-        if not self.current_selected_ts_id: return
-        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if not ts_obj: return
-
-        if new_reviewed_state == ts_obj.is_reviewed:
-            return
-
-        old_reviewed_state = ts_obj.is_reviewed
-        old_warning_ignored_state = ts_obj.is_warning_ignored
-        changes_for_undo = [
-            {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_reviewed_state,
-             'new_value': new_reviewed_state},
-            {'string_id': ts_obj.id, 'field': 'is_warning_ignored', 'old_value': old_warning_ignored_state,
-             'new_value': new_reviewed_state}
-        ]
-        self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
-
-        ts_obj.is_reviewed = new_reviewed_state
-        ts_obj.is_warning_ignored = new_reviewed_state
-
-        ts_obj.update_style_cache()
-        self.mark_project_modified()
-        self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
-            'Yes') if new_reviewed_state else _('No')))
-
-        source_index = self.sheet_model.index_from_id(ts_obj.id)
-        if source_index.isValid():
-            first_col_index = source_index.siblingAtColumn(0)
-            last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
-            self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
-        self.force_refresh_ui_for_current_selection()
 
     def __and_dispatch_more(self):
         if not self.is_aidecrement_active_threads_translating_batch:
