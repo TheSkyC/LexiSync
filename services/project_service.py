@@ -57,7 +57,7 @@ def save_project(filepath, app_instance):
         "project_custom_instructions": app_instance.project_custom_instructions,
         "current_tm_file_path": app_instance.current_tm_file or "",
         "filter_settings": {
-            "deduplicate": app_instance.deduplicate_checkbox.isChecked(),
+            # "deduplicate": app_instance.deduplicate_checkbox.isChecked(),
             "show_ignored": app_instance.ignored_checkbox.isChecked(),
             "show_untranslated": app_instance.untranslated_checkbox.isChecked(),
             "show_translated": app_instance.translated_checkbox.isChecked(),
