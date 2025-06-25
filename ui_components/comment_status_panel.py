@@ -34,9 +34,9 @@ class CommentStatusPanel(QWidget):
         self.comment_edit_text = NewlineTextEdit()
         self.comment_edit_text.setObjectName("comment_edit_text")
         self.comment_edit_text.setLineWrapMode(NewlineTextEdit.WidgetWidth)
-        self.comment_edit_text.setFixedHeight(70)
         self.comment_edit_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.comment_edit_text.focusOutEvent = self._comment_focus_out_event
+        self.comment_edit_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout.addWidget(self.comment_edit_text)
         self.highlighter = PoCommentHighlighter(self.comment_edit_text.document())
 
@@ -66,8 +66,6 @@ class CommentStatusPanel(QWidget):
         status_layout.addWidget(self.reviewed_checkbox)
         status_layout.addStretch(1)
         layout.addWidget(status_frame)
-
-        layout.addStretch(1)
 
     def _comment_focus_out_event(self, event):
         self.comment_focus_out_signal.emit()

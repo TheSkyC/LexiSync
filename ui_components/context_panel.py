@@ -19,15 +19,12 @@ class ContextPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(5)
-
-
-
         self.context_text_display = QTextEdit()
         self.context_text_display.setReadOnly(True)
-        self.context_text_display.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)  # 修正枚举访问
+        self.context_text_display.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
         self.context_text_display.setFontFamily("Consolas")
         self.context_text_display.setFontPointSize(9)
-        self.context_text_display.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # 修正枚举访问
+        self.context_text_display.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout.addWidget(self.context_text_display)
 
     def set_context(self, context_lines, current_line_in_context_idx):

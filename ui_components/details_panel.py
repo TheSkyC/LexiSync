@@ -3,7 +3,7 @@
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFrame, QSizePolicy
+    QFrame, QSizePolicy, QSplitter
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QTextCharFormat, QColor, QFont, QTextCursor
@@ -27,31 +27,41 @@ class DetailsPanel(QWidget):
     def setup_ui(self):
         if self._ui_initialized:
             return
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(5, 5, 5, 5)
-        layout.setSpacing(5)
-
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(5, 5, 5, 5)
+        main_layout.setSpacing(5)
+        splitter = QSplitter(Qt.Vertical)
+        original_container = QWidget()
+        original_layout = QVBoxLayout(original_container)
+        original_layout.setContentsMargins(0, 0, 0, 0)
+        original_layout.setSpacing(5)
         self.original_label = QLabel(_("Original:"))
         self.original_label.setObjectName("original_label")
-        layout.addWidget(self.original_label)
         self.original_text_display = NewlineTextEdit()
         self.original_text_display.setReadOnly(True)
         self.original_text_display.setLineWrapMode(NewlineTextEdit.WidgetWidth)
-        self.original_text_display.setFixedHeight(70)
-        self.original_text_display.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        layout.addWidget(self.original_text_display)
+        self.original_text_display.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        original_layout.addWidget(self.original_label)
+        original_layout.addWidget(self.original_text_display)
+
+        translation_container = QWidget()
+        translation_layout = QVBoxLayout(translation_container)
+        translation_layout.setContentsMargins(0, 0, 0, 0)
+        translation_layout.setSpacing(5)
 
         self.translation_label = QLabel(_("Translation:"))
         self.translation_label.setObjectName("translation_label")
-        layout.addWidget(self.translation_label)
         self.translation_edit_text = NewlineTextEdit()
         self.translation_edit_text.setLineWrapMode(NewlineTextEdit.WidgetWidth)
-        self.translation_edit_text.setFixedHeight(100)
-        self.translation_edit_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.translation_edit_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.translation_edit_text.textChanged.connect(self.translation_text_changed_signal.emit)
         self.translation_edit_text.focusOutEvent = self._translation_focus_out_event
-        layout.addWidget(self.translation_edit_text)
-
+        translation_layout.addWidget(self.translation_label)
+        translation_layout.addWidget(self.translation_edit_text)
+        splitter.addWidget(original_container)
+        splitter.addWidget(translation_container)
+        splitter.setSizes([100, 100])
+        main_layout.addWidget(splitter)
         trans_actions_frame = QFrame()
         trans_actions_layout = QHBoxLayout(trans_actions_frame)
         trans_actions_layout.setContentsMargins(0, 0, 0, 0)
@@ -66,8 +76,8 @@ class DetailsPanel(QWidget):
         self.ai_translate_current_btn.clicked.connect(self.ai_translate_signal.emit)
         self.ai_translate_current_btn.setEnabled(False)
         trans_actions_layout.addWidget(self.ai_translate_current_btn)
-        layout.addWidget(trans_actions_frame)
-        layout.addStretch(1)
+        main_layout.addWidget(trans_actions_frame)
+
         self.setup_text_formats()
         self._ui_initialized = True
 
@@ -83,7 +93,6 @@ class DetailsPanel(QWidget):
         self.placeholder_error_format = QTextCharFormat()
         self.placeholder_error_format.setBackground(QColor("#FFDDDD"))
         self.placeholder_error_format.setForeground(QColor("red"))
-        self.placeholder_error_format.setFontWeight(QFont.Bold)
 
         self.whitespace_format = QTextCharFormat()
         self.whitespace_format.setBackground(QColor("#DDEEFF"))

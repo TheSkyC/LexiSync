@@ -22,9 +22,9 @@ class TMPanel(QWidget):
         layout.setSpacing(5)
 
         self.tm_suggestions_listbox = QListWidget()
-        self.tm_suggestions_listbox.setFixedHeight(100)
         self.tm_suggestions_listbox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.tm_suggestions_listbox.itemDoubleClicked.connect(self._on_tm_suggestion_double_click)
+        self.tm_suggestions_listbox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout.addWidget(self.tm_suggestions_listbox)
 
         tm_actions_frame = QWidget()
@@ -43,8 +43,6 @@ class TMPanel(QWidget):
         tm_actions_layout.addWidget(self.clear_selected_tm_btn)
         tm_actions_layout.addStretch(1)
         layout.addWidget(tm_actions_frame)
-
-        layout.addStretch(1)
 
     def _on_tm_suggestion_double_click(self, item):
         full_text = item.text()
