@@ -3,9 +3,9 @@
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QCheckBox,
-    QFrame, QSizePolicy, QTextEdit
+    QFrame, QSizePolicy, QTextEdit, QToolButton
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QPropertyAnimation
 from PySide6.QtGui import QTextCharFormat, QColor, QFont, QTextCursor
 import re
 from .newline_text_edit import NewlineTextEdit
@@ -26,6 +26,8 @@ class DetailsPanel(QWidget):
         super().__init__(parent)
         self.app_instance = parent
         self._ui_initialized = False
+        self.animation = None
+        self._collapsible_content_height = 0
         self.setup_ui()
 
     def setup_ui(self):
@@ -35,7 +37,6 @@ class DetailsPanel(QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(5)
 
-        # Original Text Display
         self.original_label = QLabel(_("Original:"))
         self.original_label.setObjectName("original_label")
         layout.addWidget(self.original_label)
@@ -46,7 +47,6 @@ class DetailsPanel(QWidget):
         self.original_text_display.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         layout.addWidget(self.original_text_display)
 
-        # Translation Edit Text
         self.translation_label = QLabel(_("Translation:"))
         self.translation_label.setObjectName("translation_label")
         layout.addWidget(self.translation_label)
@@ -58,7 +58,6 @@ class DetailsPanel(QWidget):
         self.translation_edit_text.focusOutEvent = self._translation_focus_out_event
         layout.addWidget(self.translation_edit_text)
 
-        # Translation Actions
         trans_actions_frame = QFrame()
         trans_actions_layout = QHBoxLayout(trans_actions_frame)
         trans_actions_layout.setContentsMargins(0, 0, 0, 0)
@@ -75,10 +74,31 @@ class DetailsPanel(QWidget):
         trans_actions_layout.addWidget(self.ai_translate_current_btn)
         layout.addWidget(trans_actions_frame)
 
-        # Comment Edit Text
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(separator)
+
+        self.toggle_button = QToolButton()
+        self.toggle_button.setObjectName("toggle_button")
+        self.toggle_button.setText(_("Comments && Status"))
+        self.toggle_button.setCheckable(True)
+        self.toggle_button.setChecked(True)
+        self.toggle_button.setStyleSheet("QToolButton { border: none; font-weight: bold; }")
+        self.toggle_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.toggle_button.setArrowType(Qt.DownArrow)
+        self.toggle_button.toggled.connect(self.on_toggle_collapse)
+        layout.addWidget(self.toggle_button)
+
+        self.collapsible_widget = QWidget()
+        self.collapsible_layout = QVBoxLayout(self.collapsible_widget)
+        self.collapsible_layout.setContentsMargins(10, 0, 0, 0)
+        self.collapsible_layout.setSpacing(5)
+        layout.addWidget(self.collapsible_widget)
+
         self.comment_label = QLabel(_("Comment:"))
         self.comment_label.setObjectName("comment_label")
-        layout.addWidget(self.comment_label)
+        self.collapsible_layout.addWidget(self.comment_label)
 
         self.comment_edit_text = NewlineTextEdit()
         self.comment_edit_text.setObjectName("comment_edit_text")
@@ -86,10 +106,9 @@ class DetailsPanel(QWidget):
         self.comment_edit_text.setFixedHeight(70)
         self.comment_edit_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.comment_edit_text.focusOutEvent = self._comment_focus_out_event
-        layout.addWidget(self.comment_edit_text)
+        self.collapsible_layout.addWidget(self.comment_edit_text)
         self.highlighter = PoCommentHighlighter(self.comment_edit_text.document())
 
-        # Comment Actions
         comment_actions_frame = QFrame()
         comment_actions_layout = QHBoxLayout(comment_actions_frame)
         comment_actions_layout.setContentsMargins(0, 0, 0, 0)
@@ -99,9 +118,8 @@ class DetailsPanel(QWidget):
         self.apply_comment_btn.setEnabled(False)
         comment_actions_layout.addWidget(self.apply_comment_btn)
         comment_actions_layout.addStretch(1)
-        layout.addWidget(comment_actions_frame)
+        self.collapsible_layout.addWidget(comment_actions_frame)
 
-        # Status Checkboxes
         status_frame = QFrame()
         status_layout = QHBoxLayout(status_frame)
         status_layout.setContentsMargins(0, 0, 0, 0)
@@ -114,24 +132,60 @@ class DetailsPanel(QWidget):
         self.reviewed_checkbox.setEnabled(False)
         status_layout.addWidget(self.reviewed_checkbox)
         status_layout.addStretch(1)
-        layout.addWidget(status_frame)
+        self.collapsible_layout.addWidget(status_frame)
 
-        layout.addStretch(1)
+        #layout.addStretch(1)
 
         self.setup_text_formats()
         self._ui_initialized = True
+        self.collapsible_widget.setVisible(True)
+        self.collapsible_widget.layout().activate()
+        self._collapsible_content_height = self.collapsible_widget.sizeHint().height()
+        if not self.toggle_button.isChecked():
+            self.collapsible_widget.setMaximumHeight(0)
+            self.collapsible_widget.setVisible(False)
+
+    def on_toggle_collapse(self, checked):
+        self.toggle_button.setArrowType(Qt.DownArrow if checked else Qt.RightArrow)
+
+        if hasattr(self, 'animation') and self.animation and self.animation.state() == QPropertyAnimation.State.Running:
+            self.animation.stop()
+
+        self.animation = QPropertyAnimation(self.collapsible_widget, b"maximumHeight")
+        self.animation.setDuration(250)
+
+        if checked:
+            self.collapsible_widget.setVisible(True)
+            self.animation.setStartValue(0)
+            self.animation.setEndValue(self._collapsible_content_height)
+            self.animation.finished.connect(self._on_expand_animation_finished)
+        else:
+            self.animation.setStartValue(self.collapsible_widget.height())
+            self.animation.setEndValue(0)
+            self.animation.finished.connect(self._on_collapse_animation_finished)
+
+        self.animation.start()
+
+    def _on_expand_animation_finished(self):
+        if self.toggle_button.isChecked():
+            self.collapsible_widget.setMaximumHeight(16777215)
+        if hasattr(self, 'animation'):
+            self.animation = None
+
+    def _on_collapse_animation_finished(self):
+        if not self.toggle_button.isChecked():
+            self.collapsible_widget.setVisible(False)
+        if hasattr(self, 'animation'):
+            self.animation = None
 
     def setup_text_formats(self):
-        # Placeholder format
         self.placeholder_format = QTextCharFormat()
         self.placeholder_format.setForeground(QColor("orange red"))
 
-        # Placeholder missing/extra format
         self.placeholder_error_format = QTextCharFormat()
         self.placeholder_error_format.setBackground(QColor("#FFDDDD"))
         self.placeholder_error_format.setForeground(QColor("red"))
 
-        # Whitespace format
         self.whitespace_format = QTextCharFormat()
         self.whitespace_format.setBackground(QColor("#DDEEFF"))
         self.newline_format = QTextCharFormat()
@@ -209,6 +263,7 @@ class DetailsPanel(QWidget):
         self.findChild(QLabel, "translation_label").setText(_("Translation:"))
         self.findChild(QPushButton, "apply_btn").setText(_("Apply Translation"))
         self.findChild(QPushButton, "ai_translate_current_btn").setText(_("AI Translate Selected"))
+        self.findChild(QToolButton, "toggle_button").setText(_("Comments & Status"))
         self.findChild(QLabel, "comment_label").setText(_("Comment:"))
         self.findChild(QPushButton, "apply_comment_btn").setText(_("Apply Comment"))
 

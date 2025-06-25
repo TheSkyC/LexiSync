@@ -374,7 +374,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.filter_actions['show_unreviewed'] = self.action_show_unreviewed
         self.view_menu.addSeparator()
 
-        self.action_toggle_details_panel = QAction(_("Edit & Details Panel"), self, checkable=True)
+        self.action_toggle_details_panel = QAction(_("Edit && Details Panel"), self, checkable=True)
         self.view_menu.addAction(self.action_toggle_details_panel)
 
         self.action_toggle_context_panel = QAction(_("Context Preview Panel"), self, checkable=True)
@@ -530,7 +530,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_show_untranslated.setText(_("Show Untranslated"))
         self.action_show_translated.setText(_("Show Translated"))
         self.action_show_unreviewed.setText(_("Show Unreviewed"))
-        self.action_toggle_details_panel.setText(_("Edit & Details Panel"))
+        self.action_toggle_details_panel.setText(_("Edit && Details Panel"))
         self.action_toggle_context_panel.setText(_("Context Preview Panel"))
         self.action_toggle_tm_panel.setText(_("Translation Memory Panel"))
         self.action_restore_layout.setText(_("Restore Default Layout"))
