@@ -122,6 +122,9 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
             entry_flags.extend([f.strip() for f in flags_str.split(',') if f.strip()])
 
         entry_flags = sorted(list(set(entry_flags)))
+        if ts_obj.is_reviewed or ts_obj.is_warning_ignored:
+            if 'fuzzy' in entry_flags:
+                entry_flags.remove('fuzzy')
         entry_occurrences = []
         if ts_obj.line_num_in_file > 0:
             entry_occurrences.append((original_file_name, str(ts_obj.line_num_in_file)))

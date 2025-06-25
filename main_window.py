@@ -1844,57 +1844,47 @@ class OverwatchLocalizerApp(QMainWindow):
         if not self.current_selected_ts_id: return False
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return False
-
         full_comment_text = self.details_panel.comment_edit_text.toPlainText()
-
         old_po_lines = ts_obj.po_comment.splitlines()
         old_user_lines = ts_obj.comment.splitlines()
         old_full_text = "\n".join(old_po_lines + old_user_lines)
-        if full_comment_text == old_full_text:
-            return False
-
-        lines = full_comment_text.splitlines()
         new_po_lines = []
         new_user_lines = []
-
+        lines = full_comment_text.splitlines()
         for line in lines:
             if line.strip().startswith('#'):
                 new_po_lines.append(line)
             else:
                 new_user_lines.append(line)
-
+        has_fuzzy_in_new_comment = any('fuzzy' in line for line in new_po_lines if line.strip().startswith('#,'))
+        new_is_fuzzy = has_fuzzy_in_new_comment
+        if full_comment_text == old_full_text and new_is_fuzzy == ts_obj.is_fuzzy:
+            return False
         new_po_comment = "\n".join(new_po_lines)
         new_user_comment = "\n".join(new_user_lines)
-
-        has_fuzzy_in_new_comment = any('fuzzy' in line for line in new_po_lines if line.strip().startswith('#,'))
-
         old_is_fuzzy = ts_obj.is_fuzzy
-        new_is_fuzzy = has_fuzzy_in_new_comment
-
-        if new_po_comment != ts_obj.po_comment or new_user_comment != ts_obj.comment or new_is_fuzzy != old_is_fuzzy:
-            self.add_to_undo_history('bulk_change', {
-                'changes': [
-                    {'string_id': ts_obj.id, 'field': 'po_comment', 'old_value': ts_obj.po_comment,
-                     'new_value': new_po_comment},
-                    {'string_id': ts_obj.id, 'field': 'comment', 'old_value': ts_obj.comment,
-                     'new_value': new_user_comment},
-                    {'string_id': ts_obj.id, 'field': 'is_fuzzy', 'old_value': old_is_fuzzy, 'new_value': new_is_fuzzy}
-                ]
-            })
-            ts_obj.po_comment = new_po_comment
-            ts_obj.comment = new_user_comment
-            ts_obj.is_fuzzy = new_is_fuzzy
-            ts_obj.update_style_cache()
-            source_index = self.sheet_model.index_from_id(ts_obj.id)
-            if source_index.isValid():
-                first_col_index = source_index.siblingAtColumn(0)
-                last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
-                self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
-            self.mark_project_modified()
-            self.update_statusbar(_("Comment updated."))
-            self.details_panel.highlighter.rehighlight()
-            return True
-        return False
+        self.add_to_undo_history('bulk_change', {
+            'changes': [
+                {'string_id': ts_obj.id, 'field': 'po_comment', 'old_value': ts_obj.po_comment,
+                 'new_value': new_po_comment},
+                {'string_id': ts_obj.id, 'field': 'comment', 'old_value': ts_obj.comment,
+                 'new_value': new_user_comment},
+                {'string_id': ts_obj.id, 'field': 'is_fuzzy', 'old_value': old_is_fuzzy, 'new_value': new_is_fuzzy}
+            ]
+        })
+        ts_obj.po_comment = new_po_comment
+        ts_obj.comment = new_user_comment
+        ts_obj.is_fuzzy = new_is_fuzzy
+        ts_obj.update_style_cache()
+        source_index = self.sheet_model.index_from_id(ts_obj.id)
+        if source_index.isValid():
+            first_col_index = source_index.siblingAtColumn(0)
+            last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
+            self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
+        self.mark_project_modified()
+        self.update_statusbar(_("Comment updated."))
+        self.details_panel.highlighter.rehighlight()
+        return True
 
     def apply_comment_from_button(self):
         self._save_comment_from_ui()
