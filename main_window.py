@@ -3369,21 +3369,29 @@ class OverwatchLocalizerApp(QMainWindow):
     def cm_set_reviewed_status(self, reviewed_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
-
-        bulk_changes = []
+        bulk_changes_for_undo = []
+        modified_ids = set()
         for ts_obj in selected_objs:
             if ts_obj.is_reviewed != reviewed_flag:
-                old_val = ts_obj.is_reviewed
+                old_reviewed_val = ts_obj.is_reviewed
+                old_warning_ignored_val = ts_obj.is_warning_ignored
                 ts_obj.is_reviewed = reviewed_flag
+                ts_obj.is_warning_ignored = reviewed_flag
                 ts_obj.update_style_cache()
-                bulk_changes.append(
-                    {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_val, 'new_value': reviewed_flag})
-
-        if bulk_changes:
-            self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
-            self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
+                bulk_changes_for_undo.append(
+                    {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_reviewed_val,
+                     'new_value': reviewed_flag})
+                bulk_changes_for_undo.append(
+                    {'string_id': ts_obj.id, 'field': 'is_warning_ignored', 'old_value': old_warning_ignored_val,
+                     'new_value': ts_obj.is_warning_ignored})
+                modified_ids.add(ts_obj.id)
+        if bulk_changes_for_undo:
+            self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes_for_undo})
             self.mark_project_modified()
+            self.update_statusbar(_("{count} items' review status updated.").format(count=len(modified_ids)))
+            self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
+        else:
+            self.update_statusbar(_("Selected item(s) already have the desired review status."))
 
     def cm_toggle_ignored_status(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()
