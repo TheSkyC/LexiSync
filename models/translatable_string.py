@@ -125,12 +125,19 @@ class TranslatableString:
         self.ui_style_cache = {}
         # 1. 最高优先级：严重警告
         if self.warnings and not self.is_warning_ignored:
-            self.ui_style_cache['background'] = QColor("#FFDDDD")
-            self.ui_style_cache['foreground'] = QColor("red")
+            if not self.is_ignored:
+                self.ui_style_cache['background'] = QColor("#FFDDDD")
+                self.ui_style_cache['foreground'] = QColor("red")
+            else: # 警告但忽略
+                self.ui_style_cache['background'] = QColor(220, 220, 220, 200)
+                self.ui_style_cache['foreground'] = QColor(255, 0, 0, 150) # 透明红色
+                font = QFont()
+                font.setItalic(True)
+                self.ui_style_cache['font'] = font
 
         # 2. 次高优先级：已忽略
         elif self.is_ignored:
-            self.ui_style_cache['background'] = QColor("#F0F0F0")
+            self.ui_style_cache['background'] = QColor(220, 220, 220, 200)
             self.ui_style_cache['foreground'] = QColor("#707070")
             font = QFont()
             font.setItalic(True)
