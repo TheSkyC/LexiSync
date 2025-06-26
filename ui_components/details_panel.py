@@ -88,7 +88,6 @@ class DetailsPanel(QWidget):
     def setup_text_formats(self):
         self.placeholder_format = QTextCharFormat()
         self.placeholder_format.setForeground(QColor("orange red"))
-        self.placeholder_format.setFontWeight(QFont.Bold)
 
         self.placeholder_error_format = QTextCharFormat()
         self.placeholder_error_format.setBackground(QColor("#FFDDDD"))
