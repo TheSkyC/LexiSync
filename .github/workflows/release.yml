@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
 
 env:
   APP_NAME: OverwatchLocalizer
@@ -17,19 +18,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Windows
           - os_name: windows
             os_image: windows-latest
             arch_display: x64
             python_arch: x64
             asset_suffix: win-x64.zip
-          # Linux
           - os_name: linux
             os_image: ubuntu-latest
             arch_display: x64
             python_arch: x64
             asset_suffix: linux-x64.tar.gz
-          # macOS
           - os_name: macos
             os_image: macos-latest
             arch_display: universal
@@ -44,7 +42,6 @@ jobs:
       if: matrix.os_name == 'macos'
       shell: bash
       run: |
-        echo "Runner Arch (from GITHUB_RUNNER_ARCH): $RUNNER_ARCH"
         if [[ "$RUNNER_ARCH" == "ARM64" ]]; then
           echo "python_arch_for_macos=arm64" >> $GITHUB_OUTPUT
         else
@@ -71,15 +68,10 @@ jobs:
 
     - name: Install UPX
       uses: crazy-max/ghaction-upx@v3
-      if: runner.os == 'Windows' || runner.os == 'Linux'
       with:
         version: latest
 
-    - name: Install UPX (macOS)
-      if: runner.os == 'macOS'
-      run: brew install upx
-
-    - name: Build with PyInstaller for ${{ matrix.os_name }}
+    - name: Build with PyInstaller
       shell: bash
       run: |
         echo "Preparing clean locales directory for packaging..."
@@ -128,28 +120,39 @@ jobs:
           --exclude-module Qt6Multimedia \
           main.py
 
-    - name: Compress with UPX
-      if: success()
+    - name: Compress with UPX (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
       run: |
-        echo "Compressing executables and libraries with UPX..."
+        $distDir = "dist/${{ env.APP_NAME }}"
+        Write-Host "Compressing files in $distDir..."
+        upx --best --lzma "$distDir/${{ env.APP_NAME }}.exe"
+        Get-ChildItem -Path $distDir -Recurse -Include *.dll, *.pyd | ForEach-Object {
+          Write-Host "Compressing $($_.Name)..."
+          upx --best --lzma $_.FullName
+        }
+        Write-Host "UPX compression finished for Windows."
+
+    - name: Compress with UPX (Linux/macOS)
+      if: runner.os == 'Linux' || runner.os == 'macOS'
+      shell: bash
+      run: |
         DIST_DIR="dist/${{ env.APP_NAME }}"
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          upx --best --lzma "$DIST_DIR/${{ env.APP_NAME }}.exe"
-          pwsh -Command "Get-ChildItem -Path '${DIST_DIR}' -Recurse -Include *.dll, *.pyd | ForEach-Object { upx --best --lzma \$_.FullName }"
-        elif [[ "${{ runner.os }}" == "macOS" ]]; then
+        echo "Compressing files in $DIST_DIR..."
+        
+        if [[ "${{ runner.os }}" == "macOS" ]]; then
           upx --best --lzma --force-macos "$DIST_DIR/${{ env.APP_NAME }}"
         else # Linux
           upx --best --lzma "$DIST_DIR/${{ env.APP_NAME }}"
           find "$DIST_DIR" -type f -name "*.so" -exec upx --best --lzma {} \;
         fi
-        echo "UPX compression finished."
-      shell: bash
+        echo "UPX compression finished for ${{ runner.os }}."
 
     - name: Prepare Artifacts (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        Compress-Archive -Path dist/${{ env.APP_NAME }} -DestinationPath ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}
+        Compress-Archive -Path dist/${{ env.APP_NAME }} -DestinationPath ${{ env.APP_NAME }}-${{ matrix.asset_suffix }} -Force
 
     - name: Prepare Artifacts (Linux)
       if: runner.os == 'Linux'
@@ -162,11 +165,10 @@ jobs:
       shell: bash
       run: |
         APP_BUNDLE_PATH="dist/${{ env.APP_NAME }}.app"
-        
         if [ -d "$APP_BUNDLE_PATH" ]; then
-          echo "Found .app bundle: $APP_BUNDLE_PATH"
+          echo "Waiting for 3 seconds to ensure file handles are released..."
+          sleep 3
           hdiutil create -volname "${{ env.APP_NAME }}" -srcfolder "$APP_BUNDLE_PATH" -ov -format UDZO "${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
-          echo "Created DMG: ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
         else
           echo "Error: .app bundle not found in dist/ for macOS."
           exit 1
@@ -190,8 +192,7 @@ jobs:
       with:
         path: artifacts
 
-    - name: List downloaded files (for debugging)
-      shell: bash
+    - name: List downloaded files
       run: ls -R artifacts
 
     - name: Create Release and Upload Assets
