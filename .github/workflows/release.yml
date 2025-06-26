@@ -70,22 +70,31 @@ jobs:
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y upx-ucl
 
-    - name: Install UPX (Windows)
+    - name: Compress with UPX (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        Write-Host "Installing UPX for Windows..."
-        $upxVersion = "4.2.4"
-        $upxUrl = "https://github.com/upx/upx/releases/download/v$upxVersion/upx-$upxVersion-win64.zip"
-        $upxZip = "upx.zip"
-        $upxDir = "upx-$upxVersion-win64"
-        
-        Invoke-WebRequest -Uri $upxUrl -OutFile $upxZip
-        Expand-Archive -Path $upxZip -DestinationPath . -Force
-        
-        $upxPath = Join-Path $PWD "$upxDir\upx.exe"
-        Write-Host "UPX installed at: $upxPath"
-        echo "UPX_PATH=$upxPath" >> $env:GITHUB_ENV
+        $distDir = "dist/${{ env.APP_NAME }}"
+        $upxPath = $env:UPX_PATH
+
+        if (-not $upxPath -or -not (Test-Path $upxPath)) {
+          Write-Host "Error: UPX path not found or invalid: $upxPath"
+          exit 1
+        }
+
+        Write-Host "UPX Path: $upxPath"
+        Write-Host "Compressing files in $distDir..."
+
+        $filesToCompress = Get-ChildItem -Path $distDir -Recurse -Include *.exe, *.dll, *.pyd
+
+        foreach ($file in $filesToCompress) {
+          Write-Host "Compressing $($file.Name)..."
+          & $upxPath --best --lzma --force $file.FullName
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Warning: Failed to compress $($file.Name). UPX exited with code $LASTEXITCODE."
+          }
+        }
+        Write-Host "UPX compression finished for Windows."
 
     - name: Install UPX (macOS)
       if: runner.os == 'macOS'
