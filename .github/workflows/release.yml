@@ -71,8 +71,13 @@ jobs:
 
     - name: Install UPX
       uses: crazy-max/ghaction-upx@v3
+      if: runner.os == 'Windows' || runner.os == 'Linux'
       with:
         version: latest
+
+    - name: Install UPX (macOS)
+      if: runner.os == 'macOS'
+      run: brew install upx
 
     - name: Build with PyInstaller for ${{ matrix.os_name }}
       shell: bash
