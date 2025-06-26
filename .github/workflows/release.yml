@@ -130,20 +130,20 @@ jobs:
 
     - name: Compress with UPX
       if: success()
-      shell: bash
       run: |
         echo "Compressing executables and libraries with UPX..."
         DIST_DIR="dist/${{ env.APP_NAME }}"
-        
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           upx --best --lzma "$DIST_DIR/${{ env.APP_NAME }}.exe"
-          find "$DIST_DIR" -type f \( -name "*.dll" -o -name "*.pyd" \) -exec upx --best --lzma {} \;
-        else
-          # For Linux and macOS
+          pwsh -Command "Get-ChildItem -Path '${DIST_DIR}' -Recurse -Include *.dll, *.pyd | ForEach-Object { upx --best --lzma \$_.FullName }"
+        elif [[ "${{ runner.os }}" == "macOS" ]]; then
+          upx --best --lzma --force-macos "$DIST_DIR/${{ env.APP_NAME }}"
+        else # Linux
           upx --best --lzma "$DIST_DIR/${{ env.APP_NAME }}"
-          find "$DIST_DIR" -type f \( -name "*.so" -o -name "*.dylib" \) -exec upx --best --lzma {} \;
+          find "$DIST_DIR" -type f -name "*.so" -exec upx --best --lzma {} \;
         fi
         echo "UPX compression finished."
+      shell: bash
 
     - name: Prepare Artifacts (Windows)
       if: runner.os == 'Windows'
