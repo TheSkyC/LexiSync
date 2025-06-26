@@ -66,10 +66,20 @@ jobs:
           pip install PySide6 PySide6-Charts openpyxl polib requests
         fi
 
-    - name: Install UPX
+    - name: Install UPX (Linux)
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y upx-ucl
+
+    - name: Install UPX (Windows)
+      id: upx_windows
+      if: runner.os == 'Windows'
       uses: crazy-max/ghaction-upx@v3
       with:
         version: latest
+
+    - name: Install UPX (macOS)
+      if: runner.os == 'macOS'
+      run: brew install upx
 
     - name: Build with PyInstaller
       shell: bash
@@ -125,34 +135,41 @@ jobs:
       shell: pwsh
       run: |
         $distDir = "dist/${{ env.APP_NAME }}"
+        $upxPath = "${{ steps.upx_windows.outputs.upx_path }}"
+        Write-Host "UPX Path: $upxPath"
         Write-Host "Compressing files in $distDir..."
-        upx --best --lzma "$distDir/${{ env.APP_NAME }}.exe"
+        
+        & $upxPath --best --lzma "$distDir/${{ env.APP_NAME }}.exe"
         Get-ChildItem -Path $distDir -Recurse -Include *.dll, *.pyd | ForEach-Object {
           Write-Host "Compressing $($_.Name)..."
-          upx --best --lzma $_.FullName
+          & $upxPath --best --lzma $_.FullName
         }
         Write-Host "UPX compression finished for Windows."
 
-    - name: Compress with UPX (Linux/macOS)
-      if: runner.os == 'Linux' || runner.os == 'macOS'
+    - name: Compress with UPX (Linux)
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         DIST_DIR="dist/${{ env.APP_NAME }}"
         echo "Compressing files in $DIST_DIR..."
-        
-        if [[ "${{ runner.os }}" == "macOS" ]]; then
-          upx --best --lzma --force-macos "$DIST_DIR/${{ env.APP_NAME }}"
-        else # Linux
-          upx --best --lzma "$DIST_DIR/${{ env.APP_NAME }}"
-          find "$DIST_DIR" -type f -name "*.so" -exec upx --best --lzma {} \;
-        fi
-        echo "UPX compression finished for ${{ runner.os }}."
+        upx --best --lzma "$DIST_DIR/${{ env.APP_NAME }}"
+        find "$DIST_DIR" -type f -name "*.so" -exec upx --best --lzma {} \;
+        echo "UPX compression finished for Linux."
 
     - name: Prepare Artifacts (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
         Compress-Archive -Path dist/${{ env.APP_NAME }} -DestinationPath ${{ env.APP_NAME }}-${{ matrix.asset_suffix }} -Force
+
+    - name: Compress with UPX (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        DIST_DIR="dist/${{ env.APP_NAME }}"
+        echo "Compressing files in $DIST_DIR..."
+        upx --best --lzma --force-macos "$DIST_DIR/${{ env.APP_NAME }}"
+        echo "UPX compression finished for macOS."
 
     - name: Prepare Artifacts (Linux)
       if: runner.os == 'Linux'
