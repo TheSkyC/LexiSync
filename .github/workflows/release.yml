@@ -130,6 +130,10 @@ jobs:
         
         if [ -d "$APP_BUNDLE_PATH" ]; then
           echo "Found .app bundle: $APP_BUNDLE_PATH"
+          
+          echo "Waiting for 5 seconds to ensure file handles are released..."
+          sleep 5
+          
           hdiutil create -volname "${{ env.APP_NAME }}" -srcfolder "$APP_BUNDLE_PATH" -ov -format UDZO "${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
           echo "Created DMG: ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
         else
