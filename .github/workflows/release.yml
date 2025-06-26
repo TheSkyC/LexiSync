@@ -166,7 +166,7 @@ jobs:
         
         if (Test-Path "$distDir/${{ env.APP_NAME }}.exe") {
           Write-Host "Compressing main executable..."
-          & $upxPath --best --lzma "$distDir/${{ env.APP_NAME }}.exe"
+          & $upxPath --best --lzma --force "$distDir/${{ env.APP_NAME }}.exe"
           if ($LASTEXITCODE -ne 0) {
             Write-Host "Warning: Failed to compress main executable with UPX, skipping..."
             $LASTEXITCODE = 0
