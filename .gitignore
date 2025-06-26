@@ -39,6 +39,7 @@ venv.bak/
 .idea/
 .vscode/
 
+build.ps1
 localization_tool_config.json
 ow_translator_tm.xlsx
 *.owprompt
@@ -47,3 +48,4 @@ babel.cfg
 
 .DS_Store
 Thumbs.db
+/OverwatchLocalizer.spec

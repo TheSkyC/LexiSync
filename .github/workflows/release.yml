@@ -66,8 +66,13 @@ jobs:
           pip install -r requirements.txt
         else
           echo "requirements.txt not found, installing default dependencies."
-          pip install openpyxl tkinterdnd2-universal requests
+          pip install PySide6 PySide6-Charts openpyxl polib requests
         fi
+
+    - name: Install UPX
+      uses: crazy-max/ghaction-upx@v3
+      with:
+        version: latest
 
     - name: Build with PyInstaller for ${{ matrix.os_name }}
       shell: bash
@@ -89,13 +94,6 @@ jobs:
                     shutil.copy2(source_path, target_path)
         "
         
-        echo "Temporary locales directory content:"
-        if command -v find &> /dev/null; then
-            find dist_locales -print
-        else
-            ls -R dist_locales
-        fi
-        
         DATA_SEPARATOR=':'
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           DATA_SEPARATOR=';'
@@ -108,7 +106,39 @@ jobs:
           --windowed \
           --noconfirm \
           --add-data "dist_locales${DATA_SEPARATOR}locales" \
+          --exclude-module Qt6Network \
+          --exclude-module Qt6Sql \
+          --exclude-module Qt6Test \
+          --exclude-module Qt6Xml \
+          --exclude-module Qt6Qml \
+          --exclude-module Qt6Quick \
+          --exclude-module Qt6WebEngineWidgets \
+          --exclude-module Qt6WebEngineCore \
+          --exclude-module Qt6WebChannel \
+          --exclude-module Qt6Positioning \
+          --exclude-module Qt6Sensors \
+          --exclude-module Qt6Nfc \
+          --exclude-module Qt6Bluetooth \
+          --exclude-module Qt6DataVisualization \
+          --exclude-module Qt6Multimedia \
           main.py
+
+    - name: Compress with UPX
+      if: success()
+      shell: bash
+      run: |
+        echo "Compressing executables and libraries with UPX..."
+        DIST_DIR="dist/${{ env.APP_NAME }}"
+        
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          upx --best --lzma "$DIST_DIR/${{ env.APP_NAME }}.exe"
+          find "$DIST_DIR" -type f \( -name "*.dll" -o -name "*.pyd" \) -exec upx --best --lzma {} \;
+        else
+          # For Linux and macOS
+          upx --best --lzma "$DIST_DIR/${{ env.APP_NAME }}"
+          find "$DIST_DIR" -type f \( -name "*.so" -o -name "*.dylib" \) -exec upx --best --lzma {} \;
+        fi
+        echo "UPX compression finished."
 
     - name: Prepare Artifacts (Windows)
       if: runner.os == 'Windows'
@@ -130,10 +160,6 @@ jobs:
         
         if [ -d "$APP_BUNDLE_PATH" ]; then
           echo "Found .app bundle: $APP_BUNDLE_PATH"
-          
-          echo "Waiting for 5 seconds to ensure file handles are released..."
-          sleep 5
-          
           hdiutil create -volname "${{ env.APP_NAME }}" -srcfolder "$APP_BUNDLE_PATH" -ov -format UDZO "${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
           echo "Created DMG: ${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
         else
@@ -156,13 +182,15 @@ jobs:
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
+      with:
+        path: artifacts
 
     - name: List downloaded files (for debugging)
       shell: bash
-      run: ls -R
+      run: ls -R artifacts
 
     - name: Create Release and Upload Assets
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          OverwatchLocalizer-*/*.*
+          artifacts/*/*
