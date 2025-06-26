@@ -166,20 +166,26 @@ jobs:
         
         if (Test-Path "$distDir/${{ env.APP_NAME }}.exe") {
           Write-Host "Compressing main executable..."
-          & $upxPath --best --lzma --force "$distDir/${{ env.APP_NAME }}.exe"
+          & $upxPath --best --lzma "$distDir/${{ env.APP_NAME }}.exe"
           if ($LASTEXITCODE -ne 0) {
-            Write-Host "Warning: Failed to compress main executable with UPX. Exit code: $LASTEXITCODE"
+            Write-Host "Warning: Failed to compress main executable with UPX, skipping..."
+            $LASTEXITCODE = 0
           }
         }
         
         Get-ChildItem -Path $distDir -Recurse -Include *.dll, *.pyd | ForEach-Object {
           Write-Host "Compressing $($_.Name)..."
-          & $upxPath --best --lzma --force $_.FullName
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Warning: Failed to compress $($_.Name). Exit code: $LASTEXITCODE"
+          try {
+            & $upxPath --best --lzma $_.FullName
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "Warning: Failed to compress $($_.Name)"
+            }
+          } catch {
+            Write-Host "Warning: Exception while compressing $($_.Name): $($_.Exception.Message)"
           }
         }
         Write-Host "UPX compression finished for Windows."
+
 
     - name: Compress with UPX (Linux)
       if: runner.os == 'Linux'
