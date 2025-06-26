@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import (
     Qt, QAbstractTableModel, QModelIndex, Signal, QObject, QTimer, QByteArray,
-    QThread, QRunnable, QThreadPool, QItemSelectionModel, QEvent
+    QThread, QRunnable, QThreadPool, QItemSelectionModel, QEvent, QSize
 )
 from PySide6.QtGui import QAction, QKeySequence, QFont, QFontDatabase,QPalette, QColor, QActionGroup, QBrush
 
@@ -754,6 +754,8 @@ class OverwatchLocalizerApp(QMainWindow):
 
         # Table View
         self.table_view = CustomTableView(self, self)
+        self.table_view.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table_view.setIconSize(QSize(32, 32))
         self.table_view.setAttribute(Qt.WA_Hover, False)
         palette = self.table_view.palette()
         palette.setColor(QPalette.Base, QColor("white"))
