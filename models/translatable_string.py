@@ -5,6 +5,8 @@ import uuid
 from PySide6.QtGui import QColor, QFont
 from utils.constants import APP_NAMESPACE_UUID, MAX_UNDO_HISTORY
 from utils.localization import _
+from utils.enums import WarningType
+
 
 class TranslatableString:
     def __init__(self, original_raw, original_semantic, line_num, char_pos_start_in_file, char_pos_end_in_file,
@@ -21,16 +23,15 @@ class TranslatableString:
         self.char_pos_end_in_file = char_pos_end_in_file
         self.warnings = []
         self.minor_warnings = []
-        self.is_warning_ignored = False
 
+        self.is_warning_ignored = False
         self.string_type = string_type
-        self.source_comment = ""
         self.comment = ""
         self.is_reviewed = False
         self.is_fuzzy = False
         self.po_comment = ""
-        self.ui_style_cache = {}
 
+        self.ui_style_cache = {}
         context_radius = 2
         start_line_idx = max(0, line_num - 1 - context_radius)
         current_line_content_idx = line_num - 1
@@ -42,7 +43,6 @@ class TranslatableString:
         else:
             self.context_lines = []
             self.current_line_in_context_idx = -1
-
         self._translation_edit_history = [self.translation]
         self._translation_history_pointer = 0
 
@@ -67,6 +67,9 @@ class TranslatableString:
         return self.translation.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
 
     def to_dict(self):
+        serializable_warnings = [(wt.name, msg) for wt, msg in self.warnings]
+        serializable_minor_warnings = [(wt.name, msg) for wt, msg in self.minor_warnings]
+
         return {
             'id': self.id,
             'original_raw': self.original_raw,
@@ -82,8 +85,9 @@ class TranslatableString:
             'is_reviewed': self.is_reviewed,
             'is_fuzzy': self.is_fuzzy,
             'po_comment': self.po_comment,
-            '_translation_edit_history': self._translation_edit_history,
-            '_translation_history_pointer': self._translation_history_pointer,
+            'is_warning_ignored': self.is_warning_ignored,
+            'warnings': serializable_warnings,
+            'minor_warnings': serializable_minor_warnings,
         }
 
     @classmethod
@@ -105,60 +109,74 @@ class TranslatableString:
         ts.is_reviewed = data.get('is_reviewed', False)
         ts.is_fuzzy = data.get('is_fuzzy', False)
         ts.po_comment = data.get('po_comment', "")
-        ts._translation_edit_history = data.get('_translation_edit_history', [ts.translation])
-        ts._translation_history_pointer = data.get('_translation_history_pointer',
-                                                   len(ts._translation_edit_history) - 1 if ts._translation_edit_history else 0)
+        ts.is_warning_ignored = data.get('is_warning_ignored', False)
+        if 'warnings' in data:
+            for wt_name, msg in data['warnings']:
+                try:
+                    ts.warnings.append((WarningType[wt_name], msg))
+                except KeyError:
+                    print(
+                        f"Warning: Unknown warning type name '{wt_name}' found in project file for ID {ts.id}. Original message: {msg}")
+        if 'minor_warnings' in data:
+            for wt_name, msg in data['minor_warnings']:
+                try:
+                    ts.minor_warnings.append((WarningType[wt_name], msg))
+                except KeyError:
+                    print(
+                        f"Warning: Unknown minor warning type name '{wt_name}' found in project file for ID {ts.id}. Original message: {msg}")
         return ts
 
     def update_style_cache(self, all_strings_map=None):
-        fuzzy_warning_text = _("Translation is marked as fuzzy and needs review.")
+        fuzzy_warning_tuple = (WarningType.FUZZY_TRANSLATION, _("Translation is marked as fuzzy and needs review."))
+
+        has_fuzzy_in_minor_warnings = any(wt == WarningType.FUZZY_TRANSLATION for wt, _ in self.minor_warnings)
 
         if self.is_fuzzy:
-            if fuzzy_warning_text not in self.minor_warnings:
-                self.minor_warnings.append(fuzzy_warning_text)
+            if not has_fuzzy_in_minor_warnings:
+                self.minor_warnings.append(fuzzy_warning_tuple)
         else:
-            if fuzzy_warning_text in self.minor_warnings:
-                try:
-                    self.minor_warnings.remove(fuzzy_warning_text)
-                except ValueError:
-                    pass
+            if has_fuzzy_in_minor_warnings:
+                self.minor_warnings = [(wt, msg) for wt, msg in self.minor_warnings if
+                                       wt != WarningType.FUZZY_TRANSLATION]
         self.ui_style_cache = {}
+
         # 1. 最高优先级：严重警告
         if self.warnings and not self.is_warning_ignored:
-            if not self.is_ignored:
-                self.ui_style_cache['background'] = QColor("#FFDDDD")
-                self.ui_style_cache['foreground'] = QColor("red")
-            else: # 警告但忽略
-                self.ui_style_cache['background'] = QColor(220, 220, 220, 200)
-                self.ui_style_cache['foreground'] = QColor(255, 0, 0, 150) # 透明红色
+            if self.is_ignored:  # 警告但被用户忽略
+                self.ui_style_cache['background'] = QColor(220, 220, 220, 200)  # 浅灰色背景
+                self.ui_style_cache['foreground'] = QColor(255, 0, 0, 150)  # 半透明红色文字
                 font = QFont()
                 font.setItalic(True)
                 self.ui_style_cache['font'] = font
+            else:
+                self.ui_style_cache['background'] = QColor("#FFDDDD")  # 浅红色背景
+                self.ui_style_cache['foreground'] = QColor("red")  # 红色文字
 
         # 2. 次高优先级：已忽略
         elif self.is_ignored:
-            self.ui_style_cache['background'] = QColor(220, 220, 220, 200)
-            self.ui_style_cache['foreground'] = QColor("#707070")
+            self.ui_style_cache['background'] = QColor(220, 220, 220, 200)  # 浅灰色背景
+            self.ui_style_cache['foreground'] = QColor("#707070")  # 深灰色文字
             font = QFont()
             font.setItalic(True)
             self.ui_style_cache['font'] = font
-
-        # 3. 已审阅
         elif self.is_reviewed:
             self.ui_style_cache['foreground'] = QColor("darkgreen")
 
-        # 4. 次级警告
+        # 4. 如果未审阅，再判断次级警告
         elif self.minor_warnings and not self.is_warning_ignored:
-            self.ui_style_cache['background'] = QColor("#FFFACD")
-        elif self.translation.strip():
-            self.ui_style_cache['foreground'] = QColor("darkblue")
-        else:
-            self.ui_style_cache['foreground'] = QColor("darkred")
+            self.ui_style_cache['background'] = QColor("#FFFACD")  # 浅黄色背景
 
+        # 5. 普通翻译状态
+        elif self.translation.strip():
+            self.ui_style_cache['foreground'] = QColor("darkblue")  # 已翻译 - 深蓝色
+        else:  # 未翻译
+            self.ui_style_cache['foreground'] = QColor("darkred")  # 未翻译 - 暗红色
+
+        # 换行符颜色缓存
         original_has_newline = '\n' in self.original_semantic
         translation_has_newline = '\n' in self.translation
         if original_has_newline or translation_has_newline:
             if original_has_newline and translation_has_newline:
-                self.ui_style_cache['newline_color'] = QColor(34, 177, 76, 180)
+                self.ui_style_cache['newline_color'] = QColor(34, 177, 76, 180)  # Green
             else:
-                self.ui_style_cache['newline_color'] = QColor(237, 28, 36, 180)
+                self.ui_style_cache['newline_color'] = QColor(237, 28, 36, 180)  # Red

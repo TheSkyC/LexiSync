@@ -46,6 +46,7 @@ from dialogs.pot_drop_dialog import POTDropDialog
 from dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
 from dialogs.prompt_manager_dialog import PromptManagerDialog
 from dialogs.diff_dialog import DiffDialog
+from dialogs.statistics_dialog import StatisticsDialog
 
 from services import export_service, po_file_service
 from services.ai_translator import AITranslator
@@ -442,6 +443,13 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_reload_translatable_text.triggered.connect(self.reload_translatable_text)
         self.action_reload_translatable_text.setEnabled(False)
         self.tools_menu.addAction(self.action_reload_translatable_text)
+        self.tools_menu.addSeparator()
+
+        self.action_show_statistics = QAction(_("Project Statistics..."), self)
+        self.action_show_statistics.triggered.connect(self.show_statistics_dialog)
+        self.action_show_statistics.setEnabled(False)
+        self.tools_menu.addAction(self.action_show_statistics)
+
 
         # Settings Menu
         self.action_auto_backup_tm = QAction(_("Auto-backup TM on Save"), self, checkable=True)
@@ -554,6 +562,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_ai_settings.setText(_("AI Settings..."))
         self.action_extraction_rule_manager.setText(_("Extraction Rule Manager..."))
         self.action_reload_translatable_text.setText(_("Reload Translatable Text"))
+        self.action_show_statistics.setText(_("Project Statistics..."))
 
         #Settings Menu
         self.action_auto_backup_tm.setText(_("Auto-backup TM on Save"))
@@ -1031,6 +1040,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_project_instructions.setEnabled(self.current_project_file_path is not None)
         self.action_reload_translatable_text.setEnabled(
             bool(self.original_raw_code_content or self.current_code_file_path))
+        self.action_show_statistics.setEnabled(has_content)
 
         self.update_ai_related_ui_state()
         self.update_title()
@@ -1751,9 +1761,11 @@ class OverwatchLocalizerApp(QMainWindow):
         )
         warning_message = ""
         if ts_obj.warnings and not ts_obj.is_warning_ignored:
-            warning_message = "⚠️ " + " | ".join(ts_obj.warnings)
+            messages = [msg for wt, msg in ts_obj.warnings]
+            warning_message = "⚠️ " + " | ".join(messages)
         elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
-            warning_message = "💡 " + " | ".join(ts_obj.minor_warnings)
+            messages = [msg for wt, msg in ts_obj.minor_warnings]
+            warning_message = "💡 " + " | ".join(messages)
         self.update_statusbar(warning_message if warning_message else status_message, persistent=True)
 
 
@@ -2802,6 +2814,18 @@ class OverwatchLocalizerApp(QMainWindow):
                                  _("Error reloading translatable text: {error}").format(error=e))
             self.update_statusbar(_("Reload failed."), persistent=True)
         self.update_counts_display()
+
+    def show_statistics_dialog(self):
+        if not self.translatable_objects:
+            QMessageBox.information(self, _("Statistics"), _("No project data loaded to generate statistics."))
+            return
+        dialog = StatisticsDialog(self, self.translatable_objects)
+        dialog.locate_item_signal.connect(self.select_sheet_row_by_id_and_scroll)
+        dialog.show()
+
+    def select_sheet_row_by_id_and_scroll(self, ts_id):
+        self.select_sheet_row_by_id(ts_id, see=True)
+        self.activateWindow()
 
     def _get_default_tm_excel_path(self):
         return os.path.join(os.getcwd(), TM_FILE_EXCEL)
