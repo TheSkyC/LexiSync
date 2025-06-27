@@ -190,7 +190,12 @@ jobs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        Compress-Archive -Path dist/${{ env.APP_NAME }} -DestinationPath ${{ env.APP_NAME }}-${{ matrix.asset_suffix }} -Force
+        $sourceDir = "dist/${{ env.APP_NAME }}"
+        $destinationZip = "${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
+        if (Test-Path $destinationZip) {
+         Remove-Item $destinationZip
+         }
+        Compress-Archive -Path (Get-ChildItem -Path $sourceDir) -DestinationPath $destinationZip
     - name: Prepare Artifacts (Linux)
       if: runner.os == 'Linux'
       shell: bash
