@@ -47,7 +47,6 @@ jobs:
         else
           echo "python_arch_for_macos=x64" >> $GITHUB_OUTPUT
         fi
-
     - name: Set up Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v5
       with:
@@ -65,37 +64,26 @@ jobs:
           echo "requirements.txt not found, installing default dependencies."
           pip install PySide6 PySide6-Charts openpyxl polib requests
         fi
-
     - name: Install UPX (Linux)
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y upx-ucl
 
-    - name: Compress with UPX (Windows)
+    - name: Install UPX (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $distDir = "dist/${{ env.APP_NAME }}"
-        $upxPath = $env:UPX_PATH
-
-        if (-not $upxPath -or -not (Test-Path $upxPath)) {
-          Write-Host "Error: UPX path not found or invalid: $upxPath"
-          exit 1
-        }
-
-        Write-Host "UPX Path: $upxPath"
-        Write-Host "Compressing files in $distDir..."
-
-        $filesToCompress = Get-ChildItem -Path $distDir -Recurse -Include *.exe, *.dll, *.pyd
-
-        foreach ($file in $filesToCompress) {
-          Write-Host "Compressing $($file.Name)..."
-          & $upxPath --best --lzma --force $file.FullName
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Warning: Failed to compress $($file.Name). UPX exited with code $LASTEXITCODE."
-          }
-        }
-        Write-Host "UPX compression finished for Windows."
-
+        Write-Host "Installing UPX for Windows..."
+        $upxVersion = "4.2.4"
+        $upxUrl = "https://github.com/upx/upx/releases/download/v$upxVersion/upx-$upxVersion-win64.zip"
+        $upxZip = "upx.zip"
+        $upxDir = "upx-$upxVersion-win64"
+        
+        Invoke-WebRequest -Uri $upxUrl -OutFile $upxZip
+        Expand-Archive -Path $upxZip -DestinationPath . -Force
+        
+        $upxPath = Join-Path $PWD "$upxDir\upx.exe"
+        Write-Host "UPX installed at: $upxPath"
+        echo "UPX_PATH=$upxPath" >> $env:GITHUB_ENV
     - name: Install UPX (macOS)
       if: runner.os == 'macOS'
       run: brew install upx
@@ -148,7 +136,6 @@ jobs:
           --exclude-module Qt6DataVisualization \
           --exclude-module Qt6Multimedia \
           main.py
-
     - name: Compress with UPX (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
@@ -185,8 +172,6 @@ jobs:
           }
         }
         Write-Host "UPX compression finished for Windows."
-
-
     - name: Compress with UPX (Linux)
       if: runner.os == 'Linux'
       shell: bash
@@ -200,7 +185,6 @@ jobs:
         
         find "$DIST_DIR" -type f -name "*.so" -exec sh -c 'upx --best --lzma "$1" || echo "Warning: Failed to compress $1"' _ {} \;
         echo "UPX compression finished for Linux."
-
     - name: Compress with UPX (macOS)
       if: runner.os == 'macOS'
       shell: bash
@@ -212,19 +196,16 @@ jobs:
           upx --best --lzma --force-macos "$DIST_DIR/${{ env.APP_NAME }}" || echo "Warning: Failed to compress main executable"
         fi
         echo "UPX compression finished for macOS."
-
     - name: Prepare Artifacts (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
         Compress-Archive -Path dist/${{ env.APP_NAME }} -DestinationPath ${{ env.APP_NAME }}-${{ matrix.asset_suffix }} -Force
-
     - name: Prepare Artifacts (Linux)
       if: runner.os == 'Linux'
       shell: bash
       run: |
         tar -czvf ${{ env.APP_NAME }}-${{ matrix.asset_suffix }} -C dist/ ${{ env.APP_NAME }}
-
     - name: Prepare Artifacts (macOS)
       if: runner.os == 'macOS'
       shell: bash
@@ -238,7 +219,6 @@ jobs:
           echo "Error: .app bundle not found in dist/ for macOS."
           exit 1
         fi
-
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
