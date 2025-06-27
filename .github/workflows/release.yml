@@ -193,9 +193,11 @@ jobs:
         $sourceDir = "dist/${{ env.APP_NAME }}"
         $destinationZip = "${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
         if (Test-Path $destinationZip) {
-         Remove-Item $destinationZip
-         }
-        Compress-Archive -Path (Get-ChildItem -Path $sourceDir) -DestinationPath $destinationZip
+          Remove-Item $destinationZip
+        }
+        Push-Location $sourceDir
+        Compress-Archive -Path * -DestinationPath "../../$destinationZip"
+        Pop-Location
     - name: Prepare Artifacts (Linux)
       if: runner.os == 'Linux'
       shell: bash
