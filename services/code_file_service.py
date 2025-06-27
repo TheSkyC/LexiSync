@@ -153,14 +153,14 @@ def save_translated_code(filepath_to_save, original_raw_code_content, translatab
         backup_path = filepath_to_save + ".bak." + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         try:
             shutil.copy2(filepath_to_save, backup_path)
-            app_instance.update_statusbar(_("已创建备份: {filename}").format(filename=os.path.basename(backup_path)))
+            app_instance.update_statusbar(_("Backup created: {filename}").format(filename=os.path.basename(backup_path)))
         except Exception as e_backup:
             from PySide6.QtWidgets import QMessageBox
-            if app_instance and app_instance.isVisible(): # Check if app is still running
-                QMessageBox.warning(app_instance, _("备份失败"),
-                                       _("无法创建代码文件备份 '{filename}': {error}").format(filename=os.path.basename(backup_path), error=e_backup))
+            if app_instance and app_instance.isVisible():
+                QMessageBox.warning(app_instance, _("Backup Failed"),
+                                       _("Could not create code file backup '{filename}': {error}").format(filename=os.path.basename(backup_path), error=e_backup))
             else:
-                print(f"备份失败: {e_backup}")
+                print(f"Backup Failed: {e_backup}")
 
     with open(filepath_to_save, 'w', encoding='utf-8') as f:
         f.write(final_content)

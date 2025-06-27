@@ -360,7 +360,7 @@ class StatisticsDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(10)
 
-        self.refresh_button = QPushButton(_("🔄 Refresh Data"))
+        self.refresh_button = QPushButton(_("Refresh Data"))
         self.refresh_button.clicked.connect(self.start_calculation)
         self.refresh_button.setStyleSheet("""
             QPushButton {
@@ -615,7 +615,7 @@ class StatisticsDialog(QDialog):
         total_issues = sum(len(ts_obj_list) for ts_obj_list in warnings_by_type.values())
 
         if total_issues == 0:
-            no_issues_item = QStandardItem(_("✅ No issues found"))
+            no_issues_item = QStandardItem(_("No issues found"))
             no_issues_item.setEditable(False)
             no_issues_item.setForeground(QColor("#4CAF50"))
             font = QFont("Segoe UI", 11, QFont.Weight.Bold)
