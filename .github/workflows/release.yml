@@ -138,40 +138,33 @@ jobs:
           main.py
     - name: Compress with UPX (Windows)
       if: runner.os == 'Windows'
+      continue-on-error: true
       shell: pwsh
       run: |
         $distDir = "dist/${{ env.APP_NAME }}"
-        $upxPath = $env:UPX_PATH
+        $upxPath = "${{ steps.upx_windows.outputs.upx_path }}"
         
         if (-not $upxPath -or -not (Test-Path $upxPath)) {
-          Write-Host "Error: UPX path not found or invalid: $upxPath"
+          Write-Host "##[error]UPX path not found or invalid: $upxPath"
           exit 1
         }
         
         Write-Host "UPX Path: $upxPath"
         Write-Host "Compressing files in $distDir..."
         
-        if (Test-Path "$distDir/${{ env.APP_NAME }}.exe") {
-          Write-Host "Compressing main executable..."
-          & $upxPath --best --lzma --force "$distDir/${{ env.APP_NAME }}.exe"
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Warning: Failed to compress main executable with UPX, skipping..."
-            $LASTEXITCODE = 0
-          }
+        $exePath = "$distDir/${{ env.APP_NAME }}.exe"
+        if (Test-Path $exePath) {
+          Write-Host "Compressing: ${{ env.APP_NAME }}.exe"
+          & $upxPath --best --lzma $exePath -ErrorAction SilentlyContinue
         }
         
-        Get-ChildItem -Path $distDir -Recurse -Include *.dll, *.pyd | ForEach-Object {
-          Write-Host "Compressing $($_.Name)..."
-          try {
-            & $upxPath --best --lzma $_.FullName
-            if ($LASTEXITCODE -ne 0) {
-              Write-Host "Warning: Failed to compress $($_.Name)"
-            }
-          } catch {
-            Write-Host "Warning: Exception while compressing $($_.Name): $($_.Exception.Message)"
-          }
+        $filesToCompress = Get-ChildItem -Path $distDir -Recurse -Include *.dll, *.pyd
+        foreach ($file in $filesToCompress) {
+          Write-Host "Compressing $($file.Name)..."
+          & $upxPath --best --lzma $file.FullName -ErrorAction SilentlyContinue
         }
-        Write-Host "UPX compression finished for Windows."
+        
+        Write-Host "UPX compression finished for Windows (some files may have been skipped)."
     - name: Compress with UPX (Linux)
       if: runner.os == 'Linux'
       shell: bash
