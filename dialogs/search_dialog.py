@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QCheckBox, QWidget, QMessageBox, QGroupBox, QAbstractItemView, QApplication
 )
-from PySide6.QtCore import Qt, QItemSelectionModel, QModelIndex, QTimer
+from PySide6.QtCore import Qt, QItemSelectionModel, QModelIndex, QTimer, QEvent
 import re
 from utils.localization import _
 
@@ -21,9 +21,6 @@ class AdvancedSearchDialog(QDialog):
         self.current_result_index = -1
         self.last_search_options = {}
 
-        self._find_debounce_timer = QTimer(self)
-        self._find_debounce_timer.setSingleShot(True)
-        self._is_finding = False
         self.setup_ui()
         self.load_last_search_settings()
         self.paste_from_clipboard_if_needed()
@@ -39,7 +36,6 @@ class AdvancedSearchDialog(QDialog):
         self.search_term_entry.returnPressed.connect(self._find_next)
         find_layout.addWidget(self.search_term_entry)
         main_layout.addLayout(find_layout)
-
         # 替换为
         replace_layout = QHBoxLayout()
         replace_layout.addWidget(QLabel(_("Replace with:")))
@@ -91,6 +87,7 @@ class AdvancedSearchDialog(QDialog):
         close_btn.clicked.connect(self.close)
         button_box.addWidget(close_btn)
         main_layout.addLayout(button_box)
+        self.search_term_entry.installEventFilter(self)
 
         # 初始化复选框状态
         self.search_in_original_checkbox.setChecked(True)
@@ -215,22 +212,49 @@ class AdvancedSearchDialog(QDialog):
             _("Match {current}/{total}").format(current=self.current_result_index + 1, total=len(self.search_results))
         )
 
-    def _find_next(self):
-        if self._is_finding:
-            return
-        self._is_finding = True
-        self._find_debounce_timer.start(10)
-        self._find_debounce_timer.timeout.connect(lambda: setattr(self, '_is_finding', False))
-        if not self._perform_search(): return
-        if not self.search_results: return
+    def eventFilter(self, obj, event):
+        if obj is self.search_term_entry and event.type() == QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+                self._find_next()
+                return True
+        return super().eventFilter(obj, event)
 
+    def _find_next(self):
+        is_new_search = self.last_search_options != self._get_current_search_options()
+        if is_new_search:
+            if not self._perform_search(): return
+            self.current_result_index = -1
+
+        if not self.search_results: return
+        if self.current_result_index == -1:
+            current_selection = self.app.table_view.selectionModel().currentIndex()
+            start_row = current_selection.row() if current_selection.isValid() else -1
+            for i, res in enumerate(self.search_results):
+                if res["proxy_row"] >= start_row:
+                    self.current_result_index = i - 1
+                    break
+            else:
+                self.current_result_index = len(self.search_results) - 1
         self.current_result_index = (self.current_result_index + 1) % len(self.search_results)
         self._navigate_to_result()
 
     def _find_prev(self):
-        if not self._perform_search(): return
-        if not self.search_results: return
+        is_new_search = self.last_search_options != self._get_current_search_options()
+        if is_new_search:
+            if not self._perform_search(): return
+            self.current_result_index = -1
 
+        if not self.search_results: return
+        if self.current_result_index == -1:
+            current_selection = self.app.table_view.selectionModel().currentIndex()
+            start_row = current_selection.row() if current_selection.isValid() else -1
+            for i in range(len(self.search_results) - 1, -1, -1):
+                res = self.search_results[i]
+                if res["proxy_row"] <= start_row:
+                    self.current_result_index = i + 1
+                    break
+            else:
+                self.current_result_index = 0
         self.current_result_index = (self.current_result_index - 1 + len(self.search_results)) % len(
             self.search_results)
         self._navigate_to_result()
