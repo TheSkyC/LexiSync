@@ -1,9 +1,9 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QStyledItemDelegate
+from PySide6.QtWidgets import QStyledItemDelegate, QStyleOptionViewItem
 from PySide6.QtGui import QPainter, QColor, QPen, QFont
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QModelIndex
 from models.translatable_strings_model import NewlineColorRole
 
 
@@ -14,81 +14,73 @@ class CustomCellDelegate(QStyledItemDelegate):
 
         self.selection_border_pen = QPen(QColor(51, 153, 255, 145), 1)
         self.focus_border_pen = QPen(QColor(255, 0, 0, 200), 1)
+        search_pen = QPen(QColor(255, 165, 0), 1)
+        search_pen.setStyle(Qt.PenStyle.DotLine)
+        self.search_highlight_pen = search_pen
 
         self.newline_symbol = "↵"
 
-    def paint(self, painter, option, index):
-        original_text = index.data(Qt.DisplayRole)
-        display_option = option
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
+        display_option = QStyleOptionViewItem(option)
         if index.column() == 1:
             display_option.displayAlignment = Qt.AlignCenter
-        if index.column() in [2, 3] and original_text and '\n' in original_text:
-            display_option.text = original_text.replace('\n', '↵')
+        original_text = index.data(Qt.DisplayRole)
+        text_to_draw = str(original_text) if original_text is not None else ""
+        if index.column() in [2, 3] and '\n' in text_to_draw:
+            text_to_draw = text_to_draw.replace('\n', '↵')
+        display_option.text = text_to_draw
+        painter.save()
+        current_proxy_index_tuple = (index.row(), index.column())
+        is_find_match = current_proxy_index_tuple in self.app.find_highlight_indices
+        is_current_find_focus = current_proxy_index_tuple == self.app.current_find_highlight_index
 
-        background_color = index.data(Qt.BackgroundRole)
-        if background_color and isinstance(background_color, QColor):
-            painter.fillRect(option.rect, background_color)
-
+        if is_current_find_focus:
+            painter.fillRect(display_option.rect, QColor(144, 238, 144, 100))
+        elif is_find_match:
+            painter.fillRect(display_option.rect, QColor(147, 112, 219, 150))
+        else:
+            background_color = index.data(Qt.BackgroundRole)
+            if background_color and isinstance(background_color, QColor):
+                painter.fillRect(display_option.rect, background_color)
+        painter.restore()
         super().paint(painter, display_option, index)
-
-        source_index = index.model().mapToSource(index)
-        is_search_result = (source_index.row(), source_index.column()) in index.model().search_results_indices
-
-        if is_search_result:
-            painter.fillRect(option.rect, QColor(147, 112, 219, 70))  # 半透明紫色
-
+        painter.save()
         ts_obj = index.data(Qt.UserRole)
-        if not ts_obj: return
+        if ts_obj:
+            is_selected = display_option.state & self.parent().style().StateFlag.State_Selected
+            is_focused = (self.app and ts_obj.id == self.app.current_focused_ts_id)
 
-        is_selected = option.state & self.parent().style().StateFlag.State_Selected
-        is_focused = (self.app and ts_obj.id == self.app.current_focused_ts_id)
-        if is_selected or is_focused or is_search_result:
-            painter.save()
-
+            pen_to_use = None
             if is_focused:
-                pen = self.focus_border_pen
+                pen_to_use = self.focus_border_pen
             elif is_selected:
-                pen = self.selection_border_pen
-            else:
-                search_pen = QPen(QColor(255, 165, 0), 1)
-                search_pen.setStyle(Qt.PenStyle.DotLine)
-                pen = search_pen
+                pen_to_use = self.selection_border_pen
+            elif is_find_match:
+                pen_to_use = self.search_highlight_pen
 
-
-            painter.setPen(pen)
-            rect = option.rect
-
-            painter.drawLine(rect.topLeft(), rect.topRight())
-            painter.drawLine(rect.bottomLeft().x(), rect.bottomLeft().y() - 1, rect.bottomRight().x(),
-                             rect.bottomRight().y() - 1)
-
-            if index.column() == 0:
-                painter.drawLine(rect.topLeft().x(), rect.topLeft().y(), rect.bottomLeft().x(),
-                                 rect.bottomLeft().y() - 1)
-
-            if index.column() == index.model().columnCount() - 1:
-                painter.drawLine(rect.topRight().x(), rect.topRight().y(), rect.bottomRight().x(),
+            if pen_to_use:
+                painter.setPen(pen_to_use)
+                rect = display_option.rect
+                painter.drawLine(rect.topLeft(), rect.topRight())
+                painter.drawLine(rect.bottomLeft().x(), rect.bottomLeft().y() - 1, rect.bottomRight().x(),
                                  rect.bottomRight().y() - 1)
-
-            painter.restore()
-
-        current_col = index.column()
-        if current_col in [2, 3]:
+                if index.column() == 0:
+                    painter.drawLine(rect.topLeft().x(), rect.topLeft().y(), rect.bottomLeft().x(),
+                                     rect.bottomLeft().y() - 1)
+                if index.column() == index.model().columnCount() - 1:
+                    painter.drawLine(rect.topRight().x(), rect.topRight().y(), rect.bottomRight().x(),
+                                     rect.bottomRight().y() - 1)
+        if index.column() in [2, 3]:
             symbol_color = index.data(NewlineColorRole)
             if symbol_color and isinstance(symbol_color, QColor):
-                painter.save()
-
-                symbol_font = QFont(option.font)
-                symbol_font.setPointSize(int(option.font.pointSize() * 0.9))
+                symbol_font = QFont(display_option.font)
+                symbol_font.setPointSize(int(display_option.font.pointSize() * 0.9))
                 painter.setFont(symbol_font)
                 painter.setPen(symbol_color)
-
                 font_metrics = painter.fontMetrics()
                 symbol_width = font_metrics.horizontalAdvance(self.newline_symbol)
-
-                x = option.rect.right() - symbol_width - 3
-                y = option.rect.bottom() - font_metrics.descent() - 2
-
+                x = display_option.rect.right() - symbol_width - 3
+                y = display_option.rect.bottom() - font_metrics.descent() - 2
                 painter.drawText(x, y, self.newline_symbol)
 
-                painter.restore()
+        painter.restore()

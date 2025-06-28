@@ -175,7 +175,8 @@ class OverwatchLocalizerApp(QMainWindow):
             "in_translation": True,
             "in_comment": True
         }
-
+        self.find_highlight_indices = set()
+        self.current_find_highlight_index = None
         self.ai_translator = AITranslator(
             api_key=self.config.get("ai_api_key"),
             model_name=self.config.get("ai_model_name", "deepseek-chat"),

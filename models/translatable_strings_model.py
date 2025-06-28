@@ -115,42 +115,8 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         self._current_filter_seen_originals = set()
         self.new_entry_id = "##NEW_ENTRY##"
 
-    def set_search_term(self, term, case_sensitive=False, search_in_original=True, search_in_translation=True,
-                        search_in_comment=True):
-        """
-        :param term: 搜索词
-        :param case_sensitive: 是否区分大小写
-        :param search_in_original: 是否搜索原文
-        :param search_in_translation: 是否搜索译文
-        :param search_in_comment: 是否搜索注释
-        """
-        self.search_term = term if case_sensitive else term.lower()
-        self.search_results_indices.clear()
-
-        if self.search_term:
-            columns_to_search = []
-            if search_in_original: columns_to_search.append(2)
-            if search_in_translation: columns_to_search.append(3)
-            if search_in_comment: columns_to_search.append(4)
-
-            if not columns_to_search:
-                self.layoutChanged.emit()
-                return
-
-            for row in range(self.sourceModel().rowCount()):
-                for col in columns_to_search:
-                    index = self.sourceModel().index(row, col)
-                    text = self.sourceModel().data(index, Qt.DisplayRole)
-                    if text:
-                        text_to_check = str(text) if case_sensitive else str(text).lower()
-                        if self.search_term in text_to_check:
-                            self.search_results_indices.add((row, col))
-
-        self.layoutChanged.emit()
-
     def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term,
                     is_po_mode):
-        # self.deduplicate = deduplicate
         self.show_ignored = show_ignored
         self.show_untranslated = show_untranslated
         self.show_translated = show_translated
