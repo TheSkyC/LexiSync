@@ -156,13 +156,7 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
             if right_obj.id == self.new_entry_id: return True
         column = self.sortColumn()
         if column == 0:
-            left_is_warning = bool(left_obj.warnings and not left_obj.is_warning_ignored)
-            right_is_warning = bool(right_obj.warnings and not right_obj.is_warning_ignored)
-            left_weight = 0 if left_is_warning else 1
-            right_weight = 0 if right_is_warning else 1
-            if left_weight != right_weight:
-                return left_weight < right_weight
-            return left_obj.line_num_in_file < right_obj.line_num_in_file
+            return left_index.row() < right_index.row()
         elif column == 1 or column == 5:
             def get_status_weight(ts_obj):
                 if ts_obj.is_ignored: return 5
