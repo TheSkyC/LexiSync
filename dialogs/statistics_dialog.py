@@ -30,15 +30,24 @@ class StatisticsCalculationThread(QThread):
             self.calculation_finished.emit({})
             return
 
-        self.progress_updated.emit(10, _("Calculating core metrics..."))
-        self._initialize_statistics(total_items)
-        time.sleep(0.1)
+        # --- 核心修改点: 重新分配进度权重 ---
 
+        # 阶段1: 初始化 (分配 5% 的进度)
+        self.progress_updated.emit(2, _("Initializing..."))
+        self._initialize_statistics(total_items)
+        time.sleep(0.05)  # 短暂休眠让UI有机会刷新
+        self.progress_updated.emit(5, _("Initialization complete."))
+
+        # 阶段2: 核心处理 (分配 90% 的进度)
         self._process_translatable_objects(total_items)
 
-        time.sleep(0.1)
-        self.progress_updated.emit(90, _("Finalizing..."))
-        time.sleep(0.1)
+        # 阶段3: 完成 (分配 5% 的进度)
+        time.sleep(0.05)
+        self.progress_updated.emit(98, _("Finalizing..."))
+        time.sleep(0.05)
+        self.progress_updated.emit(100, _("Calculation finished."))
+
+        # 最后才发射完成信号
         self.calculation_finished.emit(self.statistics)
 
     def _initialize_statistics(self, total_items):
@@ -51,32 +60,45 @@ class StatisticsCalculationThread(QThread):
             'warning_count': 0,
             'minor_warning_count': 0,
             'warnings_by_type': {wt: [] for wt in WarningType},
-            'source_char_count': 0,
-            'translation_char_count': 0
+            'source_char_count_for_expansion': 0,
+            'translation_char_count_for_expansion': 0
         }
 
     def _process_translatable_objects(self, total_items):
+        # 这个阶段的进度从 5% 开始，到 95% 结束，总共占据 90%
+        base_progress = 5
+        progress_range = 90
+
         for i, ts_obj in enumerate(self.translatable_objects):
-            if (i + 1) % (total_items // 20 or 1) == 0:
-                progress = int(10 + 70 * (i / total_items))
+            # --- 核心修改点: 更平滑的进度计算 ---
+            # 每处理一定数量的条目就更新一次进度，而不是按百分比
+            update_interval = max(1, total_items // 100)  # 大约更新100次
+            if (i + 1) % update_interval == 0 or (i + 1) == total_items:
+                # 计算当前在 90% 范围内的进度
+                current_progress_in_range = progress_range * ((i + 1) / total_items)
+                # 加上基础进度
+                total_progress = int(base_progress + current_progress_in_range)
+
                 status = _("Processing item {i}/{total}...").format(i=i + 1, total=total_items)
-                self.progress_updated.emit(progress, status)
+                self.progress_updated.emit(total_progress, status)
 
             self._process_single_object(ts_obj)
 
     def _process_single_object(self, ts_obj):
+        is_translated = False
         if ts_obj.is_ignored:
             self.statistics['ignored_count'] += 1
         elif ts_obj.translation.strip():
             self.statistics['translated_count'] += 1
             if ts_obj.is_reviewed:
                 self.statistics['reviewed_count'] += 1
+            is_translated = True
         else:
             self.statistics['untranslated_count'] += 1
-
+        if is_translated:
+            self.statistics['source_char_count_for_expansion'] += len(ts_obj.original_semantic)
+            self.statistics['translation_char_count_for_expansion'] += len(ts_obj.translation)
         self._process_warnings(ts_obj)
-        self.statistics['source_char_count'] += len(ts_obj.original_semantic)
-        self.statistics['translation_char_count'] += len(ts_obj.translation)
 
     def _process_warnings(self, ts_obj):
         has_major_warning = ts_obj.warnings and not ts_obj.is_warning_ignored
@@ -389,7 +411,8 @@ class StatisticsDialog(QDialog):
     def start_calculation(self):
         self.refresh_button.setEnabled(False)
         self.progress_bar.setVisible(True)
-        self.progress_bar.set_animated_value(0)
+        self.progress_bar.animation.stop()
+        self.progress_bar.setValue(0)
 
         self.clear_metrics_display()
         if hasattr(self, 'issues_model'):
@@ -541,12 +564,12 @@ class StatisticsDialog(QDialog):
         self.add_separator_line()
 
         # Character counts
-        source_chars = stats_data.get('source_char_count', 0)
-        translation_chars = stats_data.get('translation_char_count', 0)
-        self.add_simple_metric(_("Source Characters"), f"{source_chars:,}")
-        self.add_simple_metric(_("Translation Characters"), f"{translation_chars:,}")
+        source_chars = stats_data.get('source_char_count_for_expansion', 0)
+        translation_chars = stats_data.get('translation_char_count_for_expansion', 0)
 
-        # Expansion ratio
+        self.add_simple_metric(_("Source Chars (Translated only)"), f"{source_chars:,}")
+        self.add_simple_metric(_("Translation Chars (Translated only)"), f"{translation_chars:,}")
+
         if source_chars > 0:
             expansion_ratio = translation_chars / source_chars
             self.add_simple_metric(_("Expansion Ratio"), f"{expansion_ratio:.2f}x")
