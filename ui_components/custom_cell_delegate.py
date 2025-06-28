@@ -22,28 +22,29 @@ class CustomCellDelegate(QStyledItemDelegate):
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
         display_option = QStyleOptionViewItem(option)
-        if index.column() == 1:
-            display_option.displayAlignment = Qt.AlignCenter
         original_text = index.data(Qt.DisplayRole)
         text_to_draw = str(original_text) if original_text is not None else ""
         if index.column() in [2, 3] and '\n' in text_to_draw:
             text_to_draw = text_to_draw.replace('\n', '↵')
         display_option.text = text_to_draw
+        if index.column() == 1:
+            display_option.displayAlignment = Qt.AlignCenter
+        background_color = index.data(Qt.BackgroundRole)
+        if background_color and isinstance(background_color, QColor):
+            painter.save()
+            painter.fillRect(display_option.rect, background_color)
+            painter.restore()
+        super().paint(painter, display_option, index)
         painter.save()
         current_proxy_index_tuple = (index.row(), index.column())
         is_find_match = current_proxy_index_tuple in self.app.find_highlight_indices
         is_current_find_focus = current_proxy_index_tuple == self.app.current_find_highlight_index
 
         if is_current_find_focus:
-            painter.fillRect(display_option.rect, QColor(144, 238, 144, 100))
+            painter.fillRect(display_option.rect, QColor(144, 238, 144, 150))
         elif is_find_match:
-            painter.fillRect(display_option.rect, QColor(147, 112, 219, 150))
-        else:
-            background_color = index.data(Qt.BackgroundRole)
-            if background_color and isinstance(background_color, QColor):
-                painter.fillRect(display_option.rect, background_color)
+            painter.fillRect(display_option.rect, QColor(147, 112, 219, 110))
         painter.restore()
-        super().paint(painter, display_option, index)
         painter.save()
         ts_obj = index.data(Qt.UserRole)
         if ts_obj:
@@ -82,5 +83,4 @@ class CustomCellDelegate(QStyledItemDelegate):
                 x = display_option.rect.right() - symbol_width - 3
                 y = display_option.rect.bottom() - font_metrics.descent() - 2
                 painter.drawText(x, y, self.newline_symbol)
-
         painter.restore()
