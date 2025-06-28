@@ -21,6 +21,9 @@ class AdvancedSearchDialog(QDialog):
         self.current_result_index = -1
         self.last_search_options = {}
 
+        self._find_debounce_timer = QTimer(self)
+        self._find_debounce_timer.setSingleShot(True)
+        self._is_finding = False
         self.setup_ui()
         self.load_last_search_settings()
         self.paste_from_clipboard_if_needed()
@@ -213,6 +216,11 @@ class AdvancedSearchDialog(QDialog):
         )
 
     def _find_next(self):
+        if self._is_finding:
+            return
+        self._is_finding = True
+        self._find_debounce_timer.start(10)
+        self._find_debounce_timer.timeout.connect(lambda: setattr(self, '_is_finding', False))
         if not self._perform_search(): return
         if not self.search_results: return
 
