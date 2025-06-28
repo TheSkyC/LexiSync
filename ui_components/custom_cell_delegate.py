@@ -72,7 +72,11 @@ class CustomCellDelegate(QStyledItemDelegate):
                     painter.drawLine(rect.topRight().x(), rect.topRight().y(), rect.bottomRight().x(),
                                      rect.bottomRight().y() - 1)
         if index.column() in [2, 3]:
-            symbol_color = index.data(NewlineColorRole)
+            symbol_color = None
+            if index.column() == 2:  # 原文列
+                symbol_color = ts_obj.ui_style_cache.get('original_newline_color')
+            elif index.column() == 3:  # 译文列
+                symbol_color = ts_obj.ui_style_cache.get('translation_newline_color')
             if symbol_color and isinstance(symbol_color, QColor):
                 symbol_font = QFont(display_option.font)
                 symbol_font.setPointSize(int(display_option.font.pointSize() * 0.9))
@@ -83,4 +87,5 @@ class CustomCellDelegate(QStyledItemDelegate):
                 x = display_option.rect.right() - symbol_width - 3
                 y = display_option.rect.bottom() - font_metrics.descent() - 2
                 painter.drawText(x, y, self.newline_symbol)
+
         painter.restore()

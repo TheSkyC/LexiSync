@@ -172,11 +172,22 @@ class TranslatableString:
         else:  # 未翻译
             self.ui_style_cache['foreground'] = QColor("darkred")  # 未翻译 - 暗红色
 
-        # 换行符颜色缓存
         original_has_newline = '\n' in self.original_semantic
         translation_has_newline = '\n' in self.translation
-        if original_has_newline or translation_has_newline:
-            if original_has_newline and translation_has_newline:
-                self.ui_style_cache['newline_color'] = QColor(34, 177, 76, 180)  # Green
-            else:
-                self.ui_style_cache['newline_color'] = QColor(237, 28, 36, 180)  # Red
+
+        # 换行符
+        self.ui_style_cache.pop('original_newline_color', None)
+        self.ui_style_cache.pop('translation_newline_color', None)
+
+        if original_has_newline and translation_has_newline:
+            # 两者都有，都是绿色
+            green_color = QColor(34, 177, 76, 180)
+            self.ui_style_cache['original_newline_color'] = green_color
+            self.ui_style_cache['translation_newline_color'] = green_color
+        elif original_has_newline or translation_has_newline:
+            # 只有一个有，哪个有，哪个就是红色
+            red_color = QColor(237, 28, 36, 180)
+            if original_has_newline:
+                self.ui_style_cache['original_newline_color'] = red_color
+            if translation_has_newline:
+                self.ui_style_cache['translation_newline_color'] = red_color
