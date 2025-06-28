@@ -1884,28 +1884,19 @@ class OverwatchLocalizerApp(QMainWindow):
     def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual"):
         if new_translation_from_ui == ts_obj.translation:
             return False
-
         old_translation_for_undo = ts_obj.get_translation_for_storage_and_tm()
+        ids_to_update = {ts_obj.id}
+        all_changes_for_undo_list = []
         ts_obj.set_translation_internal(new_translation_from_ui)
         new_translation_for_tm_storage = ts_obj.get_translation_for_storage_and_tm()
-
         primary_change_data = {
-            'string_id': ts_obj.id,
-            'field': 'translation',
-            'old_value': old_translation_for_undo,
-            'new_value': new_translation_for_tm_storage
+            'string_id': ts_obj.id, 'field': 'translation',
+            'old_value': old_translation_for_undo, 'new_value': new_translation_for_tm_storage
         }
-
+        all_changes_for_undo_list.append(primary_change_data)
         if ts_obj.original_semantic not in self.translation_memory:
             if new_translation_from_ui.strip():
                 self.translation_memory[ts_obj.original_semantic] = new_translation_for_tm_storage
-        else:
-            pass
-
-        undo_action_type = 'single_change'
-        undo_data_payload = primary_change_data
-
-        all_changes_for_undo_list = [primary_change_data]
         for other_ts_obj in self.translatable_objects:
             if other_ts_obj.id != ts_obj.id and \
                     other_ts_obj.original_semantic == ts_obj.original_semantic and \
@@ -1913,21 +1904,27 @@ class OverwatchLocalizerApp(QMainWindow):
                 old_other_translation_for_undo = other_ts_obj.get_translation_for_storage_and_tm()
                 other_ts_obj.set_translation_internal(new_translation_from_ui)
                 all_changes_for_undo_list.append({
-                    'string_id': other_ts_obj.id,
-                    'field': 'translation',
-                    'old_value': old_other_translation_for_undo,
-                    'new_value': new_translation_for_tm_storage
+                    'string_id': other_ts_obj.id, 'field': 'translation',
+                    'old_value': old_other_translation_for_undo, 'new_value': new_translation_for_tm_storage
                 })
-        if len(all_changes_for_undo_list) > 1:
-            undo_action_type = 'bulk_change'
-            undo_data_payload = {'changes': all_changes_for_undo_list}
+                ids_to_update.add(other_ts_obj.id)
+        undo_action_type = 'bulk_change' if len(all_changes_for_undo_list) > 1 else 'single_change'
+        undo_data_payload = {'changes': all_changes_for_undo_list} if len(
+            all_changes_for_undo_list) > 1 else primary_change_data
 
         if source not in ["ai_batch_item"]:
             self.add_to_undo_history(undo_action_type, undo_data_payload)
-        else:
-            return primary_change_data
+        from services.validation_service import validate_string
+        for item_id in ids_to_update:
+            obj = self._find_ts_obj_by_id(item_id)
+            if obj:
+                validate_string(obj)
+                obj.update_style_cache()
+                source_index = self.sheet_model.index_from_id(obj.id)
+                if source_index.isValid():
+                    self.sheet_model.dataChanged.emit(source_index, source_index.siblingAtColumn(
+                        self.sheet_model.columnCount() - 1))
 
-        self._run_and_refresh_with_validation()
         self.update_statusbar(_("Translation applied: \"{original_semantic}...\"").format(
             original_semantic=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
 
@@ -2056,7 +2053,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.sheet_model.set_translatable_objects(self.translatable_objects)
 
         self.proxy_model.set_filters(
-            # deduplicate=self.deduplicate_checkbox.isChecked(),
             show_ignored=self.ignored_checkbox.isChecked(),
             show_untranslated=self.untranslated_checkbox.isChecked(),
             show_translated=self.translated_checkbox.isChecked(),
