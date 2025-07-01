@@ -202,7 +202,7 @@ class AISettingsDialog(QDialog):
             self.app_config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE), placeholders)
 
         success, message = temp_translator.test_connection(system_prompt=test_prompt)
-        self.app.thread_safe_handle_ai_result.emit("", "", message, False)
+        self.app.thread_signals.handle_ai_result.emit("", "", message, False)
         QTimer.singleShot(0, lambda: self._show_test_result(success, message))
 
 
