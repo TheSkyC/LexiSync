@@ -96,13 +96,16 @@ def load_from_po(filepath, original_code_content_for_context=None, original_file
 
     translatable_objects.sort(
         key=lambda x: (x.line_num_in_file if x.line_num_in_file > 0 else float('inf'), x.original_semantic))
-    return translatable_objects, po_file.metadata
+    po_lang = po_file.metadata.get('Language', None)
+    return translatable_objects, po_file.metadata, po_lang
 
 
-def save_to_po(filepath, translatable_objects, metadata=None, original_file_name="source_code"):
+def save_to_po(filepath, translatable_objects, metadata=None, original_file_name="source_code", app_instance=None):
     po_file = polib.POFile(wrapwidth=0)
     if metadata:
         po_file.metadata = metadata
+    if app_instance and app_instance.target_language:
+        po_file.metadata['Language'] = app_instance.target_language
     po_file.metadata['PO-Revision-Date'] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M%z")
     po_file.metadata['Content-Type'] = 'text/plain; charset=utf-8'
     po_file.metadata['Content-Transfer-Encoding'] = '8bit'

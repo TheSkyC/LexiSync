@@ -18,6 +18,18 @@ STRUCTURAL = "Structural Content"
 STATIC = "Static Instruction"
 DYNAMIC = "Dynamic Instruction"
 
+SUPPORTED_LANGUAGES = {
+    "English": "en",
+    "简体中文": "zh",
+    "日本語": "ja",
+    "한국어": "ko",
+    "Français": "fr",
+    "Deutsch": "de",
+    "Русский": "ru",
+    "Español": "es",
+    "Italiano": "it",
+}
+
 DEFAULT_PROMPT_STRUCTURE = [
     {
         "id": str(uuid.uuid4()), "type": STRUCTURAL, "enabled": True,

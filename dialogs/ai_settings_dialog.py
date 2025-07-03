@@ -14,19 +14,19 @@ from services.prompt_service import generate_prompt_from_structure
 from dialogs.prompt_manager_dialog import PromptManagerDialog
 
 class AISettingsDialog(QDialog):
-    def __init__(self, parent, title, app_config_ref, save_config_callback, ai_translator_ref, app_instance):
+    def __init__(self, parent, title, app_config_ref, save_config_callback, ai_translator_ref, app_instance, current_target_lang_name):
         super().__init__(parent)
         self.app_config = app_config_ref
         self.save_config_callback = save_config_callback
         self.ai_translator_instance = ai_translator_ref
         self.app = app_instance
+        self.current_target_lang_name = current_target_lang_name
 
         self.setWindowTitle(title)
         self.setModal(True)
 
         self.initial_api_key = self.app_config.get("ai_api_key", "")
         self.initial_api_base_url = self.app_config.get("ai_api_base_url", DEFAULT_API_URL)
-        self.initial_target_language = self.app_config.get("ai_target_language", _("Target Language"))
         self.initial_api_interval = self.app_config.get("ai_api_interval", 200)
         self.initial_model_name = self.app_config.get("ai_model_name", "deepseek-chat")
         self.initial_max_concurrent_requests = self.app_config.get("ai_max_concurrent_requests", 1)
@@ -69,7 +69,9 @@ class AISettingsDialog(QDialog):
 
         target_language_layout = QHBoxLayout()
         target_language_layout.addWidget(QLabel(_("Target Language:")))
-        self.target_language_entry = QLineEdit(self.initial_target_language)
+        self.target_language_entry = QLineEdit(self.current_target_lang_name)
+        self.target_language_entry.setReadOnly(True)
+        self.target_language_entry.setToolTip(_("Target language is set in 'Settings > Language Pair Settings...'"))
         target_language_layout.addWidget(self.target_language_entry)
         trans_layout.addLayout(target_language_layout)
 
@@ -217,7 +219,6 @@ class AISettingsDialog(QDialog):
     def accept(self):
         api_key = self.api_key_entry.text()
         api_base_url = self.api_base_url_entry.text().strip()
-        target_language = self.target_language_entry.text().strip()
         model_name = self.model_name_entry.text().strip()
         api_interval = self.api_interval_spinbox.value()
         use_context = self.use_context_check.isChecked()
@@ -226,10 +227,6 @@ class AISettingsDialog(QDialog):
         original_context_neighbors = self.original_context_neighbors_spinbox.value()
         max_concurrent_requests = self.max_concurrent_requests_spinbox.value()
 
-        if not target_language:
-            QMessageBox.critical(self, _("Error"), _("Target language cannot be empty."))
-            self.target_language_entry.setFocus()
-            return
         if not model_name:
             QMessageBox.critical(self, _("Error"), _("Model name cannot be empty."))
             self.model_name_entry.setFocus()
@@ -245,7 +242,6 @@ class AISettingsDialog(QDialog):
 
         self.app_config["ai_api_key"] = api_key
         self.app_config["ai_api_base_url"] = api_base_url if api_base_url else DEFAULT_API_URL
-        self.app_config["ai_target_language"] = target_language
         self.app_config["ai_model_name"] = model_name
         self.app_config["ai_api_interval"] = api_interval
         self.app_config["ai_use_translation_context"] = use_context
@@ -260,7 +256,6 @@ class AISettingsDialog(QDialog):
 
         changed = (api_key != self.initial_api_key or
                    api_base_url != self.initial_api_base_url or
-                   target_language != self.initial_target_language or
                    model_name != self.initial_model_name or
                    api_interval != self.initial_api_interval or
                    use_context != self.initial_use_context or

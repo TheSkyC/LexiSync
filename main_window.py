@@ -42,12 +42,14 @@ from dialogs.ai_settings_dialog import AISettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
 from dialogs.font_settings_dialog import FontSettingsDialog
 from dialogs.keybinding_dialog import KeybindingDialog
+from dialogs.language_pair_dialog import LanguagePairDialog
 from dialogs.pot_drop_dialog import POTDropDialog
 from dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
 from dialogs.prompt_manager_dialog import PromptManagerDialog
 from dialogs.diff_dialog import DiffDialog
 from dialogs.statistics_dialog import StatisticsDialog
 
+from services import language_service
 from services import export_service, po_file_service
 from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
@@ -197,6 +199,8 @@ class OverwatchLocalizerApp(QMainWindow):
 
         self.filter_actions = {}
         self.filter_checkboxes = {}
+        self.source_language = self.config.get("default_source_language", "en")
+        self.target_language = self.config.get("default_target_language", "zh")
         self.show_ignored_var = self.config.get("show_ignored", True)
         self.show_untranslated_var = self.config.get("show_untranslated", False)
         self.show_translated_var = self.config.get("show_translated", False)
@@ -459,6 +463,11 @@ class OverwatchLocalizerApp(QMainWindow):
             lambda: self.set_config_var('auto_backup_tm_on_save', self.action_auto_backup_tm.isChecked()))
         self.settings_menu.addAction(self.action_auto_backup_tm)
 
+        self.settings_menu.addSeparator()
+        self.action_language_pair_settings = QAction(_("Language Pair Settings..."), self)
+        self.action_language_pair_settings.triggered.connect(self.show_language_pair_dialog)
+        self.settings_menu.addAction(self.action_language_pair_settings)
+
         self.language_menu = self.settings_menu.addMenu(_("Language"))
         self.language_action_group = QActionGroup(self)
         self.language_action_group.setExclusive(True)
@@ -674,6 +683,20 @@ class OverwatchLocalizerApp(QMainWindow):
 
             self.ACTION_MAP_FOR_DIALOG[name] = action
 
+    def show_language_pair_dialog(self):
+        dialog = LanguagePairDialog(self, self.source_language, self.target_language)
+        if dialog.exec():
+            if (self.source_language != dialog.source_lang or
+                    self.target_language != dialog.target_lang):
+                self.source_language = dialog.source_lang
+                self.target_language = dialog.target_lang
+                self.config["default_source_language"] = self.source_language
+                self.config["default_target_language"] = self.target_language
+                self.save_config()
+                if self.translatable_objects:
+                    self.mark_project_modified()
+
+                self.update_statusbar(f"语言对已更新为: {self.source_language} -> {self.target_language}")
 
     def show_keybinding_dialog(self):
         dialog = KeybindingDialog(self, _("Keybinding Settings"), self)
@@ -1425,8 +1448,11 @@ class OverwatchLocalizerApp(QMainWindow):
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
             self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
                                                                      extraction_patterns)
+            detected_lang = language_service.detect_source_language([ts.original_semantic for ts in self.translatable_objects])
+            self.source_language = detected_lang
+            self.target_language = self.config.get("default_target_language", "zh")
+            self.update_statusbar(f"已加载 {len(self.translatable_objects)} 项，检测到源语言: {self.source_language}")
             self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
-
             self.undo_history.clear()
             self.redo_history.clear()
             self.current_selected_ts_id = None
@@ -1470,6 +1496,8 @@ class OverwatchLocalizerApp(QMainWindow):
             self.current_code_file_path = loaded_data["original_code_file_path"]
             self.original_raw_code_content = loaded_data["original_raw_code_content"]
             self.translatable_objects = loaded_data["translatable_objects"]
+            self.source_language = loaded_data["source_language"]
+            self.target_language = loaded_data["target_language"]
             self.current_po_metadata = project_data.get("po_metadata")
             self.project_custom_instructions = project_data.get("project_custom_instructions", "")
 
@@ -2644,12 +2672,23 @@ class OverwatchLocalizerApp(QMainWindow):
                     QMessageBox.warning(self, _("Code File Load Failed"),
                                         _("Could not load associated code file: {error}").format(error=e))
         try:
-            self.translatable_objects, self.current_po_metadata = po_file_service.load_from_po(
+            self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(
                 po_filepath, original_code_for_context, original_code_filepath_for_context
             )
             self._run_and_refresh_with_validation()
             self.original_raw_code_content = original_code_for_context if original_code_for_context else ""
-            self.current_code_file_path = original_code_filepath_for_context
+            self.source_language = language_service.detect_source_language(
+                [ts.original_semantic for ts in self.translatable_objects])
+
+            target_lang_detected = False
+            if po_lang_full:
+                po_lang_short = po_lang_full.split('_')[0]
+                if po_lang_short in SUPPORTED_LANGUAGES.values():
+                    self.target_language = po_lang_short
+                    target_lang_detected = True
+
+            if not target_lang_detected:
+                self.target_language = self.config.get("default_target_language", "zh")
             self.current_project_file_path = None
             self.project_custom_instructions = ""
 
@@ -3170,7 +3209,8 @@ class OverwatchLocalizerApp(QMainWindow):
             QMessageBox.critical(self, _("Feature Unavailable"),
                                  _("The 'requests' library is not installed, AI translation is unavailable.\nPlease run: pip install requests"))
             return
-        dialog = AISettingsDialog(self, _("AI Settings"), self.config, self.save_config, self.ai_translator, self)
+        target_language_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == self.target_language), self.target_language)
+        dialog = AISettingsDialog(self, _("AI Settings"), self.config, self.save_config, self.ai_translator, self, target_language_name)
         dialog.exec()
 
     def _check_ai_prerequisites(self, show_error=True):
@@ -3320,9 +3360,8 @@ class OverwatchLocalizerApp(QMainWindow):
                 _("AI is translating: \"{text}...\"").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
 
         context_dict = self._generate_ai_context_strings(ts_obj.id)
-        target_language = self.config.get("ai_target_language", _("Target Language"))
-
-        worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language,
+        target_language_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == self.target_language), self.target_language)
+        worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language_name,
                                      context_dict, self.project_custom_instructions, False)
         self.ai_thread_pool.start(worker)
         return True
@@ -3355,9 +3394,10 @@ class OverwatchLocalizerApp(QMainWindow):
 
             if ts_obj and not ts_obj.is_ignored:
                 context_dict = self._generate_ai_context_strings(ts_obj.id)
-                target_language = self.config.get("ai_target_language", _("Target Language"))
-
-                worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language,
+                target_language_name = next(
+                    (name for name, code in SUPPORTED_LANGUAGES.items() if code == self.target_language),
+                    self.target_language)
+                worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language_name,
                                              context_dict, self.project_custom_instructions, True)
                 self.ai_thread_pool.start(worker)
             else:
