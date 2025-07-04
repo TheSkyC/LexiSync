@@ -129,8 +129,6 @@ def validate_string(ts_obj, app_instance=None):
             original,
             "none" # 未实现-占位符密度
         )
-        print(app_instance.source_language, app_instance.target_language)
-        print(expected_ratio)
 
     major_upper_threshold = 2.5
     major_lower_threshold = 0.4
