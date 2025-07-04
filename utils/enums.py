@@ -19,13 +19,14 @@ class WarningType(Enum):
     PUNCTUATION_MISMATCH_END = auto()  # 结尾标点不匹配
 
     # --- 长度相关 ---
-    LENGTH_DEVIATION_MINOR = auto()  # 译文长度与原文差异 50%-79%
-    LENGTH_DEVIATION_MAJOR = auto()  # 译文长度与原文差异 >= 80%
+    LENGTH_DEVIATION_MINOR = auto()  # 译文长度与原文差异略大
+    LENGTH_DEVIATION_MAJOR = auto()  # 译文长度与原文差异较大
     TRANSLATION_EMPTY_BUT_ORIGINAL_NOT = auto()  # 译文为空但原文不为空
     ORIGINAL_EMPTY_BUT_TRANSLATION_NOT = auto()  # 原文为空但译文不为空
 
-    # --- PO 文件相关 ---
-    FUZZY_TRANSLATION = auto()  # PO文件导入的 fuzzy 标记
+
+    FUZZY_TRANSLATION = auto()
+    UNUSUAL_EXPANSION_RATIO = auto()
 
     def get_display_text(self):
         from utils.localization import _

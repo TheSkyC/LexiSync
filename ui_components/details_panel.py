@@ -31,33 +31,50 @@ class DetailsPanel(QWidget):
         main_layout.setContentsMargins(5, 5, 5, 5)
         main_layout.setSpacing(5)
         splitter = QSplitter(Qt.Vertical)
+
+
+
+        # --- 原文 ---
         original_container = QWidget()
         original_layout = QVBoxLayout(original_container)
         original_layout.setContentsMargins(0, 0, 0, 0)
         original_layout.setSpacing(5)
+        original_header_layout = QHBoxLayout()
         self.original_label = QLabel(_("Original:"))
         self.original_label.setObjectName("original_label")
+        self.char_count_label = QLabel("")
+        self.char_count_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        original_header_layout.addWidget(self.original_label)
+        original_header_layout.addStretch()  # 添加一个伸缩项，将右侧标签推到最右边
+        original_header_layout.addWidget(self.char_count_label)
+        original_layout.addLayout(original_header_layout)
         self.original_text_display = NewlineTextEdit()
         self.original_text_display.setReadOnly(True)
         self.original_text_display.setLineWrapMode(NewlineTextEdit.WidgetWidth)
         self.original_text_display.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        original_layout.addWidget(self.original_label)
         original_layout.addWidget(self.original_text_display)
 
+        # --- 译文 ---
         translation_container = QWidget()
         translation_layout = QVBoxLayout(translation_container)
         translation_layout.setContentsMargins(0, 0, 0, 0)
         translation_layout.setSpacing(5)
-
+        translation_header_layout = QHBoxLayout()
         self.translation_label = QLabel(_("Translation:"))
         self.translation_label.setObjectName("translation_label")
+        self.ratio_label = QLabel("")
+        self.ratio_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        translation_header_layout.addWidget(self.translation_label)
+        translation_header_layout.addStretch()
+        translation_header_layout.addWidget(self.ratio_label)
+        translation_layout.addLayout(translation_header_layout)
         self.translation_edit_text = NewlineTextEdit()
         self.translation_edit_text.setLineWrapMode(NewlineTextEdit.WidgetWidth)
         self.translation_edit_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.translation_edit_text.textChanged.connect(self.translation_text_changed_signal.emit)
         self.translation_edit_text.focusOutEvent = self._translation_focus_out_event
-        translation_layout.addWidget(self.translation_label)
         translation_layout.addWidget(self.translation_edit_text)
+
         splitter.addWidget(original_container)
         splitter.addWidget(translation_container)
         splitter.setSizes([100, 100])
@@ -159,6 +176,19 @@ class DetailsPanel(QWidget):
                 cursor.setPosition(block.position() + trailing_ws_match.start())
                 cursor.setPosition(block.position() + trailing_ws_match.end(), QTextCursor.KeepAnchor)
                 cursor.mergeCharFormat(self.whitespace_format)
+
+    def update_stats_labels(self, char_counts: tuple | None, ratios: tuple | None):
+        if char_counts:
+            self.char_count_label.setText(f"{char_counts[0]} | {char_counts[1]}")
+        else:
+            self.char_count_label.setText("")
+
+        if ratios:
+            actual_str = f"{ratios[0]:.2f}" if ratios[0] is not None else "-"
+            expected_str = f"{ratios[1]:.2f}" if ratios[1] is not None else "-"
+            self.ratio_label.setText(f"{actual_str} | {expected_str}")
+        else:
+            self.ratio_label.setText("")
 
     def update_ui_texts(self):
         self.findChild(QLabel, "original_label").setText(_("Original:"))

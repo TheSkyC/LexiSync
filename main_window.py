@@ -56,10 +56,12 @@ from services.code_file_service import extract_translatable_strings, save_transl
 from services.project_service import load_project, save_project
 from services.prompt_service import generate_prompt_from_structure
 from services.validation_service import run_validation_on_all, placeholder_regex as enhanced_placeholder_regex
+from services.expansion_ratio_service import ExpansionRatioService
 
 from utils.constants import *
 from utils import config_manager
 from utils.localization import lang_manager, _
+from utils.text_utils import get_linguistic_length
 
 
 try:
@@ -147,6 +149,10 @@ class OverwatchLocalizerApp(QMainWindow):
         self.neighbor_select_timer = QTimer(self)
         self.neighbor_select_timer.setSingleShot(True)
 
+        self.stats_update_timer = QTimer(self)
+        self.stats_update_timer.setSingleShot(True)
+        self.stats_update_timer.timeout.connect(self._update_details_panel_stats)
+
         self.tm_update_timer = QTimer(self)
         self.tm_update_timer.setSingleShot(True)
         self.tm_update_timer.timeout.connect(self.perform_tm_update)
@@ -221,6 +227,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.setAcceptDrops(True)
 
         self.UI_initialization()
+        ExpansionRatioService.initialize()
         QTimer.singleShot(100, self.prewarm_dependencies)
 
     def prewarm_dependencies(self):
@@ -233,7 +240,6 @@ class OverwatchLocalizerApp(QMainWindow):
             from dialogs import language_pair_dialog
 
             self.update_statusbar(_("Ready"))
-            print("Dependencies pre-warmed successfully.")
 
         except Exception as e:
             error_msg = f"Failed to pre-warm dependencies: {e}"
@@ -877,7 +883,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         # DetailsPanel
         self.details_panel.apply_translation_signal.connect(self.apply_translation_from_button)
-        self.details_panel.translation_text_changed_signal.connect(self.schedule_placeholder_validation)
+        self.details_panel.translation_text_changed_signal.connect(self.schedule_details_panel_stats_update)
         self.details_panel.translation_focus_out_signal.connect(self.apply_translation_focus_out)
         self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
 
@@ -1783,6 +1789,7 @@ class OverwatchLocalizerApp(QMainWindow):
                 self.current_selected_ts_id = newly_focused_id
                 self.force_refresh_ui_for_current_selection()
                 self.update_ui_state_for_selection(self.current_selected_ts_id)
+                self._update_details_panel_stats()
         tm_exists_for_selected = ts_obj.original_semantic in self.translation_memory
 
 
@@ -1811,6 +1818,40 @@ class OverwatchLocalizerApp(QMainWindow):
             warning_message = "💡 " + " | ".join(messages)
         self.update_statusbar(warning_message if warning_message else status_message, persistent=True)
 
+    def schedule_details_panel_stats_update(self):
+        self.stats_update_timer.start(200)
+
+    def _update_details_panel_stats(self):
+        if not self.current_selected_ts_id:
+            self.details_panel.update_stats_labels(None, None)
+            return
+
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+        if not ts_obj:
+            self.details_panel.update_stats_labels(None, None)
+            return
+
+        # 获取当前编辑器中的文本，而不是模型中的旧文本
+        current_translation_text = self.details_panel.translation_edit_text.toPlainText()
+
+        # 计算净化后的字符数
+        orig_len = get_linguistic_length(ts_obj.original_semantic)
+        trans_len = get_linguistic_length(current_translation_text)
+        char_counts = (orig_len, trans_len)
+
+        # 计算膨胀率
+        actual_ratio = trans_len / orig_len if orig_len > 0 else None
+
+        service = ExpansionRatioService.get_instance()
+        expected_ratio = service.get_expected_ratio(
+            self.source_language,
+            self.target_language,
+            ts_obj.original_semantic,
+            "none"  # 未实现-占位符密度
+        )
+        ratios = (actual_ratio, expected_ratio)
+
+        self.details_panel.update_stats_labels(char_counts, ratios)
 
     def schedule_placeholder_validation(self):
         if self._placeholder_validation_job:
@@ -1857,6 +1898,7 @@ class OverwatchLocalizerApp(QMainWindow):
         # 清空 DetailsPanel
         self.details_panel.original_text_display.setPlainText("")
         self.details_panel.translation_edit_text.setPlainText("")
+        self.details_panel.update_stats_labels(None, None)
         self.details_panel.apply_btn.setEnabled(False)
         self.details_panel.ai_translate_current_btn.setEnabled(False)
 
@@ -1880,7 +1922,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.sheet_model.set_translatable_objects([])
             self.proxy_model.invalidate()
             return
-        run_validation_on_all(self.translatable_objects)
+        run_validation_on_all(self.translatable_objects, self)
         for ts_obj in self.translatable_objects:
             ts_obj.update_style_cache()
         self.sheet_model.set_translatable_objects(self.translatable_objects)
@@ -2686,7 +2728,6 @@ class OverwatchLocalizerApp(QMainWindow):
             self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(
                 po_filepath, original_code_for_context, original_code_filepath_for_context
             )
-            self._run_and_refresh_with_validation()
             self.original_raw_code_content = original_code_for_context if original_code_for_context else ""
             self.source_language = language_service.detect_source_language(
                 [ts.original_semantic for ts in self.translatable_objects])
@@ -2712,7 +2753,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.mark_project_modified(False)
             self.is_po_mode = True
             self.current_po_file_path = po_filepath
-            self.refresh_sheet()
+            self._run_and_refresh_with_validation()
             self.update_statusbar(
                 _("Loaded {count} entries from PO file {filename}.").format(count=len(self.translatable_objects),
                                                                             filename=os.path.basename(po_filepath)),
@@ -3809,6 +3850,9 @@ class OverwatchLocalizerApp(QMainWindow):
             self._finalize_batch_ai_translation()
         else:
             self.update_ai_related_ui_state()
+
+
+
 
     def _get_selected_ts_objects_from_sheet(self):
         selected_objs = []
