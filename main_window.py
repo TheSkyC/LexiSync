@@ -221,7 +221,24 @@ class OverwatchLocalizerApp(QMainWindow):
         self.setAcceptDrops(True)
 
         self.UI_initialization()
+        QTimer.singleShot(100, self.prewarm_dependencies)
 
+    def prewarm_dependencies(self):
+        self.update_statusbar(_("Initializing services in the background..."), persistent=True)
+
+        try:
+            import langid
+            langid.classify("This is a pre-warming text to load the language model.")
+            from services import po_file_service, project_service
+            from dialogs import language_pair_dialog
+
+            self.update_statusbar(_("Ready"))
+            print("Dependencies pre-warmed successfully.")
+
+        except Exception as e:
+            error_msg = f"Failed to pre-warm dependencies: {e}"
+            print(error_msg)
+            self.update_statusbar(error_msg)
 
     def UI_initialization(self):
         self._setup_ui()
@@ -730,12 +747,6 @@ class OverwatchLocalizerApp(QMainWindow):
 
         self.filter_label = QLabel(_("Filter:"))
         toolbar_layout.addWidget(self.filter_label)
-
-        # self.deduplicate_checkbox = QCheckBox(_("Deduplicate"))
-        # self.deduplicate_checkbox.setChecked(self.deduplicate_strings_var)
-        # self.deduplicate_checkbox.stateChanged.connect(lambda state: self.set_filter_var('deduplicate', bool(state)))
-        # toolbar_layout.addWidget(self.deduplicate_checkbox)
-        # self.filter_checkboxes['deduplicate'] = self.deduplicate_checkbox
 
         self.ignored_checkbox = QCheckBox(_("Ignored"))
         self.ignored_checkbox.setChecked(self.show_ignored_var)
