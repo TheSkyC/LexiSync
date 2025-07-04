@@ -10,7 +10,7 @@ from utils.enums import WarningType
 
 class TranslatableString:
     def __init__(self, original_raw, original_semantic, line_num, char_pos_start_in_file, char_pos_end_in_file,
-                 full_code_lines, string_type="Custom String"):
+                 full_code_lines, string_type="Custom String", source_file_path="", occurrences=None):
         name_string_for_uuid = f"{original_semantic}::{string_type}::L{line_num}::C{char_pos_start_in_file}"
         self.id = str(uuid.uuid5(APP_NAMESPACE_UUID, name_string_for_uuid))
         self.original_raw = original_raw
@@ -18,7 +18,12 @@ class TranslatableString:
         self.translation = ""
         self.is_ignored = False
         self.was_auto_ignored = False
-        self.line_num_in_file = line_num
+        if occurrences is not None:
+            self.occurrences = occurrences
+        elif line_num > 0:
+            self.occurrences = [(source_file_path, str(line_num))]
+        else:
+            self.occurrences = []
         self.char_pos_start_in_file = char_pos_start_in_file
         self.char_pos_end_in_file = char_pos_end_in_file
         self.warnings = []
@@ -45,6 +50,20 @@ class TranslatableString:
             self.current_line_in_context_idx = -1
         self._translation_edit_history = [self.translation]
         self._translation_history_pointer = 0
+
+    @property
+    def line_num_in_file(self):
+        try:
+            return int(self.occurrences[0][1])
+        except (IndexError, ValueError, TypeError):
+            return 0
+
+    @property
+    def source_file_path(self):
+        try:
+            return self.occurrences[0][0]
+        except IndexError:
+            return ""
 
     def set_translation_internal(self, text_with_newlines):
         if text_with_newlines == self.translation:
@@ -77,7 +96,9 @@ class TranslatableString:
             'translation': self.translation,
             'is_ignored': self.is_ignored,
             'was_auto_ignored': self.was_auto_ignored,
-            'line_num_in_file': self.line_num_in_file,
+            'line_num_in_file': self.line_num_in_file, # Backward compatible
+            'source_file_path': self.source_file_path, # Backward compatible
+            'occurrences': self.occurrences,
             'char_pos_start_in_file': self.char_pos_start_in_file,
             'char_pos_end_in_file': self.char_pos_end_in_file,
             'string_type': self.string_type,
@@ -99,8 +120,11 @@ class TranslatableString:
             char_pos_start_in_file=data['char_pos_start_in_file'],
             char_pos_end_in_file=data['char_pos_end_in_file'],
             full_code_lines=full_code_lines_ref,
-            string_type=data.get('string_type', "Custom String")
+            string_type=data.get('string_type', "Custom String"),
+            occurrences=data.get('occurrences')
         )
+        if not ts.occurrences and 'line_num_in_file' in data: # Backward compatible
+            ts.occurrences = [(data.get('source_file_path', ''), str(data['line_num_in_file']))]
         ts.id = data['id']
         ts.translation = data.get('translation', "")
         ts.is_ignored = data.get('is_ignored', False)

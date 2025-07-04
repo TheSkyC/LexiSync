@@ -12,9 +12,11 @@ from utils.localization import _
 
 def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_path=None):
     line_num = 0
+    source_path = ""
     if hasattr(entry, 'occurrences') and entry.occurrences:
         try:
             _path, lnum_str = entry.occurrences[0]
+            source_path = _path
             if lnum_str.isdigit():
                 line_num = int(lnum_str)
         except (ValueError, IndexError, TypeError):
@@ -27,7 +29,8 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
         char_pos_start_in_file=0,
         char_pos_end_in_file=len(entry.msgid),
         full_code_lines=full_code_lines if full_code_lines else [],
-        string_type="PO Import"
+        string_type="PO Import",
+        occurrences=entry.occurrences
     )
     ts.translation = entry.msgstr
     po_comment_lines = []
@@ -91,30 +94,18 @@ def extract_to_pot(code_content, extraction_patterns, project_name="Untitled Pro
 
 
 def load_from_po(filepath):
-    """
-    从 PO 文件加载条目，并自动检测和加载上下文。
-    """
     po_file = polib.pofile(filepath, encoding='utf-8', wrapwidth=0)
     translatable_objects = []
-
-    # 1. 自动检测项目根目录
     project_root = _find_project_root(filepath)
-    if not project_root:
-        print(f"Warning: Could not determine project root from PO file path: {filepath}. Context will be unavailable.")
-
-    # 2. 缓存已读文件的内容
     file_content_cache = {}
-
     for entry in po_file:
         if entry.obsolete or (entry.msgid == "" and not translatable_objects):
             continue
 
         full_code_lines = []
-        # 3. 如果有根目录且 PO 条目中有路径信息，则加载上下文
         if project_root and entry.occurrences:
             try:
                 relative_path = entry.occurrences[0][0]
-                # 将 PO 文件中的路径分隔符统一为系统分隔符
                 normalized_rel_path = os.path.normpath(relative_path)
                 full_source_path = os.path.join(project_root, normalized_rel_path)
 
@@ -130,9 +121,6 @@ def load_from_po(filepath):
 
         ts = _po_entry_to_translatable_string(entry, full_code_lines)
         translatable_objects.append(ts)
-
-    translatable_objects.sort(
-        key=lambda x: (x.line_num_in_file if x.line_num_in_file > 0 else float('inf'), x.original_semantic))
 
     po_lang = po_file.metadata.get('Language', None)
     return translatable_objects, po_file.metadata, po_lang
@@ -166,9 +154,9 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         if ts_obj.is_reviewed or ts_obj.is_warning_ignored:
             if 'fuzzy' in entry_flags:
                 entry_flags.remove('fuzzy')
-        entry_occurrences = []
-        if ts_obj.line_num_in_file > 0:
-            entry_occurrences.append((original_file_name, str(ts_obj.line_num_in_file)))
+        entry_occurrences = ts_obj.occurrences
+        if not entry_occurrences and ts_obj.line_num_in_file > 0:
+            entry_occurrences = [(original_file_name, str(ts_obj.line_num_in_file))]
         user_comment_lines = ts_obj.comment.splitlines()
         if ts_obj.is_reviewed:
             user_comment_lines.append("#OWLocalizer:reviewed")
