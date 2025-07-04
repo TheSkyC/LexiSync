@@ -2704,31 +2704,11 @@ class OverwatchLocalizerApp(QMainWindow):
                                  _("Error extracting POT file: {error}").format(error=e))
 
     def import_po_file_dialog_with_path(self, po_filepath):
-        original_code_for_context = None
-        original_code_filepath_for_context = None
-        reply = QMessageBox.question(self, _("Associate Code File?"),
-                                     _("Do you want to associate an original code file to get context and line number information?"),
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            code_context_filepath, selected_filter = QFileDialog.getOpenFileName(
-                self,
-                _("Select Associated Code File (for context)"),
-                os.path.dirname(po_filepath),
-                _("Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)")
-            )
-            if code_context_filepath:
-                try:
-                    with open(code_context_filepath, 'r', encoding='utf-8', errors='replace') as f:
-                        original_code_for_context = f.read()
-                    original_code_filepath_for_context = code_context_filepath
-                except Exception as e:
-                    QMessageBox.warning(self, _("Code File Load Failed"),
-                                        _("Could not load associated code file: {error}").format(error=e))
+
         try:
-            self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(
-                po_filepath, original_code_for_context, original_code_filepath_for_context
-            )
-            self.original_raw_code_content = original_code_for_context if original_code_for_context else ""
+            self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(po_filepath)
+            self.original_raw_code_content = ""
+            self.current_code_file_path = None
             self.source_language = language_service.detect_source_language(
                 [ts.original_semantic for ts in self.translatable_objects])
 
