@@ -142,15 +142,17 @@ class TranslatableString:
 
         # 1. 最高优先级：已忽略
         if self.is_ignored:
-            if self.is_ignored:  # 警告但被用户忽略，特殊显示
-                self.ui_style_cache['background'] = QColor(220, 220, 220, 200)  # 浅灰色背景
-                self.ui_style_cache['foreground'] = QColor(255, 0, 0, 150)  # 半透明红色文字
+            # 被忽略，但仍有警告，则特殊显示
+            if self.warnings and not self.is_warning_ignored:
+                self.ui_style_cache['background'] = QColor(220, 220, 220, 200)
+                self.ui_style_cache['foreground'] = QColor(255, 0, 0, 150)
                 font = QFont()
                 font.setItalic(True)
                 self.ui_style_cache['font'] = font
             else:
-                self.ui_style_cache['background'] = QColor(220, 220, 220, 200)  # 浅灰色背景
-                self.ui_style_cache['foreground'] = QColor("#707070")  # 深灰色文字
+                # 普通的忽略样式
+                self.ui_style_cache['background'] = QColor(220, 220, 220, 200)
+                self.ui_style_cache['foreground'] = QColor("#707070")
                 font = QFont()
                 font.setItalic(True)
                 self.ui_style_cache['font'] = font
