@@ -140,29 +140,31 @@ class TranslatableString:
                                        wt != WarningType.FUZZY_TRANSLATION]
         self.ui_style_cache = {}
 
-        # 1. 最高优先级：严重警告
-        if self.warnings and not self.is_warning_ignored:
-            if self.is_ignored:  # 警告但被用户忽略
+        # 1. 最高优先级：已忽略
+        if self.is_ignored:
+            if self.is_ignored:  # 警告但被用户忽略，特殊显示
                 self.ui_style_cache['background'] = QColor(220, 220, 220, 200)  # 浅灰色背景
                 self.ui_style_cache['foreground'] = QColor(255, 0, 0, 150)  # 半透明红色文字
                 font = QFont()
                 font.setItalic(True)
                 self.ui_style_cache['font'] = font
             else:
-                self.ui_style_cache['background'] = QColor("#FFDDDD")  # 浅红色背景
-                self.ui_style_cache['foreground'] = QColor("red")  # 红色文字
+                self.ui_style_cache['background'] = QColor(220, 220, 220, 200)  # 浅灰色背景
+                self.ui_style_cache['foreground'] = QColor("#707070")  # 深灰色文字
+                font = QFont()
+                font.setItalic(True)
+                self.ui_style_cache['font'] = font
 
-        # 2. 次高优先级：已忽略
-        elif self.is_ignored:
-            self.ui_style_cache['background'] = QColor(220, 220, 220, 200)  # 浅灰色背景
-            self.ui_style_cache['foreground'] = QColor("#707070")  # 深灰色文字
-            font = QFont()
-            font.setItalic(True)
-            self.ui_style_cache['font'] = font
+        # 2. 次高优先级：已审阅
         elif self.is_reviewed:
             self.ui_style_cache['foreground'] = QColor("darkgreen")
 
-        # 4. 如果未审阅，再判断次级警告
+        # 3. 严重警告
+        elif self.warnings and not self.is_warning_ignored:
+                self.ui_style_cache['background'] = QColor("#FFDDDD")  # 浅红色背景
+                self.ui_style_cache['foreground'] = QColor("red")  # 红色文字
+
+        # 4. 次级警告
         elif self.minor_warnings and not self.is_warning_ignored:
             self.ui_style_cache['background'] = QColor("#FFFACD")  # 浅黄色背景
 

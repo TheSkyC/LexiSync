@@ -160,12 +160,11 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         elif column == 1 or column == 5:
             def get_status_weight(ts_obj):
                 if ts_obj.is_ignored: return 5
+                if ts_obj.is_reviewed: return 4
                 if ts_obj.warnings and not ts_obj.is_warning_ignored: return 0
-                if ts_obj.minor_warnings and not ts_obj.is_warning_ignored and ts_obj.translation.strip(): return 1
-                if not ts_obj.translation.strip(): return 2
-                if not ts_obj.is_reviewed: return 3
-                return 4
-
+                if not ts_obj.translation.strip(): return 1
+                if ts_obj.minor_warnings and not ts_obj.is_warning_ignored: return 2
+                return 3
             left_weight = get_status_weight(left_obj)
             right_weight = get_status_weight(right_obj)
             if left_weight != right_weight:
