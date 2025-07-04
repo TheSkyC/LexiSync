@@ -215,6 +215,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         self.auto_save_tm_var = self.config.get("auto_save_tm", False)
         self.auto_backup_tm_on_save_var = self.config.get("auto_backup_tm_on_save", True)
+        self.auto_compile_mo_var = self.config.get("auto_compile_mo_on_save", True)
 
         self.placeholder_regex = enhanced_placeholder_regex
         self._placeholder_validation_job = None
@@ -487,6 +488,14 @@ class OverwatchLocalizerApp(QMainWindow):
         self.settings_menu.addAction(self.action_auto_backup_tm)
 
         self.settings_menu.addSeparator()
+        self.action_auto_compile_mo = QAction(_("Auto-compile MO on Save"), self, checkable=True)
+        self.action_auto_compile_mo.setChecked(self.auto_compile_mo_var)
+        self.action_auto_compile_mo.triggered.connect(
+            lambda: self.set_config_var('auto_compile_mo_on_save', self.action_auto_compile_mo.isChecked())
+        )
+        self.settings_menu.addAction(self.action_auto_compile_mo)
+
+        self.settings_menu.addSeparator()
         self.action_language_pair_settings = QAction(_("Language Pair Settings..."), self)
         self.action_language_pair_settings.triggered.connect(self.show_language_pair_dialog)
         self.settings_menu.addAction(self.action_language_pair_settings)
@@ -600,6 +609,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         #Settings Menu
         self.action_auto_backup_tm.setText(_("Auto-backup TM on Save"))
+        self.action_auto_compile_mo.setText(_("Auto-compile MO on Save"))
         self.language_menu.setTitle(_("Language"))
         self.action_keybinding_settings.setText(_("Keybinding Settings..."))
         self.action_font_settings.setText(_("Font Settings..."))
@@ -1309,6 +1319,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.config["show_unreviewed"] = self.unreviewed_checkbox.isChecked()
         self.config["auto_save_tm"] = self.auto_save_tm_var
         self.config["auto_backup_tm_on_save"] = self.auto_backup_tm_on_save_var
+        self.config["auto_compile_mo_on_save"] = self.auto_compile_mo_var
         current_search_text = self.search_entry.text()
         if current_search_text == _("Quick search..."):
             self.config["ui_state"]["search_term"] = ""
@@ -2348,13 +2359,21 @@ class OverwatchLocalizerApp(QMainWindow):
         try:
             original_file_name = os.path.basename(self.current_code_file_path or "source_code")
             po_file_service.save_to_po(filepath, self.translatable_objects, self.current_po_metadata,
-                                       original_file_name)
+                                       original_file_name, self)
 
             self.current_po_file_path = filepath
             self.mark_project_modified(False)
             self.update_statusbar(_("PO file saved to: {filename}").format(filename=os.path.basename(filepath)),
                                   persistent=True)
             self.update_title()
+            if self.auto_compile_mo_var:
+                try:
+                    mo_filepath = os.path.splitext(filepath)[0] + ".mo"
+                    po_file_to_compile = polib.pofile(filepath, encoding='utf-8')
+                    po_file_to_compile.save_as_mofile(mo_filepath)
+                    self.update_statusbar(_("PO file saved and MO file compiled: {filename}").format(filename=os.path.basename(mo_filepath)))
+                except Exception as e_mo:
+                    QMessageBox.critical(self, _("MO Compilation Failed"), _("Could not compile MO file: {error}").format(error=e_mo))
             return True
         except Exception as e:
             QMessageBox.critical(self, _("Save PO Error"), _("Failed to save PO file: {error}").format(error=e))
