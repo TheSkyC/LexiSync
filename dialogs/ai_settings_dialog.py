@@ -5,13 +5,31 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QCheckBox, QSpinBox, QMessageBox, QWidget, QGroupBox, QApplication
 )
-from PySide6.QtCore import Qt, Signal, QObject, QTimer
+from PySide6.QtCore import Qt, Signal, QObject, QTimer, QThread
 import threading
 from services.ai_translator import AITranslator
-from utils.constants import DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE
+from utils.constants import DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE, SUPPORTED_LANGUAGES
 from utils.localization import _
 from services.prompt_service import generate_prompt_from_structure
 from dialogs.prompt_manager_dialog import PromptManagerDialog
+
+class TestConnectionWorker(QObject):
+    finished = Signal(bool, str)
+
+    def __init__(self, api_key, model_name, api_url, system_prompt):
+        super().__init__()
+        self.api_key = api_key
+        self.model_name = model_name
+        self.api_url = api_url
+        self.system_prompt = system_prompt
+
+    def run(self):
+        try:
+            translator = AITranslator(self.api_key, self.model_name, self.api_url)
+            success, message = translator.test_connection(system_prompt=self.system_prompt)
+            self.finished.emit(success, message)
+        except Exception as e:
+            self.finished.emit(False, str(e))
 
 class AISettingsDialog(QDialog):
     def __init__(self, parent, title, app_config_ref, save_config_callback, ai_translator_ref, app_instance, current_target_lang_name):
@@ -24,6 +42,8 @@ class AISettingsDialog(QDialog):
 
         self.setWindowTitle(title)
         self.setModal(True)
+        self.test_thread = None
+        self.worker = None
 
         self.initial_api_key = self.app_config.get("ai_api_key", "")
         self.initial_api_base_url = self.app_config.get("ai_api_base_url", DEFAULT_API_URL)
@@ -145,7 +165,7 @@ class AISettingsDialog(QDialog):
         button_box.addStretch(1)
 
         self.test_btn = QPushButton(_("Test Connection"))
-        self.test_btn.clicked.connect(self.test_api_connection_dialog)
+        self.test_btn.clicked.connect(self.start_test_connection)
         button_box.addWidget(self.test_btn)
 
         self.ok_btn = QPushButton(_("OK"))
@@ -166,7 +186,8 @@ class AISettingsDialog(QDialog):
         dialog = PromptManagerDialog(self, _("AI Prompt Manager"), self.app)
         dialog.exec()
 
-    def test_api_connection_dialog(self):
+    def start_test_connection(self):
+        self.test_btn.setEnabled(False)
         self.test_status_label.setText(_("Testing..."))
         QApplication.processEvents()
 
@@ -177,44 +198,42 @@ class AISettingsDialog(QDialog):
         if not api_key:
             QMessageBox.critical(self, _("Test Failed"), _("API Key is not filled."))
             self.test_status_label.setText(_("Test failed: API Key is not filled."))
+            self.test_btn.setEnabled(True)
             return
+        target_lang_code = self.app.target_language
+        target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
+                                target_lang_code)
 
-        temp_translator = AITranslator(api_key, model_name, api_url)
-        class TestWorker(QObject):
-            finished = Signal(bool, str)
+        placeholders = {
+            '[Target Language]': target_lang_name,
+            '[Custom Translate]': '',
+            '[Untranslated Context]': '',
+            '[Translated Context]': ''
+        }
+        system_prompt = generate_prompt_from_structure(
+            self.app_config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE), placeholders
+        )
+        self.test_thread = QThread()
+        self.worker = TestConnectionWorker(api_key, model_name, api_url, system_prompt)
+        self.worker.moveToThread(self.test_thread)
 
-            def __init__(self, translator, system_prompt, test_text):
-                super().__init__()
-                self.translator = translator
-                self.system_prompt = system_prompt
-                self.test_text = test_text
+        self.test_thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.on_test_finished)
 
-            def run(self):
-                success, message = self.translator.test_connection(system_prompt=self.system_prompt, test_text=self.test_text)
-                self.finished.emit(success, message)
+        self.worker.finished.connect(self.test_thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.test_thread.finished.connect(self.test_thread.deleteLater)
 
-        self.test_thread = threading.Thread(target=self._test_in_thread_wrapper, args=(temp_translator, api_key, model_name, api_url))
-        self.test_thread.daemon = True
         self.test_thread.start()
 
-    def _test_in_thread_wrapper(self, temp_translator, api_key, model_name, api_url):
-        placeholders = {'[Target Language]': _('Target Language'), '[Custom Translate]': '', '[Untranslated Context]': '',
-                        '[Translated Context]': ''}
-        test_prompt = generate_prompt_from_structure(
-            self.app_config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE), placeholders)
+    def on_test_finished(self, success, message):
+        self.test_status_label.setText(message)
+        if success:
+            QMessageBox.information(self, _("Test Connection"), message)
+        else:
+            QMessageBox.critical(self, _("Test Connection"), message)
 
-        success, message = temp_translator.test_connection(system_prompt=test_prompt)
-        self.app.thread_signals.handle_ai_result.emit("", "", message, False)
-        QTimer.singleShot(0, lambda: self._show_test_result(success, message))
-
-
-    def _show_test_result(self, success, message):
-        if self.isVisible():
-            self.test_status_label.setText(message)
-            if success:
-                QMessageBox.information(self, _("Test Connection"), message)
-            else:
-                QMessageBox.critical(self, _("Test Connection"), message)
+        self.test_btn.setEnabled(True)
 
     def accept(self):
         api_key = self.api_key_entry.text()
