@@ -149,6 +149,9 @@ class OverwatchLocalizerApp(QMainWindow):
         self.neighbor_select_timer = QTimer(self)
         self.neighbor_select_timer.setSingleShot(True)
 
+        self.source_language = self.config.get("default_source_language", "en")
+        self.target_language = self.config.get("default_target_language", "zh")
+
         self.stats_update_timer = QTimer(self)
         self.stats_update_timer.setSingleShot(True)
         self.stats_update_timer.timeout.connect(self._update_details_panel_stats)
@@ -716,8 +719,21 @@ class OverwatchLocalizerApp(QMainWindow):
 
             self.ACTION_MAP_FOR_DIALOG[name] = action
 
+    def detect_language_from_data(self, text_type: str) -> str | None:
+        if not self.translatable_objects:
+            QMessageBox.information(self, _("Info"), _("No text available to detect language from."))
+            return None
+
+        if text_type == 'source':
+            strings_to_check = [ts.original_semantic for ts in self.translatable_objects]
+            return language_service.detect_source_language(strings_to_check)
+        elif text_type == 'target':
+            strings_to_check = [ts.translation for ts in self.translatable_objects]
+            return language_service.detect_source_language(strings_to_check)
+        return None
+
     def show_language_pair_dialog(self):
-        dialog = LanguagePairDialog(self, self.source_language, self.target_language)
+        dialog = LanguagePairDialog(self, self.source_language, self.target_language, self)
         if dialog.exec():
             if (self.source_language != dialog.source_lang or
                     self.target_language != dialog.target_lang):

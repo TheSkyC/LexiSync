@@ -39,6 +39,7 @@ def load_config():
     config_data.setdefault("last_dir", "")
     config_data.setdefault("recent_files", [])
     config_data.setdefault("ui_state", {})
+    config_data.setdefault("favorite_language_pairs", [])
     # AI settings
     config_data.setdefault("ai_api_key", "")
     config_data.setdefault("ai_api_base_url", DEFAULT_API_URL)
