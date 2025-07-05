@@ -38,6 +38,8 @@ pytz==2025.2
     # via pandas
 pyyaml==6.0.2
     # via -r requirements.in
+rapidfuzz==3.13.0
+    # via -r requirements.in
 regex==2024.11.6
     # via -r requirements.in
 requests==2.32.4

@@ -4,7 +4,7 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, QSizePolicy
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
-from difflib import SequenceMatcher
+from rapidfuzz import fuzz
 from utils.localization import _
 
 class TMPanel(QWidget):
@@ -80,7 +80,7 @@ class TMPanel(QWidget):
             if tm_orig == original_semantic_text or tm_orig.lower() == original_lower:
                 continue
 
-            ratio = SequenceMatcher(None, original_semantic_text, tm_orig).ratio()
+            ratio = fuzz.ratio(original_semantic_text, tm_orig) / 100.0
             if ratio > 0.65:
                 fuzzy_matches.append((ratio, tm_orig, tm_trans_with_slash_n))
 
