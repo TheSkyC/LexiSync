@@ -909,6 +909,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         # DetailsPanel
         self.details_panel.apply_translation_signal.connect(self.apply_translation_from_button)
+        self.details_panel.translation_text_changed_signal.connect(self.schedule_placeholder_validation)
         self.details_panel.translation_text_changed_signal.connect(self.schedule_details_panel_stats_update)
         self.details_panel.translation_focus_out_signal.connect(self.apply_translation_focus_out)
         self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
