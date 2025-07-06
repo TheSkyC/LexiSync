@@ -218,9 +218,15 @@ class OverwatchLocalizerApp(QMainWindow):
 
         self.search_term_var = self.config.get("ui_state", {}).get("search_term", "")
 
+
+
         self.auto_save_tm_var = self.config.get("auto_save_tm", False)
         self.auto_backup_tm_on_save_var = self.config.get("auto_backup_tm_on_save", True)
         self.auto_compile_mo_var = self.config.get("auto_compile_mo_on_save", True)
+        self.auto_save_interval_sec = self.config.get("auto_save_interval_sec", 0)
+        self.auto_save_timer = QTimer(self)
+        self.auto_save_timer.timeout.connect(self.auto_save_project)
+        self.setup_auto_save_timer()
 
         self.placeholder_regex = enhanced_placeholder_regex
         self._placeholder_validation_job = None
@@ -498,13 +504,16 @@ class OverwatchLocalizerApp(QMainWindow):
             lambda: self.set_config_var('auto_backup_tm_on_save', self.action_auto_backup_tm.isChecked()))
         self.settings_menu.addAction(self.action_auto_backup_tm)
 
-        self.settings_menu.addSeparator()
         self.action_auto_compile_mo = QAction(_("Auto-compile MO on Save"), self, checkable=True)
         self.action_auto_compile_mo.setChecked(self.auto_compile_mo_var)
         self.action_auto_compile_mo.triggered.connect(
             lambda: self.set_config_var('auto_compile_mo_on_save', self.action_auto_compile_mo.isChecked())
         )
         self.settings_menu.addAction(self.action_auto_compile_mo)
+
+        self.action_set_auto_save_interval = QAction(_("Auto-save Interval..."), self)
+        self.action_set_auto_save_interval.triggered.connect(self.show_auto_save_interval_dialog)
+        self.settings_menu.addAction(self.action_set_auto_save_interval)
 
         self.settings_menu.addSeparator()
         self.action_language_pair_settings = QAction(_("Language Pair Settings..."), self)
@@ -556,6 +565,12 @@ class OverwatchLocalizerApp(QMainWindow):
             action.triggered.connect(lambda checked, lc=lang_code: self.change_language(lc))
             self.language_menu.addAction(action)
             self.language_action_group.addAction(action)
+
+    def setup_auto_save_timer(self):
+        if self.auto_save_interval_sec > 0:
+            self.auto_save_timer.start(self.auto_save_interval_sec * 1000)
+        else:
+            self.auto_save_timer.stop()
 
     def update_ui_texts(self):
         self.setWindowTitle(_("Overwatch Localizer - v{version}").format(version=APP_VERSION))
@@ -782,6 +797,44 @@ class OverwatchLocalizerApp(QMainWindow):
         if dialog.exec():
             QMessageBox.information(self, _("Restart Required"),
                                     _("Font settings have been changed. Please restart the application for the changes to take effect."))
+
+    def show_auto_save_interval_dialog(self):
+        new_interval, ok = QInputDialog.getInt(
+            self,
+            _("Auto-save Interval"),
+            _("Enter interval in seconds (0 to disable):"),
+            self.auto_save_interval_sec, # value (当前值)
+            0,                          # minValue (最小值)
+            3600,                       # maxValue (最大值)
+            1                           # step (步长)
+        )
+        if ok:
+            self.auto_save_interval_sec = new_interval
+            self.set_config_var('auto_save_interval_sec', new_interval)
+            self.setup_auto_save_timer()
+            if new_interval > 0:
+                self.update_statusbar(_("Auto-save enabled every {seconds} seconds.").format(seconds=new_interval))
+            else:
+                self.update_statusbar(_("Auto-save disabled."))
+
+    def auto_save_project(self):
+        if not self.current_project_modified:
+            return
+        if not (self.current_project_file_path or self.current_po_file_path):
+            return
+
+        self.setEnabled(False)
+        self.update_statusbar(_("Auto-saving..."), persistent=True)
+        QApplication.processEvents()
+
+        try:
+            if self.is_po_mode:
+                self.save_po_file(self.current_po_file_path, compile_mo=False)
+            else:
+                self.save_project_file(self.current_project_file_path)
+            self.update_statusbar(_("Project auto-saved."), persistent=False)
+        finally:
+            self.setEnabled(True)
 
     def change_language(self, new_lang_code):
         if new_lang_code != self.config.get('language'):
@@ -1362,6 +1415,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.config["auto_save_tm"] = self.auto_save_tm_var
         self.config["auto_backup_tm_on_save"] = self.auto_backup_tm_on_save_var
         self.config["auto_compile_mo_on_save"] = self.auto_compile_mo_var
+        self.config["auto_save_interval_sec"] = self.auto_save_interval_sec
         current_search_text = self.search_entry.text()
         if current_search_text == _("Quick search..."):
             self.config["ui_state"]["search_term"] = ""
@@ -2403,7 +2457,7 @@ class OverwatchLocalizerApp(QMainWindow):
             return self.save_project_file(filepath)
         return False
 
-    def save_po_file(self, filepath):
+    def save_po_file(self, filepath, compile_mo=True):
         try:
             original_file_name = os.path.basename(self.current_code_file_path or "source_code")
             po_file_service.save_to_po(filepath, self.translatable_objects, self.current_po_metadata,
@@ -2414,7 +2468,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.update_statusbar(_("PO file saved to: {filename}").format(filename=os.path.basename(filepath)),
                                   persistent=True)
             self.update_title()
-            if self.auto_compile_mo_var:
+            if self.auto_compile_mo_var and compile_mo:
                 try:
                     mo_filepath = os.path.splitext(filepath)[0] + ".mo"
                     po_file_to_compile = polib.pofile(filepath, encoding='utf-8')
