@@ -1921,7 +1921,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.update_statusbar(warning_message if warning_message else status_message, persistent=True)
 
     def schedule_details_panel_stats_update(self):
-        self.stats_update_timer.start(200)
+        self.stats_update_timer.start(100)
 
     def _update_details_panel_stats(self):
         if not self.current_selected_ts_id:
@@ -1959,7 +1959,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self._placeholder_validation_job = QTimer()
         self._placeholder_validation_job.setSingleShot(True)
         self._placeholder_validation_job.timeout.connect(self._update_all_highlights)
-        self._placeholder_validation_job.start(150)
+        self._placeholder_validation_job.start(100)
 
     def _update_all_highlights(self):
         if not self.current_selected_ts_id:
