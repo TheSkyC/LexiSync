@@ -93,6 +93,7 @@ DEFAULT_KEYBINDINGS = {
     'toggle_reviewed': 'Ctrl+R',
     'toggle_ignored': 'Ctrl+I',
     'apply_and_next': 'Ctrl+Return',
+    'refresh_sort': 'F5',
 }
 
 SUPPORTED_LANGUAGES = {

@@ -214,6 +214,8 @@ class OverwatchLocalizerApp(QMainWindow):
         self.show_untranslated_var = self.config.get("show_untranslated", False)
         self.show_translated_var = self.config.get("show_translated", False)
         self.show_unreviewed_var = self.config.get("show_unreviewed", False)
+        self.use_static_sorting_var = self.config.get("use_static_sorting", False)
+
         self.search_term_var = self.config.get("ui_state", {}).get("search_term", "")
 
         self.auto_save_tm_var = self.config.get("auto_save_tm", False)
@@ -252,6 +254,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
     def UI_initialization(self):
         self._setup_ui()
+        self.proxy_model.set_static_sorting_enabled(self.use_static_sorting_var)
         self._load_default_tm_excel()
         self.update_ui_state_after_file_load()
         self.update_ai_related_ui_state()
@@ -413,8 +416,13 @@ class OverwatchLocalizerApp(QMainWindow):
         self.filter_actions['show_unreviewed'] = self.action_show_unreviewed
         self.view_menu.addSeparator()
 
+        self.action_toggle_static_sort = QAction(_("Static Sorting"), self, checkable=True)
+        self.action_toggle_static_sort.setChecked(self.use_static_sorting_var)
+        self.action_toggle_static_sort.triggered.connect(self._toggle_static_sorting_mode)
+        self.view_menu.addAction(self.action_toggle_static_sort)
         self.action_toggle_details_panel = QAction(_("Edit && Details Panel"), self, checkable=True)
         self.view_menu.addAction(self.action_toggle_details_panel)
+        self.view_menu.addSeparator()
 
         self.action_toggle_comment_status_panel = QAction(_("Comment && Status Panel"), self, checkable=True)
         self.view_menu.addAction(self.action_toggle_comment_status_panel)
@@ -587,11 +595,12 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_paste_translation.setText(_("Paste to Translation"))
 
         #View Menu
-        #self.action_deduplicate.setText(_("Deduplicate Strings"))
+
         self.action_show_ignored.setText(_("Show Ignored"))
         self.action_show_untranslated.setText(_("Show Untranslated"))
         self.action_show_translated.setText(_("Show Translated"))
         self.action_show_unreviewed.setText(_("Show Unreviewed"))
+        self.action_toggle_static_sort.setText(_("Static Sorting"))
         self.action_toggle_details_panel.setText(_("Edit && Details Panel"))
         self.action_toggle_comment_status_panel.setText(_("Comment && Status Panel"))
         self.action_toggle_context_panel.setText(_("Context Preview Panel"))
@@ -702,6 +711,7 @@ class OverwatchLocalizerApp(QMainWindow):
             'toggle_reviewed': self.cm_toggle_reviewed_status,
             'toggle_ignored': self.cm_toggle_ignored_status,
             'apply_and_next': self.apply_and_select_next_untranslated,
+            'refresh_sort': self.refresh_sort,
         }
 
         for name, slot in global_actions.items():
@@ -718,6 +728,21 @@ class OverwatchLocalizerApp(QMainWindow):
             self.addAction(action)
 
             self.ACTION_MAP_FOR_DIALOG[name] = action
+
+    def _toggle_static_sorting_mode(self, checked: bool):
+        self.use_static_sorting_var = checked
+        self.proxy_model.set_static_sorting_enabled(checked)
+        self.set_config_var('use_static_sorting', checked)
+        if checked:
+            self.update_statusbar(_("Static sorting enabled. Press F5 to refresh."))
+        else:
+            self.update_statusbar(_("Dynamic sorting enabled."))
+            self.proxy_model.invalidate()
+
+    def refresh_sort(self):
+        if self.use_static_sorting_var:
+            self.proxy_model.invalidate()
+            self.update_statusbar(_("View refreshed."))
 
     def detect_language_from_data(self, text_type: str) -> str | None:
         if not self.translatable_objects:
@@ -932,7 +957,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.details_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.details_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
-        self.addDockWidget(Qt.BottomDockWidgetArea, self.details_dock)  # <--- 修改停靠区域
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.details_dock)
 
         # ContextPanel
         self.context_dock = QDockWidget(_("Context Preview"), self)
@@ -949,7 +974,7 @@ class OverwatchLocalizerApp(QMainWindow):
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.tm_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.tm_dock)
-        self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)  # 将TM分割到Context下方
+        self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)
 
         # CommentStatusPanel
         self.comment_status_dock = QDockWidget(_("Comment && Status"), self)
@@ -958,7 +983,7 @@ class OverwatchLocalizerApp(QMainWindow):
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.comment_status_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.comment_status_dock)
-        self.splitDockWidget(self.tm_dock, self.comment_status_dock, Qt.Vertical)  # 将Comment分割到TM下方
+        self.splitDockWidget(self.tm_dock, self.comment_status_dock, Qt.Vertical)
 
         self.action_toggle_details_panel.setChecked(self.details_dock.isVisible())
         self.action_toggle_details_panel.triggered.connect(
@@ -1329,11 +1354,11 @@ class OverwatchLocalizerApp(QMainWindow):
         event.accept()
 
     def save_config(self):
-        # self.config["deduplicate"] = self.deduplicate_checkbox.isChecked()
         self.config["show_ignored"] = self.ignored_checkbox.isChecked()
         self.config["show_untranslated"] = self.untranslated_checkbox.isChecked()
         self.config["show_translated"] = self.translated_checkbox.isChecked()
         self.config["show_unreviewed"] = self.unreviewed_checkbox.isChecked()
+        self.config["use_static_sorting"] = self.use_static_sorting_var
         self.config["auto_save_tm"] = self.auto_save_tm_var
         self.config["auto_backup_tm_on_save"] = self.auto_backup_tm_on_save_var
         self.config["auto_compile_mo_on_save"] = self.auto_compile_mo_var
@@ -1555,7 +1580,6 @@ class OverwatchLocalizerApp(QMainWindow):
                                         tm_path=tm_path_from_project))
 
             filter_settings = project_data.get("filter_settings", {})
-            # self.deduplicate_checkbox.setChecked(filter_settings.get("deduplicate", False))
             self.ignored_checkbox.setChecked(filter_settings.get("show_ignored", True))
             self.untranslated_checkbox.setChecked(filter_settings.get("show_untranslated", False))
             self.translated_checkbox.setChecked(filter_settings.get("show_translated", False))
@@ -1624,7 +1648,6 @@ class OverwatchLocalizerApp(QMainWindow):
                     self.import_po_file_dialog_with_path(pot_filepath)
 
     def run_comparison_with_file(self, filepath):
-        print(f"Running comparison with {filepath}")
         self._run_comparison_logic(filepath)
 
     def prompt_save_if_modified(self):
@@ -1648,15 +1671,13 @@ class OverwatchLocalizerApp(QMainWindow):
         if item_to_reselect_after:
             old_selected_id = item_to_reselect_after
         self.proxy_model.set_filters(
-            # deduplicate=self.deduplicate_checkbox.isChecked(),
-            show_ignored=self.ignored_checkbox.isChecked(),
-            show_untranslated=self.untranslated_checkbox.isChecked(),
-            show_translated=self.translated_checkbox.isChecked(),
-            show_unreviewed=self.unreviewed_checkbox.isChecked(),
+            show_ignored=self.show_ignored_var,
+            show_untranslated=self.show_untranslated_var,
+            show_translated=self.show_translated_var,
+            show_unreviewed=self.show_unreviewed_var,
             search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
             is_po_mode=self.is_po_mode
         )
-        self.proxy_model.invalidateFilter()
         self.update_counts_display()
         if preserve_selection and old_selected_id:
             self.select_sheet_row_by_id(old_selected_id, see=True)
@@ -1675,7 +1696,6 @@ class OverwatchLocalizerApp(QMainWindow):
     def _perform_delayed_search_filter(self):
         search_term_to_use = self._last_quick_search_text
         self.proxy_model.set_filters(
-            #deduplicate=self.deduplicate_checkbox.isChecked(),
             show_ignored=self.ignored_checkbox.isChecked(),
             show_untranslated=self.untranslated_checkbox.isChecked(),
             show_translated=self.translated_checkbox.isChecked(),
@@ -1859,7 +1879,6 @@ class OverwatchLocalizerApp(QMainWindow):
             self.details_panel.update_stats_labels(None, None)
             return
 
-        # 获取当前编辑器中的文本，而不是模型中的旧文本
         current_translation_text = self.details_panel.translation_edit_text.toPlainText()
 
         # 计算净化后的字符数
@@ -1869,7 +1888,6 @@ class OverwatchLocalizerApp(QMainWindow):
 
         # 计算膨胀率
         actual_ratio = trans_len / orig_len if orig_len > 0 else None
-
         service = ExpansionRatioService.get_instance()
         expected_ratio = service.get_expected_ratio(
             self.source_language,
@@ -1950,11 +1968,17 @@ class OverwatchLocalizerApp(QMainWindow):
             self.sheet_model.set_translatable_objects([])
             self.proxy_model.invalidate()
             return
+
         run_validation_on_all(self.translatable_objects, self)
+
         for ts_obj in self.translatable_objects:
             ts_obj.update_style_cache()
+
         self.sheet_model.set_translatable_objects(self.translatable_objects)
-        self.refresh_sheet_preserve_selection()
+        if not self.use_static_sorting_var:
+            self.refresh_sheet_preserve_selection()
+        else:
+            self.table_view.viewport().update()
         self.force_refresh_ui_for_current_selection()
 
     def cm_set_warning_ignored_status(self, ignore_flag):
@@ -2159,25 +2183,43 @@ class OverwatchLocalizerApp(QMainWindow):
         self.mark_project_modified()
         return True
 
+    def _update_view_for_ids(self, changed_ids: set):
+        if not changed_ids:
+            return
+
+        from services.validation_service import validate_string
+        for ts_id in changed_ids:
+            ts_obj = self._find_ts_obj_by_id(ts_id)
+            if ts_obj:
+                validate_string(ts_obj, self)
+                ts_obj.update_style_cache()
+                source_index = self.sheet_model.index_from_id(ts_obj.id)
+                if source_index.isValid():
+                    first_col_index = source_index.siblingAtColumn(0)
+                    last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
+                    self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
+
+        if self.current_selected_ts_id in changed_ids:
+            self.force_refresh_ui_for_current_selection()
+
+        self.update_counts_display()
+
     def force_full_refresh(self, id_to_reselect=None):
         self.sheet_model.set_translatable_objects(self.translatable_objects)
-
         self.proxy_model.set_filters(
-            show_ignored=self.ignored_checkbox.isChecked(),
-            show_untranslated=self.untranslated_checkbox.isChecked(),
-            show_translated=self.translated_checkbox.isChecked(),
-            show_unreviewed=self.unreviewed_checkbox.isChecked(),
+            show_ignored=self.show_ignored_var,
+            show_untranslated=self.show_untranslated_var,
+            show_translated=self.show_translated_var,
+            show_unreviewed=self.show_unreviewed_var,
             search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
             is_po_mode=self.is_po_mode
         )
-
         if id_to_reselect:
             self.select_sheet_row_by_id(id_to_reselect, see=True)
         self.force_refresh_ui_for_current_selection()
         self.update_counts_display()
 
     def _select_neighbor_or_first(self, removed_row_index):
-        print(f"--- _select_neighbor: Trying to select neighbor of removed row {removed_row_index} ---")
         if removed_row_index < self.proxy_model.rowCount():
             neighbor_index = self.proxy_model.index(removed_row_index, 0)
         elif self.proxy_model.rowCount() > 0:
@@ -2187,8 +2229,6 @@ class OverwatchLocalizerApp(QMainWindow):
             self.on_sheet_select(QModelIndex(), QModelIndex())
             return
         selected_obj = self.proxy_model.data(neighbor_index, Qt.UserRole)
-        print(f"    -> Neighbor found. New index row: {neighbor_index.row()}, ID: {selected_obj.id[:8]}")
-
         self.table_view.setCurrentIndex(neighbor_index)
         self.on_sheet_select(neighbor_index, QModelIndex())
 
@@ -2208,7 +2248,7 @@ class OverwatchLocalizerApp(QMainWindow):
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj or new_ignore_state == ts_obj.is_ignored: return
         neighbor_id_to_select = None
-        will_disappear = not self.ignored_checkbox.isChecked() and new_ignore_state
+        will_disappear = not self.show_ignored_var and new_ignore_state
         if will_disappear:
             source_index = self.sheet_model.index_from_id(ts_obj.id)
             proxy_index = self.proxy_model.mapFromSource(source_index)
@@ -2231,10 +2271,10 @@ class OverwatchLocalizerApp(QMainWindow):
         self.mark_project_modified()
         self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
             'Yes') if new_ignore_state else _('No')))
+        self._update_view_for_ids({ts_obj.id})
         def deferred_refresh():
-            id_to_select_after = neighbor_id_to_select if will_disappear else ts_obj.id
-            self.force_full_refresh(id_to_reselect=id_to_select_after)
-
+            if will_disappear:
+                self.force_full_refresh(id_to_reselect=neighbor_id_to_select)
         QTimer.singleShot(0, deferred_refresh)
 
     def toggle_reviewed_selected_checkbox(self, state):
@@ -2242,6 +2282,7 @@ class OverwatchLocalizerApp(QMainWindow):
         if not self.current_selected_ts_id: return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj or new_reviewed_state == ts_obj.is_reviewed: return
+
         neighbor_id_to_select = None
         will_disappear = self.unreviewed_checkbox.isChecked() and new_reviewed_state
         if will_disappear:
@@ -2252,34 +2293,24 @@ class OverwatchLocalizerApp(QMainWindow):
                 if current_row + 1 < self.proxy_model.rowCount():
                     neighbor_proxy_index = self.proxy_model.index(current_row + 1, 0)
                     neighbor_obj = self.proxy_model.data(neighbor_proxy_index, Qt.UserRole)
-                    if neighbor_obj:
-                        neighbor_id_to_select = neighbor_obj.id
+                    if neighbor_obj: neighbor_id_to_select = neighbor_obj.id
                 elif current_row - 1 >= 0:
                     neighbor_proxy_index = self.proxy_model.index(current_row - 1, 0)
                     neighbor_obj = self.proxy_model.data(neighbor_proxy_index, Qt.UserRole)
-                    if neighbor_obj:
-                        neighbor_id_to_select = neighbor_obj.id
-        old_reviewed_state = ts_obj.is_reviewed
-        old_warning_ignored_state = ts_obj.is_warning_ignored
-        changes_for_undo = [
-            {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_reviewed_state,
-             'new_value': new_reviewed_state},
-            {'string_id': ts_obj.id, 'field': 'is_warning_ignored', 'old_value': old_warning_ignored_state,
-             'new_value': new_reviewed_state}
-        ]
-        self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
-
+                    if neighbor_obj: neighbor_id_to_select = neighbor_obj.id
+        primary_change = {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': ts_obj.is_reviewed,
+                          'new_value': new_reviewed_state}
+        self.add_to_undo_history('single_change', primary_change)
         ts_obj.is_reviewed = new_reviewed_state
-        ts_obj.is_warning_ignored = new_reviewed_state
-
         ts_obj.update_style_cache()
         self.mark_project_modified()
-        self.update_statusbar(_("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
-            'Yes') if new_reviewed_state else _('No')))
+        self.update_statusbar(
+            _("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...",
+                                                              status=_('Yes') if new_reviewed_state else _('No')))
+        self._update_view_for_ids({ts_obj.id})
         def deferred_refresh():
-            id_to_select_after = neighbor_id_to_select if will_disappear else ts_obj.id
-            self.force_full_refresh(id_to_reselect=id_to_select_after)
-
+            if will_disappear:
+                self.force_full_refresh(id_to_reselect=neighbor_id_to_select)
         QTimer.singleShot(0, deferred_refresh)
 
     def save_code_file_content(self, filepath_to_save):
@@ -3482,7 +3513,10 @@ class OverwatchLocalizerApp(QMainWindow):
         selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
 
+        will_any_disappear = ignore_flag and not self.show_ignored_var
+
         bulk_changes = []
+        changed_ids = set()
         for ts_obj in selected_objs:
             if ts_obj.is_ignored != ignore_flag:
                 old_val = ts_obj.is_ignored
@@ -3491,102 +3525,100 @@ class OverwatchLocalizerApp(QMainWindow):
                 ts_obj.update_style_cache()
                 bulk_changes.append(
                     {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': old_val, 'new_value': ignore_flag})
+                changed_ids.add(ts_obj.id)
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
-            self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
             self.mark_project_modified()
+            self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
+
+            if will_any_disappear:
+                self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
+            else:
+                self._update_view_for_ids(changed_ids)
 
     def cm_set_reviewed_status(self, reviewed_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
-        bulk_changes_for_undo = []
-        modified_ids = set()
+
+        will_any_disappear = reviewed_flag and self.unreviewed_checkbox.isChecked()
+
+        bulk_changes = []
+        changed_ids = set()
         for ts_obj in selected_objs:
             if ts_obj.is_reviewed != reviewed_flag:
-                old_reviewed_val = ts_obj.is_reviewed
-                old_warning_ignored_val = ts_obj.is_warning_ignored
+                old_val = ts_obj.is_reviewed
                 ts_obj.is_reviewed = reviewed_flag
-                ts_obj.is_warning_ignored = reviewed_flag
                 ts_obj.update_style_cache()
-                bulk_changes_for_undo.append(
-                    {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_reviewed_val,
-                     'new_value': reviewed_flag})
-                bulk_changes_for_undo.append(
-                    {'string_id': ts_obj.id, 'field': 'is_warning_ignored', 'old_value': old_warning_ignored_val,
-                     'new_value': ts_obj.is_warning_ignored})
-                modified_ids.add(ts_obj.id)
-        if bulk_changes_for_undo:
-            self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes_for_undo})
+                bulk_changes.append(
+                    {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_val, 'new_value': reviewed_flag})
+                changed_ids.add(ts_obj.id)
+
+        if bulk_changes:
+            self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.mark_project_modified()
-            self.update_statusbar(_("{count} items' review status updated.").format(count=len(modified_ids)))
-            self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
-        else:
-            self.update_statusbar(_("Selected item(s) already have the desired review status."))
+            self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
+
+            if will_any_disappear:
+                self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
+            else:
+                self._update_view_for_ids(changed_ids)
 
     def cm_toggle_ignored_status(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()
-        if not selected_objs:
-            return
-        focused_obj = self._find_ts_obj_by_id(self.current_focused_ts_id)
-        if not focused_obj or focused_obj not in selected_objs:
-            focused_obj = selected_objs[0]
+        if not selected_objs: return
 
-        target_ignore_state = not focused_obj.is_ignored
+        will_any_disappear = (not self.show_ignored_var) and any(not ts_obj.is_ignored for ts_obj in selected_objs)
 
         bulk_changes = []
+        changed_ids = set()
         for ts_obj in selected_objs:
-            if ts_obj.is_ignored != target_ignore_state:
-                old_val = ts_obj.is_ignored
-                ts_obj.is_ignored = target_ignore_state
-                if not target_ignore_state:
-                    ts_obj.was_auto_ignored = False
-                ts_obj.update_style_cache()
-                bulk_changes.append(
-                    {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': old_val,
-                     'new_value': target_ignore_state})
+            old_val = ts_obj.is_ignored
+            new_val = not old_val
+            ts_obj.is_ignored = new_val
+            if not new_val: ts_obj.was_auto_ignored = False
+            ts_obj.update_style_cache()
+            bulk_changes.append(
+                {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': old_val, 'new_value': new_val})
+            changed_ids.add(ts_obj.id)
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.mark_project_modified()
-            self.force_full_refresh(id_to_reselect=self.current_focused_ts_id)
-            self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(selected_objs)))
+            self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
+
+            if will_any_disappear:
+                self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
+            else:
+                self._update_view_for_ids(changed_ids)
 
     def cm_toggle_reviewed_status(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()
-        if not selected_objs:
-            return
-        focused_obj = self._find_ts_obj_by_id(self.current_focused_ts_id)
+        if not selected_objs: return
 
-        if not focused_obj or focused_obj not in selected_objs:
-            focused_obj = selected_objs[0]
-
-        target_reviewed_state = not focused_obj.is_reviewed
+        will_any_disappear = self.unreviewed_checkbox.isChecked() and any(
+            not ts_obj.is_reviewed for ts_obj in selected_objs)
 
         bulk_changes = []
+        changed_ids = set()
         for ts_obj in selected_objs:
-            if ts_obj.is_reviewed != target_reviewed_state:
-                old_reviewed_val = ts_obj.is_reviewed
-                old_warning_ignored_val = ts_obj.is_warning_ignored
-
-                ts_obj.is_reviewed = target_reviewed_state
-                ts_obj.is_warning_ignored = target_reviewed_state
-                ts_obj.update_style_cache()
-
-                bulk_changes.append(
-                    {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_reviewed_val,
-                     'new_value': target_reviewed_state})
-                if old_warning_ignored_val != ts_obj.is_warning_ignored:
-                    bulk_changes.append(
-                        {'string_id': ts_obj.id, 'field': 'is_warning_ignored', 'old_value': old_warning_ignored_val,
-                         'new_value': ts_obj.is_warning_ignored})
+            old_val = ts_obj.is_reviewed
+            new_val = not old_val
+            ts_obj.is_reviewed = new_val
+            ts_obj.update_style_cache()
+            bulk_changes.append(
+                {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_val, 'new_value': new_val})
+            changed_ids.add(ts_obj.id)
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.mark_project_modified()
-            self.force_full_refresh(id_to_reselect=self.current_focused_ts_id)
-            self.update_statusbar(_("{count} items' review status updated.").format(count=len(selected_objs)))
+            self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
+
+            if will_any_disappear:
+                self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
+            else:
+                self._update_view_for_ids(changed_ids)
 
     def __and_dispatch_more(self):
         if not self.is_aidecrement_active_threads_translating_batch:
@@ -3687,12 +3719,10 @@ class OverwatchLocalizerApp(QMainWindow):
 
         if max_concurrency == 1:
             estimated_time_s = self.ai_batch_total_items * (avg_api_time_estimate_s + api_interval_ms / 1000.0)
-            concurrency_text = _("sequential execution")
         else:
             estimated_time_s = (self.ai_batch_total_items / max_concurrency) * avg_api_time_estimate_s + \
                                (self.ai_batch_total_items / max_concurrency) * (
                                        api_interval_ms / 1000.0)
-            concurrency_text = _("up to {max_concurrency} concurrent").format(max_concurrency=max_concurrency)
         if self.ai_batch_total_items > 50:
             reply = QMessageBox.question(self, _("Confirm Batch Translation"),
                                          _("You are about to AI translate {count} unique strings.\n"
@@ -3722,21 +3752,19 @@ class OverwatchLocalizerApp(QMainWindow):
             else:
                 break
 
-
     def _finalize_batch_ai_translation(self):
         if not self.is_ai_translating_batch and self.ai_batch_active_threads > 0:
             return
         self.is_finalizing_batch_translation = True
-
         try:
+            changed_ids = {change['string_id'] for change in self.ai_batch_successful_translations_for_undo}
             if self.ai_batch_successful_translations_for_undo:
                 self.add_to_undo_history('bulk_ai_translate',
                                          {'changes': self.ai_batch_successful_translations_for_undo})
                 self.mark_project_modified()
                 self.check_batch_placeholder_mismatches()
-
             success_count = len(self.ai_batch_successful_translations_for_undo)
-            processed_items = self.ai_batch_total_items
+            processed_items = self.ai_batch_completed_count
             self.update_statusbar(
                 _("AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned).").format(
                     success_count=success_count, processed_count=processed_items,
@@ -3749,15 +3777,14 @@ class OverwatchLocalizerApp(QMainWindow):
             self.ai_batch_active_threads = 0
             self.ai_batch_next_item_index = 0
             self.ai_batch_completed_count = 0
-
             self.update_ai_related_ui_state()
-            self._run_and_refresh_with_validation()
+            self._update_view_for_ids(changed_ids)
+
         finally:
             QTimer.singleShot(0, lambda: setattr(self, 'is_finalizing_batch_translation', False))
 
     def _handle_ai_translation_result(self, ts_id, translated_text, error_message, is_batch_item):
         trigger_ts_obj = self._find_ts_obj_by_id(ts_id)
-
         if not trigger_ts_obj:
             if is_batch_item: self.ai_batch_completed_count += 1
             return
@@ -3773,6 +3800,8 @@ class OverwatchLocalizerApp(QMainWindow):
         elif translated_text is not None and translated_text.strip():
             cleaned_translation = translated_text.strip()
             original_text_to_match = trigger_ts_obj.original_semantic
+            changed_ids = set()
+
             for ts_obj in self.translatable_objects:
                 if ts_obj.original_semantic == original_text_to_match and \
                         (not ts_obj.translation.strip() or ts_obj.id == trigger_ts_obj.id):
@@ -3784,18 +3813,18 @@ class OverwatchLocalizerApp(QMainWindow):
                         'new_value': cleaned_translation.replace('\n', '\\n')
                     })
                     ts_obj.set_translation_internal(cleaned_translation)
-                    ts_obj.update_style_cache()
-                    source_index = self.sheet_model.index_from_id(ts_obj.id)
-                    if source_index.isValid():
-                        self.sheet_model.dataChanged.emit(source_index, source_index.siblingAtColumn(
-                            self.sheet_model.columnCount() - 1))
+                    changed_ids.add(ts_obj.id)
             if cleaned_translation:
                 self.translation_memory[original_text_to_match] = cleaned_translation.replace('\n', '\\n')
+            if not is_batch_item:
+                self._update_view_for_ids(changed_ids)
             if self.current_selected_ts_id == trigger_ts_obj.id:
                 self.force_refresh_ui_for_current_selection()
+
             if self.ai_batch_total_items == 1:
                 self.update_statusbar(_("AI translation successful: \"{text}...\"").format(
                     text=trigger_ts_obj.original_semantic[:20].replace('\n', '↵')))
+
         if is_batch_item:
             self.ai_batch_completed_count += 1
             if self.ai_batch_total_items > 0:
@@ -4052,8 +4081,11 @@ class OverwatchLocalizerApp(QMainWindow):
         if not selected_objs:
             self.update_statusbar(_("No items selected for AI translation."))
             return
-
-        self._start_ai_batch_translation(selected_objs)
+        if len(selected_objs) == 1:
+            ts_obj = selected_objs[0]
+            self._initiate_single_ai_translation(ts_obj.id, called_from_cm=True)
+        else:
+            self._start_ai_batch_translation(selected_objs)
 
     def _run_comparison_logic(self, new_filepath):
         try:

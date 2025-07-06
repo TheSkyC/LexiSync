@@ -104,7 +104,6 @@ class TranslatableStringsModel(QAbstractTableModel):
 class TranslatableStringsProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        # self.deduplicate = False
         self.show_ignored = True
         self.show_untranslated = False
         self.show_translated = False
@@ -114,17 +113,19 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         self.is_po_mode = False
         self._current_filter_seen_originals = set()
         self.new_entry_id = "##NEW_ENTRY##"
+        self.setDynamicSortFilter(True)
 
-    def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term,
-                    is_po_mode):
+    def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term, is_po_mode):
+        current_sort_column = self.sortColumn()
+        current_sort_order = self.sortOrder()
         self.show_ignored = show_ignored
         self.show_untranslated = show_untranslated
         self.show_translated = show_translated
         self.show_unreviewed = show_unreviewed
         self.search_term = search_term.lower()
         self.is_po_mode = is_po_mode
-
         self.invalidateFilter()
+        self.sort(current_sort_column, current_sort_order)
 
     def filterAcceptsRow(self, source_row, source_parent):
         ts_obj = self.sourceModel().data(self.sourceModel().index(source_row, 0, source_parent), Qt.UserRole)
@@ -192,3 +193,6 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
             proxy_index = self.mapFromSource(source_index)
             return proxy_index.isValid()
         return False
+
+    def set_static_sorting_enabled(self, enabled: bool):
+        self.setDynamicSortFilter(not enabled)
