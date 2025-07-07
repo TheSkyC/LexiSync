@@ -1979,7 +1979,8 @@ class OverwatchLocalizerApp(QMainWindow):
 
     def update_ui_state_for_selection(self, selected_id):
         state = True if selected_id else False
-
+        self.action_copy_original.setEnabled(state)
+        self.action_paste_translation.setEnabled(state)
         # DetailsPanel
         self.details_panel.apply_btn.setEnabled(state)
         self.details_panel.ai_translate_current_btn.setEnabled(state and self.config.get("ai_api_key") and requests is not None)
