@@ -638,6 +638,8 @@ class OverwatchLocalizerApp(QMainWindow):
         #Settings Menu
         self.action_auto_backup_tm.setText(_("Auto-backup TM on Save"))
         self.action_auto_compile_mo.setText(_("Auto-compile MO on Save"))
+        self.action_set_auto_save_interval.setText(_("Auto-save Interval..."))
+        self.action_language_pair_settings.setText(_("Language Pair Settings..."))
         self.language_menu.setTitle(_("Language"))
         self.action_keybinding_settings.setText(_("Keybinding Settings..."))
         self.action_font_settings.setText(_("Font Settings..."))
