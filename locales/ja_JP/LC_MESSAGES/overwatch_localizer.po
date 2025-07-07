@@ -3,1211 +3,121 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
-"POT-Creation-Date: 2025-06-28 15:12+0000\n"
-"PO-Revision-Date: 2025-07-01 23:37+0800\n"
+"POT-Creation-Date: 2025-07-07 06:22+0000\n"
+"PO-Revision-Date: 2025-07-07 06:54+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
-"Language: ja_JP\n"
+"Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
-"X-Generator: Poedit 3.6\n"
 
-#: source_code:13
-msgid "POT File Detected"
-msgstr "POTファイルを検出しました"
+#: main_window.py:4017 ui_components/comment_status_panel.py:79
+msgid " (Auto)"
+msgstr " (自動)"
 
-#: source_code:20
-msgid "A POT file was dropped. What would you like to do?"
-msgstr "POTファイルがドロップされました。どうしますか？"
-
-#: source_code:21
-msgid "API Key not set."
-msgstr "APIキーが設定されていません。"
-
-#: source_code:23
-msgid "'requests' library not found. AI translation feature is unavailable."
-msgstr "'requests' ライブラリが見つかりません。AI翻訳機能は利用できません。"
-
-#: source_code:24
-msgid "Comparison Results Summary"
-msgstr "比較結果の概要"
-
-#: source_code:24
-msgid "Update from POT"
-msgstr "POTからの更新"
-
-#: source_code:28
-msgid "Import as New File"
-msgstr "新規ファイルとしてインポート"
-
-#: source_code:28
-msgid "Toggle Reviewed Status"
-msgstr "レビュー済みステータスを切り替える"
-
-#: source_code:29
-msgid "Target Language"
-msgstr "ターゲット言語"
-
-#: source_code:29
-msgid "Toggle Ignored Status"
-msgstr "無視ステータスを切り替える"
-
-#: source_code:30
-msgid "Apply and Go to Next Untranslated"
-msgstr "適用して次の未翻訳へ"
-
-#: source_code:30
-msgid "Comment:"
-msgstr "コメント:"
-
-#: source_code:31
-msgid "New Version Original"
-msgstr "新バージョン原文"
-
-#: source_code:31
-msgid "Old Version Original"
-msgstr "旧バージョン原文"
-
-#: source_code:31
-msgid "Similarity"
-msgstr "類似度"
-
-#: source_code:31
-msgid "Status"
-msgstr "ステータス"
-
-#: source_code:32
-msgid "Override default font settings"
-msgstr "デフォルトのフォント設定を上書き"
-
-#: source_code:33
-msgid "Find what:"
-msgstr "検索文字列:"
-
-#: source_code:33
-msgid "Placeholder Missing"
-msgstr "プレースホルダーがありません"
-
-#: source_code:33
-msgid "Update TM for Selected"
-msgstr "選択したTMを更新"
-
-#: source_code:35
-msgid "Add"
-msgstr "追加"
-
-#: source_code:35
-msgid "Extra Placeholder"
-msgstr "余分なプレースホルダー"
-
-#: source_code:36
-msgid "Initializing..."
-msgstr "初期化中..."
-
-#: source_code:37
-msgid "Capitalization Mismatch"
-msgstr "大文字小文字の不一致"
-
-#: source_code:38
-msgid "Original:"
-msgstr "オリジナル:"
-
-#: source_code:39
-msgid "Clear TM for Selected"
-msgstr "選択したTMをクリア"
-
-#: source_code:39
-msgid "Delete Selected"
-msgstr "選択を削除"
-
-#: source_code:39
-msgid "Initialization complete."
-msgstr "初期化が完了しました。"
-
-#: source_code:39
-msgid "Leading Whitespace Mismatch"
-msgstr "先頭の空白不一致"
-
-#: source_code:41
-msgid "Confirm and Update Project"
-msgstr "確認してプロジェクトを更新"
-
-#: source_code:41
-msgid "Replace with:"
-msgstr "置換文字列:"
-
-#: source_code:41
-msgid "Trailing Whitespace Mismatch"
-msgstr "末尾の空白不一致"
-
-#: source_code:43
-msgid "API Connection & Model Settings"
-msgstr "API接続とモデル設定"
-
-#: source_code:43
-msgid "Line Count Mismatch"
-msgstr "行数不一致"
-
-#: source_code:43
-msgid "Reset to Defaults"
-msgstr "デフォルトに戻す"
-
-#: source_code:44
-#, python-brace-format
-msgid "Missing placeholders: {placeholders}"
-msgstr "不足しているプレースホルダー: {placeholders}"
-
-#: source_code:45
-msgid "Starting Punctuation Mismatch"
-msgstr "開始句読点の不一致"
-
-#: source_code:46
-msgid "Apply Comment"
-msgstr "コメントを適用"
-
-#: source_code:46
-msgid "Finalizing..."
-msgstr "処理中..."
-
-#: source_code:47
-msgid "API Key:"
-msgstr "APIキー:"
-
-#: source_code:47
-msgid "Ending Punctuation Mismatch"
-msgstr "句末の句読点不一致"
-
-#: source_code:47
-msgid "Options"
-msgstr "オプション"
-
-#: source_code:48
-msgid "Calculation finished."
-msgstr "計算が完了しました。"
-
-#: source_code:48
-msgid "Code Context"
-msgstr "コードコンテキスト"
-
-#: source_code:48
-#, python-brace-format
-msgid "Extra placeholders: {placeholders}"
-msgstr "余分なプレースホルダー: {placeholders}"
-
-#: source_code:48
-msgid "Unknown API error structure"
-msgstr "不明なAPIエラー構造"
-
-#: source_code:49
-msgid "Case sensitive"
-msgstr "大文字小文字を区別"
-
-#: source_code:49
-msgid "Import Preset"
-msgstr "プリセットをインポート"
-
-#: source_code:49
-msgid "Length Deviation (Minor)"
-msgstr "長さの差異（軽微）"
-
-#: source_code:51
-msgid "Length Deviation (Major)"
-msgstr "長さの差異（重大）"
-
-#: source_code:52
-msgid "No content in message"
-msgstr "メッセージに内容がありません"
-
-#: source_code:52
-msgid "Translation:"
-msgstr "翻訳:"
-
-#: source_code:53
-msgid "API Error"
-msgstr "APIエラー"
-
-#: source_code:53
-msgid "Added"
-msgstr "追加済み"
-
-#: source_code:53
-msgid "Export Preset"
-msgstr "プリセットをエクスポート"
-
-#: source_code:53
-msgid "Line count differs from original."
-msgstr "原文の行数と異なります。"
-
-#: source_code:53
-msgid "Response"
-msgstr "レスポンス"
-
-#: source_code:53
-msgid "Translation Empty"
-msgstr "翻訳が空です"
-
-#: source_code:54
-msgid "API Base URL:"
-msgstr "APIベースURL:"
-
-#: source_code:55
-msgid "API request timed out."
-msgstr "APIリクエストがタイムアウトしました。"
-
-#: source_code:55
-msgid "Original Empty, Translation Not"
-msgstr "原文が空、翻訳あり"
-
-#: source_code:55
-msgid "Search in:"
-msgstr "検索対象:"
-
-#: source_code:56
-msgid "Original"
-msgstr "原文"
-
-#: source_code:57
-msgid "Fuzzy Translation"
-msgstr "あいまいな翻訳"
-
-#: source_code:57
-msgid "Network error or API request failed"
-msgstr "ネットワークエラーまたはAPIリクエストが失敗しました"
-
-#: source_code:57
-msgid "Translation"
-msgstr "翻訳"
-
-#: source_code:58
-msgid "Comment"
-msgstr "コメント"
-
-#: source_code:58
-msgid "Original starts with space, translation does not."
-msgstr "翻訳の先頭にスペースがありません。"
-
-#: source_code:59
-msgid "Content"
-msgstr "内容"
-
-#: source_code:59
-msgid "Type"
-msgstr "タイプ"
-
-#: source_code:60
-msgid "Could not decode API response. Response text"
-msgstr "APIレスポンスをデコードできませんでした。レスポンステキスト"
-
-#: source_code:60
-msgid "Enabled"
-msgstr "有効"
-
-#: source_code:60
-msgid "Left Delimiter (Regex)"
-msgstr "左区切り文字 (正規表現)"
-
-#: source_code:60
-msgid "Model Name:"
-msgstr "モデル名:"
-
-#: source_code:60
-msgid "No response object"
-msgstr "レスポンスオブジェクトがありません"
-
-#: source_code:60
-msgid "Right Delimiter (Regex)"
-msgstr "右区切り文字 (正規表現)"
-
-#: source_code:60
-msgid "Rule Name"
-msgstr "ルール名"
-
-#: source_code:60
-msgid "String Type"
-msgstr "文字列タイプ"
-
-#: source_code:61
-msgid "Translation starts with space, original does not."
-msgstr "原文がスペースで始まっていないのに、翻訳がスペースで始まっています。"
-
-#: source_code:62
-msgid "Unknown error occurred during translation"
-msgstr "翻訳中に不明なエラーが発生しました"
-
-#: source_code:65
-msgid "Original ends with space, translation does not."
-msgstr "原文はスペースで終わっているが、翻訳はそうなっていません。"
-
-#: source_code:65
-msgid "Removed"
-msgstr "削除済み"
-
-#: source_code:67
-msgid "Connection successful. Test translation"
-msgstr "接続に成功しました。テスト翻訳"
-
-#: source_code:67
-msgid "Translation & Context Settings"
-msgstr "翻訳とコンテキスト設定"
-
-#: source_code:68
-msgid "Apply Translation"
-msgstr "翻訳を適用"
-
-#: source_code:68
-msgid "Translation ends with space, original does not."
-msgstr "翻訳の末尾にスペースがありますが、原文にはありません。"
-
-#: source_code:69
-msgid "Connection failed"
-msgstr "接続に失敗しました"
-
-#: source_code:71
-msgid "Target Language:"
-msgstr "ターゲット言語:"
-
-#: source_code:73
-msgid "Find Next"
-msgstr "次を検索"
-
-#: source_code:74
-msgid "Font Family:"
-msgstr "フォント ファミリー:"
-
-#: source_code:76
-msgid "Find Previous"
-msgstr "前を検索"
-
-#: source_code:77
-msgid "API Call Interval (ms):"
-msgstr "API呼び出し間隔 (ms):"
-
-#: source_code:77
-msgid "Modified/Inherited"
-msgstr "変更/継承"
-
-#: source_code:79
-msgid "Replace"
-msgstr "置換"
-
-#: source_code:82
-#, python-brace-format
-msgid "Processing item {i}/{total}..."
-msgstr "項目 {i}/{total} を処理中..."
-
-#: source_code:82
-msgid "Replace All"
-msgstr "すべて置換"
-
-#: source_code:83
-msgid "Size:"
-msgstr "サイズ:"
-
-#: source_code:84
-msgid "Starting punctuation presence differs."
-msgstr "開始の句読点の有無が異なります。"
-
-#: source_code:86
-msgid "Close"
-msgstr "閉じる"
-
-#: source_code:87
-msgid "Max Concurrent Requests:"
-msgstr "最大同時リクエスト数:"
-
-#: source_code:88
-#, python-brace-format
-msgid "Starting punctuation differs: '{c1}' vs '{c2}'."
-msgstr "開始の句読点が異なります: '{c1}' と '{c2}'。"
-
-#: source_code:91
-msgid "Unnamed Rule"
-msgstr "無名ルール"
-
-#: source_code:92
-msgid "Custom"
-msgstr "カスタム"
-
-#: source_code:93
-msgid "Style:"
-msgstr "スタイル:"
-
-#: source_code:95
-msgid "Ending punctuation presence differs."
-msgstr "終了句読点の有無が異なります。"
-
-#: source_code:96
-msgid "Press a key combination..."
-msgstr "キーの組み合わせを押してください..."
-
-#: source_code:96
-msgid "Use nearby original text as context"
-msgstr "近くの原文をコンテキストとして使用"
-
-#: source_code:97
-msgid "Structural Content"
-msgstr "構造コンテンツ"
-
-#: source_code:98
-msgid "Static Instruction"
-msgstr "静的指示"
-
-#: source_code:99
-msgid "Dynamic Instruction"
-msgstr "動的指示"
-
-#: source_code:99
-#, python-brace-format
-msgid "Ending punctuation differs: '{c1}' vs '{c2}'."
-msgstr "終了の句読点が異なります: '{c1}' と '{c2}'。"
-
-#: source_code:103
-msgid "Use nearby"
-msgstr "近くの"
-
-#: source_code:107
-msgid "Initial capitalization mismatch."
-msgstr "先頭の大文字が一致していません。"
-
-#: source_code:109
-msgid "original strings (0 for all)"
-msgstr "原文 ({0}で全て)"
-
-#: source_code:113
-msgid "Original is empty but translation is not."
-msgstr "原文は空ですが、翻訳は空ではありません。"
-
-#: source_code:113
-msgid "Use nearby translated text as context"
-msgstr "近くの翻訳済みテキストをコンテキストとして使用"
-
-#: source_code:114
-msgid "New Rule"
-msgstr "新しいルール"
-
-#: source_code:116
-msgid "Translation is empty but original is not."
-msgstr "翻訳が空ですが、原文は空ではありません。"
-
-#: source_code:118
-msgid "Confirmation"
-msgstr "確認"
-
-#: source_code:118
-msgid "Reset all font settings to default?"
-msgstr "すべてのフォント設定をデフォルトにリセットしますか？"
-
-#: source_code:120
-msgid "New Instruction"
-msgstr "新しい指示"
-
-#: source_code:121
-msgid "Add Extraction Rule"
-msgstr "抽出ルールを追加"
-
-#: source_code:121
-msgid "Add Prompt Fragment"
-msgstr "プロンプトフラグメントを追加"
-
-#: source_code:126
-msgid "translations (0 for all)"
-msgstr "翻訳 (0で全て)"
-
-#: source_code:129
-#, python-brace-format
-msgid "Overwatch Localizer - v{version}"
-msgstr "Overwatch Localizer - v{version}"
-
-#: source_code:130
-msgid "Translation is marked as fuzzy and needs review."
-msgstr "翻訳はファジー（未確定）としてマークされており、レビューが必要です。"
-
-#: source_code:132
-#, python-brace-format
-msgid "Translation length differs by {percent:.0%} (Major)."
-msgstr "翻訳の長さが {percent:.0%} 異なります（重大）。"
-
-#: source_code:136
-#, python-brace-format
-msgid "Translation length differs by {percent:.0%} (Minor)."
-msgstr "翻訳の長さが {percent:.0%} 異なります（軽微）。"
-
-#: source_code:137
-msgid "Are you sure you want to reset all keybindings to their default settings?"
-msgstr "すべてのショートカットをデフォルト設定にリセットしますか？"
-
-#: source_code:140
-msgid "Prompt Manager..."
-msgstr "プロンプトマネージャー..."
-
-#: source_code:145
-msgid "Test Connection"
-msgstr "接続テスト"
-
-#: source_code:146
-msgid "Edit Prompt Fragment"
-msgstr "プロンプトフラグメントを編集"
-
-#: source_code:146
-msgid "Project Statistics"
-msgstr "プロジェクト統計"
-
-#: source_code:147
-msgid "Edit Extraction Rule"
-msgstr "抽出ルールを編集"
-
-#: source_code:149
-msgid "OK"
-msgstr "OK"
-
-#: source_code:151
-msgid "Keybindings have been updated."
-msgstr "ショートカットが更新されました。"
-
-#: source_code:153
-msgid "Cancel"
-msgstr "キャンセル"
-
-#: source_code:153
-msgid "Please enter a search term."
-msgstr "検索語を入力してください。"
-
-#: source_code:155
-msgid ""
-"Are you sure you want to reset the prompt to its default settings?\n"
-"All current customizations will be lost."
-msgstr ""
-"プロンプトをデフォルト設定にリセットしますか？\n"
-"現在のカスタマイズはすべて失われます。"
-
-#: source_code:156
-msgid ""
-"Are you sure you want to reset extraction rules to their default settings?\n"
-"All current custom rules will be lost."
-msgstr ""
-"抽出ルールをデフォルト設定にリセットしますか？\n"
-"現在のカスタムルールはすべて失われます。"
-
-#: source_code:156
-#, python-brace-format
-msgid "Backup created: {filename}"
-msgstr "バックアップが作成されました: {filename}"
-
-#: source_code:156
-msgid "Confirm"
-msgstr "確認"
-
-#: source_code:161
-#, python-brace-format
-msgid "Could not create code file backup '{filename}': {error}"
-msgstr "コードファイルのバックアップ '{filename}' を作成できませんでした: {error}"
-
-#: source_code:164
-msgid "AI Prompt Manager"
-msgstr "AIプロンプトマネージャー"
-
-#: source_code:164
-msgid "Import Prompt Preset"
-msgstr "プロンプトプリセットをインポート"
-
-#: source_code:165
-msgid "Import Extraction Rule Preset"
-msgstr "抽出ルールプリセットをインポート"
-
-#: source_code:166
-#, python-brace-format
-msgid "Overwatch Prompt Files (*{ext});;All Files (*.*)"
-msgstr "Overwatch プロンプトファイル (*{ext});;すべてのファイル (*.*)"
-
-#: source_code:167
-#, python-brace-format
-msgid "Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)"
-msgstr "Overwatch 抽出パターンファイル (*{ext});;すべてのファイル (*.*)"
-
-#: source_code:168
-msgid "Testing..."
-msgstr "テスト中..."
-
-#: source_code:176
-msgid "API Key is not filled."
-msgstr "APIキーが入力されていません。"
-
-#: source_code:176
-msgid "Test Failed"
-msgstr "テスト失敗"
-
-#: source_code:177
-msgid "Test failed: API Key is not filled."
-msgstr "テスト失敗: APIキーが入力されていません。"
-
-#: source_code:180
-msgid "Preset imported successfully."
-msgstr "プリセットが正常にインポートされました。"
-
-#: source_code:180
-msgid "Success"
-msgstr "成功"
-
-#: source_code:182
-#, python-brace-format
-msgid "Found {count} matches."
-msgstr "{count}件の一致が見つかりました。"
-
-#: source_code:183
-msgid "Preset file format is incorrect."
-msgstr "プリセットファイルの形式が正しくありません。"
-
-#: source_code:185
-#, python-brace-format
-msgid "Could not load preset file: {error}"
-msgstr "プリセットファイルを読み込めませんでした: {error}"
-
-#: source_code:185
-msgid "Import Failed"
-msgstr "インポートに失敗しました"
-
-#: source_code:187
-msgid "No matches found."
-msgstr "一致する項目は見つかりませんでした。"
-
-#: source_code:188
-msgid "Export Prompt Preset"
-msgstr "プロンプトプリセットをエクスポート"
-
-#: source_code:190
-msgid "Export Extraction Rule Preset"
-msgstr "抽出ルールプリセットをエクスポート"
-
-#: source_code:198
-msgid "Preset exported successfully."
-msgstr "プリセットが正常にエクスポートされました。"
-
-#: source_code:200
-#, python-brace-format
-msgid "Could not save preset file: {error}"
-msgstr "プリセットファイルを保存できませんでした: {error}"
-
-#: source_code:200
-msgid "Export Failed"
-msgstr "エクスポートに失敗しました"
-
-#: source_code:204
-msgid "AI prompt structure updated."
-msgstr "AIプロンプト構造が更新されました。"
-
-#: source_code:207
-msgid "Extraction rules updated. Consider reloading the text."
-msgstr "抽出ルールが更新されました。テキストの再読み込みを検討してください。"
-
-#: source_code:212
-#, python-brace-format
-msgid "Match {current}/{total}"
-msgstr "{current}/{total}件目の一致"
-
-#: source_code:226
-msgid "Type:"
-msgstr "タイプ:"
-
-#: source_code:230
-msgid "Error"
-msgstr "エラー"
-
-#: source_code:230
-msgid "Target language cannot be empty."
-msgstr "ターゲット言語は空にできません。"
-
-#: source_code:234
-msgid "Model name cannot be empty."
-msgstr "モデル名は空にできません。"
-
-#: source_code:235
-msgid "Rule Name:"
-msgstr "ルール名:"
-
-#: source_code:237
-msgid "Enable this fragment"
-msgstr "このフラグメントを有効にする"
-
-#: source_code:238
-msgid "API call interval cannot be negative."
-msgstr "API呼び出し間隔は負の値にできません。"
-
-#: source_code:238
-msgid "Enable this rule"
-msgstr "このルールを有効にする"
-
-#: source_code:239
-msgid "&File"
-msgstr "&ファイル"
-
-#: source_code:240
+#: main_window.py:280 main_window.py:580
 msgid "&Edit"
 msgstr "&編集"
 
-#: source_code:241
-msgid "&View"
-msgstr "&表示"
+#: main_window.py:279 main_window.py:579
+msgid "&File"
+msgstr "&ファイル"
 
-#: source_code:242
-msgid "&Tools"
-msgstr "&ツール"
-
-#: source_code:242
-msgid "Max concurrent requests must be between 1 and 10."
-msgstr "最大同時リクエスト数は1から10の間である必要があります。"
-
-#: source_code:243
-msgid "&Settings"
-msgstr "&設定"
-
-#: source_code:244
+#: main_window.py:284 main_window.py:584
 msgid "&Help"
 msgstr "&ヘルプ"
 
-#: source_code:244
-msgid "Content:"
-msgstr "内容:"
+#: main_window.py:283 main_window.py:583
+msgid "&Settings"
+msgstr "&設定"
 
-#: source_code:245
-msgid "String Type:"
-msgstr "文字列タイプ:"
+#: main_window.py:282 main_window.py:582
+msgid "&Tools"
+msgstr "&ツール"
 
-#: source_code:247
-msgid "Open Code File..."
-msgstr "コードファイルを開く..."
+#: main_window.py:281 main_window.py:581
+msgid "&View"
+msgstr "&表示"
 
-#: source_code:251
-msgid "Left Delimiter:"
-msgstr "左区切り文字:"
+#: services/ai_translator.py:23
+msgid "'requests' library not found. AI translation feature is unavailable."
+msgstr "'requests' ライブラリが見つかりません。AI翻訳機能は利用できません。"
 
-#: source_code:251
-msgid "Open Project..."
-msgstr "プロジェクトを開く..."
+#: dialogs/pot_drop_dialog.py:20
+msgid "A POT file was dropped. What would you like to do?"
+msgstr "POTファイルがドロップされました。どうしますか？"
 
-#: source_code:256
-msgid "Compare/Import New Version..."
-msgstr "新バージョンをインポート/比較..."
+#: main_window.py:3943
+msgid "AI Batch Translation"
+msgstr "AI一括翻訳"
 
-#: source_code:257
-msgid "Right Delimiter:"
-msgstr "右区切り文字:"
-
-#: source_code:262
-msgid "Save"
-msgstr "保存"
-
-#: source_code:264
-msgid "Escape for Regex (Left)"
-msgstr "正規表現用にエスケープ (左)"
-
-#: source_code:264
-msgid "Info"
-msgstr "情報"
-
-#: source_code:264
-msgid "No matches found to replace."
-msgstr "置換対象の一致が見つかりませんでした。"
-
-#: source_code:267
-msgid "Save As..."
-msgstr "名前を付けて保存..."
-
-#: source_code:268
-msgid "Escape for Regex (Right)"
-msgstr "正規表現用にエスケープ (右)"
-
-#: source_code:273
-msgid "Save Translation to New Code File"
-msgstr "翻訳を新しいコードファイルに保存"
-
-#: source_code:279
-msgid "Import Translations from Excel"
-msgstr "Excelから翻訳をインポート"
-
-#: source_code:284
-msgid "Export to Excel"
-msgstr "Excelにエクスポート"
-
-#: source_code:289
-msgid "Export to JSON"
-msgstr "JSONにエクスポート"
-
-#: source_code:292
-msgid "Match is not in a replaceable column (Translation or Comment)."
-msgstr "一致する項目は置換可能な列（翻訳またはコメント）にありません。"
-
-#: source_code:294
-msgid "Export to YAML"
-msgstr "YAMLにエクスポート"
-
-#: source_code:300
-msgid "Extract POT Template from Code..."
-msgstr "コードからPOTテンプレートを抽出..."
-
-#: source_code:300
-msgid "Issues & Warnings"
-msgstr "問題と警告"
-
-#: source_code:300
-msgid "Rule name cannot be empty."
-msgstr "ルール名は空にできません。"
-
-#: source_code:303
-msgid "Left and right delimiters cannot be empty."
-msgstr "左右の区切り文字は空にできません。"
-
-#: source_code:304
-msgid "Import Translations from PO File..."
-msgstr "POファイルから翻訳をインポート..."
-
-#: source_code:308
-msgid "Export to PO File..."
-msgstr "POファイルにエクスポート..."
-
-#: source_code:312
-msgid "No matches found in Translation or Comment columns."
-msgstr "翻訳またはコメント列に一致するものが見つかりませんでした。"
-
-#: source_code:314
-msgid "Import TM (Excel)"
-msgstr "翻訳メモリをインポート (Excel)"
-
-#: source_code:318
-msgid "Export Current TM (Excel)"
-msgstr "現在のTMをエクスポート (Excel)"
-
-#: source_code:323
-msgid "Recent Files"
-msgstr "最近のファイル"
-
-#: source_code:328
-msgid "Exit"
-msgstr "終了"
-
-#: source_code:332
-msgid "Undo"
-msgstr "元に戻す"
-
-#: source_code:337
-msgid "Redo"
-msgstr "やり直し"
-
-#: source_code:339
-msgid "Translation Progress"
-msgstr "翻訳進捗"
-
-#: source_code:343
-msgid "Find/Replace..."
-msgstr "検索/置換..."
-
-#: source_code:346
-msgid "Replace All Complete"
-msgstr "すべて置換完了"
-
-#: source_code:347
+#: main_window.py:3543
 #, python-brace-format
-msgid "Replaced occurrences in {count} item(s)."
-msgstr "{count} 項目で置換されました。"
+msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
+msgstr "AI一括: 処理中 {current}/{total} (同時実行: {threads})..."
 
-#: source_code:349
-msgid "Copy Original"
-msgstr "原文をコピー"
+#: main_window.py:3889
+#, python-brace-format
+msgid "AI Batch: {current}/{total} completed ({progress_percent:.0f}%)."
+msgstr "AI一括: {current}/{total} 完了 ({progress_percent:.0f}%)。"
 
-#: source_code:354
-msgid "Paste to Translation"
-msgstr "翻訳に貼り付け"
+#: main_window.py:3372
+msgid "AI Feature Unavailable"
+msgstr "AI機能は利用できません"
 
-#: source_code:358
-msgid "Project Metrics"
-msgstr "プロジェクトメトリクス"
+#: dialogs/ai_settings_dialog.py:186
+msgid "AI Prompt Manager"
+msgstr "AIプロンプトマネージャー"
 
-#: source_code:360
-msgid "Show Ignored"
-msgstr "無視済みを表示"
+#: main_window.py:3366
+msgid "AI Settings"
+msgstr "AI設定"
 
-#: source_code:366
-msgid "Show Untranslated"
-msgstr "未翻訳を表示"
-
-#: source_code:372
-msgid "Show Translated"
-msgstr "翻訳済みを表示"
-
-#: source_code:378
-msgid "Show Unreviewed"
-msgstr "未レビューを表示"
-
-#: source_code:385
-msgid "Edit && Details Panel"
-msgstr "編集 && 詳細パネル"
-
-#: source_code:385
-msgid "Refresh Data"
-msgstr "データを更新"
-
-#: source_code:388
-msgid "Comment && Status Panel"
-msgstr "コメント && ステータスパネル"
-
-#: source_code:391
-msgid "Context Preview Panel"
-msgstr "コンテキストプレビューパネル"
-
-#: source_code:394
-msgid "Translation Memory Panel"
-msgstr "翻訳メモリパネル"
-
-#: source_code:398
-msgid "Restore Default Layout"
-msgstr "デフォルトレイアウトに戻す"
-
-#: source_code:403
-msgid "Apply TM to Untranslated"
-msgstr "未翻訳にTMを適用"
-
-#: source_code:408
-msgid "Clear TM (in-memory)"
-msgstr "翻訳メモリをクリア (メモリ内)"
-
-#: source_code:413
-msgid "AI Translate Selected"
-msgstr "AI翻訳 (選択項目)"
-
-#: source_code:418
-msgid "AI Translate All Untranslated"
-msgstr "AIで未翻訳をすべて翻訳"
-
-#: source_code:423
-msgid "Stop AI Batch Translation"
-msgstr "AI一括翻訳を停止"
-
-#: source_code:429
-msgid "Project-specific Instructions..."
-msgstr "プロジェクト固有の指示..."
-
-#: source_code:434
+#: main_window.py:479 main_window.py:632
 msgid "AI Settings..."
 msgstr "AI設定..."
 
-#: source_code:439
-msgid "Extraction Rule Manager..."
-msgstr "抽出ルールマネージャー..."
+#: main_window.py:463 main_window.py:629
+msgid "AI Translate All Untranslated"
+msgstr "AIで未翻訳をすべて翻訳"
 
-#: source_code:443
-msgid "Reload Translatable Text"
-msgstr "翻訳可能テキストを再読み込み"
+#: main_window.py:458 main_window.py:628 ui_components/details_panel.py:91 ui_components/details_panel.py:197
+msgid "AI Translate Selected"
+msgstr "AI翻訳 (選択項目)"
 
-#: source_code:449
-msgid "Project Statistics..."
-msgstr "プロジェクト統計..."
+#: main_window.py:3766
+msgid "AI Translation"
+msgstr "AI翻訳"
 
-#: source_code:456
-msgid "Auto-backup TM on Save"
-msgstr "保存時にTMを自動バックアップ"
+#: main_window.py:3851
+msgid "AI Translation Error"
+msgstr "AI翻訳エラー"
 
-#: source_code:462
-msgid "Language"
-msgstr "言語"
-
-#: source_code:467
-msgid "Keybinding Settings..."
-msgstr "ショートカット設定..."
-
-#: source_code:471
-msgid "Font Settings..."
-msgstr "フォント設定..."
-
-#: source_code:476
-msgid "About"
-msgstr "について"
-
-#: source_code:515
-msgid "Error:"
-msgstr "エラー："
-
-#: source_code:515
-msgid "No data to display."
-msgstr "表示するデータがありません。"
-
-#: source_code:527
-msgid "Total Items"
-msgstr "総アイテム数"
-
-#: source_code:533
-msgid "Translated"
-msgstr "翻訳済み"
-
-#: source_code:538
-msgid "Untranslated"
-msgstr "未翻訳"
-
-#: source_code:543
-msgid "Ignored"
-msgstr "無視済み"
-
-#: source_code:551
-msgid "Reviewed (of total)"
-msgstr "総計に対するレビュー済み"
-
-#: source_code:555
-msgid "Reviewed (of translated)"
-msgstr "翻訳済みのうちレビュー済み"
-
-#: source_code:561
-msgid "Items with Warnings"
-msgstr "警告のある項目"
-
-#: source_code:570
-msgid "Source Chars (Translated only)"
-msgstr "翻訳済みのソース文字数"
-
-#: source_code:571
-msgid "Translation Chars (Translated only)"
-msgstr "翻訳文字数（翻訳済みのみ）"
-
-#: source_code:575
-msgid "Expansion Ratio"
-msgstr "拡大率"
-
-#: source_code:583
-msgid "Line"
-msgstr "行"
-
-#: source_code:586
-msgid "Filter:"
-msgstr "フィルター:"
-
-#: source_code:590
-msgid "Unreviewed"
-msgstr "未レビュー"
-
-#: source_code:591
-msgid "Find"
-msgstr "検索"
-
-#: source_code:595
-msgid "Quick search..."
-msgstr "クイック検索..."
-
-#: source_code:599
-msgid "Edit && Details"
-msgstr "編集 && 詳細"
-
-#: source_code:600
-msgid "Context Preview"
-msgstr "コンテキストプレビュー"
-
-#: source_code:601
-msgid "Translation Memory Matches"
-msgstr "翻訳メモリマッチ"
-
-#: source_code:602
-msgid "Comment && Status"
-msgstr "コメント && ステータス"
-
-#: source_code:609
-msgid "Ready"
-msgstr "準備完了"
-
-#: source_code:633
-msgid "Issue Description"
-msgstr "問題の説明"
-
-#: source_code:641
-msgid "No issues found"
-msgstr "問題は見つかりませんでした"
-
-#: source_code:678
-msgid "Keybinding Settings"
-msgstr "ショートカット設定"
-
-#: source_code:681
-msgid "Double-click to locate."
-msgstr "ダブルクリックで位置を特定します。"
-
-#: source_code:683
-msgid "Font Settings"
-msgstr "フォント設定"
-
-#: source_code:685
-msgid "Restart Required"
-msgstr "再起動が必要です"
-
-#: source_code:686
-msgid "Font settings have been changed. Please restart the application for the changes to take effect."
-msgstr "フォント設定が変更されました。変更を反映するにはアプリケーションを再起動してください。"
-
-#: source_code:862
-msgid "Edit & Details"
-msgstr "編集と詳細"
-
-#: source_code:931
-msgid "The layout has been restored to its default state."
-msgstr "レイアウトがデフォルトの状態に復元されました。"
-
-#: source_code:951
-msgid "Hint: requests not found, AI translation is disabled."
-msgstr "ヒント: requestsが見つかりません。AI翻訳は無効です。"
-
-#: source_code:953
-msgid "Hint: "
-msgstr "ヒント: "
-
-#: source_code:967
-msgid "Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"
-msgstr "表示: 0/0 | 翻訳済み: 0 | 未翻訳: 0 | 無視: 0"
-
-#: source_code:989
-#, python-brace-format
-msgid "Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}"
-msgstr "表示: {displayed_count}/{total_count} | 翻訳済み: {translated_visible} | 未翻訳: {untranslated_visible} | 無視: {ignored_visible}"
-
-#: source_code:1096
-msgid "No more actions to undo"
-msgstr "元に戻せる操作はありません"
-
-#: source_code:1123
-#, python-brace-format
-msgid "Undo: {field} for ID {id} -> '{value}'"
-msgstr "元に戻す: ID {id}の{field} -> '{value}'"
-
-#: source_code:1127
-#, python-brace-format
-msgid "Undo error: Object ID {obj_id} not found"
-msgstr "元に戻すエラー: オブジェクトID {obj_id}が見つかりません"
-
-#: source_code:1149
-#, python-brace-format
-msgid "Undo: Bulk change ({count} items)"
-msgstr "元に戻す: 一括変更 ({count}項目)"
-
-#: source_code:1169
-msgid "No more actions to redo"
-msgstr "やり直せる操作はありません"
-
-#: source_code:1196
-#, python-brace-format
-msgid "Redo: {field} for ID {id} -> '{value}'"
-msgstr "やり直し: ID {id}の{field} -> '{value}'"
-
-#: source_code:1200
-#, python-brace-format
-msgid "Redo error: Object ID {obj_id} not found"
-msgstr "やり直しエラー: オブジェクトID {obj_id}が見つかりません"
-
-#: source_code:1222
-#, python-brace-format
-msgid "Redo: Bulk change ({count} items)"
-msgstr "やり直し: 一括変更 ({count}項目)"
-
-#: source_code:1243
+#: main_window.py:1389
 msgid "AI Translation in Progress"
 msgstr "AI翻訳が進行中"
 
-#: source_code:1244
+#: main_window.py:3823
+#, python-brace-format
+msgid "AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned)."
+msgstr "AI一括翻訳が完了しました。{success_count}/{processed_count}項目を正常に翻訳しました (計画合計{total_items}項目)。"
+
+#: main_window.py:3719
+msgid "AI batch translation is already in progress."
+msgstr "AI一括翻訳はすでに進行中です。"
+
+#: main_window.py:1613
+msgid "AI batch translation is in progress."
+msgstr "AI一括翻訳が進行中です。"
+
+#: main_window.py:1556
+msgid "AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."
+msgstr "AI一括翻訳が進行中です。新しいファイルを開く前に、完了または停止するまでお待ちください。"
+
+#: main_window.py:1390
 msgid ""
 "AI batch translation is still in progress. Are you sure you want to exit?\n"
 "Unfinished translations will be lost."
@@ -1215,32 +125,1406 @@ msgstr ""
 "AI一括翻訳がまだ進行中です。終了しますか？\n"
 "未完了の翻訳は失われます。"
 
-#: source_code:1310
-msgid "No History"
-msgstr "履歴なし"
+#: main_window.py:3800
+#, python-brace-format
+msgid "AI batch translation started for {count} unique strings..."
+msgstr "AIバッチ翻訳を開始しました。{count}件のユニークな文字列を処理中..."
 
-#: source_code:1320
+#: main_window.py:3944
+msgid ""
+"AI batch translation stop requested.\n"
+"Dispatched tasks will continue to complete, please wait."
+msgstr ""
+"AI一括翻訳の停止が要求されました。\n"
+"ディスパッチされたタスクは完了まで続行されますので、お待ちください。"
+
+#: main_window.py:3946
+msgid "AI batch translation stop requested. Finishing dispatched tasks..."
+msgstr "AI一括翻訳の停止が要求されました。ディスパッチされたタスクを完了しています..."
+
+#: main_window.py:3513
+#, python-brace-format
+msgid "AI is translating: \"{text}...\""
+msgstr "AIが翻訳中: 「{text}...」"
+
+#: dialogs/prompt_manager_dialog.py:204
+msgid "AI prompt structure updated."
+msgstr "AIプロンプト構造が更新されました。"
+
+#: main_window.py:3852
+#, python-brace-format
+msgid ""
+"AI translation failed for \"{text}...\":\n"
+"{error}"
+msgstr ""
+"「{text}...」のAI翻訳に失敗しました:\n"
+"{error}"
+
+#: main_window.py:3847
+#, python-brace-format
+msgid "AI translation failed for \"{text}...\": {error}"
+msgstr "AI翻訳に失敗しました: 「{text}...」: {error}"
+
+#: main_window.py:3879
+#, python-brace-format
+msgid "AI translation successful: \"{text}...\""
+msgstr "AI翻訳に成功しました: 「{text}...」"
+
+#: dialogs/ai_settings_dialog.py:74
+msgid "API Base URL:"
+msgstr "APIベースURL:"
+
+#: dialogs/ai_settings_dialog.py:99
+msgid "API Call Interval (ms):"
+msgstr "API呼び出し間隔 (ms):"
+
+#: dialogs/ai_settings_dialog.py:63
+msgid "API Connection & Model Settings"
+msgstr "API接続とモデル設定"
+
+#: services/ai_translator.py:53
+msgid "API Error"
+msgstr "APIエラー"
+
+#: main_window.py:3377
+msgid "API Key Missing"
+msgstr "APIキーがありません"
+
+#: dialogs/ai_settings_dialog.py:199
+msgid "API Key is not filled."
+msgstr "APIキーが入力されていません。"
+
+#: main_window.py:3378
+msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
+msgstr "APIキーが設定されていません。「ツール > AI設定」で設定してください。"
+
+#: services/ai_translator.py:21
+msgid "API Key not set."
+msgstr "APIキーが設定されていません。"
+
+#: dialogs/ai_settings_dialog.py:67
+msgid "API Key:"
+msgstr "APIキー:"
+
+#: dialogs/ai_settings_dialog.py:254
+msgid "API call interval cannot be negative."
+msgstr "API呼び出し間隔は負の値にできません。"
+
+#: services/ai_translator.py:55
+msgid "API request timed out."
+msgstr "APIリクエストがタイムアウトしました。"
+
+#: main_window.py:537 main_window.py:645
+msgid "About"
+msgstr "について"
+
+#: main_window.py:1503
+msgid "About Overwatch Localizer"
+msgstr "Overwatch Localizerについて"
+
+#: dialogs/language_pair_dialog.py:278
+msgid "Actions"
+msgstr "アクション"
+
+#: dialogs/extraction_pattern_dialog.py:35 dialogs/prompt_manager_dialog.py:34
+msgid "Add"
+msgstr "追加"
+
+#: dialogs/language_pair_dialog.py:282
+msgid "Add Current Pair to Favorites"
+msgstr "現在のペアをお気に入りに追加"
+
+#: dialogs/extraction_pattern_dialog.py:121
+msgid "Add Extraction Rule"
+msgstr "抽出ルールを追加"
+
+#: dialogs/prompt_manager_dialog.py:121
+msgid "Add Prompt Fragment"
+msgstr "プロンプトフラグメントを追加"
+
+#: dialogs/diff_dialog.py:53
+msgid "Added"
+msgstr "追加済み"
+
+#: main_window.py:3930
+#, python-brace-format
+msgid "Added comments to {count} placeholder mismatched items."
+msgstr "{count}個のプレースホルダー不一致項目にコメントを追加しました。"
+
+#: main_window.py:3912
+#, python-brace-format
+msgid ""
+"After AI batch translation, {count} items were found with placeholder mismatches.\n"
+"Do you want to add the comment \"Placeholder Mismatch\" to these items in bulk?"
+msgstr ""
+"AI一括翻訳後、{count}個の項目でプレースホルダーの不一致が見つかりました。\n"
+"これらの項目に一括で「プレースホルダー不一致」のコメントを追加しますか？"
+
+#: main_window.py:4237
+#, python-brace-format
+msgid "An error occurred: {error}"
+msgstr "エラーが発生しました: {error}"
+
+#: main_window.py:4090
+#, python-brace-format
+msgid "Applied TM to {count} selected items."
+msgstr "選択した{count}項目にTMを適用しました。"
+
+#: main_window.py:3300 main_window.py:3301
+#, python-brace-format
+msgid "Applied TM to {count} strings."
+msgstr "{count}個の文字列にTMを適用しました。"
+
+#: ui_components/comment_status_panel.py:46 ui_components/comment_status_panel.py:76
+msgid "Apply Comment"
+msgstr "コメントを適用"
+
+#: dialogs/language_pair_dialog.py:280
+msgid "Apply Favorite"
+msgstr "お気に入りを適用"
+
+#: main_window.py:1846
+msgid "Apply Memory to Selected Items"
+msgstr "選択項目に翻訳メモリを適用"
+
+#: main_window.py:3142
+msgid "Apply TM"
+msgstr "TMを適用"
+
+#: main_window.py:448 main_window.py:626
+msgid "Apply TM to Untranslated"
+msgstr "未翻訳にTMを適用"
+
+#: ui_components/details_panel.py:85 ui_components/details_panel.py:196
+msgid "Apply Translation"
+msgstr "翻訳を適用"
+
+#: dialogs/keybinding_dialog.py:30
+msgid "Apply and Go to Next Untranslated"
+msgstr "適用して次の未翻訳へ"
+
+#: main_window.py:4221
+msgid "Applying updates..."
+msgstr "更新を適用中..."
+
+#: main_window.py:3170
+msgid ""
+"Are you sure you want to clear all entries from the in-memory TM?\n"
+"This cannot be undone."
+msgstr ""
+"メモリ内の翻訳メモリのすべてのエントリをクリアしますか？\n"
+"この操作は元に戻せません。"
+
+#: main_window.py:1495
+msgid "Are you sure you want to clear all recent file history?"
+msgstr "最近のファイル履歴をすべてクリアしますか？"
+
+#: main_window.py:4102
+#, python-brace-format
+msgid "Are you sure you want to clear the translations for the {count} selected items?"
+msgstr "選択した{count}項目の翻訳をクリアしますか？"
+
+#: main_window.py:3228
+#, python-brace-format
+msgid ""
+"Are you sure you want to remove the TM entry for:\n"
+"'{text}...'?"
+msgstr ""
+"翻訳メモリから「\n"
+"'{text}...'」のエントリを削除しますか？"
+
+#: dialogs/keybinding_dialog.py:137
+msgid "Are you sure you want to reset all keybindings to their default settings?"
+msgstr "すべてのショートカットをデフォルト設定にリセットしますか？"
+
+#: dialogs/extraction_pattern_dialog.py:156
+msgid ""
+"Are you sure you want to reset extraction rules to their default settings?\n"
+"All current custom rules will be lost."
+msgstr ""
+"抽出ルールをデフォルト設定にリセットしますか？\n"
+"現在のカスタムルールはすべて失われます。"
+
+#: dialogs/prompt_manager_dialog.py:155
+msgid ""
+"Are you sure you want to reset the prompt to its default settings?\n"
+"All current customizations will be lost."
+msgstr ""
+"プロンプトをデフォルト設定にリセットしますか？\n"
+"現在のカスタマイズはすべて失われます。"
+
+#: main_window.py:2987
+#, python-brace-format
+msgid "Attempted to restore {count} old translations/statuses."
+msgstr "{count}個の古い翻訳/ステータスを復元しようとしました。"
+
+#: main_window.py:501 main_window.py:638
+msgid "Auto-backup TM on Save"
+msgstr "保存時にTMを自動バックアップ"
+
+#: main_window.py:507 main_window.py:639
+msgid "Auto-compile MO on Save"
+msgstr "保存時にMOファイルを自動コンパイル"
+
+#: dialogs/language_pair_dialog.py:243
+msgid "Auto-detect Source"
+msgstr "ソース言語を自動検出"
+
+#: dialogs/language_pair_dialog.py:255
+msgid "Auto-detect Target"
+msgstr "ターゲット言語を自動検出"
+
+#: main_window.py:804
+msgid "Auto-save Interval"
+msgstr "自動保存間隔"
+
+#: main_window.py:514
+msgid "Auto-save Interval..."
+msgstr "自動保存間隔..."
+
+#: main_window.py:818
+msgid "Auto-save disabled."
+msgstr "自動保存は無効です。"
+
+#: main_window.py:816
+#, python-brace-format
+msgid "Auto-save enabled every {seconds} seconds."
+msgstr "自動保存は{seconds}秒ごとに有効です。"
+
+#: main_window.py:827
+msgid "Auto-saving..."
+msgstr "自動保存中..."
+
+#: main_window.py:3103 services/code_file_service.py:160
+msgid "Backup Failed"
+msgstr "バックアップに失敗しました"
+
+#: services/code_file_service.py:156
+#, python-brace-format
+msgid "Backup created: {filename}"
+msgstr "バックアップが作成されました: {filename}"
+
+#: dialogs/statistics_dialog.py:48
+msgid "Calculation finished."
+msgstr "計算が完了しました。"
+
+#: dialogs/ai_settings_dialog.py:175 dialogs/diff_dialog.py:45 dialogs/extraction_pattern_dialog.py:80 dialogs/extraction_pattern_dialog.py:281 dialogs/font_settings_dialog.py:61 dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342 dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:77 dialogs/prompt_manager_dialog.py:255 main_window.py:3751
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: utils/enums.py:38
+msgid "Capitalization Mismatch"
+msgstr "大文字小文字の不一致"
+
+#: dialogs/search_dialog.py:49
+msgid "Case sensitive"
+msgstr "大文字小文字を区別"
+
+#: main_window.py:1468
 msgid "Clear History"
 msgstr "履歴をクリア"
 
-#: source_code:1326
-msgid "File not found"
-msgstr "ファイルが見つかりません"
+#: main_window.py:1848
+msgid "Clear Selected Translations"
+msgstr "選択した翻訳をクリア"
 
-#: source_code:1327
+#: main_window.py:3166
+msgid "Clear TM"
+msgstr "TMをクリア"
+
+#: main_window.py:453 main_window.py:627
+msgid "Clear TM (in-memory)"
+msgstr "翻訳メモリをクリア (メモリ内)"
+
+#: ui_components/tm_panel.py:39 ui_components/tm_panel.py:98
+msgid "Clear TM for Selected"
+msgstr "選択したTMをクリア"
+
+#: main_window.py:4131
+#, python-brace-format
+msgid "Cleared {count} translations."
+msgstr "{count}個の翻訳をクリアしました。"
+
+#: main_window.py:3342
+msgid "Clipboard content pasted to translation."
+msgstr "クリップボードの内容が翻訳に貼り付けられました。"
+
+#: dialogs/search_dialog.py:86 dialogs/statistics_dialog.py:405
+msgid "Close"
+msgstr "閉じる"
+
+#: dialogs/font_settings_dialog.py:48
+msgid "Code Context"
+msgstr "コードコンテキスト"
+
+#: main_window.py:1596
+msgid "Code file loading failed"
+msgstr "コードファイルの読み込みに失敗しました"
+
+#: main_window.py:2378
+#, python-brace-format
+msgid "Code file saved to: {filename}"
+msgstr "コードファイルが{filename}に保存されました"
+
+#: dialogs/search_dialog.py:58 main_window.py:651 main_window.py:2556 main_window.py:2616 main_window.py:2624
+msgid "Comment"
+msgstr "コメント"
+
+#: main_window.py:672 main_window.py:1033
+msgid "Comment && Status"
+msgstr "コメント && ステータス"
+
+#: main_window.py:433 main_window.py:620
+msgid "Comment && Status Panel"
+msgstr "コメント && ステータスパネル"
+
+#: main_window.py:2236
+#, python-brace-format
+msgid "Comment updated for ID {id}..."
+msgstr "ID {id}...のコメントが更新されました..."
+
+#: main_window.py:2213
+msgid "Comment updated."
+msgstr "コメントを更新しました。"
+
+#: ui_components/comment_status_panel.py:30 ui_components/comment_status_panel.py:75
+msgid "Comment:"
+msgstr "コメント:"
+
+#: main_window.py:296 main_window.py:589
+msgid "Compare/Import New Version..."
+msgstr "新バージョンをインポート/比較..."
+
+#: main_window.py:4168
+msgid "Comparing versions..."
+msgstr "バージョンを比較中..."
+
+#: main_window.py:4237
+msgid "Comparison Failed"
+msgstr "比較に失敗しました"
+
+#: dialogs/diff_dialog.py:24
+msgid "Comparison Results Summary"
+msgstr "比較結果の概要"
+
+#: main_window.py:4211
+msgid "Comparison complete. Found "
+msgstr "比較完了。見つかった項目 "
+
+#: dialogs/extraction_pattern_dialog.py:156 dialogs/keybinding_dialog.py:137 dialogs/prompt_manager_dialog.py:155
+msgid "Confirm"
+msgstr "確認"
+
+#: main_window.py:3781
+msgid "Confirm Batch Translation"
+msgstr "一括翻訳の確認"
+
+#: main_window.py:3169 main_window.py:3227 main_window.py:4101
+msgid "Confirm Clear"
+msgstr "クリアの確認"
+
+#: main_window.py:3262
+msgid "Confirm Operation"
+msgstr "操作の確認"
+
+#: main_window.py:2398
+msgid "Confirm Overwrite"
+msgstr "上書きの確認"
+
+#: main_window.py:2957
+msgid "Confirm Reload"
+msgstr "再読み込みの確認"
+
+#: main_window.py:3194
+msgid "Confirm Update TM"
+msgstr "TM更新の確認"
+
+#: dialogs/diff_dialog.py:41
+msgid "Confirm and Update Project"
+msgstr "確認してプロジェクトを更新"
+
+#: dialogs/font_settings_dialog.py:118 main_window.py:1494
+msgid "Confirmation"
+msgstr "確認"
+
+#: services/ai_translator.py:69
+msgid "Connection failed"
+msgstr "接続に失敗しました"
+
+#: services/ai_translator.py:67
+msgid "Connection successful. Test translation"
+msgstr "接続に成功しました。テスト翻訳"
+
+#: dialogs/prompt_manager_dialog.py:59
+msgid "Content"
+msgstr "内容"
+
+#: dialogs/prompt_manager_dialog.py:244
+msgid "Content:"
+msgstr "内容:"
+
+#: main_window.py:670 main_window.py:1016
+msgid "Context Preview"
+msgstr "コンテキストプレビュー"
+
+#: main_window.py:436 main_window.py:621
+msgid "Context Preview Panel"
+msgstr "コンテキストプレビューパネル"
+
+#: main_window.py:3319
+#, python-brace-format
+msgid "Copied {count} original strings to clipboard."
+msgstr "{count}個の原文をクリップボードにコピーしました。"
+
+#: main_window.py:3326
+#, python-brace-format
+msgid "Copied {count} translations to clipboard."
+msgstr "{count}個の翻訳をクリップボードにコピーしました。"
+
+#: main_window.py:389 main_window.py:609 main_window.py:1812
+msgid "Copy Original"
+msgstr "原文をコピー"
+
+#: main_window.py:1813
+msgid "Copy Translation"
+msgstr "翻訳をコピー"
+
+#: main_window.py:2478
+#, python-brace-format
+msgid "Could not compile MO file: {error}"
+msgstr "MOファイルをコンパイルできませんでした: {error}"
+
+#: main_window.py:3104
+#, python-brace-format
+msgid "Could not create backup for TM: {error}"
+msgstr "TMのバックアップを作成できませんでした: {error}"
+
+#: services/code_file_service.py:161
+#, python-brace-format
+msgid "Could not create code file backup '{filename}': {error}"
+msgstr "コードファイルのバックアップ '{filename}' を作成できませんでした: {error}"
+
+#: services/ai_translator.py:60
+msgid "Could not decode API response. Response text"
+msgstr "APIレスポンスをデコードできませんでした。レスポンステキスト"
+
+#: main_window.py:3052
+#, python-brace-format
+msgid "Could not determine original/translation columns from '{filename}' header. Will try to use the first two columns by default (A=Original, B=Translation)."
+msgstr "'{filename}'のヘッダーから原文/翻訳列を特定できませんでした。デフォルトで最初の2列を使用します (A=原文, B=翻訳)。"
+
+#: main_window.py:2588
+#, python-brace-format
+msgid "Could not export project translations to Excel: {error}"
+msgstr "プロジェクト翻訳をExcelにエクスポートできませんでした: {error}"
+
+#: main_window.py:2750
+#, python-brace-format
+msgid "Could not export project translations to JSON: {error}"
+msgstr "プロジェクト翻訳をJSONにエクスポートできませんでした: {error}"
+
+#: main_window.py:2790
+#, python-brace-format
+msgid "Could not export project translations to YAML: {error}"
+msgstr "プロジェクト翻訳をYAMLにエクスポートできませんでした: {error}"
+
+#: main_window.py:3189
+msgid "Could not find data for the selected item."
+msgstr "選択した項目のデータが見つかりませんでした。"
+
+#: main_window.py:2945
+msgid "Could not get code content for re-extraction."
+msgstr "再抽出するコードコンテンツを取得できませんでした。"
+
+#: main_window.py:2710
+#, python-brace-format
+msgid "Could not import project translations from Excel: {error}"
+msgstr "Excelからプロジェクト翻訳をインポートできませんでした: {error}"
+
+#: dialogs/extraction_pattern_dialog.py:185 dialogs/prompt_manager_dialog.py:183
+#, python-brace-format
+msgid "Could not load preset file: {error}"
+msgstr "プリセットファイルを読み込めませんでした: {error}"
+
+#: main_window.py:1667
+#, python-brace-format
+msgid "Could not load project file '{filename}': {error}"
+msgstr "プロジェクトファイル'{filename}'を読み込めませんでした: {error}"
+
+#: main_window.py:1593
+#, python-brace-format
+msgid "Could not open or parse code file '{filename}': {error}"
+msgstr "コードファイル'{filename}'を開くか解析できませんでした: {error}"
+
+#: main_window.py:2941
+#, python-brace-format
+msgid ""
+"Could not re-read {filepath} from disk.\n"
+"Using in-memory version.\n"
+"Error: {error}"
+msgstr ""
+"{filepath}をディスクから再読み込みできませんでした。\n"
+"メモリ内のバージョンを使用します。\n"
+"エラー: {error}"
+
+#: main_window.py:2382
+#, python-brace-format
+msgid "Could not save code file: {error}"
+msgstr "コードファイルを保存できませんでした: {error}"
+
+#: dialogs/extraction_pattern_dialog.py:200 dialogs/prompt_manager_dialog.py:198
+#, python-brace-format
+msgid "Could not save preset file: {error}"
+msgstr "プリセットファイルを保存できませんでした: {error}"
+
+#: dialogs/language_pair_dialog.py:308
+msgid "Current Selection:"
+msgstr "現在の選択:"
+
+#: dialogs/extraction_pattern_dialog.py:92 dialogs/extraction_pattern_dialog.py:116 dialogs/extraction_pattern_dialog.py:177 dialogs/extraction_pattern_dialog.py:246 dialogs/extraction_pattern_dialog.py:295
+msgid "Custom"
+msgstr "カスタム"
+
+#: dialogs/extraction_pattern_dialog.py:39 dialogs/prompt_manager_dialog.py:38
+msgid "Delete Selected"
+msgstr "選択を削除"
+
+#: main_window.py:1113
+msgid "Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"
+msgstr "表示: 0/0 | 翻訳済み: 0 | 未翻訳: 0 | 無視: 0"
+
+#: main_window.py:1135
+#, python-brace-format
+msgid "Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}"
+msgstr "表示: {displayed_count}/{total_count} | 翻訳済み: {translated_visible} | 未翻訳: {untranslated_visible} | 無視: {ignored_visible}"
+
+#: main_window.py:3748
+msgid "Do you want to overwrite them, skip them, or cancel the operation?"
+msgstr "それらを上書きしますか、スキップしますか、または操作をキャンセルしますか？"
+
+#: dialogs/statistics_dialog.py:681
+msgid "Double-click to locate."
+msgstr "ダブルクリックで位置を特定します。"
+
+#: main_window.py:1536
+#, python-brace-format
+msgid "Drag and drop failed: '{filename}' is not a file."
+msgstr "ドラッグ＆ドロップに失敗しました: '{filename}'はファイルではありません。"
+
+#: main_window.py:1533
+#, python-brace-format
+msgid "Drag and drop failed: Invalid file type '{filename}'"
+msgstr "ドラッグ＆ドロップに失敗しました: 無効なファイルタイプ'{filename}'"
+
+#: dialogs/prompt_manager_dialog.py:99 dialogs/prompt_manager_dialog.py:106 dialogs/prompt_manager_dialog.py:231
+msgid "Dynamic Instruction"
+msgstr "動的指示"
+
+#: main_window.py:754
+msgid "Dynamic sorting enabled."
+msgstr "動的ソートが有効です。"
+
+#: main_window.py:1008
+msgid "Edit & Details"
+msgstr "編集と詳細"
+
+#: main_window.py:669
+msgid "Edit && Details"
+msgstr "編集 && 詳細"
+
+#: main_window.py:429 main_window.py:619
+msgid "Edit && Details Panel"
+msgstr "編集 && 詳細パネル"
+
+#: main_window.py:1843 main_window.py:4044
+msgid "Edit Comment..."
+msgstr "コメントを編集..."
+
+#: dialogs/extraction_pattern_dialog.py:147
+msgid "Edit Extraction Rule"
+msgstr "抽出ルールを編集"
+
+#: dialogs/prompt_manager_dialog.py:146
+msgid "Edit Prompt Fragment"
+msgstr "プロンプトフラグメントを編集"
+
+#: dialogs/prompt_manager_dialog.py:237
+msgid "Enable this fragment"
+msgstr "このフラグメントを有効にする"
+
+#: dialogs/extraction_pattern_dialog.py:238
+msgid "Enable this rule"
+msgstr "このルールを有効にする"
+
+#: dialogs/extraction_pattern_dialog.py:60 dialogs/prompt_manager_dialog.py:59
+msgid "Enabled"
+msgstr "有効"
+
+#: utils/enums.py:48
+msgid "Ending Punctuation Mismatch"
+msgstr "句末の句読点不一致"
+
+#: services/validation_service.py:97
+#, python-brace-format
+msgid "Ending punctuation differs: '{c1}' vs '{c2}'."
+msgstr "終了の句読点が異なります: '{c1}' と '{c2}'。"
+
+#: services/validation_service.py:93
+msgid "Ending punctuation presence differs."
+msgstr "終了句読点の有無が異なります。"
+
+#: main_window.py:4040
+#, python-brace-format
+msgid "Enter comment for {count} selected items:"
+msgstr "選択した{count}項目にコメントを入力:"
+
+#: main_window.py:805
+msgid "Enter interval in seconds (0 to disable):"
+msgstr "間隔を秒単位で入力してください (0で無効):"
+
+#: main_window.py:3352
+msgid ""
+"Enter specific translation instructions for this project (e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a lively and cute style').\n"
+"These instructions will be used during AI translation."
+msgstr ""
+"このプロジェクト固有の翻訳指示を入力してください（例：「Hero」を「Agent」と翻訳、「活発でかわいいスタイルを使用」）。\n"
+"これらの指示はAI翻訳時に使用されます。"
+
+#: dialogs/ai_settings_dialog.py:250 dialogs/ai_settings_dialog.py:254 dialogs/ai_settings_dialog.py:258 dialogs/extraction_pattern_dialog.py:183 dialogs/extraction_pattern_dialog.py:300 dialogs/extraction_pattern_dialog.py:303 dialogs/prompt_manager_dialog.py:181 main_window.py:1593 main_window.py:2132 main_window.py:2136 main_window.py:2372 main_window.py:2387 main_window.py:2391 main_window.py:2945 main_window.py:3081 main_window.py:3128 main_window.py:3189 main_window.py:3348 main_window.py:4242
+msgid "Error"
+msgstr "エラー"
+
+#: main_window.py:2825
+#, python-brace-format
+msgid "Error extracting POT file: {error}"
+msgstr "POTファイルの抽出エラー: {error}"
+
+#: main_window.py:2865
+#, python-brace-format
+msgid "Error importing PO file '{filename}': {error}"
+msgstr "POファイル'{filename}'のインポートエラー: {error}"
+
+#: main_window.py:2706
+#, python-brace-format
+msgid "Error processing Excel file (possibly column names issue): {error}"
+msgstr "Excelファイルの処理エラー (列名が原因の可能性): {error}"
+
+#: main_window.py:2691
+#, python-brace-format
+msgid "Error processing Excel row {row_num}: {error}. Skipping this row."
+msgstr "Excelの行{row_num}の処理中にエラーが発生しました: {error}。この行はスキップします。"
+
+#: main_window.py:3006
+#, python-brace-format
+msgid "Error reloading translatable text: {error}"
+msgstr "翻訳可能テキストの再読み込みエラー: {error}"
+
+#: dialogs/statistics_dialog.py:515
+msgid "Error:"
+msgstr "エラー："
+
+#: dialogs/extraction_pattern_dialog.py:264
+msgid "Escape for Regex (Left)"
+msgstr "正規表現用にエスケープ (左)"
+
+#: dialogs/extraction_pattern_dialog.py:268
+msgid "Escape for Regex (Right)"
+msgstr "正規表現用にエスケープ (右)"
+
+#: main_window.py:2600
+msgid "Excel files (*.xlsx)"
+msgstr "Excel ファイル (*.xlsx)"
+
+#: main_window.py:3135 main_window.py:3159
+msgid "Excel files (*.xlsx);;All files (*.*)"
+msgstr "Excel ファイル (*.xlsx);;すべてのファイル (*.*)"
+
+#: main_window.py:2610
+msgid "Excel header format is incorrect or empty."
+msgstr "Excelヘッダーの形式が正しくないか、空です。"
+
+#: main_window.py:2623
+#, python-brace-format
+msgid ""
+"Excel header must contain 'UUID' and '{translation_col}' columns.\n"
+"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
+msgstr ""
+"Excelヘッダーには「UUID」と「{translation_col}」列が必要です。\n"
+"オプションの列: 「{comment_col}」、「{reviewed_col}」、「{ignored_col}」、「{original_semantic_col}」。"
+
+#: main_window.py:368 main_window.py:603
+msgid "Exit"
+msgstr "終了"
+
+#: dialogs/statistics_dialog.py:575
+msgid "Expansion Ratio"
+msgstr "拡大率"
+
+#: main_window.py:358 main_window.py:601 main_window.py:3157
+msgid "Export Current TM (Excel)"
+msgstr "現在のTMをエクスポート (Excel)"
+
+#: main_window.py:2587 main_window.py:2749 main_window.py:2789 main_window.py:2915
+msgid "Export Error"
+msgstr "エクスポートエラー"
+
+#: dialogs/extraction_pattern_dialog.py:190
+msgid "Export Extraction Rule Preset"
+msgstr "抽出ルールプリセットをエクスポート"
+
+#: dialogs/extraction_pattern_dialog.py:200 dialogs/prompt_manager_dialog.py:198
+msgid "Export Failed"
+msgstr "エクスポートに失敗しました"
+
+#: dialogs/extraction_pattern_dialog.py:53 dialogs/prompt_manager_dialog.py:52
+msgid "Export Preset"
+msgstr "プリセットをエクスポート"
+
+#: main_window.py:2547
+msgid "Export Project Translations to Excel"
+msgstr "プロジェクト翻訳をExcelにエクスポート"
+
+#: main_window.py:2730
+msgid "Export Project Translations to JSON"
+msgstr "プロジェクト翻訳をJSONにエクスポート"
+
+#: main_window.py:2770
+msgid "Export Project Translations to YAML"
+msgstr "プロジェクト翻訳をYAMLにエクスポート"
+
+#: dialogs/prompt_manager_dialog.py:188
+msgid "Export Prompt Preset"
+msgstr "プロンプトプリセットをエクスポート"
+
+#: main_window.py:324 main_window.py:594
+msgid "Export to Excel"
+msgstr "Excelにエクスポート"
+
+#: main_window.py:329 main_window.py:595
+msgid "Export to JSON"
+msgstr "JSONにエクスポート"
+
+#: main_window.py:348 main_window.py:599 main_window.py:2900
+msgid "Export to PO File..."
+msgstr "POファイルにエクスポート..."
+
+#: main_window.py:334 main_window.py:596
+msgid "Export to YAML"
+msgstr "YAMLにエクスポート"
+
+#: utils/enums.py:36
+msgid "Extra Placeholder"
+msgstr "余分なプレースホルダー"
+
+#: services/validation_service.py:46
+#, python-brace-format
+msgid "Extra placeholders: {placeholders}"
+msgstr "余分なプレースホルダー: {placeholders}"
+
+#: main_window.py:340 main_window.py:597
+msgid "Extract POT Template from Code..."
+msgstr "コードからPOTテンプレートを抽出..."
+
+#: main_window.py:1570
+msgid "Extracting strings..."
+msgstr "文字列を抽出中..."
+
+#: main_window.py:2918
+msgid "Extraction Rule Manager"
+msgstr "抽出ルールマネージャー"
+
+#: main_window.py:484 main_window.py:633
+msgid "Extraction Rule Manager..."
+msgstr "抽出ルールマネージャー..."
+
+#: main_window.py:2921
+msgid "Extraction Rules Updated"
+msgstr "抽出ルールが更新されました"
+
+#: dialogs/extraction_pattern_dialog.py:207
+msgid "Extraction rules updated. Consider reloading the text."
+msgstr "抽出ルールが更新されました。テキストの再読み込みを検討してください。"
+
+#: main_window.py:2922
+msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"
+msgstr "抽出ルールが更新されました。すぐに新しいルールを使用して現在のコードの翻訳可能テキストを再読み込みしますか？"
+
+#: main_window.py:2915
+#, python-brace-format
+msgid "Failed to export to PO file: {error}"
+msgstr "POファイルへのエクスポートに失敗しました: {error}"
+
+#: main_window.py:3081 main_window.py:3082
+#, python-brace-format
+msgid "Failed to load Excel TM: {error}"
+msgstr "Excel TMの読み込みに失敗しました: {error}"
+
+#: main_window.py:2481
+#, python-brace-format
+msgid "Failed to save PO file: {error}"
+msgstr "POファイルの保存に失敗しました: {error}"
+
+#: main_window.py:3128
+#, python-brace-format
+msgid "Failed to save TM: {error}"
+msgstr "TMの保存に失敗しました: {error}"
+
+#: dialogs/language_pair_dialog.py:270 dialogs/language_pair_dialog.py:296
+msgid "Favorite Pairs"
+msgstr "お気に入りペア"
+
+#: main_window.py:3362
+msgid "Feature Unavailable"
+msgstr "機能は利用できません"
+
+#: main_window.py:2399
+#, python-brace-format
+msgid "File '{filename}' already exists. Overwrite? A backup file (.bak) will be created."
+msgstr "ファイル'{filename}'はすでに存在します。上書きしますか？バックアップファイル(.bak)が作成されます。"
+
+#: main_window.py:1475
 #, python-brace-format
 msgid "File '{filepath}' does not exist."
 msgstr "ファイル'{filepath}'は存在しません。"
 
-#: source_code:1347
-msgid "Are you sure you want to clear all recent file history?"
-msgstr "最近のファイル履歴をすべてクリアしますか？"
+#: main_window.py:2940
+msgid "File Read Error"
+msgstr "ファイル読み込みエラー"
 
-#: source_code:1355
-msgid "About Overwatch Localizer"
-msgstr "Overwatch Localizerについて"
+#: main_window.py:1474
+msgid "File not found"
+msgstr "ファイルが見つかりません"
 
-#: source_code:1356
+#: main_window.py:656 main_window.py:858
+msgid "Filter:"
+msgstr "フィルター:"
+
+#: main_window.py:1773
+#, python-brace-format
+msgid "Filtered by '{search_term}'."
+msgstr "「{search_term}」でフィルタリングされました。"
+
+#: dialogs/statistics_dialog.py:46
+msgid "Finalizing..."
+msgstr "処理中..."
+
+#: main_window.py:661 main_window.py:896
+msgid "Find"
+msgstr "検索"
+
+#: dialogs/search_dialog.py:73
+msgid "Find Next"
+msgstr "次を検索"
+
+#: dialogs/search_dialog.py:76
+msgid "Find Previous"
+msgstr "前を検索"
+
+#: main_window.py:3311
+msgid "Find and Replace"
+msgstr "検索と置換"
+
+#: dialogs/search_dialog.py:33
+msgid "Find what:"
+msgstr "検索文字列:"
+
+#: main_window.py:383 main_window.py:608
+msgid "Find/Replace..."
+msgstr "検索/置換..."
+
+#: dialogs/font_settings_dialog.py:74
+msgid "Font Family:"
+msgstr "フォント ファミリー:"
+
+#: main_window.py:796
+msgid "Font Settings"
+msgstr "フォント設定"
+
+#: main_window.py:532 main_window.py:642
+msgid "Font Settings..."
+msgstr "フォント設定..."
+
+#: main_window.py:799
+msgid "Font settings have been changed. Please restart the application for the changes to take effect."
+msgstr "フォント設定が変更されました。変更を反映するにはアプリケーションを再起動してください。"
+
+#: dialogs/search_dialog.py:182
+#, python-brace-format
+msgid "Found {count} matches."
+msgstr "{count}件の一致が見つかりました。"
+
+#: utils/enums.py:58
+msgid "Fuzzy Translation"
+msgstr "あいまいな翻訳"
+
+#: main_window.py:4198
+msgid "Fuzzy match, please review."
+msgstr "ファジーマッチ、確認が必要です。"
+
+#: main_window.py:1099
+msgid "Hint: "
+msgstr "ヒント: "
+
+#: main_window.py:1097
+msgid "Hint: requests not found, AI translation is disabled."
+msgstr "ヒント: requestsが見つかりません。AI翻訳は無効です。"
+
+#: main_window.py:1833
+msgid "Ignore Warnings for Selected"
+msgstr "選択項目の警告を無視"
+
+#: main_window.py:2326
+#, python-brace-format
+msgid "Ignore status for ID {id} -> {status}"
+msgstr "ID {id}の無視ステータス -> {status}"
+
+#: main_window.py:2009 main_window.py:4015 ui_components/comment_status_panel.py:57
+msgid "Ignore this string"
+msgstr "この文字列を無視"
+
+#: dialogs/statistics_dialog.py:543 dialogs/statistics_dialog.py:600 main_window.py:657 main_window.py:861 main_window.py:2557 main_window.py:2618 main_window.py:2626 main_window.py:3496
+msgid "Ignored"
+msgstr "無視済み"
+
+#: main_window.py:2063
+#, python-brace-format
+msgid "Ignored warnings for {count} item(s)."
+msgstr "{count} 件の項目の警告を無視しました。"
+
+#: main_window.py:2610 main_window.py:2622 main_window.py:2705 main_window.py:2709
+msgid "Import Error"
+msgstr "インポートエラー"
+
+#: dialogs/extraction_pattern_dialog.py:165
+msgid "Import Extraction Rule Preset"
+msgstr "抽出ルールプリセットをインポート"
+
+#: dialogs/extraction_pattern_dialog.py:185 dialogs/prompt_manager_dialog.py:183
+msgid "Import Failed"
+msgstr "インポートに失敗しました"
+
+#: dialogs/extraction_pattern_dialog.py:49 dialogs/prompt_manager_dialog.py:48
+msgid "Import Preset"
+msgstr "プリセットをインポート"
+
+#: dialogs/prompt_manager_dialog.py:164
+msgid "Import Prompt Preset"
+msgstr "プロンプトプリセットをインポート"
+
+#: main_window.py:354 main_window.py:600 main_window.py:3133
+msgid "Import TM (Excel)"
+msgstr "翻訳メモリをインポート (Excel)"
+
+#: main_window.py:319 main_window.py:593 main_window.py:2598
+msgid "Import Translations from Excel"
+msgstr "Excelから翻訳をインポート"
+
+#: main_window.py:344 main_window.py:598
+msgid "Import Translations from PO File..."
+msgstr "POファイルから翻訳をインポート..."
+
+#: dialogs/pot_drop_dialog.py:28
+msgid "Import as New File"
+msgstr "新規ファイルとしてインポート"
+
+#: main_window.py:2701
+#, python-brace-format
+msgid "Imported/updated {field_count} fields for {item_count} items from Excel."
+msgstr "Excelから{item_count}項目に対して{field_count}個のフィールドをインポート/更新しました。"
+
+#: main_window.py:3174
+msgid "In-memory TM has been cleared."
+msgstr "メモリ内のTMがクリアされました。"
+
+#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291 dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:764 main_window.py:2432 main_window.py:2531 main_window.py:2592 main_window.py:2714 main_window.py:2754 main_window.py:2885 main_window.py:2929 main_window.py:3184 main_window.py:3221 main_window.py:3238 main_window.py:3255 main_window.py:3258 main_window.py:3309 main_window.py:3936 main_window.py:4069 main_window.py:4093
+msgid "Info"
+msgstr "情報"
+
+#: main_window.py:4195 services/diff_service.py:35
+msgid "Inherited from old version"
+msgstr "旧バージョンから継承"
+
+#: services/validation_service.py:105
+msgid "Initial capitalization mismatch."
+msgstr "先頭の大文字が一致していません。"
+
+#: dialogs/statistics_dialog.py:39
+msgid "Initialization complete."
+msgstr "初期化が完了しました。"
+
+#: main_window.py:246
+msgid "Initializing services in the background..."
+msgstr "バックグラウンドでサービスを初期化中..."
+
+#: dialogs/statistics_dialog.py:36
+msgid "Initializing..."
+msgstr "初期化中..."
+
+#: dialogs/statistics_dialog.py:633
+msgid "Issue Description"
+msgstr "問題の説明"
+
+#: dialogs/statistics_dialog.py:300
+msgid "Issues & Warnings"
+msgstr "問題と警告"
+
+#: dialogs/statistics_dialog.py:561
+msgid "Items with Warnings"
+msgstr "警告のある項目"
+
+#: main_window.py:2732
+msgid "JSON files (*.json);;All Files (*.*)"
+msgstr "JSON ファイル (*.json);;すべてのファイル (*.*)"
+
+#: main_window.py:791
+msgid "Keybinding Settings"
+msgstr "ショートカット設定"
+
+#: main_window.py:528 main_window.py:641
+msgid "Keybinding Settings..."
+msgstr "ショートカット設定..."
+
+#: dialogs/keybinding_dialog.py:151
+msgid "Keybindings have been updated."
+msgstr "ショートカットが更新されました。"
+
+#: main_window.py:523 main_window.py:640
+msgid "Language"
+msgstr "言語"
+
+#: dialogs/language_pair_dialog.py:183
+msgid "Language Pair Settings"
+msgstr "言語ペア設定"
+
+#: main_window.py:519
+msgid "Language Pair Settings..."
+msgstr "言語ペア設定..."
+
+#: dialogs/language_pair_dialog.py:263
+msgid "Language Selection"
+msgstr "言語選択"
+
+#: utils/enums.py:40
+msgid "Leading Whitespace Mismatch"
+msgstr "先頭の空白不一致"
+
+#: dialogs/extraction_pattern_dialog.py:60
+msgid "Left Delimiter (Regex)"
+msgstr "左区切り文字 (正規表現)"
+
+#: dialogs/extraction_pattern_dialog.py:251
+msgid "Left Delimiter:"
+msgstr "左区切り文字:"
+
+#: dialogs/extraction_pattern_dialog.py:303
+msgid "Left and right delimiters cannot be empty."
+msgstr "左右の区切り文字は空にできません。"
+
+#: utils/enums.py:52
+msgid "Length Deviation (Major)"
+msgstr "長さの差異（重大）"
+
+#: utils/enums.py:50
+msgid "Length Deviation (Minor)"
+msgstr "長さの差異（軽微）"
+
+#: services/validation_service.py:141 services/validation_service.py:146
+#, python-brace-format
+msgid "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
+msgstr "長さ警告: 異常な膨張率 ({actual:.1f}x)、予想値は約{expected:.1f}xです。"
+
+#: main_window.py:653
+msgid "Line"
+msgstr "行"
+
+#: utils/enums.py:44
+msgid "Line Count Mismatch"
+msgstr "行数不一致"
+
+#: services/validation_service.py:51
+msgid "Line count differs from original."
+msgstr "原文の行数と異なります。"
+
+#: main_window.py:2859
+#, python-brace-format
+msgid "Loaded {count} entries from PO file {filename}."
+msgstr "POファイル{filename}から{count}個のエントリを読み込みました。"
+
+#: main_window.py:1587
+#, python-brace-format
+msgid "Loaded {count} translatable strings from {filename}"
+msgstr "{filename}から{count}個の翻訳可能文字列を読み込みました"
+
+#: main_window.py:3074
+#, python-brace-format
+msgid "Loaded/merged {count} Excel TM records from '{filename}'."
+msgstr "Excel TMレコードを'{filename}'から{count}件読み込み/マージしました。"
+
+#: main_window.py:2478
+msgid "MO Compilation Failed"
+msgstr "MOコンパイルに失敗しました"
+
+#: main_window.py:1818
+msgid "Mark as Ignored"
+msgstr "無視としてマーク"
+
+#: main_window.py:1825
+msgid "Mark as Reviewed"
+msgstr "レビュー済みとしてマーク"
+
+#: main_window.py:1826
+msgid "Mark as Unreviewed"
+msgstr "未レビューとしてマーク"
+
+#: dialogs/search_dialog.py:292
+msgid "Match is not in a replaceable column (Translation or Comment)."
+msgstr "一致する項目は置換可能な列（翻訳またはコメント）にありません。"
+
+#: dialogs/search_dialog.py:212
+#, python-brace-format
+msgid "Match {current}/{total}"
+msgstr "{current}/{total}件目の一致"
+
+#: dialogs/ai_settings_dialog.py:109
+msgid "Max Concurrent Requests:"
+msgstr "最大同時リクエスト数:"
+
+#: dialogs/ai_settings_dialog.py:258
+msgid "Max concurrent requests must be between 1 and 10."
+msgstr "最大同時リクエスト数は1から10の間である必要があります。"
+
+#: services/validation_service.py:42
+#, python-brace-format
+msgid "Missing placeholders: {placeholders}"
+msgstr "不足しているプレースホルダー: {placeholders}"
+
+#: dialogs/ai_settings_dialog.py:80
+msgid "Model Name:"
+msgstr "モデル名:"
+
+#: dialogs/ai_settings_dialog.py:250
+msgid "Model name cannot be empty."
+msgstr "モデル名は空にできません。"
+
+#: dialogs/diff_dialog.py:77
+msgid "Modified/Inherited"
+msgstr "変更/継承"
+
+#: services/ai_translator.py:57
+msgid "Network error or API request failed"
+msgstr "ネットワークエラーまたはAPIリクエストが失敗しました"
+
+#: dialogs/prompt_manager_dialog.py:120
+msgid "New Instruction"
+msgstr "新しい指示"
+
+#: dialogs/extraction_pattern_dialog.py:114
+msgid "New Rule"
+msgstr "新しいルール"
+
+#: dialogs/diff_dialog.py:31
+msgid "New Version Original"
+msgstr "新バージョン原文"
+
+#: main_window.py:2327 main_window.py:2363 main_window.py:2577 main_window.py:2578
+msgid "No"
+msgstr "いいえ"
+
+#: main_window.py:3936
+msgid "No AI batch translation task is in progress."
+msgstr "AI一括翻訳タスクは進行していません。"
+
+#: main_window.py:1458
+msgid "No History"
+msgstr "履歴なし"
+
+#: main_window.py:3710
+msgid "No Translation Needed"
+msgstr "翻訳不要"
+
+#: main_window.py:3303
+msgid "No applicable translations found in TM (or no changes needed)."
+msgstr "TMに適用可能な翻訳が見つかりませんでした (または変更不要でした)。"
+
+#: main_window.py:2929
+msgid "No code content loaded to reload."
+msgstr "再読み込みするコードコンテンツが読み込まれていません。"
+
+#: services/ai_translator.py:52
+msgid "No content in message"
+msgstr "メッセージに内容がありません"
+
+#: dialogs/statistics_dialog.py:515
+msgid "No data to display."
+msgstr "表示するデータがありません。"
+
+#: main_window.py:2531 main_window.py:2714 main_window.py:2754 main_window.py:2885
+msgid "No data to export."
+msgstr "エクスポートするデータがありません。"
+
+#: dialogs/statistics_dialog.py:641
+msgid "No issues found"
+msgstr "問題は見つかりませんでした"
+
+#: main_window.py:4136
+msgid "No items selected for AI translation."
+msgstr "AI翻訳のために選択された項目がありません。"
+
+#: main_window.py:2041
+msgid "No items selected to modify warning status."
+msgstr "警告ステータスを変更するアイテムが選択されていません。"
+
+#: main_window.py:3766
+msgid "No items to process."
+msgstr "処理する項目がありません。"
+
+#: main_window.py:1775
+#, python-brace-format
+msgid "No matches found for '{search_term}' under current filters."
+msgstr "現在のフィルター条件で「{search_term}」に一致する項目は見つかりませんでした。"
+
+#: dialogs/search_dialog.py:312
+msgid "No matches found in Translation or Comment columns."
+msgstr "翻訳またはコメント列に一致するものが見つかりませんでした。"
+
+#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:300
+msgid "No matches found to replace."
+msgstr "置換対象の一致が見つかりませんでした。"
+
+#: dialogs/search_dialog.py:187
+msgid "No matches found."
+msgstr "一致する項目は見つかりませんでした。"
+
+#: main_window.py:4094
+msgid "No matching TM entries or no changes needed for selected items."
+msgstr "一致するTMエントリがないか、選択した項目に変更は不要です。"
+
+#: main_window.py:1315
+msgid "No more actions to redo"
+msgstr "やり直せる操作はありません"
+
+#: main_window.py:1242
+msgid "No more actions to undo"
+msgstr "元に戻せる操作はありません"
+
+#: main_window.py:3428
+msgid "No more untranslated items."
+msgstr "これ以上未翻訳の項目はありません。"
+
+#: main_window.py:2391
+msgid "No original code content to save."
+msgstr "保存する元のコードコンテンツがありません。"
+
+#: main_window.py:2387
+msgid "No original code file path."
+msgstr "元のコードファイルのパスがありません。"
+
+#: main_window.py:3012
+msgid "No project data loaded to generate statistics."
+msgstr "プロジェクトデータが読み込まれていないため、統計を生成できません。"
+
+#: services/ai_translator.py:60
+msgid "No response object"
+msgstr "レスポンスオブジェクトがありません"
+
+#: main_window.py:3255
+msgid "No strings to apply TM to."
+msgstr "TMを適用する文字列がありません。"
+
+#: main_window.py:764
+msgid "No text available to detect language from."
+msgstr "検出可能なテキストがありません。"
+
+#: main_window.py:3711
+msgid "No untranslated and non-ignored strings found."
+msgstr "未翻訳で無視されていない文字列は見つかりませんでした。"
+
+#: dialogs/ai_settings_dialog.py:171 dialogs/extraction_pattern_dialog.py:76 dialogs/extraction_pattern_dialog.py:277 dialogs/font_settings_dialog.py:57 dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341 dialogs/prompt_manager_dialog.py:73 dialogs/prompt_manager_dialog.py:251
+msgid "OK"
+msgstr "OK"
+
+#: dialogs/diff_dialog.py:31
+msgid "Old Version Original"
+msgstr "旧バージョン原文"
+
+#: main_window.py:1546
+msgid "Open Code File"
+msgstr "コードファイルを開く"
+
+#: main_window.py:287 main_window.py:587
+msgid "Open Code File..."
+msgstr "コードファイルを開く..."
+
+#: main_window.py:1666
+msgid "Open Project Error"
+msgstr "プロジェクトを開くエラー"
+
+#: main_window.py:1604
+msgid "Open Project File"
+msgstr "プロジェクトファイルを開く"
+
+#: main_window.py:291 main_window.py:588
+msgid "Open Project..."
+msgstr "プロジェクトを開く..."
+
+#: main_window.py:1555 main_window.py:1613 main_window.py:3719
+msgid "Operation Restricted"
+msgstr "操作が制限されています"
+
+#: dialogs/search_dialog.py:47
+msgid "Options"
+msgstr "オプション"
+
+#: dialogs/search_dialog.py:56 main_window.py:649
+msgid "Original"
+msgstr "原文"
+
+#: main_window.py:2558
+msgid "Original (Raw)"
+msgstr "原文 (Raw)"
+
+#: main_window.py:2556 main_window.py:2620 main_window.py:2626
+msgid "Original (Semantic)"
+msgstr "原文 (意味的)"
+
+#: utils/enums.py:56
+msgid "Original Empty, Translation Not"
+msgstr "原文が空、翻訳あり"
+
+#: services/validation_service.py:63
+msgid "Original ends with space, translation does not."
+msgstr "原文はスペースで終わっているが、翻訳はそうなっていません。"
+
+#: services/validation_service.py:56
+msgid "Original starts with space, translation does not."
+msgstr "翻訳の先頭にスペースがありません。"
+
+#: main_window.py:2132
+msgid "Original text cannot be empty for a new entry."
+msgstr "新しいエントリのオリジナルテキストは空にできません。"
+
+#: ui_components/details_panel.py:43 ui_components/details_panel.py:194
+msgid "Original:"
+msgstr "オリジナル:"
+
+#: main_window.py:4041
+#, python-brace-format
+msgid ""
+"Original:\n"
+"{original_semantic}...\n"
+"\n"
+"Enter comment:"
+msgstr ""
+"原文:\n"
+"{original_semantic}...\n"
+"\n"
+"コメントを入力:"
+
+#: dialogs/font_settings_dialog.py:32
+msgid "Override default font settings"
+msgstr "デフォルトのフォント設定を上書き"
+
+#: main_window.py:1504
 #, python-brace-format
 msgid ""
 "Overwatch Custom Code Translation Tool\n"
@@ -1255,224 +1539,660 @@ msgstr ""
 "作者: TheSkyC\n"
 "中国サーバーID: 小鳥游六花#56683 / アジアサーバー: 小鳥游六花#31665"
 
-#: source_code:1385
+#: dialogs/extraction_pattern_dialog.py:167 dialogs/extraction_pattern_dialog.py:192
 #, python-brace-format
-msgid "Drag and drop failed: Invalid file type '{filename}'"
-msgstr "ドラッグ＆ドロップに失敗しました: 無効なファイルタイプ'{filename}'"
+msgid "Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)"
+msgstr "Overwatch 抽出パターンファイル (*{ext});;すべてのファイル (*.*)"
 
-#: source_code:1388
+#: main_window.py:133 main_window.py:576
 #, python-brace-format
-msgid "Drag and drop failed: '{filename}' is not a file."
-msgstr "ドラッグ＆ドロップに失敗しました: '{filename}'はファイルではありません。"
+msgid "Overwatch Localizer - v{version}"
+msgstr "Overwatch Localizer - v{version}"
 
-#: source_code:1398
-msgid "Open Code File"
-msgstr "コードファイルを開く"
-
-#: source_code:1400
-msgid "Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)"
-msgstr "Overwatch ワークショップファイル (*.ow *.txt);;すべてのファイル (*.*)"
-
-#: source_code:1407
-msgid "Operation Restricted"
-msgstr "操作が制限されています"
-
-#: source_code:1408
-msgid "AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."
-msgstr "AI一括翻訳が進行中です。新しいファイルを開く前に、完了または停止するまでお待ちください。"
-
-#: source_code:1422
-msgid "Extracting strings..."
-msgstr "文字列を抽出中..."
-
-#: source_code:1436
-#, python-brace-format
-msgid "Loaded {count} translatable strings from {filename}"
-msgstr "{filename}から{count}個の翻訳可能文字列を読み込みました"
-
-#: source_code:1442
-#, python-brace-format
-msgid "Could not open or parse code file '{filename}': {error}"
-msgstr "コードファイル'{filename}'を開くか解析できませんでした: {error}"
-
-#: source_code:1445
-msgid "Code file loading failed"
-msgstr "コードファイルの読み込みに失敗しました"
-
-#: source_code:1453
-msgid "Open Project File"
-msgstr "プロジェクトファイルを開く"
-
-#: source_code:1455
+#: main_window.py:1606 main_window.py:2454
 #, python-brace-format
 msgid "Overwatch Project Files (*{ext});;All Files (*.*)"
 msgstr "Overwatch プロジェクトファイル (*{ext});;すべてのファイル (*.*)"
 
-#: source_code:1462
-msgid "AI batch translation is in progress."
-msgstr "AI一括翻訳が進行中です。"
-
-#: source_code:1479
-msgid "Project Warning"
-msgstr "プロジェクト警告"
-
-#: source_code:1480
+#: dialogs/prompt_manager_dialog.py:166 dialogs/prompt_manager_dialog.py:190
 #, python-brace-format
-msgid "Project's associated TM file '{tm_path}' not found."
-msgstr "プロジェクトに関連付けられたTMファイル'{tm_path}'が見つかりません。"
+msgid "Overwatch Prompt Files (*{ext});;All Files (*.*)"
+msgstr "Overwatch プロンプトファイル (*{ext});;すべてのファイル (*.*)"
 
-#: source_code:1509
+#: main_window.py:1548 main_window.py:2797 main_window.py:4253
+msgid "Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)"
+msgstr "Overwatch ワークショップファイル (*.ow *.txt);;すべてのファイル (*.*)"
+
+#: main_window.py:3749
+msgid "Overwrite All"
+msgstr "すべて上書き"
+
+#: main_window.py:3504 main_window.py:3735 main_window.py:3745
+msgid "Overwrite Confirmation"
+msgstr "上書き確認"
+
+#: main_window.py:2865
+msgid "PO Import Error"
+msgstr "POインポートエラー"
+
+#: main_window.py:4248
+msgid "PO Template Files (*.pot);;All Files (*.*)"
+msgstr "POテンプレートファイル (*.pot);;すべてのファイル (*.*)"
+
+#: main_window.py:2805
+msgid "PO Template files (*.pot);;All files (*.*)"
+msgstr "POテンプレートファイル (*.pot);;すべてのファイル (*.*)"
+
+#: main_window.py:2868
+msgid "PO file loading failed"
+msgstr "POファイルの読み込みに失敗しました"
+
+#: main_window.py:2476
+#, python-brace-format
+msgid "PO file saved and MO file compiled: {filename}"
+msgstr "POファイルを保存し、MOファイルをコンパイルしました: {filename}"
+
+#: main_window.py:2468
+#, python-brace-format
+msgid "PO file saved to: {filename}"
+msgstr "POファイルを保存しました: {filename}"
+
+#: main_window.py:2489 main_window.py:2902
+msgid "PO files (*.po);;All Files (*.*)"
+msgstr "POファイル (*.po);;すべてのファイル (*.*)"
+
+#: main_window.py:2878
+msgid "PO files (*.po);;POT files (*.pot);;All files (*.*)"
+msgstr "POファイル (*.po);;POTファイル (*.pot);;すべてのファイル (*.*)"
+
+#: main_window.py:2824
+msgid "POT Extraction Error"
+msgstr "POT抽出エラー"
+
+#: dialogs/pot_drop_dialog.py:13
+msgid "POT File Detected"
+msgstr "POTファイルを検出しました"
+
+#: main_window.py:2820
+#, python-brace-format
+msgid "POT template saved to: {filename}"
+msgstr "POTテンプレートが{filename}に保存されました"
+
+#: main_window.py:4150
+msgid "Parsing new file..."
+msgstr "新しいファイルを解析中..."
+
+#: main_window.py:3344
+msgid "Paste failed: Clipboard content is not text."
+msgstr "貼り付けに失敗しました: クリップボードの内容がテキストではありません。"
+
+#: main_window.py:394 main_window.py:610
+msgid "Paste to Translation"
+msgstr "翻訳に貼り付け"
+
+#: main_window.py:3914 main_window.py:3920
+msgid "Placeholder Mismatch"
+msgstr "プレースホルダー不一致"
+
+#: utils/enums.py:34
+msgid "Placeholder Missing"
+msgstr "プレースホルダーがありません"
+
+#: dialogs/search_dialog.py:153
+msgid "Please enter a search term."
+msgstr "検索語を入力してください。"
+
+#: main_window.py:2593
+msgid "Please load a code file or project first to match imported translations."
+msgstr "インポートされた翻訳と一致させるために、まずコードファイルまたはプロジェクトを読み込んでください。"
+
+#: main_window.py:3309
+msgid "Please load a file or project first."
+msgstr "まずファイルまたはプロジェクトを読み込んでください。"
+
+#: main_window.py:4242
+msgid "Please open a project or file first."
+msgstr "最初にプロジェクトまたはファイルを開いてください。"
+
+#: main_window.py:3184 main_window.py:3221
+msgid "Please select an item first."
+msgstr "まず項目を選択してください。"
+
+#: main_window.py:3698
+msgid "Please select an item to AI translate."
+msgstr "AI翻訳する項目を選択してください。"
+
+#: main_window.py:3330
+msgid "Please select an item."
+msgstr "項目を選択してください。"
+
+#: dialogs/extraction_pattern_dialog.py:198 dialogs/prompt_manager_dialog.py:196
+msgid "Preset exported successfully."
+msgstr "プリセットが正常にエクスポートされました。"
+
+#: dialogs/extraction_pattern_dialog.py:183 dialogs/prompt_manager_dialog.py:181
+msgid "Preset file format is incorrect."
+msgstr "プリセットファイルの形式が正しくありません。"
+
+#: dialogs/extraction_pattern_dialog.py:180 dialogs/prompt_manager_dialog.py:179
+msgid "Preset imported successfully."
+msgstr "プリセットが正常にインポートされました。"
+
+#: dialogs/keybinding_dialog.py:96
+msgid "Press a key combination..."
+msgstr "キーの組み合わせを押してください..."
+
+#: dialogs/statistics_dialog.py:82
+#, python-brace-format
+msgid "Processing item {i}/{total}..."
+msgstr "項目 {i}/{total} を処理中..."
+
+#: main_window.py:1661
 #, python-brace-format
 msgid "Project '{filename}' loaded."
 msgstr "プロジェクト'{filename}'が読み込まれました。"
 
-#: source_code:1514
-msgid "Open Project Error"
-msgstr "プロジェクトを開くエラー"
+#: dialogs/statistics_dialog.py:358
+msgid "Project Metrics"
+msgstr "プロジェクトメトリクス"
 
-#: source_code:1515
-#, python-brace-format
-msgid "Could not load project file '{filename}': {error}"
-msgstr "プロジェクトファイル'{filename}'を読み込めませんでした: {error}"
+#: dialogs/statistics_dialog.py:146 dialogs/statistics_dialog.py:430 dialogs/statistics_dialog.py:512
+msgid "Project Statistics"
+msgstr "プロジェクト統計"
 
-#: source_code:1518
+#: main_window.py:494 main_window.py:635
+msgid "Project Statistics..."
+msgstr "プロジェクト統計..."
+
+#: main_window.py:1632
+msgid "Project Warning"
+msgstr "プロジェクト警告"
+
+#: main_window.py:835
+msgid "Project auto-saved."
+msgstr "プロジェクトを自動保存しました。"
+
+#: main_window.py:1670
 msgid "Project file loading failed."
 msgstr "プロジェクトファイルの読み込みに失敗しました。"
 
-#: source_code:1558
-msgid "Unsaved Changes"
-msgstr "未保存の変更"
-
-#: source_code:1559
-msgid "The current project has unsaved changes. Do you want to save?"
-msgstr "現在のプロジェクトには未保存の変更があります。保存しますか？"
-
-#: source_code:1625
+#: main_window.py:2520
 #, python-brace-format
-msgid "Filtered by '{search_term}'."
-msgstr "「{search_term}」でフィルタリングされました。"
+msgid "Project saved to: {filename}"
+msgstr "プロジェクトが{filename}に保存されました"
 
-#: source_code:1627
+#: main_window.py:2585 main_window.py:2747 main_window.py:2787
 #, python-brace-format
-msgid "No matches found for '{search_term}' under current filters."
-msgstr "現在のフィルター条件で「{search_term}」に一致する項目は見つかりませんでした。"
+msgid "Project translations exported to: {filename}"
+msgstr "プロジェクト翻訳が{filename}にエクスポートされました"
 
-#: source_code:1630
-msgid "Search cleared."
-msgstr "検索がクリアされました。"
+#: main_window.py:4231
+msgid "Project updated to new version."
+msgstr "プロジェクトを新しいバージョンに更新しました。"
 
-#: source_code:1665
-msgid "Copy Translation"
-msgstr "翻訳をコピー"
-
-#: source_code:1670
-msgid "Mark as Ignored"
-msgstr "無視としてマーク"
-
-#: source_code:1671
-msgid "Unmark as Ignored"
-msgstr "無視マークを解除"
-
-#: source_code:1677
-msgid "Mark as Reviewed"
-msgstr "レビュー済みとしてマーク"
-
-#: source_code:1678
-msgid "Mark as Unreviewed"
-msgstr "未レビューとしてマーク"
-
-#: source_code:1685
-msgid "Ignore Warnings for Selected"
-msgstr "選択項目の警告を無視"
-
-#: source_code:1687
-msgid "Un-ignore Warnings for Selected"
-msgstr "選択項目の警告を無視解除"
-
-#: source_code:1695
-msgid "Edit Comment..."
-msgstr "コメントを編集..."
-
-#: source_code:1698
-msgid "Apply Memory to Selected Items"
-msgstr "選択項目に翻訳メモリを適用"
-
-#: source_code:1700
-msgid "Clear Selected Translations"
-msgstr "選択した翻訳をクリア"
-
-#: source_code:1703
-msgid "Use AI to Translate Selected Items"
-msgstr "AIで選択項目を翻訳"
-
-#: source_code:1761
+#: main_window.py:1633
 #, python-brace-format
-msgid "Selected: \"{text}...\" (Line: {line_num})"
-msgstr "選択済み: 「{text}...」 (行: {line_num})"
+msgid "Project's associated TM file '{tm_path}' not found."
+msgstr "プロジェクトに関連付けられたTMファイル'{tm_path}'が見つかりません。"
 
-#: source_code:1827
-msgid "Ignore this string"
-msgstr "この文字列を無視"
+#: main_window.py:3351
+msgid "Project-specific Instructions"
+msgstr "プロジェクト固有の指示"
 
-#: source_code:1853
-msgid "No items selected to modify warning status."
-msgstr "警告ステータスを変更するアイテムが選択されていません。"
+#: main_window.py:474 main_window.py:631
+msgid "Project-specific Instructions..."
+msgstr "プロジェクト固有の指示..."
 
-#: source_code:1875
+#: main_window.py:3358
+msgid "Project-specific translation settings updated."
+msgstr "プロジェクト固有の翻訳設定が更新されました。"
+
+#: dialogs/ai_settings_dialog.py:162
+msgid "Prompt Manager..."
+msgstr "プロンプトマネージャー..."
+
+#: main_window.py:3373
+msgid "Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."
+msgstr "Pythonの「requests」ライブラリが見つかりません。AI翻訳機能を使用するには、pip install requestsを実行してください。"
+
+#: main_window.py:665 main_window.py:888 main_window.py:972 main_window.py:977 main_window.py:1420 main_window.py:1732 main_window.py:1757 main_window.py:1774 main_window.py:1780 main_window.py:1781 main_window.py:1785 main_window.py:1792 main_window.py:2268 main_window.py:2509
+msgid "Quick search..."
+msgstr "クイック検索..."
+
+#: main_window.py:2967
+msgid "Re-extracting strings with new rules..."
+msgstr "新しいルールで文字列を再抽出中..."
+
+#: main_window.py:254 main_window.py:679 main_window.py:1083 main_window.py:1109
+msgid "Ready"
+msgstr "準備完了"
+
+#: main_window.py:363 main_window.py:602
+msgid "Recent Files"
+msgstr "最近のファイル"
+
+#: main_window.py:377 main_window.py:607
+msgid "Redo"
+msgstr "やり直し"
+
+#: main_window.py:1346
 #, python-brace-format
-msgid "Ignored warnings for {count} item(s)."
-msgstr "{count} 件の項目の警告を無視しました。"
+msgid "Redo error: Object ID {obj_id} not found"
+msgstr "やり直しエラー: オブジェクトID {obj_id}が見つかりません"
 
-#: source_code:1877
+#: main_window.py:1368
 #, python-brace-format
-msgid "Un-ignored warnings for {count} item(s)."
-msgstr "{count} 件のアイテムの警告を無視解除しました。"
+msgid "Redo: Bulk change ({count} items)"
+msgstr "やり直し: 一括変更 ({count}項目)"
 
-#: source_code:1880
-msgid "Selected item(s) already have the desired warning status."
-msgstr "選択された項目は既に希望する警告ステータスを持っています。"
-
-#: source_code:1928
+#: main_window.py:1342
 #, python-brace-format
-msgid "Translation applied: \"{original_semantic}...\""
-msgstr "翻訳が適用されました: 「{original_semantic}...」"
+msgid "Redo: {field} for ID {id} -> '{value}'"
+msgstr "やり直し: ID {id}の{field} -> '{value}'"
 
-#: source_code:1944
-msgid "Original text cannot be empty for a new entry."
-msgstr "新しいエントリのオリジナルテキストは空にできません。"
+#: dialogs/statistics_dialog.py:385
+msgid "Refresh Data"
+msgstr "データを更新"
 
-#: source_code:1948
-msgid "This original text already exists."
-msgstr "この原文は既に存在しています。"
+#: main_window.py:3005
+msgid "Reload Error"
+msgstr "再読み込みエラー"
 
-#: source_code:2025
-msgid "Comment updated."
-msgstr "コメントを更新しました。"
+#: main_window.py:488 main_window.py:634
+msgid "Reload Translatable Text"
+msgstr "翻訳可能テキストを再読み込み"
 
-#: source_code:2048
+#: main_window.py:3007
+msgid "Reload failed."
+msgstr "再読み込みに失敗しました。"
+
+#: main_window.py:2999
 #, python-brace-format
-msgid "Comment updated for ID {id}..."
-msgstr "ID {id}...のコメントが更新されました..."
+msgid "Reloaded {count} strings from {source} using new rules."
+msgstr "新しいルールを使用して{source}から{count}個の文字列を再読み込みしました。"
 
-#: source_code:2122
+#: dialogs/language_pair_dialog.py:284
+msgid "Remove Selected Favorite"
+msgstr "選択したお気に入りを削除"
+
+#: dialogs/diff_dialog.py:65
+msgid "Removed"
+msgstr "削除済み"
+
+#: dialogs/search_dialog.py:79
+msgid "Replace"
+msgstr "置換"
+
+#: dialogs/search_dialog.py:82
+msgid "Replace All"
+msgstr "すべて置換"
+
+#: dialogs/search_dialog.py:346
+msgid "Replace All Complete"
+msgstr "すべて置換完了"
+
+#: dialogs/search_dialog.py:41
+msgid "Replace with:"
+msgstr "置換文字列:"
+
+#: dialogs/search_dialog.py:347
 #, python-brace-format
-msgid "Ignore status for ID {id} -> {status}"
-msgstr "ID {id}の無視ステータス -> {status}"
+msgid "Replaced occurrences in {count} item(s)."
+msgstr "{count} 項目で置換されました。"
 
-#: source_code:2123
-msgid "No"
-msgstr "いいえ"
+#: dialogs/language_pair_dialog.py:327
+msgid "Reset"
+msgstr "リセット"
 
-#: source_code:2123
-msgid "Yes"
-msgstr "はい"
+#: dialogs/font_settings_dialog.py:118
+msgid "Reset all font settings to default?"
+msgstr "すべてのフォント設定をデフォルトにリセットしますか？"
 
-#: source_code:2167
+#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52 dialogs/keybinding_dialog.py:78 dialogs/prompt_manager_dialog.py:42
+msgid "Reset to Defaults"
+msgstr "デフォルトに戻す"
+
+#: services/ai_translator.py:53
+msgid "Response"
+msgstr "レスポンス"
+
+#: main_window.py:798
+msgid "Restart Required"
+msgstr "再起動が必要です"
+
+#: main_window.py:443 main_window.py:623
+msgid "Restore Default Layout"
+msgstr "デフォルトレイアウトに戻す"
+
+#: main_window.py:2362
 #, python-brace-format
 msgid "Review status for ID {id} -> {status}"
 msgstr "ID {id}のレビュー状況 -> {status}"
 
-#: source_code:2178
+#: main_window.py:2556 main_window.py:2617 main_window.py:2625 ui_components/comment_status_panel.py:62 ui_components/comment_status_panel.py:82
+msgid "Reviewed"
+msgstr "レビュー済み"
+
+#: dialogs/statistics_dialog.py:551
+msgid "Reviewed (of total)"
+msgstr "総計に対するレビュー済み"
+
+#: dialogs/statistics_dialog.py:555
+msgid "Reviewed (of translated)"
+msgstr "翻訳済みのうちレビュー済み"
+
+#: dialogs/extraction_pattern_dialog.py:60
+msgid "Right Delimiter (Regex)"
+msgstr "右区切り文字 (正規表現)"
+
+#: dialogs/extraction_pattern_dialog.py:257
+msgid "Right Delimiter:"
+msgstr "右区切り文字:"
+
+#: dialogs/extraction_pattern_dialog.py:60
+msgid "Rule Name"
+msgstr "ルール名"
+
+#: dialogs/extraction_pattern_dialog.py:235
+msgid "Rule Name:"
+msgstr "ルール名:"
+
+#: dialogs/extraction_pattern_dialog.py:300
+msgid "Rule name cannot be empty."
+msgstr "ルール名は空にできません。"
+
+#: main_window.py:302 main_window.py:590
+msgid "Save"
+msgstr "保存"
+
+#: main_window.py:307 main_window.py:591
+msgid "Save As..."
+msgstr "名前を付けて保存..."
+
+#: main_window.py:2382
+msgid "Save Error"
+msgstr "保存エラー"
+
+#: main_window.py:2481
+msgid "Save PO Error"
+msgstr "POファイル保存エラー"
+
+#: main_window.py:2487
+msgid "Save PO File As"
+msgstr "POファイルを別名で保存"
+
+#: main_window.py:2803
+msgid "Save POT Template File"
+msgstr "POTテンプレートファイルを保存"
+
+#: main_window.py:2452
+msgid "Save Project As"
+msgstr "プロジェクトを名前を付けて保存"
+
+#: main_window.py:313 main_window.py:592
+msgid "Save Translation to New Code File"
+msgstr "翻訳を新しいコードファイルに保存"
+
+#: main_window.py:1778
+msgid "Search cleared."
+msgstr "検索がクリアされました。"
+
+#: dialogs/search_dialog.py:55
+msgid "Search in:"
+msgstr "検索対象:"
+
+#: dialogs/language_pair_dialog.py:240 dialogs/language_pair_dialog.py:252
+msgid "Search languages..."
+msgstr "言語を検索..."
+
+#: main_window.py:2795
+msgid "Select Code File to Extract POT From"
+msgstr "POT抽出元のコードファイルを選択"
+
+#: main_window.py:2876
+msgid "Select PO File to Import"
+msgstr "インポートするPOファイルを選択"
+
+#: main_window.py:4247
+msgid "Select new POT template for comparison"
+msgstr "比較用の新しいPOTテンプレートを選択"
+
+#: main_window.py:4252
+msgid "Select new version code file for comparison"
+msgstr "比較する新バージョンのコードファイルを選択"
+
+#: main_window.py:2068
+msgid "Selected item(s) already have the desired warning status."
+msgstr "選択された項目は既に希望する警告ステータスを持っています。"
+
+#: main_window.py:1910
+#, python-brace-format
+msgid "Selected: \"{text}...\" (Line: {line_num})"
+msgstr "選択済み: 「{text}...」 (行: {line_num})"
+
+#: main_window.py:400 main_window.py:614
+msgid "Show Ignored"
+msgstr "無視済みを表示"
+
+#: main_window.py:412 main_window.py:616
+msgid "Show Translated"
+msgstr "翻訳済みを表示"
+
+#: main_window.py:418 main_window.py:617
+msgid "Show Unreviewed"
+msgstr "未レビューを表示"
+
+#: main_window.py:406 main_window.py:615
+msgid "Show Untranslated"
+msgstr "未翻訳を表示"
+
+#: dialogs/diff_dialog.py:31
+msgid "Similarity"
+msgstr "類似度"
+
+#: dialogs/font_settings_dialog.py:83
+msgid "Size:"
+msgstr "サイズ:"
+
+#: main_window.py:3750
+msgid "Skip Translated"
+msgstr "翻訳済みをスキップ"
+
+#: dialogs/statistics_dialog.py:570
+msgid "Source Chars (Translated only)"
+msgstr "翻訳済みのソース文字数"
+
+#: dialogs/language_pair_dialog.py:237
+msgid "Source Language"
+msgstr "ソース言語"
+
+#: main_window.py:2557
+msgid "Source Line"
+msgstr "ソース行"
+
+#: dialogs/language_pair_dialog.py:470
+msgid "Source and target languages cannot be the same."
+msgstr "ソース言語とターゲット言語は同じにできません。"
+
+#: utils/enums.py:46
+msgid "Starting Punctuation Mismatch"
+msgstr "開始句読点の不一致"
+
+#: services/validation_service.py:86
+#, python-brace-format
+msgid "Starting punctuation differs: '{c1}' vs '{c2}'."
+msgstr "開始の句読点が異なります: '{c1}' と '{c2}'。"
+
+#: services/validation_service.py:82
+msgid "Starting punctuation presence differs."
+msgstr "開始の句読点の有無が異なります。"
+
+#: dialogs/prompt_manager_dialog.py:98 dialogs/prompt_manager_dialog.py:105 dialogs/prompt_manager_dialog.py:230
+msgid "Static Instruction"
+msgstr "静的指示"
+
+#: main_window.py:425 main_window.py:618
+msgid "Static Sorting"
+msgstr "静的ソート"
+
+#: main_window.py:752
+msgid "Static sorting enabled. Press F5 to refresh."
+msgstr "静的ソートが有効です。F5キーを押して更新してください。"
+
+#: main_window.py:3012
+msgid "Statistics"
+msgstr "統計"
+
+#: dialogs/diff_dialog.py:31
+msgid "Status"
+msgstr "ステータス"
+
+#: main_window.py:468 main_window.py:630
+msgid "Stop AI Batch Translation"
+msgstr "AI一括翻訳を停止"
+
+#: main_window.py:3505 main_window.py:3736
+#, python-brace-format
+msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
+msgstr "文字列「{text}...」にはすでに翻訳があります。AI翻訳で上書きしますか？"
+
+#: dialogs/extraction_pattern_dialog.py:60
+msgid "String Type"
+msgstr "文字列タイプ"
+
+#: dialogs/extraction_pattern_dialog.py:245
+msgid "String Type:"
+msgstr "文字列タイプ:"
+
+#: dialogs/prompt_manager_dialog.py:97 dialogs/prompt_manager_dialog.py:104 dialogs/prompt_manager_dialog.py:229
+msgid "Structural Content"
+msgstr "構造コンテンツ"
+
+#: dialogs/font_settings_dialog.py:93
+msgid "Style:"
+msgstr "スタイル:"
+
+#: dialogs/extraction_pattern_dialog.py:180 dialogs/extraction_pattern_dialog.py:198 dialogs/prompt_manager_dialog.py:179 dialogs/prompt_manager_dialog.py:196
+msgid "Success"
+msgstr "成功"
+
+#: main_window.py:3073 main_window.py:3087 main_window.py:3121 main_window.py:3150 main_window.py:3300 main_window.py:3303
+msgid "TM"
+msgstr "TM"
+
+#: main_window.py:3051
+msgid "TM Load Warning"
+msgstr "TM読み込み警告"
+
+#: main_window.py:3233
+msgid "TM entry cleared for selected item."
+msgstr "選択した項目のTMエントリがクリアされました。"
+
+#: main_window.py:3143
+msgid "TM imported. Do you want to apply it to untranslated strings in the current project immediately?"
+msgstr "TMがインポートされました。現在のプロジェクトの未翻訳文字列にすぐに適用しますか？"
+
+#: main_window.py:3166
+msgid "TM is already empty."
+msgstr "TMはすでに空です。"
+
+#: main_window.py:3087 main_window.py:3150
+msgid "TM is empty, nothing to export."
+msgstr "TMは空です。エクスポートするものはありません。"
+
+#: main_window.py:3258 main_window.py:4069
+msgid "TM is empty."
+msgstr "TMは空です。"
+
+#: main_window.py:3077
+#, python-brace-format
+msgid "TM loaded from '{filename}' (Excel)."
+msgstr "TMが'{filename}' (Excel) から読み込まれました。"
+
+#: main_window.py:3122 main_window.py:3125
+#, python-brace-format
+msgid "TM saved to '{filename}'."
+msgstr "TMが'{filename}'に保存されました。"
+
+#: main_window.py:3251
+msgid "TM suggestion applied."
+msgstr "TMの提案が適用されました。"
+
+#: main_window.py:3199
+msgid "TM update cancelled."
+msgstr "TMの更新がキャンセルされました。"
+
+#: main_window.py:3208
+#, python-brace-format
+msgid "TM updated for original: '{text}...'"
+msgstr "TMが原文「{text}...」に対して更新されました"
+
+#: dialogs/language_pair_dialog.py:249
+msgid "Target Language"
+msgstr "ターゲット言語"
+
+#: dialogs/ai_settings_dialog.py:91
+msgid "Target Language:"
+msgstr "ターゲット言語:"
+
+#: dialogs/ai_settings_dialog.py:94
+msgid "Target language is set in 'Settings > Language Pair Settings...'"
+msgstr "ターゲット言語は「設定 > 言語ペア設定...」で設定されます。"
+
+#: dialogs/ai_settings_dialog.py:167 dialogs/ai_settings_dialog.py:232 dialogs/ai_settings_dialog.py:234
+msgid "Test Connection"
+msgstr "接続テスト"
+
+#: dialogs/ai_settings_dialog.py:199
+msgid "Test Failed"
+msgstr "テスト失敗"
+
+#: dialogs/ai_settings_dialog.py:200
+msgid "Test failed: API Key is not filled."
+msgstr "テスト失敗: APIキーが入力されていません。"
+
+#: dialogs/ai_settings_dialog.py:191
+msgid "Testing..."
+msgstr "テスト中..."
+
+#: main_window.py:3363
+msgid ""
+"The 'requests' library is not installed, AI translation is unavailable.\n"
+"Please run: pip install requests"
+msgstr ""
+"「requests」ライブラリがインストールされていません。AI翻訳は利用できません。\n"
+"pip install requestsを実行してください"
+
+#: main_window.py:1710
+msgid "The current project has unsaved changes. Do you want to save?"
+msgstr "現在のプロジェクトには未保存の変更があります。保存しますか？"
+
+#: main_window.py:3195
+#, python-brace-format
+msgid ""
+"The current translation is empty. Do you want to update the TM entry for:\n"
+"'{text}...' with an empty translation?"
+msgstr ""
+"現在の翻訳は空です。TMエントリを「\n"
+"'{text}...'」に対して空の翻訳で更新しますか？"
+
+#: main_window.py:1077
+msgid "The layout has been restored to its default state."
+msgstr "レイアウトがデフォルトの状態に復元されました。"
+
+#: main_window.py:3238
+msgid "The selected item has no entry in the TM."
+msgstr "選択した項目にはTMにエントリがありません。"
+
+#: main_window.py:3497
+msgid "The selected string is marked as ignored and will not be AI translated."
+msgstr "選択した文字列は無視としてマークされており、AI翻訳されません。"
+
+#: main_window.py:2433
+msgid "There is no content to save as a project. Please open a code file or PO file first."
+msgstr "プロジェクトとして保存する内容がありません。最初にコードファイルまたはPOファイルを開いてください。"
+
+#: main_window.py:2373
 msgid ""
 "There is no original code file content to save.\n"
 "Please ensure the code file associated with the project is loaded."
@@ -1480,318 +2200,19 @@ msgstr ""
 "保存する元のコードファイルコンテンツがありません。\n"
 "プロジェクトに関連付けられたコードファイルが読み込まれていることを確認してください。"
 
-#: source_code:2183
-#, python-brace-format
-msgid "Code file saved to: {filename}"
-msgstr "コードファイルが{filename}に保存されました"
-
-#: source_code:2187
-#, python-brace-format
-msgid "Could not save code file: {error}"
-msgstr "コードファイルを保存できませんでした: {error}"
-
-#: source_code:2187
-msgid "Save Error"
-msgstr "保存エラー"
-
-#: source_code:2192
-msgid "No original code file path."
-msgstr "元のコードファイルのパスがありません。"
-
-#: source_code:2196
-msgid "No original code content to save."
-msgstr "保存する元のコードコンテンツがありません。"
-
-#: source_code:2203
-msgid "Confirm Overwrite"
-msgstr "上書きの確認"
-
-#: source_code:2204
-#, python-brace-format
-msgid "File '{filename}' already exists. Overwrite? A backup file (.bak) will be created."
-msgstr "ファイル'{filename}'はすでに存在します。上書きしますか？バックアップファイル(.bak)が作成されます。"
-
-#: source_code:2238
-msgid "There is no content to save as a project. Please open a code file or PO file first."
-msgstr "プロジェクトとして保存する内容がありません。最初にコードファイルまたはPOファイルを開いてください。"
-
-#: source_code:2257
-msgid "Save Project As"
-msgstr "プロジェクトを名前を付けて保存"
-
-#: source_code:2273
-#, python-brace-format
-msgid "PO file saved to: {filename}"
-msgstr "POファイルを保存しました: {filename}"
-
-#: source_code:2278
-#, python-brace-format
-msgid "Failed to save PO file: {error}"
-msgstr "POファイルの保存に失敗しました: {error}"
-
-#: source_code:2278
-msgid "Save PO Error"
-msgstr "POファイル保存エラー"
-
-#: source_code:2284
-msgid "Save PO File As"
-msgstr "POファイルを別名で保存"
-
-#: source_code:2286
-msgid "PO files (*.po);;All Files (*.*)"
-msgstr "POファイル (*.po);;すべてのファイル (*.*)"
-
-#: source_code:2317
-#, python-brace-format
-msgid "Project saved to: {filename}"
-msgstr "プロジェクトが{filename}に保存されました。"
-
-#: source_code:2328
-msgid "No data to export."
-msgstr "エクスポートするデータがありません。"
-
-#: source_code:2344
-msgid "Export Project Translations to Excel"
-msgstr "プロジェクト翻訳をExcelにエクスポート"
-
-#: source_code:2353
-msgid "Original (Semantic)"
-msgstr "原文 (意味的)"
-
-#: source_code:2353
-msgid "Reviewed"
-msgstr "レビュー済み"
-
-#: source_code:2354
-msgid "Source Line"
-msgstr "ソース行"
-
-#: source_code:2355
-msgid "Original (Raw)"
-msgstr "原文 (Raw)"
-
-#: source_code:2382
-#, python-brace-format
-msgid "Project translations exported to: {filename}"
-msgstr "プロジェクト翻訳が{filename}にエクスポートされました。"
-
-#: source_code:2384
-msgid "Export Error"
-msgstr "エクスポートエラー"
-
-#: source_code:2385
-#, python-brace-format
-msgid "Could not export project translations to Excel: {error}"
-msgstr "プロジェクト翻訳をExcelにエクスポートできませんでした: {error}"
-
-#: source_code:2390
-msgid "Please load a code file or project first to match imported translations."
-msgstr "インポートされた翻訳と一致させるために、まずコードファイルまたはプロジェクトを読み込んでください。"
-
-#: source_code:2397
-msgid "Excel files (*.xlsx)"
-msgstr "Excel ファイル (*.xlsx)"
-
-#: source_code:2407
-msgid "Excel header format is incorrect or empty."
-msgstr "Excelヘッダーの形式が正しくないか、空です。"
-
-#: source_code:2407
-msgid "Import Error"
-msgstr "インポートエラー"
-
-#: source_code:2420
-#, python-brace-format
-msgid ""
-"Excel header must contain 'UUID' and '{translation_col}' columns.\n"
-"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
-msgstr ""
-"Excelヘッダーには「UUID」と「{translation_col}」列が必要です。\n"
-"オプションの列: 「{comment_col}」、「{reviewed_col}」、「{ignored_col}」、「{original_semantic_col}」。"
-
-#: source_code:2441
-#, python-brace-format
-msgid "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported."
-msgstr "警告: Excelの行{row_num}、UUID {uuid} - 原文がExcelと一致しません。データはインポートされます。"
-
-#: source_code:2488
-#, python-brace-format
-msgid "Error processing Excel row {row_num}: {error}. Skipping this row."
-msgstr "Excelの行{row_num}の処理中にエラーが発生しました: {error}。この行はスキップします。"
-
-#: source_code:2498
-#, python-brace-format
-msgid "Imported/updated {field_count} fields for {item_count} items from Excel."
-msgstr "Excelから{item_count}項目に対して{field_count}個のフィールドをインポート/更新しました。"
-
-#: source_code:2503
-#, python-brace-format
-msgid "Error processing Excel file (possibly column names issue): {error}"
-msgstr "Excelファイルの処理エラー (列名が原因の可能性): {error}"
-
-#: source_code:2507
-#, python-brace-format
-msgid "Could not import project translations from Excel: {error}"
-msgstr "Excelからプロジェクト翻訳をインポートできませんでした: {error}"
-
-#: source_code:2527
-msgid "Export Project Translations to JSON"
-msgstr "プロジェクト翻訳をJSONにエクスポート"
-
-#: source_code:2529
-msgid "JSON files (*.json);;All Files (*.*)"
-msgstr "JSON ファイル (*.json);;すべてのファイル (*.*)"
-
-#: source_code:2547
-#, python-brace-format
-msgid "Could not export project translations to JSON: {error}"
-msgstr "プロジェクト翻訳をJSONにエクスポートできませんでした: {error}"
-
-#: source_code:2567
-msgid "Export Project Translations to YAML"
-msgstr "プロジェクト翻訳をYAMLにエクスポート"
-
-#: source_code:2569
-msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
-msgstr "YAML ファイル (*.yaml *.yml);;すべてのファイル (*.*)"
-
-#: source_code:2587
-#, python-brace-format
-msgid "Could not export project translations to YAML: {error}"
-msgstr "プロジェクト翻訳をYAMLにエクスポートできませんでした: {error}"
-
-#: source_code:2592
-msgid "Select Code File to Extract POT From"
-msgstr "POT抽出元のコードファイルを選択"
-
-#: source_code:2600
-msgid "Save POT Template File"
-msgstr "POTテンプレートファイルを保存"
-
-#: source_code:2602
-msgid "PO Template files (*.pot);;All files (*.*)"
-msgstr "POテンプレートファイル (*.pot);;すべてのファイル (*.*)"
-
-#: source_code:2617
-#, python-brace-format
-msgid "POT template saved to: {filename}"
-msgstr "POTテンプレートが{filename}に保存されました"
-
-#: source_code:2621
-msgid "POT Extraction Error"
-msgstr "POT抽出エラー"
-
-#: source_code:2622
-#, python-brace-format
-msgid "Error extracting POT file: {error}"
-msgstr "POTファイルの抽出エラー: {error}"
-
-#: source_code:2627
-msgid "Associate Code File?"
-msgstr "コードファイルを関連付けますか？"
-
-#: source_code:2628
-msgid "Do you want to associate an original code file to get context and line number information?"
-msgstr "コンテキストと行番号情報を取得するために、元のコードファイルを関連付けますか？"
-
-#: source_code:2633
-msgid "Select Associated Code File (for context)"
-msgstr "関連付けられたコードファイルを選択 (コンテキスト用)"
-
-#: source_code:2643
-msgid "Code File Load Failed"
-msgstr "コードファイルの読み込みに失敗しました"
-
-#: source_code:2644
-#, python-brace-format
-msgid "Could not load associated code file: {error}"
-msgstr "関連付けられたコードファイルを読み込めませんでした: {error}"
-
-#: source_code:2666
-#, python-brace-format
-msgid "Loaded {count} entries from PO file {filename}."
-msgstr "POファイル{filename}から{count}個のエントリを読み込みました。"
-
-#: source_code:2672
-#, python-brace-format
-msgid "Error importing PO file '{filename}': {error}"
-msgstr "POファイル'{filename}'のインポートエラー: {error}"
-
-#: source_code:2672
-msgid "PO Import Error"
-msgstr "POインポートエラー"
-
-#: source_code:2675
-msgid "PO file loading failed"
-msgstr "POファイルの読み込みに失敗しました"
-
-#: source_code:2683
-msgid "Select PO File to Import"
-msgstr "インポートするPOファイルを選択"
-
-#: source_code:2685
-msgid "PO files (*.po);;POT files (*.pot);;All files (*.*)"
-msgstr "POファイル (*.po);;POTファイル (*.pot);;すべてのファイル (*.*)"
-
-#: source_code:2719
-#, python-brace-format
-msgid "Translations exported to PO file: {filename}"
-msgstr "翻訳がPOファイル{filename}にエクスポートされました。"
-
-#: source_code:2722
-#, python-brace-format
-msgid "Failed to export to PO file: {error}"
-msgstr "POファイルへのエクスポートに失敗しました: {error}"
-
-#: source_code:2725
-msgid "Extraction Rule Manager"
-msgstr "抽出ルールマネージャー"
-
-#: source_code:2728
-msgid "Extraction Rules Updated"
-msgstr "抽出ルールが更新されました"
-
-#: source_code:2729
-msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"
-msgstr "抽出ルールが更新されました。すぐに新しいルールを使用して現在のコードの翻訳可能テキストを再読み込みしますか？"
-
-#: source_code:2736
-msgid "No code content loaded to reload."
-msgstr "再読み込みするコードコンテンツが読み込まれていません。"
-
-#: source_code:2740
-msgid "current in-memory code"
-msgstr "現在のメモリ内コード"
-
-#: source_code:2745
-#, python-brace-format
-msgid "file '{filename}'"
-msgstr "ファイル'{filename}'"
-
-#: source_code:2747
-msgid "File Read Error"
-msgstr "ファイル読み込みエラー"
-
-#: source_code:2748
-#, python-brace-format
-msgid ""
-"Could not re-read {filepath} from disk.\n"
-"Using in-memory version.\n"
-"Error: {error}"
-msgstr ""
-"{filepath}をディスクから再読み込みできませんでした。\n"
-"メモリ内のバージョンを使用します。\n"
-"エラー: {error}"
-
-#: source_code:2752
-msgid "Could not get code content for re-extraction."
-msgstr "再抽出するコードコンテンツを取得できませんでした。"
-
-#: source_code:2764
-msgid "Confirm Reload"
-msgstr "再読み込みの確認"
-
-#: source_code:2765
+#: main_window.py:3348
+msgid "This feature is only available when a project file is open."
+msgstr "この機能はプロジェクトファイルが開いている場合にのみ利用可能です。"
+
+#: main_window.py:2136
+msgid "This original text already exists."
+msgstr "この原文は既に存在しています。"
+
+#: main_window.py:3263
+msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
+msgstr "これにより、一致するすべての文字列にTMが適用され、既存の翻訳が上書きされます。続行しますか？"
+
+#: main_window.py:2958
 #, python-brace-format
 msgid ""
 "This will re-extract strings from {source} using the new rules.\n"
@@ -1802,390 +2223,211 @@ msgstr ""
 "既存の翻訳は原文が一致する場所で保持されますが、一致しない翻訳やステータスは失われる可能性があります。\n"
 "この操作は元に戻す履歴をクリアします。続行しますか？"
 
-#: source_code:2774
-msgid "Re-extracting strings with new rules..."
-msgstr "新しいルールで文字列を再抽出中..."
+#: dialogs/keybinding_dialog.py:29
+msgid "Toggle Ignored Status"
+msgstr "無視ステータスを切り替える"
 
-#: source_code:2794
-#, python-brace-format
-msgid "Attempted to restore {count} old translations/statuses."
-msgstr "{count}個の古い翻訳/ステータスを復元しようとしました。"
+#: dialogs/keybinding_dialog.py:28
+msgid "Toggle Reviewed Status"
+msgstr "レビュー済みステータスを切り替える"
 
-#: source_code:2806
-#, python-brace-format
-msgid "Reloaded {count} strings from {source} using new rules."
-msgstr "新しいルールを使用して{source}から{count}個の文字列を再読み込みしました。"
+#: dialogs/statistics_dialog.py:527
+msgid "Total Items"
+msgstr "総アイテム数"
 
-#: source_code:2812
-msgid "Reload Error"
-msgstr "再読み込みエラー"
+#: utils/enums.py:42
+msgid "Trailing Whitespace Mismatch"
+msgstr "末尾の空白不一致"
 
-#: source_code:2813
-#, python-brace-format
-msgid "Error reloading translatable text: {error}"
-msgstr "翻訳可能テキストの再読み込みエラー: {error}"
+#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590 main_window.py:659 main_window.py:873
+msgid "Translated"
+msgstr "翻訳済み"
 
-#: source_code:2814
-msgid "Reload failed."
-msgstr "再読み込みに失敗しました。"
-
-#: source_code:2819
-msgid "No project data loaded to generate statistics."
-msgstr "プロジェクトデータが読み込まれていないため、統計を生成できません。"
-
-#: source_code:2819
-msgid "Statistics"
-msgstr "統計"
-
-#: source_code:2851
-msgid "original"
-msgstr "原文"
-
-#: source_code:2853
-msgid "translation"
+#: dialogs/search_dialog.py:57 main_window.py:650 main_window.py:2556 main_window.py:2615 main_window.py:2624
+msgid "Translation"
 msgstr "翻訳"
 
-#: source_code:2858
-msgid "TM Load Warning"
-msgstr "TM読み込み警告"
+#: dialogs/ai_settings_dialog.py:87
+msgid "Translation & Context Settings"
+msgstr "翻訳とコンテキスト設定"
 
-#: source_code:2859
+#: dialogs/statistics_dialog.py:571
+msgid "Translation Chars (Translated only)"
+msgstr "翻訳文字数（翻訳済みのみ）"
+
+#: utils/enums.py:54
+msgid "Translation Empty"
+msgstr "翻訳が空です"
+
+#: main_window.py:671 main_window.py:1024
+msgid "Translation Memory Matches"
+msgstr "翻訳メモリマッチ"
+
+#: main_window.py:439 main_window.py:622
+msgid "Translation Memory Panel"
+msgstr "翻訳メモリパネル"
+
+#: dialogs/statistics_dialog.py:339
+msgid "Translation Progress"
+msgstr "翻訳進捗"
+
+#: main_window.py:2116
 #, python-brace-format
-msgid "Could not determine original/translation columns from '{filename}' header. Will try to use the first two columns by default (A=Original, B=Translation)."
-msgstr "'{filename}'のヘッダーから原文/翻訳列を特定できませんでした。デフォルトで最初の2列を使用します (A=原文, B=翻訳)。"
+msgid "Translation applied: \"{original_semantic}...\""
+msgstr "翻訳が適用されました: 「{original_semantic}...」"
 
-#: source_code:2880
-msgid "TM"
-msgstr "TM"
+#: services/validation_service.py:66
+msgid "Translation ends with space, original does not."
+msgstr "翻訳の末尾にスペースがありますが、原文にはありません。"
 
-#: source_code:2881
+#: models/translatable_string.py:154
+msgid "Translation is marked as fuzzy and needs review."
+msgstr "翻訳はファジー（未確定）としてマークされており、レビューが必要です。"
+
+#: services/validation_service.py:59
+msgid "Translation starts with space, original does not."
+msgstr "原文がスペースで始まっていないのに、翻訳がスペースで始まっています。"
+
+#: ui_components/details_panel.py:63 ui_components/details_panel.py:195
+msgid "Translation:"
+msgstr "翻訳:"
+
+#: main_window.py:2912
 #, python-brace-format
-msgid "Loaded/merged {count} Excel TM records from '{filename}'."
-msgstr "Excel TMレコードを'{filename}'から{count}件読み込み/マージしました。"
+msgid "Translations exported to PO file: {filename}"
+msgstr "翻訳がPOファイル{filename}にエクスポートされました"
 
-#: source_code:2884
+#: main_window.py:4123
+msgid "Translations for selected items are already empty, no clearing needed."
+msgstr "選択した項目の翻訳はすでに空です。クリアは不要です。"
+
+#: dialogs/prompt_manager_dialog.py:59
+msgid "Type"
+msgstr "タイプ"
+
+#: dialogs/prompt_manager_dialog.py:226
+msgid "Type:"
+msgstr "タイプ:"
+
+#: main_window.py:1835
+msgid "Un-ignore Warnings for Selected"
+msgstr "選択項目の警告を無視解除"
+
+#: main_window.py:2065
 #, python-brace-format
-msgid "TM loaded from '{filename}' (Excel)."
-msgstr "TMが'{filename}' (Excel) から読み込まれました。"
+msgid "Un-ignored warnings for {count} item(s)."
+msgstr "{count} 件のアイテムの警告を無視解除しました。"
 
-#: source_code:2888
+#: main_window.py:372 main_window.py:606
+msgid "Undo"
+msgstr "元に戻す"
+
+#: main_window.py:1273
 #, python-brace-format
-msgid "Failed to load Excel TM: {error}"
-msgstr "Excel TMの読み込みに失敗しました: {error}"
+msgid "Undo error: Object ID {obj_id} not found"
+msgstr "元に戻すエラー: オブジェクトID {obj_id}が見つかりません"
 
-#: source_code:2894
-msgid "TM is empty, nothing to export."
-msgstr "TMは空です。エクスポートするものはありません。"
-
-#: source_code:2910
-msgid "Backup Failed"
-msgstr "バックアップに失敗しました"
-
-#: source_code:2911
+#: main_window.py:1295
 #, python-brace-format
-msgid "Could not create backup for TM: {error}"
-msgstr "TMのバックアップを作成できませんでした: {error}"
+msgid "Undo: Bulk change ({count} items)"
+msgstr "元に戻す: 一括変更 ({count}項目)"
 
-#: source_code:2929
+#: main_window.py:1269
 #, python-brace-format
-msgid "TM saved to '{filename}'."
-msgstr "TMが'{filename}'に保存されました。"
+msgid "Undo: {field} for ID {id} -> '{value}'"
+msgstr "元に戻す: ID {id}の{field} -> '{value}'"
 
-#: source_code:2935
+#: services/ai_translator.py:48
+msgid "Unknown API error structure"
+msgstr "不明なAPIエラー構造"
+
+#: services/ai_translator.py:62
+msgid "Unknown error occurred during translation"
+msgstr "翻訳中に不明なエラーが発生しました"
+
+#: main_window.py:1819
+msgid "Unmark as Ignored"
+msgstr "無視マークを解除"
+
+#: dialogs/extraction_pattern_dialog.py:91
+msgid "Unnamed Rule"
+msgstr "無名ルール"
+
+#: main_window.py:660 main_window.py:879
+msgid "Unreviewed"
+msgstr "未レビュー"
+
+#: main_window.py:1709
+msgid "Unsaved Changes"
+msgstr "未保存の変更"
+
+#: dialogs/statistics_dialog.py:538 dialogs/statistics_dialog.py:595 main_window.py:658 main_window.py:867
+msgid "Untranslated"
+msgstr "未翻訳"
+
+#: ui_components/tm_panel.py:33 ui_components/tm_panel.py:97
+msgid "Update TM for Selected"
+msgstr "選択したTMを更新"
+
+#: dialogs/pot_drop_dialog.py:24
+msgid "Update from POT"
+msgstr "POTからの更新"
+
+#: main_window.py:4062
 #, python-brace-format
-msgid "Failed to save TM: {error}"
-msgstr "TMの保存に失敗しました: {error}"
+msgid "Updated comments for {count} items."
+msgstr "{count}個の項目のコメントを更新しました。"
 
-#: source_code:2942
-msgid "Excel files (*.xlsx);;All files (*.*)"
-msgstr "Excel ファイル (*.xlsx);;すべてのファイル (*.*)"
+#: main_window.py:1851
+msgid "Use AI to Translate Selected Items"
+msgstr "AIで選択項目を翻訳"
 
-#: source_code:2949
-msgid "Apply TM"
-msgstr "TMを適用"
+#: dialogs/ai_settings_dialog.py:125 dialogs/ai_settings_dialog.py:142
+msgid "Use nearby"
+msgstr "近くの"
 
-#: source_code:2950
-msgid "TM imported. Do you want to apply it to untranslated strings in the current project immediately?"
-msgstr "TMがインポートされました。現在のプロジェクトの未翻訳文字列にすぐに適用しますか？"
+#: dialogs/ai_settings_dialog.py:118
+msgid "Use nearby original text as context"
+msgstr "近くの原文をコンテキストとして使用"
 
-#: source_code:2973
-msgid "Clear TM"
-msgstr "TMをクリア"
+#: dialogs/ai_settings_dialog.py:135
+msgid "Use nearby translated text as context"
+msgstr "近くの翻訳済みテキストをコンテキストとして使用"
 
-#: source_code:2973
-msgid "TM is already empty."
-msgstr "TMはすでに空です。"
+#: main_window.py:4217
+msgid "Version Comparison Results"
+msgstr "バージョン比較結果"
 
-#: source_code:2976
-msgid "Confirm Clear"
-msgstr "クリアの確認"
+#: main_window.py:4238
+msgid "Version comparison failed."
+msgstr "バージョン比較に失敗しました。"
 
-#: source_code:2977
-msgid ""
-"Are you sure you want to clear all entries from the in-memory TM?\n"
-"This cannot be undone."
-msgstr ""
-"メモリ内の翻訳メモリのすべてのエントリをクリアしますか？\n"
-"この操作は元に戻せません。"
+#: main_window.py:4233
+msgid "Version update cancelled."
+msgstr "バージョン更新がキャンセルされました。"
 
-#: source_code:2981
-msgid "In-memory TM has been cleared."
-msgstr "メモリ内のTMがクリアされました。"
+#: main_window.py:760
+msgid "View refreshed."
+msgstr "表示を更新しました。"
 
-#: source_code:2991
-msgid "Please select an item first."
-msgstr "まず項目を選択してください。"
+#: dialogs/language_pair_dialog.py:470
+msgid "Warning"
+msgstr "警告"
 
-#: source_code:2996
-msgid "Could not find data for the selected item."
-msgstr "選択した項目のデータが見つかりませんでした。"
-
-#: source_code:3001
-msgid "Confirm Update TM"
-msgstr "TM更新の確認"
-
-#: source_code:3002
+#: main_window.py:2644
 #, python-brace-format
-msgid ""
-"The current translation is empty. Do you want to update the TM entry for:\n"
-"'{text}...' with an empty translation?"
-msgstr ""
-"現在の翻訳は空です。TMエントリを「\n"
-"'{text}...'」に対して空の翻訳で更新しますか？"
+msgid "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported."
+msgstr "警告: Excelの行{row_num}、UUID {uuid} - 原文がExcelと一致しません。データはインポートされます。"
 
-#: source_code:3006
-msgid "TM update cancelled."
-msgstr "TMの更新がキャンセルされました。"
+#: main_window.py:2772
+msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
+msgstr "YAML ファイル (*.yaml *.yml);;すべてのファイル (*.*)"
 
-#: source_code:3015
-#, python-brace-format
-msgid "TM updated for original: '{text}...'"
-msgstr "TMが原文「{text}...」に対して更新されました。"
+#: main_window.py:2327 main_window.py:2363 main_window.py:2577 main_window.py:2578 main_window.py:2670 main_window.py:2680
+msgid "Yes"
+msgstr "はい"
 
-#: source_code:3035
-#, python-brace-format
-msgid ""
-"Are you sure you want to remove the TM entry for:\n"
-"'{text}...'?"
-msgstr ""
-"翻訳メモリから「\n"
-"'{text}...'」のエントリを削除しますか？"
-
-#: source_code:3040
-msgid "TM entry cleared for selected item."
-msgstr "選択した項目のTMエントリがクリアされました。"
-
-#: source_code:3045
-msgid "The selected item has no entry in the TM."
-msgstr "選択した項目にはTMにエントリがありません。"
-
-#: source_code:3058
-msgid "TM suggestion applied."
-msgstr "TMの提案が適用されました。"
-
-#: source_code:3062
-msgid "No strings to apply TM to."
-msgstr "TMを適用する文字列がありません。"
-
-#: source_code:3065
-msgid "TM is empty."
-msgstr "TMは空です。"
-
-#: source_code:3069
-msgid "Confirm Operation"
-msgstr "操作の確認"
-
-#: source_code:3070
-msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
-msgstr "これにより、一致するすべての文字列にTMが適用され、既存の翻訳が上書きされます。続行しますか？"
-
-#: source_code:3107
-#, python-brace-format
-msgid "Applied TM to {count} strings."
-msgstr "{count}個の文字列にTMを適用しました。"
-
-#: source_code:3110
-msgid "No applicable translations found in TM (or no changes needed)."
-msgstr "TMに適用可能な翻訳が見つかりませんでした (または変更不要でした)。"
-
-#: source_code:3116
-msgid "Please load a file or project first."
-msgstr "まずファイルまたはプロジェクトを読み込んでください。"
-
-#: source_code:3118
-msgid "Find and Replace"
-msgstr "検索と置換"
-
-#: source_code:3126
-#, python-brace-format
-msgid "Copied {count} original strings to clipboard."
-msgstr "{count}個の原文をクリップボードにコピーしました。"
-
-#: source_code:3133
-#, python-brace-format
-msgid "Copied {count} translations to clipboard."
-msgstr "{count}個の翻訳をクリップボードにコピーしました。"
-
-#: source_code:3137
-msgid "Please select an item."
-msgstr "項目を選択してください。"
-
-#: source_code:3149
-msgid "Clipboard content pasted to translation."
-msgstr "クリップボードの内容が翻訳に貼り付けられました。"
-
-#: source_code:3151
-msgid "Paste failed: Clipboard content is not text."
-msgstr "貼り付けに失敗しました: クリップボードの内容がテキストではありません。"
-
-#: source_code:3155
-msgid "This feature is only available when a project file is open."
-msgstr "この機能はプロジェクトファイルが開いている場合にのみ利用可能です。"
-
-#: source_code:3158
-msgid "Project-specific Instructions"
-msgstr "プロジェクト固有の指示"
-
-#: source_code:3159
-msgid ""
-"Enter specific translation instructions for this project (e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a lively and cute style').\n"
-"These instructions will be used during AI translation."
-msgstr ""
-"このプロジェクト固有の翻訳指示を入力してください（例：「Hero」を「Agent」と翻訳、「活発でかわいいスタイルを使用」）。\n"
-"これらの指示はAI翻訳時に使用されます。"
-
-#: source_code:3165
-msgid "Project-specific translation settings updated."
-msgstr "プロジェクト固有の翻訳設定が更新されました。"
-
-#: source_code:3169
-msgid "Feature Unavailable"
-msgstr "機能は利用できません"
-
-#: source_code:3170
-msgid ""
-"The 'requests' library is not installed, AI translation is unavailable.\n"
-"Please run: pip install requests"
-msgstr ""
-"「requests」ライブラリがインストールされていません。AI翻訳は利用できません。\n"
-"pip install requestsを実行してください"
-
-#: source_code:3172
-msgid "AI Settings"
-msgstr "AI設定"
-
-#: source_code:3178
-msgid "AI Feature Unavailable"
-msgstr "AI機能は利用できません"
-
-#: source_code:3179
-msgid "Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."
-msgstr "Pythonの「requests」ライブラリが見つかりません。AI翻訳機能を使用するには、pip install requestsを実行してください。"
-
-#: source_code:3183
-msgid "API Key Missing"
-msgstr "APIキーがありません"
-
-#: source_code:3184
-msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
-msgstr "APIキーが設定されていません。「ツール > AI設定」で設定してください。"
-
-#: source_code:3234
-msgid "No more untranslated items."
-msgstr "これ以上未翻訳の項目はありません。"
-
-#: source_code:3303
-msgid "The selected string is marked as ignored and will not be AI translated."
-msgstr "選択した文字列は無視としてマークされており、AI翻訳されません。"
-
-#: source_code:3310
-msgid "Overwrite Confirmation"
-msgstr "上書き確認"
-
-#: source_code:3311
-#, python-brace-format
-msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
-msgstr "文字列「{text}...」にはすでに翻訳があります。AI翻訳で上書きしますか？"
-
-#: source_code:3319
-#, python-brace-format
-msgid "AI is translating: \"{text}...\""
-msgstr "AIが翻訳中: 「{text}...」"
-
-#: source_code:3350
-#, python-brace-format
-msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
-msgstr "AI一括: 処理中 {current}/{total} (同時実行: {threads})..."
-
-#: source_code:3389
-#, python-brace-format
-msgid "{count} items' ignore status updated."
-msgstr "{count}個の項目の無視ステータスが更新されました。"
-
-#: source_code:3414
-#, python-brace-format
-msgid "{count} items' review status updated."
-msgstr "{count}個の項目のレビュー済みステータスが更新されました。"
-
-#: source_code:3417
-msgid "Selected item(s) already have the desired review status."
-msgstr "選択された項目は既に所望のレビューステータスを持っています。"
-
-#: source_code:3503
-msgid "Please select an item to AI translate."
-msgstr "AI翻訳する項目を選択してください。"
-
-#: source_code:3515
-msgid "No Translation Needed"
-msgstr "翻訳不要"
-
-#: source_code:3516
-msgid "No untranslated and non-ignored strings found."
-msgstr "未翻訳で無視されていない文字列は見つかりませんでした。"
-
-#: source_code:3524
-msgid "AI batch translation is already in progress."
-msgstr "AI一括翻訳はすでに進行中です。"
-
-#: source_code:3552
-#, python-brace-format
-msgid "{count} item(s) already have translations."
-msgstr "{count} 件のアイテムには既に翻訳があります。"
-
-#: source_code:3553
-msgid "Do you want to overwrite them, skip them, or cancel the operation?"
-msgstr "それらを上書きしますか、スキップしますか、または操作をキャンセルしますか？"
-
-#: source_code:3554
-msgid "Overwrite All"
-msgstr "すべて上書き"
-
-#: source_code:3555
-msgid "Skip Translated"
-msgstr "翻訳済みをスキップ"
-
-#: source_code:3571
-msgid "AI Translation"
-msgstr "AI翻訳"
-
-#: source_code:3571
-msgid "No items to process."
-msgstr "処理する項目がありません。"
-
-#: source_code:3581
-msgid "sequential execution"
-msgstr "シーケンシャル実行"
-
-#: source_code:3586
-#, python-brace-format
-msgid "up to {max_concurrency} concurrent"
-msgstr "最大{max_concurrency}同時実行"
-
-#: source_code:3588
-msgid "Confirm Batch Translation"
-msgstr "一括翻訳の確認"
-
-#: source_code:3589
+#: main_window.py:3782
 #, python-brace-format
 msgid ""
 "You are about to AI translate {count} unique strings.\n"
@@ -2198,212 +2440,57 @@ msgstr ""
 "推定所要時間: 約{time_s:.1f}秒。\n"
 "続行しますか？"
 
-#: source_code:3607
-#, python-brace-format
-msgid "AI batch translation started for {count} unique strings..."
-msgstr "AIバッチ翻訳を開始しました。{count}件のユニークな文字列を処理中..."
-
-#: source_code:3632
-#, python-brace-format
-msgid "AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned)."
-msgstr "AI一括翻訳が完了しました。{success_count}/{processed_count}項目を正常に翻訳しました (計画合計{total_items}項目)。"
-
-#: source_code:3657
-#, python-brace-format
-msgid "AI translation failed for \"{text}...\": {error}"
-msgstr "AI翻訳に失敗しました: 「{text}...」: {error}"
-
-#: source_code:3661
-msgid "AI Translation Error"
-msgstr "AI翻訳エラー"
-
-#: source_code:3662
-#, python-brace-format
-msgid ""
-"AI translation failed for \"{text}...\":\n"
-"{error}"
-msgstr ""
-"「{text}...」のAI翻訳に失敗しました:\n"
-"{error}"
-
-#: source_code:3688
-#, python-brace-format
-msgid "AI translation successful: \"{text}...\""
-msgstr "AI翻訳に成功しました: 「{text}...」"
-
-#: source_code:3697
-#, python-brace-format
-msgid "AI Batch: {current}/{total} completed ({progress_percent:.0f}%)."
-msgstr "AI一括: {current}/{total} 完了 ({progress_percent:.0f}%)。"
-
-#: source_code:3720
-#, python-brace-format
-msgid ""
-"After AI batch translation, {count} items were found with placeholder mismatches.\n"
-"Do you want to add the comment \"Placeholder Mismatch\" to these items in bulk?"
-msgstr ""
-"AI一括翻訳後、{count}個の項目でプレースホルダーの不一致が見つかりました。\n"
-"これらの項目に一括で「プレースホルダー不一致」のコメントを追加しますか？"
-
-#: source_code:3722
-msgid "Placeholder Mismatch"
-msgstr "プレースホルダー不一致"
-
-#: source_code:3738
-#, python-brace-format
-msgid "Added comments to {count} placeholder mismatched items."
-msgstr "{count}個のプレースホルダー不一致項目にコメントを追加しました。"
-
-#: source_code:3744
-msgid "No AI batch translation task is in progress."
-msgstr "AI一括翻訳タスクは進行していません。"
-
-#: source_code:3751
-msgid "AI Batch Translation"
-msgstr "AI一括翻訳"
-
-#: source_code:3752
-msgid ""
-"AI batch translation stop requested.\n"
-"Dispatched tasks will continue to complete, please wait."
-msgstr ""
-"AI一括翻訳の停止が要求されました。\n"
-"ディスパッチされたタスクは完了まで続行されますので、お待ちください。"
-
-#: source_code:3754
-msgid "AI batch translation stop requested. Finishing dispatched tasks..."
-msgstr "AI一括翻訳の停止が要求されました。ディスパッチされたタスクを完了しています..."
-
-#: source_code:3822
-msgid " (Auto)"
-msgstr " (自動)"
-
-#: source_code:3845
-#, python-brace-format
-msgid "Enter comment for {count} selected items:"
-msgstr "選択した{count}項目にコメントを入力:"
-
-#: source_code:3846
-#, python-brace-format
-msgid ""
-"Original:\n"
-"{original_semantic}...\n"
-"\n"
-"Enter comment:"
-msgstr ""
-"原文:\n"
-"{original_semantic}...\n"
-"\n"
-"コメントを入力:"
-
-#: source_code:3867
-#, python-brace-format
-msgid "Updated comments for {count} items."
-msgstr "{count}個の項目のコメントを更新しました。"
-
-#: source_code:3895
-#, python-brace-format
-msgid "Applied TM to {count} selected items."
-msgstr "選択した{count}項目にTMを適用しました。"
-
-#: source_code:3899
-msgid "No matching TM entries or no changes needed for selected items."
-msgstr "一致するTMエントリがないか、選択した項目に変更は不要です。"
-
-#: source_code:3907
-#, python-brace-format
-msgid "Are you sure you want to clear the translations for the {count} selected items?"
-msgstr "選択した{count}項目の翻訳をクリアしますか？"
-
-#: source_code:3928
-msgid "Translations for selected items are already empty, no clearing needed."
-msgstr "選択した項目の翻訳はすでに空です。クリアは不要です。"
-
-#: source_code:3936
-#, python-brace-format
-msgid "Cleared {count} translations."
-msgstr "{count}個の翻訳をクリアしました。"
-
-#: source_code:3941
-msgid "No items selected for AI translation."
-msgstr "AI翻訳のために選択された項目がありません。"
-
-#: source_code:3952
-msgid "Parsing new file..."
-msgstr "新しいファイルを解析中..."
-
-#: source_code:3970
-msgid "Comparing versions..."
-msgstr "バージョンを比較中..."
-
-#: source_code:3997
-msgid "Inherited from old version"
-msgstr "旧バージョンから継承"
-
-#: source_code:4000
-msgid "Fuzzy match, please review."
-msgstr "ファジーマッチ、確認が必要です。"
-
-#: source_code:4013
-msgid "Comparison complete. Found "
-msgstr "比較完了。見つかった項目: "
-
-#: source_code:4013
-#, python-brace-format
-msgid "{added} new items, "
-msgstr "{added}個の新しい項目、 "
-
-#: source_code:4014
-#, python-brace-format
-msgid "{removed} removed items, "
-msgstr "{removed}個の削除された項目、 "
-
-#: source_code:4015
+#: main_window.py:4213
 #, python-brace-format
 msgid "and {modified} modified/inherited items."
 msgstr "、および{modified}個の変更/継承された項目。"
 
-#: source_code:4019
-msgid "Version Comparison Results"
-msgstr "バージョン比較結果"
+#: main_window.py:2933
+msgid "current in-memory code"
+msgstr "現在のメモリ内コード"
 
-#: source_code:4023
-msgid "Applying updates..."
-msgstr "更新を適用中..."
-
-#: source_code:4033
-msgid "Project updated to new version."
-msgstr "プロジェクトを新しいバージョンに更新しました。"
-
-#: source_code:4035
-msgid "Version update cancelled."
-msgstr "バージョン更新がキャンセルされました。"
-
-#: source_code:4039
+#: main_window.py:2938
 #, python-brace-format
-msgid "An error occurred: {error}"
-msgstr "エラーが発生しました: {error}"
+msgid "file '{filename}'"
+msgstr "ファイル'{filename}'"
 
-#: source_code:4039
-msgid "Comparison Failed"
-msgstr "比較に失敗しました"
+#: main_window.py:3044
+msgid "original"
+msgstr "原文"
 
-#: source_code:4040
-msgid "Version comparison failed."
-msgstr "バージョン比較に失敗しました。"
+#: dialogs/ai_settings_dialog.py:131
+msgid "original strings (0 for all)"
+msgstr "原文 ({0}で全て)"
 
-#: source_code:4044
-msgid "Please open a project or file first."
-msgstr "最初にプロジェクトまたはファイルを開いてください。"
+#: main_window.py:3046
+msgid "translation"
+msgstr "翻訳"
 
-#: source_code:4049
-msgid "Select new POT template for comparison"
-msgstr "比較用の新しいPOTテンプレートを選択"
+#: dialogs/ai_settings_dialog.py:148
+msgid "translations (0 for all)"
+msgstr "翻訳 (0で全て)"
 
-#: source_code:4050
-msgid "PO Template Files (*.pot);;All Files (*.*)"
-msgstr "POテンプレートファイル (*.pot);;すべてのファイル (*.*)"
+#: main_window.py:4211
+#, python-brace-format
+msgid "{added} new items, "
+msgstr "{added}個の新しい項目、 "
 
-#: source_code:4054
-msgid "Select new version code file for comparison"
-msgstr "比較する新バージョンのコードファイルを選択"
+#: main_window.py:3747
+#, python-brace-format
+msgid "{count} item(s) already have translations."
+msgstr "{count} 件のアイテムには既に翻訳があります。"
+
+#: main_window.py:3587 main_window.py:3642
+#, python-brace-format
+msgid "{count} items' ignore status updated."
+msgstr "{count}個の項目の無視ステータスが更新されました。"
+
+#: main_window.py:3614 main_window.py:3670
+#, python-brace-format
+msgid "{count} items' review status updated."
+msgstr "{count}個の項目のレビュー済みステータスが更新されました。"
+
+#: main_window.py:4212
+#, python-brace-format
+msgid "{removed} removed items, "
+msgstr "{removed}個の削除された項目、 "

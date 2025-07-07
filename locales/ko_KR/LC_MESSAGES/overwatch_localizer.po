@@ -3,1211 +3,121 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
-"POT-Creation-Date: 2025-06-28 15:12+0000\n"
-"PO-Revision-Date: 2025-07-01 23:39+0800\n"
+"POT-Creation-Date: 2025-07-07 06:22+0000\n"
+"PO-Revision-Date: 2025-07-07 06:49+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
-"Language: ko_KR\n"
+"Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
-"X-Generator: Poedit 3.6\n"
 
-#: source_code:13
-msgid "POT File Detected"
-msgstr "POT 파일이 감지되었습니다"
+#: main_window.py:4017 ui_components/comment_status_panel.py:79
+msgid " (Auto)"
+msgstr " (자동)"
 
-#: source_code:20
-msgid "A POT file was dropped. What would you like to do?"
-msgstr "POT 파일이 삭제되었습니다. 어떻게 하시겠습니까?"
-
-#: source_code:21
-msgid "API Key not set."
-msgstr "API 키가 설정되지 않았습니다."
-
-#: source_code:23
-msgid "'requests' library not found. AI translation feature is unavailable."
-msgstr "'requests' 라이브러리를 찾을 수 없습니다. AI 번역 기능을 사용할 수 없습니다."
-
-#: source_code:24
-msgid "Comparison Results Summary"
-msgstr "비교 결과 요약"
-
-#: source_code:24
-msgid "Update from POT"
-msgstr "POT에서 업데이트"
-
-#: source_code:28
-msgid "Import as New File"
-msgstr "새 파일로 가져오기"
-
-#: source_code:28
-msgid "Toggle Reviewed Status"
-msgstr "검토 상태 전환"
-
-#: source_code:29
-msgid "Target Language"
-msgstr "대상 언어"
-
-#: source_code:29
-msgid "Toggle Ignored Status"
-msgstr "무시 상태 전환"
-
-#: source_code:30
-msgid "Apply and Go to Next Untranslated"
-msgstr "적용 후 다음 미번역 항목으로 이동"
-
-#: source_code:30
-msgid "Comment:"
-msgstr "주석:"
-
-#: source_code:31
-msgid "New Version Original"
-msgstr "새 버전 원본"
-
-#: source_code:31
-msgid "Old Version Original"
-msgstr "이전 버전 원본"
-
-#: source_code:31
-msgid "Similarity"
-msgstr "유사도"
-
-#: source_code:31
-msgid "Status"
-msgstr "상태"
-
-#: source_code:32
-msgid "Override default font settings"
-msgstr "기본 글꼴 설정 재정의"
-
-#: source_code:33
-msgid "Find what:"
-msgstr "찾을 내용:"
-
-#: source_code:33
-msgid "Placeholder Missing"
-msgstr "플레이스홀더 누락"
-
-#: source_code:33
-msgid "Update TM for Selected"
-msgstr "선택된 항목의 TM 업데이트"
-
-#: source_code:35
-msgid "Add"
-msgstr "추가"
-
-#: source_code:35
-msgid "Extra Placeholder"
-msgstr "추가 플레이스홀더"
-
-#: source_code:36
-msgid "Initializing..."
-msgstr "초기화 중..."
-
-#: source_code:37
-msgid "Capitalization Mismatch"
-msgstr "대소문자 불일치"
-
-#: source_code:38
-msgid "Original:"
-msgstr "원본:"
-
-#: source_code:39
-msgid "Clear TM for Selected"
-msgstr "선택된 항목의 TM 지우기"
-
-#: source_code:39
-msgid "Delete Selected"
-msgstr "선택 삭제"
-
-#: source_code:39
-msgid "Initialization complete."
-msgstr "초기화 완료."
-
-#: source_code:39
-msgid "Leading Whitespace Mismatch"
-msgstr "선행 공백 불일치"
-
-#: source_code:41
-msgid "Confirm and Update Project"
-msgstr "확인 및 프로젝트 업데이트"
-
-#: source_code:41
-msgid "Replace with:"
-msgstr "바꿀 내용:"
-
-#: source_code:41
-msgid "Trailing Whitespace Mismatch"
-msgstr "후행 공백 불일치"
-
-#: source_code:43
-msgid "API Connection & Model Settings"
-msgstr "API 연결 및 모델 설정"
-
-#: source_code:43
-msgid "Line Count Mismatch"
-msgstr "줄 수 불일치"
-
-#: source_code:43
-msgid "Reset to Defaults"
-msgstr "기본값으로 재설정"
-
-#: source_code:44
-#, python-brace-format
-msgid "Missing placeholders: {placeholders}"
-msgstr "누락된 플레이스홀더: {placeholders}"
-
-#: source_code:45
-msgid "Starting Punctuation Mismatch"
-msgstr "시작 구두점 불일치"
-
-#: source_code:46
-msgid "Apply Comment"
-msgstr "주석 적용"
-
-#: source_code:46
-msgid "Finalizing..."
-msgstr "완료 중..."
-
-#: source_code:47
-msgid "API Key:"
-msgstr "API 키:"
-
-#: source_code:47
-msgid "Ending Punctuation Mismatch"
-msgstr "종료 구두점 불일치"
-
-#: source_code:47
-msgid "Options"
-msgstr "옵션"
-
-#: source_code:48
-msgid "Calculation finished."
-msgstr "계산이 완료되었습니다."
-
-#: source_code:48
-msgid "Code Context"
-msgstr "코드 컨텍스트"
-
-#: source_code:48
-#, python-brace-format
-msgid "Extra placeholders: {placeholders}"
-msgstr "추가 플레이스홀더: {placeholders}"
-
-#: source_code:48
-msgid "Unknown API error structure"
-msgstr "알 수 없는 API 오류 구조"
-
-#: source_code:49
-msgid "Case sensitive"
-msgstr "대소문자 구분"
-
-#: source_code:49
-msgid "Import Preset"
-msgstr "프리셋 가져오기"
-
-#: source_code:49
-msgid "Length Deviation (Minor)"
-msgstr "길이 편차 (경미)"
-
-#: source_code:51
-msgid "Length Deviation (Major)"
-msgstr "길이 편차 (심각)"
-
-#: source_code:52
-msgid "No content in message"
-msgstr "메시지에 내용이 없습니다"
-
-#: source_code:52
-msgid "Translation:"
-msgstr "번역:"
-
-#: source_code:53
-msgid "API Error"
-msgstr "API 오류"
-
-#: source_code:53
-msgid "Added"
-msgstr "추가됨"
-
-#: source_code:53
-msgid "Export Preset"
-msgstr "프리셋 내보내기"
-
-#: source_code:53
-msgid "Line count differs from original."
-msgstr "원본과 줄 수가 다릅니다."
-
-#: source_code:53
-msgid "Response"
-msgstr "응답"
-
-#: source_code:53
-msgid "Translation Empty"
-msgstr "번역 없음"
-
-#: source_code:54
-msgid "API Base URL:"
-msgstr "API 기본 URL:"
-
-#: source_code:55
-msgid "API request timed out."
-msgstr "API 요청 시간이 초과되었습니다."
-
-#: source_code:55
-msgid "Original Empty, Translation Not"
-msgstr "원본 비어 있음, 번역 없음"
-
-#: source_code:55
-msgid "Search in:"
-msgstr "검색 위치:"
-
-#: source_code:56
-msgid "Original"
-msgstr "원본"
-
-#: source_code:57
-msgid "Fuzzy Translation"
-msgstr "퍼지 번역"
-
-#: source_code:57
-msgid "Network error or API request failed"
-msgstr "네트워크 오류 또는 API 요청 실패"
-
-#: source_code:57
-msgid "Translation"
-msgstr "번역"
-
-#: source_code:58
-msgid "Comment"
-msgstr "주석"
-
-#: source_code:58
-msgid "Original starts with space, translation does not."
-msgstr "원본은 공백으로 시작하지만, 번역은 그렇지 않습니다."
-
-#: source_code:59
-msgid "Content"
-msgstr "내용"
-
-#: source_code:59
-msgid "Type"
-msgstr "유형"
-
-#: source_code:60
-msgid "Could not decode API response. Response text"
-msgstr "API 응답을 디코딩할 수 없습니다. 응답 텍스트"
-
-#: source_code:60
-msgid "Enabled"
-msgstr "활성화됨"
-
-#: source_code:60
-msgid "Left Delimiter (Regex)"
-msgstr "왼쪽 구분 기호 (정규식)"
-
-#: source_code:60
-msgid "Model Name:"
-msgstr "모델 이름:"
-
-#: source_code:60
-msgid "No response object"
-msgstr "응답 객체 없음"
-
-#: source_code:60
-msgid "Right Delimiter (Regex)"
-msgstr "오른쪽 구분 기호 (정규식)"
-
-#: source_code:60
-msgid "Rule Name"
-msgstr "규칙 이름"
-
-#: source_code:60
-msgid "String Type"
-msgstr "문자열 유형"
-
-#: source_code:61
-msgid "Translation starts with space, original does not."
-msgstr "번역이 공백으로 시작하지만 원본은 그렇지 않습니다."
-
-#: source_code:62
-msgid "Unknown error occurred during translation"
-msgstr "번역 중 알 수 없는 오류가 발생했습니다"
-
-#: source_code:65
-msgid "Original ends with space, translation does not."
-msgstr "원본은 공백으로 끝나지만 번역은 그렇지 않습니다."
-
-#: source_code:65
-msgid "Removed"
-msgstr "제거됨"
-
-#: source_code:67
-msgid "Connection successful. Test translation"
-msgstr "연결 성공. 테스트 번역"
-
-#: source_code:67
-msgid "Translation & Context Settings"
-msgstr "번역 및 컨텍스트 설정"
-
-#: source_code:68
-msgid "Apply Translation"
-msgstr "번역 적용"
-
-#: source_code:68
-msgid "Translation ends with space, original does not."
-msgstr "번역 끝에 공백이 있음, 원본에는 없음."
-
-#: source_code:69
-msgid "Connection failed"
-msgstr "연결 실패"
-
-#: source_code:71
-msgid "Target Language:"
-msgstr "대상 언어:"
-
-#: source_code:73
-msgid "Find Next"
-msgstr "다음 찾기"
-
-#: source_code:74
-msgid "Font Family:"
-msgstr "폰트 패밀리:"
-
-#: source_code:76
-msgid "Find Previous"
-msgstr "이전 찾기"
-
-#: source_code:77
-msgid "API Call Interval (ms):"
-msgstr "API 호출 간격 (ms):"
-
-#: source_code:77
-msgid "Modified/Inherited"
-msgstr "수정됨/상속됨"
-
-#: source_code:79
-msgid "Replace"
-msgstr "바꾸기"
-
-#: source_code:82
-#, python-brace-format
-msgid "Processing item {i}/{total}..."
-msgstr "항목 {i}/{total} 처리 중..."
-
-#: source_code:82
-msgid "Replace All"
-msgstr "모두 바꾸기"
-
-#: source_code:83
-msgid "Size:"
-msgstr "크기:"
-
-#: source_code:84
-msgid "Starting punctuation presence differs."
-msgstr "시작 구두점 존재 여부가 다릅니다."
-
-#: source_code:86
-msgid "Close"
-msgstr "닫기"
-
-#: source_code:87
-msgid "Max Concurrent Requests:"
-msgstr "최대 동시 요청 수:"
-
-#: source_code:88
-#, python-brace-format
-msgid "Starting punctuation differs: '{c1}' vs '{c2}'."
-msgstr "시작 구두점이 다릅니다: '{c1}' vs '{c2}'."
-
-#: source_code:91
-msgid "Unnamed Rule"
-msgstr "이름 없는 규칙"
-
-#: source_code:92
-msgid "Custom"
-msgstr "사용자 지정"
-
-#: source_code:93
-msgid "Style:"
-msgstr "스타일:"
-
-#: source_code:95
-msgid "Ending punctuation presence differs."
-msgstr "끝 구두점 존재 여부가 다릅니다."
-
-#: source_code:96
-msgid "Press a key combination..."
-msgstr "키 조합을 누르세요..."
-
-#: source_code:96
-msgid "Use nearby original text as context"
-msgstr "근처 원본 텍스트를 컨텍스트로 사용"
-
-#: source_code:97
-msgid "Structural Content"
-msgstr "구조적 콘텐츠"
-
-#: source_code:98
-msgid "Static Instruction"
-msgstr "정적 지침"
-
-#: source_code:99
-msgid "Dynamic Instruction"
-msgstr "동적 지침"
-
-#: source_code:99
-#, python-brace-format
-msgid "Ending punctuation differs: '{c1}' vs '{c2}'."
-msgstr "종료 구두점이 다릅니다: '{c1}' vs '{c2}'."
-
-#: source_code:103
-msgid "Use nearby"
-msgstr "근처 사용"
-
-#: source_code:107
-msgid "Initial capitalization mismatch."
-msgstr "초기 대문자 불일치."
-
-#: source_code:109
-msgid "original strings (0 for all)"
-msgstr "원본 문자열 (0은 모두)"
-
-#: source_code:113
-msgid "Original is empty but translation is not."
-msgstr "원본은 비어 있지만 번역은 비어 있지 않습니다."
-
-#: source_code:113
-msgid "Use nearby translated text as context"
-msgstr "근처 번역된 텍스트를 컨텍스트로 사용"
-
-#: source_code:114
-msgid "New Rule"
-msgstr "새 규칙"
-
-#: source_code:116
-msgid "Translation is empty but original is not."
-msgstr "번역은 비어 있지만 원본은 비어 있지 않습니다."
-
-#: source_code:118
-msgid "Confirmation"
-msgstr "확인"
-
-#: source_code:118
-msgid "Reset all font settings to default?"
-msgstr "모든 글꼴 설정을 기본값으로 재설정하시겠습니까?"
-
-#: source_code:120
-msgid "New Instruction"
-msgstr "새 지침"
-
-#: source_code:121
-msgid "Add Extraction Rule"
-msgstr "추출 규칙 추가"
-
-#: source_code:121
-msgid "Add Prompt Fragment"
-msgstr "프롬프트 조각 추가"
-
-#: source_code:126
-msgid "translations (0 for all)"
-msgstr "번역 (0은 모두)"
-
-#: source_code:129
-#, python-brace-format
-msgid "Overwatch Localizer - v{version}"
-msgstr "Overwatch Localizer - v{version}"
-
-#: source_code:130
-msgid "Translation is marked as fuzzy and needs review."
-msgstr "번역이 모호하게 표시되어 검토가 필요합니다."
-
-#: source_code:132
-#, python-brace-format
-msgid "Translation length differs by {percent:.0%} (Major)."
-msgstr "번역 길이가 {percent:.0%} 차이납니다 (심각)."
-
-#: source_code:136
-#, python-brace-format
-msgid "Translation length differs by {percent:.0%} (Minor)."
-msgstr "번역 길이가 {percent:.0%}만큼 다릅니다 (사소한 차이)."
-
-#: source_code:137
-msgid "Are you sure you want to reset all keybindings to their default settings?"
-msgstr "모든 단축키를 기본 설정으로 재설정하시겠습니까?"
-
-#: source_code:140
-msgid "Prompt Manager..."
-msgstr "프롬프트 관리자..."
-
-#: source_code:145
-msgid "Test Connection"
-msgstr "연결 테스트"
-
-#: source_code:146
-msgid "Edit Prompt Fragment"
-msgstr "프롬프트 조각 편집"
-
-#: source_code:146
-msgid "Project Statistics"
-msgstr "프로젝트 통계"
-
-#: source_code:147
-msgid "Edit Extraction Rule"
-msgstr "추출 규칙 편집"
-
-#: source_code:149
-msgid "OK"
-msgstr "확인"
-
-#: source_code:151
-msgid "Keybindings have been updated."
-msgstr "단축키가 업데이트되었습니다."
-
-#: source_code:153
-msgid "Cancel"
-msgstr "취소"
-
-#: source_code:153
-msgid "Please enter a search term."
-msgstr "검색어를 입력하십시오."
-
-#: source_code:155
-msgid ""
-"Are you sure you want to reset the prompt to its default settings?\n"
-"All current customizations will be lost."
-msgstr ""
-"프롬프트를 기본 설정으로 재설정하시겠습니까?\n"
-"현재 사용자 지정 내용은 모두 손실됩니다."
-
-#: source_code:156
-msgid ""
-"Are you sure you want to reset extraction rules to their default settings?\n"
-"All current custom rules will be lost."
-msgstr ""
-"추출 규칙을 기본 설정으로 재설정하시겠습니까?\n"
-"현재 사용자 지정 규칙은 모두 손실됩니다."
-
-#: source_code:156
-#, python-brace-format
-msgid "Backup created: {filename}"
-msgstr "백업이 생성되었습니다: {filename}"
-
-#: source_code:156
-msgid "Confirm"
-msgstr "확인"
-
-#: source_code:161
-#, python-brace-format
-msgid "Could not create code file backup '{filename}': {error}"
-msgstr "코드 파일 백업 '{filename}'을 생성할 수 없습니다: {error}"
-
-#: source_code:164
-msgid "AI Prompt Manager"
-msgstr "AI 프롬프트 관리자"
-
-#: source_code:164
-msgid "Import Prompt Preset"
-msgstr "프롬프트 프리셋 가져오기"
-
-#: source_code:165
-msgid "Import Extraction Rule Preset"
-msgstr "추출 규칙 프리셋 가져오기"
-
-#: source_code:166
-#, python-brace-format
-msgid "Overwatch Prompt Files (*{ext});;All Files (*.*)"
-msgstr "오버워치 프롬프트 파일 (*{ext});;모든 파일 (*.*)"
-
-#: source_code:167
-#, python-brace-format
-msgid "Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)"
-msgstr "오버워치 추출 패턴 파일 (*{ext});;모든 파일 (*.*)"
-
-#: source_code:168
-msgid "Testing..."
-msgstr "테스트 중..."
-
-#: source_code:176
-msgid "API Key is not filled."
-msgstr "API 키가 입력되지 않았습니다."
-
-#: source_code:176
-msgid "Test Failed"
-msgstr "테스트 실패"
-
-#: source_code:177
-msgid "Test failed: API Key is not filled."
-msgstr "테스트 실패: API 키가 입력되지 않았습니다."
-
-#: source_code:180
-msgid "Preset imported successfully."
-msgstr "프리셋이 성공적으로 가져와졌습니다."
-
-#: source_code:180
-msgid "Success"
-msgstr "성공"
-
-#: source_code:182
-#, python-brace-format
-msgid "Found {count} matches."
-msgstr "{count}개 일치 항목 발견."
-
-#: source_code:183
-msgid "Preset file format is incorrect."
-msgstr "프리셋 파일 형식이 올바르지 않습니다."
-
-#: source_code:185
-#, python-brace-format
-msgid "Could not load preset file: {error}"
-msgstr "프리셋 파일을 로드할 수 없습니다: {error}"
-
-#: source_code:185
-msgid "Import Failed"
-msgstr "가져오기 실패"
-
-#: source_code:187
-msgid "No matches found."
-msgstr "일치 항목 없음."
-
-#: source_code:188
-msgid "Export Prompt Preset"
-msgstr "프롬프트 프리셋 내보내기"
-
-#: source_code:190
-msgid "Export Extraction Rule Preset"
-msgstr "추출 규칙 프리셋 내보내기"
-
-#: source_code:198
-msgid "Preset exported successfully."
-msgstr "프리셋이 성공적으로 내보내졌습니다."
-
-#: source_code:200
-#, python-brace-format
-msgid "Could not save preset file: {error}"
-msgstr "프리셋 파일을 저장할 수 없습니다: {error}"
-
-#: source_code:200
-msgid "Export Failed"
-msgstr "내보내기 실패"
-
-#: source_code:204
-msgid "AI prompt structure updated."
-msgstr "AI 프롬프트 구조 업데이트됨."
-
-#: source_code:207
-msgid "Extraction rules updated. Consider reloading the text."
-msgstr "추출 규칙이 업데이트되었습니다. 텍스트를 다시 로드하는 것을 고려하십시오."
-
-#: source_code:212
-#, python-brace-format
-msgid "Match {current}/{total}"
-msgstr "일치 {current}/{total}"
-
-#: source_code:226
-msgid "Type:"
-msgstr "유형:"
-
-#: source_code:230
-msgid "Error"
-msgstr "오류"
-
-#: source_code:230
-msgid "Target language cannot be empty."
-msgstr "대상 언어는 비워둘 수 없습니다."
-
-#: source_code:234
-msgid "Model name cannot be empty."
-msgstr "모델 이름은 비워둘 수 없습니다."
-
-#: source_code:235
-msgid "Rule Name:"
-msgstr "규칙 이름:"
-
-#: source_code:237
-msgid "Enable this fragment"
-msgstr "이 조각 활성화"
-
-#: source_code:238
-msgid "API call interval cannot be negative."
-msgstr "API 호출 간격은 음수일 수 없습니다."
-
-#: source_code:238
-msgid "Enable this rule"
-msgstr "이 규칙 활성화"
-
-#: source_code:239
-msgid "&File"
-msgstr "&파일"
-
-#: source_code:240
+#: main_window.py:280 main_window.py:580
 msgid "&Edit"
 msgstr "&편집"
 
-#: source_code:241
-msgid "&View"
-msgstr "&보기"
+#: main_window.py:279 main_window.py:579
+msgid "&File"
+msgstr "&파일"
 
-#: source_code:242
-msgid "&Tools"
-msgstr "&도구"
-
-#: source_code:242
-msgid "Max concurrent requests must be between 1 and 10."
-msgstr "최대 동시 요청 수는 1에서 10 사이여야 합니다."
-
-#: source_code:243
-msgid "&Settings"
-msgstr "&설정"
-
-#: source_code:244
+#: main_window.py:284 main_window.py:584
 msgid "&Help"
 msgstr "&도움말"
 
-#: source_code:244
-msgid "Content:"
-msgstr "내용:"
+#: main_window.py:283 main_window.py:583
+msgid "&Settings"
+msgstr "&설정"
 
-#: source_code:245
-msgid "String Type:"
-msgstr "문자열 유형:"
+#: main_window.py:282 main_window.py:582
+msgid "&Tools"
+msgstr "&도구"
 
-#: source_code:247
-msgid "Open Code File..."
-msgstr "코드 파일 열기..."
+#: main_window.py:281 main_window.py:581
+msgid "&View"
+msgstr "&보기"
 
-#: source_code:251
-msgid "Left Delimiter:"
-msgstr "왼쪽 구분 기호:"
+#: services/ai_translator.py:23
+msgid "'requests' library not found. AI translation feature is unavailable."
+msgstr "'requests' 라이브러리를 찾을 수 없습니다. AI 번역 기능을 사용할 수 없습니다."
 
-#: source_code:251
-msgid "Open Project..."
-msgstr "프로젝트 열기..."
+#: dialogs/pot_drop_dialog.py:20
+msgid "A POT file was dropped. What would you like to do?"
+msgstr "POT 파일이 삭제되었습니다. 어떻게 하시겠습니까?"
 
-#: source_code:256
-msgid "Compare/Import New Version..."
-msgstr "새 버전 비교/가져오기..."
+#: main_window.py:3943
+msgid "AI Batch Translation"
+msgstr "AI 일괄 번역"
 
-#: source_code:257
-msgid "Right Delimiter:"
-msgstr "오른쪽 구분 기호:"
-
-#: source_code:262
-msgid "Save"
-msgstr "저장"
-
-#: source_code:264
-msgid "Escape for Regex (Left)"
-msgstr "정규식 이스케이프 (왼쪽)"
-
-#: source_code:264
-msgid "Info"
-msgstr "정보"
-
-#: source_code:264
-msgid "No matches found to replace."
-msgstr "교체할 일치 항목이 없습니다."
-
-#: source_code:267
-msgid "Save As..."
-msgstr "다른 이름으로 저장..."
-
-#: source_code:268
-msgid "Escape for Regex (Right)"
-msgstr "정규식 이스케이프 (오른쪽)"
-
-#: source_code:273
-msgid "Save Translation to New Code File"
-msgstr "번역을 새 코드 파일로 저장"
-
-#: source_code:279
-msgid "Import Translations from Excel"
-msgstr "Excel에서 번역 가져오기"
-
-#: source_code:284
-msgid "Export to Excel"
-msgstr "Excel로 내보내기"
-
-#: source_code:289
-msgid "Export to JSON"
-msgstr "JSON으로 내보내기"
-
-#: source_code:292
-msgid "Match is not in a replaceable column (Translation or Comment)."
-msgstr "일치 항목이 교체 가능한 열(번역 또는 주석)에 없습니다."
-
-#: source_code:294
-msgid "Export to YAML"
-msgstr "YAML로 내보내기"
-
-#: source_code:300
-msgid "Extract POT Template from Code..."
-msgstr "코드에서 POT 템플릿 추출..."
-
-#: source_code:300
-msgid "Issues & Warnings"
-msgstr "문제 및 경고"
-
-#: source_code:300
-msgid "Rule name cannot be empty."
-msgstr "규칙 이름은 비워둘 수 없습니다."
-
-#: source_code:303
-msgid "Left and right delimiters cannot be empty."
-msgstr "왼쪽 및 오른쪽 구분 기호는 비워둘 수 없습니다."
-
-#: source_code:304
-msgid "Import Translations from PO File..."
-msgstr "PO 파일에서 번역 가져오기..."
-
-#: source_code:308
-msgid "Export to PO File..."
-msgstr "PO 파일로 내보내기..."
-
-#: source_code:312
-msgid "No matches found in Translation or Comment columns."
-msgstr "번역 또는 주석 열에서 일치하는 항목을 찾을 수 없습니다."
-
-#: source_code:314
-msgid "Import TM (Excel)"
-msgstr "TM 가져오기 (Excel)"
-
-#: source_code:318
-msgid "Export Current TM (Excel)"
-msgstr "현재 TM 내보내기 (Excel)"
-
-#: source_code:323
-msgid "Recent Files"
-msgstr "최근 파일"
-
-#: source_code:328
-msgid "Exit"
-msgstr "종료"
-
-#: source_code:332
-msgid "Undo"
-msgstr "실행 취소"
-
-#: source_code:337
-msgid "Redo"
-msgstr "다시 실행"
-
-#: source_code:339
-msgid "Translation Progress"
-msgstr "번역 진행 상태"
-
-#: source_code:343
-msgid "Find/Replace..."
-msgstr "찾기/바꾸기..."
-
-#: source_code:346
-msgid "Replace All Complete"
-msgstr "모두 바꾸기 완료"
-
-#: source_code:347
+#: main_window.py:3543
 #, python-brace-format
-msgid "Replaced occurrences in {count} item(s)."
-msgstr "{count}개 항목에서 일치하는 항목을 바꿨습니다."
+msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
+msgstr "AI 일괄: 처리 중 {current}/{total} (동시성: {threads})..."
 
-#: source_code:349
-msgid "Copy Original"
-msgstr "원본 복사"
+#: main_window.py:3889
+#, python-brace-format
+msgid "AI Batch: {current}/{total} completed ({progress_percent:.0f}%)."
+msgstr "AI 일괄: {current}/{total} 완료 ({progress_percent:.0f}%)."
 
-#: source_code:354
-msgid "Paste to Translation"
-msgstr "번역에 붙여넣기"
+#: main_window.py:3372
+msgid "AI Feature Unavailable"
+msgstr "AI 기능 사용 불가"
 
-#: source_code:358
-msgid "Project Metrics"
-msgstr "프로젝트 메트릭"
+#: dialogs/ai_settings_dialog.py:186
+msgid "AI Prompt Manager"
+msgstr "AI 프롬프트 관리자"
 
-#: source_code:360
-msgid "Show Ignored"
-msgstr "무시된 항목 표시"
+#: main_window.py:3366
+msgid "AI Settings"
+msgstr "AI 설정"
 
-#: source_code:366
-msgid "Show Untranslated"
-msgstr "미번역 항목 표시"
-
-#: source_code:372
-msgid "Show Translated"
-msgstr "번역된 항목 표시"
-
-#: source_code:378
-msgid "Show Unreviewed"
-msgstr "미검토된 항목 표시"
-
-#: source_code:385
-msgid "Edit && Details Panel"
-msgstr "편집 && 상세 정보 패널"
-
-#: source_code:385
-msgid "Refresh Data"
-msgstr "데이터 새로 고침"
-
-#: source_code:388
-msgid "Comment && Status Panel"
-msgstr "댓글 && 상태 패널"
-
-#: source_code:391
-msgid "Context Preview Panel"
-msgstr "컨텍스트 미리보기 패널"
-
-#: source_code:394
-msgid "Translation Memory Panel"
-msgstr "번역 메모리 패널"
-
-#: source_code:398
-msgid "Restore Default Layout"
-msgstr "기본 레이아웃 복원"
-
-#: source_code:403
-msgid "Apply TM to Untranslated"
-msgstr "미번역 항목에 TM 적용"
-
-#: source_code:408
-msgid "Clear TM (in-memory)"
-msgstr "TM 지우기 (메모리 내)"
-
-#: source_code:413
-msgid "AI Translate Selected"
-msgstr "AI로 선택 항목 번역"
-
-#: source_code:418
-msgid "AI Translate All Untranslated"
-msgstr "AI로 모든 미번역 항목 번역"
-
-#: source_code:423
-msgid "Stop AI Batch Translation"
-msgstr "AI 일괄 번역 중지"
-
-#: source_code:429
-msgid "Project-specific Instructions..."
-msgstr "프로젝트별 지침..."
-
-#: source_code:434
+#: main_window.py:479 main_window.py:632
 msgid "AI Settings..."
 msgstr "AI 설정..."
 
-#: source_code:439
-msgid "Extraction Rule Manager..."
-msgstr "추출 규칙 관리자..."
+#: main_window.py:463 main_window.py:629
+msgid "AI Translate All Untranslated"
+msgstr "AI로 모든 미번역 항목 번역"
 
-#: source_code:443
-msgid "Reload Translatable Text"
-msgstr "번역 가능한 텍스트 재로드"
+#: main_window.py:458 main_window.py:628 ui_components/details_panel.py:91 ui_components/details_panel.py:197
+msgid "AI Translate Selected"
+msgstr "AI로 선택 항목 번역"
 
-#: source_code:449
-msgid "Project Statistics..."
-msgstr "프로젝트 통계..."
+#: main_window.py:3766
+msgid "AI Translation"
+msgstr "AI 번역"
 
-#: source_code:456
-msgid "Auto-backup TM on Save"
-msgstr "저장 시 TM 자동 백업"
+#: main_window.py:3851
+msgid "AI Translation Error"
+msgstr "AI 번역 오류"
 
-#: source_code:462
-msgid "Language"
-msgstr "언어"
-
-#: source_code:467
-msgid "Keybinding Settings..."
-msgstr "단축키 설정..."
-
-#: source_code:471
-msgid "Font Settings..."
-msgstr "폰트 설정..."
-
-#: source_code:476
-msgid "About"
-msgstr "정보"
-
-#: source_code:515
-msgid "Error:"
-msgstr "오류:"
-
-#: source_code:515
-msgid "No data to display."
-msgstr "표시할 데이터가 없습니다."
-
-#: source_code:527
-msgid "Total Items"
-msgstr "전체 항목"
-
-#: source_code:533
-msgid "Translated"
-msgstr "번역됨"
-
-#: source_code:538
-msgid "Untranslated"
-msgstr "미번역"
-
-#: source_code:543
-msgid "Ignored"
-msgstr "무시됨"
-
-#: source_code:551
-msgid "Reviewed (of total)"
-msgstr "검토됨 (전체 중)"
-
-#: source_code:555
-msgid "Reviewed (of translated)"
-msgstr "검토됨 (번역된 항목 중)"
-
-#: source_code:561
-msgid "Items with Warnings"
-msgstr "경고가 있는 항목"
-
-#: source_code:570
-msgid "Source Chars (Translated only)"
-msgstr "원본 문자 (번역된 항목만)"
-
-#: source_code:571
-msgid "Translation Chars (Translated only)"
-msgstr "번역된 문자 (번역된 항목만)"
-
-#: source_code:575
-msgid "Expansion Ratio"
-msgstr "확장 비율"
-
-#: source_code:583
-msgid "Line"
-msgstr "줄"
-
-#: source_code:586
-msgid "Filter:"
-msgstr "필터:"
-
-#: source_code:590
-msgid "Unreviewed"
-msgstr "미검토됨"
-
-#: source_code:591
-msgid "Find"
-msgstr "찾기"
-
-#: source_code:595
-msgid "Quick search..."
-msgstr "빠른 검색..."
-
-#: source_code:599
-msgid "Edit && Details"
-msgstr "편집 및 세부 정보"
-
-#: source_code:600
-msgid "Context Preview"
-msgstr "컨텍스트 미리보기"
-
-#: source_code:601
-msgid "Translation Memory Matches"
-msgstr "번역 메모리 일치"
-
-#: source_code:602
-msgid "Comment && Status"
-msgstr "댓글 && 상태"
-
-#: source_code:609
-msgid "Ready"
-msgstr "준비됨"
-
-#: source_code:633
-msgid "Issue Description"
-msgstr "문제 설명"
-
-#: source_code:641
-msgid "No issues found"
-msgstr "발견된 문제 없음"
-
-#: source_code:678
-msgid "Keybinding Settings"
-msgstr "단축키 설정"
-
-#: source_code:681
-msgid "Double-click to locate."
-msgstr "더블 클릭으로 위치 확인."
-
-#: source_code:683
-msgid "Font Settings"
-msgstr "폰트 설정"
-
-#: source_code:685
-msgid "Restart Required"
-msgstr "재시작 필요"
-
-#: source_code:686
-msgid "Font settings have been changed. Please restart the application for the changes to take effect."
-msgstr "글꼴 설정이 변경되었습니다. 변경 사항을 적용하려면 애플리케이션을 재시작하세요."
-
-#: source_code:862
-msgid "Edit & Details"
-msgstr "편집 및 세부 정보"
-
-#: source_code:931
-msgid "The layout has been restored to its default state."
-msgstr "레이아웃이 기본 상태로 복원되었습니다."
-
-#: source_code:951
-msgid "Hint: requests not found, AI translation is disabled."
-msgstr "힌트: requests를 찾을 수 없습니다. AI 번역 기능이 비활성화됩니다."
-
-#: source_code:953
-msgid "Hint: "
-msgstr "힌트: "
-
-#: source_code:967
-msgid "Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"
-msgstr "표시됨: 0/0 | 번역됨: 0 | 미번역: 0 | 무시됨: 0"
-
-#: source_code:989
-#, python-brace-format
-msgid "Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}"
-msgstr "표시됨: {displayed_count}/{total_count} | 번역됨: {translated_visible} | 미번역: {untranslated_visible} | 무시됨: {ignored_visible}"
-
-#: source_code:1096
-msgid "No more actions to undo"
-msgstr "더 이상 실행 취소할 작업이 없습니다"
-
-#: source_code:1123
-#, python-brace-format
-msgid "Undo: {field} for ID {id} -> '{value}'"
-msgstr "실행 취소: ID {id}에 대한 {field} -> '{value}'"
-
-#: source_code:1127
-#, python-brace-format
-msgid "Undo error: Object ID {obj_id} not found"
-msgstr "실행 취소 오류: 개체 ID {obj_id}을(를) 찾을 수 없습니다"
-
-#: source_code:1149
-#, python-brace-format
-msgid "Undo: Bulk change ({count} items)"
-msgstr "실행 취소: 일괄 변경 ({count}개 항목)"
-
-#: source_code:1169
-msgid "No more actions to redo"
-msgstr "더 이상 되돌릴 작업이 없습니다"
-
-#: source_code:1196
-#, python-brace-format
-msgid "Redo: {field} for ID {id} -> '{value}'"
-msgstr "다시 실행: ID {id}에 대한 {field} -> '{value}'"
-
-#: source_code:1200
-#, python-brace-format
-msgid "Redo error: Object ID {obj_id} not found"
-msgstr "다시 실행 오류: 개체 ID {obj_id}을(를) 찾을 수 없습니다"
-
-#: source_code:1222
-#, python-brace-format
-msgid "Redo: Bulk change ({count} items)"
-msgstr "다시 실행: 일괄 변경 ({count}개 항목)"
-
-#: source_code:1243
+#: main_window.py:1389
 msgid "AI Translation in Progress"
 msgstr "AI 번역 진행 중"
 
-#: source_code:1244
+#: main_window.py:3823
+#, python-brace-format
+msgid "AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned)."
+msgstr "AI 일괄 번역 완료. {success_count}/{processed_count}개 항목 성공적으로 번역됨 (총 {total_items}개 예정)."
+
+#: main_window.py:3719
+msgid "AI batch translation is already in progress."
+msgstr "AI 일괄 번역이 이미 진행 중입니다."
+
+#: main_window.py:1613
+msgid "AI batch translation is in progress."
+msgstr "AI 일괄 번역 진행 중입니다."
+
+#: main_window.py:1556
+msgid "AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."
+msgstr "AI 일괄 번역이 진행 중입니다. 새 파일을 열기 전에 완료되거나 중지될 때까지 기다려 주십시오."
+
+#: main_window.py:1390
 msgid ""
 "AI batch translation is still in progress. Are you sure you want to exit?\n"
 "Unfinished translations will be lost."
@@ -1215,32 +125,1406 @@ msgstr ""
 "AI 일괄 번역이 아직 진행 중입니다. 종료하시겠습니까?\n"
 "미완료된 번역은 손실됩니다."
 
-#: source_code:1310
-msgid "No History"
-msgstr "기록 없음"
+#: main_window.py:3800
+#, python-brace-format
+msgid "AI batch translation started for {count} unique strings..."
+msgstr "AI 일괄 번역 시작: {count}개의 고유 문자열에 대해..."
 
-#: source_code:1320
+#: main_window.py:3944
+msgid ""
+"AI batch translation stop requested.\n"
+"Dispatched tasks will continue to complete, please wait."
+msgstr ""
+"AI 일괄 번역 중지 요청됨.\n"
+"할당된 작업은 계속 완료됩니다. 잠시 기다려 주십시오."
+
+#: main_window.py:3946
+msgid "AI batch translation stop requested. Finishing dispatched tasks..."
+msgstr "AI 일괄 번역 중지 요청됨. 할당된 작업 완료 중..."
+
+#: main_window.py:3513
+#, python-brace-format
+msgid "AI is translating: \"{text}...\""
+msgstr "AI 번역 중: \"{text}...\""
+
+#: dialogs/prompt_manager_dialog.py:204
+msgid "AI prompt structure updated."
+msgstr "AI 프롬프트 구조 업데이트됨."
+
+#: main_window.py:3852
+#, python-brace-format
+msgid ""
+"AI translation failed for \"{text}...\":\n"
+"{error}"
+msgstr ""
+"\"{text}...\"에 대한 AI 번역 실패:\n"
+"{error}"
+
+#: main_window.py:3847
+#, python-brace-format
+msgid "AI translation failed for \"{text}...\": {error}"
+msgstr "AI 번역 실패: \"{text}...\"에 대한 {error}"
+
+#: main_window.py:3879
+#, python-brace-format
+msgid "AI translation successful: \"{text}...\""
+msgstr "AI 번역 성공: \"{text}...\""
+
+#: dialogs/ai_settings_dialog.py:74
+msgid "API Base URL:"
+msgstr "API 기본 URL:"
+
+#: dialogs/ai_settings_dialog.py:99
+msgid "API Call Interval (ms):"
+msgstr "API 호출 간격 (ms):"
+
+#: dialogs/ai_settings_dialog.py:63
+msgid "API Connection & Model Settings"
+msgstr "API 연결 및 모델 설정"
+
+#: services/ai_translator.py:53
+msgid "API Error"
+msgstr "API 오류"
+
+#: main_window.py:3377
+msgid "API Key Missing"
+msgstr "API 키 누락"
+
+#: dialogs/ai_settings_dialog.py:199
+msgid "API Key is not filled."
+msgstr "API 키가 입력되지 않았습니다."
+
+#: main_window.py:3378
+msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
+msgstr "API 키가 설정되지 않았습니다. '도구 > AI 설정'에서 구성해 주십시오."
+
+#: services/ai_translator.py:21
+msgid "API Key not set."
+msgstr "API 키가 설정되지 않았습니다."
+
+#: dialogs/ai_settings_dialog.py:67
+msgid "API Key:"
+msgstr "API 키:"
+
+#: dialogs/ai_settings_dialog.py:254
+msgid "API call interval cannot be negative."
+msgstr "API 호출 간격은 음수일 수 없습니다."
+
+#: services/ai_translator.py:55
+msgid "API request timed out."
+msgstr "API 요청 시간이 초과되었습니다."
+
+#: main_window.py:537 main_window.py:645
+msgid "About"
+msgstr "정보"
+
+#: main_window.py:1503
+msgid "About Overwatch Localizer"
+msgstr "Overwatch Localizer 정보"
+
+#: dialogs/language_pair_dialog.py:278
+msgid "Actions"
+msgstr "동작"
+
+#: dialogs/extraction_pattern_dialog.py:35 dialogs/prompt_manager_dialog.py:34
+msgid "Add"
+msgstr "추가"
+
+#: dialogs/language_pair_dialog.py:282
+msgid "Add Current Pair to Favorites"
+msgstr "현재 쌍 즐겨찾기에 추가"
+
+#: dialogs/extraction_pattern_dialog.py:121
+msgid "Add Extraction Rule"
+msgstr "추출 규칙 추가"
+
+#: dialogs/prompt_manager_dialog.py:121
+msgid "Add Prompt Fragment"
+msgstr "프롬프트 조각 추가"
+
+#: dialogs/diff_dialog.py:53
+msgid "Added"
+msgstr "추가됨"
+
+#: main_window.py:3930
+#, python-brace-format
+msgid "Added comments to {count} placeholder mismatched items."
+msgstr "{count}개 자리표시자 불일치 항목에 주석 추가됨."
+
+#: main_window.py:3912
+#, python-brace-format
+msgid ""
+"After AI batch translation, {count} items were found with placeholder mismatches.\n"
+"Do you want to add the comment \"Placeholder Mismatch\" to these items in bulk?"
+msgstr ""
+"AI 일괄 번역 후, {count}개 항목에서 자리표시자 불일치가 발견되었습니다.\n"
+"이 항목들에 \"자리표시자 불일치\" 주석을 일괄 추가하시겠습니까?"
+
+#: main_window.py:4237
+#, python-brace-format
+msgid "An error occurred: {error}"
+msgstr "오류 발생: {error}"
+
+#: main_window.py:4090
+#, python-brace-format
+msgid "Applied TM to {count} selected items."
+msgstr "선택된 {count}개 항목에 TM 적용됨."
+
+#: main_window.py:3300 main_window.py:3301
+#, python-brace-format
+msgid "Applied TM to {count} strings."
+msgstr "{count}개 문자열에 TM 적용됨."
+
+#: ui_components/comment_status_panel.py:46 ui_components/comment_status_panel.py:76
+msgid "Apply Comment"
+msgstr "주석 적용"
+
+#: dialogs/language_pair_dialog.py:280
+msgid "Apply Favorite"
+msgstr "즐겨찾기 적용"
+
+#: main_window.py:1846
+msgid "Apply Memory to Selected Items"
+msgstr "선택된 항목에 메모리 적용"
+
+#: main_window.py:3142
+msgid "Apply TM"
+msgstr "TM 적용"
+
+#: main_window.py:448 main_window.py:626
+msgid "Apply TM to Untranslated"
+msgstr "미번역 항목에 TM 적용"
+
+#: ui_components/details_panel.py:85 ui_components/details_panel.py:196
+msgid "Apply Translation"
+msgstr "번역 적용"
+
+#: dialogs/keybinding_dialog.py:30
+msgid "Apply and Go to Next Untranslated"
+msgstr "적용 후 다음 미번역 항목으로 이동"
+
+#: main_window.py:4221
+msgid "Applying updates..."
+msgstr "업데이트 적용 중..."
+
+#: main_window.py:3170
+msgid ""
+"Are you sure you want to clear all entries from the in-memory TM?\n"
+"This cannot be undone."
+msgstr ""
+"메모리 내 모든 TM 항목을 지우시겠습니까?\n"
+"이 작업은 되돌릴 수 없습니다."
+
+#: main_window.py:1495
+msgid "Are you sure you want to clear all recent file history?"
+msgstr "모든 최근 파일 기록을 지우시겠습니까?"
+
+#: main_window.py:4102
+#, python-brace-format
+msgid "Are you sure you want to clear the translations for the {count} selected items?"
+msgstr "선택된 {count}개 항목의 번역을 지우시겠습니까?"
+
+#: main_window.py:3228
+#, python-brace-format
+msgid ""
+"Are you sure you want to remove the TM entry for:\n"
+"'{text}...'?"
+msgstr ""
+"TM에서 다음 항목을 제거하시겠습니까:\n"
+"'{text}...'?"
+
+#: dialogs/keybinding_dialog.py:137
+msgid "Are you sure you want to reset all keybindings to their default settings?"
+msgstr "모든 단축키를 기본 설정으로 재설정하시겠습니까?"
+
+#: dialogs/extraction_pattern_dialog.py:156
+msgid ""
+"Are you sure you want to reset extraction rules to their default settings?\n"
+"All current custom rules will be lost."
+msgstr ""
+"추출 규칙을 기본 설정으로 재설정하시겠습니까?\n"
+"현재 사용자 지정 규칙은 모두 손실됩니다."
+
+#: dialogs/prompt_manager_dialog.py:155
+msgid ""
+"Are you sure you want to reset the prompt to its default settings?\n"
+"All current customizations will be lost."
+msgstr ""
+"프롬프트를 기본 설정으로 재설정하시겠습니까?\n"
+"현재 사용자 지정 내용은 모두 손실됩니다."
+
+#: main_window.py:2987
+#, python-brace-format
+msgid "Attempted to restore {count} old translations/statuses."
+msgstr "{count}개 이전 번역/상태 복원 시도됨."
+
+#: main_window.py:501 main_window.py:638
+msgid "Auto-backup TM on Save"
+msgstr "저장 시 TM 자동 백업"
+
+#: main_window.py:507 main_window.py:639
+msgid "Auto-compile MO on Save"
+msgstr "저장 시 MO 자동 컴파일"
+
+#: dialogs/language_pair_dialog.py:243
+msgid "Auto-detect Source"
+msgstr "원본 언어 자동 감지"
+
+#: dialogs/language_pair_dialog.py:255
+msgid "Auto-detect Target"
+msgstr "대상 언어 자동 감지"
+
+#: main_window.py:804
+msgid "Auto-save Interval"
+msgstr "자동 저장 간격"
+
+#: main_window.py:514
+msgid "Auto-save Interval..."
+msgstr "자동 저장 간격..."
+
+#: main_window.py:818
+msgid "Auto-save disabled."
+msgstr "자동 저장 비활성화됨."
+
+#: main_window.py:816
+#, python-brace-format
+msgid "Auto-save enabled every {seconds} seconds."
+msgstr "{seconds}초마다 자동 저장 활성화됨."
+
+#: main_window.py:827
+msgid "Auto-saving..."
+msgstr "자동 저장 중..."
+
+#: main_window.py:3103 services/code_file_service.py:160
+msgid "Backup Failed"
+msgstr "백업 실패"
+
+#: services/code_file_service.py:156
+#, python-brace-format
+msgid "Backup created: {filename}"
+msgstr "백업이 생성되었습니다: {filename}"
+
+#: dialogs/statistics_dialog.py:48
+msgid "Calculation finished."
+msgstr "계산이 완료되었습니다."
+
+#: dialogs/ai_settings_dialog.py:175 dialogs/diff_dialog.py:45 dialogs/extraction_pattern_dialog.py:80 dialogs/extraction_pattern_dialog.py:281 dialogs/font_settings_dialog.py:61 dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342 dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:77 dialogs/prompt_manager_dialog.py:255 main_window.py:3751
+msgid "Cancel"
+msgstr "취소"
+
+#: utils/enums.py:38
+msgid "Capitalization Mismatch"
+msgstr "대소문자 불일치"
+
+#: dialogs/search_dialog.py:49
+msgid "Case sensitive"
+msgstr "대소문자 구분"
+
+#: main_window.py:1468
 msgid "Clear History"
 msgstr "기록 지우기"
 
-#: source_code:1326
-msgid "File not found"
-msgstr "파일을 찾을 수 없습니다"
+#: main_window.py:1848
+msgid "Clear Selected Translations"
+msgstr "선택된 번역 지우기"
 
-#: source_code:1327
+#: main_window.py:3166
+msgid "Clear TM"
+msgstr "TM 지우기"
+
+#: main_window.py:453 main_window.py:627
+msgid "Clear TM (in-memory)"
+msgstr "TM 지우기 (메모리 내)"
+
+#: ui_components/tm_panel.py:39 ui_components/tm_panel.py:98
+msgid "Clear TM for Selected"
+msgstr "선택된 항목의 TM 지우기"
+
+#: main_window.py:4131
+#, python-brace-format
+msgid "Cleared {count} translations."
+msgstr "{count}개 번역 지워짐."
+
+#: main_window.py:3342
+msgid "Clipboard content pasted to translation."
+msgstr "클립보드 내용이 번역에 붙여넣어졌습니다."
+
+#: dialogs/search_dialog.py:86 dialogs/statistics_dialog.py:405
+msgid "Close"
+msgstr "닫기"
+
+#: dialogs/font_settings_dialog.py:48
+msgid "Code Context"
+msgstr "코드 컨텍스트"
+
+#: main_window.py:1596
+msgid "Code file loading failed"
+msgstr "코드 파일 로드 실패"
+
+#: main_window.py:2378
+#, python-brace-format
+msgid "Code file saved to: {filename}"
+msgstr "코드 파일이 다음 위치에 저장됨: {filename}"
+
+#: dialogs/search_dialog.py:58 main_window.py:651 main_window.py:2556 main_window.py:2616 main_window.py:2624
+msgid "Comment"
+msgstr "주석"
+
+#: main_window.py:672 main_window.py:1033
+msgid "Comment && Status"
+msgstr "댓글 && 상태"
+
+#: main_window.py:433 main_window.py:620
+msgid "Comment && Status Panel"
+msgstr "댓글 && 상태 패널"
+
+#: main_window.py:2236
+#, python-brace-format
+msgid "Comment updated for ID {id}..."
+msgstr "ID {id}에 대한 주석 업데이트됨..."
+
+#: main_window.py:2213
+msgid "Comment updated."
+msgstr "주석 업데이트됨."
+
+#: ui_components/comment_status_panel.py:30 ui_components/comment_status_panel.py:75
+msgid "Comment:"
+msgstr "주석:"
+
+#: main_window.py:296 main_window.py:589
+msgid "Compare/Import New Version..."
+msgstr "새 버전 비교/가져오기..."
+
+#: main_window.py:4168
+msgid "Comparing versions..."
+msgstr "버전 비교 중..."
+
+#: main_window.py:4237
+msgid "Comparison Failed"
+msgstr "비교 실패"
+
+#: dialogs/diff_dialog.py:24
+msgid "Comparison Results Summary"
+msgstr "비교 결과 요약"
+
+#: main_window.py:4211
+msgid "Comparison complete. Found "
+msgstr "비교 완료. 발견됨 "
+
+#: dialogs/extraction_pattern_dialog.py:156 dialogs/keybinding_dialog.py:137 dialogs/prompt_manager_dialog.py:155
+msgid "Confirm"
+msgstr "확인"
+
+#: main_window.py:3781
+msgid "Confirm Batch Translation"
+msgstr "일괄 번역 확인"
+
+#: main_window.py:3169 main_window.py:3227 main_window.py:4101
+msgid "Confirm Clear"
+msgstr "지우기 확인"
+
+#: main_window.py:3262
+msgid "Confirm Operation"
+msgstr "작업 확인"
+
+#: main_window.py:2398
+msgid "Confirm Overwrite"
+msgstr "덮어쓰기 확인"
+
+#: main_window.py:2957
+msgid "Confirm Reload"
+msgstr "재로드 확인"
+
+#: main_window.py:3194
+msgid "Confirm Update TM"
+msgstr "TM 업데이트 확인"
+
+#: dialogs/diff_dialog.py:41
+msgid "Confirm and Update Project"
+msgstr "확인 및 프로젝트 업데이트"
+
+#: dialogs/font_settings_dialog.py:118 main_window.py:1494
+msgid "Confirmation"
+msgstr "확인"
+
+#: services/ai_translator.py:69
+msgid "Connection failed"
+msgstr "연결 실패"
+
+#: services/ai_translator.py:67
+msgid "Connection successful. Test translation"
+msgstr "연결 성공. 테스트 번역"
+
+#: dialogs/prompt_manager_dialog.py:59
+msgid "Content"
+msgstr "내용"
+
+#: dialogs/prompt_manager_dialog.py:244
+msgid "Content:"
+msgstr "내용:"
+
+#: main_window.py:670 main_window.py:1016
+msgid "Context Preview"
+msgstr "컨텍스트 미리보기"
+
+#: main_window.py:436 main_window.py:621
+msgid "Context Preview Panel"
+msgstr "컨텍스트 미리보기 패널"
+
+#: main_window.py:3319
+#, python-brace-format
+msgid "Copied {count} original strings to clipboard."
+msgstr "원본 문자열 {count}개 클립보드에 복사됨."
+
+#: main_window.py:3326
+#, python-brace-format
+msgid "Copied {count} translations to clipboard."
+msgstr "번역 {count}개 클립보드에 복사됨."
+
+#: main_window.py:389 main_window.py:609 main_window.py:1812
+msgid "Copy Original"
+msgstr "원본 복사"
+
+#: main_window.py:1813
+msgid "Copy Translation"
+msgstr "번역 복사"
+
+#: main_window.py:2478
+#, python-brace-format
+msgid "Could not compile MO file: {error}"
+msgstr "MO 파일을 컴파일할 수 없습니다: {error}"
+
+#: main_window.py:3104
+#, python-brace-format
+msgid "Could not create backup for TM: {error}"
+msgstr "TM 백업을 생성할 수 없습니다: {error}"
+
+#: services/code_file_service.py:161
+#, python-brace-format
+msgid "Could not create code file backup '{filename}': {error}"
+msgstr "코드 파일 백업 '{filename}'을 생성할 수 없습니다: {error}"
+
+#: services/ai_translator.py:60
+msgid "Could not decode API response. Response text"
+msgstr "API 응답을 디코딩할 수 없습니다. 응답 텍스트"
+
+#: main_window.py:3052
+#, python-brace-format
+msgid "Could not determine original/translation columns from '{filename}' header. Will try to use the first two columns by default (A=Original, B=Translation)."
+msgstr "'{filename}' 헤더에서 원본/번역 열을 확인할 수 없습니다. 기본적으로 처음 두 열을 사용합니다 (A=원본, B=번역)."
+
+#: main_window.py:2588
+#, python-brace-format
+msgid "Could not export project translations to Excel: {error}"
+msgstr "프로젝트 번역을 Excel로 내보낼 수 없습니다: {error}"
+
+#: main_window.py:2750
+#, python-brace-format
+msgid "Could not export project translations to JSON: {error}"
+msgstr "프로젝트 번역을 JSON으로 내보낼 수 없습니다: {error}"
+
+#: main_window.py:2790
+#, python-brace-format
+msgid "Could not export project translations to YAML: {error}"
+msgstr "프로젝트 번역을 YAML로 내보낼 수 없습니다: {error}"
+
+#: main_window.py:3189
+msgid "Could not find data for the selected item."
+msgstr "선택된 항목에 대한 데이터를 찾을 수 없습니다."
+
+#: main_window.py:2945
+msgid "Could not get code content for re-extraction."
+msgstr "재추출을 위한 코드 내용을 가져올 수 없습니다."
+
+#: main_window.py:2710
+#, python-brace-format
+msgid "Could not import project translations from Excel: {error}"
+msgstr "Excel에서 프로젝트 번역을 가져올 수 없습니다: {error}"
+
+#: dialogs/extraction_pattern_dialog.py:185 dialogs/prompt_manager_dialog.py:183
+#, python-brace-format
+msgid "Could not load preset file: {error}"
+msgstr "프리셋 파일을 로드할 수 없습니다: {error}"
+
+#: main_window.py:1667
+#, python-brace-format
+msgid "Could not load project file '{filename}': {error}"
+msgstr "프로젝트 파일 '{filename}'을(를) 로드할 수 없습니다: {error}"
+
+#: main_window.py:1593
+#, python-brace-format
+msgid "Could not open or parse code file '{filename}': {error}"
+msgstr "코드 파일 '{filename}'을(를) 열거나 구문 분석할 수 없습니다: {error}"
+
+#: main_window.py:2941
+#, python-brace-format
+msgid ""
+"Could not re-read {filepath} from disk.\n"
+"Using in-memory version.\n"
+"Error: {error}"
+msgstr ""
+"{filepath}을(를) 디스크에서 다시 읽을 수 없습니다.\n"
+"메모리 내 버전을 사용합니다.\n"
+"오류: {error}"
+
+#: main_window.py:2382
+#, python-brace-format
+msgid "Could not save code file: {error}"
+msgstr "코드 파일을 저장할 수 없습니다: {error}"
+
+#: dialogs/extraction_pattern_dialog.py:200 dialogs/prompt_manager_dialog.py:198
+#, python-brace-format
+msgid "Could not save preset file: {error}"
+msgstr "프리셋 파일을 저장할 수 없습니다: {error}"
+
+#: dialogs/language_pair_dialog.py:308
+msgid "Current Selection:"
+msgstr "현재 선택:"
+
+#: dialogs/extraction_pattern_dialog.py:92 dialogs/extraction_pattern_dialog.py:116 dialogs/extraction_pattern_dialog.py:177 dialogs/extraction_pattern_dialog.py:246 dialogs/extraction_pattern_dialog.py:295
+msgid "Custom"
+msgstr "사용자 지정"
+
+#: dialogs/extraction_pattern_dialog.py:39 dialogs/prompt_manager_dialog.py:38
+msgid "Delete Selected"
+msgstr "선택 삭제"
+
+#: main_window.py:1113
+msgid "Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"
+msgstr "표시됨: 0/0 | 번역됨: 0 | 미번역: 0 | 무시됨: 0"
+
+#: main_window.py:1135
+#, python-brace-format
+msgid "Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}"
+msgstr "표시됨: {displayed_count}/{total_count} | 번역됨: {translated_visible} | 미번역: {untranslated_visible} | 무시됨: {ignored_visible}"
+
+#: main_window.py:3748
+msgid "Do you want to overwrite them, skip them, or cancel the operation?"
+msgstr "덮어쓰기, 건너뛰기 또는 작업 취소 중 무엇을 하시겠습니까?"
+
+#: dialogs/statistics_dialog.py:681
+msgid "Double-click to locate."
+msgstr "더블 클릭으로 위치 확인."
+
+#: main_window.py:1536
+#, python-brace-format
+msgid "Drag and drop failed: '{filename}' is not a file."
+msgstr "드래그 앤 드롭 실패: '{filename}'은(는) 파일이 아닙니다."
+
+#: main_window.py:1533
+#, python-brace-format
+msgid "Drag and drop failed: Invalid file type '{filename}'"
+msgstr "드래그 앤 드롭 실패: 유효하지 않은 파일 형식 '{filename}'"
+
+#: dialogs/prompt_manager_dialog.py:99 dialogs/prompt_manager_dialog.py:106 dialogs/prompt_manager_dialog.py:231
+msgid "Dynamic Instruction"
+msgstr "동적 지침"
+
+#: main_window.py:754
+msgid "Dynamic sorting enabled."
+msgstr "동적 정렬 활성화됨."
+
+#: main_window.py:1008
+msgid "Edit & Details"
+msgstr "편집 및 세부 정보"
+
+#: main_window.py:669
+msgid "Edit && Details"
+msgstr "편집 및 세부 정보"
+
+#: main_window.py:429 main_window.py:619
+msgid "Edit && Details Panel"
+msgstr "편집 && 상세 정보 패널"
+
+#: main_window.py:1843 main_window.py:4044
+msgid "Edit Comment..."
+msgstr "주석 편집..."
+
+#: dialogs/extraction_pattern_dialog.py:147
+msgid "Edit Extraction Rule"
+msgstr "추출 규칙 편집"
+
+#: dialogs/prompt_manager_dialog.py:146
+msgid "Edit Prompt Fragment"
+msgstr "프롬프트 조각 편집"
+
+#: dialogs/prompt_manager_dialog.py:237
+msgid "Enable this fragment"
+msgstr "이 조각 활성화"
+
+#: dialogs/extraction_pattern_dialog.py:238
+msgid "Enable this rule"
+msgstr "이 규칙 활성화"
+
+#: dialogs/extraction_pattern_dialog.py:60 dialogs/prompt_manager_dialog.py:59
+msgid "Enabled"
+msgstr "활성화됨"
+
+#: utils/enums.py:48
+msgid "Ending Punctuation Mismatch"
+msgstr "종료 구두점 불일치"
+
+#: services/validation_service.py:97
+#, python-brace-format
+msgid "Ending punctuation differs: '{c1}' vs '{c2}'."
+msgstr "종료 구두점이 다릅니다: '{c1}' vs '{c2}'."
+
+#: services/validation_service.py:93
+msgid "Ending punctuation presence differs."
+msgstr "끝 구두점 존재 여부가 다릅니다."
+
+#: main_window.py:4040
+#, python-brace-format
+msgid "Enter comment for {count} selected items:"
+msgstr "선택된 {count}개 항목에 대한 주석 입력:"
+
+#: main_window.py:805
+msgid "Enter interval in seconds (0 to disable):"
+msgstr "초 단위로 간격 입력 (0은 비활성화):"
+
+#: main_window.py:3352
+msgid ""
+"Enter specific translation instructions for this project (e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a lively and cute style').\n"
+"These instructions will be used during AI translation."
+msgstr ""
+"이 프로젝트에 대한 특정 번역 지침을 입력하십시오 (예: '\"Hero\"를 \"Agent\"로 번역', '활기차고 귀여운 스타일 사용').\n"
+"이 지침은 AI 번역 시 사용됩니다."
+
+#: dialogs/ai_settings_dialog.py:250 dialogs/ai_settings_dialog.py:254 dialogs/ai_settings_dialog.py:258 dialogs/extraction_pattern_dialog.py:183 dialogs/extraction_pattern_dialog.py:300 dialogs/extraction_pattern_dialog.py:303 dialogs/prompt_manager_dialog.py:181 main_window.py:1593 main_window.py:2132 main_window.py:2136 main_window.py:2372 main_window.py:2387 main_window.py:2391 main_window.py:2945 main_window.py:3081 main_window.py:3128 main_window.py:3189 main_window.py:3348 main_window.py:4242
+msgid "Error"
+msgstr "오류"
+
+#: main_window.py:2825
+#, python-brace-format
+msgid "Error extracting POT file: {error}"
+msgstr "POT 파일 추출 오류: {error}"
+
+#: main_window.py:2865
+#, python-brace-format
+msgid "Error importing PO file '{filename}': {error}"
+msgstr "PO 파일 '{filename}' 가져오기 오류: {error}"
+
+#: main_window.py:2706
+#, python-brace-format
+msgid "Error processing Excel file (possibly column names issue): {error}"
+msgstr "Excel 파일 처리 오류 (열 이름 문제일 수 있음): {error}"
+
+#: main_window.py:2691
+#, python-brace-format
+msgid "Error processing Excel row {row_num}: {error}. Skipping this row."
+msgstr "Excel {row_num}행 처리 오류: {error}. 이 행 건너뛰기."
+
+#: main_window.py:3006
+#, python-brace-format
+msgid "Error reloading translatable text: {error}"
+msgstr "번역 가능한 텍스트 재로드 오류: {error}"
+
+#: dialogs/statistics_dialog.py:515
+msgid "Error:"
+msgstr "오류:"
+
+#: dialogs/extraction_pattern_dialog.py:264
+msgid "Escape for Regex (Left)"
+msgstr "정규식 이스케이프 (왼쪽)"
+
+#: dialogs/extraction_pattern_dialog.py:268
+msgid "Escape for Regex (Right)"
+msgstr "정규식 이스케이프 (오른쪽)"
+
+#: main_window.py:2600
+msgid "Excel files (*.xlsx)"
+msgstr "Excel 파일 (*.xlsx)"
+
+#: main_window.py:3135 main_window.py:3159
+msgid "Excel files (*.xlsx);;All files (*.*)"
+msgstr "Excel 파일 (*.xlsx);;모든 파일 (*.*)"
+
+#: main_window.py:2610
+msgid "Excel header format is incorrect or empty."
+msgstr "Excel 헤더 형식이 올바르지 않거나 비어 있습니다."
+
+#: main_window.py:2623
+#, python-brace-format
+msgid ""
+"Excel header must contain 'UUID' and '{translation_col}' columns.\n"
+"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
+msgstr ""
+"Excel 헤더에는 'UUID' 및 '{translation_col}' 열이 포함되어야 합니다.\n"
+"선택적 열: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
+
+#: main_window.py:368 main_window.py:603
+msgid "Exit"
+msgstr "종료"
+
+#: dialogs/statistics_dialog.py:575
+msgid "Expansion Ratio"
+msgstr "확장 비율"
+
+#: main_window.py:358 main_window.py:601 main_window.py:3157
+msgid "Export Current TM (Excel)"
+msgstr "현재 TM 내보내기 (Excel)"
+
+#: main_window.py:2587 main_window.py:2749 main_window.py:2789 main_window.py:2915
+msgid "Export Error"
+msgstr "내보내기 오류"
+
+#: dialogs/extraction_pattern_dialog.py:190
+msgid "Export Extraction Rule Preset"
+msgstr "추출 규칙 프리셋 내보내기"
+
+#: dialogs/extraction_pattern_dialog.py:200 dialogs/prompt_manager_dialog.py:198
+msgid "Export Failed"
+msgstr "내보내기 실패"
+
+#: dialogs/extraction_pattern_dialog.py:53 dialogs/prompt_manager_dialog.py:52
+msgid "Export Preset"
+msgstr "프리셋 내보내기"
+
+#: main_window.py:2547
+msgid "Export Project Translations to Excel"
+msgstr "프로젝트 번역을 Excel로 내보내기"
+
+#: main_window.py:2730
+msgid "Export Project Translations to JSON"
+msgstr "프로젝트 번역을 JSON으로 내보내기"
+
+#: main_window.py:2770
+msgid "Export Project Translations to YAML"
+msgstr "프로젝트 번역을 YAML로 내보내기"
+
+#: dialogs/prompt_manager_dialog.py:188
+msgid "Export Prompt Preset"
+msgstr "프롬프트 프리셋 내보내기"
+
+#: main_window.py:324 main_window.py:594
+msgid "Export to Excel"
+msgstr "Excel로 내보내기"
+
+#: main_window.py:329 main_window.py:595
+msgid "Export to JSON"
+msgstr "JSON으로 내보내기"
+
+#: main_window.py:348 main_window.py:599 main_window.py:2900
+msgid "Export to PO File..."
+msgstr "PO 파일로 내보내기..."
+
+#: main_window.py:334 main_window.py:596
+msgid "Export to YAML"
+msgstr "YAML로 내보내기"
+
+#: utils/enums.py:36
+msgid "Extra Placeholder"
+msgstr "추가 플레이스홀더"
+
+#: services/validation_service.py:46
+#, python-brace-format
+msgid "Extra placeholders: {placeholders}"
+msgstr "추가 플레이스홀더: {placeholders}"
+
+#: main_window.py:340 main_window.py:597
+msgid "Extract POT Template from Code..."
+msgstr "코드에서 POT 템플릿 추출..."
+
+#: main_window.py:1570
+msgid "Extracting strings..."
+msgstr "문자열 추출 중..."
+
+#: main_window.py:2918
+msgid "Extraction Rule Manager"
+msgstr "추출 규칙 관리자"
+
+#: main_window.py:484 main_window.py:633
+msgid "Extraction Rule Manager..."
+msgstr "추출 규칙 관리자..."
+
+#: main_window.py:2921
+msgid "Extraction Rules Updated"
+msgstr "추출 규칙 업데이트됨"
+
+#: dialogs/extraction_pattern_dialog.py:207
+msgid "Extraction rules updated. Consider reloading the text."
+msgstr "추출 규칙이 업데이트되었습니다. 텍스트를 다시 로드하는 것을 고려하십시오."
+
+#: main_window.py:2922
+msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"
+msgstr "추출 규칙이 업데이트되었습니다. 새 규칙을 사용하여 현재 코드의 번역 가능한 텍스트를 즉시 다시 로드하시겠습니까?"
+
+#: main_window.py:2915
+#, python-brace-format
+msgid "Failed to export to PO file: {error}"
+msgstr "PO 파일로 내보내기 실패: {error}"
+
+#: main_window.py:3081 main_window.py:3082
+#, python-brace-format
+msgid "Failed to load Excel TM: {error}"
+msgstr "Excel TM 로드 실패: {error}"
+
+#: main_window.py:2481
+#, python-brace-format
+msgid "Failed to save PO file: {error}"
+msgstr "PO 파일 저장 실패: {error}"
+
+#: main_window.py:3128
+#, python-brace-format
+msgid "Failed to save TM: {error}"
+msgstr "TM 저장 실패: {error}"
+
+#: dialogs/language_pair_dialog.py:270 dialogs/language_pair_dialog.py:296
+msgid "Favorite Pairs"
+msgstr "즐겨찾는 쌍"
+
+#: main_window.py:3362
+msgid "Feature Unavailable"
+msgstr "기능 사용 불가"
+
+#: main_window.py:2399
+#, python-brace-format
+msgid "File '{filename}' already exists. Overwrite? A backup file (.bak) will be created."
+msgstr "파일 '{filename}'이(가) 이미 존재합니다. 덮어쓰시겠습니까? 백업 파일(.bak)이 생성됩니다."
+
+#: main_window.py:1475
 #, python-brace-format
 msgid "File '{filepath}' does not exist."
 msgstr "파일 '{filepath}'이(가) 존재하지 않습니다."
 
-#: source_code:1347
-msgid "Are you sure you want to clear all recent file history?"
-msgstr "모든 최근 파일 기록을 지우시겠습니까?"
+#: main_window.py:2940
+msgid "File Read Error"
+msgstr "파일 읽기 오류"
 
-#: source_code:1355
-msgid "About Overwatch Localizer"
-msgstr "Overwatch Localizer 정보"
+#: main_window.py:1474
+msgid "File not found"
+msgstr "파일을 찾을 수 없습니다"
 
-#: source_code:1356
+#: main_window.py:656 main_window.py:858
+msgid "Filter:"
+msgstr "필터:"
+
+#: main_window.py:1773
+#, python-brace-format
+msgid "Filtered by '{search_term}'."
+msgstr "'{search_term}'(으)로 필터링됨."
+
+#: dialogs/statistics_dialog.py:46
+msgid "Finalizing..."
+msgstr "완료 중..."
+
+#: main_window.py:661 main_window.py:896
+msgid "Find"
+msgstr "찾기"
+
+#: dialogs/search_dialog.py:73
+msgid "Find Next"
+msgstr "다음 찾기"
+
+#: dialogs/search_dialog.py:76
+msgid "Find Previous"
+msgstr "이전 찾기"
+
+#: main_window.py:3311
+msgid "Find and Replace"
+msgstr "찾기 및 바꾸기"
+
+#: dialogs/search_dialog.py:33
+msgid "Find what:"
+msgstr "찾을 내용:"
+
+#: main_window.py:383 main_window.py:608
+msgid "Find/Replace..."
+msgstr "찾기/바꾸기..."
+
+#: dialogs/font_settings_dialog.py:74
+msgid "Font Family:"
+msgstr "폰트 패밀리:"
+
+#: main_window.py:796
+msgid "Font Settings"
+msgstr "폰트 설정"
+
+#: main_window.py:532 main_window.py:642
+msgid "Font Settings..."
+msgstr "폰트 설정..."
+
+#: main_window.py:799
+msgid "Font settings have been changed. Please restart the application for the changes to take effect."
+msgstr "글꼴 설정이 변경되었습니다. 변경 사항을 적용하려면 애플리케이션을 재시작하세요."
+
+#: dialogs/search_dialog.py:182
+#, python-brace-format
+msgid "Found {count} matches."
+msgstr "{count}개 일치 항목 발견."
+
+#: utils/enums.py:58
+msgid "Fuzzy Translation"
+msgstr "퍼지 번역"
+
+#: main_window.py:4198
+msgid "Fuzzy match, please review."
+msgstr "퍼지 매칭, 검토 필요."
+
+#: main_window.py:1099
+msgid "Hint: "
+msgstr "힌트: "
+
+#: main_window.py:1097
+msgid "Hint: requests not found, AI translation is disabled."
+msgstr "힌트: requests를 찾을 수 없습니다. AI 번역 기능이 비활성화됩니다."
+
+#: main_window.py:1833
+msgid "Ignore Warnings for Selected"
+msgstr "선택된 항목에 대한 경고 무시"
+
+#: main_window.py:2326
+#, python-brace-format
+msgid "Ignore status for ID {id} -> {status}"
+msgstr "ID {id}에 대한 무시 상태 -> {status}"
+
+#: main_window.py:2009 main_window.py:4015 ui_components/comment_status_panel.py:57
+msgid "Ignore this string"
+msgstr "이 문자열 무시"
+
+#: dialogs/statistics_dialog.py:543 dialogs/statistics_dialog.py:600 main_window.py:657 main_window.py:861 main_window.py:2557 main_window.py:2618 main_window.py:2626 main_window.py:3496
+msgid "Ignored"
+msgstr "무시됨"
+
+#: main_window.py:2063
+#, python-brace-format
+msgid "Ignored warnings for {count} item(s)."
+msgstr "{count}개 항목에 대한 경고를 무시했습니다."
+
+#: main_window.py:2610 main_window.py:2622 main_window.py:2705 main_window.py:2709
+msgid "Import Error"
+msgstr "가져오기 오류"
+
+#: dialogs/extraction_pattern_dialog.py:165
+msgid "Import Extraction Rule Preset"
+msgstr "추출 규칙 프리셋 가져오기"
+
+#: dialogs/extraction_pattern_dialog.py:185 dialogs/prompt_manager_dialog.py:183
+msgid "Import Failed"
+msgstr "가져오기 실패"
+
+#: dialogs/extraction_pattern_dialog.py:49 dialogs/prompt_manager_dialog.py:48
+msgid "Import Preset"
+msgstr "프리셋 가져오기"
+
+#: dialogs/prompt_manager_dialog.py:164
+msgid "Import Prompt Preset"
+msgstr "프롬프트 프리셋 가져오기"
+
+#: main_window.py:354 main_window.py:600 main_window.py:3133
+msgid "Import TM (Excel)"
+msgstr "TM 가져오기 (Excel)"
+
+#: main_window.py:319 main_window.py:593 main_window.py:2598
+msgid "Import Translations from Excel"
+msgstr "Excel에서 번역 가져오기"
+
+#: main_window.py:344 main_window.py:598
+msgid "Import Translations from PO File..."
+msgstr "PO 파일에서 번역 가져오기..."
+
+#: dialogs/pot_drop_dialog.py:28
+msgid "Import as New File"
+msgstr "새 파일로 가져오기"
+
+#: main_window.py:2701
+#, python-brace-format
+msgid "Imported/updated {field_count} fields for {item_count} items from Excel."
+msgstr "Excel에서 {item_count}개 항목에 대해 {field_count}개 필드 가져오기/업데이트됨."
+
+#: main_window.py:3174
+msgid "In-memory TM has been cleared."
+msgstr "메모리 내 TM이 지워졌습니다."
+
+#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291 dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:764 main_window.py:2432 main_window.py:2531 main_window.py:2592 main_window.py:2714 main_window.py:2754 main_window.py:2885 main_window.py:2929 main_window.py:3184 main_window.py:3221 main_window.py:3238 main_window.py:3255 main_window.py:3258 main_window.py:3309 main_window.py:3936 main_window.py:4069 main_window.py:4093
+msgid "Info"
+msgstr "정보"
+
+#: main_window.py:4195 services/diff_service.py:35
+msgid "Inherited from old version"
+msgstr "이전 버전에서 상속됨"
+
+#: services/validation_service.py:105
+msgid "Initial capitalization mismatch."
+msgstr "초기 대문자 불일치."
+
+#: dialogs/statistics_dialog.py:39
+msgid "Initialization complete."
+msgstr "초기화 완료."
+
+#: main_window.py:246
+msgid "Initializing services in the background..."
+msgstr "백그라운드에서 서비스 초기화 중..."
+
+#: dialogs/statistics_dialog.py:36
+msgid "Initializing..."
+msgstr "초기화 중..."
+
+#: dialogs/statistics_dialog.py:633
+msgid "Issue Description"
+msgstr "문제 설명"
+
+#: dialogs/statistics_dialog.py:300
+msgid "Issues & Warnings"
+msgstr "문제 및 경고"
+
+#: dialogs/statistics_dialog.py:561
+msgid "Items with Warnings"
+msgstr "경고가 있는 항목"
+
+#: main_window.py:2732
+msgid "JSON files (*.json);;All Files (*.*)"
+msgstr "JSON 파일 (*.json);;모든 파일 (*.*)"
+
+#: main_window.py:791
+msgid "Keybinding Settings"
+msgstr "단축키 설정"
+
+#: main_window.py:528 main_window.py:641
+msgid "Keybinding Settings..."
+msgstr "단축키 설정..."
+
+#: dialogs/keybinding_dialog.py:151
+msgid "Keybindings have been updated."
+msgstr "단축키가 업데이트되었습니다."
+
+#: main_window.py:523 main_window.py:640
+msgid "Language"
+msgstr "언어"
+
+#: dialogs/language_pair_dialog.py:183
+msgid "Language Pair Settings"
+msgstr "언어 쌍 설정"
+
+#: main_window.py:519
+msgid "Language Pair Settings..."
+msgstr "언어 쌍 설정..."
+
+#: dialogs/language_pair_dialog.py:263
+msgid "Language Selection"
+msgstr "언어 선택"
+
+#: utils/enums.py:40
+msgid "Leading Whitespace Mismatch"
+msgstr "선행 공백 불일치"
+
+#: dialogs/extraction_pattern_dialog.py:60
+msgid "Left Delimiter (Regex)"
+msgstr "왼쪽 구분 기호 (정규식)"
+
+#: dialogs/extraction_pattern_dialog.py:251
+msgid "Left Delimiter:"
+msgstr "왼쪽 구분 기호:"
+
+#: dialogs/extraction_pattern_dialog.py:303
+msgid "Left and right delimiters cannot be empty."
+msgstr "왼쪽 및 오른쪽 구분 기호는 비워둘 수 없습니다."
+
+#: utils/enums.py:52
+msgid "Length Deviation (Major)"
+msgstr "길이 편차 (심각)"
+
+#: utils/enums.py:50
+msgid "Length Deviation (Minor)"
+msgstr "길이 편차 (경미)"
+
+#: services/validation_service.py:141 services/validation_service.py:146
+#, python-brace-format
+msgid "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
+msgstr "길이 경고: 비정상적인 확장 비율({actual:.1f}x), 예상 값은 약 {expected:.1f}x."
+
+#: main_window.py:653
+msgid "Line"
+msgstr "줄"
+
+#: utils/enums.py:44
+msgid "Line Count Mismatch"
+msgstr "줄 수 불일치"
+
+#: services/validation_service.py:51
+msgid "Line count differs from original."
+msgstr "원본과 줄 수가 다릅니다."
+
+#: main_window.py:2859
+#, python-brace-format
+msgid "Loaded {count} entries from PO file {filename}."
+msgstr "PO 파일 {filename}에서 {count}개 항목 로드됨."
+
+#: main_window.py:1587
+#, python-brace-format
+msgid "Loaded {count} translatable strings from {filename}"
+msgstr "{filename}에서 {count}개 번역 가능한 문자열 로드됨"
+
+#: main_window.py:3074
+#, python-brace-format
+msgid "Loaded/merged {count} Excel TM records from '{filename}'."
+msgstr "'{filename}'에서 {count}개 Excel TM 기록 로드/병합됨."
+
+#: main_window.py:2478
+msgid "MO Compilation Failed"
+msgstr "MO 컴파일 실패"
+
+#: main_window.py:1818
+msgid "Mark as Ignored"
+msgstr "무시됨으로 표시"
+
+#: main_window.py:1825
+msgid "Mark as Reviewed"
+msgstr "검토됨으로 표시"
+
+#: main_window.py:1826
+msgid "Mark as Unreviewed"
+msgstr "미검토됨으로 표시"
+
+#: dialogs/search_dialog.py:292
+msgid "Match is not in a replaceable column (Translation or Comment)."
+msgstr "일치 항목이 교체 가능한 열(번역 또는 주석)에 없습니다."
+
+#: dialogs/search_dialog.py:212
+#, python-brace-format
+msgid "Match {current}/{total}"
+msgstr "일치 {current}/{total}"
+
+#: dialogs/ai_settings_dialog.py:109
+msgid "Max Concurrent Requests:"
+msgstr "최대 동시 요청 수:"
+
+#: dialogs/ai_settings_dialog.py:258
+msgid "Max concurrent requests must be between 1 and 10."
+msgstr "최대 동시 요청 수는 1에서 10 사이여야 합니다."
+
+#: services/validation_service.py:42
+#, python-brace-format
+msgid "Missing placeholders: {placeholders}"
+msgstr "누락된 플레이스홀더: {placeholders}"
+
+#: dialogs/ai_settings_dialog.py:80
+msgid "Model Name:"
+msgstr "모델 이름:"
+
+#: dialogs/ai_settings_dialog.py:250
+msgid "Model name cannot be empty."
+msgstr "모델 이름은 비워둘 수 없습니다."
+
+#: dialogs/diff_dialog.py:77
+msgid "Modified/Inherited"
+msgstr "수정됨/상속됨"
+
+#: services/ai_translator.py:57
+msgid "Network error or API request failed"
+msgstr "네트워크 오류 또는 API 요청 실패"
+
+#: dialogs/prompt_manager_dialog.py:120
+msgid "New Instruction"
+msgstr "새 지침"
+
+#: dialogs/extraction_pattern_dialog.py:114
+msgid "New Rule"
+msgstr "새 규칙"
+
+#: dialogs/diff_dialog.py:31
+msgid "New Version Original"
+msgstr "새 버전 원본"
+
+#: main_window.py:2327 main_window.py:2363 main_window.py:2577 main_window.py:2578
+msgid "No"
+msgstr "아니요"
+
+#: main_window.py:3936
+msgid "No AI batch translation task is in progress."
+msgstr "진행 중인 AI 일괄 번역 작업이 없습니다."
+
+#: main_window.py:1458
+msgid "No History"
+msgstr "기록 없음"
+
+#: main_window.py:3710
+msgid "No Translation Needed"
+msgstr "번역 필요 없음"
+
+#: main_window.py:3303
+msgid "No applicable translations found in TM (or no changes needed)."
+msgstr "TM에서 적용 가능한 번역을 찾을 수 없습니다 (또는 변경 필요 없음)."
+
+#: main_window.py:2929
+msgid "No code content loaded to reload."
+msgstr "다시 로드할 코드 내용이 로드되지 않았습니다."
+
+#: services/ai_translator.py:52
+msgid "No content in message"
+msgstr "메시지에 내용이 없습니다"
+
+#: dialogs/statistics_dialog.py:515
+msgid "No data to display."
+msgstr "표시할 데이터가 없습니다."
+
+#: main_window.py:2531 main_window.py:2714 main_window.py:2754 main_window.py:2885
+msgid "No data to export."
+msgstr "내보낼 데이터가 없습니다."
+
+#: dialogs/statistics_dialog.py:641
+msgid "No issues found"
+msgstr "발견된 문제 없음"
+
+#: main_window.py:4136
+msgid "No items selected for AI translation."
+msgstr "AI 번역을 위해 선택된 항목이 없습니다."
+
+#: main_window.py:2041
+msgid "No items selected to modify warning status."
+msgstr "경고 상태를 수정할 항목이 선택되지 않았습니다."
+
+#: main_window.py:3766
+msgid "No items to process."
+msgstr "처리할 항목이 없습니다."
+
+#: main_window.py:1775
+#, python-brace-format
+msgid "No matches found for '{search_term}' under current filters."
+msgstr "현재 필터에서 '{search_term}'에 대한 일치 항목을 찾을 수 없습니다."
+
+#: dialogs/search_dialog.py:312
+msgid "No matches found in Translation or Comment columns."
+msgstr "번역 또는 주석 열에서 일치하는 항목을 찾을 수 없습니다."
+
+#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:300
+msgid "No matches found to replace."
+msgstr "교체할 일치 항목이 없습니다."
+
+#: dialogs/search_dialog.py:187
+msgid "No matches found."
+msgstr "일치 항목 없음."
+
+#: main_window.py:4094
+msgid "No matching TM entries or no changes needed for selected items."
+msgstr "일치하는 TM 항목이 없거나 선택된 항목에 변경이 필요 없습니다."
+
+#: main_window.py:1315
+msgid "No more actions to redo"
+msgstr "더 이상 되돌릴 작업이 없습니다"
+
+#: main_window.py:1242
+msgid "No more actions to undo"
+msgstr "더 이상 실행 취소할 작업이 없습니다"
+
+#: main_window.py:3428
+msgid "No more untranslated items."
+msgstr "더 이상 미번역 항목이 없습니다."
+
+#: main_window.py:2391
+msgid "No original code content to save."
+msgstr "저장할 원본 코드 내용이 없습니다."
+
+#: main_window.py:2387
+msgid "No original code file path."
+msgstr "원본 코드 파일 경로가 없습니다."
+
+#: main_window.py:3012
+msgid "No project data loaded to generate statistics."
+msgstr "통계 생성에 사용할 프로젝트 데이터가 로드되지 않았습니다."
+
+#: services/ai_translator.py:60
+msgid "No response object"
+msgstr "응답 객체 없음"
+
+#: main_window.py:3255
+msgid "No strings to apply TM to."
+msgstr "TM을 적용할 문자열이 없습니다."
+
+#: main_window.py:764
+msgid "No text available to detect language from."
+msgstr "감지할 수 있는 텍스트가 없습니다."
+
+#: main_window.py:3711
+msgid "No untranslated and non-ignored strings found."
+msgstr "미번역 및 무시되지 않은 문자열을 찾을 수 없습니다."
+
+#: dialogs/ai_settings_dialog.py:171 dialogs/extraction_pattern_dialog.py:76 dialogs/extraction_pattern_dialog.py:277 dialogs/font_settings_dialog.py:57 dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341 dialogs/prompt_manager_dialog.py:73 dialogs/prompt_manager_dialog.py:251
+msgid "OK"
+msgstr "확인"
+
+#: dialogs/diff_dialog.py:31
+msgid "Old Version Original"
+msgstr "이전 버전 원본"
+
+#: main_window.py:1546
+msgid "Open Code File"
+msgstr "코드 파일 열기"
+
+#: main_window.py:287 main_window.py:587
+msgid "Open Code File..."
+msgstr "코드 파일 열기..."
+
+#: main_window.py:1666
+msgid "Open Project Error"
+msgstr "프로젝트 열기 오류"
+
+#: main_window.py:1604
+msgid "Open Project File"
+msgstr "프로젝트 파일 열기"
+
+#: main_window.py:291 main_window.py:588
+msgid "Open Project..."
+msgstr "프로젝트 열기..."
+
+#: main_window.py:1555 main_window.py:1613 main_window.py:3719
+msgid "Operation Restricted"
+msgstr "작업 제한됨"
+
+#: dialogs/search_dialog.py:47
+msgid "Options"
+msgstr "옵션"
+
+#: dialogs/search_dialog.py:56 main_window.py:649
+msgid "Original"
+msgstr "원본"
+
+#: main_window.py:2558
+msgid "Original (Raw)"
+msgstr "원본 (Raw)"
+
+#: main_window.py:2556 main_window.py:2620 main_window.py:2626
+msgid "Original (Semantic)"
+msgstr "원본 (Semantic)"
+
+#: utils/enums.py:56
+msgid "Original Empty, Translation Not"
+msgstr "원본 비어 있음, 번역 없음"
+
+#: services/validation_service.py:63
+msgid "Original ends with space, translation does not."
+msgstr "원본은 공백으로 끝나지만 번역은 그렇지 않습니다."
+
+#: services/validation_service.py:56
+msgid "Original starts with space, translation does not."
+msgstr "원본은 공백으로 시작하지만, 번역은 그렇지 않습니다."
+
+#: main_window.py:2132
+msgid "Original text cannot be empty for a new entry."
+msgstr "새 항목의 원본 텍스트는 비워둘 수 없습니다."
+
+#: ui_components/details_panel.py:43 ui_components/details_panel.py:194
+msgid "Original:"
+msgstr "원본:"
+
+#: main_window.py:4041
+#, python-brace-format
+msgid ""
+"Original:\n"
+"{original_semantic}...\n"
+"\n"
+"Enter comment:"
+msgstr ""
+"원본:\n"
+"{original_semantic}...\n"
+"\n"
+"주석 입력:"
+
+#: dialogs/font_settings_dialog.py:32
+msgid "Override default font settings"
+msgstr "기본 글꼴 설정 재정의"
+
+#: main_window.py:1504
 #, python-brace-format
 msgid ""
 "Overwatch Custom Code Translation Tool\n"
@@ -1255,224 +1539,660 @@ msgstr ""
 "제작자: TheSkyC\n"
 "중국 서버 ID: 小鸟游六花#56683 / 아시아 서버: 小鳥游六花#31665"
 
-#: source_code:1385
+#: dialogs/extraction_pattern_dialog.py:167 dialogs/extraction_pattern_dialog.py:192
 #, python-brace-format
-msgid "Drag and drop failed: Invalid file type '{filename}'"
-msgstr "드래그 앤 드롭 실패: 유효하지 않은 파일 형식 '{filename}'"
+msgid "Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)"
+msgstr "오버워치 추출 패턴 파일 (*{ext});;모든 파일 (*.*)"
 
-#: source_code:1388
+#: main_window.py:133 main_window.py:576
 #, python-brace-format
-msgid "Drag and drop failed: '{filename}' is not a file."
-msgstr "드래그 앤 드롭 실패: '{filename}'은(는) 파일이 아닙니다."
+msgid "Overwatch Localizer - v{version}"
+msgstr "Overwatch Localizer - v{version}"
 
-#: source_code:1398
-msgid "Open Code File"
-msgstr "코드 파일 열기"
-
-#: source_code:1400
-msgid "Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)"
-msgstr "오버워치 워크샵 파일 (*.ow *.txt);;모든 파일 (*.*)"
-
-#: source_code:1407
-msgid "Operation Restricted"
-msgstr "작업 제한됨"
-
-#: source_code:1408
-msgid "AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."
-msgstr "AI 일괄 번역이 진행 중입니다. 새 파일을 열기 전에 완료되거나 중지될 때까지 기다려 주십시오."
-
-#: source_code:1422
-msgid "Extracting strings..."
-msgstr "문자열 추출 중..."
-
-#: source_code:1436
-#, python-brace-format
-msgid "Loaded {count} translatable strings from {filename}"
-msgstr "{filename}에서 {count}개 번역 가능한 문자열 로드됨"
-
-#: source_code:1442
-#, python-brace-format
-msgid "Could not open or parse code file '{filename}': {error}"
-msgstr "코드 파일 '{filename}'을(를) 열거나 구문 분석할 수 없습니다: {error}"
-
-#: source_code:1445
-msgid "Code file loading failed"
-msgstr "코드 파일 로드 실패"
-
-#: source_code:1453
-msgid "Open Project File"
-msgstr "프로젝트 파일 열기"
-
-#: source_code:1455
+#: main_window.py:1606 main_window.py:2454
 #, python-brace-format
 msgid "Overwatch Project Files (*{ext});;All Files (*.*)"
 msgstr "오버워치 프로젝트 파일 (*{ext});;모든 파일 (*.*)"
 
-#: source_code:1462
-msgid "AI batch translation is in progress."
-msgstr "AI 일괄 번역 진행 중입니다."
-
-#: source_code:1479
-msgid "Project Warning"
-msgstr "프로젝트 경고"
-
-#: source_code:1480
+#: dialogs/prompt_manager_dialog.py:166 dialogs/prompt_manager_dialog.py:190
 #, python-brace-format
-msgid "Project's associated TM file '{tm_path}' not found."
-msgstr "프로젝트와 연결된 TM 파일 '{tm_path}'을(를) 찾을 수 없습니다."
+msgid "Overwatch Prompt Files (*{ext});;All Files (*.*)"
+msgstr "오버워치 프롬프트 파일 (*{ext});;모든 파일 (*.*)"
 
-#: source_code:1509
+#: main_window.py:1548 main_window.py:2797 main_window.py:4253
+msgid "Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)"
+msgstr "오버워치 워크샵 파일 (*.ow *.txt);;모든 파일 (*.*)"
+
+#: main_window.py:3749
+msgid "Overwrite All"
+msgstr "모두 덮어쓰기"
+
+#: main_window.py:3504 main_window.py:3735 main_window.py:3745
+msgid "Overwrite Confirmation"
+msgstr "덮어쓰기 확인"
+
+#: main_window.py:2865
+msgid "PO Import Error"
+msgstr "PO 가져오기 오류"
+
+#: main_window.py:4248
+msgid "PO Template Files (*.pot);;All Files (*.*)"
+msgstr "PO 템플릿 파일 (*.pot);;모든 파일 (*.*)"
+
+#: main_window.py:2805
+msgid "PO Template files (*.pot);;All files (*.*)"
+msgstr "PO 템플릿 파일 (*.pot);;모든 파일 (*.*)"
+
+#: main_window.py:2868
+msgid "PO file loading failed"
+msgstr "PO 파일 로드 실패"
+
+#: main_window.py:2476
+#, python-brace-format
+msgid "PO file saved and MO file compiled: {filename}"
+msgstr "PO 파일 저장 및 MO 파일 컴파일 완료: {filename}"
+
+#: main_window.py:2468
+#, python-brace-format
+msgid "PO file saved to: {filename}"
+msgstr "PO 파일이 다음 위치에 저장됨: {filename}"
+
+#: main_window.py:2489 main_window.py:2902
+msgid "PO files (*.po);;All Files (*.*)"
+msgstr "PO 파일 (*.po);;모든 파일 (*.*)"
+
+#: main_window.py:2878
+msgid "PO files (*.po);;POT files (*.pot);;All files (*.*)"
+msgstr "PO 파일 (*.po);;POT 파일 (*.pot);;모든 파일 (*.*)"
+
+#: main_window.py:2824
+msgid "POT Extraction Error"
+msgstr "POT 추출 오류"
+
+#: dialogs/pot_drop_dialog.py:13
+msgid "POT File Detected"
+msgstr "POT 파일이 감지되었습니다"
+
+#: main_window.py:2820
+#, python-brace-format
+msgid "POT template saved to: {filename}"
+msgstr "POT 템플릿이 다음 위치에 저장됨: {filename}"
+
+#: main_window.py:4150
+msgid "Parsing new file..."
+msgstr "새 파일 구문 분석 중..."
+
+#: main_window.py:3344
+msgid "Paste failed: Clipboard content is not text."
+msgstr "붙여넣기 실패: 클립보드 내용이 텍스트가 아닙니다."
+
+#: main_window.py:394 main_window.py:610
+msgid "Paste to Translation"
+msgstr "번역에 붙여넣기"
+
+#: main_window.py:3914 main_window.py:3920
+msgid "Placeholder Mismatch"
+msgstr "자리표시자 불일치"
+
+#: utils/enums.py:34
+msgid "Placeholder Missing"
+msgstr "플레이스홀더 누락"
+
+#: dialogs/search_dialog.py:153
+msgid "Please enter a search term."
+msgstr "검색어를 입력하십시오."
+
+#: main_window.py:2593
+msgid "Please load a code file or project first to match imported translations."
+msgstr "가져온 번역과 일치시키려면 먼저 코드 파일 또는 프로젝트를 로드하십시오."
+
+#: main_window.py:3309
+msgid "Please load a file or project first."
+msgstr "먼저 파일 또는 프로젝트를 로드하십시오."
+
+#: main_window.py:4242
+msgid "Please open a project or file first."
+msgstr "먼저 프로젝트 또는 파일을 열어주세요."
+
+#: main_window.py:3184 main_window.py:3221
+msgid "Please select an item first."
+msgstr "먼저 항목을 선택하십시오."
+
+#: main_window.py:3698
+msgid "Please select an item to AI translate."
+msgstr "AI 번역할 항목을 선택해 주세요."
+
+#: main_window.py:3330
+msgid "Please select an item."
+msgstr "항목을 선택하십시오."
+
+#: dialogs/extraction_pattern_dialog.py:198 dialogs/prompt_manager_dialog.py:196
+msgid "Preset exported successfully."
+msgstr "프리셋이 성공적으로 내보내졌습니다."
+
+#: dialogs/extraction_pattern_dialog.py:183 dialogs/prompt_manager_dialog.py:181
+msgid "Preset file format is incorrect."
+msgstr "프리셋 파일 형식이 올바르지 않습니다."
+
+#: dialogs/extraction_pattern_dialog.py:180 dialogs/prompt_manager_dialog.py:179
+msgid "Preset imported successfully."
+msgstr "프리셋이 성공적으로 가져와졌습니다."
+
+#: dialogs/keybinding_dialog.py:96
+msgid "Press a key combination..."
+msgstr "키 조합을 누르세요..."
+
+#: dialogs/statistics_dialog.py:82
+#, python-brace-format
+msgid "Processing item {i}/{total}..."
+msgstr "항목 {i}/{total} 처리 중..."
+
+#: main_window.py:1661
 #, python-brace-format
 msgid "Project '{filename}' loaded."
 msgstr "프로젝트 '{filename}' 로드됨."
 
-#: source_code:1514
-msgid "Open Project Error"
-msgstr "프로젝트 열기 오류"
+#: dialogs/statistics_dialog.py:358
+msgid "Project Metrics"
+msgstr "프로젝트 메트릭"
 
-#: source_code:1515
-#, python-brace-format
-msgid "Could not load project file '{filename}': {error}"
-msgstr "프로젝트 파일 '{filename}'을(를) 로드할 수 없습니다: {error}"
+#: dialogs/statistics_dialog.py:146 dialogs/statistics_dialog.py:430 dialogs/statistics_dialog.py:512
+msgid "Project Statistics"
+msgstr "프로젝트 통계"
 
-#: source_code:1518
+#: main_window.py:494 main_window.py:635
+msgid "Project Statistics..."
+msgstr "프로젝트 통계..."
+
+#: main_window.py:1632
+msgid "Project Warning"
+msgstr "프로젝트 경고"
+
+#: main_window.py:835
+msgid "Project auto-saved."
+msgstr "프로젝트 자동 저장됨."
+
+#: main_window.py:1670
 msgid "Project file loading failed."
 msgstr "프로젝트 파일 로드 실패."
 
-#: source_code:1558
-msgid "Unsaved Changes"
-msgstr "저장되지 않은 변경 사항"
-
-#: source_code:1559
-msgid "The current project has unsaved changes. Do you want to save?"
-msgstr "현재 프로젝트에 저장되지 않은 변경 사항이 있습니다. 저장하시겠습니까?"
-
-#: source_code:1625
+#: main_window.py:2520
 #, python-brace-format
-msgid "Filtered by '{search_term}'."
-msgstr "'{search_term}'(으)로 필터링됨."
+msgid "Project saved to: {filename}"
+msgstr "프로젝트가 다음 위치에 저장됨: {filename}"
 
-#: source_code:1627
+#: main_window.py:2585 main_window.py:2747 main_window.py:2787
 #, python-brace-format
-msgid "No matches found for '{search_term}' under current filters."
-msgstr "현재 필터에서 '{search_term}'에 대한 일치 항목을 찾을 수 없습니다."
+msgid "Project translations exported to: {filename}"
+msgstr "프로젝트 번역이 다음 위치에 내보내짐: {filename}"
 
-#: source_code:1630
-msgid "Search cleared."
-msgstr "검색 지워짐."
+#: main_window.py:4231
+msgid "Project updated to new version."
+msgstr "프로젝트가 새 버전으로 업데이트되었습니다."
 
-#: source_code:1665
-msgid "Copy Translation"
-msgstr "번역 복사"
-
-#: source_code:1670
-msgid "Mark as Ignored"
-msgstr "무시됨으로 표시"
-
-#: source_code:1671
-msgid "Unmark as Ignored"
-msgstr "무시됨 표시 해제"
-
-#: source_code:1677
-msgid "Mark as Reviewed"
-msgstr "검토됨으로 표시"
-
-#: source_code:1678
-msgid "Mark as Unreviewed"
-msgstr "미검토됨으로 표시"
-
-#: source_code:1685
-msgid "Ignore Warnings for Selected"
-msgstr "선택된 항목에 대한 경고 무시"
-
-#: source_code:1687
-msgid "Un-ignore Warnings for Selected"
-msgstr "선택된 항목에 대한 경고 무시 해제"
-
-#: source_code:1695
-msgid "Edit Comment..."
-msgstr "주석 편집..."
-
-#: source_code:1698
-msgid "Apply Memory to Selected Items"
-msgstr "선택된 항목에 메모리 적용"
-
-#: source_code:1700
-msgid "Clear Selected Translations"
-msgstr "선택된 번역 지우기"
-
-#: source_code:1703
-msgid "Use AI to Translate Selected Items"
-msgstr "AI로 선택된 항목 번역"
-
-#: source_code:1761
+#: main_window.py:1633
 #, python-brace-format
-msgid "Selected: \"{text}...\" (Line: {line_num})"
-msgstr "선택됨: \"{text}...\" (줄: {line_num})"
+msgid "Project's associated TM file '{tm_path}' not found."
+msgstr "프로젝트와 연결된 TM 파일 '{tm_path}'을(를) 찾을 수 없습니다."
 
-#: source_code:1827
-msgid "Ignore this string"
-msgstr "이 문자열 무시"
+#: main_window.py:3351
+msgid "Project-specific Instructions"
+msgstr "프로젝트별 지침"
 
-#: source_code:1853
-msgid "No items selected to modify warning status."
-msgstr "경고 상태를 수정할 항목이 선택되지 않았습니다."
+#: main_window.py:474 main_window.py:631
+msgid "Project-specific Instructions..."
+msgstr "프로젝트별 지침..."
 
-#: source_code:1875
+#: main_window.py:3358
+msgid "Project-specific translation settings updated."
+msgstr "프로젝트별 번역 설정 업데이트됨."
+
+#: dialogs/ai_settings_dialog.py:162
+msgid "Prompt Manager..."
+msgstr "프롬프트 관리자..."
+
+#: main_window.py:3373
+msgid "Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."
+msgstr "Python 'requests' 라이브러리를 찾을 수 없습니다. AI 번역 기능을 사용하려면 'pip install requests'를 실행하십시오."
+
+#: main_window.py:665 main_window.py:888 main_window.py:972 main_window.py:977 main_window.py:1420 main_window.py:1732 main_window.py:1757 main_window.py:1774 main_window.py:1780 main_window.py:1781 main_window.py:1785 main_window.py:1792 main_window.py:2268 main_window.py:2509
+msgid "Quick search..."
+msgstr "빠른 검색..."
+
+#: main_window.py:2967
+msgid "Re-extracting strings with new rules..."
+msgstr "새 규칙으로 문자열 재추출 중..."
+
+#: main_window.py:254 main_window.py:679 main_window.py:1083 main_window.py:1109
+msgid "Ready"
+msgstr "준비됨"
+
+#: main_window.py:363 main_window.py:602
+msgid "Recent Files"
+msgstr "최근 파일"
+
+#: main_window.py:377 main_window.py:607
+msgid "Redo"
+msgstr "다시 실행"
+
+#: main_window.py:1346
 #, python-brace-format
-msgid "Ignored warnings for {count} item(s)."
-msgstr "{count}개 항목에 대한 경고를 무시했습니다."
+msgid "Redo error: Object ID {obj_id} not found"
+msgstr "다시 실행 오류: 개체 ID {obj_id}을(를) 찾을 수 없습니다"
 
-#: source_code:1877
+#: main_window.py:1368
 #, python-brace-format
-msgid "Un-ignored warnings for {count} item(s)."
-msgstr "{count}개 항목에 대한 경고 무시 해제됨."
+msgid "Redo: Bulk change ({count} items)"
+msgstr "다시 실행: 일괄 변경 ({count}개 항목)"
 
-#: source_code:1880
-msgid "Selected item(s) already have the desired warning status."
-msgstr "선택된 항목에 이미 원하는 경고 상태가 적용되어 있습니다."
-
-#: source_code:1928
+#: main_window.py:1342
 #, python-brace-format
-msgid "Translation applied: \"{original_semantic}...\""
-msgstr "번역 적용됨: \"{original_semantic}...\""
+msgid "Redo: {field} for ID {id} -> '{value}'"
+msgstr "다시 실행: ID {id}에 대한 {field} -> '{value}'"
 
-#: source_code:1944
-msgid "Original text cannot be empty for a new entry."
-msgstr "새 항목의 원본 텍스트는 비워둘 수 없습니다."
+#: dialogs/statistics_dialog.py:385
+msgid "Refresh Data"
+msgstr "데이터 새로 고침"
 
-#: source_code:1948
-msgid "This original text already exists."
-msgstr "이 원본 텍스트는 이미 존재합니다."
+#: main_window.py:3005
+msgid "Reload Error"
+msgstr "재로드 오류"
 
-#: source_code:2025
-msgid "Comment updated."
-msgstr "주석 업데이트됨."
+#: main_window.py:488 main_window.py:634
+msgid "Reload Translatable Text"
+msgstr "번역 가능한 텍스트 재로드"
 
-#: source_code:2048
+#: main_window.py:3007
+msgid "Reload failed."
+msgstr "재로드 실패."
+
+#: main_window.py:2999
 #, python-brace-format
-msgid "Comment updated for ID {id}..."
-msgstr "ID {id}에 대한 주석 업데이트됨..."
+msgid "Reloaded {count} strings from {source} using new rules."
+msgstr "새 규칙을 사용하여 {source}에서 {count}개 문자열 재로드됨."
 
-#: source_code:2122
+#: dialogs/language_pair_dialog.py:284
+msgid "Remove Selected Favorite"
+msgstr "선택한 즐겨찾기 제거"
+
+#: dialogs/diff_dialog.py:65
+msgid "Removed"
+msgstr "제거됨"
+
+#: dialogs/search_dialog.py:79
+msgid "Replace"
+msgstr "바꾸기"
+
+#: dialogs/search_dialog.py:82
+msgid "Replace All"
+msgstr "모두 바꾸기"
+
+#: dialogs/search_dialog.py:346
+msgid "Replace All Complete"
+msgstr "모두 바꾸기 완료"
+
+#: dialogs/search_dialog.py:41
+msgid "Replace with:"
+msgstr "바꿀 내용:"
+
+#: dialogs/search_dialog.py:347
 #, python-brace-format
-msgid "Ignore status for ID {id} -> {status}"
-msgstr "ID {id}에 대한 무시 상태 -> {status}"
+msgid "Replaced occurrences in {count} item(s)."
+msgstr "{count}개 항목에서 일치하는 항목을 바꿨습니다."
 
-#: source_code:2123
-msgid "No"
-msgstr "아니요"
+#: dialogs/language_pair_dialog.py:327
+msgid "Reset"
+msgstr "재설정"
 
-#: source_code:2123
-msgid "Yes"
-msgstr "예"
+#: dialogs/font_settings_dialog.py:118
+msgid "Reset all font settings to default?"
+msgstr "모든 글꼴 설정을 기본값으로 재설정하시겠습니까?"
 
-#: source_code:2167
+#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52 dialogs/keybinding_dialog.py:78 dialogs/prompt_manager_dialog.py:42
+msgid "Reset to Defaults"
+msgstr "기본값으로 재설정"
+
+#: services/ai_translator.py:53
+msgid "Response"
+msgstr "응답"
+
+#: main_window.py:798
+msgid "Restart Required"
+msgstr "재시작 필요"
+
+#: main_window.py:443 main_window.py:623
+msgid "Restore Default Layout"
+msgstr "기본 레이아웃 복원"
+
+#: main_window.py:2362
 #, python-brace-format
 msgid "Review status for ID {id} -> {status}"
 msgstr "ID {id}에 대한 검토 상태 -> {status}"
 
-#: source_code:2178
+#: main_window.py:2556 main_window.py:2617 main_window.py:2625 ui_components/comment_status_panel.py:62 ui_components/comment_status_panel.py:82
+msgid "Reviewed"
+msgstr "검토됨"
+
+#: dialogs/statistics_dialog.py:551
+msgid "Reviewed (of total)"
+msgstr "검토됨 (전체 중)"
+
+#: dialogs/statistics_dialog.py:555
+msgid "Reviewed (of translated)"
+msgstr "검토됨 (번역된 항목 중)"
+
+#: dialogs/extraction_pattern_dialog.py:60
+msgid "Right Delimiter (Regex)"
+msgstr "오른쪽 구분 기호 (정규식)"
+
+#: dialogs/extraction_pattern_dialog.py:257
+msgid "Right Delimiter:"
+msgstr "오른쪽 구분 기호:"
+
+#: dialogs/extraction_pattern_dialog.py:60
+msgid "Rule Name"
+msgstr "규칙 이름"
+
+#: dialogs/extraction_pattern_dialog.py:235
+msgid "Rule Name:"
+msgstr "규칙 이름:"
+
+#: dialogs/extraction_pattern_dialog.py:300
+msgid "Rule name cannot be empty."
+msgstr "규칙 이름은 비워둘 수 없습니다."
+
+#: main_window.py:302 main_window.py:590
+msgid "Save"
+msgstr "저장"
+
+#: main_window.py:307 main_window.py:591
+msgid "Save As..."
+msgstr "다른 이름으로 저장..."
+
+#: main_window.py:2382
+msgid "Save Error"
+msgstr "저장 오류"
+
+#: main_window.py:2481
+msgid "Save PO Error"
+msgstr "PO 저장 오류"
+
+#: main_window.py:2487
+msgid "Save PO File As"
+msgstr "PO 파일 다른 이름으로 저장"
+
+#: main_window.py:2803
+msgid "Save POT Template File"
+msgstr "POT 템플릿 파일 저장"
+
+#: main_window.py:2452
+msgid "Save Project As"
+msgstr "프로젝트 다른 이름으로 저장"
+
+#: main_window.py:313 main_window.py:592
+msgid "Save Translation to New Code File"
+msgstr "번역을 새 코드 파일로 저장"
+
+#: main_window.py:1778
+msgid "Search cleared."
+msgstr "검색 지워짐."
+
+#: dialogs/search_dialog.py:55
+msgid "Search in:"
+msgstr "검색 위치:"
+
+#: dialogs/language_pair_dialog.py:240 dialogs/language_pair_dialog.py:252
+msgid "Search languages..."
+msgstr "언어 검색..."
+
+#: main_window.py:2795
+msgid "Select Code File to Extract POT From"
+msgstr "POT 추출을 위한 코드 파일 선택"
+
+#: main_window.py:2876
+msgid "Select PO File to Import"
+msgstr "가져올 PO 파일 선택"
+
+#: main_window.py:4247
+msgid "Select new POT template for comparison"
+msgstr "비교를 위한 새 POT 템플릿 선택"
+
+#: main_window.py:4252
+msgid "Select new version code file for comparison"
+msgstr "비교를 위한 새 버전 코드 파일 선택"
+
+#: main_window.py:2068
+msgid "Selected item(s) already have the desired warning status."
+msgstr "선택된 항목에 이미 원하는 경고 상태가 적용되어 있습니다."
+
+#: main_window.py:1910
+#, python-brace-format
+msgid "Selected: \"{text}...\" (Line: {line_num})"
+msgstr "선택됨: \"{text}...\" (줄: {line_num})"
+
+#: main_window.py:400 main_window.py:614
+msgid "Show Ignored"
+msgstr "무시된 항목 표시"
+
+#: main_window.py:412 main_window.py:616
+msgid "Show Translated"
+msgstr "번역된 항목 표시"
+
+#: main_window.py:418 main_window.py:617
+msgid "Show Unreviewed"
+msgstr "미검토된 항목 표시"
+
+#: main_window.py:406 main_window.py:615
+msgid "Show Untranslated"
+msgstr "미번역 항목 표시"
+
+#: dialogs/diff_dialog.py:31
+msgid "Similarity"
+msgstr "유사도"
+
+#: dialogs/font_settings_dialog.py:83
+msgid "Size:"
+msgstr "크기:"
+
+#: main_window.py:3750
+msgid "Skip Translated"
+msgstr "이미 번역된 항목 건너뛰기"
+
+#: dialogs/statistics_dialog.py:570
+msgid "Source Chars (Translated only)"
+msgstr "원본 문자 (번역된 항목만)"
+
+#: dialogs/language_pair_dialog.py:237
+msgid "Source Language"
+msgstr "원본 언어"
+
+#: main_window.py:2557
+msgid "Source Line"
+msgstr "소스 줄"
+
+#: dialogs/language_pair_dialog.py:470
+msgid "Source and target languages cannot be the same."
+msgstr "원본 언어와 대상 언어는 같을 수 없습니다."
+
+#: utils/enums.py:46
+msgid "Starting Punctuation Mismatch"
+msgstr "시작 구두점 불일치"
+
+#: services/validation_service.py:86
+#, python-brace-format
+msgid "Starting punctuation differs: '{c1}' vs '{c2}'."
+msgstr "시작 구두점이 다릅니다: '{c1}' vs '{c2}'."
+
+#: services/validation_service.py:82
+msgid "Starting punctuation presence differs."
+msgstr "시작 구두점 존재 여부가 다릅니다."
+
+#: dialogs/prompt_manager_dialog.py:98 dialogs/prompt_manager_dialog.py:105 dialogs/prompt_manager_dialog.py:230
+msgid "Static Instruction"
+msgstr "정적 지침"
+
+#: main_window.py:425 main_window.py:618
+msgid "Static Sorting"
+msgstr "정적 정렬"
+
+#: main_window.py:752
+msgid "Static sorting enabled. Press F5 to refresh."
+msgstr "정적 정렬 활성화됨. 새로고침하려면 F5를 누르세요."
+
+#: main_window.py:3012
+msgid "Statistics"
+msgstr "통계"
+
+#: dialogs/diff_dialog.py:31
+msgid "Status"
+msgstr "상태"
+
+#: main_window.py:468 main_window.py:630
+msgid "Stop AI Batch Translation"
+msgstr "AI 일괄 번역 중지"
+
+#: main_window.py:3505 main_window.py:3736
+#, python-brace-format
+msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
+msgstr "문자열 \"{text}...\"에 이미 번역이 있습니다. AI 번역으로 덮어쓰시겠습니까?"
+
+#: dialogs/extraction_pattern_dialog.py:60
+msgid "String Type"
+msgstr "문자열 유형"
+
+#: dialogs/extraction_pattern_dialog.py:245
+msgid "String Type:"
+msgstr "문자열 유형:"
+
+#: dialogs/prompt_manager_dialog.py:97 dialogs/prompt_manager_dialog.py:104 dialogs/prompt_manager_dialog.py:229
+msgid "Structural Content"
+msgstr "구조적 콘텐츠"
+
+#: dialogs/font_settings_dialog.py:93
+msgid "Style:"
+msgstr "스타일:"
+
+#: dialogs/extraction_pattern_dialog.py:180 dialogs/extraction_pattern_dialog.py:198 dialogs/prompt_manager_dialog.py:179 dialogs/prompt_manager_dialog.py:196
+msgid "Success"
+msgstr "성공"
+
+#: main_window.py:3073 main_window.py:3087 main_window.py:3121 main_window.py:3150 main_window.py:3300 main_window.py:3303
+msgid "TM"
+msgstr "TM"
+
+#: main_window.py:3051
+msgid "TM Load Warning"
+msgstr "TM 로드 경고"
+
+#: main_window.py:3233
+msgid "TM entry cleared for selected item."
+msgstr "선택된 항목에 대한 TM 항목이 지워졌습니다."
+
+#: main_window.py:3143
+msgid "TM imported. Do you want to apply it to untranslated strings in the current project immediately?"
+msgstr "TM이 가져와졌습니다. 현재 프로젝트의 미번역 문자열에 즉시 적용하시겠습니까?"
+
+#: main_window.py:3166
+msgid "TM is already empty."
+msgstr "TM이 이미 비어 있습니다."
+
+#: main_window.py:3087 main_window.py:3150
+msgid "TM is empty, nothing to export."
+msgstr "TM이 비어 있습니다. 내보낼 것이 없습니다."
+
+#: main_window.py:3258 main_window.py:4069
+msgid "TM is empty."
+msgstr "TM이 비어 있습니다."
+
+#: main_window.py:3077
+#, python-brace-format
+msgid "TM loaded from '{filename}' (Excel)."
+msgstr "TM이 '{filename}'(으)로부터 로드됨 (Excel)."
+
+#: main_window.py:3122 main_window.py:3125
+#, python-brace-format
+msgid "TM saved to '{filename}'."
+msgstr "TM이 '{filename}'(으)로 저장됨."
+
+#: main_window.py:3251
+msgid "TM suggestion applied."
+msgstr "TM 제안 적용됨."
+
+#: main_window.py:3199
+msgid "TM update cancelled."
+msgstr "TM 업데이트 취소됨."
+
+#: main_window.py:3208
+#, python-brace-format
+msgid "TM updated for original: '{text}...'"
+msgstr "원본에 대한 TM 업데이트됨: '{text}'..."
+
+#: dialogs/language_pair_dialog.py:249
+msgid "Target Language"
+msgstr "대상 언어"
+
+#: dialogs/ai_settings_dialog.py:91
+msgid "Target Language:"
+msgstr "대상 언어:"
+
+#: dialogs/ai_settings_dialog.py:94
+msgid "Target language is set in 'Settings > Language Pair Settings...'"
+msgstr "대상 언어는 '설정 > 언어 쌍 설정...'에서 설정됩니다."
+
+#: dialogs/ai_settings_dialog.py:167 dialogs/ai_settings_dialog.py:232 dialogs/ai_settings_dialog.py:234
+msgid "Test Connection"
+msgstr "연결 테스트"
+
+#: dialogs/ai_settings_dialog.py:199
+msgid "Test Failed"
+msgstr "테스트 실패"
+
+#: dialogs/ai_settings_dialog.py:200
+msgid "Test failed: API Key is not filled."
+msgstr "테스트 실패: API 키가 입력되지 않았습니다."
+
+#: dialogs/ai_settings_dialog.py:191
+msgid "Testing..."
+msgstr "테스트 중..."
+
+#: main_window.py:3363
+msgid ""
+"The 'requests' library is not installed, AI translation is unavailable.\n"
+"Please run: pip install requests"
+msgstr ""
+"'requests' 라이브러리가 설치되지 않았습니다. AI 번역을 사용할 수 없습니다.\n"
+"'pip install requests'를 실행하십시오"
+
+#: main_window.py:1710
+msgid "The current project has unsaved changes. Do you want to save?"
+msgstr "현재 프로젝트에 저장되지 않은 변경 사항이 있습니다. 저장하시겠습니까?"
+
+#: main_window.py:3195
+#, python-brace-format
+msgid ""
+"The current translation is empty. Do you want to update the TM entry for:\n"
+"'{text}...' with an empty translation?"
+msgstr ""
+"현재 번역이 비어 있습니다. 다음 항목에 대한 TM 항목을 빈 번역으로 업데이트하시겠습니까:\n"
+"'{text}...'?"
+
+#: main_window.py:1077
+msgid "The layout has been restored to its default state."
+msgstr "레이아웃이 기본 상태로 복원되었습니다."
+
+#: main_window.py:3238
+msgid "The selected item has no entry in the TM."
+msgstr "선택된 항목에 TM 항목이 없습니다."
+
+#: main_window.py:3497
+msgid "The selected string is marked as ignored and will not be AI translated."
+msgstr "선택된 문자열은 무시됨으로 표시되어 AI 번역되지 않습니다."
+
+#: main_window.py:2433
+msgid "There is no content to save as a project. Please open a code file or PO file first."
+msgstr "프로젝트로 저장할 내용이 없습니다. 먼저 코드 파일이나 PO 파일을 열어주세요."
+
+#: main_window.py:2373
 msgid ""
 "There is no original code file content to save.\n"
 "Please ensure the code file associated with the project is loaded."
@@ -1480,318 +2200,19 @@ msgstr ""
 "저장할 원본 코드 파일 내용이 없습니다.\n"
 "프로젝트와 연결된 코드 파일이 로드되었는지 확인하세요."
 
-#: source_code:2183
-#, python-brace-format
-msgid "Code file saved to: {filename}"
-msgstr "코드 파일이 다음 위치에 저장됨: {filename}"
-
-#: source_code:2187
-#, python-brace-format
-msgid "Could not save code file: {error}"
-msgstr "코드 파일을 저장할 수 없습니다: {error}"
-
-#: source_code:2187
-msgid "Save Error"
-msgstr "저장 오류"
-
-#: source_code:2192
-msgid "No original code file path."
-msgstr "원본 코드 파일 경로가 없습니다."
-
-#: source_code:2196
-msgid "No original code content to save."
-msgstr "저장할 원본 코드 내용이 없습니다."
-
-#: source_code:2203
-msgid "Confirm Overwrite"
-msgstr "덮어쓰기 확인"
-
-#: source_code:2204
-#, python-brace-format
-msgid "File '{filename}' already exists. Overwrite? A backup file (.bak) will be created."
-msgstr "파일 '{filename}'이(가) 이미 존재합니다. 덮어쓰시겠습니까? 백업 파일(.bak)이 생성됩니다."
-
-#: source_code:2238
-msgid "There is no content to save as a project. Please open a code file or PO file first."
-msgstr "프로젝트로 저장할 내용이 없습니다. 먼저 코드 파일이나 PO 파일을 열어주세요."
-
-#: source_code:2257
-msgid "Save Project As"
-msgstr "프로젝트 다른 이름으로 저장"
-
-#: source_code:2273
-#, python-brace-format
-msgid "PO file saved to: {filename}"
-msgstr "PO 파일이 다음 위치에 저장됨: {filename}"
-
-#: source_code:2278
-#, python-brace-format
-msgid "Failed to save PO file: {error}"
-msgstr "PO 파일 저장 실패: {error}"
-
-#: source_code:2278
-msgid "Save PO Error"
-msgstr "PO 저장 오류"
-
-#: source_code:2284
-msgid "Save PO File As"
-msgstr "PO 파일 다른 이름으로 저장"
-
-#: source_code:2286
-msgid "PO files (*.po);;All Files (*.*)"
-msgstr "PO 파일 (*.po);;모든 파일 (*.*)"
-
-#: source_code:2317
-#, python-brace-format
-msgid "Project saved to: {filename}"
-msgstr "프로젝트가 다음 위치에 저장됨: {filename}"
-
-#: source_code:2328
-msgid "No data to export."
-msgstr "내보낼 데이터가 없습니다."
-
-#: source_code:2344
-msgid "Export Project Translations to Excel"
-msgstr "프로젝트 번역을 Excel로 내보내기"
-
-#: source_code:2353
-msgid "Original (Semantic)"
-msgstr "원본 (Semantic)"
-
-#: source_code:2353
-msgid "Reviewed"
-msgstr "검토됨"
-
-#: source_code:2354
-msgid "Source Line"
-msgstr "소스 줄"
-
-#: source_code:2355
-msgid "Original (Raw)"
-msgstr "원본 (Raw)"
-
-#: source_code:2382
-#, python-brace-format
-msgid "Project translations exported to: {filename}"
-msgstr "프로젝트 번역이 다음 위치에 내보내짐: {filename}"
-
-#: source_code:2384
-msgid "Export Error"
-msgstr "내보내기 오류"
-
-#: source_code:2385
-#, python-brace-format
-msgid "Could not export project translations to Excel: {error}"
-msgstr "프로젝트 번역을 Excel로 내보낼 수 없습니다: {error}"
-
-#: source_code:2390
-msgid "Please load a code file or project first to match imported translations."
-msgstr "가져온 번역과 일치시키려면 먼저 코드 파일 또는 프로젝트를 로드하십시오."
-
-#: source_code:2397
-msgid "Excel files (*.xlsx)"
-msgstr "Excel 파일 (*.xlsx)"
-
-#: source_code:2407
-msgid "Excel header format is incorrect or empty."
-msgstr "Excel 헤더 형식이 올바르지 않거나 비어 있습니다."
-
-#: source_code:2407
-msgid "Import Error"
-msgstr "가져오기 오류"
-
-#: source_code:2420
-#, python-brace-format
-msgid ""
-"Excel header must contain 'UUID' and '{translation_col}' columns.\n"
-"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
-msgstr ""
-"Excel 헤더에는 'UUID' 및 '{translation_col}' 열이 포함되어야 합니다.\n"
-"선택적 열: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
-
-#: source_code:2441
-#, python-brace-format
-msgid "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported."
-msgstr "경고: Excel {row_num}행, UUID {uuid} - 원본 텍스트가 Excel의 텍스트와 일치하지 않습니다. 데이터는 계속 가져와집니다."
-
-#: source_code:2488
-#, python-brace-format
-msgid "Error processing Excel row {row_num}: {error}. Skipping this row."
-msgstr "Excel {row_num}행 처리 오류: {error}. 이 행 건너뛰기."
-
-#: source_code:2498
-#, python-brace-format
-msgid "Imported/updated {field_count} fields for {item_count} items from Excel."
-msgstr "Excel에서 {item_count}개 항목에 대해 {field_count}개 필드 가져오기/업데이트됨."
-
-#: source_code:2503
-#, python-brace-format
-msgid "Error processing Excel file (possibly column names issue): {error}"
-msgstr "Excel 파일 처리 오류 (열 이름 문제일 수 있음): {error}"
-
-#: source_code:2507
-#, python-brace-format
-msgid "Could not import project translations from Excel: {error}"
-msgstr "Excel에서 프로젝트 번역을 가져올 수 없습니다: {error}"
-
-#: source_code:2527
-msgid "Export Project Translations to JSON"
-msgstr "프로젝트 번역을 JSON으로 내보내기"
-
-#: source_code:2529
-msgid "JSON files (*.json);;All Files (*.*)"
-msgstr "JSON 파일 (*.json);;모든 파일 (*.*)"
-
-#: source_code:2547
-#, python-brace-format
-msgid "Could not export project translations to JSON: {error}"
-msgstr "프로젝트 번역을 JSON으로 내보낼 수 없습니다: {error}"
-
-#: source_code:2567
-msgid "Export Project Translations to YAML"
-msgstr "프로젝트 번역을 YAML로 내보내기"
-
-#: source_code:2569
-msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
-msgstr "YAML 파일 (*.yaml *.yml);;모든 파일 (*.*)"
-
-#: source_code:2587
-#, python-brace-format
-msgid "Could not export project translations to YAML: {error}"
-msgstr "프로젝트 번역을 YAML로 내보낼 수 없습니다: {error}"
-
-#: source_code:2592
-msgid "Select Code File to Extract POT From"
-msgstr "POT 추출을 위한 코드 파일 선택"
-
-#: source_code:2600
-msgid "Save POT Template File"
-msgstr "POT 템플릿 파일 저장"
-
-#: source_code:2602
-msgid "PO Template files (*.pot);;All files (*.*)"
-msgstr "PO 템플릿 파일 (*.pot);;모든 파일 (*.*)"
-
-#: source_code:2617
-#, python-brace-format
-msgid "POT template saved to: {filename}"
-msgstr "POT 템플릿이 다음 위치에 저장됨: {filename}"
-
-#: source_code:2621
-msgid "POT Extraction Error"
-msgstr "POT 추출 오류"
-
-#: source_code:2622
-#, python-brace-format
-msgid "Error extracting POT file: {error}"
-msgstr "POT 파일 추출 오류: {error}"
-
-#: source_code:2627
-msgid "Associate Code File?"
-msgstr "코드 파일 연결?"
-
-#: source_code:2628
-msgid "Do you want to associate an original code file to get context and line number information?"
-msgstr "컨텍스트 및 줄 번호 정보를 얻기 위해 원본 코드 파일을 연결하시겠습니까?"
-
-#: source_code:2633
-msgid "Select Associated Code File (for context)"
-msgstr "연결된 코드 파일 선택 (컨텍스트용)"
-
-#: source_code:2643
-msgid "Code File Load Failed"
-msgstr "코드 파일 로드 실패"
-
-#: source_code:2644
-#, python-brace-format
-msgid "Could not load associated code file: {error}"
-msgstr "연결된 코드 파일을 로드할 수 없습니다: {error}"
-
-#: source_code:2666
-#, python-brace-format
-msgid "Loaded {count} entries from PO file {filename}."
-msgstr "PO 파일 {filename}에서 {count}개 항목 로드됨."
-
-#: source_code:2672
-#, python-brace-format
-msgid "Error importing PO file '{filename}': {error}"
-msgstr "PO 파일 '{filename}' 가져오기 오류: {error}"
-
-#: source_code:2672
-msgid "PO Import Error"
-msgstr "PO 가져오기 오류"
-
-#: source_code:2675
-msgid "PO file loading failed"
-msgstr "PO 파일 로드 실패"
-
-#: source_code:2683
-msgid "Select PO File to Import"
-msgstr "가져올 PO 파일 선택"
-
-#: source_code:2685
-msgid "PO files (*.po);;POT files (*.pot);;All files (*.*)"
-msgstr "PO 파일 (*.po);;POT 파일 (*.pot);;모든 파일 (*.*)"
-
-#: source_code:2719
-#, python-brace-format
-msgid "Translations exported to PO file: {filename}"
-msgstr "번역이 PO 파일로 내보내짐: {filename}"
-
-#: source_code:2722
-#, python-brace-format
-msgid "Failed to export to PO file: {error}"
-msgstr "PO 파일로 내보내기 실패: {error}"
-
-#: source_code:2725
-msgid "Extraction Rule Manager"
-msgstr "추출 규칙 관리자"
-
-#: source_code:2728
-msgid "Extraction Rules Updated"
-msgstr "추출 규칙 업데이트됨"
-
-#: source_code:2729
-msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"
-msgstr "추출 규칙이 업데이트되었습니다. 새 규칙을 사용하여 현재 코드의 번역 가능한 텍스트를 즉시 다시 로드하시겠습니까?"
-
-#: source_code:2736
-msgid "No code content loaded to reload."
-msgstr "다시 로드할 코드 내용이 로드되지 않았습니다."
-
-#: source_code:2740
-msgid "current in-memory code"
-msgstr "현재 메모리 내 코드"
-
-#: source_code:2745
-#, python-brace-format
-msgid "file '{filename}'"
-msgstr "파일 '{filename}'"
-
-#: source_code:2747
-msgid "File Read Error"
-msgstr "파일 읽기 오류"
-
-#: source_code:2748
-#, python-brace-format
-msgid ""
-"Could not re-read {filepath} from disk.\n"
-"Using in-memory version.\n"
-"Error: {error}"
-msgstr ""
-"{filepath}을(를) 디스크에서 다시 읽을 수 없습니다.\n"
-"메모리 내 버전을 사용합니다.\n"
-"오류: {error}"
-
-#: source_code:2752
-msgid "Could not get code content for re-extraction."
-msgstr "재추출을 위한 코드 내용을 가져올 수 없습니다."
-
-#: source_code:2764
-msgid "Confirm Reload"
-msgstr "재로드 확인"
-
-#: source_code:2765
+#: main_window.py:3348
+msgid "This feature is only available when a project file is open."
+msgstr "이 기능은 프로젝트 파일이 열려 있을 때만 사용할 수 있습니다."
+
+#: main_window.py:2136
+msgid "This original text already exists."
+msgstr "이 원본 텍스트는 이미 존재합니다."
+
+#: main_window.py:3263
+msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
+msgstr "이것은 모든 일치하는 문자열에 TM을 적용하여 기존 번역을 덮어씁니다. 계속하시겠습니까?"
+
+#: main_window.py:2958
 #, python-brace-format
 msgid ""
 "This will re-extract strings from {source} using the new rules.\n"
@@ -1802,390 +2223,211 @@ msgstr ""
 "원본 텍스트가 일치하는 경우 기존 번역은 유지되지만, 일치하지 않는 번역 및 상태는 손실될 수 있습니다.\n"
 "이 작업은 실행 취소 기록을 지웁니다. 계속하시겠습니까?"
 
-#: source_code:2774
-msgid "Re-extracting strings with new rules..."
-msgstr "새 규칙으로 문자열 재추출 중..."
+#: dialogs/keybinding_dialog.py:29
+msgid "Toggle Ignored Status"
+msgstr "무시 상태 전환"
 
-#: source_code:2794
-#, python-brace-format
-msgid "Attempted to restore {count} old translations/statuses."
-msgstr "{count}개 이전 번역/상태 복원 시도됨."
+#: dialogs/keybinding_dialog.py:28
+msgid "Toggle Reviewed Status"
+msgstr "검토 상태 전환"
 
-#: source_code:2806
-#, python-brace-format
-msgid "Reloaded {count} strings from {source} using new rules."
-msgstr "새 규칙을 사용하여 {source}에서 {count}개 문자열 재로드됨."
+#: dialogs/statistics_dialog.py:527
+msgid "Total Items"
+msgstr "전체 항목"
 
-#: source_code:2812
-msgid "Reload Error"
-msgstr "재로드 오류"
+#: utils/enums.py:42
+msgid "Trailing Whitespace Mismatch"
+msgstr "후행 공백 불일치"
 
-#: source_code:2813
-#, python-brace-format
-msgid "Error reloading translatable text: {error}"
-msgstr "번역 가능한 텍스트 재로드 오류: {error}"
+#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590 main_window.py:659 main_window.py:873
+msgid "Translated"
+msgstr "번역됨"
 
-#: source_code:2814
-msgid "Reload failed."
-msgstr "재로드 실패."
-
-#: source_code:2819
-msgid "No project data loaded to generate statistics."
-msgstr "통계 생성에 사용할 프로젝트 데이터가 로드되지 않았습니다."
-
-#: source_code:2819
-msgid "Statistics"
-msgstr "통계"
-
-#: source_code:2851
-msgid "original"
-msgstr "원본"
-
-#: source_code:2853
-msgid "translation"
+#: dialogs/search_dialog.py:57 main_window.py:650 main_window.py:2556 main_window.py:2615 main_window.py:2624
+msgid "Translation"
 msgstr "번역"
 
-#: source_code:2858
-msgid "TM Load Warning"
-msgstr "TM 로드 경고"
+#: dialogs/ai_settings_dialog.py:87
+msgid "Translation & Context Settings"
+msgstr "번역 및 컨텍스트 설정"
 
-#: source_code:2859
+#: dialogs/statistics_dialog.py:571
+msgid "Translation Chars (Translated only)"
+msgstr "번역된 문자 (번역된 항목만)"
+
+#: utils/enums.py:54
+msgid "Translation Empty"
+msgstr "번역 없음"
+
+#: main_window.py:671 main_window.py:1024
+msgid "Translation Memory Matches"
+msgstr "번역 메모리 일치"
+
+#: main_window.py:439 main_window.py:622
+msgid "Translation Memory Panel"
+msgstr "번역 메모리 패널"
+
+#: dialogs/statistics_dialog.py:339
+msgid "Translation Progress"
+msgstr "번역 진행 상태"
+
+#: main_window.py:2116
 #, python-brace-format
-msgid "Could not determine original/translation columns from '{filename}' header. Will try to use the first two columns by default (A=Original, B=Translation)."
-msgstr "'{filename}' 헤더에서 원본/번역 열을 확인할 수 없습니다. 기본적으로 처음 두 열을 사용합니다 (A=원본, B=번역)."
+msgid "Translation applied: \"{original_semantic}...\""
+msgstr "번역 적용됨: \"{original_semantic}...\""
 
-#: source_code:2880
-msgid "TM"
-msgstr "TM"
+#: services/validation_service.py:66
+msgid "Translation ends with space, original does not."
+msgstr "번역 끝에 공백이 있음, 원본에는 없음."
 
-#: source_code:2881
+#: models/translatable_string.py:154
+msgid "Translation is marked as fuzzy and needs review."
+msgstr "번역이 모호하게 표시되어 검토가 필요합니다."
+
+#: services/validation_service.py:59
+msgid "Translation starts with space, original does not."
+msgstr "번역이 공백으로 시작하지만 원본은 그렇지 않습니다."
+
+#: ui_components/details_panel.py:63 ui_components/details_panel.py:195
+msgid "Translation:"
+msgstr "번역:"
+
+#: main_window.py:2912
 #, python-brace-format
-msgid "Loaded/merged {count} Excel TM records from '{filename}'."
-msgstr "'{filename}'에서 {count}개 Excel TM 기록 로드/병합됨."
+msgid "Translations exported to PO file: {filename}"
+msgstr "번역이 PO 파일로 내보내짐: {filename}"
 
-#: source_code:2884
+#: main_window.py:4123
+msgid "Translations for selected items are already empty, no clearing needed."
+msgstr "선택된 항목의 번역이 이미 비어 있습니다. 지울 필요가 없습니다."
+
+#: dialogs/prompt_manager_dialog.py:59
+msgid "Type"
+msgstr "유형"
+
+#: dialogs/prompt_manager_dialog.py:226
+msgid "Type:"
+msgstr "유형:"
+
+#: main_window.py:1835
+msgid "Un-ignore Warnings for Selected"
+msgstr "선택된 항목에 대한 경고 무시 해제"
+
+#: main_window.py:2065
 #, python-brace-format
-msgid "TM loaded from '{filename}' (Excel)."
-msgstr "TM이 '{filename}'(으)로부터 로드됨 (Excel)."
+msgid "Un-ignored warnings for {count} item(s)."
+msgstr "{count}개 항목에 대한 경고 무시 해제됨."
 
-#: source_code:2888
+#: main_window.py:372 main_window.py:606
+msgid "Undo"
+msgstr "실행 취소"
+
+#: main_window.py:1273
 #, python-brace-format
-msgid "Failed to load Excel TM: {error}"
-msgstr "Excel TM 로드 실패: {error}"
+msgid "Undo error: Object ID {obj_id} not found"
+msgstr "실행 취소 오류: 개체 ID {obj_id}을(를) 찾을 수 없습니다"
 
-#: source_code:2894
-msgid "TM is empty, nothing to export."
-msgstr "TM이 비어 있습니다. 내보낼 것이 없습니다."
-
-#: source_code:2910
-msgid "Backup Failed"
-msgstr "백업 실패"
-
-#: source_code:2911
+#: main_window.py:1295
 #, python-brace-format
-msgid "Could not create backup for TM: {error}"
-msgstr "TM 백업을 생성할 수 없습니다: {error}"
+msgid "Undo: Bulk change ({count} items)"
+msgstr "실행 취소: 일괄 변경 ({count}개 항목)"
 
-#: source_code:2929
+#: main_window.py:1269
 #, python-brace-format
-msgid "TM saved to '{filename}'."
-msgstr "TM이 '{filename}'(으)로 저장됨."
+msgid "Undo: {field} for ID {id} -> '{value}'"
+msgstr "실행 취소: ID {id}에 대한 {field} -> '{value}'"
 
-#: source_code:2935
+#: services/ai_translator.py:48
+msgid "Unknown API error structure"
+msgstr "알 수 없는 API 오류 구조"
+
+#: services/ai_translator.py:62
+msgid "Unknown error occurred during translation"
+msgstr "번역 중 알 수 없는 오류가 발생했습니다"
+
+#: main_window.py:1819
+msgid "Unmark as Ignored"
+msgstr "무시됨 표시 해제"
+
+#: dialogs/extraction_pattern_dialog.py:91
+msgid "Unnamed Rule"
+msgstr "이름 없는 규칙"
+
+#: main_window.py:660 main_window.py:879
+msgid "Unreviewed"
+msgstr "미검토됨"
+
+#: main_window.py:1709
+msgid "Unsaved Changes"
+msgstr "저장되지 않은 변경 사항"
+
+#: dialogs/statistics_dialog.py:538 dialogs/statistics_dialog.py:595 main_window.py:658 main_window.py:867
+msgid "Untranslated"
+msgstr "미번역"
+
+#: ui_components/tm_panel.py:33 ui_components/tm_panel.py:97
+msgid "Update TM for Selected"
+msgstr "선택된 항목의 TM 업데이트"
+
+#: dialogs/pot_drop_dialog.py:24
+msgid "Update from POT"
+msgstr "POT에서 업데이트"
+
+#: main_window.py:4062
 #, python-brace-format
-msgid "Failed to save TM: {error}"
-msgstr "TM 저장 실패: {error}"
+msgid "Updated comments for {count} items."
+msgstr "{count}개 항목에 대한 주석 업데이트됨."
 
-#: source_code:2942
-msgid "Excel files (*.xlsx);;All files (*.*)"
-msgstr "Excel 파일 (*.xlsx);;모든 파일 (*.*)"
+#: main_window.py:1851
+msgid "Use AI to Translate Selected Items"
+msgstr "AI로 선택된 항목 번역"
 
-#: source_code:2949
-msgid "Apply TM"
-msgstr "TM 적용"
+#: dialogs/ai_settings_dialog.py:125 dialogs/ai_settings_dialog.py:142
+msgid "Use nearby"
+msgstr "근처 사용"
 
-#: source_code:2950
-msgid "TM imported. Do you want to apply it to untranslated strings in the current project immediately?"
-msgstr "TM이 가져와졌습니다. 현재 프로젝트의 미번역 문자열에 즉시 적용하시겠습니까?"
+#: dialogs/ai_settings_dialog.py:118
+msgid "Use nearby original text as context"
+msgstr "근처 원본 텍스트를 컨텍스트로 사용"
 
-#: source_code:2973
-msgid "Clear TM"
-msgstr "TM 지우기"
+#: dialogs/ai_settings_dialog.py:135
+msgid "Use nearby translated text as context"
+msgstr "근처 번역된 텍스트를 컨텍스트로 사용"
 
-#: source_code:2973
-msgid "TM is already empty."
-msgstr "TM이 이미 비어 있습니다."
+#: main_window.py:4217
+msgid "Version Comparison Results"
+msgstr "버전 비교 결과"
 
-#: source_code:2976
-msgid "Confirm Clear"
-msgstr "지우기 확인"
+#: main_window.py:4238
+msgid "Version comparison failed."
+msgstr "버전 비교 실패."
 
-#: source_code:2977
-msgid ""
-"Are you sure you want to clear all entries from the in-memory TM?\n"
-"This cannot be undone."
-msgstr ""
-"메모리 내 모든 TM 항목을 지우시겠습니까?\n"
-"이 작업은 되돌릴 수 없습니다."
+#: main_window.py:4233
+msgid "Version update cancelled."
+msgstr "버전 업데이트 취소됨."
 
-#: source_code:2981
-msgid "In-memory TM has been cleared."
-msgstr "메모리 내 TM이 지워졌습니다."
+#: main_window.py:760
+msgid "View refreshed."
+msgstr "보기가 새로고침되었습니다."
 
-#: source_code:2991
-msgid "Please select an item first."
-msgstr "먼저 항목을 선택하십시오."
+#: dialogs/language_pair_dialog.py:470
+msgid "Warning"
+msgstr "경고"
 
-#: source_code:2996
-msgid "Could not find data for the selected item."
-msgstr "선택된 항목에 대한 데이터를 찾을 수 없습니다."
-
-#: source_code:3001
-msgid "Confirm Update TM"
-msgstr "TM 업데이트 확인"
-
-#: source_code:3002
+#: main_window.py:2644
 #, python-brace-format
-msgid ""
-"The current translation is empty. Do you want to update the TM entry for:\n"
-"'{text}...' with an empty translation?"
-msgstr ""
-"현재 번역이 비어 있습니다. 다음 항목에 대한 TM 항목을 빈 번역으로 업데이트하시겠습니까:\n"
-"'{text}...'?"
+msgid "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported."
+msgstr "경고: Excel {row_num}행, UUID {uuid} - 원본 텍스트가 Excel의 텍스트와 일치하지 않습니다. 데이터는 계속 가져와집니다."
 
-#: source_code:3006
-msgid "TM update cancelled."
-msgstr "TM 업데이트 취소됨."
+#: main_window.py:2772
+msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
+msgstr "YAML 파일 (*.yaml *.yml);;모든 파일 (*.*)"
 
-#: source_code:3015
-#, python-brace-format
-msgid "TM updated for original: '{text}...'"
-msgstr "원본에 대한 TM 업데이트됨: '{text}'..."
+#: main_window.py:2327 main_window.py:2363 main_window.py:2577 main_window.py:2578 main_window.py:2670 main_window.py:2680
+msgid "Yes"
+msgstr "예"
 
-#: source_code:3035
-#, python-brace-format
-msgid ""
-"Are you sure you want to remove the TM entry for:\n"
-"'{text}...'?"
-msgstr ""
-"TM에서 다음 항목을 제거하시겠습니까:\n"
-"'{text}...'?"
-
-#: source_code:3040
-msgid "TM entry cleared for selected item."
-msgstr "선택된 항목에 대한 TM 항목이 지워졌습니다."
-
-#: source_code:3045
-msgid "The selected item has no entry in the TM."
-msgstr "선택된 항목에 TM 항목이 없습니다."
-
-#: source_code:3058
-msgid "TM suggestion applied."
-msgstr "TM 제안 적용됨."
-
-#: source_code:3062
-msgid "No strings to apply TM to."
-msgstr "TM을 적용할 문자열이 없습니다."
-
-#: source_code:3065
-msgid "TM is empty."
-msgstr "TM이 비어 있습니다."
-
-#: source_code:3069
-msgid "Confirm Operation"
-msgstr "작업 확인"
-
-#: source_code:3070
-msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
-msgstr "이것은 모든 일치하는 문자열에 TM을 적용하여 기존 번역을 덮어씁니다. 계속하시겠습니까?"
-
-#: source_code:3107
-#, python-brace-format
-msgid "Applied TM to {count} strings."
-msgstr "{count}개 문자열에 TM 적용됨."
-
-#: source_code:3110
-msgid "No applicable translations found in TM (or no changes needed)."
-msgstr "TM에서 적용 가능한 번역을 찾을 수 없습니다 (또는 변경 필요 없음)."
-
-#: source_code:3116
-msgid "Please load a file or project first."
-msgstr "먼저 파일 또는 프로젝트를 로드하십시오."
-
-#: source_code:3118
-msgid "Find and Replace"
-msgstr "찾기 및 바꾸기"
-
-#: source_code:3126
-#, python-brace-format
-msgid "Copied {count} original strings to clipboard."
-msgstr "원본 문자열 {count}개 클립보드에 복사됨."
-
-#: source_code:3133
-#, python-brace-format
-msgid "Copied {count} translations to clipboard."
-msgstr "번역 {count}개 클립보드에 복사됨."
-
-#: source_code:3137
-msgid "Please select an item."
-msgstr "항목을 선택하십시오."
-
-#: source_code:3149
-msgid "Clipboard content pasted to translation."
-msgstr "클립보드 내용이 번역에 붙여넣어졌습니다."
-
-#: source_code:3151
-msgid "Paste failed: Clipboard content is not text."
-msgstr "붙여넣기 실패: 클립보드 내용이 텍스트가 아닙니다."
-
-#: source_code:3155
-msgid "This feature is only available when a project file is open."
-msgstr "이 기능은 프로젝트 파일이 열려 있을 때만 사용할 수 있습니다."
-
-#: source_code:3158
-msgid "Project-specific Instructions"
-msgstr "프로젝트별 지침"
-
-#: source_code:3159
-msgid ""
-"Enter specific translation instructions for this project (e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a lively and cute style').\n"
-"These instructions will be used during AI translation."
-msgstr ""
-"이 프로젝트에 대한 특정 번역 지침을 입력하십시오 (예: '\"Hero\"를 \"Agent\"로 번역', '활기차고 귀여운 스타일 사용').\n"
-"이 지침은 AI 번역 시 사용됩니다."
-
-#: source_code:3165
-msgid "Project-specific translation settings updated."
-msgstr "프로젝트별 번역 설정 업데이트됨."
-
-#: source_code:3169
-msgid "Feature Unavailable"
-msgstr "기능 사용 불가"
-
-#: source_code:3170
-msgid ""
-"The 'requests' library is not installed, AI translation is unavailable.\n"
-"Please run: pip install requests"
-msgstr ""
-"'requests' 라이브러리가 설치되지 않았습니다. AI 번역을 사용할 수 없습니다.\n"
-"'pip install requests'를 실행하십시오"
-
-#: source_code:3172
-msgid "AI Settings"
-msgstr "AI 설정"
-
-#: source_code:3178
-msgid "AI Feature Unavailable"
-msgstr "AI 기능 사용 불가"
-
-#: source_code:3179
-msgid "Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."
-msgstr "Python 'requests' 라이브러리를 찾을 수 없습니다. AI 번역 기능을 사용하려면 'pip install requests'를 실행하십시오."
-
-#: source_code:3183
-msgid "API Key Missing"
-msgstr "API 키 누락"
-
-#: source_code:3184
-msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
-msgstr "API 키가 설정되지 않았습니다. '도구 > AI 설정'에서 구성해 주십시오."
-
-#: source_code:3234
-msgid "No more untranslated items."
-msgstr "더 이상 미번역 항목이 없습니다."
-
-#: source_code:3303
-msgid "The selected string is marked as ignored and will not be AI translated."
-msgstr "선택된 문자열은 무시됨으로 표시되어 AI 번역되지 않습니다."
-
-#: source_code:3310
-msgid "Overwrite Confirmation"
-msgstr "덮어쓰기 확인"
-
-#: source_code:3311
-#, python-brace-format
-msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
-msgstr "문자열 \"{text}...\"에 이미 번역이 있습니다. AI 번역으로 덮어쓰시겠습니까?"
-
-#: source_code:3319
-#, python-brace-format
-msgid "AI is translating: \"{text}...\""
-msgstr "AI 번역 중: \"{text}...\""
-
-#: source_code:3350
-#, python-brace-format
-msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
-msgstr "AI 일괄: 처리 중 {current}/{total} (동시성: {threads})..."
-
-#: source_code:3389
-#, python-brace-format
-msgid "{count} items' ignore status updated."
-msgstr "{count}개 항목의 무시 상태 업데이트됨."
-
-#: source_code:3414
-#, python-brace-format
-msgid "{count} items' review status updated."
-msgstr "{count}개 항목의 검토 상태 업데이트됨."
-
-#: source_code:3417
-msgid "Selected item(s) already have the desired review status."
-msgstr "선택한 항목에 이미 원하는 검토 상태가 설정되어 있습니다."
-
-#: source_code:3503
-msgid "Please select an item to AI translate."
-msgstr "AI 번역할 항목을 선택해 주세요."
-
-#: source_code:3515
-msgid "No Translation Needed"
-msgstr "번역 필요 없음"
-
-#: source_code:3516
-msgid "No untranslated and non-ignored strings found."
-msgstr "미번역 및 무시되지 않은 문자열을 찾을 수 없습니다."
-
-#: source_code:3524
-msgid "AI batch translation is already in progress."
-msgstr "AI 일괄 번역이 이미 진행 중입니다."
-
-#: source_code:3552
-#, python-brace-format
-msgid "{count} item(s) already have translations."
-msgstr "{count}개 항목에 이미 번역이 있습니다."
-
-#: source_code:3553
-msgid "Do you want to overwrite them, skip them, or cancel the operation?"
-msgstr "덮어쓰기, 건너뛰기 또는 작업 취소 중 무엇을 하시겠습니까?"
-
-#: source_code:3554
-msgid "Overwrite All"
-msgstr "모두 덮어쓰기"
-
-#: source_code:3555
-msgid "Skip Translated"
-msgstr "이미 번역된 항목 건너뛰기"
-
-#: source_code:3571
-msgid "AI Translation"
-msgstr "AI 번역"
-
-#: source_code:3571
-msgid "No items to process."
-msgstr "처리할 항목이 없습니다."
-
-#: source_code:3581
-msgid "sequential execution"
-msgstr "순차 실행"
-
-#: source_code:3586
-#, python-brace-format
-msgid "up to {max_concurrency} concurrent"
-msgstr "최대 {max_concurrency}개 동시"
-
-#: source_code:3588
-msgid "Confirm Batch Translation"
-msgstr "일괄 번역 확인"
-
-#: source_code:3589
+#: main_window.py:3782
 #, python-brace-format
 msgid ""
 "You are about to AI translate {count} unique strings.\n"
@@ -2198,212 +2440,57 @@ msgstr ""
 "예상 소요 시간: 약 {time_s:.1f}초.\n"
 "계속하시겠습니까?"
 
-#: source_code:3607
-#, python-brace-format
-msgid "AI batch translation started for {count} unique strings..."
-msgstr "AI 일괄 번역 시작: {count}개의 고유 문자열에 대해..."
-
-#: source_code:3632
-#, python-brace-format
-msgid "AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned)."
-msgstr "AI 일괄 번역 완료. {success_count}/{processed_count}개 항목 성공적으로 번역됨 (총 {total_items}개 예정)."
-
-#: source_code:3657
-#, python-brace-format
-msgid "AI translation failed for \"{text}...\": {error}"
-msgstr "AI 번역 실패: \"{text}...\"에 대한 {error}"
-
-#: source_code:3661
-msgid "AI Translation Error"
-msgstr "AI 번역 오류"
-
-#: source_code:3662
-#, python-brace-format
-msgid ""
-"AI translation failed for \"{text}...\":\n"
-"{error}"
-msgstr ""
-"\"{text}...\"에 대한 AI 번역 실패:\n"
-"{error}"
-
-#: source_code:3688
-#, python-brace-format
-msgid "AI translation successful: \"{text}...\""
-msgstr "AI 번역 성공: \"{text}...\""
-
-#: source_code:3697
-#, python-brace-format
-msgid "AI Batch: {current}/{total} completed ({progress_percent:.0f}%)."
-msgstr "AI 일괄: {current}/{total} 완료 ({progress_percent:.0f}%)."
-
-#: source_code:3720
-#, python-brace-format
-msgid ""
-"After AI batch translation, {count} items were found with placeholder mismatches.\n"
-"Do you want to add the comment \"Placeholder Mismatch\" to these items in bulk?"
-msgstr ""
-"AI 일괄 번역 후, {count}개 항목에서 자리표시자 불일치가 발견되었습니다.\n"
-"이 항목들에 \"자리표시자 불일치\" 주석을 일괄 추가하시겠습니까?"
-
-#: source_code:3722
-msgid "Placeholder Mismatch"
-msgstr "자리표시자 불일치"
-
-#: source_code:3738
-#, python-brace-format
-msgid "Added comments to {count} placeholder mismatched items."
-msgstr "{count}개 자리표시자 불일치 항목에 주석 추가됨."
-
-#: source_code:3744
-msgid "No AI batch translation task is in progress."
-msgstr "진행 중인 AI 일괄 번역 작업이 없습니다."
-
-#: source_code:3751
-msgid "AI Batch Translation"
-msgstr "AI 일괄 번역"
-
-#: source_code:3752
-msgid ""
-"AI batch translation stop requested.\n"
-"Dispatched tasks will continue to complete, please wait."
-msgstr ""
-"AI 일괄 번역 중지 요청됨.\n"
-"할당된 작업은 계속 완료됩니다. 잠시 기다려 주십시오."
-
-#: source_code:3754
-msgid "AI batch translation stop requested. Finishing dispatched tasks..."
-msgstr "AI 일괄 번역 중지 요청됨. 할당된 작업 완료 중..."
-
-#: source_code:3822
-msgid " (Auto)"
-msgstr " (자동)"
-
-#: source_code:3845
-#, python-brace-format
-msgid "Enter comment for {count} selected items:"
-msgstr "선택된 {count}개 항목에 대한 주석 입력:"
-
-#: source_code:3846
-#, python-brace-format
-msgid ""
-"Original:\n"
-"{original_semantic}...\n"
-"\n"
-"Enter comment:"
-msgstr ""
-"원본:\n"
-"{original_semantic}...\n"
-"\n"
-"주석 입력:"
-
-#: source_code:3867
-#, python-brace-format
-msgid "Updated comments for {count} items."
-msgstr "{count}개 항목에 대한 주석 업데이트됨."
-
-#: source_code:3895
-#, python-brace-format
-msgid "Applied TM to {count} selected items."
-msgstr "선택된 {count}개 항목에 TM 적용됨."
-
-#: source_code:3899
-msgid "No matching TM entries or no changes needed for selected items."
-msgstr "일치하는 TM 항목이 없거나 선택된 항목에 변경이 필요 없습니다."
-
-#: source_code:3907
-#, python-brace-format
-msgid "Are you sure you want to clear the translations for the {count} selected items?"
-msgstr "선택된 {count}개 항목의 번역을 지우시겠습니까?"
-
-#: source_code:3928
-msgid "Translations for selected items are already empty, no clearing needed."
-msgstr "선택된 항목의 번역이 이미 비어 있습니다. 지울 필요가 없습니다."
-
-#: source_code:3936
-#, python-brace-format
-msgid "Cleared {count} translations."
-msgstr "{count}개 번역 지워짐."
-
-#: source_code:3941
-msgid "No items selected for AI translation."
-msgstr "AI 번역을 위해 선택된 항목이 없습니다."
-
-#: source_code:3952
-msgid "Parsing new file..."
-msgstr "새 파일 구문 분석 중..."
-
-#: source_code:3970
-msgid "Comparing versions..."
-msgstr "버전 비교 중..."
-
-#: source_code:3997
-msgid "Inherited from old version"
-msgstr "이전 버전에서 상속됨"
-
-#: source_code:4000
-msgid "Fuzzy match, please review."
-msgstr "퍼지 매칭, 검토 필요."
-
-#: source_code:4013
-msgid "Comparison complete. Found "
-msgstr "비교 완료. 발견됨 "
-
-#: source_code:4013
-#, python-brace-format
-msgid "{added} new items, "
-msgstr "{added}개 새 항목, "
-
-#: source_code:4014
-#, python-brace-format
-msgid "{removed} removed items, "
-msgstr "{removed}개 제거된 항목, "
-
-#: source_code:4015
+#: main_window.py:4213
 #, python-brace-format
 msgid "and {modified} modified/inherited items."
 msgstr "및 {modified}개 수정/상속된 항목."
 
-#: source_code:4019
-msgid "Version Comparison Results"
-msgstr "버전 비교 결과"
+#: main_window.py:2933
+msgid "current in-memory code"
+msgstr "현재 메모리 내 코드"
 
-#: source_code:4023
-msgid "Applying updates..."
-msgstr "업데이트 적용 중..."
-
-#: source_code:4033
-msgid "Project updated to new version."
-msgstr "프로젝트가 새 버전으로 업데이트되었습니다."
-
-#: source_code:4035
-msgid "Version update cancelled."
-msgstr "버전 업데이트 취소됨."
-
-#: source_code:4039
+#: main_window.py:2938
 #, python-brace-format
-msgid "An error occurred: {error}"
-msgstr "오류 발생: {error}"
+msgid "file '{filename}'"
+msgstr "파일 '{filename}'"
 
-#: source_code:4039
-msgid "Comparison Failed"
-msgstr "비교 실패"
+#: main_window.py:3044
+msgid "original"
+msgstr "원본"
 
-#: source_code:4040
-msgid "Version comparison failed."
-msgstr "버전 비교 실패."
+#: dialogs/ai_settings_dialog.py:131
+msgid "original strings (0 for all)"
+msgstr "원본 문자열 (0은 모두)"
 
-#: source_code:4044
-msgid "Please open a project or file first."
-msgstr "먼저 프로젝트 또는 파일을 열어주세요."
+#: main_window.py:3046
+msgid "translation"
+msgstr "번역"
 
-#: source_code:4049
-msgid "Select new POT template for comparison"
-msgstr "비교를 위한 새 POT 템플릿 선택"
+#: dialogs/ai_settings_dialog.py:148
+msgid "translations (0 for all)"
+msgstr "번역 (0은 모두)"
 
-#: source_code:4050
-msgid "PO Template Files (*.pot);;All Files (*.*)"
-msgstr "PO 템플릿 파일 (*.pot);;모든 파일 (*.*)"
+#: main_window.py:4211
+#, python-brace-format
+msgid "{added} new items, "
+msgstr "{added}개 새 항목, "
 
-#: source_code:4054
-msgid "Select new version code file for comparison"
-msgstr "비교를 위한 새 버전 코드 파일 선택"
+#: main_window.py:3747
+#, python-brace-format
+msgid "{count} item(s) already have translations."
+msgstr "{count}개 항목에 이미 번역이 있습니다."
+
+#: main_window.py:3587 main_window.py:3642
+#, python-brace-format
+msgid "{count} items' ignore status updated."
+msgstr "{count}개 항목의 무시 상태 업데이트됨."
+
+#: main_window.py:3614 main_window.py:3670
+#, python-brace-format
+msgid "{count} items' review status updated."
+msgstr "{count}개 항목의 검토 상태 업데이트됨."
+
+#: main_window.py:4212
+#, python-brace-format
+msgid "{removed} removed items, "
+msgstr "{removed}개 제거된 항목, "
