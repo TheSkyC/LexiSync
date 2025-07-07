@@ -5,6 +5,7 @@ import gettext
 import os
 import locale
 from PySide6.QtCore import QObject, Signal
+from .path_utils import get_resource_path
 
 class LanguageManager(QObject):
     language_changed = Signal()
@@ -13,7 +14,7 @@ class LanguageManager(QObject):
         super().__init__()
         self.translator = lambda s: s
         self.app_name = "overwatch_localizer"
-        self.locale_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'locales')
+        self.locale_dir = get_resource_path('locales')
         self.supported_languages = self._get_supported_languages()
         self.default_lang = 'en_US'
         self.current_lang_code = self.default_lang

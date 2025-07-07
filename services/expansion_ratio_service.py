@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from utils.constants import EXPANSION_DATA_DIR
 from utils.text_utils  import get_linguistic_length
+from utils.path_utils import get_resource_path
 
 
 class ExpansionRatioService:
@@ -28,14 +29,14 @@ class ExpansionRatioService:
         self._load_and_process_data()
 
     def _load_and_process_data(self):
-        if not os.path.isdir(EXPANSION_DATA_DIR):
-            print(f"Warning: Expansion data directory '{EXPANSION_DATA_DIR}' not found.")
+        data_dir_path = get_resource_path(EXPANSION_DATA_DIR)
+        if not os.path.isdir(data_dir_path):
+            print(f"Warning: Expansion data directory '{data_dir_path}' not found.")
             return
-
         all_data = []
-        for filename in os.listdir(EXPANSION_DATA_DIR):
+        for filename in os.listdir(data_dir_path):
             if filename.endswith(".json"):
-                filepath = os.path.join(EXPANSION_DATA_DIR, filename)
+                filepath = os.path.join(data_dir_path, filename)
                 with open(filepath, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     models = data.get("models", {})
