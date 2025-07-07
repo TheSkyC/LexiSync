@@ -108,6 +108,17 @@ jobs:
                     shutil.copy2(source_path, target_path)
         "
         
+        echo "Preparing expansion_data directory for packaging..."
+        python -c "
+        import os, shutil
+        source_dir = 'expansion_data'
+        target_dir = 'dist_expansion_data'
+        if os.path.exists(target_dir):
+            shutil.rmtree(target_dir)
+        if os.path.exists(source_dir): # 只有当源目录存在时才复制
+            shutil.copytree(source_dir, target_dir)
+        "
+        
         DATA_SEPARATOR=':'
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           DATA_SEPARATOR=';'
