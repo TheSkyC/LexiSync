@@ -115,7 +115,7 @@ jobs:
         target_dir = 'dist_expansion_data'
         if os.path.exists(target_dir):
             shutil.rmtree(target_dir)
-        if os.path.exists(source_dir): # 只有当源目录存在时才复制
+        if os.path.exists(source_dir):
             shutil.copytree(source_dir, target_dir)
         "
         
