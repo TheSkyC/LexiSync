@@ -426,9 +426,10 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_toggle_static_sort.setChecked(self.use_static_sorting_var)
         self.action_toggle_static_sort.triggered.connect(self._toggle_static_sorting_mode)
         self.view_menu.addAction(self.action_toggle_static_sort)
+        self.view_menu.addSeparator()
+
         self.action_toggle_details_panel = QAction(_("Edit && Details Panel"), self, checkable=True)
         self.view_menu.addAction(self.action_toggle_details_panel)
-        self.view_menu.addSeparator()
 
         self.action_toggle_comment_status_panel = QAction(_("Comment && Status Panel"), self, checkable=True)
         self.view_menu.addAction(self.action_toggle_comment_status_panel)
