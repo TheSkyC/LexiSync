@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
 "POT-Creation-Date: 2025-07-07 06:22+0000\n"
-"PO-Revision-Date: 2025-07-07 06:49+0000\n"
+"PO-Revision-Date: 2025-07-07 07:36+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: ko\n"
@@ -48,7 +48,7 @@ msgstr "'requests' 라이브러리를 찾을 수 없습니다. AI 번역 기능�
 
 #: dialogs/pot_drop_dialog.py:20
 msgid "A POT file was dropped. What would you like to do?"
-msgstr "POT 파일이 삭제되었습니다. 어떻게 하시겠습니까?"
+msgstr "POT 파일이 드롭되었습니다. 어떻게 하시겠습니까?"
 
 #: main_window.py:3943
 msgid "AI Batch Translation"
@@ -57,7 +57,7 @@ msgstr "AI 일괄 번역"
 #: main_window.py:3543
 #, python-brace-format
 msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
-msgstr "AI 일괄: 처리 중 {current}/{total} (동시성: {threads})..."
+msgstr "AI 일괄: 처리 중 {current}/{total} (동시 처리: {threads})..."
 
 #: main_window.py:3889
 #, python-brace-format
@@ -163,7 +163,7 @@ msgstr ""
 #: main_window.py:3847
 #, python-brace-format
 msgid "AI translation failed for \"{text}...\": {error}"
-msgstr "AI 번역 실패: \"{text}...\"에 대한 {error}"
+msgstr "AI 번역 실패: \"{text}...\" - {error}"
 
 #: main_window.py:3879
 #, python-brace-format
@@ -285,7 +285,7 @@ msgstr "즐겨찾기 적용"
 
 #: main_window.py:1846
 msgid "Apply Memory to Selected Items"
-msgstr "선택된 항목에 메모리 적용"
+msgstr "선택된 항목에 번역 메모리 적용 或 선택된 항목에 TM 적용"
 
 #: main_window.py:3142
 msgid "Apply TM"
@@ -330,7 +330,7 @@ msgid ""
 "Are you sure you want to remove the TM entry for:\n"
 "'{text}...'?"
 msgstr ""
-"TM에서 다음 항목을 제거하시겠습니까:\n"
+"TM에서 다음 항목을 제거하시겠습니까?\n"
 "'{text}...'?"
 
 #: dialogs/keybinding_dialog.py:137
@@ -472,11 +472,11 @@ msgstr "주석"
 
 #: main_window.py:672 main_window.py:1033
 msgid "Comment && Status"
-msgstr "댓글 && 상태"
+msgstr "주석 && 상태"
 
 #: main_window.py:433 main_window.py:620
 msgid "Comment && Status Panel"
-msgstr "댓글 && 상태 패널"
+msgstr "주석 && 상태 패널"
 
 #: main_window.py:2236
 #, python-brace-format
@@ -541,7 +541,7 @@ msgstr "TM 업데이트 확인"
 
 #: dialogs/diff_dialog.py:41
 msgid "Confirm and Update Project"
-msgstr "확인 및 프로젝트 업데이트"
+msgstr "확인 후 프로젝트 업데이트"
 
 #: dialogs/font_settings_dialog.py:118 main_window.py:1494
 msgid "Confirmation"
@@ -574,12 +574,12 @@ msgstr "컨텍스트 미리보기 패널"
 #: main_window.py:3319
 #, python-brace-format
 msgid "Copied {count} original strings to clipboard."
-msgstr "원본 문자열 {count}개 클립보드에 복사됨."
+msgstr "원본 문자열 {count}개가 클립보드에 복사되었습니다."
 
 #: main_window.py:3326
 #, python-brace-format
 msgid "Copied {count} translations to clipboard."
-msgstr "번역 {count}개 클립보드에 복사됨."
+msgstr "번역 {count}개가 클립보드에 복사되었습니다."
 
 #: main_window.py:389 main_window.py:609 main_window.py:1812
 msgid "Copy Original"
@@ -700,7 +700,7 @@ msgstr "표시됨: {displayed_count}/{total_count} | 번역됨: {translated_visi
 
 #: main_window.py:3748
 msgid "Do you want to overwrite them, skip them, or cancel the operation?"
-msgstr "덮어쓰기, 건너뛰기 또는 작업 취소 중 무엇을 하시겠습니까?"
+msgstr "덮어쓰기, 건너뛰기 또는 작업을 취소하시겠습니까?"
 
 #: dialogs/statistics_dialog.py:681
 msgid "Double-click to locate."
@@ -943,7 +943,7 @@ msgstr "추출 규칙 업데이트됨"
 
 #: dialogs/extraction_pattern_dialog.py:207
 msgid "Extraction rules updated. Consider reloading the text."
-msgstr "추출 규칙이 업데이트되었습니다. 텍스트를 다시 로드하는 것을 고려하십시오."
+msgstr "추출 규칙이 업데이트되었습니다. 텍스트를 다시 로드하는 것이 좋습니다."
 
 #: main_window.py:2922
 msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"

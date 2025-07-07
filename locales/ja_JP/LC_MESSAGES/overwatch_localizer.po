@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
 "POT-Creation-Date: 2025-07-07 06:22+0000\n"
-"PO-Revision-Date: 2025-07-07 06:54+0000\n"
+"PO-Revision-Date: 2025-07-07 07:28+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: ja\n"
@@ -312,7 +312,7 @@ msgid ""
 "Are you sure you want to clear all entries from the in-memory TM?\n"
 "This cannot be undone."
 msgstr ""
-"メモリ内の翻訳メモリのすべてのエントリをクリアしますか？\n"
+"メモリ内のTMのすべてのエントリをクリアしますか？\n"
 "この操作は元に戻せません。"
 
 #: main_window.py:1495
@@ -330,8 +330,8 @@ msgid ""
 "Are you sure you want to remove the TM entry for:\n"
 "'{text}...'?"
 msgstr ""
-"翻訳メモリから「\n"
-"'{text}...'」のエントリを削除しますか？"
+"TMから\n"
+"'{text}...'のエントリを削除しますか？"
 
 #: dialogs/keybinding_dialog.py:137
 msgid "Are you sure you want to reset all keybindings to their default settings?"
@@ -434,7 +434,7 @@ msgstr "TMをクリア"
 
 #: main_window.py:453 main_window.py:627
 msgid "Clear TM (in-memory)"
-msgstr "翻訳メモリをクリア (メモリ内)"
+msgstr "メモリ内TMをクリア"
 
 #: ui_components/tm_panel.py:39 ui_components/tm_panel.py:98
 msgid "Clear TM for Selected"
@@ -1113,7 +1113,7 @@ msgstr "プロンプトプリセットをインポート"
 
 #: main_window.py:354 main_window.py:600 main_window.py:3133
 msgid "Import TM (Excel)"
-msgstr "翻訳メモリをインポート (Excel)"
+msgstr "TMをインポート (Excel)"
 
 #: main_window.py:319 main_window.py:593 main_window.py:2598
 msgid "Import Translations from Excel"
@@ -1497,7 +1497,7 @@ msgstr "原文はスペースで終わっているが、翻訳はそうなって
 
 #: services/validation_service.py:56
 msgid "Original starts with space, translation does not."
-msgstr "翻訳の先頭にスペースがありません。"
+msgstr "原文の先頭にスペースがあるが、翻訳にはありません。"
 
 #: main_window.py:2132
 msgid "Original text cannot be empty for a new entry."
@@ -1505,7 +1505,7 @@ msgstr "新しいエントリのオリジナルテキストは空にできませ
 
 #: ui_components/details_panel.py:43 ui_components/details_panel.py:194
 msgid "Original:"
-msgstr "オリジナル:"
+msgstr "原文:"
 
 #: main_window.py:4041
 #, python-brace-format
@@ -2173,8 +2173,8 @@ msgid ""
 "The current translation is empty. Do you want to update the TM entry for:\n"
 "'{text}...' with an empty translation?"
 msgstr ""
-"現在の翻訳は空です。TMエントリを「\n"
-"'{text}...'」に対して空の翻訳で更新しますか？"
+"現在の翻訳は空です。TMエントリを\n"
+"'{text}...'に対して空の翻訳で更新しますか？"
 
 #: main_window.py:1077
 msgid "The layout has been restored to its default state."

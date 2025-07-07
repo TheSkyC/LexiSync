@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
 "POT-Creation-Date: 2025-07-07 06:22+0000\n"
-"PO-Revision-Date: 2025-07-07 07:04+0000\n"
+"PO-Revision-Date: 2025-07-07 08:02+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: es\n"
@@ -140,7 +140,7 @@ msgstr ""
 
 #: main_window.py:3946
 msgid "AI batch translation stop requested. Finishing dispatched tasks..."
-msgstr "Solicitud de detención de traducción por IA en lotes. Finalizando tareas enviadas..."
+msgstr "Se ha solicitado la detención de la traducción por IA en lotes. Finalizando tareas enviadas..."
 
 #: main_window.py:3513
 #, python-brace-format
@@ -1489,7 +1489,7 @@ msgstr "Original (Semántico)"
 
 #: utils/enums.py:56
 msgid "Original Empty, Translation Not"
-msgstr "Original Empty, Translation Not"
+msgstr "Original vacío, traducción presente"
 
 #: services/validation_service.py:63
 msgid "Original ends with space, translation does not."
@@ -2054,7 +2054,7 @@ msgstr "Detener traducción automática por lotes"
 #: main_window.py:3505 main_window.py:3736
 #, python-brace-format
 msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
-msgstr "¿La cadena \"{text}...\" ya tiene una traducción. ¿Sobrescribir con la traducción de IA?"
+msgstr "La cadena \"{text}...\" ya tiene una traducción. ¿Sobrescribir con la traducción de IA?"
 
 #: dialogs/extraction_pattern_dialog.py:60
 msgid "String Type"
@@ -2210,7 +2210,7 @@ msgstr "Este texto original ya existe."
 
 #: main_window.py:3263
 msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
-msgstr "¿Esto aplicará la TM a todas las cadenas coincidentes, sobrescribiendo las traducciones existentes. ¿Continuar?"
+msgstr "Esto aplicará la TM a todas las cadenas coincidentes, sobrescribiendo las traducciones existentes. ¿Continuar?"
 
 #: main_window.py:2958
 #, python-brace-format
@@ -2311,7 +2311,7 @@ msgstr "Tipo:"
 
 #: main_window.py:1835
 msgid "Un-ignore Warnings for Selected"
-msgstr "Mostrar advertencias para los seleccionados"
+msgstr "Dejar de ignorar advertencias para los seleccionados"
 
 #: main_window.py:2065
 #, python-brace-format
@@ -2384,7 +2384,7 @@ msgstr "Usar IA para traducir los elementos seleccionados"
 
 #: dialogs/ai_settings_dialog.py:125 dialogs/ai_settings_dialog.py:142
 msgid "Use nearby"
-msgstr "Usar texto cercano"
+msgstr "Usar cercano"
 
 #: dialogs/ai_settings_dialog.py:118
 msgid "Use nearby original text as context"
@@ -2392,7 +2392,7 @@ msgstr "Usar texto original cercano como contexto"
 
 #: dialogs/ai_settings_dialog.py:135
 msgid "Use nearby translated text as context"
-msgstr "Utilizar el texto traducido cercano como contexto"
+msgstr "Usar el texto traducido cercano como contexto"
 
 #: main_window.py:4217
 msgid "Version Comparison Results"

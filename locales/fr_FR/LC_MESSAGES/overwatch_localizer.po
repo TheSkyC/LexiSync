@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
 "POT-Creation-Date: 2025-07-07 06:22+0000\n"
-"PO-Revision-Date: 2025-07-07 07:01+0000\n"
+"PO-Revision-Date: 2025-07-07 07:56+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: fr\n"
@@ -82,11 +82,11 @@ msgstr "Paramètres IA..."
 
 #: main_window.py:463 main_window.py:629
 msgid "AI Translate All Untranslated"
-msgstr "Traduire la sélection par IA"
+msgstr "Traduire tous les non-traduits par IA"
 
 #: main_window.py:458 main_window.py:628 ui_components/details_panel.py:91 ui_components/details_panel.py:197
 msgid "AI Translate Selected"
-msgstr "Traduire tous les non-traduits par IA"
+msgstr "Traduire la sélection par IA"
 
 #: main_window.py:3766
 msgid "AI Translation"

@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
 "POT-Creation-Date: 2025-07-07 06:22+0000\n"
-"PO-Revision-Date: 2025-07-07 06:57+0000\n"
+"PO-Revision-Date: 2025-07-07 07:56+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: it\n"
@@ -434,7 +434,7 @@ msgstr "Cancella MT"
 
 #: main_window.py:453 main_window.py:627
 msgid "Clear TM (in-memory)"
-msgstr "Cancella Memoria di Traduzione (in memoria)"
+msgstr "Cancella MT (in memoria)"
 
 #: ui_components/tm_panel.py:39 ui_components/tm_panel.py:98
 msgid "Clear TM for Selected"
@@ -1489,7 +1489,7 @@ msgstr "Originale (Semantico)"
 
 #: utils/enums.py:56
 msgid "Original Empty, Translation Not"
-msgstr "Originale Vuoto, Traduzione Non"
+msgstr "Originale vuoto, traduzione presente"
 
 #: services/validation_service.py:63
 msgid "Original ends with space, translation does not."
