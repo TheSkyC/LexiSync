@@ -120,6 +120,7 @@ jobs:
           --windowed \
           --noconfirm \
           --add-data "dist_locales${DATA_SEPARATOR}locales" \
+          --add-data "dist_expansion_data${DATA_SEPARATOR}expansion_data" \
           --exclude-module Qt6Network \
           --exclude-module Qt6Sql \
           --exclude-module Qt6Test \
