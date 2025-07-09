@@ -4,53 +4,54 @@
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
 ![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python)
 </div>
-  <p align="center"><a href="./README.md">中文</a> | English | <a href="./docs/README.ja.md">日本語</a><br></p>
+  <p align="center"><a href="./README.zh_CN.md">中文</a> | English | <a href="./docs/README.ja.md">日本語</a><br></p>
 
 # Overwatch Localizer
 
-**Overwatch Localizer** is a powerful desktop application designed for Overwatch Workshop creators, mod developers, and professional translators. It provides a complete and efficient localization solution, from intelligent text extraction to assisted translation and seamless integration, significantly simplifying the management of multilingual content.
+**Overwatch Localizer** is a powerful desktop application designed for Overwatch Workshop creators, mod developers, and professional translators. It offers a complete and efficient localization solution, from intelligent text extraction and AI-assisted translation to data-driven quality assurance, greatly simplifying the multi-language content management process.
 
-This tool not only supports Overwatch's custom code format but is also compatible with industry-standard PO/POT files, making it a versatile platform for localization editing and management.
+This tool not only deeply supports Overwatch's custom code format but also fully complies with industry-standard PO/POT files, making it a versatile localization editing and management platform.
 
 ---
 
 ## 🚀 Key Features
 
-### Core Translation Functionality
-*   **Intuitive Translation Interface**: Side-by-side display of original text, translation, comments, and status, with a context preview.
-*   **Translation Memory (TM)**: Supports importing/exporting TM in Excel format, with automatic matching and fuzzy match suggestions.
+### Core Translation & Project Management
+*   **Intuitive Translation Interface**: Displays source, translation, comments, and status side-by-side, providing real-time context preview.
+*   **Translation Memory (TM)**: Supports importing/exporting TM in Excel format, automatically applying matches, and providing fuzzy matching suggestions.
 *   **Standard Localization Support**:
-    *   **Complete PO/POT Workflow**: Directly create, edit, and manage PO files.
-    *   **Version Comparison & Merging**: Compare PO files with new POT templates to intelligently merge new and updated content.
-
-### Project & Workflow Management
+    *   **PO/POT Workflow**: Directly create, edit, and manage PO files.
+    *   **Version Comparison**: Supports comparing PO files with new POT templates for intelligent merging of old and new content.
 *   **Dual Project Modes**:
-    *   **Workshop Code Mode**: Directly extract translatable strings from `.ow` or `.txt` code files and write the translations back into a new code file.
-    *   **PO File Mode**: Provides a standalone PO file editing workflow, independent of any associated code files.
-*   **Project Management**: Save and load project files (`.owproj`) to preserve your work progress, filter views, and configurations.
+    *   **Workshop Code Mode**: Directly extracts translatable strings from `.ow` or `.txt` code files and writes translated results back into new code.
+    *   **PO File Mode**: Provides an independent PO file editing workflow, with automatic `.mo` file compilation upon saving.
+*   **Project Management**: Supports saving/loading project files (`.owproj`), fully preserving your work progress, filtered views, and configurations.
+*   **Project Statistics**: Features a detailed project statistics interface, allowing direct identification of problematic items within the statistics view.
+*   **Static Sorting**: Supports switching to static sorting mode; manually refresh by pressing `F5`.
 
-### Automation & Intelligence
-*   **Smart String Extraction**: Automatically identifies and extracts translatable strings from code files, supports custom regex rules, and intelligently filters out non-translatable content (e.g., numbers, placeholders).
+### Automation & Smart Assistance
+*   **Intelligent String Extraction**: Automatically identifies and extracts translatable strings from code files using customizable regular expressions.
 *   **Integrated AI Translation**:
-    *   Achieve high-quality machine translation by leveraging Large Language Models (compatible with OpenAI API).
-    *   Supports batch translation, context referencing, and project-specific instructions to enhance accuracy and style.
+    *   Utilizes large language models (compatible with OpenAI API) for high-quality machine translation.
+    *   Supports single-item and batch translation, with context referencing and project-specific instructions to optimize translation accuracy and style.
 *   **Quality Assurance (QA)**:
-    *   **Built-in Validation System**: Automatically detects common errors in translations.
-    *   **Smart Validation**: Checks for placeholder mismatches, inconsistent line counts, and mismatched leading/trailing spaces or punctuation.
+    *   **Built-in Validation System**: Automatically detects common errors in translations, such as placeholder mismatches, inconsistent punctuation, leading/trailing spaces, etc.
+    *   **Smart Length Validation**:
+        *   Validates translation length using an **expansion ratio model** generated by analyzing professional translation datasets (`Opus-100`).
+        *   Provides precise warnings when translation length deviates significantly from industry benchmarks.
 
-### High Customizability
-*   **Custom Extraction Rules**: Manage string extraction rules through a graphical interface to adapt to various code formats.
-*   **Custom AI Prompts**: Fine-tune the behavior, tone, and terminology of AI translations.
-*   **Custom Hotkeys**: Set personalized shortcuts for frequently used functions to match your workflow.
-*   **Custom Fonts**: Specify display fonts for different language scripts (e.g., Latin, CJK, Cyrillic) in the settings for optimal visual presentation of global text.
+### Highly Customizable
+*   **Custom Extraction Rules**: Manage string extraction rules via a graphical interface to adapt to various code formats.
+*   **Custom AI Prompts**: Fine-tune AI translation behavior, tone, and terminology.
+*   **Custom Keybindings**: Set personalized hotkeys for frequently used functions according to your operating habits.
+*   **Custom Fonts**: Specify display fonts for different languages (e.g., Latin, CJK, Cyrillic) in settings to ensure optimal visual presentation of globalized text.
 
 ## 🛠️ Custom Configuration
-Application settings are stored in the `localization_tool_config.json` file. You can easily configure them through the application's UI:
-
-*   **AI Translation Settings**: `Tools (T) > AI Settings...`
-*   **Extraction Rule Manager**: `Tools (T) > Extraction Rule Manager...`
-*   **Hotkey Settings**: `Settings (S) > Keybinding Settings...`
-*   **Font Settings**: `Settings (S) > Font Settings...`
+Application configurations are stored in the `localization_tool_config.json` file. You can easily configure them via the application's UI:
+*   **AI Translation Settings**: `Tools(T) > AI Translation Settings...`
+*   **Extraction Rules Manager**: `Tools(T) > Extraction Rules Manager...`
+*   **Keybinding Settings**: `Settings(S) > Keybinding Settings...`
+*   **Font Settings**: `Settings(S) > Font Settings...`
 
 ## 📥 Download
 You can download the latest version from the **[GitHub Releases](https://github.com/TheSkyC/overwatch-localizer/releases/latest)** page.
@@ -59,18 +60,23 @@ You can download the latest version from the **[GitHub Releases](https://github.
 
 ## 📸 Screenshots
 *Main Interface*
-![image](https://github.com/user-attachments/assets/4f164e2c-ef08-493a-9555-ca7867614a5a)
+![QQ20250709-173104](https://github.com/user-attachments/assets/5d472d9e-6fe8-4d8d-b444-31f81d649f3a)
 
 <details>
-<summary><b>► Click to see more screenshots</b></summary>
+<summary><b>► Click to view more screenshots</b></summary>
 
-*AI translation, extraction rules, hotkeys, and fonts are all customizable.*
-![image](https://github.com/user-attachments/assets/5870964c-2667-4b2e-a86a-2d33f1d3e448)
-![image](https://github.com/user-attachments/assets/dbb2fd73-9eb0-46e6-81fa-130ac9f68c9c)
+*Custom Configuration*
 
+![image](https://github.com/user-attachments/assets/b3e278db-6b0d-4288-8ce4-4e84f4998035)
+
+*Project Statistics, Language Pair Settings*
+
+![image](https://github.com/user-attachments/assets/5fa82ae5-03e6-408b-9010-2f0b0503482f)
+![image](https://github.com/user-attachments/assets/0c985437-8c38-414b-a990-0d8b37040ae8)
 </details>
 
-## 🛠️ Setup for Development
+
+## 🛠️ Development Environment Setup
 
 ### Prerequisites
 *   Python 3.8 or higher
@@ -97,31 +103,31 @@ You can download the latest version from the **[GitHub Releases](https://github.
     pip install -r requirements.txt
     ```
 
-## 🚀 How to Use
+## 🚀 Usage
 1.  **Launch the application**
     ```bash
     python main.py
     ```
-2.  **Basic Workflows**
+2.  **Basic Workflow**
+    *   **First Use**: Select your preferred working language pair via `Settings(S) > Language Pair Settings...`.
     *   **Workshop Code Workflow**:
-        1.  Open an `.ow` / `.txt` code file or an `.owproj` project file.
-        2.  Enter translations in the editor pane on the right. Use `Ctrl+Enter` to apply and jump to the next item.
-        3.  Click `File (F) > Save` to save your `.owproj` project.
-        4.  Once finished, click `File (F) > Save Translation to New Code File` to generate the translated code.
+        1.  Open/drag and drop `.ow` / `.txt` code files. The application will automatically detect the source language.
+        2.  Translate in the right-side editor, use `Ctrl+Enter` to apply and jump to the next item.
+        3.  Click `File(F) > Save` to save the `.owproj` project.
+        4.  After completion, click `File(F) > Save Translation to New Code File` to generate the translated code.
 
     *   **PO File Workflow**:
-        1.  Open a `.po` file or start from a `.pot` template.
-        2.  Translate and review entries. Items marked as `fuzzy` will be automatically highlighted with a light yellow background.
-        3.  To update, click `File (F) > Compare/Import New Version...` and select the new `.pot` file to merge.
-        4.  When done, click `File (F) > Save` to save the `.po` file.
+        1.  Open a `.po` file. The application will automatically detect the language and load context.
+        2.  Translate and review. Items marked as `fuzzy` will be highlighted with a light yellow background.
+        3.  To update, click `File(F) > Compare Versions/Import New Code...` and select a new `.pot` file for merging.
+        4.  After completion, click `File(F) > Save` to save the `.po` file. If enabled in settings, the `.mo` file will be compiled automatically.
 
-3.  **AI Translation & QA**
-    *   Configure your API in `Tools (T) > AI Settings...`.
-    *   Select entries and use the right-click context menu or hotkeys for AI translation.
-    *   Look for the "⚠️" icon in the status column and hover over the status bar to see detailed warning messages.
+3.  **AI Translation & Quality Assurance**
+    *   Configure API settings in `Tools(T) > AI Translation Settings...`.
+    *   Select an item, then use the right-click context menu or hotkeys for AI translation.
 
 ## 🌐 Supported Languages
-This tool supports translation into any language and provides a localized UI for the following languages:
+This tool supports translation for any language and provides localized UI interfaces for the following languages:
 *   **English** (`en_US`)
 *   **简体中文** (`zh_CN`)
 *   **日本語** (`ja_JP`)
@@ -132,14 +138,13 @@ This tool supports translation into any language and provides a localized UI for
 *   **español (España)** (`es_ES`)
 *   **italiano** (`it_IT`)
 
-## 🤝 Contributing
-Contributions of any kind are welcome! If you have any questions, feature suggestions, or bug reports, please feel free to submit them via GitHub Issues.
+## 🤝 Contribution
+Contributions of any kind are welcome! If you have any questions, feature suggestions, or find bugs, please feel free to submit them via GitHub Issues.
 
 ## 📄 License
-This project is licensed under the [Apache 2.0 License](LICENSE). You are free to use, modify, and distribute it, provided that the copyright notice is retained.
+This project is open-sourced under [Apache 2.0](LICENSE), allowing free use, modification, and distribution, provided the copyright notice is retained.
 
 ## 📞 Contact
-- Author: TheSkyC (骰子掷上帝)
+- Author: TheSkyC
 - Email: 0x4fe6@gmail.com
-- Battle.net ID (CN): 小鸟游六花#56683
-- Battle.net ID (Asia): 小鳥游六花#31665
+- ASIA Server ID: 小鳥游六花#31665
