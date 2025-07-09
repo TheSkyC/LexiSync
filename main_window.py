@@ -1008,7 +1008,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
 
         # DetailsPanel
-        self.details_dock = QDockWidget(_("Edit & Details"), self)
+        self.details_dock = QDockWidget(_("Edit && Details"), self)
         self.details_dock.setWidget(self.details_panel)
         self.details_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
