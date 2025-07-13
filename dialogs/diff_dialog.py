@@ -196,7 +196,25 @@ class DiffDialog(QDialog):
                 item.setData(item_data, Qt.UserRole)
                 removed_root.appendRow([item, QStandardItem("N/A")])
 
+        # 未改变项目
+        unchanged_items = self.diff_results.get('unchanged', [])
+        if unchanged_items:
+            unchanged_root = QStandardItem(f"{_('Unchanged')} ({len(unchanged_items)})")
+            unchanged_root.setForeground(QColor("#6C757D"))
+            unchanged_root.setFont(QFont("Segoe UI", 10, QFont.Bold))
+            self.model.appendRow(unchanged_root)
+            for item_data in unchanged_items:
+                item = QStandardItem(item_data['new_obj'].original_semantic)
+                item.setData(item_data, Qt.UserRole)
+                unchanged_root.appendRow([item, QStandardItem("100%")])
         self.tree.expandAll()
+        if unchanged_items:
+            for row in range(self.model.rowCount()):
+                item = self.model.item(row)
+                if item and item.text().startswith(_('Unchanged')):
+                    self.tree.collapse(item.index())
+                    break
+
 
     def on_selection_changed(self, selected, deselected):
         indexes = selected.indexes()
