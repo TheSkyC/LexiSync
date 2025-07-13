@@ -37,7 +37,7 @@ class TranslatableString:
         self.po_comment = ""
 
         self.ui_style_cache = {}
-        context_radius = 2
+        context_radius = 5
         start_line_idx = max(0, line_num - 1 - context_radius)
         current_line_content_idx = line_num - 1
         if full_code_lines:
