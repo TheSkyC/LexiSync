@@ -9,7 +9,7 @@ import datetime
 import time
 import threading
 from copy import deepcopy
-from difflib import SequenceMatcher
+from rapidfuzz import fuzz
 from openpyxl import Workbook, load_workbook
 import polib
 import weakref
@@ -4190,7 +4190,7 @@ class OverwatchLocalizerApp(QMainWindow):
                     best_match_old_s = None
                     for old_s in old_strings:
                         if old_s.original_semantic not in new_map:
-                            score = SequenceMatcher(None, new_obj.original_semantic, old_s.original_semantic).ratio()
+                            score = fuzz.ratio(new_obj.original_semantic, old_s.original_semantic) / 100
                             if score > best_match_score:
                                 best_match_score = score
                                 best_match_old_s = old_s
