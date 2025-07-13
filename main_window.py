@@ -58,8 +58,9 @@ from services.prompt_service import generate_prompt_from_structure
 from services.validation_service import run_validation_on_all, placeholder_regex as enhanced_placeholder_regex
 from services.expansion_ratio_service import ExpansionRatioService
 
-from utils.constants import *
 from utils import config_manager
+from utils.constants import *
+from utils.enums import WarningType
 from utils.localization import lang_manager, _
 from utils.text_utils import get_linguistic_length
 
@@ -4148,7 +4149,6 @@ class OverwatchLocalizerApp(QMainWindow):
     def _run_comparison_logic(self, new_filepath):
         try:
             is_po_mode = self.is_po_mode
-
             self.progress_bar.setVisible(True)
             self.progress_bar.setValue(0)
             self.update_statusbar(_("Parsing new file..."), persistent=True)
@@ -4159,51 +4159,143 @@ class OverwatchLocalizerApp(QMainWindow):
 
             if is_po_mode:
                 pot_file = polib.pofile(new_filepath, encoding='utf-8')
-                new_strings = [TranslatableString(original_raw=entry.msgid, original_semantic=entry.msgid, line_num=0,
-                                                  char_pos_start_in_file=0, char_pos_end_in_file=0, full_code_lines=[])
-                               for entry in pot_file if not entry.obsolete]
+                old_strings_map = {s.original_semantic: s for s in self.translatable_objects}
+                used_old_strings_for_fuzzy_match = set()
+
+                for entry in pot_file:
+                    if entry.obsolete:
+                        continue
+                    new_obj = po_file_service._po_entry_to_translatable_string(entry)
+                    if new_obj.original_semantic in old_strings_map:
+                        # 精确匹配
+                        old_obj = old_strings_map[new_obj.original_semantic]
+                        new_obj.translation = old_obj.translation
+                        new_obj.comment = old_obj.comment
+                        new_obj.po_comment = old_obj.po_comment
+                        new_obj.is_fuzzy = old_obj.is_fuzzy
+                        new_obj.is_reviewed = old_obj.is_reviewed
+                        new_obj.is_ignored = old_obj.is_ignored
+                        used_old_strings_for_fuzzy_match.add(old_obj)
+                    else:
+                        # 模糊匹配
+                        best_match_score = 0
+                        best_match_old_s = None
+                        for old_s in self.translatable_objects:
+                            if old_s not in used_old_strings_for_fuzzy_match:
+                                score = fuzz.ratio(new_obj.original_semantic,old_s.original_semantic) / 100
+                                if score > best_match_score:
+                                    best_match_score = score
+                                    best_match_old_s = old_s
+
+                        if best_match_score >= 0.85 and best_match_old_s:
+                            new_obj.translation = best_match_old_s.translation
+                            new_obj.comment = best_match_old_s.comment
+                            new_obj.po_comment = best_match_old_s.po_comment
+                            new_obj.is_fuzzy = True
+                            new_obj.is_reviewed = False
+                            used_old_strings_for_fuzzy_match.add(best_match_old_s)
+
+                    new_strings.append(new_obj)
+                new_map = {s.original_semantic: s for s in new_strings}
+                diff_results = {'added': [], 'removed': [], 'modified': [], 'unchanged': []}
+
+                for new_obj in new_strings:
+                    if new_obj.original_semantic in old_strings_map:
+                        old_obj = old_strings_map[new_obj.original_semantic]
+                        if new_obj.is_fuzzy:
+                            diff_results['modified'].append({'old_obj': old_obj, 'new_obj': new_obj,
+                                                             'similarity': fuzz.ratio(new_obj.original_semantic,old_obj.original_semantic) / 100})
+                        else:
+                            diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': new_obj})
+                    else:
+                        diff_results['added'].append({'new_obj': new_obj})
+
+                for old_obj in self.translatable_objects:
+                    if old_obj.original_semantic not in new_map:
+                        diff_results['removed'].append({'old_obj': old_obj})
+                self.progress_bar.setValue(70)
+                summary = (_("Comparison complete. Found ") + _("{added} new items, ").format(
+                    added=len(diff_results['added'])) + _("{removed} removed items, ").format(
+                    removed=len(diff_results['removed'])) + _("and {modified} modified/inherited items.").format(
+                    modified=len(diff_results['modified'])))
+                diff_results['summary'] = summary
+
+                dialog = DiffDialog(self, _("Version Comparison Results"), diff_results)
+                self.progress_bar.setVisible(False)
+
+                if dialog.exec():
+                    self.update_statusbar(_("Applying updates..."), persistent=True)
+                    self.translatable_objects = new_strings
+                    self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
+                    self._run_and_refresh_with_validation()
+                    self.mark_project_modified()
+                    self.update_statusbar(_("Project updated to new version."), persistent=True)
+                else:
+                    self.update_statusbar(_("Version update cancelled."))
+                return
             else:
                 with open(new_filepath, 'r', encoding='utf-8', errors='replace') as f:
                     new_code_content = f.read()
                 extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
                 new_strings = extract_translatable_strings(new_code_content, extraction_patterns)
-
             self.progress_bar.setValue(30)
             self.update_statusbar(_("Comparing versions..."), persistent=True)
             QApplication.processEvents()
-
             old_strings = self.translatable_objects
             old_map = {s.original_semantic: s for s in old_strings}
             new_map = {s.original_semantic: s for s in new_strings}
             diff_results = {'added': [], 'removed': [], 'modified': [], 'unchanged': []}
-
+            used_old_strings_for_fuzzy_match = set()
             for new_obj in new_strings:
                 if new_obj.original_semantic in old_map:
                     old_obj = old_map[new_obj.original_semantic]
+
                     new_obj.translation = old_obj.translation
                     new_obj.comment = old_obj.comment
+                    new_obj.po_comment = old_obj.po_comment
+                    new_obj.is_fuzzy = old_obj.is_fuzzy
                     new_obj.is_ignored = old_obj.is_ignored
                     new_obj.is_reviewed = old_obj.is_reviewed
+                    new_obj.occurrences = old_obj.occurrences
+                    new_obj.context_lines = old_obj.context_lines
+                    new_obj.current_line_in_context_idx = old_obj.current_line_in_context_idx
+
                     diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': new_obj})
                 else:
                     best_match_score = 0
                     best_match_old_s = None
                     for old_s in old_strings:
-                        if old_s.original_semantic not in new_map:
+                        if old_s.original_semantic not in new_map and old_s not in used_old_strings_for_fuzzy_match:
                             score = fuzz.ratio(new_obj.original_semantic, old_s.original_semantic) / 100
                             if score > best_match_score:
                                 best_match_score = score
                                 best_match_old_s = old_s
                     if best_match_score >= 0.85 and best_match_old_s:
                         new_obj.translation = best_match_old_s.translation
-                        new_obj.comment = f"[{_('Inherited from old version')}] {best_match_old_s.comment}".strip()
+                        new_obj.comment = best_match_old_s.comment
+                        new_obj.po_comment = best_match_old_s.po_comment
+                        new_obj.is_fuzzy = True
                         new_obj.is_reviewed = False
+                        new_obj.occurrences = best_match_old_s.occurrences
+                        new_obj.context_lines = best_match_old_s.context_lines
+                        new_obj.current_line_in_context_idx = best_match_old_s.current_line_in_context_idx
+
                         if new_obj.translation:
-                            new_obj.minor_warnings.append(_("Fuzzy match, please review."))
+                            if not hasattr(new_obj, 'minor_warnings') or not isinstance(new_obj.minor_warnings, list):
+                                new_obj.minor_warnings = []
+                            new_obj.minor_warnings.append(
+                                (WarningType.FUZZY_TRANSLATION, _("Fuzzy match, please review.")))
+
                         diff_results['modified'].append(
                             {'old_obj': best_match_old_s, 'new_obj': new_obj, 'similarity': best_match_score})
+                        used_old_strings_for_fuzzy_match.add(best_match_old_s)
                     else:
                         diff_results['added'].append({'new_obj': new_obj})
+            for old_obj in old_strings:
+                if old_obj.original_semantic not in new_map:
+                    if old_obj not in used_old_strings_for_fuzzy_match:
+                        diff_results['removed'].append({'old_obj': old_obj})
+
 
             for old_obj in old_strings:
                 if old_obj.original_semantic not in new_map:
@@ -4228,7 +4320,8 @@ class OverwatchLocalizerApp(QMainWindow):
                     self.original_raw_code_content = new_code_content
                     self.current_code_file_path = new_filepath
                 elif is_po_mode:
-                    self.current_po_file_path = new_filepath
+                    # self.current_po_file_path = new_filepath
+                    pass
                 self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
                 self._run_and_refresh_with_validation()
                 self.mark_project_modified()

@@ -33,24 +33,43 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
         occurrences=entry.occurrences
     )
     ts.translation = entry.msgstr
-    po_comment_lines = []
+    all_comment_lines = []
     if entry.comment:
-        po_comment_lines.extend([line.lstrip('# ').strip() for line in entry.comment.splitlines()])
+        all_comment_lines.extend(entry.comment.splitlines())
+    if entry.tcomment:
+        all_comment_lines.extend(entry.tcomment.splitlines())
+
+    user_comment_lines = []
+    po_meta_comment_lines = []
+
+    # 遍历所有注释行，进行分类
+    for line in all_comment_lines:
+        stripped_line = line.strip()
+        if stripped_line.startswith('#.'):
+            content = stripped_line[2:].strip()
+            if content.startswith('OWLocalizer:'):
+                if 'reviewed' in content:
+                    ts.is_reviewed = True
+                if 'ignored' in content:
+                    ts.is_ignored = True
+            else:
+                user_comment_lines.append(content)
+        elif stripped_line.startswith('#'):
+            po_meta_comment_lines.append(stripped_line)
+        else:
+            user_comment_lines.append(line)
+
+    # 添加由 polib 自动解析的元数据注释
     if entry.occurrences:
-        po_comment_lines.append(f"#: {' '.join(f'{p}:{l}' for p, l in entry.occurrences)}")
+        po_meta_comment_lines.append(f"#: {' '.join(f'{p}:{l}' for p, l in entry.occurrences)}")
     if entry.flags:
-        po_comment_lines.append(f"#, {', '.join(entry.flags)}")
+        po_meta_comment_lines.append(f"#, {', '.join(entry.flags)}")
     if entry.previous_msgid:
         previous_entries = entry.previous_msgid if isinstance(entry.previous_msgid, list) else [entry.previous_msgid]
         for p_msgid in previous_entries:
-            po_comment_lines.append(f"#| msgid \"{p_msgid}\"")
-
-    ts.po_comment = "\n".join(po_comment_lines)
-    ts.comment = entry.tcomment or ""
-    user_comment_lines = ts.comment.splitlines()
-    ts.is_reviewed = "#OWLocalizer:reviewed" in user_comment_lines
-    ts.is_ignored = "#OWLocalizer:ignored" in user_comment_lines
-    ts.comment = "\n".join([line for line in user_comment_lines if not line.startswith('#OWLocalizer:')])
+            po_meta_comment_lines.append(f"#| msgid \"{p_msgid}\"")
+    ts.comment = "\n".join(user_comment_lines)
+    ts.po_comment = "\n".join(sorted(list(set(po_meta_comment_lines))))
 
     if 'fuzzy' in entry.flags:
         ts.is_fuzzy = True
