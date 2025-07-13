@@ -22,11 +22,11 @@ class POTDropDialog(QDialog):
         button_box = QHBoxLayout()
 
         update_btn = QPushButton(_("Update from POT"))
-        update_btn.clicked.connect(lambda: self.done("update"))
+        update_btn.clicked.connect(lambda: self._set_result_and_accept("update"))
         button_box.addWidget(update_btn)
 
         import_btn = QPushButton(_("Import as New File"))
-        import_btn.clicked.connect(lambda: self.done("import"))
+        import_btn.clicked.connect(lambda: self._set_result_and_accept("import"))
         button_box.addWidget(import_btn)
 
         cancel_btn = QPushButton(_("Cancel"))
@@ -35,6 +35,6 @@ class POTDropDialog(QDialog):
 
         main_layout.addLayout(button_box)
 
-    def done(self, result):
+    def _set_result_and_accept(self, result):
         self.result = result
         self.accept()
