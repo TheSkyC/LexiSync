@@ -12,11 +12,11 @@ class ContextPanel(QWidget):
         super().__init__(parent)
         self.setup_ui()
         self.line_highlight_format = QTextCharFormat()
-        self.line_highlight_format.setBackground(QColor("yellow"))
+        self.line_highlight_format.setBackground(QColor("#E3F2FD"))
         self.keyword_highlight_format = QTextCharFormat()
-        self.keyword_highlight_format.setBackground(QColor("yellow"))
+        self.keyword_highlight_format.setBackground(QColor("#E3F2FD"))
         self.keyword_highlight_format.setFontUnderline(True)
-        self.keyword_highlight_format.setUnderlineColor(QColor("#007BFF"))  # 设置下划线颜色
+        self.keyword_highlight_format.setUnderlineColor(QColor("#007BFF"))
         self.default_format = QTextCharFormat()
 
     def setup_ui(self):
@@ -57,7 +57,8 @@ class ContextPanel(QWidget):
             cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
             cursor.setCharFormat(self.line_highlight_format)
 
-            # 在高亮行内查找并高亮关键词
+            # 高亮关键词
+            keyword_cursor = None
             if keyword_to_highlight:
                 block_text = current_block.text()
                 start_pos = block_text.find(keyword_to_highlight)
@@ -70,13 +71,26 @@ class ContextPanel(QWidget):
                     )
                     keyword_cursor.setCharFormat(self.keyword_highlight_format)
 
-            # 滚动到视图中央
-            scroll_target_cursor = QTextCursor(current_block)
+            # 定位到关键词
+            scroll_target_cursor = keyword_cursor if keyword_cursor else QTextCursor(current_block)
             self.context_text_display.setTextCursor(scroll_target_cursor)
+
             cursor_rect = self.context_text_display.cursorRect()
+
             viewport_height = self.context_text_display.viewport().height()
-            target_y = cursor_rect.top() - (viewport_height / 2) + (cursor_rect.height() / 2)
+            target_y = self.context_text_display.verticalScrollBar().value() + cursor_rect.top() - (
+                        viewport_height / 2) + (cursor_rect.height() / 2)
             self.context_text_display.verticalScrollBar().setValue(int(target_y))
+
+            viewport_width = self.context_text_display.viewport().width()
+            target_x = self.context_text_display.horizontalScrollBar().value() + cursor_rect.left() - (
+                        viewport_width / 2) + (cursor_rect.width() / 2)
+            self.context_text_display.horizontalScrollBar().setValue(int(target_x))
+            final_cursor = self.context_text_display.textCursor()
+            start_position = final_cursor.selectionStart()
+            final_cursor.clearSelection()
+            final_cursor.setPosition(start_position)
+            self.context_text_display.setTextCursor(final_cursor)
 
     def update_ui_texts(self):
         label = self.findChild(QLabel, "context_label")
