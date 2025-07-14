@@ -1074,10 +1074,15 @@ class OverwatchLocalizerApp(QMainWindow):
             self.details_dock.setVisible(True)
             self.context_dock.setVisible(True)
             self.tm_dock.setVisible(True)
-            main_width = self.size().width()
-            initial_dock_width = int(main_width * 0.25)
-            initial_dock_width = max(300, min(initial_dock_width, 500))
-            self.resizeDocks([self.details_dock], [initial_dock_width], Qt.Horizontal)
+            self.comment_status_dock.setVisible(True)
+            right_dock_total_height = self.context_dock.height() + self.tm_dock.height() + self.comment_status_dock.height()
+            if right_dock_total_height > 0:
+                self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)
+                self.resizeDocks([self.context_dock, self.tm_dock],
+                                 [right_dock_total_height // 3, right_dock_total_height // 3], Qt.Vertical)
+            main_height = self.size().height()
+            details_panel_height = max(200, int(main_height * 0.25))
+            self.resizeDocks([self.details_dock], [details_panel_height], Qt.Vertical)
             self.update_statusbar(_("The layout has been restored to its default state."))
 
     def _setup_statusbar(self):
