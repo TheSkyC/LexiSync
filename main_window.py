@@ -547,6 +547,7 @@ class OverwatchLocalizerApp(QMainWindow):
             lang_name = {
                 'en_US': 'English',
                 'zh_CN': '简体中文',
+                'zh_TW': '繁體中文',
                 'ja_JP': '日本語',
                 'ko_KR': '한국어',
                 'fr_FR': 'le français',
@@ -560,7 +561,6 @@ class OverwatchLocalizerApp(QMainWindow):
                 'pl_PL': 'polski',
                 'tr_TR': 'Türkçe',
                 'ar_SA': 'العربية',
-                'zh_TW': '繁體中文'
             }.get(lang_code, lang_code)
             action = QAction(lang_name, self, checkable=True)
             action.setChecked(lang_code == self.config.get('language'))
