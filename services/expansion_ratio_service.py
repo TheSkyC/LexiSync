@@ -81,8 +81,12 @@ class ExpansionRatioService:
             return None
         if visited is None:
             visited = set()
+        query_target_lang = 'zh' if target_lang == 'zh_TW' else target_lang
+        query_source_lang = 'zh' if source_lang == 'zh_TW' else source_lang
+        if query_source_lang == 'zh' and query_target_lang == 'zh':
+            return 1.0
 
-        lang_pair = f"{source_lang}-{target_lang}"
+        lang_pair = f"{query_source_lang}-{query_target_lang}"
         if lang_pair in visited:
             return None
         visited.add(lang_pair)
@@ -95,7 +99,8 @@ class ExpansionRatioService:
             ]
         if not query.empty:
             return query.iloc[0]['median']
-        reverse_lang_pair = f"{target_lang}-{source_lang}"
+
+        reverse_lang_pair = f"{query_target_lang}-{query_source_lang}"  # 使用处理过的语言代码
         reverse_query = self.df[
             (self.df['lang_pair'] == reverse_lang_pair) &
             (self.df['density'] == placeholder_density) &
@@ -105,12 +110,14 @@ class ExpansionRatioService:
         if not reverse_query.empty:
             reverse_ratio = reverse_query.iloc[0]['median']
             return 1 / reverse_ratio if reverse_ratio != 0 else None
-        if source_lang != 'en' and target_lang != 'en':
-            ratio_source_to_en = self.get_expected_ratio(source_lang, 'en', original_text, placeholder_density, visited)
+
+        if query_source_lang != 'en' and query_target_lang != 'en':
+            ratio_source_to_en = self.get_expected_ratio(query_source_lang, 'en', original_text, placeholder_density,
+                                                         visited)
             if ratio_source_to_en:
                 estimated_en_len = length * ratio_source_to_en
                 en_text_placeholder = "a" * int(estimated_en_len)
-                ratio_en_to_target = self.get_expected_ratio('en', target_lang, en_text_placeholder,
+                ratio_en_to_target = self.get_expected_ratio('en', query_target_lang, en_text_placeholder,
                                                              placeholder_density, visited)
                 if ratio_en_to_target:
                     return ratio_source_to_en * ratio_en_to_target
