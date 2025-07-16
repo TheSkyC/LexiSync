@@ -285,7 +285,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.help_menu = self.menuBar().addMenu(_("&Help"))
 
         # File Menu
-        self.action_open_code_file = QAction(_("Open Code File..."), self)
+        self.action_open_code_file = QAction(_("Open..."), self)
         self.action_open_code_file.triggered.connect(self.open_code_file_dialog)
         self.file_menu.addAction(self.action_open_code_file)
 
@@ -586,7 +586,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.help_menu.setTitle(_("&Help"))
 
         #File Menu
-        self.action_open_code_file.setText(_("Open Code File..."))
+        self.action_open_code_file.setText(_("Open..."))
         self.action_open_project.setText(_("Open Project..."))
         self.action_compare_new_version.setText(_("Compare/Import New Version..."))
         self.action_save_current_file.setText(_("Save"))
@@ -1556,15 +1556,27 @@ class OverwatchLocalizerApp(QMainWindow):
 
     def open_code_file_dialog(self):
         if not self.prompt_save_if_modified(): return
-
+        dialog_title = _("Open File")
+        file_filters = (
+                _("All Supported Files (*.ow *.txt *.po *.pot);;") +
+                _("Overwatch Workshop Files (*.ow *.txt);;") +
+                _("PO Translation Files (*.po *.pot);;") +
+                _("All Files (*.*)")
+        )
         filepath, selected_filter = QFileDialog.getOpenFileName(
             self,
-            _("Open Code File"),
+            dialog_title,
             self.config.get("last_dir", os.getcwd()),
-            _("Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)")
+            file_filters
         )
         if filepath:
-            self.open_code_file_path(filepath)
+            file_ext = filepath.lower().split('.')[-1]
+            if file_ext in ['ow', 'txt']:
+                self.open_code_file_path(filepath)
+            elif file_ext in ['po', 'pot']:
+                self.import_po_file_dialog_with_path(filepath)
+            else:
+                self.open_code_file_path(filepath)
 
     def open_code_file_path(self, filepath):
         if self.is_ai_translating_batch:
