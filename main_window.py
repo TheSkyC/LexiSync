@@ -2022,7 +2022,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.comment_status_panel.reviewed_checkbox.setEnabled(False)
 
         # 清空其他面板
-        self.context_panel.set_context([], -1, "")
+        self.context_panel.set_context([])
         self.tm_panel.update_tm_suggestions_for_text("", {})
         self.tm_panel.update_selected_tm_btn.setEnabled(False)
         self.tm_panel.clear_selected_tm_btn.setEnabled(False)
@@ -4030,7 +4030,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.comment_status_panel.reviewed_checkbox.setChecked(ts_obj.is_reviewed)
         self.comment_status_panel.highlighter.rehighlight()
 
-        self.context_panel.set_context(ts_obj.context_lines, ts_obj.current_line_in_context_idx, ts_obj.original_raw)
+        self.context_panel.set_context(ts_obj)
         self.schedule_tm_update(ts_obj.original_semantic)
         self._update_all_highlights()
 
