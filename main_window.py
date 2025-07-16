@@ -788,8 +788,15 @@ class OverwatchLocalizerApp(QMainWindow):
                 self.save_config()
                 if self.translatable_objects:
                     self.mark_project_modified()
-
-                self.update_statusbar(f"语言对已更新为: {self.source_language} -> {self.target_language}")
+                    self.update_statusbar(_("Language pair updated. Re-validating all entries..."), persistent=True)
+                    QApplication.processEvents()
+                    self._run_and_refresh_with_validation()
+                    self.update_statusbar(
+                        _("Validation complete. Language pair set to {src} -> {tgt}.").format(src=self.source_language,
+                                                                                              tgt=self.target_language))
+                else:
+                    self.update_statusbar(_("Language pair set to {src} -> {tgt}.").format(src=self.source_language,
+                                                                                           tgt=self.target_language))
 
     def show_keybinding_dialog(self):
         dialog = KeybindingDialog(self, _("Keybinding Settings"), self)
