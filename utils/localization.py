@@ -86,6 +86,29 @@ class LanguageManager(QObject):
             available.insert(0, self.default_lang)
         return sorted(available)
 
+    def get_language_name(self, lang_code):
+        full_name_map = {
+            'en_US': 'English',
+            'zh_CN': '简体中文',
+            'zh_TW': '繁體中文',
+            'ja_JP': '日本語',
+            'ko_KR': '한국어',
+            'fr_FR': 'Français',
+            'de_DE': 'Deutsch',
+            'ru_RU': 'Русский',
+            'es_ES': 'Español (España)',
+            'es_MX': 'Español (Latinoamérica)',
+            'pt_BR': 'Português (Brasil)',
+            'pt_PT': 'Português (Portugal)',
+            'it_IT': 'Italiano',
+            'pl_PL': 'Polski',
+            'tr_TR': 'Türkçe',
+            'ar_SA': 'العربية',
+        }
+        return full_name_map.get(lang_code, lang_code)
+
+    def get_available_languages_map(self):
+        return {code: self.get_language_name(code) for code in self.get_available_languages()}
 
 lang_manager = LanguageManager()
 _ = lambda s: lang_manager.get_translator()(s)

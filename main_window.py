@@ -39,7 +39,6 @@ from ui_components.custom_cell_delegate import CustomCellDelegate
 from ui_components.newline_text_edit import NewlineTextEdit
 from ui_components.custom_table_view import CustomTableView
 
-from dialogs.ai_settings_dialog import AISettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
 from dialogs.font_settings_dialog import FontSettingsDialog
 from dialogs.keybinding_dialog import KeybindingDialog
@@ -49,6 +48,7 @@ from dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
 from dialogs.prompt_manager_dialog import PromptManagerDialog
 from dialogs.diff_dialog import DiffDialog
 from dialogs.statistics_dialog import StatisticsDialog
+from dialogs.settings_dialog import SettingsDialog
 
 from services import language_service
 from services import export_service, po_file_service
@@ -123,6 +123,7 @@ class OverwatchLocalizerApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.config = config_manager.load_config()
+        self.lang_manager = lang_manager
         language_code = self.config.get('language')
         if not language_code:
             language_code = lang_manager.get_best_match_language()
@@ -426,12 +427,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.filter_actions['show_unreviewed'] = self.action_show_unreviewed
         self.view_menu.addSeparator()
 
-        self.action_toggle_static_sort = QAction(_("Static Sorting"), self, checkable=True)
-        self.action_toggle_static_sort.setChecked(self.use_static_sorting_var)
-        self.action_toggle_static_sort.triggered.connect(self._toggle_static_sorting_mode)
-        self.view_menu.addAction(self.action_toggle_static_sort)
-        self.view_menu.addSeparator()
-
         self.action_toggle_details_panel = QAction(_("Edit && Details Panel"), self, checkable=True)
         self.view_menu.addAction(self.action_toggle_details_panel)
 
@@ -455,11 +450,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_apply_tm_to_untranslated.setEnabled(False)
         self.tools_menu.addAction(self.action_apply_tm_to_untranslated)
 
-        self.action_clear_tm_in_memory = QAction(_("Clear TM (in-memory)"), self)
-        self.action_clear_tm_in_memory.triggered.connect(self.clear_entire_translation_memory)
-        self.tools_menu.addAction(self.action_clear_tm_in_memory)
-        self.tools_menu.addSeparator()
-
         self.action_ai_translate_selected = QAction(_("AI Translate Selected"), self)
         self.action_ai_translate_selected.triggered.connect(self.cm_ai_translate_selected)
         self.action_ai_translate_selected.setEnabled(False)
@@ -476,20 +466,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.tools_menu.addAction(self.action_stop_ai_batch_translation)
         self.tools_menu.addSeparator()
 
-        self.action_project_instructions = QAction(_("Project-specific Instructions..."), self)
-        self.action_project_instructions.triggered.connect(self.show_project_custom_instructions_dialog)
-        self.action_project_instructions.setEnabled(False)
-        self.tools_menu.addAction(self.action_project_instructions)
-
-        self.action_ai_settings = QAction(_("AI Settings..."), self)
-        self.action_ai_settings.triggered.connect(self.show_ai_settings_dialog)
-        self.tools_menu.addAction(self.action_ai_settings)
-        self.tools_menu.addSeparator()
-
-        self.action_extraction_rule_manager = QAction(_("Extraction Rule Manager..."), self)
-        self.action_extraction_rule_manager.triggered.connect(self.show_extraction_pattern_dialog)
-        self.tools_menu.addAction(self.action_extraction_rule_manager)
-
         self.action_reload_translatable_text = QAction(_("Reload Translatable Text"), self)
         self.action_reload_translatable_text.triggered.connect(self.reload_translatable_text)
         self.action_reload_translatable_text.setEnabled(False)
@@ -501,42 +477,16 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_show_statistics.setEnabled(False)
         self.tools_menu.addAction(self.action_show_statistics)
 
-
         # Settings Menu
-        self.action_auto_backup_tm = QAction(_("Auto-backup TM on Save"), self, checkable=True)
-        self.action_auto_backup_tm.setChecked(self.auto_backup_tm_on_save_var)
-        self.action_auto_backup_tm.triggered.connect(
-            lambda: self.set_config_var('auto_backup_tm_on_save', self.action_auto_backup_tm.isChecked()))
-        self.settings_menu.addAction(self.action_auto_backup_tm)
-
-        self.action_auto_compile_mo = QAction(_("Auto-compile MO on Save"), self, checkable=True)
-        self.action_auto_compile_mo.setChecked(self.auto_compile_mo_var)
-        self.action_auto_compile_mo.triggered.connect(
-            lambda: self.set_config_var('auto_compile_mo_on_save', self.action_auto_compile_mo.isChecked())
-        )
-        self.settings_menu.addAction(self.action_auto_compile_mo)
-
-        self.action_set_auto_save_interval = QAction(_("Auto-save Interval..."), self)
-        self.action_set_auto_save_interval.triggered.connect(self.show_auto_save_interval_dialog)
-        self.settings_menu.addAction(self.action_set_auto_save_interval)
+        self.action_show_settings = QAction(_("Settings..."), self)
+        self.action_show_settings.triggered.connect(self.show_settings_dialog)
+        self.settings_menu.addAction(self.action_show_settings)
 
         self.settings_menu.addSeparator()
+
         self.action_language_pair_settings = QAction(_("Language Pair Settings..."), self)
         self.action_language_pair_settings.triggered.connect(self.show_language_pair_dialog)
         self.settings_menu.addAction(self.action_language_pair_settings)
-
-        self.language_menu = self.settings_menu.addMenu(_("Language"))
-        self.language_action_group = QActionGroup(self)
-        self.language_action_group.setExclusive(True)
-        self.setup_language_menu()
-
-        self.action_keybinding_settings = QAction(_("Keybinding Settings..."), self)
-        self.action_keybinding_settings.triggered.connect(self.show_keybinding_dialog)
-        self.settings_menu.addAction(self.action_keybinding_settings)
-
-        self.action_font_settings = QAction(_("Font Settings..."), self)
-        self.action_font_settings.triggered.connect(self.show_font_settings_dialog)
-        self.settings_menu.addAction(self.action_font_settings)
 
         # Help Menu
         self.action_about = QAction(_("About"), self)
@@ -623,7 +573,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_show_untranslated.setText(_("Show Untranslated"))
         self.action_show_translated.setText(_("Show Translated"))
         self.action_show_unreviewed.setText(_("Show Unreviewed"))
-        self.action_toggle_static_sort.setText(_("Static Sorting"))
         self.action_toggle_details_panel.setText(_("Edit && Details Panel"))
         self.action_toggle_comment_status_panel.setText(_("Comment && Status Panel"))
         self.action_toggle_context_panel.setText(_("Context Preview Panel"))
@@ -632,24 +581,15 @@ class OverwatchLocalizerApp(QMainWindow):
 
         #Tools Menu
         self.action_apply_tm_to_untranslated.setText(_("Apply TM to Untranslated"))
-        self.action_clear_tm_in_memory.setText(_("Clear TM (in-memory)"))
         self.action_ai_translate_selected.setText(_("AI Translate Selected"))
         self.action_ai_translate_all_untranslated.setText(_("AI Translate All Untranslated"))
         self.action_stop_ai_batch_translation.setText(_("Stop AI Batch Translation"))
-        self.action_project_instructions.setText(_("Project-specific Instructions..."))
-        self.action_ai_settings.setText(_("AI Settings..."))
-        self.action_extraction_rule_manager.setText(_("Extraction Rule Manager..."))
         self.action_reload_translatable_text.setText(_("Reload Translatable Text"))
         self.action_show_statistics.setText(_("Project Statistics..."))
 
         #Settings Menu
-        self.action_auto_backup_tm.setText(_("Auto-backup TM on Save"))
-        self.action_auto_compile_mo.setText(_("Auto-compile MO on Save"))
-        self.action_set_auto_save_interval.setText(_("Auto-save Interval..."))
+        self.action_show_settings.setText(_("Settings..."))
         self.action_language_pair_settings.setText(_("Language Pair Settings..."))
-        self.language_menu.setTitle(_("Language"))
-        self.action_keybinding_settings.setText(_("Keybinding Settings..."))
-        self.action_font_settings.setText(_("Font Settings..."))
 
         #Help Menu
         self.action_about.setText(_("About"))
@@ -1213,7 +1153,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_redo.setEnabled(bool(self.redo_history))
 
         self.action_apply_tm_to_untranslated.setEnabled(has_content)
-        self.action_project_instructions.setEnabled(self.current_project_file_path is not None)
         self.action_reload_translatable_text.setEnabled(
             bool(self.original_raw_code_content or self.current_code_file_path))
         self.action_show_statistics.setEnabled(has_content)
@@ -1230,7 +1169,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_ai_translate_selected.setEnabled(can_start_ai_ops and item_selected)
         self.action_ai_translate_all_untranslated.setEnabled(can_start_ai_ops)
         self.action_stop_ai_batch_translation.setEnabled(self.is_ai_translating_batch)
-        self.action_ai_settings.setEnabled(ai_available)
 
         self.details_panel.ai_translate_current_btn.setEnabled(can_start_ai_ops and item_selected)
 
@@ -3408,13 +3346,12 @@ class OverwatchLocalizerApp(QMainWindow):
             self.mark_project_modified()
             self.update_statusbar(_("Project-specific translation settings updated."))
 
-    def show_ai_settings_dialog(self):
-        if not requests:
-            QMessageBox.critical(self, _("Feature Unavailable"),
-                                 _("The 'requests' library is not installed, AI translation is unavailable.\nPlease run: pip install requests"))
-            return
-        target_language_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == self.target_language), self.target_language)
-        dialog = AISettingsDialog(self, _("AI Settings"), self.config, self.save_config, self.ai_translator, self, target_language_name)
+    def show_prompt_manager(self):
+        dialog = PromptManagerDialog(self, _("AI Prompt Manager"), self)
+        dialog.exec()
+
+    def show_settings_dialog(self):
+        dialog = SettingsDialog(self)
         dialog.exec()
 
     def _check_ai_prerequisites(self, show_error=True):
