@@ -91,7 +91,7 @@ jobs:
     - name: Build with PyInstaller
       shell: bash
       run: |
-        echo "Preparing clean locales directory for packaging..."
+        echo "Preparing locales directory for packaging..."
         python -c "
         import os, shutil
         source_dir = 'locales'
@@ -119,6 +119,18 @@ jobs:
             shutil.copytree(source_dir, target_dir)
         "
         
+        echo "Preparing plugins directory for packaging..."
+        python -c "
+        import os, shutil
+        source_dir = 'plugins'
+        target_dir = 'dist_plugins'
+        if os.path.exists(target_dir):
+            shutil.rmtree(target_dir)
+        if os.path.exists(source_dir):
+            shutil.copytree(source_dir, target_dir)
+        "
+        
+        echo "Building for ${{ matrix.os_name }}..."
         DATA_SEPARATOR=':'
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           DATA_SEPARATOR=';'
@@ -132,6 +144,7 @@ jobs:
           --noconfirm \
           --add-data "dist_locales${DATA_SEPARATOR}locales" \
           --add-data "dist_expansion_data${DATA_SEPARATOR}expansion_data" \
+          --add-data "dist_plugins${DATA_SEPARATOR}plugins" \
           --exclude-module Qt6Network \
           --exclude-module Qt6Sql \
           --exclude-module Qt6Test \
