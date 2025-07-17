@@ -1017,6 +1017,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         # DetailsPanel
         self.details_dock = QDockWidget(_("Edit && Details"), self)
+        self.details_dock.setObjectName("detailsDock")
         self.details_dock.setWidget(self.details_panel)
         self.details_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
@@ -1025,6 +1026,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         # ContextPanel
         self.context_dock = QDockWidget(_("Context Preview"), self)
+        self.context_dock.setObjectName("contextDock")
         self.context_dock.setWidget(self.context_panel)
         self.context_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
@@ -1033,6 +1035,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         # TMPanel
         self.tm_dock = QDockWidget(_("Translation Memory Matches"), self)
+        self.tm_dock.setObjectName("tmDock")
         self.tm_dock.setWidget(self.tm_panel)
         self.tm_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
@@ -1042,6 +1045,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         # CommentStatusPanel
         self.comment_status_dock = QDockWidget(_("Comment && Status"), self)
+        self.comment_status_dock.setObjectName("commentDock")
         self.comment_status_dock.setWidget(self.comment_status_panel)
         self.comment_status_dock.setFeatures(
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
@@ -1449,11 +1453,6 @@ class OverwatchLocalizerApp(QMainWindow):
     def restore_window_state(self):
         if "window_state" in self.config and self.config["window_state"]:
             self.restoreState(QByteArray.fromBase64(self.config["window_state"].encode('utf-8')))
-        if hasattr(self, 'details_dock') and self.details_dock:
-            main_width = self.size().width()
-            initial_dock_width = int(main_width * 0.25)
-            initial_dock_width = max(300, min(initial_dock_width, 500))
-            self.resizeDocks([self.details_dock], [initial_dock_width], Qt.Horizontal)
 
 
     def add_to_recent_files(self, filepath):

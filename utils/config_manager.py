@@ -52,37 +52,34 @@ def load_config():
     config_data.setdefault("ai_use_original_context", True)
     config_data.setdefault("ai_original_context_neighbors", 3)
 
-    # Prompt structure (ensure deepcopy to avoid modifying default directly)
+    # Prompt structure
     config_data.setdefault("ai_prompt_structure", deepcopy(DEFAULT_PROMPT_STRUCTURE))
     config_data.pop("ai_prompt_template", None) # Remove old key if exists
 
-    # Extraction patterns (ensure deepcopy)
+    # Extraction patterns
     config_data.setdefault("extraction_patterns", deepcopy(DEFAULT_EXTRACTION_PATTERNS))
 
-    # Keybindings (merge with defaults to add new ones)
+    # Keybindings
     if 'keybindings' not in config_data:
         config_data['keybindings'] = DEFAULT_KEYBINDINGS.copy()
     else:
-        # Add any new default keybindings that might be missing in existing config
         for key, value in DEFAULT_KEYBINDINGS.items():
             config_data['keybindings'].setdefault(key, value)
 
-    # Font settings (merge with defaults)
+    # Font settings
     default_fonts = get_default_font_settings()
     if "font_settings" not in config_data:
         config_data["font_settings"] = default_fonts
     else:
-        # Ensure all sub-keys are present
         config_data["font_settings"].setdefault("override_default_fonts", default_fonts["override_default_fonts"])
         config_data["font_settings"].setdefault("scripts", default_fonts["scripts"])
         config_data["font_settings"].setdefault("code_context", default_fonts["code_context"])
         for script, settings in default_fonts["scripts"].items():
             config_data["font_settings"]["scripts"].setdefault(script, settings)
-        # Ensure code_context settings are complete
         for key, value in default_fonts["code_context"].items():
             config_data["font_settings"]["code_context"].setdefault(key, value)
 
-    # Window state (for PySide6)
+    # Window state
     config_data.setdefault("window_state", "")
     config_data.setdefault("window_geometry", "")
 
