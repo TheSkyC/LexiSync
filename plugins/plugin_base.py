@@ -126,10 +126,12 @@ class PluginBase(ABC):
         """
         return text
 
-    def add_menu_items(self) -> list[tuple[str, callable]]:
+    def add_menu_items(self) -> list:
         """
-        Return a list of tuples to add to the Plugins menu.
-        Format: [("Menu Item Name", callback_function), ...]
+        Return a list of menu items to be added to the Plugins menu.
+        The format can be:
+        - ('Menu Item Name', callback_function) for a simple action.
+        - ('Submenu Name', [('Action 1', callback1), ('Action 2', callback2)]) for a submenu.
         """
         return []
 

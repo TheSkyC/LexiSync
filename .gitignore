@@ -45,6 +45,7 @@ ow_translator_tm.xlsx
 *.owprompt
 manage_translations.py
 babel.cfg
+plugins/*/config.json
 
 .DS_Store
 Thumbs.db

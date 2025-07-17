@@ -8,7 +8,7 @@ from plugins.com_theskyc_pseudo.preview_dialog import PreviewDialog
 import re
 import logging
 
-class EnhancedPseudoLocalizationPlugin(PluginBase):
+class PseudoLocalizationPlugin(PluginBase):
     def __init__(self):
         super().__init__()
         self.logger = logging.getLogger(__name__)
@@ -32,35 +32,32 @@ class EnhancedPseudoLocalizationPlugin(PluginBase):
         return self._("Pseudo-Localization")
 
     def description(self) -> str:
-        return self._("An advanced pseudo-localization plugin with multiple modes and extensive customization.")
+        return self._("An pseudo-localization plugin with multiple modes and extensive customization.")
+
+    def version(self) -> str:
+        return "1.0.1"
 
     def author(self) -> str:
         return "TheSkyC"
 
+    def url(self) -> str:
+        return "https://github.com/TheSkyC/overwatch-localizer/tree/master/plugins/com_theskyc_pseudo"
+
     def compatible_app_version(self) -> str:
-        return "1.2"
+        return "1.1"
 
-    def add_menu_items(self) -> list[tuple[str, callable]]:
-        pseudo_menu = self.main_window.plugin_menu.addMenu(self.name())
+    def add_menu_items(self) -> list:
+        submenu_items = [
+            (self._("Apply to Selected"), self.apply_to_selected),
+            (self._("Preview on Selected"), self.preview_selected),
+            (self._("Clear Translation for Selected"), self.clear_selected_translation),
+            '---',
+            (self._("Settings..."), self.show_settings_dialog)
+        ]
 
-        apply_action = pseudo_menu.addAction(self._("Apply to Selected"))
-        apply_action.triggered.connect(self.apply_to_selected)
-
-        copy_original_action = pseudo_menu.addAction(self._("Copy Original to Translation"))
-        copy_original_action.triggered.connect(self.copy_original_to_translation)
-
-        preview_action = pseudo_menu.addAction(self._("Preview on Selected"))
-        preview_action.triggered.connect(self.preview_selected)
-
-        clear_action = pseudo_menu.addAction(self._("Clear Translation for Selected"))
-        clear_action.triggered.connect(self.clear_selected_translation)
-
-        pseudo_menu.addSeparator()
-
-        settings_action = pseudo_menu.addAction(self._("Settings..."))
-        settings_action.triggered.connect(self.show_settings_dialog)
-
-        return []
+        return [
+            (self.name(), submenu_items)
+        ]
 
     def apply_to_selected(self):
         selected_objs = self.main_window._get_selected_ts_objects_from_sheet()
@@ -127,20 +124,11 @@ class EnhancedPseudoLocalizationPlugin(PluginBase):
             self.main_window.update_statusbar(self._("Pseudo-localization settings updated."))
 
     def process_string_for_save(self, text: str, ts_object, column: str) -> str:
-        # --- 这是核心修改：钩子现在会检查开关状态 ---
         if not self.config.get('auto_pseudo_on_apply', False):
-            # 如果自动伪本地化功能被关闭，钩子直接返回原文，什么都不做
             return text
-
-        # 如果功能开启，则执行伪本地化
         return self._do_pseudo_localization(text)
-        # --- 结束修改 ---
 
     def _do_pseudo_localization(self, text: str) -> str:
-        """
-        The actual processing logic, extracted into a separate method.
-        This can be called directly by menu actions or by the hook.
-        """
         if not text or not text.strip():
             return text
 

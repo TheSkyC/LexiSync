@@ -9,6 +9,7 @@ import logging
 from PySide6.QtWidgets import QMessageBox
 from plugins.plugin_base import PluginBase
 from plugins.plugin_dialog import PluginManagerDialog
+from utils.constants import APP_VERSION
 from utils.localization import _
 
 
@@ -19,14 +20,30 @@ class PluginManager:
         self.translators = {}
         self.plugin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
         self.logger = logging.getLogger(__name__)
+        self.incompatible_plugins = {}
 
         self._enabled_plugins_cache = None
         self._cache_valid = False
 
         self.load_plugins()
 
+    def _is_version_compatible(self, app_version, required_prefix):
+        if not required_prefix:
+            return True
+        app_parts = app_version.split('.')
+        req_parts = required_prefix.split('.')
+
+        if len(req_parts) > len(app_parts):
+            return False
+
+        for i in range(len(req_parts)):
+            if app_parts[i] != req_parts[i]:
+                return False
+        return True
+
     def load_plugins(self):
         self.plugins = []
+        self.incompatible_plugins = {}
         self._cache_valid = False
         if not os.path.isdir(self.plugin_dir):
             self.logger.warning(f"Plugin directory not found: {self.plugin_dir}")
@@ -46,6 +63,19 @@ class PluginManager:
             sorted_instances = self._sort_and_instantiate_plugins(plugin_specs)
             self.plugins = sorted_instances
             for instance in self.plugins:
+                required_version = instance.compatible_app_version()
+                if not self._is_version_compatible(APP_VERSION, required_version):
+                    self.logger.warning(
+                        f"Plugin '{instance.name()}' (ID: {instance.plugin_id()}) is not compatible with app version {APP_VERSION}. "
+                        f"Requires: {required_version}. Disabling it."
+                    )
+                    self.incompatible_plugins[instance.plugin_id()] = {
+                        "name": instance.name(),
+                        "required": required_version,
+                        "current": APP_VERSION
+                    }
+                    continue
+
                 self.setup_plugin_translation(instance.plugin_id())
                 instance.setup(self.main_window, self)
                 self.logger.info(
@@ -69,7 +99,6 @@ class PluginManager:
         return None
 
     def _sort_and_instantiate_plugins(self, plugin_specs):
-        # 拓扑排序
         from collections import defaultdict
         dep_graph = {spec['id']: set(spec['deps']) for spec in plugin_specs}
         in_degree = defaultdict(int)
@@ -130,7 +159,6 @@ class PluginManager:
     def get_enabled_plugins(self):
         if not self._cache_valid or self._enabled_plugins_cache is None:
             enabled_ids = self.main_window.config.get('enabled_plugins', [])
-            # 插件已按依赖顺序排序，此处直接过滤即可
             self._enabled_plugins_cache = [p for p in self.plugins if p.plugin_id() in enabled_ids]
             self._cache_valid = True
         return self._enabled_plugins_cache
@@ -187,20 +215,49 @@ class PluginManager:
         if not hasattr(self.main_window, 'plugin_menu'):
             self.main_window.plugin_menu = self.main_window.menuBar().addMenu(_("&Plugins"))
         self.main_window.plugin_menu.clear()
-
         manage_action = self.main_window.plugin_menu.addAction(_("Manage Plugins..."))
         manage_action.triggered.connect(self.show_plugin_manager_dialog)
-        self.main_window.plugin_menu.addSeparator()
+        if self.get_enabled_plugins():
+            self.main_window.plugin_menu.addSeparator()
 
         for plugin in self.get_enabled_plugins():
             if hasattr(plugin, 'add_menu_items'):
                 items = plugin.add_menu_items()
                 if items:
-                    for name, callback in items:
-                        action = self.main_window.plugin_menu.addAction(name)
-                        action.triggered.connect(callback)
+                    self._create_menu_from_structure(self.main_window.plugin_menu, items)
+
+    def _create_menu_from_structure(self, parent_menu, structure):
+        for item in structure:
+            if isinstance(item, str) and item == '---':
+                parent_menu.addSeparator()
+                continue
+            if not isinstance(item, tuple) or len(item) != 2:
+                continue
+            name, action = item
+            if isinstance(action, list):
+                submenu = parent_menu.addMenu(name)
+                self._create_menu_from_structure(submenu, action)
+            elif callable(action):
+                menu_action = parent_menu.addAction(name)
+                menu_action.triggered.connect(action)
 
     def show_plugin_manager_dialog(self):
         dialog = PluginManagerDialog(self.main_window, self)
         dialog.exec()
         self.setup_plugin_ui()
+
+    def is_dependency_for_others(self, plugin_id_to_check: str) -> bool:
+        dependent_plugins = []
+        for p in self.get_enabled_plugins():
+            if plugin_id_to_check in p.dependencies():
+                dependent_plugins.append(p.name())
+
+        if dependent_plugins:
+            plugin_to_disable = self.get_plugin(plugin_id_to_check)
+            msg = _("Cannot disable '{plugin_name}'.\nThe following enabled plugins depend on it:\n\n- {deps}").format(
+                plugin_name=plugin_to_disable.name(),
+                deps="\n- ".join(dependent_plugins)
+            )
+            QMessageBox.warning(self.main_window, _("Dependency Error"), msg)
+            return True
+        return False
