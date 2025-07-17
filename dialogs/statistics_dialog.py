@@ -30,24 +30,20 @@ class StatisticsCalculationThread(QThread):
             self.calculation_finished.emit({})
             return
 
-        # --- 核心修改点: 重新分配进度权重 ---
-
-        # 阶段1: 初始化 (分配 5% 的进度)
+        # 初始化 5%
         self.progress_updated.emit(2, _("Initializing..."))
         self._initialize_statistics(total_items)
         time.sleep(0.05)  # 短暂休眠让UI有机会刷新
         self.progress_updated.emit(5, _("Initialization complete."))
 
-        # 阶段2: 核心处理 (分配 90% 的进度)
+        # 核心处理 90%
         self._process_translatable_objects(total_items)
 
-        # 阶段3: 完成 (分配 5% 的进度)
+        # 完成 5%
         time.sleep(0.05)
         self.progress_updated.emit(98, _("Finalizing..."))
         time.sleep(0.05)
         self.progress_updated.emit(100, _("Calculation finished."))
-
-        # 最后才发射完成信号
         self.calculation_finished.emit(self.statistics)
 
     def _initialize_statistics(self, total_items):
@@ -65,20 +61,14 @@ class StatisticsCalculationThread(QThread):
         }
 
     def _process_translatable_objects(self, total_items):
-        # 这个阶段的进度从 5% 开始，到 95% 结束，总共占据 90%
         base_progress = 5
         progress_range = 90
 
         for i, ts_obj in enumerate(self.translatable_objects):
-            # --- 核心修改点: 更平滑的进度计算 ---
-            # 每处理一定数量的条目就更新一次进度，而不是按百分比
-            update_interval = max(1, total_items // 100)  # 大约更新100次
+            update_interval = max(1, total_items // 100)
             if (i + 1) % update_interval == 0 or (i + 1) == total_items:
-                # 计算当前在 90% 范围内的进度
                 current_progress_in_range = progress_range * ((i + 1) / total_items)
-                # 加上基础进度
                 total_progress = int(base_progress + current_progress_in_range)
-
                 status = _("Processing item {i}/{total}...").format(i=i + 1, total=total_items)
                 self.progress_updated.emit(total_progress, status)
 

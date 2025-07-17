@@ -64,7 +64,7 @@ class ExtractionPatternManagerDialog(QDialog):
         self.tree.header().setSectionResizeMode(3, QHeaderView.Stretch)
         self.tree.header().setSectionResizeMode(4, QHeaderView.Stretch)
         self.tree.setSelectionBehavior(QTreeWidget.SelectRows)
-        self.tree.setDragDropMode(QTreeWidget.InternalMove) # Enable drag and drop reordering
+        self.tree.setDragDropMode(QTreeWidget.InternalMove)
         self.tree.itemDoubleClicked.connect(self.edit_item)
         main_layout.addWidget(self.tree)
 
@@ -93,8 +93,8 @@ class ExtractionPatternManagerDialog(QDialog):
                 pattern.get("left_delimiter", ""),
                 pattern.get("right_delimiter", "")
             ])
-            item.setData(0, Qt.UserRole, pattern["id"]) # Store ID in UserRole
-            item.setFlags(item.flags() | Qt.ItemIsEditable) # Make items editable for drag/drop
+            item.setData(0, Qt.UserRole, pattern["id"])
+            item.setFlags(item.flags() | Qt.ItemIsEditable)
             self.tree.addTopLevelItem(item)
 
     def get_current_order_from_tree(self):
@@ -102,7 +102,6 @@ class ExtractionPatternManagerDialog(QDialog):
         for i in range(self.tree.topLevelItemCount()):
             item = self.tree.topLevelItem(i)
             item_id = item.data(0, Qt.UserRole)
-            # Find the original pattern object by ID
             original_pattern = next((p for p in self.patterns_buffer if p["id"] == item_id), None)
             if original_pattern:
                 new_order.append(original_pattern)
@@ -122,7 +121,6 @@ class ExtractionPatternManagerDialog(QDialog):
         if dialog.exec():
             self.patterns_buffer.append(dialog.result)
             self.populate_tree()
-            # Select and scroll to the new item
             for i in range(self.tree.topLevelItemCount()):
                 item = self.tree.topLevelItem(i)
                 if item.data(0, Qt.UserRole) == dialog.result["id"]:
@@ -163,7 +161,7 @@ class ExtractionPatternManagerDialog(QDialog):
         filepath, selected_filter = QFileDialog.getOpenFileName(
             self,
             _("Import Extraction Rule Preset"),
-            "", # Default directory
+            "",
             _("Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)").format(ext=EXTRACTION_PATTERN_PRESET_EXTENSION)
         )
         if not filepath: return

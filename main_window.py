@@ -496,34 +496,6 @@ class OverwatchLocalizerApp(QMainWindow):
         # Plugins Menu
         self.plugin_manager.setup_plugin_ui()
 
-    def setup_language_menu(self):
-        self.language_menu.clear()
-        available_langs = lang_manager.get_available_languages()
-        for lang_code in available_langs:
-            lang_name = {
-                'en_US': 'English',
-                'zh_CN': '简体中文',
-                'zh_TW': '繁體中文',
-                'ja_JP': '日本語',
-                'ko_KR': '한국어',
-                'fr_FR': 'le français',
-                'de_DE': 'Deutsch',
-                'ru_RU': 'русский язык',
-                'es_ES': 'español (España)',
-                'es_MX': 'español (Latinoamérica)',
-                'pt_BR': 'português (Brasil)',
-                'pt_PT': 'português (Portugal)',
-                'it_IT': 'italiano',
-                'pl_PL': 'polski',
-                'tr_TR': 'Türkçe',
-                'ar_SA': 'العربية',
-            }.get(lang_code, lang_code)
-            action = QAction(lang_name, self, checkable=True)
-            action.setChecked(lang_code == self.config.get('language'))
-            action.triggered.connect(lambda checked, lc=lang_code: self.change_language(lc))
-            self.language_menu.addAction(action)
-            self.language_action_group.addAction(action)
-
     def setup_auto_save_timer(self):
         if self.auto_save_interval_sec > 0:
             self.auto_save_timer.start(self.auto_save_interval_sec * 1000)

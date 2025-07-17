@@ -49,6 +49,7 @@ class PseudoLocalizationPlugin(PluginBase):
     def add_menu_items(self) -> list:
         submenu_items = [
             (self._("Apply to Selected"), self.apply_to_selected),
+            (self._("Copy Original to Translation"), self.copy_original_to_translation),
             (self._("Preview on Selected"), self.preview_selected),
             (self._("Clear Translation for Selected"), self.clear_selected_translation),
             '---',
