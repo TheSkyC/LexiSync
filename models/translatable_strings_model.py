@@ -35,6 +35,21 @@ class TranslatableStringsModel(QAbstractTableModel):
         row, col = index.row(), index.column()
         if row >= len(self._data): return None
         ts_obj = self._data[row]
+        original_display_text = None
+        if role == Qt.DisplayRole:
+            if col == 2:
+                original_display_text = ts_obj.original_semantic
+            elif col == 3:
+                original_display_text = ts_obj.get_translation_for_ui()
+
+            if original_display_text is not None:
+                column_name = 'original' if col == 2 else 'translation'
+                display_text = self.app_instance.plugin_manager.run_hook(
+                    'process_string_for_display',
+                    original_display_text,
+                    ts_object=ts_obj,
+                    column=column_name
+                )
         if role == Qt.BackgroundRole:
             return ts_obj.ui_style_cache.get('background')
 
@@ -64,9 +79,9 @@ class TranslatableStringsModel(QAbstractTableModel):
                 else:
                     return "U"
             elif col == 2:
-                return ts_obj.original_semantic
+                return display_text
             elif col == 3:
-                return ts_obj.get_translation_for_ui()
+                return display_text
             elif col == 4:
                 return ts_obj.comment
             elif col == 5:

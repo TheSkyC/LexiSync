@@ -30,6 +30,7 @@ from PySide6.QtGui import QAction, QKeySequence, QFont, QFontDatabase,QPalette, 
 
 from models.translatable_string import TranslatableString
 from models.translatable_strings_model import TranslatableStringsModel, TranslatableStringsProxyModel
+from plugins.plugin_manager import PluginManager
 from ui_components.details_panel import DetailsPanel
 from ui_components.comment_status_panel import CommentStatusPanel
 from ui_components.context_panel import ContextPanel
@@ -238,6 +239,8 @@ class OverwatchLocalizerApp(QMainWindow):
 
         self.language_changed.connect(self.update_ui_texts)
         self.setAcceptDrops(True)
+
+        self.plugin_manager = PluginManager(self)
 
         self.UI_initialization()
         ExpansionRatioService.initialize()
@@ -539,6 +542,9 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_about = QAction(_("About"), self)
         self.action_about.triggered.connect(self.about)
         self.help_menu.addAction(self.action_about)
+
+        # Plugins Menu
+        self.plugin_manager.setup_plugin_ui()
 
     def setup_language_menu(self):
         self.language_menu.clear()
@@ -853,6 +859,7 @@ class OverwatchLocalizerApp(QMainWindow):
             lang_manager.setup_translation(new_lang_code)
             self.save_config()
             self.language_changed.emit()
+            self.plugin_manager.on_main_app_language_changed()
 
     def _setup_main_layout(self):
         central_widget = QWidget()
@@ -1599,6 +1606,7 @@ class OverwatchLocalizerApp(QMainWindow):
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
             self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
                                                                      extraction_patterns)
+            self.plugin_manager.run_hook('on_project_loaded', self.translatable_objects)
             detected_lang = language_service.detect_source_language([ts.original_semantic for ts in self.translatable_objects])
             self.source_language = detected_lang
             self.target_language = self.config.get("default_target_language", "zh")
@@ -1647,6 +1655,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.current_code_file_path = loaded_data["original_code_file_path"]
             self.original_raw_code_content = loaded_data["original_raw_code_content"]
             self.translatable_objects = loaded_data["translatable_objects"]
+            self.plugin_manager.run_hook('on_project_loaded', self.translatable_objects)
             self.source_language = loaded_data["source_language"]
             self.target_language = loaded_data["target_language"]
             self.current_po_metadata = project_data.get("po_metadata")
@@ -2098,12 +2107,18 @@ class OverwatchLocalizerApp(QMainWindow):
         self._run_and_refresh_with_validation()
 
     def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual"):
-        if new_translation_from_ui == ts_obj.translation:
-            return False
+        processed_translation = self.plugin_manager.run_hook(
+            'process_string_for_save',
+            new_translation_from_ui,
+            ts_object=ts_obj,
+            column='translation'
+        )
+        if processed_translation == ts_obj.translation:
+            return processed_translation, False
         old_translation_for_undo = ts_obj.get_translation_for_storage_and_tm()
         ids_to_update = {ts_obj.id}
         all_changes_for_undo_list = []
-        ts_obj.set_translation_internal(new_translation_from_ui)
+        ts_obj.set_translation_internal(processed_translation)
         new_translation_for_tm_storage = ts_obj.get_translation_for_storage_and_tm()
         primary_change_data = {
             'string_id': ts_obj.id, 'field': 'translation',
@@ -2150,7 +2165,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.tm_panel.update_tm_suggestions_for_text(ts_obj.original_semantic, self.translation_memory)
 
         self.mark_project_modified()
-        return True
+        return processed_translation, True
 
     def apply_translation_from_button(self):
         if not self.current_selected_ts_id: return
@@ -2180,7 +2195,11 @@ class OverwatchLocalizerApp(QMainWindow):
         if not ts_obj: return
 
         new_translation_ui = self.details_panel.translation_edit_text.toPlainText()
-        self._apply_translation_to_model(ts_obj, new_translation_ui, source="manual_button")
+        final_text, changed = self._apply_translation_to_model(ts_obj, new_translation_ui, source="manual_button")
+        if changed:
+            self.details_panel.translation_edit_text.blockSignals(True)
+            self.details_panel.translation_edit_text.setPlainText(final_text)
+            self.details_panel.translation_edit_text.blockSignals(False)
 
     def apply_translation_focus_out(self):
         if not self.current_selected_ts_id: return
@@ -2190,7 +2209,11 @@ class OverwatchLocalizerApp(QMainWindow):
 
         new_translation_ui = self.details_panel.translation_edit_text.toPlainText()
         if new_translation_ui != ts_obj.get_translation_for_ui():
-            self._apply_translation_to_model(ts_obj, new_translation_ui, source="manual_focus_out")
+            final_text, changed = self._apply_translation_to_model(ts_obj, new_translation_ui, source="manual_focus_out")
+            if changed:
+                self.details_panel.translation_edit_text.blockSignals(True)
+                self.details_panel.translation_edit_text.setPlainText(final_text)
+                self.details_panel.translation_edit_text.blockSignals(False)
 
     def _save_comment_from_ui(self):
         if not self.current_selected_ts_id: return False
