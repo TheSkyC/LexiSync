@@ -207,9 +207,15 @@ class PluginManager:
                     self.logger.error(f"Error in plugin '{plugin.plugin_id()}' hook '{hook_name}': {e}", exc_info=True)
 
     def on_main_app_language_changed(self):
+        self.logger.info(f"Main app language changed. Reloading all plugins to apply new language...")
         for plugin in self.plugins:
-            self.setup_plugin_translation(plugin.plugin_id())
-        self.setup_plugin_ui()
+            try:
+                plugin.teardown()
+            except Exception as e:
+                self.logger.error(f"Error during teardown of plugin {plugin.plugin_id()}: {e}", exc_info=True)
+        self.plugins.clear()
+        self.translators.clear()
+        self.load_plugins()
 
     def setup_plugin_ui(self):
         if not hasattr(self.main_window, 'plugin_menu') or self.main_window.plugin_menu is None:

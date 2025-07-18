@@ -601,6 +601,8 @@ class OverwatchLocalizerApp(QMainWindow):
         self.comment_status_panel.update_ui_texts()
         self.context_panel.update_ui_texts()
         self.tm_panel.update_ui_texts()
+        if hasattr(self, 'plugin_manager'):
+            self.plugin_manager.setup_plugin_ui()
 
         self.update_statusbar(_("Ready"), persistent=True)
         self.update_counts_display()
@@ -772,10 +774,11 @@ class OverwatchLocalizerApp(QMainWindow):
     def change_language(self, new_lang_code):
         if new_lang_code != self.config.get('language'):
             self.config['language'] = new_lang_code
-            lang_manager.setup_translation(new_lang_code)
+            self.lang_manager.setup_translation(new_lang_code)
             self.save_config()
+            if hasattr(self, 'plugin_manager'):
+                self.plugin_manager.on_main_app_language_changed()
             self.language_changed.emit()
-            self.plugin_manager.on_main_app_language_changed()
 
     def _setup_main_layout(self):
         central_widget = QWidget()
