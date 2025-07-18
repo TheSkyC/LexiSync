@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
-"POT-Creation-Date: 2025-07-16 05:35+0000\n"
+"POT-Creation-Date: 2025-07-18 02:04+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,31 +18,39 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: main_window.py:4027 ui_components/comment_status_panel.py:79
+#: main_window.py:3977 ui_components/comment_status_panel.py:79
 msgid " (Auto)"
 msgstr ""
 
-#: main_window.py:281 main_window.py:582
+#: dialogs/settings_pages.py:110
+msgid " s"
+msgstr ""
+
+#: main_window.py:285 main_window.py:510
 msgid "&Edit"
 msgstr ""
 
-#: main_window.py:280 main_window.py:581
+#: main_window.py:284 main_window.py:509
 msgid "&File"
 msgstr ""
 
-#: main_window.py:285 main_window.py:586
+#: main_window.py:289 main_window.py:514
 msgid "&Help"
 msgstr ""
 
-#: main_window.py:284 main_window.py:585
+#: plugins/plugin_manager.py:216
+msgid "&Plugins"
+msgstr ""
+
+#: main_window.py:288 main_window.py:513
 msgid "&Settings"
 msgstr ""
 
-#: main_window.py:283 main_window.py:584
+#: main_window.py:287 main_window.py:512
 msgid "&Tools"
 msgstr ""
 
-#: main_window.py:282 main_window.py:583
+#: main_window.py:286 main_window.py:511
 msgid "&View"
 msgstr ""
 
@@ -50,105 +58,101 @@ msgstr ""
 msgid "'requests' library not found. AI translation feature is unavailable."
 msgstr ""
 
+#: dialogs/settings_pages.py:112
+msgid "(0 to disable)"
+msgstr ""
+
 #: dialogs/pot_drop_dialog.py:20
 msgid "A POT file was dropped. What would you like to do?"
 msgstr ""
 
-#: main_window.py:3953
+#: main_window.py:3903
 msgid "AI Batch Translation"
 msgstr ""
 
-#: main_window.py:3553
+#: main_window.py:3503
 #, python-brace-format
 msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
 msgstr ""
 
-#: main_window.py:3899
+#: main_window.py:3849
 #, python-brace-format
 msgid "AI Batch: {current}/{total} completed ({progress_percent:.0f}%)."
 msgstr ""
 
-#: main_window.py:3382
+#: main_window.py:3332
 msgid "AI Feature Unavailable"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:186
+#: main_window.py:3322
 msgid "AI Prompt Manager"
 msgstr ""
 
-#: main_window.py:3376
-msgid "AI Settings"
-msgstr ""
-
-#: main_window.py:481 main_window.py:634
-msgid "AI Settings..."
-msgstr ""
-
-#: main_window.py:465 main_window.py:631
+#: main_window.py:458 main_window.py:557
 msgid "AI Translate All Untranslated"
 msgstr ""
 
-#: main_window.py:460 main_window.py:630 ui_components/details_panel.py:91
+#: main_window.py:453 main_window.py:556 ui_components/details_panel.py:91
 #: ui_components/details_panel.py:197
 msgid "AI Translate Selected"
 msgstr ""
 
-#: main_window.py:3776
+#: dialogs/settings_dialog.py:111 main_window.py:3726
 msgid "AI Translation"
 msgstr ""
 
-#: main_window.py:3861
+#: main_window.py:3811
 msgid "AI Translation Error"
 msgstr ""
 
-#: main_window.py:1398
+#: main_window.py:1326
 msgid "AI Translation in Progress"
 msgstr ""
 
-#: main_window.py:3833
+#: main_window.py:3783
 #, python-brace-format
 msgid ""
 "AI batch translation complete. Successfully translated "
 "{success_count}/{processed_count} items (total {total_items} planned)."
 msgstr ""
 
-#: main_window.py:3729
+#: main_window.py:3679
 msgid "AI batch translation is already in progress."
 msgstr ""
 
-#: main_window.py:1622
+#: main_window.py:1558
 msgid "AI batch translation is in progress."
 msgstr ""
 
-#: main_window.py:1565
+#: main_window.py:1500
 msgid ""
 "AI batch translation is in progress. Please wait for it to complete or "
 "stop it before opening a new file."
 msgstr ""
 
-#: main_window.py:1399
+#: main_window.py:1327
 msgid ""
 "AI batch translation is still in progress. Are you sure you want to exit?"
 "\n"
 "Unfinished translations will be lost."
 msgstr ""
 
-#: main_window.py:3810
+#: main_window.py:3760
 #, python-brace-format
 msgid "AI batch translation started for {count} unique strings..."
 msgstr ""
 
-#: main_window.py:3954
+#: main_window.py:3904
 msgid ""
 "AI batch translation stop requested.\n"
 "Dispatched tasks will continue to complete, please wait."
 msgstr ""
 
-#: main_window.py:3956
+#: main_window.py:3906
 msgid "AI batch translation stop requested. Finishing dispatched tasks..."
 msgstr ""
 
-#: main_window.py:3523
+#: main_window.py:3473
 #, python-brace-format
 msgid "AI is translating: \"{text}...\""
 msgstr ""
@@ -157,48 +161,40 @@ msgstr ""
 msgid "AI prompt structure updated."
 msgstr ""
 
-#: main_window.py:3862
+#: main_window.py:3812
 #, python-brace-format
 msgid ""
 "AI translation failed for \"{text}...\":\n"
 "{error}"
 msgstr ""
 
-#: main_window.py:3857
+#: main_window.py:3807
 #, python-brace-format
 msgid "AI translation failed for \"{text}...\": {error}"
 msgstr ""
 
-#: main_window.py:3889
+#: main_window.py:3839
 #, python-brace-format
 msgid "AI translation successful: \"{text}...\""
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:74
+#: dialogs/settings_pages.py:199
 msgid "API Base URL:"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:99
-msgid "API Call Interval (ms):"
-msgstr ""
-
-#: dialogs/ai_settings_dialog.py:63
-msgid "API Connection & Model Settings"
+#: dialogs/settings_pages.py:212
+msgid "API Call Interval:"
 msgstr ""
 
 #: services/ai_translator.py:53
 msgid "API Error"
 msgstr ""
 
-#: main_window.py:3387
+#: main_window.py:3337
 msgid "API Key Missing"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:199
-msgid "API Key is not filled."
-msgstr ""
-
-#: main_window.py:3388
+#: main_window.py:3338
 msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
 msgstr ""
 
@@ -206,23 +202,23 @@ msgstr ""
 msgid "API Key not set."
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:67
+#: dialogs/settings_pages.py:198
 msgid "API Key:"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:254
-msgid "API call interval cannot be negative."
+#: dialogs/settings_pages.py:192
+msgid "API Settings"
 msgstr ""
 
 #: services/ai_translator.py:55
 msgid "API request timed out."
 msgstr ""
 
-#: main_window.py:539 main_window.py:649
+#: main_window.py:492 main_window.py:567
 msgid "About"
 msgstr ""
 
-#: main_window.py:1512
+#: main_window.py:1435
 msgid "About Overwatch Localizer"
 msgstr ""
 
@@ -238,7 +234,7 @@ msgstr ""
 msgid "Add Current Pair to Favorites"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:121
+#: dialogs/extraction_pattern_dialog.py:120
 msgid "Add Extraction Rule"
 msgstr ""
 
@@ -250,12 +246,12 @@ msgstr ""
 msgid "Added"
 msgstr ""
 
-#: main_window.py:3940
+#: main_window.py:3890
 #, python-brace-format
 msgid "Added comments to {count} placeholder mismatched items."
 msgstr ""
 
-#: main_window.py:3922
+#: main_window.py:3872
 #, python-brace-format
 msgid ""
 "After AI batch translation, {count} items were found with placeholder "
@@ -264,19 +260,35 @@ msgid ""
 " bulk?"
 msgstr ""
 
-#: main_window.py:4339
+#: main_window.py:1480
+msgid "All Files (*.*)"
+msgstr ""
+
+#: main_window.py:1477
+msgid "All Supported Files (*.ow *.txt *.po *.pot);;"
+msgstr ""
+
+#: main_window.py:4289
 #, python-brace-format
 msgid "An error occurred: {error}"
 msgstr ""
 
-#: main_window.py:4100
+#: dialogs/settings_dialog.py:108
+msgid "Appearance"
+msgstr ""
+
+#: main_window.py:4050
 #, python-brace-format
 msgid "Applied TM to {count} selected items."
 msgstr ""
 
-#: main_window.py:3310 main_window.py:3311
+#: main_window.py:3261 main_window.py:3262
 #, python-brace-format
 msgid "Applied TM to {count} strings."
+msgstr ""
+
+#: dialogs/settings_dialog.py:88
+msgid "Apply"
 msgstr ""
 
 #: ui_components/comment_status_panel.py:46
@@ -288,15 +300,15 @@ msgstr ""
 msgid "Apply Favorite"
 msgstr ""
 
-#: main_window.py:1855
+#: main_window.py:1792
 msgid "Apply Memory to Selected Items"
 msgstr ""
 
-#: main_window.py:3152
+#: main_window.py:3103
 msgid "Apply TM"
 msgstr ""
 
-#: main_window.py:450 main_window.py:628
+#: main_window.py:448 main_window.py:555
 msgid "Apply TM to Untranslated"
 msgstr ""
 
@@ -308,28 +320,28 @@ msgstr ""
 msgid "Apply and Go to Next Untranslated"
 msgstr ""
 
-#: main_window.py:4232 main_window.py:4322
+#: main_window.py:4182 main_window.py:4272
 msgid "Applying updates..."
 msgstr ""
 
-#: main_window.py:3180
+#: main_window.py:3131
 msgid ""
 "Are you sure you want to clear all entries from the in-memory TM?\n"
 "This cannot be undone."
 msgstr ""
 
-#: main_window.py:1504
+#: main_window.py:1427
 msgid "Are you sure you want to clear all recent file history?"
 msgstr ""
 
-#: main_window.py:4112
+#: main_window.py:4062
 #, python-brace-format
 msgid ""
 "Are you sure you want to clear the translations for the {count} selected "
 "items?"
 msgstr ""
 
-#: main_window.py:3238
+#: main_window.py:3189
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove the TM entry for:\n"
@@ -340,7 +352,7 @@ msgstr ""
 msgid "Are you sure you want to reset all keybindings to their default settings?"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:156
+#: dialogs/extraction_pattern_dialog.py:154
 msgid ""
 "Are you sure you want to reset extraction rules to their default "
 "settings?\n"
@@ -353,17 +365,21 @@ msgid ""
 "All current customizations will be lost."
 msgstr ""
 
-#: main_window.py:2997
+#: main_window.py:2948
 #, python-brace-format
 msgid "Attempted to restore {count} old translations/statuses."
 msgstr ""
 
-#: main_window.py:503 main_window.py:640
-msgid "Auto-backup TM on Save"
+#: plugins/plugin_dialog.py:235
+msgid "Author"
 msgstr ""
 
-#: main_window.py:509 main_window.py:641
-msgid "Auto-compile MO on Save"
+#: dialogs/settings_pages.py:129
+msgid "Auto-backup Translation Memory"
+msgstr ""
+
+#: dialogs/settings_pages.py:131
+msgid "Auto-compile .mo file when save .po file"
 msgstr ""
 
 #: dialogs/language_pair_dialog.py:243
@@ -374,28 +390,28 @@ msgstr ""
 msgid "Auto-detect Target"
 msgstr ""
 
-#: main_window.py:808
+#: main_window.py:733
 msgid "Auto-save Interval"
 msgstr ""
 
-#: main_window.py:516 main_window.py:642
-msgid "Auto-save Interval..."
+#: dialogs/settings_pages.py:117
+msgid "Auto-save Interval:"
 msgstr ""
 
-#: main_window.py:822
+#: main_window.py:747
 msgid "Auto-save disabled."
 msgstr ""
 
-#: main_window.py:820
+#: main_window.py:745
 #, python-brace-format
 msgid "Auto-save enabled every {seconds} seconds."
 msgstr ""
 
-#: main_window.py:831
+#: main_window.py:756
 msgid "Auto-saving..."
 msgstr ""
 
-#: main_window.py:3113 services/code_file_service.py:160
+#: main_window.py:3064 services/code_file_service.py:160
 msgid "Backup Failed"
 msgstr ""
 
@@ -404,17 +420,34 @@ msgstr ""
 msgid "Backup created: {filename}"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:48
+#: dialogs/statistics_dialog.py:46
 msgid "Calculation finished."
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:175 dialogs/diff_dialog.py:153
-#: dialogs/extraction_pattern_dialog.py:80
-#: dialogs/extraction_pattern_dialog.py:281 dialogs/font_settings_dialog.py:61
+#: dialogs/diff_dialog.py:153 dialogs/extraction_pattern_dialog.py:80
+#: dialogs/extraction_pattern_dialog.py:279 dialogs/font_settings_dialog.py:61
 #: dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342
 #: dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:77
-#: dialogs/prompt_manager_dialog.py:255 main_window.py:3761
+#: dialogs/prompt_manager_dialog.py:255 main_window.py:3711
 msgid "Cancel"
+msgstr ""
+
+#: plugins/plugin_manager.py:257
+#, python-brace-format
+msgid ""
+"Cannot disable '{plugin_name}'.\n"
+"The following enabled plugins depend on it:\n"
+"\n"
+"- {deps}"
+msgstr ""
+
+#: plugins/plugin_manager.py:174
+#, python-brace-format
+msgid ""
+"Cannot enable '{plugin_name}'.\n"
+"It requires the following disabled plugins:\n"
+"\n"
+"- {deps}"
 msgstr ""
 
 #: utils/enums.py:38
@@ -425,36 +458,37 @@ msgstr ""
 msgid "Case sensitive"
 msgstr ""
 
-#: main_window.py:1477
+#: plugins/plugin_manager.py:122
+msgid "Circular dependency detected in plugins. Cannot load."
+msgstr ""
+
+#: main_window.py:1400
 msgid "Clear History"
 msgstr ""
 
-#: main_window.py:1857
+#: main_window.py:1794
 msgid "Clear Selected Translations"
 msgstr ""
 
-#: main_window.py:3176
+#: main_window.py:3127
 msgid "Clear TM"
-msgstr ""
-
-#: main_window.py:455 main_window.py:629
-msgid "Clear TM (in-memory)"
 msgstr ""
 
 #: ui_components/tm_panel.py:39 ui_components/tm_panel.py:98
 msgid "Clear TM for Selected"
 msgstr ""
 
-#: main_window.py:4141
+#: main_window.py:4091
 #, python-brace-format
 msgid "Cleared {count} translations."
 msgstr ""
 
-#: main_window.py:3352
+#: main_window.py:3303
 msgid "Clipboard content pasted to translation."
 msgstr ""
 
-#: dialogs/search_dialog.py:86 dialogs/statistics_dialog.py:405
+#: dialogs/search_dialog.py:86 dialogs/statistics_dialog.py:395
+#: plugins/plugin_dialog.py:96
 msgid "Close"
 msgstr ""
 
@@ -462,34 +496,34 @@ msgstr ""
 msgid "Code Context"
 msgstr ""
 
-#: main_window.py:1605
+#: main_window.py:1541
 msgid "Code file loading failed"
 msgstr ""
 
-#: main_window.py:2388
+#: main_window.py:2339
 #, python-brace-format
 msgid "Code file saved to: {filename}"
 msgstr ""
 
-#: dialogs/search_dialog.py:58 main_window.py:655 main_window.py:2566
-#: main_window.py:2626 main_window.py:2634
+#: dialogs/search_dialog.py:58 main_window.py:573 main_window.py:2517
+#: main_window.py:2577 main_window.py:2585
 msgid "Comment"
 msgstr ""
 
-#: main_window.py:676 main_window.py:1037
+#: main_window.py:594 main_window.py:966
 msgid "Comment && Status"
 msgstr ""
 
-#: main_window.py:435 main_window.py:622
+#: main_window.py:433 main_window.py:549
 msgid "Comment && Status Panel"
 msgstr ""
 
-#: main_window.py:2246
+#: main_window.py:2197
 #, python-brace-format
 msgid "Comment updated for ID {id}..."
 msgstr ""
 
-#: main_window.py:2223
+#: main_window.py:2174
 msgid "Comment updated."
 msgstr ""
 
@@ -498,15 +532,15 @@ msgstr ""
 msgid "Comment:"
 msgstr ""
 
-#: main_window.py:297 main_window.py:591
+#: main_window.py:301 main_window.py:519
 msgid "Compare/Import New Version..."
 msgstr ""
 
-#: main_window.py:4247
+#: main_window.py:4197
 msgid "Comparing versions..."
 msgstr ""
 
-#: main_window.py:4339
+#: main_window.py:4289
 msgid "Comparison Failed"
 msgstr ""
 
@@ -514,36 +548,44 @@ msgstr ""
 msgid "Comparison Results Summary"
 msgstr ""
 
-#: main_window.py:4222 main_window.py:4312
+#: main_window.py:4172 main_window.py:4262
 msgid "Comparison complete. Found "
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:156 dialogs/keybinding_dialog.py:137
+#: plugins/plugin_dialog.py:153
+msgid "Compatibility Warning"
+msgstr ""
+
+#: plugins/plugin_dialog.py:255
+msgid "Compatible"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:154 dialogs/keybinding_dialog.py:137
 #: dialogs/prompt_manager_dialog.py:155
 msgid "Confirm"
 msgstr ""
 
-#: main_window.py:3791
+#: main_window.py:3741
 msgid "Confirm Batch Translation"
 msgstr ""
 
-#: main_window.py:3179 main_window.py:3237 main_window.py:4111
+#: main_window.py:3130 main_window.py:3188 main_window.py:4061
 msgid "Confirm Clear"
 msgstr ""
 
-#: main_window.py:3272
+#: main_window.py:3223
 msgid "Confirm Operation"
 msgstr ""
 
-#: main_window.py:2408
+#: main_window.py:2359
 msgid "Confirm Overwrite"
 msgstr ""
 
-#: main_window.py:2967
+#: main_window.py:2918
 msgid "Confirm Reload"
 msgstr ""
 
-#: main_window.py:3204
+#: main_window.py:3155
 msgid "Confirm Update TM"
 msgstr ""
 
@@ -551,7 +593,7 @@ msgstr ""
 msgid "Confirm and Update Project"
 msgstr ""
 
-#: dialogs/font_settings_dialog.py:118 main_window.py:1503
+#: dialogs/font_settings_dialog.py:118 main_window.py:1426
 msgid "Confirmation"
 msgstr ""
 
@@ -571,38 +613,42 @@ msgstr ""
 msgid "Content:"
 msgstr ""
 
-#: main_window.py:674 main_window.py:1020
+#: dialogs/settings_pages.py:216
+msgid "Context & Prompts"
+msgstr ""
+
+#: main_window.py:592 main_window.py:947
 msgid "Context Preview"
 msgstr ""
 
-#: main_window.py:438 main_window.py:623
+#: main_window.py:436 main_window.py:550
 msgid "Context Preview Panel"
 msgstr ""
 
-#: main_window.py:3329
+#: main_window.py:3280
 #, python-brace-format
 msgid "Copied {count} original strings to clipboard."
 msgstr ""
 
-#: main_window.py:3336
+#: main_window.py:3287
 #, python-brace-format
 msgid "Copied {count} translations to clipboard."
 msgstr ""
 
-#: main_window.py:390 main_window.py:611 main_window.py:1821
+#: main_window.py:394 main_window.py:539 main_window.py:1758
 msgid "Copy Original"
 msgstr ""
 
-#: main_window.py:1822
+#: main_window.py:1759
 msgid "Copy Translation"
 msgstr ""
 
-#: main_window.py:2488
+#: main_window.py:2439
 #, python-brace-format
 msgid "Could not compile MO file: {error}"
 msgstr ""
 
-#: main_window.py:3114
+#: main_window.py:3065
 #, python-brace-format
 msgid "Could not create backup for TM: {error}"
 msgstr ""
@@ -616,7 +662,7 @@ msgstr ""
 msgid "Could not decode API response. Response text"
 msgstr ""
 
-#: main_window.py:3062
+#: main_window.py:3013
 #, python-brace-format
 msgid ""
 "Could not determine original/translation columns from '{filename}' "
@@ -624,51 +670,51 @@ msgid ""
 "B=Translation)."
 msgstr ""
 
-#: main_window.py:2598
+#: main_window.py:2549
 #, python-brace-format
 msgid "Could not export project translations to Excel: {error}"
 msgstr ""
 
-#: main_window.py:2760
+#: main_window.py:2711
 #, python-brace-format
 msgid "Could not export project translations to JSON: {error}"
 msgstr ""
 
-#: main_window.py:2800
+#: main_window.py:2751
 #, python-brace-format
 msgid "Could not export project translations to YAML: {error}"
 msgstr ""
 
-#: main_window.py:3199
+#: main_window.py:3150
 msgid "Could not find data for the selected item."
 msgstr ""
 
-#: main_window.py:2955
+#: main_window.py:2906
 msgid "Could not get code content for re-extraction."
 msgstr ""
 
-#: main_window.py:2720
+#: main_window.py:2671
 #, python-brace-format
 msgid "Could not import project translations from Excel: {error}"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:185
+#: dialogs/extraction_pattern_dialog.py:183
 #: dialogs/prompt_manager_dialog.py:183
 #, python-brace-format
 msgid "Could not load preset file: {error}"
 msgstr ""
 
-#: main_window.py:1676
+#: main_window.py:1613
 #, python-brace-format
 msgid "Could not load project file '{filename}': {error}"
 msgstr ""
 
-#: main_window.py:1602
+#: main_window.py:1538
 #, python-brace-format
 msgid "Could not open or parse code file '{filename}': {error}"
 msgstr ""
 
-#: main_window.py:2951
+#: main_window.py:2902
 #, python-brace-format
 msgid ""
 "Could not re-read {filepath} from disk.\n"
@@ -676,15 +722,19 @@ msgid ""
 "Error: {error}"
 msgstr ""
 
-#: main_window.py:2392
+#: main_window.py:2343
 #, python-brace-format
 msgid "Could not save code file: {error}"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:200
+#: dialogs/extraction_pattern_dialog.py:198
 #: dialogs/prompt_manager_dialog.py:198
 #, python-brace-format
 msgid "Could not save preset file: {error}"
+msgstr ""
+
+#: plugins/plugin_dialog.py:248
+msgid "Current"
 msgstr ""
 
 #: dialogs/language_pair_dialog.py:308
@@ -692,10 +742,10 @@ msgid "Current Selection:"
 msgstr ""
 
 #: dialogs/extraction_pattern_dialog.py:92
-#: dialogs/extraction_pattern_dialog.py:116
-#: dialogs/extraction_pattern_dialog.py:177
-#: dialogs/extraction_pattern_dialog.py:246
-#: dialogs/extraction_pattern_dialog.py:295
+#: dialogs/extraction_pattern_dialog.py:115
+#: dialogs/extraction_pattern_dialog.py:175
+#: dialogs/extraction_pattern_dialog.py:244
+#: dialogs/extraction_pattern_dialog.py:293
 msgid "Custom"
 msgstr ""
 
@@ -703,11 +753,19 @@ msgstr ""
 msgid "Delete Selected"
 msgstr ""
 
-#: main_window.py:1122
+#: plugins/plugin_dialog.py:266
+msgid "Dependencies"
+msgstr ""
+
+#: plugins/plugin_manager.py:178 plugins/plugin_manager.py:261
+msgid "Dependency Error"
+msgstr ""
+
+#: main_window.py:1052
 msgid "Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"
 msgstr ""
 
-#: main_window.py:1144
+#: main_window.py:1074
 #, python-brace-format
 msgid ""
 "Displayed: {displayed_count}/{total_count} | Translated: "
@@ -715,20 +773,20 @@ msgid ""
 "{ignored_visible}"
 msgstr ""
 
-#: main_window.py:3758
+#: main_window.py:3708
 msgid "Do you want to overwrite them, skip them, or cancel the operation?"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:681
+#: dialogs/statistics_dialog.py:671
 msgid "Double-click to locate."
 msgstr ""
 
-#: main_window.py:1545
+#: main_window.py:1468
 #, python-brace-format
 msgid "Drag and drop failed: '{filename}' is not a file."
 msgstr ""
 
-#: main_window.py:1542
+#: main_window.py:1465
 #, python-brace-format
 msgid "Drag and drop failed: Invalid file type '{filename}'"
 msgstr ""
@@ -738,23 +796,23 @@ msgstr ""
 msgid "Dynamic Instruction"
 msgstr ""
 
-#: main_window.py:758
+#: main_window.py:676
 msgid "Dynamic sorting enabled."
 msgstr ""
 
-#: main_window.py:673 main_window.py:1012
+#: main_window.py:591 main_window.py:938
 msgid "Edit && Details"
 msgstr ""
 
-#: main_window.py:432 main_window.py:621
+#: main_window.py:430 main_window.py:548
 msgid "Edit && Details Panel"
 msgstr ""
 
-#: main_window.py:1852 main_window.py:4054
+#: main_window.py:1789 main_window.py:4004
 msgid "Edit Comment..."
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:147
+#: dialogs/extraction_pattern_dialog.py:145
 msgid "Edit Extraction Rule"
 msgstr ""
 
@@ -766,7 +824,7 @@ msgstr ""
 msgid "Enable this fragment"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:238
+#: dialogs/extraction_pattern_dialog.py:236
 msgid "Enable this rule"
 msgstr ""
 
@@ -787,84 +845,83 @@ msgstr ""
 msgid "Ending punctuation presence differs."
 msgstr ""
 
-#: main_window.py:4050
+#: main_window.py:4000
 #, python-brace-format
 msgid "Enter comment for {count} selected items:"
 msgstr ""
 
-#: main_window.py:809
+#: main_window.py:734
 msgid "Enter interval in seconds (0 to disable):"
 msgstr ""
 
-#: main_window.py:3362
+#: main_window.py:3313
 msgid ""
 "Enter specific translation instructions for this project (e.g., "
 "'Translate \"Hero\" as \"Agent\"', 'Use a lively and cute style').\n"
 "These instructions will be used during AI translation."
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:250 dialogs/ai_settings_dialog.py:254
-#: dialogs/ai_settings_dialog.py:258 dialogs/extraction_pattern_dialog.py:183
-#: dialogs/extraction_pattern_dialog.py:300
-#: dialogs/extraction_pattern_dialog.py:303
-#: dialogs/prompt_manager_dialog.py:181 main_window.py:1602 main_window.py:2142
-#: main_window.py:2146 main_window.py:2382 main_window.py:2397
-#: main_window.py:2401 main_window.py:2955 main_window.py:3091
-#: main_window.py:3138 main_window.py:3199 main_window.py:3358
-#: main_window.py:4344
+#: dialogs/extraction_pattern_dialog.py:181
+#: dialogs/extraction_pattern_dialog.py:298
+#: dialogs/extraction_pattern_dialog.py:301
+#: dialogs/prompt_manager_dialog.py:181 main_window.py:1538 main_window.py:2085
+#: main_window.py:2089 main_window.py:2333 main_window.py:2348
+#: main_window.py:2352 main_window.py:2906 main_window.py:3042
+#: main_window.py:3089 main_window.py:3150 main_window.py:3309
+#: main_window.py:4294
 msgid "Error"
 msgstr ""
 
-#: main_window.py:2835
+#: main_window.py:2786
 #, python-brace-format
 msgid "Error extracting POT file: {error}"
 msgstr ""
 
-#: main_window.py:2875
+#: main_window.py:2826
 #, python-brace-format
 msgid "Error importing PO file '{filename}': {error}"
 msgstr ""
 
-#: main_window.py:2716
+#: main_window.py:2667
 #, python-brace-format
 msgid "Error processing Excel file (possibly column names issue): {error}"
 msgstr ""
 
-#: main_window.py:2701
+#: main_window.py:2652
 #, python-brace-format
 msgid "Error processing Excel row {row_num}: {error}. Skipping this row."
 msgstr ""
 
-#: main_window.py:3016
+#: main_window.py:2967
 #, python-brace-format
 msgid "Error reloading translatable text: {error}"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:515
+#: dialogs/statistics_dialog.py:505
 msgid "Error:"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:264
+#: dialogs/extraction_pattern_dialog.py:262
 msgid "Escape for Regex (Left)"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:268
+#: dialogs/extraction_pattern_dialog.py:266
 msgid "Escape for Regex (Right)"
 msgstr ""
 
-#: main_window.py:2610
+#: main_window.py:2561
 msgid "Excel files (*.xlsx)"
 msgstr ""
 
-#: main_window.py:3145 main_window.py:3169
+#: main_window.py:3096 main_window.py:3120
 msgid "Excel files (*.xlsx);;All files (*.*)"
 msgstr ""
 
-#: main_window.py:2620
+#: main_window.py:2571
 msgid "Excel header format is incorrect or empty."
 msgstr ""
 
-#: main_window.py:2633
+#: main_window.py:2584
 #, python-brace-format
 msgid ""
 "Excel header must contain 'UUID' and '{translation_col}' columns.\n"
@@ -872,28 +929,28 @@ msgid ""
 "'{original_semantic_col}'."
 msgstr ""
 
-#: main_window.py:369 main_window.py:605
+#: main_window.py:373 main_window.py:533
 msgid "Exit"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:575
+#: dialogs/statistics_dialog.py:565
 msgid "Expansion Ratio"
 msgstr ""
 
-#: main_window.py:359 main_window.py:603 main_window.py:3167
+#: main_window.py:363 main_window.py:531 main_window.py:3118
 msgid "Export Current TM (Excel)"
 msgstr ""
 
-#: main_window.py:2597 main_window.py:2759 main_window.py:2799
-#: main_window.py:2925
+#: main_window.py:2548 main_window.py:2710 main_window.py:2750
+#: main_window.py:2876
 msgid "Export Error"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:190
+#: dialogs/extraction_pattern_dialog.py:188
 msgid "Export Extraction Rule Preset"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:200
+#: dialogs/extraction_pattern_dialog.py:198
 #: dialogs/prompt_manager_dialog.py:198
 msgid "Export Failed"
 msgstr ""
@@ -902,15 +959,15 @@ msgstr ""
 msgid "Export Preset"
 msgstr ""
 
-#: main_window.py:2557
+#: main_window.py:2508
 msgid "Export Project Translations to Excel"
 msgstr ""
 
-#: main_window.py:2740
+#: main_window.py:2691
 msgid "Export Project Translations to JSON"
 msgstr ""
 
-#: main_window.py:2780
+#: main_window.py:2731
 msgid "Export Project Translations to YAML"
 msgstr ""
 
@@ -918,19 +975,19 @@ msgstr ""
 msgid "Export Prompt Preset"
 msgstr ""
 
-#: main_window.py:325 main_window.py:596
+#: main_window.py:329 main_window.py:524
 msgid "Export to Excel"
 msgstr ""
 
-#: main_window.py:330 main_window.py:597
+#: main_window.py:334 main_window.py:525
 msgid "Export to JSON"
 msgstr ""
 
-#: main_window.py:349 main_window.py:601 main_window.py:2910
+#: main_window.py:353 main_window.py:529 main_window.py:2861
 msgid "Export to PO File..."
 msgstr ""
 
-#: main_window.py:335 main_window.py:598
+#: main_window.py:339 main_window.py:526
 msgid "Export to YAML"
 msgstr ""
 
@@ -943,52 +1000,52 @@ msgstr ""
 msgid "Extra placeholders: {placeholders}"
 msgstr ""
 
-#: main_window.py:341 main_window.py:599
+#: main_window.py:345 main_window.py:527
 msgid "Extract POT Template from Code..."
 msgstr ""
 
-#: main_window.py:1579
+#: main_window.py:1514
 msgid "Extracting strings..."
 msgstr ""
 
-#: main_window.py:2928
+#: main_window.py:2879
 msgid "Extraction Rule Manager"
 msgstr ""
 
-#: main_window.py:486 main_window.py:635
-msgid "Extraction Rule Manager..."
-msgstr ""
-
-#: main_window.py:2931
+#: main_window.py:2882
 msgid "Extraction Rules Updated"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:207
+#: dialogs/settings_pages.py:122
+msgid "Extraction Rules:"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:205
 msgid "Extraction rules updated. Consider reloading the text."
 msgstr ""
 
-#: main_window.py:2932
+#: main_window.py:2883
 msgid ""
 "Extraction rules updated. Do you want to reload the translatable text of "
 "the current code using the new rules immediately?"
 msgstr ""
 
-#: main_window.py:2925
+#: main_window.py:2876
 #, python-brace-format
 msgid "Failed to export to PO file: {error}"
 msgstr ""
 
-#: main_window.py:3091 main_window.py:3092
+#: main_window.py:3042 main_window.py:3043
 #, python-brace-format
 msgid "Failed to load Excel TM: {error}"
 msgstr ""
 
-#: main_window.py:2491
+#: main_window.py:2442
 #, python-brace-format
 msgid "Failed to save PO file: {error}"
 msgstr ""
 
-#: main_window.py:3138
+#: main_window.py:3089
 #, python-brace-format
 msgid "Failed to save TM: {error}"
 msgstr ""
@@ -997,44 +1054,40 @@ msgstr ""
 msgid "Favorite Pairs"
 msgstr ""
 
-#: main_window.py:3372
-msgid "Feature Unavailable"
-msgstr ""
-
-#: main_window.py:2409
+#: main_window.py:2360
 #, python-brace-format
 msgid ""
 "File '{filename}' already exists. Overwrite? A backup file (.bak) will be"
 " created."
 msgstr ""
 
-#: main_window.py:1484
+#: main_window.py:1407
 #, python-brace-format
 msgid "File '{filepath}' does not exist."
 msgstr ""
 
-#: main_window.py:2950
+#: main_window.py:2901
 msgid "File Read Error"
 msgstr ""
 
-#: main_window.py:1483
+#: main_window.py:1406
 msgid "File not found"
 msgstr ""
 
-#: main_window.py:660 main_window.py:862
+#: main_window.py:578 main_window.py:788
 msgid "Filter:"
 msgstr ""
 
-#: main_window.py:1782
+#: main_window.py:1719
 #, python-brace-format
 msgid "Filtered by '{search_term}'."
 msgstr ""
 
-#: dialogs/statistics_dialog.py:46
+#: dialogs/statistics_dialog.py:44
 msgid "Finalizing..."
 msgstr ""
 
-#: main_window.py:665 main_window.py:900
+#: main_window.py:583 main_window.py:826
 msgid "Find"
 msgstr ""
 
@@ -1046,7 +1099,7 @@ msgstr ""
 msgid "Find Previous"
 msgstr ""
 
-#: main_window.py:3321
+#: main_window.py:3272
 msgid "Find and Replace"
 msgstr ""
 
@@ -1054,7 +1107,7 @@ msgstr ""
 msgid "Find what:"
 msgstr ""
 
-#: main_window.py:384 main_window.py:610
+#: main_window.py:388 main_window.py:538
 msgid "Find/Replace..."
 msgstr ""
 
@@ -1062,18 +1115,22 @@ msgstr ""
 msgid "Font Family:"
 msgstr ""
 
-#: main_window.py:800
+#: main_window.py:725
 msgid "Font Settings"
 msgstr ""
 
-#: main_window.py:534 main_window.py:646
+#: dialogs/settings_pages.py:171
 msgid "Font Settings..."
 msgstr ""
 
-#: main_window.py:803
+#: main_window.py:728
 msgid ""
 "Font settings have been changed. Please restart the application for the "
 "changes to take effect."
+msgstr ""
+
+#: dialogs/settings_pages.py:173
+msgid "Fonts:"
 msgstr ""
 
 #: dialogs/search_dialog.py:182
@@ -1085,53 +1142,57 @@ msgstr ""
 msgid "Fuzzy Translation"
 msgstr ""
 
-#: main_window.py:4292
+#: main_window.py:4242
 msgid "Fuzzy match, please review."
 msgstr ""
 
-#: main_window.py:1108
+#: dialogs/settings_dialog.py:105
+msgid "General"
+msgstr ""
+
+#: main_window.py:1038
 msgid "Hint: "
 msgstr ""
 
-#: main_window.py:1106
+#: main_window.py:1036
 msgid "Hint: requests not found, AI translation is disabled."
 msgstr ""
 
-#: main_window.py:1842
+#: main_window.py:1779
 msgid "Ignore Warnings for Selected"
 msgstr ""
 
-#: main_window.py:2336
+#: main_window.py:2287
 #, python-brace-format
 msgid "Ignore status for ID {id} -> {status}"
 msgstr ""
 
-#: main_window.py:2019 main_window.py:4025
+#: main_window.py:1956 main_window.py:3975
 #: ui_components/comment_status_panel.py:57
 msgid "Ignore this string"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:543 dialogs/statistics_dialog.py:600
-#: main_window.py:661 main_window.py:865 main_window.py:2567
-#: main_window.py:2628 main_window.py:2636 main_window.py:3506
+#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590
+#: main_window.py:579 main_window.py:791 main_window.py:2518
+#: main_window.py:2579 main_window.py:2587 main_window.py:3456
 msgid "Ignored"
 msgstr ""
 
-#: main_window.py:2073
+#: main_window.py:2010
 #, python-brace-format
 msgid "Ignored warnings for {count} item(s)."
 msgstr ""
 
-#: main_window.py:2620 main_window.py:2632 main_window.py:2715
-#: main_window.py:2719
+#: main_window.py:2571 main_window.py:2583 main_window.py:2666
+#: main_window.py:2670
 msgid "Import Error"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:165
+#: dialogs/extraction_pattern_dialog.py:163
 msgid "Import Extraction Rule Preset"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:185
+#: dialogs/extraction_pattern_dialog.py:183
 #: dialogs/prompt_manager_dialog.py:183
 msgid "Import Failed"
 msgstr ""
@@ -1144,15 +1205,15 @@ msgstr ""
 msgid "Import Prompt Preset"
 msgstr ""
 
-#: main_window.py:355 main_window.py:602 main_window.py:3143
+#: main_window.py:359 main_window.py:530 main_window.py:3094
 msgid "Import TM (Excel)"
 msgstr ""
 
-#: main_window.py:320 main_window.py:595 main_window.py:2608
+#: main_window.py:324 main_window.py:523 main_window.py:2559
 msgid "Import Translations from Excel"
 msgstr ""
 
-#: main_window.py:345 main_window.py:600
+#: main_window.py:349 main_window.py:528
 msgid "Import Translations from PO File..."
 msgstr ""
 
@@ -1160,23 +1221,27 @@ msgstr ""
 msgid "Import as New File"
 msgstr ""
 
-#: main_window.py:2711
+#: main_window.py:2662
 #, python-brace-format
 msgid "Imported/updated {field_count} fields for {item_count} items from Excel."
 msgstr ""
 
-#: main_window.py:3184
+#: main_window.py:3135
 msgid "In-memory TM has been cleared."
 msgstr ""
 
+#: plugins/plugin_dialog.py:247
+msgid "Incompatible"
+msgstr ""
+
 #: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291
-#: dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:768
-#: main_window.py:2442 main_window.py:2541 main_window.py:2602
-#: main_window.py:2724 main_window.py:2764 main_window.py:2895
-#: main_window.py:2939 main_window.py:3194 main_window.py:3231
-#: main_window.py:3248 main_window.py:3265 main_window.py:3268
-#: main_window.py:3319 main_window.py:3946 main_window.py:4079
-#: main_window.py:4103
+#: dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:686
+#: main_window.py:2393 main_window.py:2492 main_window.py:2553
+#: main_window.py:2675 main_window.py:2715 main_window.py:2846
+#: main_window.py:2890 main_window.py:3145 main_window.py:3182
+#: main_window.py:3199 main_window.py:3216 main_window.py:3219
+#: main_window.py:3270 main_window.py:3896 main_window.py:4029
+#: main_window.py:4053
 msgid "Info"
 msgstr ""
 
@@ -1188,15 +1253,15 @@ msgstr ""
 msgid "Initial capitalization mismatch."
 msgstr ""
 
-#: dialogs/statistics_dialog.py:39
+#: dialogs/statistics_dialog.py:37
 msgid "Initialization complete."
 msgstr ""
 
-#: main_window.py:247
+#: main_window.py:251
 msgid "Initializing services in the background..."
 msgstr ""
 
-#: dialogs/statistics_dialog.py:36
+#: dialogs/statistics_dialog.py:34
 msgid "Initializing..."
 msgstr ""
 
@@ -1204,27 +1269,27 @@ msgstr ""
 msgid "Inline Differences"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:633
+#: dialogs/statistics_dialog.py:623
 msgid "Issue Description"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:300
+#: dialogs/statistics_dialog.py:290
 msgid "Issues & Warnings"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:561
+#: dialogs/statistics_dialog.py:551
 msgid "Items with Warnings"
 msgstr ""
 
-#: main_window.py:2742
+#: main_window.py:2693
 msgid "JSON files (*.json);;All Files (*.*)"
 msgstr ""
 
-#: main_window.py:795
+#: main_window.py:720
 msgid "Keybinding Settings"
 msgstr ""
 
-#: main_window.py:530 main_window.py:645
+#: dialogs/settings_pages.py:175
 msgid "Keybinding Settings..."
 msgstr ""
 
@@ -1232,20 +1297,33 @@ msgstr ""
 msgid "Keybindings have been updated."
 msgstr ""
 
-#: main_window.py:525 main_window.py:644
-msgid "Language"
+#: dialogs/settings_pages.py:177
+msgid "Keybindings:"
+msgstr ""
+
+#: dialogs/settings_dialog.py:141
+msgid "Language Changed"
 msgstr ""
 
 #: dialogs/language_pair_dialog.py:183
 msgid "Language Pair Settings"
 msgstr ""
 
-#: main_window.py:521 main_window.py:643
+#: main_window.py:487 main_window.py:564
 msgid "Language Pair Settings..."
 msgstr ""
 
 #: dialogs/language_pair_dialog.py:263
 msgid "Language Selection"
+msgstr ""
+
+#: main_window.py:716
+#, python-brace-format
+msgid "Language pair set to {src} -> {tgt}."
+msgstr ""
+
+#: main_window.py:709
+msgid "Language pair updated. Re-validating all entries..."
 msgstr ""
 
 #: utils/enums.py:40
@@ -1256,11 +1334,11 @@ msgstr ""
 msgid "Left Delimiter (Regex)"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:251
+#: dialogs/extraction_pattern_dialog.py:249
 msgid "Left Delimiter:"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:303
+#: dialogs/extraction_pattern_dialog.py:301
 msgid "Left and right delimiters cannot be empty."
 msgstr ""
 
@@ -1279,7 +1357,7 @@ msgid ""
 "{expected:.1f}x."
 msgstr ""
 
-#: main_window.py:657
+#: main_window.py:575
 msgid "Line"
 msgstr ""
 
@@ -1291,34 +1369,42 @@ msgstr ""
 msgid "Line count differs from original."
 msgstr ""
 
-#: main_window.py:2869
+#: main_window.py:2820
 #, python-brace-format
 msgid "Loaded {count} entries from PO file {filename}."
 msgstr ""
 
-#: main_window.py:1596
+#: main_window.py:1532
 #, python-brace-format
 msgid "Loaded {count} translatable strings from {filename}"
 msgstr ""
 
-#: main_window.py:3084
+#: main_window.py:3035
 #, python-brace-format
 msgid "Loaded/merged {count} Excel TM records from '{filename}'."
 msgstr ""
 
-#: main_window.py:2488
+#: main_window.py:2439
 msgid "MO Compilation Failed"
 msgstr ""
 
-#: main_window.py:1827
+#: dialogs/settings_pages.py:120
+msgid "Manage Extraction Rules..."
+msgstr ""
+
+#: plugins/plugin_manager.py:218
+msgid "Manage Plugins..."
+msgstr ""
+
+#: main_window.py:1764
 msgid "Mark as Ignored"
 msgstr ""
 
-#: main_window.py:1834
+#: main_window.py:1771
 msgid "Mark as Reviewed"
 msgstr ""
 
-#: main_window.py:1835
+#: main_window.py:1772
 msgid "Mark as Unreviewed"
 msgstr ""
 
@@ -1331,12 +1417,8 @@ msgstr ""
 msgid "Match {current}/{total}"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:109
+#: dialogs/settings_pages.py:213
 msgid "Max Concurrent Requests:"
-msgstr ""
-
-#: dialogs/ai_settings_dialog.py:258
-msgid "Max concurrent requests must be between 1 and 10."
 msgstr ""
 
 #: services/validation_service.py:42
@@ -1344,12 +1426,8 @@ msgstr ""
 msgid "Missing placeholders: {placeholders}"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:80
+#: dialogs/settings_pages.py:200
 msgid "Model Name:"
-msgstr ""
-
-#: dialogs/ai_settings_dialog.py:250
-msgid "Model name cannot be empty."
 msgstr ""
 
 #: dialogs/diff_dialog.py:177
@@ -1368,32 +1446,32 @@ msgstr ""
 msgid "New Instruction"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:114
+#: dialogs/extraction_pattern_dialog.py:113
 msgid "New Rule"
 msgstr ""
 
-#: main_window.py:2337 main_window.py:2373 main_window.py:2587
-#: main_window.py:2588
+#: main_window.py:2288 main_window.py:2324 main_window.py:2538
+#: main_window.py:2539
 msgid "No"
 msgstr ""
 
-#: main_window.py:3946
+#: main_window.py:3896
 msgid "No AI batch translation task is in progress."
 msgstr ""
 
-#: main_window.py:1467
+#: main_window.py:1390
 msgid "No History"
 msgstr ""
 
-#: main_window.py:3720
+#: main_window.py:3670
 msgid "No Translation Needed"
 msgstr ""
 
-#: main_window.py:3313
+#: main_window.py:3264
 msgid "No applicable translations found in TM (or no changes needed)."
 msgstr ""
 
-#: main_window.py:2939
+#: main_window.py:2890
 msgid "No code content loaded to reload."
 msgstr ""
 
@@ -1401,32 +1479,32 @@ msgstr ""
 msgid "No content in message"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:515
+#: dialogs/statistics_dialog.py:505
 msgid "No data to display."
 msgstr ""
 
-#: main_window.py:2541 main_window.py:2724 main_window.py:2764
-#: main_window.py:2895
+#: main_window.py:2492 main_window.py:2675 main_window.py:2715
+#: main_window.py:2846
 msgid "No data to export."
 msgstr ""
 
-#: dialogs/statistics_dialog.py:641
+#: dialogs/statistics_dialog.py:631
 msgid "No issues found"
 msgstr ""
 
-#: main_window.py:4146
+#: main_window.py:4096
 msgid "No items selected for AI translation."
 msgstr ""
 
-#: main_window.py:2051
+#: main_window.py:1988
 msgid "No items selected to modify warning status."
 msgstr ""
 
-#: main_window.py:3776
+#: main_window.py:3726
 msgid "No items to process."
 msgstr ""
 
-#: main_window.py:1784
+#: main_window.py:1721
 #, python-brace-format
 msgid "No matches found for '{search_term}' under current filters."
 msgstr ""
@@ -1443,31 +1521,31 @@ msgstr ""
 msgid "No matches found."
 msgstr ""
 
-#: main_window.py:4104
+#: main_window.py:4054
 msgid "No matching TM entries or no changes needed for selected items."
 msgstr ""
 
-#: main_window.py:1324
+#: main_window.py:1252
 msgid "No more actions to redo"
 msgstr ""
 
-#: main_window.py:1251
+#: main_window.py:1179
 msgid "No more actions to undo"
 msgstr ""
 
-#: main_window.py:3438
+#: main_window.py:3388
 msgid "No more untranslated items."
 msgstr ""
 
-#: main_window.py:2401
+#: main_window.py:2352
 msgid "No original code content to save."
 msgstr ""
 
-#: main_window.py:2397
+#: main_window.py:2348
 msgid "No original code file path."
 msgstr ""
 
-#: main_window.py:3022
+#: main_window.py:2973
 msgid "No project data loaded to generate statistics."
 msgstr ""
 
@@ -1475,46 +1553,50 @@ msgstr ""
 msgid "No response object"
 msgstr ""
 
-#: main_window.py:3265
+#: main_window.py:3216
 msgid "No strings to apply TM to."
 msgstr ""
 
-#: main_window.py:768
+#: main_window.py:686
 msgid "No text available to detect language from."
 msgstr ""
 
-#: main_window.py:3721
+#: main_window.py:3671
 msgid "No untranslated and non-ignored strings found."
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:171 dialogs/extraction_pattern_dialog.py:76
-#: dialogs/extraction_pattern_dialog.py:277 dialogs/font_settings_dialog.py:57
+#: dialogs/extraction_pattern_dialog.py:76
+#: dialogs/extraction_pattern_dialog.py:275 dialogs/font_settings_dialog.py:57
 #: dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341
 #: dialogs/prompt_manager_dialog.py:73 dialogs/prompt_manager_dialog.py:251
 msgid "OK"
 msgstr ""
 
-#: main_window.py:1555
-msgid "Open Code File"
+#: dialogs/settings_pages.py:127
+msgid "On File Save"
 msgstr ""
 
-#: main_window.py:288 main_window.py:589
-msgid "Open Code File..."
+#: main_window.py:1475
+msgid "Open File"
 msgstr ""
 
-#: main_window.py:1675
+#: main_window.py:1612
 msgid "Open Project Error"
 msgstr ""
 
-#: main_window.py:1613
+#: main_window.py:1549
 msgid "Open Project File"
 msgstr ""
 
-#: main_window.py:292 main_window.py:590
+#: main_window.py:296 main_window.py:518
 msgid "Open Project..."
 msgstr ""
 
-#: main_window.py:1564 main_window.py:1622 main_window.py:3729
+#: main_window.py:292 main_window.py:517
+msgid "Open..."
+msgstr ""
+
+#: main_window.py:1499 main_window.py:1558 main_window.py:3679
 msgid "Operation Restricted"
 msgstr ""
 
@@ -1522,15 +1604,15 @@ msgstr ""
 msgid "Options"
 msgstr ""
 
-#: dialogs/diff_dialog.py:160 dialogs/search_dialog.py:56 main_window.py:653
+#: dialogs/diff_dialog.py:160 dialogs/search_dialog.py:56 main_window.py:571
 msgid "Original"
 msgstr ""
 
-#: main_window.py:2568
+#: main_window.py:2519
 msgid "Original (Raw)"
 msgstr ""
 
-#: main_window.py:2566 main_window.py:2630 main_window.py:2636
+#: main_window.py:2517 main_window.py:2581 main_window.py:2587
 msgid "Original (Semantic)"
 msgstr ""
 
@@ -1546,7 +1628,7 @@ msgstr ""
 msgid "Original starts with space, translation does not."
 msgstr ""
 
-#: main_window.py:2142
+#: main_window.py:2085
 msgid "Original text cannot be empty for a new entry."
 msgstr ""
 
@@ -1554,7 +1636,7 @@ msgstr ""
 msgid "Original:"
 msgstr ""
 
-#: main_window.py:4051
+#: main_window.py:4001
 #, python-brace-format
 msgid ""
 "Original:\n"
@@ -1567,7 +1649,7 @@ msgstr ""
 msgid "Override default font settings"
 msgstr ""
 
-#: main_window.py:1513
+#: main_window.py:1436
 #, python-brace-format
 msgid ""
 "Overwatch Custom Code Translation Tool\n"
@@ -1577,18 +1659,18 @@ msgid ""
 "China Server ID: 小鸟游六花#56683 / Asia Server: 小鳥游六花#31665"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:167
-#: dialogs/extraction_pattern_dialog.py:192
+#: dialogs/extraction_pattern_dialog.py:165
+#: dialogs/extraction_pattern_dialog.py:190
 #, python-brace-format
 msgid "Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)"
 msgstr ""
 
-#: main_window.py:134 main_window.py:578
+#: main_window.py:136 main_window.py:506
 #, python-brace-format
 msgid "Overwatch Localizer - v{version}"
 msgstr ""
 
-#: main_window.py:1615 main_window.py:2464
+#: main_window.py:1551 main_window.py:2415
 #, python-brace-format
 msgid "Overwatch Project Files (*{ext});;All Files (*.*)"
 msgstr ""
@@ -1598,53 +1680,61 @@ msgstr ""
 msgid "Overwatch Prompt Files (*{ext});;All Files (*.*)"
 msgstr ""
 
-#: main_window.py:1557 main_window.py:2807 main_window.py:4355
+#: main_window.py:1478
+msgid "Overwatch Workshop Files (*.ow *.txt);;"
+msgstr ""
+
+#: main_window.py:2758 main_window.py:4305
 msgid "Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)"
 msgstr ""
 
-#: main_window.py:3759
+#: main_window.py:3709
 msgid "Overwrite All"
 msgstr ""
 
-#: main_window.py:3514 main_window.py:3745 main_window.py:3755
+#: main_window.py:3464 main_window.py:3695 main_window.py:3705
 msgid "Overwrite Confirmation"
 msgstr ""
 
-#: main_window.py:2875
+#: main_window.py:2826
 msgid "PO Import Error"
 msgstr ""
 
-#: main_window.py:4350
+#: main_window.py:4300
 msgid "PO Template Files (*.pot);;All Files (*.*)"
 msgstr ""
 
-#: main_window.py:2815
+#: main_window.py:2766
 msgid "PO Template files (*.pot);;All files (*.*)"
 msgstr ""
 
-#: main_window.py:2878
+#: main_window.py:1479
+msgid "PO Translation Files (*.po *.pot);;"
+msgstr ""
+
+#: main_window.py:2829
 msgid "PO file loading failed"
 msgstr ""
 
-#: main_window.py:2486
+#: main_window.py:2437
 #, python-brace-format
 msgid "PO file saved and MO file compiled: {filename}"
 msgstr ""
 
-#: main_window.py:2478
+#: main_window.py:2429
 #, python-brace-format
 msgid "PO file saved to: {filename}"
 msgstr ""
 
-#: main_window.py:2499 main_window.py:2912
+#: main_window.py:2450 main_window.py:2863
 msgid "PO files (*.po);;All Files (*.*)"
 msgstr ""
 
-#: main_window.py:2888
+#: main_window.py:2839
 msgid "PO files (*.po);;POT files (*.pot);;All files (*.*)"
 msgstr ""
 
-#: main_window.py:2834
+#: main_window.py:2785
 msgid "POT Extraction Error"
 msgstr ""
 
@@ -1652,24 +1742,28 @@ msgstr ""
 msgid "POT File Detected"
 msgstr ""
 
-#: main_window.py:2830
+#: main_window.py:2781
 #, python-brace-format
 msgid "POT template saved to: {filename}"
 msgstr ""
 
-#: main_window.py:4159
+#: main_window.py:4109
 msgid "Parsing new file..."
 msgstr ""
 
-#: main_window.py:3354
+#: main_window.py:3305
 msgid "Paste failed: Clipboard content is not text."
 msgstr ""
 
-#: main_window.py:395 main_window.py:612
+#: main_window.py:399 main_window.py:540
 msgid "Paste to Translation"
 msgstr ""
 
-#: main_window.py:3924 main_window.py:3930
+#: dialogs/settings_pages.py:203
+msgid "Performance"
+msgstr ""
+
+#: main_window.py:3874 main_window.py:3880
 msgid "Placeholder Mismatch"
 msgstr ""
 
@@ -1681,41 +1775,64 @@ msgstr ""
 msgid "Please enter a search term."
 msgstr ""
 
-#: main_window.py:2603
+#: main_window.py:2554
 msgid "Please load a code file or project first to match imported translations."
 msgstr ""
 
-#: main_window.py:3319
+#: main_window.py:3270
 msgid "Please load a file or project first."
 msgstr ""
 
-#: main_window.py:4344
+#: main_window.py:4294
 msgid "Please open a project or file first."
 msgstr ""
 
-#: main_window.py:3194 main_window.py:3231
+#: main_window.py:3145 main_window.py:3182
 msgid "Please select an item first."
 msgstr ""
 
-#: main_window.py:3708
+#: main_window.py:3658
 msgid "Please select an item to AI translate."
 msgstr ""
 
-#: main_window.py:3340
+#: main_window.py:3291
 msgid "Please select an item."
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:198
+#: plugins/plugin_dialog.py:206
+#, python-brace-format
+msgid "Plugin '{plugin_name}' disabled."
+msgstr ""
+
+#: plugins/plugin_dialog.py:185
+#, python-brace-format
+msgid "Plugin '{plugin_name}' enabled."
+msgstr ""
+
+#: plugins/plugin_dialog.py:166
+#, python-brace-format
+msgid "Plugin '{plugin_name}' force-enabled."
+msgstr ""
+
+#: plugins/plugin_manager.py:85
+msgid "Plugin Loading Error"
+msgstr ""
+
+#: plugins/plugin_dialog.py:43
+msgid "Plugin Manager"
+msgstr ""
+
+#: dialogs/extraction_pattern_dialog.py:196
 #: dialogs/prompt_manager_dialog.py:196
 msgid "Preset exported successfully."
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:183
+#: dialogs/extraction_pattern_dialog.py:181
 #: dialogs/prompt_manager_dialog.py:181
 msgid "Preset file format is incorrect."
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:180
+#: dialogs/extraction_pattern_dialog.py:178
 #: dialogs/prompt_manager_dialog.py:179
 msgid "Preset imported successfully."
 msgstr ""
@@ -1724,139 +1841,143 @@ msgstr ""
 msgid "Press a key combination..."
 msgstr ""
 
-#: dialogs/statistics_dialog.py:82
+#: dialogs/statistics_dialog.py:72
 #, python-brace-format
 msgid "Processing item {i}/{total}..."
 msgstr ""
 
-#: main_window.py:1670
+#: main_window.py:1607
 #, python-brace-format
 msgid "Project '{filename}' loaded."
 msgstr ""
 
-#: dialogs/statistics_dialog.py:358
+#: dialogs/statistics_dialog.py:348
 msgid "Project Metrics"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:146 dialogs/statistics_dialog.py:430
-#: dialogs/statistics_dialog.py:512
+#: dialogs/statistics_dialog.py:136 dialogs/statistics_dialog.py:420
+#: dialogs/statistics_dialog.py:502
 msgid "Project Statistics"
 msgstr ""
 
-#: main_window.py:496 main_window.py:637
+#: main_window.py:475 main_window.py:560
 msgid "Project Statistics..."
 msgstr ""
 
-#: main_window.py:1641
+#: main_window.py:1578
 msgid "Project Warning"
 msgstr ""
 
-#: main_window.py:839
+#: main_window.py:764
 msgid "Project auto-saved."
 msgstr ""
 
-#: main_window.py:1679
+#: main_window.py:1616
 msgid "Project file loading failed."
 msgstr ""
 
-#: main_window.py:2530
+#: main_window.py:2481
 #, python-brace-format
 msgid "Project saved to: {filename}"
 msgstr ""
 
-#: main_window.py:2595 main_window.py:2757 main_window.py:2797
+#: main_window.py:2546 main_window.py:2708 main_window.py:2748
 #, python-brace-format
 msgid "Project translations exported to: {filename}"
 msgstr ""
 
-#: main_window.py:4237 main_window.py:4333
+#: main_window.py:4187 main_window.py:4283
 msgid "Project updated to new version."
 msgstr ""
 
-#: main_window.py:1642
+#: main_window.py:1579
 #, python-brace-format
 msgid "Project's associated TM file '{tm_path}' not found."
 msgstr ""
 
-#: main_window.py:3361
+#: main_window.py:3312
 msgid "Project-specific Instructions"
 msgstr ""
 
-#: main_window.py:476 main_window.py:633
+#: dialogs/settings_pages.py:264
 msgid "Project-specific Instructions..."
 msgstr ""
 
-#: main_window.py:3368
+#: main_window.py:3319
 msgid "Project-specific translation settings updated."
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:162
+#: dialogs/settings_pages.py:262
 msgid "Prompt Manager..."
 msgstr ""
 
-#: main_window.py:3383
+#: main_window.py:3333
 msgid ""
 "Python 'requests' library not found. Please install it (pip install "
 "requests) to use AI translation features."
 msgstr ""
 
-#: main_window.py:669 main_window.py:892 main_window.py:976 main_window.py:981
-#: main_window.py:1429 main_window.py:1741 main_window.py:1766
-#: main_window.py:1783 main_window.py:1789 main_window.py:1790
-#: main_window.py:1794 main_window.py:1801 main_window.py:2278
-#: main_window.py:2519
+#: main_window.py:587 main_window.py:818 main_window.py:902 main_window.py:907
+#: main_window.py:1357 main_window.py:1678 main_window.py:1703
+#: main_window.py:1720 main_window.py:1726 main_window.py:1727
+#: main_window.py:1731 main_window.py:1738 main_window.py:2229
+#: main_window.py:2470
 msgid "Quick search..."
 msgstr ""
 
-#: main_window.py:2977
+#: main_window.py:2928
 msgid "Re-extracting strings with new rules..."
 msgstr ""
 
-#: main_window.py:255 main_window.py:683 main_window.py:1092
-#: main_window.py:1118
+#: main_window.py:259 main_window.py:601 main_window.py:1022
+#: main_window.py:1048
 msgid "Ready"
 msgstr ""
 
-#: main_window.py:364 main_window.py:604
+#: main_window.py:368 main_window.py:532
 msgid "Recent Files"
 msgstr ""
 
-#: main_window.py:378 main_window.py:609
+#: main_window.py:382 main_window.py:537
 msgid "Redo"
 msgstr ""
 
-#: main_window.py:1355
+#: main_window.py:1283
 #, python-brace-format
 msgid "Redo error: Object ID {obj_id} not found"
 msgstr ""
 
-#: main_window.py:1377
+#: main_window.py:1305
 #, python-brace-format
 msgid "Redo: Bulk change ({count} items)"
 msgstr ""
 
-#: main_window.py:1351
+#: main_window.py:1279
 #, python-brace-format
 msgid "Redo: {field} for ID {id} -> '{value}'"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:385
+#: dialogs/statistics_dialog.py:375
 msgid "Refresh Data"
 msgstr ""
 
-#: main_window.py:3015
+#: plugins/plugin_dialog.py:92
+msgid "Reload All Plugins"
+msgstr ""
+
+#: main_window.py:2966
 msgid "Reload Error"
 msgstr ""
 
-#: main_window.py:490 main_window.py:636
+#: main_window.py:469 main_window.py:559
 msgid "Reload Translatable Text"
 msgstr ""
 
-#: main_window.py:3017
+#: main_window.py:2968
 msgid "Reload failed."
 msgstr ""
 
-#: main_window.py:3009
+#: main_window.py:2960
 #, python-brace-format
 msgid "Reloaded {count} strings from {source} using new rules."
 msgstr ""
@@ -1890,6 +2011,10 @@ msgstr ""
 msgid "Replaced occurrences in {count} item(s)."
 msgstr ""
 
+#: plugins/plugin_dialog.py:248 plugins/plugin_dialog.py:256
+msgid "Requires App Version"
+msgstr ""
+
 #: dialogs/language_pair_dialog.py:327
 msgid "Reset"
 msgstr ""
@@ -1907,30 +2032,30 @@ msgstr ""
 msgid "Response"
 msgstr ""
 
-#: main_window.py:802
+#: main_window.py:727
 msgid "Restart Required"
 msgstr ""
 
-#: main_window.py:445 main_window.py:625
+#: main_window.py:443 main_window.py:552
 msgid "Restore Default Layout"
 msgstr ""
 
-#: main_window.py:2372
+#: main_window.py:2323
 #, python-brace-format
 msgid "Review status for ID {id} -> {status}"
 msgstr ""
 
-#: main_window.py:2566 main_window.py:2627 main_window.py:2635
+#: main_window.py:2517 main_window.py:2578 main_window.py:2586
 #: ui_components/comment_status_panel.py:62
 #: ui_components/comment_status_panel.py:82
 msgid "Reviewed"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:551
+#: dialogs/statistics_dialog.py:541
 msgid "Reviewed (of total)"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:555
+#: dialogs/statistics_dialog.py:545
 msgid "Reviewed (of translated)"
 msgstr ""
 
@@ -1938,7 +2063,7 @@ msgstr ""
 msgid "Right Delimiter (Regex)"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:257
+#: dialogs/extraction_pattern_dialog.py:255
 msgid "Right Delimiter:"
 msgstr ""
 
@@ -1946,47 +2071,47 @@ msgstr ""
 msgid "Rule Name"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:235
+#: dialogs/extraction_pattern_dialog.py:233
 msgid "Rule Name:"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:300
+#: dialogs/extraction_pattern_dialog.py:298
 msgid "Rule name cannot be empty."
 msgstr ""
 
-#: main_window.py:303 main_window.py:592
+#: main_window.py:307 main_window.py:520
 msgid "Save"
 msgstr ""
 
-#: main_window.py:308 main_window.py:593
+#: main_window.py:312 main_window.py:521
 msgid "Save As..."
 msgstr ""
 
-#: main_window.py:2392
+#: main_window.py:2343
 msgid "Save Error"
 msgstr ""
 
-#: main_window.py:2491
+#: main_window.py:2442
 msgid "Save PO Error"
 msgstr ""
 
-#: main_window.py:2497
+#: main_window.py:2448
 msgid "Save PO File As"
 msgstr ""
 
-#: main_window.py:2813
+#: main_window.py:2764
 msgid "Save POT Template File"
 msgstr ""
 
-#: main_window.py:2462
+#: main_window.py:2413
 msgid "Save Project As"
 msgstr ""
 
-#: main_window.py:314 main_window.py:594
+#: main_window.py:318 main_window.py:522
 msgid "Save Translation to New Code File"
 msgstr ""
 
-#: main_window.py:1787
+#: main_window.py:1724
 msgid "Search cleared."
 msgstr ""
 
@@ -1998,44 +2123,56 @@ msgstr ""
 msgid "Search languages..."
 msgstr ""
 
-#: main_window.py:2805
+#: main_window.py:2756
 msgid "Select Code File to Extract POT From"
 msgstr ""
 
-#: main_window.py:2886
+#: main_window.py:2837
 msgid "Select PO File to Import"
 msgstr ""
 
-#: main_window.py:4349
+#: main_window.py:4299
 msgid "Select new POT template for comparison"
 msgstr ""
 
-#: main_window.py:4354
+#: main_window.py:4304
 msgid "Select new version code file for comparison"
 msgstr ""
 
-#: main_window.py:2078
+#: main_window.py:2015
 msgid "Selected item(s) already have the desired warning status."
 msgstr ""
 
-#: main_window.py:1919
+#: main_window.py:1856
 #, python-brace-format
 msgid "Selected: \"{text}...\" (Line: {line_num})"
 msgstr ""
 
-#: main_window.py:401 main_window.py:616
+#: dialogs/settings_dialog.py:15
+msgid "Settings"
+msgstr ""
+
+#: dialogs/settings_dialog.py:129
+msgid "Settings applied."
+msgstr ""
+
+#: main_window.py:481 main_window.py:563
+msgid "Settings..."
+msgstr ""
+
+#: main_window.py:405 main_window.py:544
 msgid "Show Ignored"
 msgstr ""
 
-#: main_window.py:413 main_window.py:618
+#: main_window.py:417 main_window.py:546
 msgid "Show Translated"
 msgstr ""
 
-#: main_window.py:419 main_window.py:619
+#: main_window.py:423 main_window.py:547
 msgid "Show Unreviewed"
 msgstr ""
 
-#: main_window.py:407 main_window.py:617
+#: main_window.py:411 main_window.py:545
 msgid "Show Untranslated"
 msgstr ""
 
@@ -2047,11 +2184,15 @@ msgstr ""
 msgid "Size:"
 msgstr ""
 
-#: main_window.py:3760
+#: main_window.py:3710
 msgid "Skip Translated"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:570
+#: dialogs/settings_pages.py:169
+msgid "Sorting Mode:"
+msgstr ""
+
+#: dialogs/statistics_dialog.py:560
 msgid "Source Chars (Translated only)"
 msgstr ""
 
@@ -2059,7 +2200,7 @@ msgstr ""
 msgid "Source Language"
 msgstr ""
 
-#: main_window.py:2567
+#: main_window.py:2518
 msgid "Source Line"
 msgstr ""
 
@@ -2085,23 +2226,19 @@ msgstr ""
 msgid "Static Instruction"
 msgstr ""
 
-#: main_window.py:426 main_window.py:620
-msgid "Static Sorting"
-msgstr ""
-
-#: main_window.py:756
+#: main_window.py:674
 msgid "Static sorting enabled. Press F5 to refresh."
 msgstr ""
 
-#: main_window.py:3022
+#: main_window.py:2973
 msgid "Statistics"
 msgstr ""
 
-#: main_window.py:470 main_window.py:632
+#: main_window.py:463 main_window.py:558
 msgid "Stop AI Batch Translation"
 msgstr ""
 
-#: main_window.py:3515 main_window.py:3746
+#: main_window.py:3465 main_window.py:3696
 #, python-brace-format
 msgid ""
 "String \"{text}...\" already has a translation. Overwrite with AI "
@@ -2112,7 +2249,7 @@ msgstr ""
 msgid "String Type"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:245
+#: dialogs/extraction_pattern_dialog.py:243
 msgid "String Type:"
 msgstr ""
 
@@ -2125,62 +2262,62 @@ msgstr ""
 msgid "Style:"
 msgstr ""
 
-#: dialogs/extraction_pattern_dialog.py:180
-#: dialogs/extraction_pattern_dialog.py:198
+#: dialogs/extraction_pattern_dialog.py:178
+#: dialogs/extraction_pattern_dialog.py:196
 #: dialogs/prompt_manager_dialog.py:179 dialogs/prompt_manager_dialog.py:196
 msgid "Success"
 msgstr ""
 
-#: main_window.py:3083 main_window.py:3097 main_window.py:3131
-#: main_window.py:3160 main_window.py:3310 main_window.py:3313
+#: main_window.py:3034 main_window.py:3048 main_window.py:3082
+#: main_window.py:3111 main_window.py:3261 main_window.py:3264
 msgid "TM"
 msgstr ""
 
-#: main_window.py:3061
+#: main_window.py:3012
 msgid "TM Load Warning"
 msgstr ""
 
-#: main_window.py:3243
+#: main_window.py:3194
 msgid "TM entry cleared for selected item."
 msgstr ""
 
-#: main_window.py:3153
+#: main_window.py:3104
 msgid ""
 "TM imported. Do you want to apply it to untranslated strings in the "
 "current project immediately?"
 msgstr ""
 
-#: main_window.py:3176
+#: main_window.py:3127
 msgid "TM is already empty."
 msgstr ""
 
-#: main_window.py:3097 main_window.py:3160
+#: main_window.py:3048 main_window.py:3111
 msgid "TM is empty, nothing to export."
 msgstr ""
 
-#: main_window.py:3268 main_window.py:4079
+#: main_window.py:3219 main_window.py:4029
 msgid "TM is empty."
 msgstr ""
 
-#: main_window.py:3087
+#: main_window.py:3038
 #, python-brace-format
 msgid "TM loaded from '{filename}' (Excel)."
 msgstr ""
 
-#: main_window.py:3132 main_window.py:3135
+#: main_window.py:3083 main_window.py:3086
 #, python-brace-format
 msgid "TM saved to '{filename}'."
 msgstr ""
 
-#: main_window.py:3261
+#: main_window.py:3212
 msgid "TM suggestion applied."
 msgstr ""
 
-#: main_window.py:3209
+#: main_window.py:3160
 msgid "TM update cancelled."
 msgstr ""
 
-#: main_window.py:3218
+#: main_window.py:3169
 #, python-brace-format
 msgid "TM updated for original: '{text}...'"
 msgstr ""
@@ -2189,42 +2326,25 @@ msgstr ""
 msgid "Target Language"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:91
+#: dialogs/settings_pages.py:219
 msgid "Target Language:"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:94
+#: dialogs/settings_pages.py:224
 msgid "Target language is set in 'Settings > Language Pair Settings...'"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:167 dialogs/ai_settings_dialog.py:232
-#: dialogs/ai_settings_dialog.py:234
-msgid "Test Connection"
-msgstr ""
-
-#: dialogs/ai_settings_dialog.py:199
-msgid "Test Failed"
-msgstr ""
-
-#: dialogs/ai_settings_dialog.py:200
-msgid "Test failed: API Key is not filled."
-msgstr ""
-
-#: dialogs/ai_settings_dialog.py:191
-msgid "Testing..."
-msgstr ""
-
-#: main_window.py:3373
+#: dialogs/settings_dialog.py:142
 msgid ""
-"The 'requests' library is not installed, AI translation is unavailable.\n"
-"Please run: pip install requests"
+"The UI language has been changed.\n"
+"Some changes may require a restart of the application to take full effect."
 msgstr ""
 
-#: main_window.py:1719
+#: main_window.py:1656
 msgid "The current project has unsaved changes. Do you want to save?"
 msgstr ""
 
-#: main_window.py:3205
+#: main_window.py:3156
 #, python-brace-format
 msgid ""
 "The current translation is empty. Do you want to update the TM entry for:"
@@ -2232,45 +2352,64 @@ msgid ""
 "'{text}...' with an empty translation?"
 msgstr ""
 
-#: main_window.py:1086
+#: main_window.py:1016
 msgid "The layout has been restored to its default state."
 msgstr ""
 
-#: main_window.py:3248
+#: plugins/plugin_dialog.py:154
+#, python-brace-format
+msgid ""
+"The plugin '{plugin_name}' is not marked as compatible with this version "
+"of the application.\n"
+"\n"
+"Forcing it to enable may cause instability or crashes.\n"
+"\n"
+"Are you sure you want to force enable it?"
+msgstr ""
+
+#: main_window.py:3199
 msgid "The selected item has no entry in the TM."
 msgstr ""
 
-#: main_window.py:3507
+#: main_window.py:3457
 msgid "The selected string is marked as ignored and will not be AI translated."
 msgstr ""
 
-#: main_window.py:2443
+#: main_window.py:2394
 msgid ""
 "There is no content to save as a project. Please open a code file or PO "
 "file first."
 msgstr ""
 
-#: main_window.py:2383
+#: main_window.py:2334
 msgid ""
 "There is no original code file content to save.\n"
 "Please ensure the code file associated with the project is loaded."
 msgstr ""
 
-#: main_window.py:3358
+#: main_window.py:3309
 msgid "This feature is only available when a project file is open."
 msgstr ""
 
-#: main_window.py:2146
+#: main_window.py:2089
 msgid "This original text already exists."
 msgstr ""
 
-#: main_window.py:3273
+#: plugins/plugin_dialog.py:120
+msgid "This plugin is force-enabled despite being incompatible."
+msgstr ""
+
+#: plugins/plugin_dialog.py:125
+msgid "This plugin is incompatible. Check to force-enable."
+msgstr ""
+
+#: main_window.py:3224
 msgid ""
 "This will apply TM to all matching strings, overwriting existing "
 "translations. Continue?"
 msgstr ""
 
-#: main_window.py:2968
+#: main_window.py:2919
 #, python-brace-format
 msgid ""
 "This will re-extract strings from {source} using the new rules.\n"
@@ -2287,7 +2426,7 @@ msgstr ""
 msgid "Toggle Reviewed Status"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:527
+#: dialogs/statistics_dialog.py:517
 msgid "Total Items"
 msgstr ""
 
@@ -2295,21 +2434,17 @@ msgstr ""
 msgid "Trailing Whitespace Mismatch"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590
-#: main_window.py:663 main_window.py:877
+#: dialogs/statistics_dialog.py:523 dialogs/statistics_dialog.py:580
+#: main_window.py:581 main_window.py:803
 msgid "Translated"
 msgstr ""
 
-#: dialogs/search_dialog.py:57 main_window.py:654 main_window.py:2566
-#: main_window.py:2625 main_window.py:2634
+#: dialogs/search_dialog.py:57 main_window.py:572 main_window.py:2517
+#: main_window.py:2576 main_window.py:2585
 msgid "Translation"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:87
-msgid "Translation & Context Settings"
-msgstr ""
-
-#: dialogs/statistics_dialog.py:571
+#: dialogs/statistics_dialog.py:561
 msgid "Translation Chars (Translated only)"
 msgstr ""
 
@@ -2317,19 +2452,19 @@ msgstr ""
 msgid "Translation Empty"
 msgstr ""
 
-#: main_window.py:675 main_window.py:1028
+#: main_window.py:593 main_window.py:956
 msgid "Translation Memory Matches"
 msgstr ""
 
-#: main_window.py:441 main_window.py:624
+#: main_window.py:439 main_window.py:551
 msgid "Translation Memory Panel"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:339
+#: dialogs/statistics_dialog.py:329
 msgid "Translation Progress"
 msgstr ""
 
-#: main_window.py:2126
+#: main_window.py:2069
 #, python-brace-format
 msgid "Translation applied: \"{original_semantic}...\""
 msgstr ""
@@ -2350,12 +2485,12 @@ msgstr ""
 msgid "Translation:"
 msgstr ""
 
-#: main_window.py:2922
+#: main_window.py:2873
 #, python-brace-format
 msgid "Translations exported to PO file: {filename}"
 msgstr ""
 
-#: main_window.py:4133
+#: main_window.py:4083
 msgid "Translations for selected items are already empty, no clearing needed."
 msgstr ""
 
@@ -2367,11 +2502,15 @@ msgstr ""
 msgid "Type:"
 msgstr ""
 
-#: main_window.py:1844
+#: dialogs/settings_pages.py:102
+msgid "UI Language:"
+msgstr ""
+
+#: main_window.py:1781
 msgid "Un-ignore Warnings for Selected"
 msgstr ""
 
-#: main_window.py:2075
+#: main_window.py:2012
 #, python-brace-format
 msgid "Un-ignored warnings for {count} item(s)."
 msgstr ""
@@ -2380,21 +2519,21 @@ msgstr ""
 msgid "Unchanged"
 msgstr ""
 
-#: main_window.py:373 main_window.py:608
+#: main_window.py:377 main_window.py:536
 msgid "Undo"
 msgstr ""
 
-#: main_window.py:1282
+#: main_window.py:1210
 #, python-brace-format
 msgid "Undo error: Object ID {obj_id} not found"
 msgstr ""
 
-#: main_window.py:1304
+#: main_window.py:1232
 #, python-brace-format
 msgid "Undo: Bulk change ({count} items)"
 msgstr ""
 
-#: main_window.py:1278
+#: main_window.py:1206
 #, python-brace-format
 msgid "Undo: {field} for ID {id} -> '{value}'"
 msgstr ""
@@ -2407,7 +2546,7 @@ msgstr ""
 msgid "Unknown error occurred during translation"
 msgstr ""
 
-#: main_window.py:1828
+#: main_window.py:1765
 msgid "Unmark as Ignored"
 msgstr ""
 
@@ -2415,16 +2554,16 @@ msgstr ""
 msgid "Unnamed Rule"
 msgstr ""
 
-#: main_window.py:664 main_window.py:883
+#: main_window.py:582 main_window.py:809
 msgid "Unreviewed"
 msgstr ""
 
-#: main_window.py:1718
+#: main_window.py:1655
 msgid "Unsaved Changes"
 msgstr ""
 
-#: dialogs/statistics_dialog.py:538 dialogs/statistics_dialog.py:595
-#: main_window.py:662 main_window.py:871
+#: dialogs/statistics_dialog.py:528 dialogs/statistics_dialog.py:585
+#: main_window.py:580 main_window.py:797
 msgid "Untranslated"
 msgstr ""
 
@@ -2436,64 +2575,81 @@ msgstr ""
 msgid "Update from POT"
 msgstr ""
 
-#: main_window.py:4072
+#: main_window.py:4022
 #, python-brace-format
 msgid "Updated comments for {count} items."
 msgstr ""
 
-#: main_window.py:1860
+#: main_window.py:1797
 msgid "Use AI to Translate Selected Items"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:125 dialogs/ai_settings_dialog.py:142
+#: dialogs/settings_pages.py:234 dialogs/settings_pages.py:248
 msgid "Use nearby"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:118
+#: dialogs/settings_pages.py:229
 msgid "Use nearby original text as context"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:135
+#: dialogs/settings_pages.py:243
 msgid "Use nearby translated text as context"
 msgstr ""
 
-#: main_window.py:4228 main_window.py:4318
+#: dialogs/settings_pages.py:167
+msgid "Use static sorting (Press F5 to manual refresh)"
+msgstr ""
+
+#: main_window.py:713
+#, python-brace-format
+msgid "Validation complete. Language pair set to {src} -> {tgt}."
+msgstr ""
+
+#: plugins/plugin_dialog.py:234
+msgid "Version"
+msgstr ""
+
+#: main_window.py:4178 main_window.py:4268
 msgid "Version Comparison Results"
 msgstr ""
 
-#: main_window.py:4340
+#: main_window.py:4290
 msgid "Version comparison failed."
 msgstr ""
 
-#: main_window.py:4239 main_window.py:4335
+#: main_window.py:4189 main_window.py:4285
 msgid "Version update cancelled."
 msgstr ""
 
-#: main_window.py:764
+#: main_window.py:682
 msgid "View refreshed."
+msgstr ""
+
+#: plugins/plugin_dialog.py:240
+msgid "Visit Plugin Homepage"
 msgstr ""
 
 #: dialogs/language_pair_dialog.py:470
 msgid "Warning"
 msgstr ""
 
-#: main_window.py:2654
+#: main_window.py:2605
 #, python-brace-format
 msgid ""
 "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match "
 "the one in Excel. Data will still be imported."
 msgstr ""
 
-#: main_window.py:2782
+#: main_window.py:2733
 msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
 msgstr ""
 
-#: main_window.py:2337 main_window.py:2373 main_window.py:2587
-#: main_window.py:2588 main_window.py:2680 main_window.py:2690
+#: main_window.py:2288 main_window.py:2324 main_window.py:2538
+#: main_window.py:2539 main_window.py:2631 main_window.py:2641
 msgid "Yes"
 msgstr ""
 
-#: main_window.py:3792
+#: main_window.py:3742
 #, python-brace-format
 msgid ""
 "You are about to AI translate {count} unique strings.\n"
@@ -2502,57 +2658,57 @@ msgid ""
 "Continue?"
 msgstr ""
 
-#: main_window.py:4224 main_window.py:4314
+#: main_window.py:4174 main_window.py:4264
 #, python-brace-format
 msgid "and {modified} modified/inherited items."
 msgstr ""
 
-#: main_window.py:2943
+#: main_window.py:2894
 msgid "current in-memory code"
 msgstr ""
 
-#: main_window.py:2948
+#: main_window.py:2899
 #, python-brace-format
 msgid "file '{filename}'"
 msgstr ""
 
-#: main_window.py:3054
+#: main_window.py:3005
 msgid "original"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:131
+#: dialogs/settings_pages.py:240
 msgid "original strings (0 for all)"
 msgstr ""
 
-#: main_window.py:3056
+#: main_window.py:3007
 msgid "translation"
 msgstr ""
 
-#: dialogs/ai_settings_dialog.py:148
+#: dialogs/settings_pages.py:254
 msgid "translations (0 for all)"
 msgstr ""
 
-#: main_window.py:4222 main_window.py:4312
+#: main_window.py:4172 main_window.py:4262
 #, python-brace-format
 msgid "{added} new items, "
 msgstr ""
 
-#: main_window.py:3757
+#: main_window.py:3707
 #, python-brace-format
 msgid "{count} item(s) already have translations."
 msgstr ""
 
-#: main_window.py:3597 main_window.py:3652
+#: main_window.py:3547 main_window.py:3602
 #, python-brace-format
 msgid "{count} items' ignore status updated."
 msgstr ""
 
-#: main_window.py:3624 main_window.py:3680
+#: main_window.py:3574 main_window.py:3630
 #, python-brace-format
 msgid "{count} items' review status updated."
 msgstr ""
 
-#: main_window.py:4223 main_window.py:4313
+#: main_window.py:4173 main_window.py:4263
 #, python-brace-format
 msgid "{removed} removed items, "
 msgstr ""
