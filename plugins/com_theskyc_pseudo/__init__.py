@@ -101,7 +101,7 @@ class PseudoLocalizationPlugin(PluginBase):
         original = ts_obj.original_semantic
         preview = self._do_pseudo_localization(original)
 
-        dialog = PreviewDialog(self.main_window, original, preview)
+        dialog = PreviewDialog(self.main_window, original, preview, self._)
         dialog.exec()
 
     def clear_selected_translation(self):
@@ -118,7 +118,7 @@ class PseudoLocalizationPlugin(PluginBase):
         )
 
     def show_settings_dialog(self):
-        dialog = SettingsDialog(self.main_window, self.config)
+        dialog = SettingsDialog(self.main_window, self.config, self._)
         if dialog.exec():
             self.config = dialog.get_settings()
             self.save_config()

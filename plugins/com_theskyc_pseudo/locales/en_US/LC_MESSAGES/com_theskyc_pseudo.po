@@ -1,0 +1,143 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2025-07-18 02:22+0000\n"
+"PO-Revision-Date: 2025-07-18 02:33+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: __init__.py:35
+msgid "An pseudo-localization plugin with multiple modes and extensive customization."
+msgstr "An pseudo-localization plugin with multiple modes and extensive customization."
+
+#: __init__.py:74
+#, python-brace-format
+msgid "Applied pseudo-localization to {count} items."
+msgstr "Applied pseudo-localization to {count} items."
+
+#: __init__.py:51
+msgid "Apply to Selected"
+msgstr "Apply to Selected"
+
+#: settings_dialog.py:21
+msgid "Auto pseudo-localize on apply"
+msgstr "Auto pseudo-localize on apply"
+
+#: settings_dialog.py:31
+msgid "Basic"
+msgstr "Basic"
+
+#: __init__.py:54
+msgid "Clear Translation for Selected"
+msgstr "Clear Translation for Selected"
+
+#: __init__.py:117
+#, python-brace-format
+msgid "Cleared translation for {count} items."
+msgstr "Cleared translation for {count} items."
+
+#: settings_dialog.py:32
+msgid "Comprehensive"
+msgstr "Comprehensive"
+
+#: __init__.py:91
+#, python-brace-format
+msgid "Copied original text to translation for {count} items."
+msgstr "Copied original text to translation for {count} items."
+
+#: __init__.py:52
+msgid "Copy Original to Translation"
+msgstr "Copy Original to Translation"
+
+#: settings_dialog.py:53
+msgid "Enable Unicode character replacement"
+msgstr "Enable Unicode character replacement"
+
+#: settings_dialog.py:43
+msgid "Enable length expansion"
+msgstr "Enable length expansion"
+
+#: settings_dialog.py:51
+msgid "Expansion Factor:"
+msgstr "Expansion Factor:"
+
+#: settings_dialog.py:33
+msgid "Extreme"
+msgstr "Extreme"
+
+#: settings_dialog.py:18
+msgid "General Settings"
+msgstr "General Settings"
+
+#: __init__.py:66 __init__.py:80 __init__.py:110
+msgid "No items selected."
+msgstr "No items selected."
+
+#: preview_dialog.py:20
+msgid "Original Text:"
+msgstr "Original Text:"
+
+#: __init__.py:97
+msgid "Please select a single item to preview."
+msgstr "Please select a single item to preview."
+
+#: settings_dialog.py:60
+msgid "Preservation Settings"
+msgstr "Preservation Settings"
+
+#: settings_dialog.py:67
+msgid "Preserve HTML tags"
+msgstr "Preserve HTML tags"
+
+#: settings_dialog.py:71
+msgid "Preserve URLs and emails"
+msgstr "Preserve URLs and emails"
+
+#: settings_dialog.py:63
+#, python-brace-format
+msgid "Preserve {placeholders}"
+msgstr "Preserve {placeholders}"
+
+#: __init__.py:53
+msgid "Preview on Selected"
+msgstr "Preview on Selected"
+
+#: preview_dialog.py:27
+msgid "Preview:"
+msgstr "Preview:"
+
+#: settings_dialog.py:41
+msgid "Processing Mode:"
+msgstr "Processing Mode:"
+
+#: __init__.py:32
+msgid "Pseudo-Localization"
+msgstr "Pseudo-Localization"
+
+#: preview_dialog.py:11
+msgid "Pseudo-Localization Preview"
+msgstr "Pseudo-Localization Preview"
+
+#: settings_dialog.py:11
+msgid "Pseudo-Localization Settings"
+msgstr "Pseudo-Localization Settings"
+
+#: __init__.py:125
+msgid "Pseudo-localization settings updated."
+msgstr "Pseudo-localization settings updated."
+
+#: __init__.py:56
+msgid "Settings..."
+msgstr "Settings..."
+
+#: settings_dialog.py:23
+msgid "When enabled, any text applied as a translation (manually, from TM, or AI) will be automatically converted."
+msgstr "When enabled, any text applied as a translation (manually, from TM, or AI) will be automatically converted."

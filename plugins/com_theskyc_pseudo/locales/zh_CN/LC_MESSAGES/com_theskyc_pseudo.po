@@ -1,0 +1,143 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2025-07-18 01:43+0000\n"
+"PO-Revision-Date: 2025-07-18 02:27+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: zh\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: __init__.py:35
+msgid "An pseudo-localization plugin with multiple modes and extensive customization."
+msgstr "一个具有多种模式和广泛自定义功能的伪本地化插件。"
+
+#: __init__.py:74
+#, python-brace-format
+msgid "Applied pseudo-localization to {count} items."
+msgstr "已对 {count} 个项目应用伪本地化。"
+
+#: __init__.py:51
+msgid "Apply to Selected"
+msgstr "对选中项应用"
+
+#: settings_dialog.py:21
+msgid "Auto pseudo-localize on apply"
+msgstr "应用时自动伪本地化"
+
+#: settings_dialog.py:31
+msgid "Basic"
+msgstr "基础"
+
+#: __init__.py:54
+msgid "Clear Translation for Selected"
+msgstr "清空选中项的译文"
+
+#: __init__.py:117
+#, python-brace-format
+msgid "Cleared translation for {count} items."
+msgstr "已清空 {count} 个项目的译文。"
+
+#: settings_dialog.py:32
+msgid "Comprehensive"
+msgstr "全面"
+
+#: __init__.py:91
+#, python-brace-format
+msgid "Copied original text to translation for {count} items."
+msgstr "已将 {count} 个项目的原文复制到译文。"
+
+#: __init__.py:52
+msgid "Copy Original to Translation"
+msgstr "将原文复制到译文"
+
+#: settings_dialog.py:53
+msgid "Enable Unicode character replacement"
+msgstr "启用 Unicode 字符替换"
+
+#: settings_dialog.py:43
+msgid "Enable length expansion"
+msgstr "启用长度扩展"
+
+#: settings_dialog.py:51
+msgid "Expansion Factor:"
+msgstr "扩展因子:"
+
+#: settings_dialog.py:33
+msgid "Extreme"
+msgstr "极限"
+
+#: settings_dialog.py:18
+msgid "General Settings"
+msgstr "通用设置"
+
+#: __init__.py:66 __init__.py:80 __init__.py:110
+msgid "No items selected."
+msgstr "未选择任何项目。"
+
+#: preview_dialog.py:20
+msgid "Original Text:"
+msgstr "原文:"
+
+#: __init__.py:97
+msgid "Please select a single item to preview."
+msgstr "请选择单个项目以进行预览。"
+
+#: settings_dialog.py:60
+msgid "Preservation Settings"
+msgstr "内容保留设置"
+
+#: settings_dialog.py:67
+msgid "Preserve HTML tags"
+msgstr "保留 HTML 标签"
+
+#: settings_dialog.py:71
+msgid "Preserve URLs and emails"
+msgstr "保留 URL 和电子邮件"
+
+#: settings_dialog.py:63
+#, python-brace-format
+msgid "Preserve {placeholders}"
+msgstr "保留 {占位符}"
+
+#: __init__.py:53
+msgid "Preview on Selected"
+msgstr "在选中项上预览"
+
+#: preview_dialog.py:27
+msgid "Preview:"
+msgstr "预览:"
+
+#: settings_dialog.py:41
+msgid "Processing Mode:"
+msgstr "处理模式:"
+
+#: __init__.py:32
+msgid "Pseudo-Localization"
+msgstr "伪本地化"
+
+#: preview_dialog.py:11
+msgid "Pseudo-Localization Preview"
+msgstr "伪本地化预览"
+
+#: settings_dialog.py:11
+msgid "Pseudo-Localization Settings"
+msgstr "伪本地化设置"
+
+#: __init__.py:125
+msgid "Pseudo-localization settings updated."
+msgstr "伪本地化设置已更新。"
+
+#: __init__.py:56
+msgid "Settings..."
+msgstr "设置..."
+
+#: settings_dialog.py:23
+msgid "When enabled, any text applied as a translation (manually, from TM, or AI) will be automatically converted."
+msgstr "启用后，任何作为译文应用的文本 (手动、来自翻译记忆库或 AI) 都将自动转换。"

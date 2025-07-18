@@ -1,0 +1,143 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2025-07-18 02:22+0000\n"
+"PO-Revision-Date: 2025-07-18 02:33+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: __init__.py:35
+msgid "An pseudo-localization plugin with multiple modes and extensive customization."
+msgstr "複数のモードと豊富なカスタマイズ機能を備えた疑似ローカライゼーションプラグイン。"
+
+#: __init__.py:74
+#, python-brace-format
+msgid "Applied pseudo-localization to {count} items."
+msgstr "{count} 項目に疑似ローカライズを適用しました。"
+
+#: __init__.py:51
+msgid "Apply to Selected"
+msgstr "選択した項目に適用"
+
+#: settings_dialog.py:21
+msgid "Auto pseudo-localize on apply"
+msgstr "適用時に自動的に擬似ローカライズする"
+
+#: settings_dialog.py:31
+msgid "Basic"
+msgstr "基本"
+
+#: __init__.py:54
+msgid "Clear Translation for Selected"
+msgstr "選択した項目の翻訳をクリア"
+
+#: __init__.py:117
+#, python-brace-format
+msgid "Cleared translation for {count} items."
+msgstr "{count} 項目の翻訳をクリアしました。"
+
+#: settings_dialog.py:32
+msgid "Comprehensive"
+msgstr "包括的"
+
+#: __init__.py:91
+#, python-brace-format
+msgid "Copied original text to translation for {count} items."
+msgstr "{count} 項目の元のテキストを翻訳にコピーしました。"
+
+#: __init__.py:52
+msgid "Copy Original to Translation"
+msgstr "翻訳に原文をコピー"
+
+#: settings_dialog.py:53
+msgid "Enable Unicode character replacement"
+msgstr "Unicode文字の置換を有効にする"
+
+#: settings_dialog.py:43
+msgid "Enable length expansion"
+msgstr "長さの拡張を有効にする"
+
+#: settings_dialog.py:51
+msgid "Expansion Factor:"
+msgstr "拡張係数:"
+
+#: settings_dialog.py:33
+msgid "Extreme"
+msgstr "極端"
+
+#: settings_dialog.py:18
+msgid "General Settings"
+msgstr "一般設定"
+
+#: __init__.py:66 __init__.py:80 __init__.py:110
+msgid "No items selected."
+msgstr "選択された項目がありません。"
+
+#: preview_dialog.py:20
+msgid "Original Text:"
+msgstr "原文:"
+
+#: __init__.py:97
+msgid "Please select a single item to preview."
+msgstr "プレビューするには1つの項目を選択してください。"
+
+#: settings_dialog.py:60
+msgid "Preservation Settings"
+msgstr "保存設定"
+
+#: settings_dialog.py:67
+msgid "Preserve HTML tags"
+msgstr "HTMLタグを保持する"
+
+#: settings_dialog.py:71
+msgid "Preserve URLs and emails"
+msgstr "URLとメールアドレスを保持する"
+
+#: settings_dialog.py:63
+#, python-brace-format
+msgid "Preserve {placeholders}"
+msgstr "{placeholders}を保持する"
+
+#: __init__.py:53
+msgid "Preview on Selected"
+msgstr "選択項目でプレビュー"
+
+#: preview_dialog.py:27
+msgid "Preview:"
+msgstr "プレビュー:"
+
+#: settings_dialog.py:41
+msgid "Processing Mode:"
+msgstr "処理モード:"
+
+#: __init__.py:32
+msgid "Pseudo-Localization"
+msgstr "疑似ローカライゼーション"
+
+#: preview_dialog.py:11
+msgid "Pseudo-Localization Preview"
+msgstr "疑似ローカライゼーションプレビュー"
+
+#: settings_dialog.py:11
+msgid "Pseudo-Localization Settings"
+msgstr "疑似ローカライゼーション設定"
+
+#: __init__.py:125
+msgid "Pseudo-localization settings updated."
+msgstr "疑似ローカライゼーション設定が更新されました。"
+
+#: __init__.py:56
+msgid "Settings..."
+msgstr "設定..."
+
+#: settings_dialog.py:23
+msgid "When enabled, any text applied as a translation (manually, from TM, or AI) will be automatically converted."
+msgstr "有効にすると、翻訳として適用されるテキスト（手動、TM、またはAIから）は自動的に変換されます。"
