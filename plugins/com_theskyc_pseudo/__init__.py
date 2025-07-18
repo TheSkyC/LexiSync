@@ -53,7 +53,7 @@ class PseudoLocalizationPlugin(PluginBase):
             (self._("Preview on Selected"), self.preview_selected),
             (self._("Clear Translation for Selected"), self.clear_selected_translation),
             '---',
-            (self._("Settings..."), self.show_settings_dialog)
+            (self._("Settings..."), lambda: self.show_settings_dialog(self.main_window))
         ]
 
         return [
@@ -117,14 +117,18 @@ class PseudoLocalizationPlugin(PluginBase):
             self._("Cleared translation for {count} items.").format(count=len(selected_objs))
         )
 
-    def show_settings_dialog(self):
-        dialog = SettingsDialog(self.main_window, self.config, self._)
+    def show_settings_dialog(self, parent_widget) -> bool:
+        dialog = SettingsDialog(parent_widget, self.config, self._)
         if dialog.exec():
             self.config = dialog.get_settings()
             self.save_config()
             self.main_window.update_statusbar(self._("Pseudo-localization settings updated."))
+            return True # 设置已更改
+        return False # 用户取消
 
-    def process_string_for_save(self, text: str, ts_object, column: str) -> str:
+    def process_string_for_save(self, text: str, ts_object, column: str, source: str) -> str:
+        if source == "plugin_copy_original":
+            return text
         if not self.config.get('auto_pseudo_on_apply', False):
             return text
         return self._do_pseudo_localization(text)

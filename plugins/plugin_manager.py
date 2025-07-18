@@ -180,10 +180,47 @@ class PluginManager:
         return True
 
     def run_hook(self, hook_name, *args, **kwargs):
-        if hook_name.startswith('process_'):
-            return self._run_processing_hook(hook_name, *args, **kwargs)
+        # 拦截型钩子 (Intercepting Hooks)
+        if hook_name == 'on_file_dropped':
+            for plugin in self.get_enabled_plugins():
+                if hasattr(plugin, hook_name):
+                    try:
+                        method = getattr(plugin, hook_name)
+                        if method(*args, **kwargs) is True:
+                            self.logger.info(f"Hook '{hook_name}' was handled by plugin '{plugin.plugin_id()}'.")
+                            return True
+                    except Exception as e:
+                        self.logger.error(
+                            f"Error in plugin '{plugin.plugin_id()}' intercepting hook '{hook_name}': {e}",
+                            exc_info=True)
+            return False
+
+        # 处理型钩子 (Processing Hooks)
+        elif hook_name.startswith('process_'):
+            processed_data = args[0]
+            other_args = args[1:]
+            for plugin in self.get_enabled_plugins():
+                if hasattr(plugin, hook_name):
+                    try:
+                        method = getattr(plugin, hook_name)
+                        processed_data = method(processed_data, *other_args, **kwargs)
+                    except Exception as e:
+                        self.logger.error(f"Error in plugin '{plugin.plugin_id()}' processing hook '{hook_name}': {e}",
+                                          exc_info=True)
+
+            return processed_data
+
+        # 通知型钩子 (Notification Hooks)
         else:
-            return self._run_notification_hook(hook_name, *args, **kwargs)
+            for plugin in self.get_enabled_plugins():
+                if hasattr(plugin, hook_name):
+                    try:
+                        method = getattr(plugin, hook_name)
+                        method(*args, **kwargs)
+                    except Exception as e:
+                        self.logger.error(
+                            f"Error in plugin '{plugin.plugin_id()}' notification hook '{hook_name}': {e}",
+                            exc_info=True)
 
     def _run_processing_hook(self, hook_name, *args, **kwargs):
         processed_data = args[0]

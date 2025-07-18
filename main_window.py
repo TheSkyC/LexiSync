@@ -1456,6 +1456,10 @@ class OverwatchLocalizerApp(QMainWindow):
         for url in event.mimeData().urls():
             filepath = url.toLocalFile()
             if os.path.isfile(filepath):
+                was_handled_by_plugin = self.plugin_manager.run_hook('on_file_dropped', filepath)
+                if was_handled_by_plugin:
+                    event.acceptProposedAction()
+                    return
                 if filepath.lower().endswith(".pot"):
                     self.handle_pot_file_drop(filepath)
                     return
@@ -2028,7 +2032,8 @@ class OverwatchLocalizerApp(QMainWindow):
             'process_string_for_save',
             new_translation_from_ui,
             ts_object=ts_obj,
-            column='translation'
+            column='translation',
+            source = source
         )
         if processed_translation == ts_obj.translation:
             return processed_translation, False

@@ -104,13 +104,13 @@ class PluginBase(ABC):
         """
         pass
 
-    def process_string_for_save(self, text: str, ts_object, column: str) -> str:
+    def process_string_for_save(self, text: str, ts_object, column: str, source: str) -> str:
         """
         Hook to process a string right before it's saved into the data model or file.
-        This is a chained hook; the output of one plugin becomes the input for the next.
         :param text: The string to be processed.
         :param ts_object: The full TranslatableString object for context.
         :param column: The column being processed, e.g., 'translation', 'comment'.
+        :param source: A string indicating the origin of the action, e.g., 'manual_button', 'ai_translation'.
         :return: The processed string.
         """
         return text
@@ -163,3 +163,14 @@ class PluginBase(ABC):
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
         except Exception as e:
             print(f"Error saving config for plugin {self.plugin_id()}: {e}")
+
+    def show_settings_dialog(self, parent_widget) -> bool:
+        """
+        If the plugin has a settings dialog, this method should create and show it.
+        The method should return True if settings were changed, False otherwise.
+        If the plugin has no settings, this method should not be implemented.
+
+        :param parent_widget: The parent widget for the dialog (usually the main window).
+        :return: True if settings were changed, False otherwise.
+        """
+        return False

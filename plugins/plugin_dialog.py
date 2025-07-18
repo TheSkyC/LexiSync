@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QListWidgetItem
     QPushButton, QSplitter, QWidget, QMessageBox
 from PySide6.QtCore import Qt, QUrl, QRectF
 from PySide6.QtGui import QColor, QFont, QIcon, QPixmap, QPainter, QDesktopServices
+from plugins.plugin_base import PluginBase
 from utils.localization import _
 
 def create_icon(color1, color2=None):
@@ -79,11 +80,16 @@ class PluginManagerDialog(QDialog):
         self.description_browser = QTextBrowser()
         self.description_browser.setOpenExternalLinks(True)
 
+        self.settings_button = QPushButton(_("Settings..."))
+        self.settings_button.clicked.connect(self.open_plugin_settings)
+        self.settings_button.setVisible(False)
+
         details_layout.addWidget(self.name_label)
         details_layout.addWidget(self.version_author_label)
         details_layout.addWidget(self.compat_label)
         details_layout.addWidget(self.dependencies_label)
         details_layout.addWidget(self.description_browser)
+        details_layout.addWidget(self.settings_button)
         splitter.addWidget(details_widget)
 
         splitter.setSizes([280, 520])
@@ -217,7 +223,17 @@ class PluginManagerDialog(QDialog):
     def open_link(self, link_str):
         QDesktopServices.openUrl(QUrl(link_str))
 
+    def open_plugin_settings(self):
+        current_item = self.plugin_list.currentItem()
+        if not current_item:
+            return
+        plugin_id = current_item.data(Qt.UserRole)
+        plugin = self.manager.get_plugin(plugin_id)
+        if plugin:
+            plugin.show_settings_dialog(self)
+
     def update_details(self, current, previous):
+        self.settings_button.setVisible(False)
         if not current:
             self.name_label.clear()
             self.version_author_label.clear()
@@ -270,6 +286,11 @@ class PluginManagerDialog(QDialog):
 
             desc_html = f"<p>{plugin.description()}</p>"
             self.description_browser.setHtml(desc_html)
+
+            method_on_instance_class = plugin.__class__.show_settings_dialog
+            method_on_base_class = PluginBase.show_settings_dialog
+            has_settings = method_on_instance_class is not method_on_base_class
+            self.settings_button.setVisible(has_settings)
 
     def reload_plugins(self):
         self.manager.reload_plugins()
