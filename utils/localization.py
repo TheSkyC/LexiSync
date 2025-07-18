@@ -65,7 +65,6 @@ class LanguageManager(QObject):
             lang_code = self.get_best_match_language()
         self.current_lang_code = lang_code
         if hasattr(gettext, '_translations'):
-            gettext._translations.clear()
 
         try:
             lang = gettext.translation(self.app_name, localedir=self.locale_dir, languages=[lang_code], fallback=True)
