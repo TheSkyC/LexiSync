@@ -212,14 +212,14 @@ class PluginManager:
         self.setup_plugin_ui()
 
     def setup_plugin_ui(self):
-        if not hasattr(self.main_window, 'plugin_menu'):
-            self.main_window.plugin_menu = self.main_window.menuBar().addMenu(_("&Plugins"))
+        if not hasattr(self.main_window, 'plugin_menu') or self.main_window.plugin_menu is None:
+            self.main_window.plugin_menu = self.main_window.menuBar().addMenu("Plugins")  # 使用一个临时的、非翻译的标题
         self.main_window.plugin_menu.clear()
+
         manage_action = self.main_window.plugin_menu.addAction(_("Manage Plugins..."))
         manage_action.triggered.connect(self.show_plugin_manager_dialog)
         if self.get_enabled_plugins():
             self.main_window.plugin_menu.addSeparator()
-
         for plugin in self.get_enabled_plugins():
             if hasattr(plugin, 'add_menu_items'):
                 items = plugin.add_menu_items()

@@ -286,6 +286,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.view_menu = self.menuBar().addMenu(_("&View"))
         self.tools_menu = self.menuBar().addMenu(_("&Tools"))
         self.settings_menu = self.menuBar().addMenu(_("&Settings"))
+        self.plugin_menu = self.menuBar().addMenu(_("&Plugins"))
         self.help_menu = self.menuBar().addMenu(_("&Help"))
 
         # File Menu
@@ -488,13 +489,14 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_language_pair_settings.triggered.connect(self.show_language_pair_dialog)
         self.settings_menu.addAction(self.action_language_pair_settings)
 
+        # Plugins Menu
+        if hasattr(self, 'plugin_manager'):
+            self.plugin_manager.setup_plugin_ui()
+
         # Help Menu
         self.action_about = QAction(_("About"), self)
         self.action_about.triggered.connect(self.about)
         self.help_menu.addAction(self.action_about)
-
-        # Plugins Menu
-        self.plugin_manager.setup_plugin_ui()
 
     def setup_auto_save_timer(self):
         if self.auto_save_interval_sec > 0:
@@ -511,6 +513,8 @@ class OverwatchLocalizerApp(QMainWindow):
         self.view_menu.setTitle(_("&View"))
         self.tools_menu.setTitle(_("&Tools"))
         self.settings_menu.setTitle(_("&Settings"))
+        if hasattr(self, 'plugin_menu'):
+            self.plugin_menu.setTitle(_("&Plugins"))
         self.help_menu.setTitle(_("&Help"))
 
         #File Menu
