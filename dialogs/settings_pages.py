@@ -106,7 +106,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         auto_save_layout.setContentsMargins(0, 0, 0, 0)
         self.auto_save_spinbox = QSpinBox()
         self.auto_save_spinbox.setRange(0, 3600)
-        self.auto_save_spinbox.setSingleStep(60)
+        self.auto_save_spinbox.setSingleStep(30)
         self.auto_save_spinbox.setSuffix(_(" s"))
         self.auto_save_spinbox.setValue(self.app.config.get('auto_save_interval_sec', 60))
         self.auto_save_hint_label = QLabel(_("(0 to disable)"))
@@ -126,9 +126,9 @@ class GeneralSettingsPage(BaseSettingsPage):
         # On Save Options
         on_save_group = QGroupBox(_("On File Save"))
         on_save_layout = QVBoxLayout(on_save_group)
-        self.backup_tm_checkbox = QCheckBox(_("Auto-backup Translation Memory (TM)"))
+        self.backup_tm_checkbox = QCheckBox(_("Auto-backup Translation Memory"))
         self.backup_tm_checkbox.setChecked(self.app.config.get('auto_backup_tm_on_save', True))
-        self.compile_mo_checkbox = QCheckBox(_("Auto-compile .mo file (for .po saves)"))
+        self.compile_mo_checkbox = QCheckBox(_("Auto-compile .mo file when save .po file"))
         self.compile_mo_checkbox.setChecked(self.app.config.get('auto_compile_mo_on_save', True))
         on_save_layout.addWidget(self.backup_tm_checkbox)
         on_save_layout.addWidget(self.compile_mo_checkbox)
@@ -164,7 +164,7 @@ class AppearanceSettingsPage(BaseSettingsPage):
         form_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
         form_layout.setLabelAlignment(Qt.AlignLeft)
 
-        self.static_sort_checkbox = QCheckBox(_("Use static sorting (requires manual refresh via F5)"))
+        self.static_sort_checkbox = QCheckBox(_("Use static sorting (Press F5 to manual refresh)"))
         self.static_sort_checkbox.setChecked(self.app.config.get('use_static_sorting', False))
         form_layout.addRow(_("Sorting Mode:"), self.static_sort_checkbox)
 
