@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QStackedWidget,
     QPushButton, QVBoxLayout, QWidget, QMessageBox
 from PySide6.QtCore import Qt
 from utils.localization import _
-from .settings_pages import GeneralSettingsPage, AppearanceSettingsPage, AISettingsPage
+from .settings_pages import GeneralSettingsPage, AppearanceSettingsPage, AISettingsPage, ValidationSettingsPage
 
 
 class SettingsDialog(QDialog):
@@ -109,6 +109,9 @@ class SettingsDialog(QDialog):
 
         ai_page = AISettingsPage(self.app)
         self._add_page(ai_page, _("AI Translation"))
+
+        validation_page = ValidationSettingsPage(self.app)
+        self._add_page(validation_page, _("Validation"))
 
         self.nav_list.setCurrentRow(0)
 

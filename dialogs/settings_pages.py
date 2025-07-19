@@ -281,3 +281,36 @@ class AISettingsPage(BaseSettingsPage):
         self.app.ai_translator.api_key = self.api_key_entry.text()
         self.app.ai_translator.api_url = self.api_base_url_entry.text()
         self.app.ai_translator.model_name = self.model_name_entry.text()
+
+
+class ValidationSettingsPage(BaseSettingsPage):
+    def __init__(self, app_instance):
+        super().__init__()
+        self.app = app_instance
+
+        group = QGroupBox(_("Enabled Validation Checks"))
+        layout = QVBoxLayout(group)
+
+        self.check_placeholders = QCheckBox(_("Check for missing/extra placeholders"))
+        self.check_placeholders.setChecked(self.app.config.get('check_placeholders', True))
+        layout.addWidget(self.check_placeholders)
+
+        self.check_formatting = QCheckBox(_("Check for formatting differences (whitespace, punctuation, etc.)"))
+        self.check_formatting.setChecked(self.app.config.get('check_formatting', True))
+        layout.addWidget(self.check_formatting)
+
+        self.check_fuzzy = QCheckBox(_("Flag entries marked as 'Fuzzy'"))
+        self.check_fuzzy.setChecked(self.app.config.get('check_fuzzy', True))
+        layout.addWidget(self.check_fuzzy)
+
+        self.check_length = QCheckBox(_("Check for unusual translation length/expansion ratio (CPU intensive)"))
+        self.check_length.setChecked(self.app.config.get('check_length', True))
+        layout.addWidget(self.check_length)
+
+        self.page_layout.addWidget(group)
+
+    def save_settings(self):
+        self.app.config['check_placeholders'] = self.check_placeholders.isChecked()
+        self.app.config['check_formatting'] = self.check_formatting.isChecked()
+        self.app.config['check_fuzzy'] = self.check_fuzzy.isChecked()
+        self.app.config['check_length'] = self.check_length.isChecked()

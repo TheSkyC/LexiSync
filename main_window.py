@@ -13,7 +13,8 @@ from rapidfuzz import fuzz
 from openpyxl import Workbook, load_workbook
 import polib
 import weakref
-from concurrent.futures import ThreadPoolExecutor
+import traceback
+import inspect
 
 from PySide6.QtWidgets import (
     QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
@@ -57,7 +58,7 @@ from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
 from services.project_service import load_project, save_project
 from services.prompt_service import generate_prompt_from_structure
-from services.validation_service import run_validation_on_all, placeholder_regex as enhanced_placeholder_regex
+from services.validation_service import run_validation_on_all, placeholder_regex
 from services.expansion_ratio_service import ExpansionRatioService
 
 from utils import config_manager
@@ -72,7 +73,6 @@ try:
 except ImportError:
     requests = None
     print("提示: requests 未找到, AI翻译功能不可用。pip install requests")
-
 
 class AITranslationWorker(QRunnable):
     def __init__(self, app_instance, ts_id, original_text, target_language, context_dict, custom_instructions, is_batch_item):
@@ -223,7 +223,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.search_term_var = self.config.get("ui_state", {}).get("search_term", "")
 
 
-
         self.auto_save_tm_var = self.config.get("auto_save_tm", False)
         self.auto_backup_tm_on_save_var = self.config.get("auto_backup_tm_on_save", True)
         self.auto_compile_mo_var = self.config.get("auto_compile_mo_on_save", True)
@@ -232,7 +231,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.auto_save_timer.timeout.connect(self.auto_save_project)
         self.setup_auto_save_timer()
 
-        self.placeholder_regex = enhanced_placeholder_regex
+        self.placeholder_regex = placeholder_regex
         self._placeholder_validation_job = None
 
         self.last_sort_column = "seq_id"
@@ -472,6 +471,11 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_stop_ai_batch_translation.setEnabled(False)
         self.tools_menu.addAction(self.action_stop_ai_batch_translation)
         self.tools_menu.addSeparator()
+
+        self.tools_menu.addSeparator()
+        self.action_revalidate_all = QAction(_("Re-validate All Entries"), self)
+        self.action_revalidate_all.triggered.connect(self._run_and_refresh_with_validation)
+        self.tools_menu.addAction(self.action_revalidate_all)
 
         self.action_reload_translatable_text = QAction(_("Reload Translatable Text"), self)
         self.action_reload_translatable_text.triggered.connect(self.reload_translatable_text)
@@ -739,24 +743,6 @@ class OverwatchLocalizerApp(QMainWindow):
             QMessageBox.information(self, _("Restart Required"),
                                     _("Font settings have been changed. Please restart the application for the changes to take effect."))
 
-    def show_auto_save_interval_dialog(self):
-        new_interval, ok = QInputDialog.getInt(
-            self,
-            _("Auto-save Interval"),
-            _("Enter interval in seconds (0 to disable):"),
-            self.auto_save_interval_sec, # value (当前值)
-            0,                          # minValue (最小值)
-            3600,                       # maxValue (最大值)
-            1                           # step (步长)
-        )
-        if ok:
-            self.auto_save_interval_sec = new_interval
-            self.set_config_var('auto_save_interval_sec', new_interval)
-            self.setup_auto_save_timer()
-            if new_interval > 0:
-                self.update_statusbar(_("Auto-save enabled every {seconds} seconds.").format(seconds=new_interval))
-            else:
-                self.update_statusbar(_("Auto-save disabled."))
 
     def auto_save_project(self):
         if not self.current_project_modified:
@@ -1557,7 +1543,6 @@ class OverwatchLocalizerApp(QMainWindow):
             detected_lang = language_service.detect_source_language([ts.original_semantic for ts in self.translatable_objects])
             self.source_language = detected_lang
             self.target_language = self.config.get("default_target_language", "zh")
-            self.update_statusbar(f"已加载 {len(self.translatable_objects)} 项，检测到源语言: {self.source_language}")
             self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
             self.undo_history.clear()
             self.redo_history.clear()
@@ -1806,6 +1791,19 @@ class OverwatchLocalizerApp(QMainWindow):
         if not self.search_entry.text() and self.search_entry.placeholderText() != _("Quick search..."):
             self.search_entry.setPlaceholderText(_("Quick search..."))
             self.search_entry.setStyleSheet("color: grey;")
+
+    def _on_validation_complete(self, ts_id, slow_warnings, slow_minor_warnings):
+        ts_obj = self._find_ts_obj_by_id(ts_id)
+        if not ts_obj:
+            return
+        ts_obj.warnings.extend(slow_warnings)
+        ts_obj.minor_warnings.extend(slow_minor_warnings)
+        ts_obj.update_style_cache()
+        source_index = self.sheet_model.index_from_id(ts_id)
+        if source_index.isValid():
+            first_col = source_index.siblingAtColumn(0)
+            last_col = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
+            self.sheet_model.dataChanged.emit(first_col, last_col)
 
     def on_search_focus_in(self, event):
         if self.search_entry.text() == _("Quick search..."):
@@ -2067,18 +2065,19 @@ class OverwatchLocalizerApp(QMainWindow):
             self.sheet_model.set_translatable_objects([])
             self.proxy_model.invalidate()
             return
-
-        run_validation_on_all(self.translatable_objects, self)
+        self.update_statusbar(_("Validating all entries..."), persistent=True)
+        QApplication.processEvents()
+        run_validation_on_all(self.translatable_objects, self.config, self)
 
         for ts_obj in self.translatable_objects:
             ts_obj.update_style_cache()
-
         self.sheet_model.set_translatable_objects(self.translatable_objects)
-        if not self.use_static_sorting_var:
-            self.refresh_sheet_preserve_selection()
+        if self.use_static_sorting_var:
+            self.proxy_model.invalidate()
         else:
-            self.table_view.viewport().update()
+            self.refresh_sheet_preserve_selection()
         self.force_refresh_ui_for_current_selection()
+        self.update_statusbar(_("Validation complete."), persistent=False)
 
     def cm_set_warning_ignored_status(self, ignore_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()
@@ -2114,7 +2113,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         self._run_and_refresh_with_validation()
 
-    def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual"):
+    def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual", run_validation=True):
         processed_translation = self.plugin_manager.run_hook(
             'process_string_for_save',
             new_translation_from_ui,
@@ -2158,7 +2157,7 @@ class OverwatchLocalizerApp(QMainWindow):
         for item_id in ids_to_update:
             obj = self._find_ts_obj_by_id(item_id)
             if obj:
-                validate_string(obj)
+                validate_string(ts_obj, self.config, self)
                 obj.update_style_cache()
                 source_index = self.sheet_model.index_from_id(obj.id)
                 if source_index.isValid():
@@ -2305,7 +2304,7 @@ class OverwatchLocalizerApp(QMainWindow):
         for ts_id in changed_ids:
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if ts_obj:
-                validate_string(ts_obj, self)
+                validate_string(ts_obj, self.config, self)
                 ts_obj.update_style_cache()
                 source_index = self.sheet_model.index_from_id(ts_obj.id)
                 if source_index.isValid():
@@ -2923,6 +2922,9 @@ class OverwatchLocalizerApp(QMainWindow):
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
+            print("--- AN EXCEPTION OCCURRED DURING PO IMPORT ---")
+            traceback.print_exc()
+            print("---------------------------------------------")
             QMessageBox.critical(self, _("PO Import Error"), _("Error importing PO file '{filename}': {error}").format(
                 filename=os.path.basename(po_filepath), error=e))
             self._reset_app_state()
@@ -3340,8 +3342,12 @@ class OverwatchLocalizerApp(QMainWindow):
 
                 if ts_obj.translation != translation_for_model_ui:
                     old_translation_for_undo = ts_obj.get_translation_for_storage_and_tm()
-                    ts_obj.set_translation_internal(translation_for_model_ui)
-
+                    self._apply_translation_to_model(
+                        ts_obj,
+                        translation_for_model_ui,
+                        source="tm_apply_all",
+                        run_validation=False # <--- 关键！
+                    )
                     bulk_changes_for_undo.append({
                         'string_id': ts_obj.id, 'field': 'translation',
                         'old_value': old_translation_for_undo,
@@ -3353,9 +3359,6 @@ class OverwatchLocalizerApp(QMainWindow):
             if bulk_changes_for_undo:
                 self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})
                 self.mark_project_modified()
-
-            self._run_and_refresh_with_validation()
-            if self.current_selected_ts_id: self.force_refresh_ui_for_current_selection()
 
             if not silent:
                 QMessageBox.information(self, _("TM"), _("Applied TM to {count} strings.").format(count=applied_count))

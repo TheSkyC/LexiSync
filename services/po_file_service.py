@@ -13,14 +13,19 @@ from utils.localization import _
 def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_path=None):
     line_num = 0
     source_path = ""
-    if hasattr(entry, 'occurrences') and entry.occurrences:
-        try:
-            _path, lnum_str = entry.occurrences[0]
-            source_path = _path
-            if lnum_str.isdigit():
-                line_num = int(lnum_str)
-        except (ValueError, IndexError, TypeError):
-            pass
+    try:
+        if hasattr(entry, 'occurrences') and entry.occurrences:
+            first_occurrence = entry.occurrences[0]
+
+            if isinstance(first_occurrence, (tuple, list)) and len(first_occurrence) >= 2:
+                source_path = first_occurrence[0] or ""
+                lnum_str = first_occurrence[1] or ""
+                if lnum_str and str(lnum_str).isdigit():
+                    line_num = int(lnum_str)
+            elif isinstance(first_occurrence, str):
+                source_path = first_occurrence
+    except Exception as e:
+        print(f"    Occurrences value was: {getattr(entry, 'occurrences', 'N/A')}")
 
     ts = TranslatableString(
         original_raw=entry.msgid,
@@ -30,9 +35,10 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
         char_pos_end_in_file=len(entry.msgid),
         full_code_lines=full_code_lines if full_code_lines else [],
         string_type="PO Import",
-        occurrences=entry.occurrences
+        occurrences=entry.occurrences if hasattr(entry, 'occurrences') else []
     )
-    ts.translation = entry.msgstr
+    ts.translation = entry.msgstr or ""
+
     all_comment_lines = []
     if entry.comment:
         all_comment_lines.extend(entry.comment.splitlines())
@@ -42,7 +48,6 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
     user_comment_lines = []
     po_meta_comment_lines = []
 
-    # 遍历所有注释行，进行分类
     for line in all_comment_lines:
         stripped_line = line.strip()
         if stripped_line.startswith('#.'):
@@ -59,19 +64,24 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
         else:
             user_comment_lines.append(line)
 
-    # 添加由 polib 自动解析的元数据注释
-    if entry.occurrences:
-        po_meta_comment_lines.append(f"#: {' '.join(f'{p}:{l}' for p, l in entry.occurrences)}")
-    if entry.flags:
-        po_meta_comment_lines.append(f"#, {', '.join(entry.flags)}")
-    if entry.previous_msgid:
-        previous_entries = entry.previous_msgid if isinstance(entry.previous_msgid, list) else [entry.previous_msgid]
+    if hasattr(entry, 'occurrences') and entry.occurrences:
+        po_meta_comment_lines.append(
+            f"#: {' '.join(f'{p}:{l}' for p, l in entry.occurrences if p is not None and l is not None)}")
+
+    flags = getattr(entry, 'flags', [])
+    if flags:
+        po_meta_comment_lines.append(f"#, {', '.join(flags)}")
+
+    previous_msgid = getattr(entry, 'previous_msgid', None)
+    if previous_msgid:
+        previous_entries = previous_msgid if isinstance(previous_msgid, list) else [previous_msgid]
         for p_msgid in previous_entries:
             po_meta_comment_lines.append(f"#| msgid \"{p_msgid}\"")
+
     ts.comment = "\n".join(user_comment_lines)
     ts.po_comment = "\n".join(sorted(list(set(po_meta_comment_lines))))
 
-    if 'fuzzy' in entry.flags:
+    if 'fuzzy' in flags:
         ts.is_fuzzy = True
 
     return ts
