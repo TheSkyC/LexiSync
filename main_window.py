@@ -433,19 +433,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.filter_actions['show_unreviewed'] = self.action_show_unreviewed
         self.view_menu.addSeparator()
 
-        self.action_toggle_details_panel = QAction(_("Edit && Details Panel"), self, checkable=True)
-        self.view_menu.addAction(self.action_toggle_details_panel)
-
-        self.action_toggle_comment_status_panel = QAction(_("Comment && Status Panel"), self, checkable=True)
-        self.view_menu.addAction(self.action_toggle_comment_status_panel)
-
-        self.action_toggle_context_panel = QAction(_("Context Preview Panel"), self, checkable=True)
-        self.view_menu.addAction(self.action_toggle_context_panel)
-
-        self.action_toggle_tm_panel = QAction(_("Translation Memory Panel"), self, checkable=True)
-        self.view_menu.addAction(self.action_toggle_tm_panel)
-        self.view_menu.addSeparator()
-
         self.action_restore_layout = QAction(_("Restore Default Layout"), self)
         self.action_restore_layout.triggered.connect(self.restore_default_layout)
         self.view_menu.addAction(self.action_restore_layout)
@@ -559,6 +546,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_show_untranslated.setText(_("Show Untranslated"))
         self.action_show_translated.setText(_("Show Translated"))
         self.action_show_unreviewed.setText(_("Show Unreviewed"))
+        self.action_toggle_file_explorer.setText(_("File Explorer Panel"))
         self.action_toggle_details_panel.setText(_("Edit && Details Panel"))
         self.action_toggle_comment_status_panel.setText(_("Comment && Status Panel"))
         self.action_toggle_context_panel.setText(_("Context Preview Panel"))
@@ -977,28 +965,31 @@ class OverwatchLocalizerApp(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.comment_status_dock)
         self.splitDockWidget(self.tm_dock, self.comment_status_dock, Qt.Vertical)
 
-        self.action_toggle_details_panel.setChecked(self.details_dock.isVisible())
-        self.action_toggle_details_panel.triggered.connect(
-            lambda checked: self.details_dock.setVisible(checked)
-        )
-        self.details_dock.visibilityChanged.connect(self.action_toggle_details_panel.setChecked)
+        # File Explorer Panel Action
+        self.action_toggle_file_explorer = self.file_explorer_dock.toggleViewAction()
+        self.action_toggle_file_explorer.setText(_("File Explorer Panel"))
 
-        self.action_toggle_context_panel.setChecked(self.context_dock.isVisible())
-        self.action_toggle_context_panel.triggered.connect(
-            lambda checked: self.context_dock.setVisible(checked)
-        )
-        self.context_dock.visibilityChanged.connect(self.action_toggle_context_panel.setChecked)
+        # Details Panel Action
+        self.action_toggle_details_panel = self.details_dock.toggleViewAction()
+        self.action_toggle_details_panel.setText(_("Edit && Details Panel"))
 
-        self.action_toggle_tm_panel.setChecked(self.tm_dock.isVisible())
-        self.action_toggle_tm_panel.triggered.connect(
-            lambda checked: self.tm_dock.setVisible(checked)
-        )
-        self.tm_dock.visibilityChanged.connect(self.action_toggle_tm_panel.setChecked)
+        # Context Panel Action
+        self.action_toggle_context_panel = self.context_dock.toggleViewAction()
+        self.action_toggle_context_panel.setText(_("Context Preview Panel"))
 
-        self.action_toggle_comment_status_panel.setChecked(self.comment_status_dock.isVisible())
-        self.action_toggle_comment_status_panel.triggered.connect(
-            lambda checked: self.comment_status_dock.setVisible(checked))
-        self.comment_status_dock.visibilityChanged.connect(self.action_toggle_comment_status_panel.setChecked)
+        # TM Panel Action
+        self.action_toggle_tm_panel = self.tm_dock.toggleViewAction()
+        self.action_toggle_tm_panel.setText(_("Translation Memory Panel"))
+
+        # Comment Status Panel Action
+        self.action_toggle_comment_status_panel = self.comment_status_dock.toggleViewAction()
+        self.action_toggle_comment_status_panel.setText(_("Comment && Status Panel"))
+
+        self.view_menu.addAction(self.action_toggle_file_explorer)
+        self.view_menu.addAction(self.action_toggle_details_panel)
+        self.view_menu.addAction(self.action_toggle_context_panel)
+        self.view_menu.addAction(self.action_toggle_tm_panel)
+        self.view_menu.addAction(self.action_toggle_comment_status_panel)
 
         if self.default_window_state is None:
             self.default_window_state = self.saveState()
