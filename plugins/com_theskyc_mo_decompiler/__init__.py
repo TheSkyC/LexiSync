@@ -14,7 +14,7 @@ class MODecompilerPlugin(PluginBase):
         self.logger = logging.getLogger(__name__)
 
     def plugin_id(self) -> str:
-        return "com_skyc_mo_decompiler"
+        return "com_theskyc_mo_decompiler"
 
     def name(self) -> str:
         return self._("MO Decompiler")
@@ -33,7 +33,7 @@ class MODecompilerPlugin(PluginBase):
         return "1.1"
 
     def url(self) -> str:
-        return "https://github.com/TheSkyC/overwatch-localizer/tree/master/plugins/com_skyc_mo_decompiler"
+        return "https://github.com/TheSkyC/overwatch-localizer/tree/master/plugins/com_theskyc_mo_decompiler"
 
     def add_menu_items(self) -> list:
         return [
