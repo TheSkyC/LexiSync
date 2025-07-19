@@ -35,17 +35,37 @@ class MODecompilerPlugin(PluginBase):
     def url(self) -> str:
         return "https://github.com/TheSkyC/overwatch-localizer/tree/master/plugins/com_theskyc_mo_decompiler"
 
+    def get_supported_file_patterns(self) -> list[str]:
+        return ["*.mo"]
+
     def add_menu_items(self) -> list:
         return [
             (self._("Decompile MO File..."), self.open_mo_file_dialog)
         ]
 
+    def on_file_dropped(self, file_path: str) -> bool:
+        if file_path.lower().endswith('.mo'):
+            self.process_files([file_path])
+            return True
+        return False
+
+
     def on_files_dropped(self, file_paths: list) -> bool:
         mo_files = [f for f in file_paths if f.lower().endswith('.mo')]
         if not mo_files:
             return False
+
         self.process_files(mo_files)
         return True
+
+    def on_file_tree_context_menu(self, selected_paths: list) -> list:
+        mo_files = [p for p in selected_paths if p.lower().endswith('.mo')]
+        if not mo_files:
+            return []
+        return [
+            ('---',),
+            (self._("Decompile MO File(s)"), lambda: self.process_files(mo_files))
+        ]
 
     def open_mo_file_dialog(self):
         file_paths, _ = QFileDialog.getOpenFileNames(

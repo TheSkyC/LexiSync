@@ -31,6 +31,7 @@ from PySide6.QtGui import QAction, QKeySequence, QFont, QFontDatabase,QPalette, 
 from models.translatable_string import TranslatableString
 from models.translatable_strings_model import TranslatableStringsModel, TranslatableStringsProxyModel
 from plugins.plugin_manager import PluginManager
+from ui_components.file_explorer_panel import FileExplorerPanel
 from ui_components.details_panel import DetailsPanel
 from ui_components.comment_status_panel import CommentStatusPanel
 from ui_components.context_panel import ContextPanel
@@ -244,6 +245,11 @@ class OverwatchLocalizerApp(QMainWindow):
         self.plugin_manager = PluginManager(self)
 
         self.UI_initialization()
+        self.file_explorer_panel.file_double_clicked.connect(self.open_file_from_explorer)
+        last_path = self.config.get('last_file_explorer_path')
+        if last_path and os.path.isdir(last_path):
+            self.file_explorer_panel.set_root_path(last_path)
+
         ExpansionRatioService.initialize()
         QTimer.singleShot(100, self.prewarm_dependencies)
 
@@ -921,6 +927,12 @@ class OverwatchLocalizerApp(QMainWindow):
         self.tm_panel = TMPanel(self)
         self.comment_status_panel = CommentStatusPanel(self)
 
+        #FileExplorerPanel
+        self.file_explorer_panel = FileExplorerPanel(self, self)
+        self.file_explorer_dock = QDockWidget(_("File Explorer"), self)
+        self.file_explorer_dock.setObjectName("fileExplorerDock")
+        self.file_explorer_dock.setWidget(self.file_explorer_panel)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.file_explorer_dock)
 
         # DetailsPanel
         self.details_panel.apply_translation_signal.connect(self.apply_translation_from_button)
@@ -1527,6 +1539,7 @@ class OverwatchLocalizerApp(QMainWindow):
         try:
             with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
                 self.original_raw_code_content = f.read()
+            self._update_file_explorer(filepath)
             self.current_code_file_path = filepath
             self.current_project_file_path = None
             self.current_po_file_path = None
@@ -1608,7 +1621,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.untranslated_checkbox.setChecked(filter_settings.get("show_untranslated", False))
             self.translated_checkbox.setChecked(filter_settings.get("show_translated", False))
             self.unreviewed_checkbox.setChecked(filter_settings.get("show_unreviewed", False))
-
+            self._update_file_explorer(project_filepath)
             self.current_project_file_path = project_filepath
             self.add_to_recent_files(project_filepath)
             self.config["last_dir"] = os.path.dirname(project_filepath)
@@ -1639,6 +1652,49 @@ class OverwatchLocalizerApp(QMainWindow):
             self._reset_app_state()
             self.update_statusbar(_("Project file loading failed."), persistent=True)
         self.update_counts_display()
+
+    def open_file_from_explorer(self, file_path):
+        if not os.path.isfile(file_path):
+            self.update_statusbar(
+                _("Error: '{filename}' is not a valid file.").format(filename=os.path.basename(file_path)),
+                persistent=True)
+            return
+
+        lower_path = file_path.lower()
+        filename = os.path.basename(file_path)
+
+        if not self.prompt_save_if_modified():
+            self.update_statusbar(_("Open operation cancelled by user."), persistent=False)
+            return
+
+        self.update_statusbar(_("Opening '{filename}'...").format(filename=filename), persistent=True)
+        QApplication.processEvents()
+
+        try:
+            if lower_path.endswith((".ow", ".txt")):
+                self.open_code_file_path(file_path)
+
+            elif lower_path.endswith(PROJECT_FILE_EXTENSION):
+                self.open_project_file(file_path)
+
+            elif lower_path.endswith((".po", ".pot")):
+                self.import_po_file_dialog_with_path(file_path)
+
+            else:
+                was_handled_by_plugin = False
+                if hasattr(self, 'plugin_manager'):
+                    was_handled_by_plugin = self.plugin_manager.run_hook('on_file_dropped', file_path)
+
+                if not was_handled_by_plugin:
+                    self.update_statusbar(
+                        _("File type for '{filename}' is not supported by the application or any active plugin.").format(
+                            filename=filename),
+                        persistent=True
+                    )
+        except Exception as e:
+            error_message = _("Failed to open '{filename}': {error}").format(filename=filename, error=str(e))
+            self.update_statusbar(error_message, persistent=True)
+            QMessageBox.critical(self, _("File Open Error"), error_message)
 
     def _reset_app_state(self):
         self.current_code_file_path = None
@@ -1892,6 +1948,24 @@ class OverwatchLocalizerApp(QMainWindow):
 
     def schedule_details_panel_stats_update(self):
         self.stats_update_timer.start(100)
+
+    def _update_file_explorer(self, file_path):
+        if not file_path: return
+
+        root_path = None
+        normalized_path = os.path.normpath(file_path)
+        path_parts = normalized_path.split(os.sep)
+
+        try:
+            locales_index = path_parts.index('locales')
+            root_path = os.sep.join(path_parts[:locales_index + 1])
+        except ValueError:
+            root_path = os.path.dirname(file_path)
+
+        if root_path and os.path.isdir(root_path):
+            self.file_explorer_panel.set_root_path(root_path)
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(100, lambda: self.file_explorer_panel.select_file(file_path))
 
     def _update_details_panel_stats(self):
         if not self.current_selected_ts_id:
@@ -2839,6 +2913,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.redo_history.clear()
             self.mark_project_modified(False)
             self.is_po_mode = True
+            self._update_file_explorer(po_filepath)
             self.current_po_file_path = po_filepath
             self._run_and_refresh_with_validation()
             self.update_statusbar(

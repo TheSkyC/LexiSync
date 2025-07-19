@@ -104,14 +104,28 @@ class PluginBase(ABC):
         """
         pass
 
-    def on_files_dropped(self, file_paths: List[str]) -> bool:
+    def on_file_tree_context_menu(self, selected_paths: list) -> list:
         """
-        Hook called when one or more files are dropped onto the main window.
-        A plugin can handle files it's interested in from the list.
+        Hook to add items to the file explorer's context menu.
+        :param selected_paths: A list of selected file/directory paths.
+        :return: A list defining menu structure, e.g., [('My Action', callback)]
+        """
+        return []
 
-        :param file_paths: A list of full paths for all dropped files.
-        :return: True if the plugin handled at least one file, otherwise False.
-                 If True is returned, the main application will stop further processing.
+    def get_supported_file_patterns(self) -> List[str]:
+        """
+        Return a list of file patterns (e.g., ['*.mo', '*.custom']) that this
+        plugin adds to the file explorer's default filter.
+        """
+        return []
+
+    def on_file_dropped(self, file_path: str) -> bool:
+        """
+        Hook called when a file is dropped OR double-clicked in the file explorer
+        and is not handled by the main application.
+
+        :param file_path: The path of the file to handle.
+        :return: True if the plugin handled the file open action, otherwise False.
         """
         return False
 

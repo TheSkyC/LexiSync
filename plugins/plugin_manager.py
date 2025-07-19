@@ -124,6 +124,18 @@ class PluginManager:
         id_to_spec = {spec['id']: spec for spec in plugin_specs}
         return [id_to_spec[id]['class']() for id in sorted_ids]
 
+    def get_all_supported_file_patterns(self) -> list[str]:
+        all_patterns = []
+        for plugin in self.get_enabled_plugins():
+            if hasattr(plugin, 'get_supported_file_patterns'):
+                try:
+                    patterns = plugin.get_supported_file_patterns()
+                    if patterns:
+                        all_patterns.extend(patterns)
+                except Exception as e:
+                    self.logger.error(f"Error getting file patterns from plugin '{plugin.plugin_id()}': {e}", exc_info=True)
+        return list(set(all_patterns))
+
     def reload_plugins(self):
         self.logger.info("Reloading all plugins...")
         for plugin in self.plugins:
@@ -180,22 +192,30 @@ class PluginManager:
         return True
 
     def run_hook(self, hook_name, *args, **kwargs):
-        # 拦截型钩子 (Intercepting Hooks)
+        """
+        Runs a specific hook across all enabled plugins.
+        - 'process_*' hooks are chained.
+        - Intercepting hooks (e.g., on_file_dropped) stop and return True if any plugin handles it.
+        - Collecting hooks (e.g., on_file_tree_context_menu) gather results from all plugins.
+        - Notification hooks (other on_*) are called without returning a value.
+        """
+        # 1. 拦截型钩子 (Intercepting Hooks)
         INTERCEPTING_HOOKS = ['on_file_dropped', 'on_files_dropped']
         if hook_name in INTERCEPTING_HOOKS:
-            was_handled = False
             for plugin in self.get_enabled_plugins():
                 if hasattr(plugin, hook_name):
                     try:
                         method = getattr(plugin, hook_name)
                         if method(*args, **kwargs) is True:
                             self.logger.info(f"Hook '{hook_name}' was handled by plugin '{plugin.plugin_id()}'.")
-                            was_handled = True
+                            return True
                     except Exception as e:
-                        self.logger.error(f"Error in plugin '{plugin.plugin_id()}' intercepting hook '{hook_name}': {e}", exc_info=True)
-            return was_handled
+                        self.logger.error(
+                            f"Error in plugin '{plugin.plugin_id()}' intercepting hook '{hook_name}': {e}",
+                            exc_info=True)
+            return False  # 循环结束，没有任何插件处理
 
-        # 处理型钩子 (Processing Hooks)
+        # 2. 处理型钩子 (Processing Hooks)
         elif hook_name.startswith('process_'):
             processed_data = args[0]
             other_args = args[1:]
@@ -207,20 +227,26 @@ class PluginManager:
                     except Exception as e:
                         self.logger.error(f"Error in plugin '{plugin.plugin_id()}' processing hook '{hook_name}': {e}",
                                           exc_info=True)
-
             return processed_data
 
-        # 通知型钩子 (Notification Hooks)
+        # 3. 收集型和通知型钩子 (Collecting & Notification Hooks)
         else:
+            all_results = []
             for plugin in self.get_enabled_plugins():
                 if hasattr(plugin, hook_name):
                     try:
                         method = getattr(plugin, hook_name)
-                        method(*args, **kwargs)
+                        result = method(*args, **kwargs)
+                        if result is not None:
+                            all_results.append(result)
                     except Exception as e:
                         self.logger.error(
-                            f"Error in plugin '{plugin.plugin_id()}' notification hook '{hook_name}': {e}",
+                            f"Error in plugin '{plugin.plugin_id()}' notification/collecting hook '{hook_name}': {e}",
                             exc_info=True)
+            if hook_name == 'on_file_tree_context_menu':
+                flat_list = [item for sublist in all_results for item in sublist]
+                return flat_list
+            return None
 
     def _run_processing_hook(self, hook_name, *args, **kwargs):
         processed_data = args[0]
