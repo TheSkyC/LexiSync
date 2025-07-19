@@ -1453,32 +1453,45 @@ class OverwatchLocalizerApp(QMainWindow):
             event.ignore()
 
     def dropEvent(self, event):
-        for url in event.mimeData().urls():
-            filepath = url.toLocalFile()
-            if os.path.isfile(filepath):
-                was_handled_by_plugin = self.plugin_manager.run_hook('on_file_dropped', filepath)
-                if was_handled_by_plugin:
-                    event.acceptProposedAction()
-                    return
-                if filepath.lower().endswith(".pot"):
-                    self.handle_pot_file_drop(filepath)
-                    return
-                elif filepath.lower().endswith((".ow", ".txt")):
-                    if self.prompt_save_if_modified():
-                        self.open_code_file_path(filepath)
-                elif filepath.lower().endswith(PROJECT_FILE_EXTENSION):
-                    if self.prompt_save_if_modified():
-                        self.open_project_file(filepath)
-                elif filepath.lower().endswith((".po")):
-                    if self.prompt_save_if_modified():
-                        self.import_po_file_dialog_with_path(filepath)
-                else:
+        dropped_files = [url.toLocalFile() for url in event.mimeData().urls() if url.isLocalFile()]
+        if not dropped_files:
+            event.acceptProposedAction()
+            return
+        was_handled_by_plugins = False
+        if hasattr(self, 'plugin_manager'):
+            was_handled_by_plugins = self.plugin_manager.run_hook('on_files_dropped', dropped_files)
+        if was_handled_by_plugins:
+            event.acceptProposedAction()
+            return
+        filepath = dropped_files[0]
+        if len(dropped_files) > 1:
+            self.update_statusbar(_("Multiple files dropped. Opening the first one: {filename}").format(
+                filename=os.path.basename(filepath)))
+
+        if os.path.isfile(filepath):
+            if filepath.lower().endswith(".pot"):
+                self.handle_pot_file_drop(filepath)
+            elif filepath.lower().endswith((".ow", ".txt")):
+                if self.prompt_save_if_modified():
+                    self.open_code_file_path(filepath)
+            elif filepath.lower().endswith(PROJECT_FILE_EXTENSION):
+                if self.prompt_save_if_modified():
+                    self.open_project_file(filepath)
+            elif filepath.lower().endswith(".po"):
+                if self.prompt_save_if_modified():
+                    self.import_po_file_dialog_with_path(filepath)
+            else:
+                was_handled = False
+                if hasattr(self, 'plugin_manager'):
+                    was_handled = self.plugin_manager.run_hook('on_file_dropped', filepath)
+
+                if not was_handled:
                     self.update_statusbar(_("Drag and drop failed: Invalid file type '{filename}'").format(
                         filename=os.path.basename(filepath)))
-            else:
-                self.update_statusbar(_("Drag and drop failed: '{filename}' is not a file.").format(
-                    filename=os.path.basename(filepath)))
-            break
+        else:
+            self.update_statusbar(_("Drag and drop failed: '{filename}' is not a file.").format(
+                filename=os.path.basename(filepath)))
+
         event.acceptProposedAction()
 
     def open_code_file_dialog(self):

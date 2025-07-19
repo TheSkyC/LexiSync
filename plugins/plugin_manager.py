@@ -181,19 +181,19 @@ class PluginManager:
 
     def run_hook(self, hook_name, *args, **kwargs):
         # 拦截型钩子 (Intercepting Hooks)
-        if hook_name == 'on_file_dropped':
+        INTERCEPTING_HOOKS = ['on_file_dropped', 'on_files_dropped']
+        if hook_name in INTERCEPTING_HOOKS:
+            was_handled = False
             for plugin in self.get_enabled_plugins():
                 if hasattr(plugin, hook_name):
                     try:
                         method = getattr(plugin, hook_name)
                         if method(*args, **kwargs) is True:
                             self.logger.info(f"Hook '{hook_name}' was handled by plugin '{plugin.plugin_id()}'.")
-                            return True
+                            was_handled = True
                     except Exception as e:
-                        self.logger.error(
-                            f"Error in plugin '{plugin.plugin_id()}' intercepting hook '{hook_name}': {e}",
-                            exc_info=True)
-            return False
+                        self.logger.error(f"Error in plugin '{plugin.plugin_id()}' intercepting hook '{hook_name}': {e}", exc_info=True)
+            return was_handled
 
         # 处理型钩子 (Processing Hooks)
         elif hook_name.startswith('process_'):

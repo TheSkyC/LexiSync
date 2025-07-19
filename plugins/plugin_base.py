@@ -104,6 +104,17 @@ class PluginBase(ABC):
         """
         pass
 
+    def on_files_dropped(self, file_paths: List[str]) -> bool:
+        """
+        Hook called when one or more files are dropped onto the main window.
+        A plugin can handle files it's interested in from the list.
+
+        :param file_paths: A list of full paths for all dropped files.
+        :return: True if the plugin handled at least one file, otherwise False.
+                 If True is returned, the main application will stop further processing.
+        """
+        return False
+
     def process_string_for_save(self, text: str, ts_object, column: str, source: str) -> str:
         """
         Hook to process a string right before it's saved into the data model or file.
