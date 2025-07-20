@@ -731,17 +731,14 @@ class OverwatchLocalizerApp(QMainWindow):
             QMessageBox.information(self, _("Restart Required"),
                                     _("Font settings have been changed. Please restart the application for the changes to take effect."))
 
-
     def auto_save_project(self):
         if not self.current_project_modified:
             return
         if not (self.current_project_file_path or self.current_po_file_path):
             return
-
-        self.setEnabled(False)
+        focused_widget = QApplication.focusWidget()
         self.update_statusbar(_("Auto-saving..."), persistent=True)
         QApplication.processEvents()
-
         try:
             if self.is_po_mode:
                 self.save_po_file(self.current_po_file_path, compile_mo=False)
@@ -749,7 +746,8 @@ class OverwatchLocalizerApp(QMainWindow):
                 self.save_project_file(self.current_project_file_path)
             self.update_statusbar(_("Project auto-saved."), persistent=False)
         finally:
-            self.setEnabled(True)
+            if focused_widget and QApplication.focusWidget() != focused_widget:
+                focused_widget.setFocus()
 
     def change_language(self, new_lang_code):
         if new_lang_code != self.config.get('language'):
