@@ -303,7 +303,7 @@ class ValidationSettingsPage(BaseSettingsPage):
         self.check_fuzzy.setChecked(self.app.config.get('check_fuzzy', True))
         layout.addWidget(self.check_fuzzy)
 
-        self.check_length = QCheckBox(_("Check for unusual translation length/expansion ratio (CPU intensive)"))
+        self.check_length = QCheckBox(_("Check for unusual translation length/expansion ratio"))
         self.check_length.setChecked(self.app.config.get('check_length', True))
         layout.addWidget(self.check_length)
 
