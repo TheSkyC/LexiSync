@@ -1185,42 +1185,31 @@ class OverwatchLocalizerApp(QMainWindow):
 
             ts_obj = self._find_ts_obj_by_id(obj_id)
             if ts_obj:
-                current_val_before_undo = getattr(ts_obj,
-                                                  field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
-
+                current_val_before_undo = getattr(ts_obj, field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
                 if field == 'translation':
                     ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"))
                 else:
                     setattr(ts_obj, field, val_to_restore)
-
-                redo_payload_data = {'string_id': obj_id, 'field': field,
-                                     'old_value': val_to_restore,
-                                     'new_value': current_val_before_undo}
-                self.update_statusbar(
-                    _("Undo: {field} for ID {id} -> '{value}'").format(field=field, id=str(obj_id)[:8] + "...",
-                                                                       value=str(val_to_restore)[:30]))
+                redo_payload_data = {'string_id': obj_id, 'field': field, 'old_value': val_to_restore, 'new_value': current_val_before_undo}
+                self.update_statusbar(_("Undo: {field} for ID {id} -> '{value}'").format(field=field, id=str(obj_id)[:8] + "...", value=str(val_to_restore)[:30]))
                 changed_ids.add(obj_id)
             else:
                 self.update_statusbar(_("Undo error: Object ID {obj_id} not found").format(obj_id=obj_id))
                 self.action_redo.setEnabled(bool(self.redo_history))
                 return
 
-        elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu',
-                             'bulk_replace_all']:
+        elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu', 'bulk_replace_all']:
             temp_redo_changes = []
             for item_change in action_data['changes']:
                 obj_id, field, val_to_restore = item_change['string_id'], item_change['field'], item_change['old_value']
                 ts_obj = self._find_ts_obj_by_id(obj_id)
                 if ts_obj:
-                    current_val_before_undo = getattr(ts_obj,
-                                                      field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
+                    current_val_before_undo = getattr(ts_obj, field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
                     if field == 'translation':
                         ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"))
                     else:
                         setattr(ts_obj, field, val_to_restore)
-                    temp_redo_changes.append({'string_id': obj_id, 'field': field,
-                                              'old_value': val_to_restore,
-                                              'new_value': current_val_before_undo})
+                    temp_redo_changes.append({'string_id': obj_id, 'field': field, 'old_value': val_to_restore, 'new_value': current_val_before_undo})
                     changed_ids.add(obj_id)
             redo_payload_data = {'changes': temp_redo_changes}
             self.update_statusbar(_("Undo: Bulk change ({count} items)").format(count=len(temp_redo_changes)))
@@ -1228,7 +1217,11 @@ class OverwatchLocalizerApp(QMainWindow):
         if redo_payload_data:
             self.redo_history.append({'type': action_type, 'data': redo_payload_data})
 
-        self._run_and_refresh_with_validation()
+        if self.use_static_sorting_var:
+            self._update_view_for_ids(changed_ids)
+        else:
+            self._run_and_refresh_with_validation()
+
         if self.current_selected_ts_id in changed_ids:
             self.force_refresh_ui_for_current_selection()
 
@@ -1258,42 +1251,31 @@ class OverwatchLocalizerApp(QMainWindow):
 
             ts_obj = self._find_ts_obj_by_id(obj_id)
             if ts_obj:
-                current_val_before_redo = getattr(ts_obj,
-                                                  field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
-
+                current_val_before_redo = getattr(ts_obj, field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
                 if field == 'translation':
                     ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"))
                 else:
                     setattr(ts_obj, field, val_to_set)
-
-                undo_payload_data = {'string_id': obj_id, 'field': field,
-                                     'old_value': current_val_before_redo,
-                                     'new_value': val_to_set}
-                self.update_statusbar(
-                    _("Redo: {field} for ID {id} -> '{value}'").format(field=field, id=str(obj_id)[:8] + "...",
-                                                                       value=str(val_to_set)[:30]))
+                undo_payload_data = {'string_id': obj_id, 'field': field, 'old_value': current_val_before_redo, 'new_value': val_to_set}
+                self.update_statusbar(_("Redo: {field} for ID {id} -> '{value}'").format(field=field, id=str(obj_id)[:8] + "...", value=str(val_to_set)[:30]))
                 changed_ids.add(obj_id)
             else:
                 self.update_statusbar(_("Redo error: Object ID {obj_id} not found").format(obj_id=obj_id))
                 self.action_undo.setEnabled(bool(self.undo_history))
                 return
 
-        elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu',
-                             'bulk_replace_all']:
+        elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu', 'bulk_replace_all']:
             temp_undo_changes = []
             for item_change in action_data_to_apply['changes']:
                 obj_id, field, val_to_set = item_change['string_id'], item_change['field'], item_change['new_value']
                 ts_obj = self._find_ts_obj_by_id(obj_id)
                 if ts_obj:
-                    current_val_before_redo = getattr(ts_obj,
-                                                      field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
+                    current_val_before_redo = getattr(ts_obj, field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
                     if field == 'translation':
                         ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"))
                     else:
                         setattr(ts_obj, field, val_to_set)
-                    temp_undo_changes.append({'string_id': obj_id, 'field': field,
-                                              'old_value': current_val_before_redo,
-                                              'new_value': val_to_set})
+                    temp_undo_changes.append({'string_id': obj_id, 'field': field, 'old_value': current_val_before_redo, 'new_value': val_to_set})
                     changed_ids.add(obj_id)
             undo_payload_data = {'changes': temp_undo_changes}
             self.update_statusbar(_("Redo: Bulk change ({count} items)").format(count=len(temp_undo_changes)))
@@ -1303,7 +1285,11 @@ class OverwatchLocalizerApp(QMainWindow):
             if len(self.undo_history) > MAX_UNDO_HISTORY:
                 self.undo_history.pop(0)
 
-        self._run_and_refresh_with_validation()
+        if self.use_static_sorting_var:
+            self._update_view_for_ids(changed_ids)
+        else:
+            self._run_and_refresh_with_validation()
+
         if self.current_selected_ts_id in changed_ids:
             self.force_refresh_ui_for_current_selection()
 
