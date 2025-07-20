@@ -1,0 +1,159 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Com Theskyc Mo Decompiler Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2025-07-20 14:30+0000\n"
+"PO-Revision-Date: 2025-07-20 14:47+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: __init__.py:75
+msgid "All Files"
+msgstr "すべてのファイル"
+
+#: __init__.py:238
+#, python-brace-format
+msgid ""
+"An error occurred while decompiling '{filename}':\n"
+"\n"
+"{error}"
+msgstr ""
+"ファイル '{filename}' の逆コンパイル中にエラーが発生しました:\n"
+"\n"
+"{error}"
+
+#: __init__.py:192
+msgid "Apply to all subsequent conflicts"
+msgstr "後続のすべての競合に適用"
+
+#: __init__.py:148
+msgid "Apply to all subsequent files"
+msgstr "後続のすべてのファイルに適用"
+
+#: __init__.py:98
+msgid "Batch Decompile"
+msgstr "一括逆コンパイル"
+
+#: __init__.py:126
+msgid "Batch Decompile Complete"
+msgstr "バッチ逆コンパイル完了"
+
+#: __init__.py:114
+msgid "Batch operation cancelled by user."
+msgstr "ユーザーによりバッチ操作がキャンセルされました。"
+
+#: __init__.py:75
+msgid "Compiled MO Files"
+msgstr "コンパイル済み MO ファイル"
+
+#: __init__.py:237
+msgid "Decompile Error"
+msgstr "デコンパイルエラー"
+
+#: __init__.py:141
+msgid "Decompile MO File"
+msgstr "MOファイルを逆コンパイル"
+
+#: __init__.py:67
+msgid "Decompile MO File(s)"
+msgstr "MOファイルを逆コンパイル"
+
+#: __init__.py:43
+msgid "Decompile MO File..."
+msgstr "MOファイルを逆コンパイル..."
+
+#: __init__.py:24
+msgid "Decompiles .mo files into .po files upon drag-and-drop or via menu."
+msgstr "ドラッグ＆ドロップまたはメニューから.moファイルを.poファイルに逆コンパイルします。"
+
+#: __init__.py:142
+#, python-brace-format
+msgid "Detected .mo file: {filename}"
+msgstr "検出された .mo ファイル: {filename}"
+
+#: __init__.py:182
+msgid "File Conflict"
+msgstr "ファイル競合"
+
+#: __init__.py:143
+msgid "How would you like to save the decompiled .po file?"
+msgstr "どのようにデコンパイルした.poファイルを保存しますか？"
+
+#: __init__.py:20
+msgid "MO Decompiler"
+msgstr "MO デコンパイラ"
+
+#: __init__.py:187
+msgid "Overwrite"
+msgstr "上書き"
+
+#: __init__.py:173
+msgid "PO Files"
+msgstr "POファイル"
+
+#: __init__.py:188
+msgid "Rename"
+msgstr "名前を変更"
+
+#: __init__.py:145
+msgid "Save As..."
+msgstr "名前を付けて保存..."
+
+#: __init__.py:173
+msgid "Save Decompiled PO File"
+msgstr "デコンパイルしたPOファイルを保存"
+
+#: __init__.py:144
+msgid "Save to Same Directory"
+msgstr "同じディレクトリに保存"
+
+#: __init__.py:73
+msgid "Select MO files to decompile"
+msgstr "MOファイルを逆コンパイルするファイルを選択"
+
+#: __init__.py:227
+#, python-brace-format
+msgid "Successfully decompiled '{mo}' to '{po}'."
+msgstr "「{mo}」を「{po}」に正常に逆コンパイルしました。"
+
+#: __init__.py:184
+#, python-brace-format
+msgid "The file '{filename}' already exists."
+msgstr "ファイル '{filename}' は既に存在します。"
+
+#: __init__.py:185
+msgid "What would you like to do?"
+msgstr "何をしますか？"
+
+#: __init__.py:99
+#, python-brace-format
+msgid ""
+"You are about to decompile {count} .mo files:\n"
+"\n"
+" - {files}\n"
+"\n"
+"Do you want to proceed?"
+msgstr ""
+"以下の{count}個の.moファイルを逆コンパイルしようとしています:\n"
+"\n"
+" - {files}\n"
+"\n"
+"続行しますか？"
+
+#: __init__.py:128
+#, python-brace-format
+msgid ""
+"{count} files were successfully decompiled. The application will now open the first file:\n"
+"\n"
+"{first_file}"
+msgstr ""
+"{count} 個のファイルが正常に逆コンパイルされました。アプリケーションは最初のファイルを開きます:\n"
+"\n"
+"{first_file}"
