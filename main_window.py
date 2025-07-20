@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import (
     Qt, QAbstractTableModel, QModelIndex, Signal, QObject, QTimer, QByteArray,
-    QThread, QRunnable, QThreadPool, QItemSelectionModel, QEvent, QSize
+    QThread, QRunnable, QThreadPool, QItemSelectionModel, QEvent, QSize, QDir
 )
 from PySide6.QtGui import QAction, QKeySequence, QFont, QFontDatabase,QPalette, QColor, QActionGroup, QBrush
 
@@ -1940,21 +1940,20 @@ class OverwatchLocalizerApp(QMainWindow):
 
     def _update_file_explorer(self, file_path):
         if not file_path: return
-
-        root_path = None
-        normalized_path = os.path.normpath(file_path)
-        path_parts = normalized_path.split(os.sep)
-
-        try:
-            locales_index = path_parts.index('locales')
-            root_path = os.sep.join(path_parts[:locales_index + 1])
-        except ValueError:
-            root_path = os.path.dirname(file_path)
-
-        if root_path and os.path.isdir(root_path):
-            self.file_explorer_panel.set_root_path(root_path)
-            from PySide6.QtCore import QTimer
-            QTimer.singleShot(100, lambda: self.file_explorer_panel.select_file(file_path))
+        current_root = self.file_explorer_panel.source_model.rootPath()
+        if not file_path.startswith(current_root) or current_root == QDir.rootPath():
+            root_path = None
+            normalized_path = os.path.normpath(file_path)
+            path_parts = normalized_path.split(os.sep)
+            try:
+                locales_index = path_parts.index('locales')
+                root_path = os.sep.join(path_parts[:locales_index])
+            except ValueError:
+                root_path = os.path.dirname(file_path)
+            if root_path and os.path.isdir(root_path):
+                self.file_explorer_panel.set_root_path(root_path)
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(100, lambda: self.file_explorer_panel.select_file(file_path))
 
     def _update_details_panel_stats(self):
         if not self.current_selected_ts_id:

@@ -164,10 +164,13 @@ class FileExplorerPanel(QWidget):
         self.proxy_model.setShowAllTypes(is_checked)
 
     def show_context_menu(self, pos):
+        proxy_index_at_pos = self.tree_view.indexAt(pos)
         proxy_indexes = self.tree_view.selectedIndexes()
         if not proxy_indexes:
             return
 
+        source_index_at_pos = self.proxy_model.mapToSource(proxy_index_at_pos)
+        path_at_pos = self.source_model.filePath(source_index_at_pos)
         source_indexes = [self.proxy_model.mapToSource(idx) for idx in proxy_indexes]
         selected_paths = [self.source_model.filePath(idx) for idx in source_indexes if idx.column() == 0]
         if not selected_paths:
@@ -175,7 +178,7 @@ class FileExplorerPanel(QWidget):
 
         menu = QMenu()
 
-        # 1: 打开 (单选)
+        # 打开 (单选)
         if len(selected_paths) == 1:
             path = selected_paths[0]
             source_index = self.source_model.index(path)
@@ -183,14 +186,20 @@ class FileExplorerPanel(QWidget):
                 open_action = menu.addAction(_("Open"))
                 open_action.triggered.connect(lambda checked=False, p=path: self.file_double_clicked.emit(p))
 
-        # 2: 重命名 (单选)
+        # 重命名 (单选)
         if len(selected_paths) == 1:
             path = selected_paths[0]
             proxy_index_at_pos = self.tree_view.indexAt(pos)
             rename_action = menu.addAction(_("Rename"))
             rename_action.triggered.connect(lambda checked=False, idx=proxy_index_at_pos: self.tree_view.edit(idx))
 
-        # 3: 浏览本地文件 (第一项)
+        # 设为根目录
+        if self.source_model.isDir(source_index_at_pos):
+            menu.addSeparator()
+            set_as_root_action = menu.addAction(_("Set as Root"))
+            set_as_root_action.triggered.connect(lambda checked=False, p=path_at_pos: self.set_root_path(p))
+
+        # 浏览本地文件 (第一项)
         first_path = selected_paths[0]
         reveal_action = menu.addAction(_("Reveal in File Explorer"))
         reveal_action.triggered.connect(
@@ -198,13 +207,13 @@ class FileExplorerPanel(QWidget):
                 QUrl.fromLocalFile(os.path.dirname(p) if not os.path.isdir(p) else p))
         )
 
-        # 动作4: 删除
+        # 删除
         delete_action = menu.addAction(_("Delete"))
         delete_action.triggered.connect(lambda checked=False, paths=selected_paths: self.delete_items(paths))
 
         menu.addSeparator()
 
-        # 5: 复制文件路径
+        # 复制文件路径
         copy_path_action = menu.addAction(_("Copy Full Path"))
         copy_path_action.triggered.connect(
             lambda checked=False, paths=selected_paths: (
