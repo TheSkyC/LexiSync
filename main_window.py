@@ -2127,16 +2127,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         if source not in ["ai_batch_item"]:
             self.add_to_undo_history(undo_action_type, undo_data_payload)
-        from services.validation_service import validate_string
-        for item_id in ids_to_update:
-            obj = self._find_ts_obj_by_id(item_id)
-            if obj:
-                validate_string(ts_obj, self.config, self)
-                obj.update_style_cache()
-                source_index = self.sheet_model.index_from_id(obj.id)
-                if source_index.isValid():
-                    self.sheet_model.dataChanged.emit(source_index, source_index.siblingAtColumn(
-                        self.sheet_model.columnCount() - 1))
+        self._update_view_for_ids(ids_to_update)
 
         self.update_statusbar(_("Translation applied: \"{original_semantic}...\"").format(
             original_semantic=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
