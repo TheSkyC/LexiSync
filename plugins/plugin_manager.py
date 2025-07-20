@@ -63,21 +63,20 @@ class PluginManager:
             sorted_instances = self._sort_and_instantiate_plugins(plugin_specs)
             self.plugins = sorted_instances
             for instance in self.plugins:
+                self.setup_plugin_translation(instance.plugin_id())
+                instance.setup(self.main_window, self)
                 required_version = instance.compatible_app_version()
                 if not self._is_version_compatible(APP_VERSION, required_version):
                     self.logger.warning(
                         f"Plugin '{instance.name()}' (ID: {instance.plugin_id()}) is not compatible with app version {APP_VERSION}. "
-                        f"Requires: {required_version}. Disabling it."
+                        f"Requires: {required_version}. It will be disabled by default."
                     )
                     self.incompatible_plugins[instance.plugin_id()] = {
                         "name": instance.name(),
                         "required": required_version,
                         "current": APP_VERSION
                     }
-                    continue
 
-                self.setup_plugin_translation(instance.plugin_id())
-                instance.setup(self.main_window, self)
                 self.logger.info(
                     f"Successfully loaded and initialized plugin: {instance.name()} (ID: {instance.plugin_id()})")
         except Exception as e:

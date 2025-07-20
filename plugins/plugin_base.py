@@ -72,6 +72,14 @@ class PluginBase(ABC):
         """Return a URL for the plugin's homepage or source code."""
         return ""
 
+    def compatible_app_version(self) -> str:
+        """
+        Return the compatible application version range for this plugin.
+        Uses a simple prefix match. E.g., "1.1" matches "1.1.3", "1.1.4", etc.
+        Return an empty string or None to indicate compatibility with all versions.
+        """
+        return "" # 确保有默认返回值
+
     def dependencies(self) -> List[str]:
         """
         Return a list of plugin_id strings that this plugin depends on.
