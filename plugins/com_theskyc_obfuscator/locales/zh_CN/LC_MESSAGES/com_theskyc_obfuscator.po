@@ -1,0 +1,152 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Com Theskyc Obfuscator Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2025-07-20 14:29+0000\n"
+"PO-Revision-Date: 2025-07-20 14:39+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: zh\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: __init__.py:80
+msgid "All Files"
+msgstr "所有文件"
+
+#: element_dialog.py:30
+msgid "Auto-Calculate"
+msgstr "自动计算"
+
+#: element_dialog.py:15 obfuscator_dialog.py:18
+msgid "Code Obfuscation"
+msgstr "代码混淆"
+
+#: obfuscator_dialog.py:53
+msgid "Complexity Settings"
+msgstr "复杂度设置"
+
+#: obfuscator_dialog.py:65
+msgid "Complexity:"
+msgstr "复杂度："
+
+#: __init__.py:90
+msgid "Error"
+msgstr "错误"
+
+#: __init__.py:91
+#, python-brace-format
+msgid "Failed to read file: {error}"
+msgstr "读取文件失败：{error}"
+
+#: element_dialog.py:59
+msgid "Hint: Low element count. Recommended minimum of 200."
+msgstr "提示：元素数量过低。建议最少输入 200。"
+
+#: element_dialog.py:21
+msgid "How to get: In-game Workshop -> Show Diagnostics -> Total Element Count"
+msgstr "如何获取：游戏内工坊 → 显示诊断结果 → 总计元素数量"
+
+#: __init__.py:71
+msgid "No Code"
+msgstr "无代码"
+
+#: obfuscator_dialog.py:16
+msgid "OK"
+msgstr "OK确定"
+
+#: __init__.py:38
+msgid "OW Code Obfuscator"
+msgstr "OW 代码混淆器"
+
+#: __init__.py:59
+msgid "Obfuscate Current File"
+msgstr "混淆当前文件"
+
+#: __init__.py:42
+msgid "Obfuscate Overwatch Workshop code. Features include string obfuscation, rule padding, and removal of comments and rule names. Currently only supports code written in Chinese or English."
+msgstr "混淆守望先锋工坊代码。功能包括字符串混淆、规则填充以及移除注释和规则名称。目前仅支持中文或英文编写的代码。"
+
+#: __init__.py:60
+msgid "Obfuscate Specific File..."
+msgstr "混淆指定文件..."
+
+#: obfuscator_dialog.py:30
+msgid "Obfuscate Strings"
+msgstr "混淆字符串"
+
+#: obfuscator_dialog.py:33
+msgid "Obfuscate Variables & Subroutines (UNSTABLE)"
+msgstr "混淆变量与子程序（不稳定）"
+
+#: __init__.py:122
+msgid "Obfuscating code..."
+msgstr "正在混淆代码..."
+
+#: __init__.py:132
+msgid "Obfuscation Complete"
+msgstr "混淆完成"
+
+#: __init__.py:137
+msgid "Obfuscation Error"
+msgstr "混淆错误"
+
+#: obfuscator_dialog.py:25
+msgid "Obfuscation Options"
+msgstr "混淆选项"
+
+#: obfuscator_dialog.py:15
+msgid "Obfuscator Settings"
+msgstr "混淆器设置"
+
+#: __init__.py:61
+msgid "Obfuscator Settings..."
+msgstr "混淆器设置..."
+
+#: __init__.py:99
+msgid "Obfuscator settings saved."
+msgstr "混淆器设置已保存。"
+
+#: obfuscator_dialog.py:29
+msgid "Pad with Fake Rules"
+msgstr "填充虚假规则"
+
+#: __init__.py:71
+msgid "Please open a workshop code file first."
+msgstr "请先打开一个工坊代码文件。"
+
+#: element_dialog.py:20
+msgid "Please provide the total number of elements from the original code:"
+msgstr "请提供原始代码中的元素数量："
+
+#: obfuscator_dialog.py:31
+msgid "Remove Comments"
+msgstr "移除注释"
+
+#: obfuscator_dialog.py:32
+msgid "Remove Rule Names"
+msgstr "移除规则名称"
+
+#: __init__.py:78
+msgid "Select Workshop File to Obfuscate"
+msgstr "选择要混淆的创意工坊文件"
+
+#: obfuscator_dialog.py:19
+msgid "Start Obfuscation"
+msgstr "开始混淆"
+
+#: __init__.py:133
+msgid "The obfuscated code has been copied to your clipboard."
+msgstr "混淆后的代码已复制到剪贴板。"
+
+#: element_dialog.py:55
+msgid "Warning: High element count. This leaves little room for obfuscation and may cause errors."
+msgstr "警告：元素数量过高。这为混淆留下的空间很小，可能导致错误。"
+
+#: __init__.py:80
+msgid "Workshop Files"
+msgstr "创意工坊文件"
