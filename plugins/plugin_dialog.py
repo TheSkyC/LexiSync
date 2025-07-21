@@ -323,7 +323,13 @@ class PluginManagerDialog(QDialog):
 
         # 显示基本信息
         self.name_label.setText(plugin.name())
-        self.version_author_label.setText(f"{_('Version')}: {plugin.version()}  |  {_('Author')}: {plugin.author()}")
+        html_info = f"{_('Version')}: {plugin.version()}  |  {_('Author')}: {plugin.author()}"
+        self.version_author_label.setText(html_info)
+        url = plugin.url()
+        if url:
+            html_info += f"<br><a href='{url}'>{_('Visit Plugin Homepage')}</a>"
+
+        self.version_author_label.setText(html_info)
         self.description_browser.setHtml(f"<p>{plugin.description()}</p>")
 
         # 版本兼容
