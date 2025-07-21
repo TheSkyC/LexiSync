@@ -35,7 +35,7 @@ class TMEnhancerPlugin(PluginBase):
             return self._("Enhances TM matching performance using TF-IDF")
         else:
             return self._(
-                "Enhances TM matching performance. Requires 'scikit-learn' and 'numpy'. Please run: pip install scikit-learn numpy")
+                "Enhances TM matching performance using TF-IDF. Requires 'scikit-learn' and 'numpy'. Please run: pip install scikit-learn numpy")
 
     def author(self) -> str:
         return "TheSkyC"
