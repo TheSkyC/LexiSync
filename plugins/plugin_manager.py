@@ -94,33 +94,50 @@ class PluginManager:
 
         for name, obj in inspect.getmembers(module, inspect.isclass):
             if issubclass(obj, PluginBase) and obj is not PluginBase:
-                return {'class': obj, 'id': obj().plugin_id(), 'deps': obj().dependencies()}
+                return {'class': obj, 'id': obj().plugin_id(), 'deps': list(obj().plugin_dependencies().keys())}
         return None
 
     def _sort_and_instantiate_plugins(self, plugin_specs):
         from collections import defaultdict
+
+        id_to_spec = {spec['id']: spec for spec in plugin_specs}
+        all_plugin_ids = set(id_to_spec.keys())
+        for spec in plugin_specs:
+            missing_deps = set(spec['deps']) - all_plugin_ids
+            if missing_deps:
+                raise RuntimeError(
+                    _("Plugin '{plugin_id}' has missing dependencies: {deps}").format(
+                        plugin_id=spec['id'],
+                        deps=", ".join(missing_deps)
+                    )
+                )
         dep_graph = {spec['id']: set(spec['deps']) for spec in plugin_specs}
-        in_degree = defaultdict(int)
-        for u, neighbors in dep_graph.items():
-            for v in neighbors:
-                in_degree[u] += 1
-
-        queue = [spec['id'] for spec in plugin_specs if in_degree[spec['id']] == 0]
+        in_degree = {uid: 0 for uid in all_plugin_ids}
+        for uid, deps in dep_graph.items():
+            for dep in deps:
+                in_degree[uid] += 1
+        in_degree = {uid: 0 for uid in all_plugin_ids}
+        graph = {uid: [] for uid in all_plugin_ids}
+        for uid, spec in id_to_spec.items():
+            for dep in spec['deps']:
+                graph[dep].append(uid)
+                in_degree[uid] += 1
+        queue = [uid for uid in all_plugin_ids if in_degree[uid] == 0]
         sorted_ids = []
-
         while queue:
             u_id = queue.pop(0)
             sorted_ids.append(u_id)
-            for v_id, v_deps in dep_graph.items():
-                if u_id in v_deps:
-                    in_degree[v_id] -= 1
-                    if in_degree[v_id] == 0:
-                        queue.append(v_id)
-
+            for v_id in graph.get(u_id, []):
+                in_degree[v_id] -= 1
+                if in_degree[v_id] == 0:
+                    queue.append(v_id)
         if len(sorted_ids) != len(plugin_specs):
-            raise RuntimeError(_("Circular dependency detected in plugins. Cannot load."))
-
-        id_to_spec = {spec['id']: spec for spec in plugin_specs}
+            cycle_nodes = set(all_plugin_ids) - set(sorted_ids)
+            raise RuntimeError(
+                _("Circular dependency detected in plugins: {nodes}. Cannot load.").format(
+                    nodes=", ".join(cycle_nodes)
+                )
+            )
         return [id_to_spec[id]['class']() for id in sorted_ids]
 
     def get_all_supported_file_patterns(self) -> list[str]:
@@ -174,17 +191,16 @@ class PluginManager:
             self._cache_valid = True
         return self._enabled_plugins_cache
 
-    def check_dependencies(self, plugin_id_to_check):
+    def check_dependencies(self, plugin_id_to_check: str) -> bool:
         plugin = self.get_plugin(plugin_id_to_check)
         if not plugin: return False
-
         enabled_ids = self.main_window.config.get('enabled_plugins', [])
-        missing_deps = [dep for dep in plugin.dependencies() if dep not in enabled_ids]
-
+        missing_deps = [dep_id for dep_id in plugin.plugin_dependencies().keys() if dep_id not in enabled_ids]
         if missing_deps:
+            dep_names = [self.get_plugin(pid).name() for pid in missing_deps if self.get_plugin(pid)]
             msg = _("Cannot enable '{plugin_name}'.\nIt requires the following disabled plugins:\n\n- {deps}").format(
                 plugin_name=plugin.name(),
-                deps="\n- ".join(missing_deps)
+                deps="\n- ".join(dep_names)
             )
             QMessageBox.warning(self.main_window, _("Dependency Error"), msg)
             return False
@@ -295,7 +311,7 @@ class PluginManager:
 
     def setup_plugin_ui(self):
         if not hasattr(self.main_window, 'plugin_menu') or self.main_window.plugin_menu is None:
-            self.main_window.plugin_menu = self.main_window.menuBar().addMenu("Plugins")  # 使用一个临时的、非翻译的标题
+            self.main_window.plugin_menu = self.main_window.menuBar().addMenu("Plugins")
         self.main_window.plugin_menu.clear()
 
         manage_action = self.main_window.plugin_menu.addAction(_("Manage Plugins..."))

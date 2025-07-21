@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Dict
 import json
 import os
 
@@ -80,12 +80,21 @@ class PluginBase(ABC):
         """
         return "" # 确保有默认返回值
 
-    def dependencies(self) -> List[str]:
+    def plugin_dependencies(self) -> Dict[str, str]:
         """
-        Return a list of plugin_id strings that this plugin depends on.
-        The plugin manager will ensure these dependencies are loaded first.
+        Return a dictionary of plugin dependencies.
+        Format: {'plugin_id': 'version_specifier', ...}
+        e.g., {'com.theskyc.core': '>=1.2.0'}
         """
-        return []
+        return {}
+
+    def external_dependencies(self) -> Dict[str, str]:
+        """
+        Return a dictionary of external Python library dependencies.
+        Format: {'library_name': 'version_specifier', ...}
+        e.g., {'scikit-learn': '>=1.0.0'}
+        """
+        return {}
 
     # --- Hooks ---
 

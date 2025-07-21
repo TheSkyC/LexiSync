@@ -1,12 +1,12 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QHBoxLayout, QLabel, QTextBrowser, \
-    QPushButton, QSplitter, QWidget, QMessageBox
-from PySide6.QtCore import Qt, QUrl, QRectF
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QHBoxLayout, QLabel, QTextBrowser, QPushButton, QSplitter, QWidget, QMessageBox
+from PySide6.QtCore import Qt, QUrl, Signal, QThread, QRectF
 from PySide6.QtGui import QColor, QFont, QIcon, QPixmap, QPainter, QDesktopServices
-from plugins.plugin_base import PluginBase
 from utils.localization import _
+from services.dependency_service import DependencyManager
+from plugins.plugin_base import PluginBase
 
 def create_icon(color1, color2=None):
     pixmap = QPixmap(16, 16)
@@ -30,6 +30,18 @@ def create_icon(color1, color2=None):
 
     painter.end()
     return QIcon(pixmap)
+
+class InstallThread(QThread):
+    progress = Signal(str)
+    finished = Signal(bool)
+
+    def __init__(self, package_spec):
+        super().__init__()
+        self.package_spec = package_spec
+
+    def run(self):
+        success = DependencyManager.get_instance().install_package(self.package_spec, self.progress.emit)
+        self.finished.emit(success)
 
 class PluginManagerDialog(QDialog):
     ICON_GREEN = None
@@ -74,8 +86,13 @@ class PluginManagerDialog(QDialog):
         self.compat_label = QLabel()
         self.compat_label.setWordWrap(True)
 
-        self.dependencies_label = QLabel()
-        self.dependencies_label.setWordWrap(True)
+        self.plugin_deps_label = QLabel()
+        self.plugin_deps_label.setWordWrap(True)
+        self.plugin_deps_label.linkActivated.connect(self.on_link_activated)
+
+        self.external_deps_label = QLabel()
+        self.external_deps_label.setWordWrap(True)
+        self.external_deps_label.linkActivated.connect(self.on_link_activated)
 
         self.description_browser = QTextBrowser()
         self.description_browser.setOpenExternalLinks(True)
@@ -87,7 +104,8 @@ class PluginManagerDialog(QDialog):
         details_layout.addWidget(self.name_label)
         details_layout.addWidget(self.version_author_label)
         details_layout.addWidget(self.compat_label)
-        details_layout.addWidget(self.dependencies_label)
+        details_layout.addWidget(self.plugin_deps_label)
+        details_layout.addWidget(self.external_deps_label)
         details_layout.addWidget(self.description_browser)
         details_layout.addWidget(self.settings_button)
         splitter.addWidget(details_widget)
@@ -233,6 +251,8 @@ class PluginManagerDialog(QDialog):
             plugin.show_settings_dialog(self)
 
     def update_details(self, current, previous):
+        self.plugin_deps_label.hide()
+        self.external_deps_label.hide()
         self.settings_button.setVisible(False)
         if not current:
             self.name_label.clear()
@@ -275,22 +295,98 @@ class PluginManagerDialog(QDialog):
                 else:
                     self.compat_label.setVisible(False)
 
-            deps = plugin.dependencies()
-            if deps:
-                dep_names = [self.manager.get_plugin(dep_id).name() for dep_id in deps if
-                             self.manager.get_plugin(dep_id)]
-                self.dependencies_label.setText(f"<b>{_('Dependencies')}:</b> {', '.join(dep_names)}")
-                self.dependencies_label.setVisible(True)
-            else:
-                self.dependencies_label.setVisible(False)
+            # 插件依赖
+            plugin_deps = plugin.plugin_dependencies()
+            if plugin_deps:
+                html = f"<b>{_('Plugin Dependencies')}:</b> "
+                links = []
+                all_plugins = {p.plugin_id(): p for p in self.manager.plugins}
+                for dep_id, spec in plugin_deps.items():
+                    res = DependencyManager.get_instance().check_plugin_dependency(dep_id, spec, all_plugins)
+                    color = {'ok': 'green', 'missing': 'red', 'outdated': 'orange'}[res['status']]
+                    title = f"{_('Required')}: {res['required'] or 'any'}\n{_('Installed')}: {res['installed'] or 'N/A'}"
+                    links.append(f"<a href='plugin:{dep_id}' style='color:{color}; text-decoration:none;' title='{title}'>{res['name']}</a>")
+                html += ", ".join(links)
+                self.plugin_deps_label.setText(html)
+                self.plugin_deps_label.show()
 
-            desc_html = f"<p>{plugin.description()}</p>"
-            self.description_browser.setHtml(desc_html)
+            # 外部库依赖
+            ext_deps = plugin.external_dependencies()
+            if ext_deps:
+                html = f"<b>{_('External Libraries')}:</b> "
+                links = []
+                for lib_name, spec in ext_deps.items():
+                    res = DependencyManager.get_instance().check_external_dependency(lib_name, spec)
+                    color = {'ok': 'green', 'missing': 'red', 'outdated': 'orange'}[res['status']]
+                    title = f"{_('Required')}: {res['required'] or 'any'}\n{_('Installed')}: {res['installed'] or 'N/A'}"
+                    links.append(f"<a href='lib:{lib_name}:{spec}' style='color:{color}; text-decoration:none;' title='{title}'>{res['name']}</a>")
+                html += ", ".join(links)
+                self.external_deps_label.setText(html)
+                self.external_deps_label.show()
 
-            method_on_instance_class = plugin.__class__.show_settings_dialog
-            method_on_base_class = PluginBase.show_settings_dialog
-            has_settings = method_on_instance_class is not method_on_base_class
-            self.settings_button.setVisible(has_settings)
+    def on_link_activated(self, link: str):
+        parts = link.split(':', 2)
+        link_type = parts[0]
+
+        if link_type == 'plugin':
+            plugin_id = parts[1]
+            for i in range(self.plugin_list.count()):
+                item = self.plugin_list.item(i)
+                if item.data(Qt.UserRole) == plugin_id:
+                    self.plugin_list.setCurrentItem(item)
+                    return
+
+        elif link_type == 'lib':
+            lib_name, spec = parts[1], parts[2]
+            self.install_dependency_dialog(lib_name, spec)
+
+    def install_dependency_dialog(self, lib_name, spec):
+        res = DependencyManager.get_instance().check_external_dependency(lib_name, spec)
+
+        if res['status'] == 'ok':
+            QMessageBox.information(self, _("Dependency Check"),
+                                    _("Library '{lib}' is already installed and compatible.").format(lib=lib_name))
+            return
+
+        action_text = _("Install") if res['status'] == 'missing' else _("Update")
+        package_spec = f"{lib_name}{spec}" if spec else lib_name
+
+        reply = QMessageBox.question(
+            self, _("Install Dependency"),
+            _("The library '{lib}' is {status}.\n\nDo you want to try to {action} it now?\n({cmd})").format(
+                lib=lib_name, status=res['status'], action=action_text, cmd=f"pip install {package_spec}"
+            ),
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            log_dialog = QDialog(self)
+            log_dialog.setWindowTitle(_("Installing {lib}...").format(lib=lib_name))
+            layout = QVBoxLayout(log_dialog)
+            log_browser = QTextBrowser()
+            layout.addWidget(log_browser)
+
+            self.install_thread = InstallThread(package_spec)
+            self.install_thread.progress.connect(log_browser.append)
+            self.install_thread.finished.connect(
+                lambda success: self.on_install_finished(success, lib_name, log_dialog)
+            )
+            self.install_thread.start()
+            log_dialog.exec()
+
+    def on_install_finished(self, success, lib_name, log_dialog):
+        log_dialog.close()
+        if success:
+            QMessageBox.information(self, _("Success"), _(
+                "Library '{lib}' installed successfully.\nPlease restart the application to use the plugin.").format(
+                lib=lib_name))
+            # 刷新当前视图
+            DependencyManager.get_instance()._cache.pop(lib_name, None)
+            self.update_details(self.plugin_list.currentItem(), None)
+        else:
+            QMessageBox.critical(self, _("Failed"),
+                                 _("Failed to install library '{lib}'.\nPlease check the log for details.").format(
+                                     lib=lib_name))
 
     def reload_plugins(self):
         self.manager.reload_plugins()
