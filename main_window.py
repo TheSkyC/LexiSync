@@ -3293,38 +3293,37 @@ class OverwatchLocalizerApp(QMainWindow):
             if reply == QMessageBox.No:
                 return 0
 
+        # --- 核心修改：高效的批量处理逻辑 ---
         applied_count = 0
         bulk_changes_for_undo = []
-        for ts_obj in self.translatable_objects:
-            if ts_obj.is_ignored: continue
+        ids_to_update = set()
 
+        for ts_obj in self.translatable_objects:
+            if ts_obj.is_ignored:
+                continue
             if only_if_empty and ts_obj.translation.strip() != "":
                 continue
-
             if ts_obj.original_semantic in self.translation_memory:
                 translation_from_tm_storage = self.translation_memory[ts_obj.original_semantic]
                 translation_for_model_ui = translation_from_tm_storage.replace("\\n", "\n")
-
                 if ts_obj.translation != translation_for_model_ui:
                     old_translation_for_undo = ts_obj.get_translation_for_storage_and_tm()
-                    self._apply_translation_to_model(
-                        ts_obj,
-                        translation_for_model_ui,
-                        source="tm_apply_all",
-                        run_validation=False # <--- 关键！
-                    )
+                    ts_obj.set_translation_internal(translation_for_model_ui)
                     bulk_changes_for_undo.append({
                         'string_id': ts_obj.id, 'field': 'translation',
                         'old_value': old_translation_for_undo,
                         'new_value': translation_from_tm_storage
                     })
+                    ids_to_update.add(ts_obj.id)
                     applied_count += 1
-
         if applied_count > 0:
             if bulk_changes_for_undo:
                 self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})
                 self.mark_project_modified()
+            self._update_view_for_ids(ids_to_update)
 
+            if self.current_selected_ts_id:
+                self.force_refresh_ui_for_current_selection()
             if not silent:
                 QMessageBox.information(self, _("TM"), _("Applied TM to {count} strings.").format(count=applied_count))
             self.update_statusbar(_("Applied TM to {count} strings.").format(count=applied_count))
