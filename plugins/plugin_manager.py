@@ -20,7 +20,6 @@ class PluginManager:
         self.plugins = []
         self.invalid_plugins = {}
         self.incompatible_plugins = {}
-        # 核心修改 2: 增加一个新的状态字典
         self.missing_deps_plugins = {}
         self.translators = {}
         self.plugin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
@@ -49,7 +48,6 @@ class PluginManager:
         self.plugins = []
         self.invalid_plugins = {}
         self.incompatible_plugins = {}
-        # 核心修改 3: 重置新状态
         self.missing_deps_plugins = {}
         self._cache_valid = False
         if not os.path.isdir(self.plugin_dir):
@@ -112,7 +110,7 @@ class PluginManager:
                     }
                     self.logger.warning(f"Plugin '{instance.plugin_id()}' is incompatible. {reason}")
 
-                # 核心修改 4: 检查外部库依赖
+                # 检查外部库依赖
                 failed_deps = []
                 ext_deps = instance.external_dependencies()
                 if ext_deps:

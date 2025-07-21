@@ -131,7 +131,6 @@ class PluginManagerDialog(QDialog):
         self.plugin_list.clear()
         enabled_plugins = self.config.get('enabled_plugins', [])
 
-        # 添加所有已成功加载的插件
         for plugin in self.manager.plugins:
             plugin_id = plugin.plugin_id()
             item = QListWidgetItem(plugin.name())
@@ -140,7 +139,6 @@ class PluginManagerDialog(QDialog):
 
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
 
-            # 核心修改 3: 扩展列表填充逻辑
             if plugin_id in self.manager.incompatible_plugins:
                 if is_enabled:
                     item.setCheckState(Qt.Checked)
@@ -168,7 +166,6 @@ class PluginManagerDialog(QDialog):
 
             self.plugin_list.addItem(item)
 
-        # 添加所有加载失败的插件 (逻辑不变)
         for plugin_id, info in self.manager.invalid_plugins.items():
             try:
                 plugin_name = info['spec']['class']().name()
@@ -201,7 +198,7 @@ class PluginManagerDialog(QDialog):
             is_checked = item.checkState() == Qt.Checked
             enabled_plugins = self.config.get('enabled_plugins', [])
 
-            # 核心修改 4: 扩展启用/禁用逻辑
+            # 启用/禁用
             if is_checked and plugin_id in self.manager.incompatible_plugins:
                 reply = QMessageBox.warning(
                     self,
@@ -319,19 +316,17 @@ class PluginManagerDialog(QDialog):
             self.compat_label.setText(
                 f"<b style='color:red;'>{_('Loading Failed')}</b><br><small>{info['reason']}</small>")
             self.compat_label.setVisible(True)
-            return  # 处理完毕，直接返回
-
-        # 如果是已加载的插件
+            return
         plugin = self.manager.get_plugin(plugin_id)
         if not plugin:
             return
 
-        # --- 显示基本信息 ---
+        # 显示基本信息
         self.name_label.setText(plugin.name())
         self.version_author_label.setText(f"{_('Version')}: {plugin.version()}  |  {_('Author')}: {plugin.author()}")
         self.description_browser.setHtml(f"<p>{plugin.description()}</p>")
 
-        # --- 显示兼容性信息 ---
+        # 版本兼容
         if plugin_id in self.manager.incompatible_plugins:
             info = self.manager.incompatible_plugins[plugin_id]
             self.compat_label.setText(
@@ -357,8 +352,7 @@ class PluginManagerDialog(QDialog):
             else:
                 self.compat_label.setVisible(False)
 
-        # --- 显示依赖信息 ---
-        # (插件依赖)
+        # 插件依赖
         plugin_deps = plugin.plugin_dependencies()
         if plugin_deps:
             html = f"<b>{_('Plugin Dependencies')}:</b> "
@@ -374,7 +368,7 @@ class PluginManagerDialog(QDialog):
             self.plugin_deps_label.setText(html)
             self.plugin_deps_label.show()
 
-        # (外部库依赖)
+        # 外部库依赖
         ext_deps = plugin.external_dependencies()
         if ext_deps:
             html = f"<b>{_('External Libraries')}:</b> "
@@ -388,8 +382,6 @@ class PluginManagerDialog(QDialog):
             html += ", ".join(links)
             self.external_deps_label.setText(html)
             self.external_deps_label.show()
-
-        # --- 显示设置按钮 ---
         method_on_instance_class = plugin.__class__.show_settings_dialog
         method_on_base_class = PluginBase.show_settings_dialog
         has_settings = method_on_instance_class is not method_on_base_class
@@ -452,7 +444,6 @@ class PluginManagerDialog(QDialog):
             QMessageBox.information(self, _("Success"), _(
                 "Library '{lib}' installed successfully.\nPlease restart the application to use the plugin.").format(
                 lib=lib_name))
-            # 刷新当前视图
             DependencyManager.get_instance()._cache.pop(lib_name, None)
             self.update_details(self.plugin_list.currentItem(), None)
         else:
