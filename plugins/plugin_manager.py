@@ -302,7 +302,7 @@ class PluginManager:
                         method = getattr(plugin, hook_name)
                         result = method(*args, **kwargs)
                         if result is not None:
-                            self.logger.info(f"TM query handled by plugin '{plugin.plugin_id()}'.")
+                            # self.logger.info(f"TM query handled by plugin '{plugin.plugin_id()}'.")
                             return result
                     except Exception as e:
                         self.logger.error(f"Error in plugin '{plugin.plugin_id()}' TM query hook: {e}", exc_info=True)

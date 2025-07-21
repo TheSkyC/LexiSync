@@ -896,7 +896,7 @@ class OverwatchLocalizerApp(QMainWindow):
     def _setup_dock_widgets(self):
         self.details_panel = DetailsPanel(self)
         self.context_panel = ContextPanel(self)
-        self.tm_panel = TMPanel(self)
+        self.tm_panel = TMPanel(self, app_instance=self)
         self.comment_status_panel = CommentStatusPanel(self)
 
         #FileExplorerPanel
