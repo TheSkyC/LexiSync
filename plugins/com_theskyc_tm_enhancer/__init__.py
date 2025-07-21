@@ -32,7 +32,7 @@ class TMEnhancerPlugin(PluginBase):
 
     def description(self) -> str:
         if SKLEARN_AVAILABLE:
-            return self._("Enhances TM matching performance using TF-IDF. Currently active.")
+            return self._("Enhances TM matching performance using TF-IDF")
         else:
             return self._(
                 "Enhances TM matching performance. Requires 'scikit-learn' and 'numpy'. Please run: pip install scikit-learn numpy")
