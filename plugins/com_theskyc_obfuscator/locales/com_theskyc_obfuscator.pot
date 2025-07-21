@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Com Theskyc Obfuscator Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
-"POT-Creation-Date: 2025-07-20 14:29+0000\n"
+"POT-Creation-Date: 2025-07-21 12:54+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: __init__.py:80
+#: __init__.py:82
 msgid "All Files"
 msgstr ""
 
@@ -38,11 +38,11 @@ msgstr ""
 msgid "Complexity:"
 msgstr ""
 
-#: __init__.py:90
+#: __init__.py:92
 msgid "Error"
 msgstr ""
 
-#: __init__.py:91
+#: __init__.py:93
 #, python-brace-format
 msgid "Failed to read file: {error}"
 msgstr ""
@@ -55,30 +55,26 @@ msgstr ""
 msgid "How to get: In-game Workshop -> Show Diagnostics -> Total Element Count"
 msgstr ""
 
-#: __init__.py:71
+#: __init__.py:73
 msgid "No Code"
-msgstr ""
-
-#: obfuscator_dialog.py:16
-msgid "OK"
 msgstr ""
 
 #: __init__.py:38
 msgid "OW Code Obfuscator"
 msgstr ""
 
-#: __init__.py:59
+#: __init__.py:62
 msgid "Obfuscate Current File"
 msgstr ""
 
 #: __init__.py:42
 msgid ""
 "Obfuscate Overwatch Workshop code. Features include string obfuscation, "
-"rule padding, and removal of comments and rule names. Currently only "
-"supports code written in Chinese or English."
+"rule padding, and removal of comments and rule names. Some features "
+"Currently only supports code written in Chinese or English."
 msgstr ""
 
-#: __init__.py:60
+#: __init__.py:63
 msgid "Obfuscate Specific File..."
 msgstr ""
 
@@ -90,15 +86,15 @@ msgstr ""
 msgid "Obfuscate Variables & Subroutines (UNSTABLE)"
 msgstr ""
 
-#: __init__.py:122
+#: __init__.py:127
 msgid "Obfuscating code..."
 msgstr ""
 
-#: __init__.py:132
+#: __init__.py:137
 msgid "Obfuscation Complete"
 msgstr ""
 
-#: __init__.py:137
+#: __init__.py:142
 msgid "Obfuscation Error"
 msgstr ""
 
@@ -110,11 +106,11 @@ msgstr ""
 msgid "Obfuscator Settings"
 msgstr ""
 
-#: __init__.py:61
+#: __init__.py:64
 msgid "Obfuscator Settings..."
 msgstr ""
 
-#: __init__.py:99
+#: __init__.py:102
 msgid "Obfuscator settings saved."
 msgstr ""
 
@@ -122,7 +118,7 @@ msgstr ""
 msgid "Pad with Fake Rules"
 msgstr ""
 
-#: __init__.py:71
+#: __init__.py:73
 msgid "Please open a workshop code file first."
 msgstr ""
 
@@ -138,7 +134,11 @@ msgstr ""
 msgid "Remove Rule Names"
 msgstr ""
 
-#: __init__.py:78
+#: obfuscator_dialog.py:16
+msgid "Save"
+msgstr ""
+
+#: __init__.py:80
 msgid "Select Workshop File to Obfuscate"
 msgstr ""
 
@@ -146,7 +146,7 @@ msgstr ""
 msgid "Start Obfuscation"
 msgstr ""
 
-#: __init__.py:133
+#: __init__.py:138
 msgid "The obfuscated code has been copied to your clipboard."
 msgstr ""
 
@@ -156,7 +156,7 @@ msgid ""
 "may cause errors."
 msgstr ""
 
-#: __init__.py:80
+#: __init__.py:82
 msgid "Workshop Files"
 msgstr ""
 

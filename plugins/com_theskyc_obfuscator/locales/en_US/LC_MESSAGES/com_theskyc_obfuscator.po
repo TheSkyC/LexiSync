@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Com Theskyc Obfuscator Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
-"POT-Creation-Date: 2025-07-20 14:29+0000\n"
-"PO-Revision-Date: 2025-07-20 14:38+0000\n"
+"POT-Creation-Date: 2025-07-21 12:54+0000\n"
+"PO-Revision-Date: 2025-07-21 12:56+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: en\n"
@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: __init__.py:80
+#: __init__.py:82
 msgid "All Files"
 msgstr "All Files"
 
@@ -34,11 +34,11 @@ msgstr "Complexity Settings"
 msgid "Complexity:"
 msgstr "Complexity:"
 
-#: __init__.py:90
+#: __init__.py:92
 msgid "Error"
 msgstr "Error"
 
-#: __init__.py:91
+#: __init__.py:93
 #, python-brace-format
 msgid "Failed to read file: {error}"
 msgstr "Failed to read file: {error}"
@@ -51,27 +51,23 @@ msgstr "Hint: Low element count. Recommended minimum of 200."
 msgid "How to get: In-game Workshop -> Show Diagnostics -> Total Element Count"
 msgstr "How to get: In-game Workshop -> Show Diagnostics -> Total Element Count"
 
-#: __init__.py:71
+#: __init__.py:73
 msgid "No Code"
 msgstr "No Code"
-
-#: obfuscator_dialog.py:16
-msgid "OK"
-msgstr "OK"
 
 #: __init__.py:38
 msgid "OW Code Obfuscator"
 msgstr "OW Code Obfuscator"
 
-#: __init__.py:59
+#: __init__.py:62
 msgid "Obfuscate Current File"
 msgstr "Obfuscate Current File"
 
 #: __init__.py:42
-msgid "Obfuscate Overwatch Workshop code. Features include string obfuscation, rule padding, and removal of comments and rule names. Currently only supports code written in Chinese or English."
-msgstr "Obfuscate Overwatch Workshop code. Features include string obfuscation, rule padding, and removal of comments and rule names. Currently only supports code written in Chinese or English."
+msgid "Obfuscate Overwatch Workshop code. Features include string obfuscation, rule padding, and removal of comments and rule names. Some features Currently only supports code written in Chinese or English."
+msgstr "Obfuscate Overwatch Workshop code. Features include string obfuscation, rule padding, and removal of comments and rule names. Some features Currently only supports code written in Chinese or English."
 
-#: __init__.py:60
+#: __init__.py:63
 msgid "Obfuscate Specific File..."
 msgstr "Obfuscate Specific File..."
 
@@ -83,15 +79,15 @@ msgstr "Obfuscate Strings"
 msgid "Obfuscate Variables & Subroutines (UNSTABLE)"
 msgstr "Obfuscate Variables & Subroutines (UNSTABLE)"
 
-#: __init__.py:122
+#: __init__.py:127
 msgid "Obfuscating code..."
 msgstr "Obfuscating code..."
 
-#: __init__.py:132
+#: __init__.py:137
 msgid "Obfuscation Complete"
 msgstr "Obfuscation Complete"
 
-#: __init__.py:137
+#: __init__.py:142
 msgid "Obfuscation Error"
 msgstr "Obfuscation Error"
 
@@ -103,11 +99,11 @@ msgstr "Obfuscation Options"
 msgid "Obfuscator Settings"
 msgstr "Obfuscator Settings"
 
-#: __init__.py:61
+#: __init__.py:64
 msgid "Obfuscator Settings..."
 msgstr "Obfuscator Settings..."
 
-#: __init__.py:99
+#: __init__.py:102
 msgid "Obfuscator settings saved."
 msgstr "Obfuscator settings saved."
 
@@ -115,7 +111,7 @@ msgstr "Obfuscator settings saved."
 msgid "Pad with Fake Rules"
 msgstr "Pad with Fake Rules"
 
-#: __init__.py:71
+#: __init__.py:73
 msgid "Please open a workshop code file first."
 msgstr "Please open a workshop code file first."
 
@@ -131,7 +127,11 @@ msgstr "Remove Comments"
 msgid "Remove Rule Names"
 msgstr "Remove Rule Names"
 
-#: __init__.py:78
+#: obfuscator_dialog.py:16
+msgid "Save"
+msgstr "Save"
+
+#: __init__.py:80
 msgid "Select Workshop File to Obfuscate"
 msgstr "Select Workshop File to Obfuscate"
 
@@ -139,7 +139,7 @@ msgstr "Select Workshop File to Obfuscate"
 msgid "Start Obfuscation"
 msgstr "Start Obfuscation"
 
-#: __init__.py:133
+#: __init__.py:138
 msgid "The obfuscated code has been copied to your clipboard."
 msgstr "The obfuscated code has been copied to your clipboard."
 
@@ -147,6 +147,6 @@ msgstr "The obfuscated code has been copied to your clipboard."
 msgid "Warning: High element count. This leaves little room for obfuscation and may cause errors."
 msgstr "Warning: High element count. This leaves little room for obfuscation and may cause errors."
 
-#: __init__.py:80
+#: __init__.py:82
 msgid "Workshop Files"
 msgstr "Workshop Files"
