@@ -1,0 +1,27 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Com Theskyc Tm Enhancer Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2025-07-21 13:41+0000\n"
+"PO-Revision-Date: 2025-07-21 13:46+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: __init__.py:35
+msgid "Enhances TM matching performance using TF-IDF"
+msgstr "Migliora le prestazioni di corrispondenza della TM utilizzando TF-IDF"
+
+#: __init__.py:38
+msgid "Enhances TM matching performance using TF-IDF. Requires 'scikit-learn' and 'numpy'. Please run: pip install scikit-learn numpy"
+msgstr "Migliora le prestazioni di corrispondenza della TM utilizzando TF-IDF. Richiede 'scikit-learn' e 'numpy'. Esegui: pip install scikit-learn numpy"
+
+#: __init__.py:31
+msgid "TM Enhancer (TF-IDF)"
+msgstr "Potenziatore TM (TF-IDF)"
