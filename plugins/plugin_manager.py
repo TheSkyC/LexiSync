@@ -11,16 +11,20 @@ from plugins.plugin_base import PluginBase
 from plugins.plugin_dialog import PluginManagerDialog
 from utils.constants import APP_VERSION
 from utils.localization import _
+from services.dependency_service import DependencyManager
 
 
 class PluginManager:
     def __init__(self, main_window):
         self.main_window = main_window
         self.plugins = []
+        self.invalid_plugins = {}
+        self.incompatible_plugins = {}
+        # 核心修改 2: 增加一个新的状态字典
+        self.missing_deps_plugins = {}
         self.translators = {}
         self.plugin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
         self.logger = logging.getLogger(__name__)
-        self.incompatible_plugins = {}
 
         self._enabled_plugins_cache = None
         self._cache_valid = False
@@ -43,44 +47,92 @@ class PluginManager:
 
     def load_plugins(self):
         self.plugins = []
+        self.invalid_plugins = {}
         self.incompatible_plugins = {}
+        # 核心修改 3: 重置新状态
+        self.missing_deps_plugins = {}
         self._cache_valid = False
         if not os.path.isdir(self.plugin_dir):
             self.logger.warning(f"Plugin directory not found: {self.plugin_dir}")
             return
 
-        plugin_specs = []
+        all_specs = {}
         for item_name in os.listdir(self.plugin_dir):
             if os.path.isdir(os.path.join(self.plugin_dir, item_name)):
                 try:
                     spec = self._get_plugin_spec(item_name)
                     if spec:
-                        plugin_specs.append(spec)
+                        all_specs[spec['id']] = spec
                 except Exception as e:
                     self.logger.error(f"Failed to load plugin spec for '{item_name}': {e}", exc_info=True)
+                    self.invalid_plugins[item_name] = {'spec': None, 'reason': str(e)}
+
+        valid_specs = {}
+        all_plugin_ids = set(all_specs.keys())
+        for plugin_id, spec in all_specs.items():
+            missing_deps = set(spec['deps']) - all_plugin_ids
+            if missing_deps:
+                reason = _("Missing dependencies: {deps}").format(deps=", ".join(missing_deps))
+                try:
+                    temp_instance = spec['class']()
+                    self.setup_plugin_translation(plugin_id)
+                    temp_instance._ = self.get_translator_for_plugin(plugin_id)
+
+                    spec['metadata'] = {
+                        'name': temp_instance.name(),
+                        'version': temp_instance.version(),
+                        'author': temp_instance.author(),
+                        'description': temp_instance.description()
+                    }
+                except Exception:
+                    spec['metadata'] = {'name': plugin_id}
+                self.invalid_plugins[plugin_id] = {'spec': spec, 'reason': reason}
+                self.logger.warning(f"Plugin '{plugin_id}' is invalid. {reason}")
+            else:
+                valid_specs[plugin_id] = spec
 
         try:
-            sorted_instances = self._sort_and_instantiate_plugins(plugin_specs)
+            sorted_instances = self._sort_and_instantiate_plugins(list(valid_specs.values()))
             self.plugins = sorted_instances
+
             for instance in self.plugins:
                 self.setup_plugin_translation(instance.plugin_id())
                 instance.setup(self.main_window, self)
+
+                # 检查版本兼容性
                 required_version = instance.compatible_app_version()
                 if not self._is_version_compatible(APP_VERSION, required_version):
-                    self.logger.warning(
-                        f"Plugin '{instance.name()}' (ID: {instance.plugin_id()}) is not compatible with app version {APP_VERSION}. "
-                        f"Requires: {required_version}. It will be disabled by default."
-                    )
+                    reason = _("Incompatible with app version (requires {req}, current is {curr})").format(
+                        req=required_version, curr=APP_VERSION)
                     self.incompatible_plugins[instance.plugin_id()] = {
-                        "name": instance.name(),
-                        "required": required_version,
-                        "current": APP_VERSION
+                        'spec': {'class': instance.__class__},
+                        'reason': reason,
+                        'required': required_version,
+                        'current': APP_VERSION
                     }
+                    self.logger.warning(f"Plugin '{instance.plugin_id()}' is incompatible. {reason}")
 
-                self.logger.info(
-                    f"Successfully loaded and initialized plugin: {instance.name()} (ID: {instance.plugin_id()})")
-        except Exception as e:
-            self.logger.critical(f"Failed to sort or initialize plugins: {e}", exc_info=True)
+                # 核心修改 4: 检查外部库依赖
+                failed_deps = []
+                ext_deps = instance.external_dependencies()
+                if ext_deps:
+                    for lib_name, spec in ext_deps.items():
+                        res = DependencyManager.get_instance().check_external_dependency(lib_name, spec)
+                        if res['status'] != 'ok':
+                            failed_deps.append(res)
+
+                if failed_deps:
+                    self.missing_deps_plugins[instance.plugin_id()] = {
+                        'failed_deps': failed_deps
+                    }
+                    reason_text = ", ".join([f"{d['name']} ({d['status']})" for d in failed_deps])
+                    self.logger.warning(
+                        f"Plugin '{instance.plugin_id()}' has missing/outdated external dependencies: {reason_text}")
+
+                self.logger.info(f"Successfully loaded plugin: {instance.name()} (ID: {instance.plugin_id()})")
+
+        except RuntimeError as e:
+            self.logger.critical(f"Failed to sort plugins due to circular dependency: {e}", exc_info=True)
             QMessageBox.critical(self.main_window, _("Plugin Loading Error"), str(e))
 
     def _get_plugin_spec(self, dir_name):
@@ -347,7 +399,7 @@ class PluginManager:
     def is_dependency_for_others(self, plugin_id_to_check: str) -> bool:
         dependent_plugins = []
         for p in self.get_enabled_plugins():
-            if plugin_id_to_check in p.dependencies():
+            if plugin_id_to_check in p.plugin_dependencies():
                 dependent_plugins.append(p.name())
 
         if dependent_plugins:

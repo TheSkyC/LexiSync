@@ -48,6 +48,7 @@ class PluginManagerDialog(QDialog):
     ICON_RED = None
     ICON_GRAY = None
     ICON_YELLOW_WARNING = None
+    ICON_GREEN_RED_WARNING = None
 
     def __init__(self, parent, manager):
         super().__init__(parent)
@@ -61,6 +62,7 @@ class PluginManagerDialog(QDialog):
             PluginManagerDialog.ICON_RED = create_icon("#E74C3C")
             PluginManagerDialog.ICON_GRAY = create_icon("#BDC3C7")
             PluginManagerDialog.ICON_YELLOW_WARNING = create_icon("#2ECC71", "#FDB933")
+            PluginManagerDialog.ICON_GREEN_RED_WARNING = create_icon("#2ECC71", "#E74C3C")
         main_layout = QVBoxLayout(self)
         splitter = QSplitter(Qt.Horizontal)
         main_layout.addWidget(splitter)
@@ -129,6 +131,7 @@ class PluginManagerDialog(QDialog):
         self.plugin_list.clear()
         enabled_plugins = self.config.get('enabled_plugins', [])
 
+        # 添加所有已成功加载的插件
         for plugin in self.manager.plugins:
             plugin_id = plugin.plugin_id()
             item = QListWidgetItem(plugin.name())
@@ -137,6 +140,7 @@ class PluginManagerDialog(QDialog):
 
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
 
+            # 核心修改 3: 扩展列表填充逻辑
             if plugin_id in self.manager.incompatible_plugins:
                 if is_enabled:
                     item.setCheckState(Qt.Checked)
@@ -147,10 +151,37 @@ class PluginManagerDialog(QDialog):
                     item.setForeground(QColor("gray"))
                     item.setIcon(self.ICON_RED)
                     item.setToolTip(_("This plugin is incompatible. Check to force-enable."))
+            elif plugin_id in self.manager.missing_deps_plugins:
+                failed_deps_str = ", ".join([d['name'] for d in self.manager.missing_deps_plugins[plugin_id]['failed_deps']])
+                if is_enabled:
+                    item.setCheckState(Qt.Checked)
+                    item.setIcon(self.ICON_GREEN_RED_WARNING)
+                    item.setToolTip(_("Force-enabled with missing libraries: {libs}").format(libs=failed_deps_str))
+                else:
+                    item.setCheckState(Qt.Unchecked)
+                    item.setForeground(QColor("gray"))
+                    item.setIcon(self.ICON_RED)
+                    item.setToolTip(_("Missing external libraries: {libs}. Check to force-enable.").format(libs=failed_deps_str))
             else:
                 item.setCheckState(Qt.Checked if is_enabled else Qt.Unchecked)
                 item.setIcon(self.ICON_GREEN if is_enabled else self.ICON_GRAY)
 
+            self.plugin_list.addItem(item)
+
+        # 添加所有加载失败的插件 (逻辑不变)
+        for plugin_id, info in self.manager.invalid_plugins.items():
+            try:
+                plugin_name = info['spec']['class']().name()
+            except:
+                plugin_name = plugin_id
+
+            item = QListWidgetItem(plugin_name)
+            item.setData(Qt.UserRole, plugin_id)
+            item.setFlags(item.flags() & ~Qt.ItemIsUserCheckable)
+            item.setCheckState(Qt.Unchecked)
+            item.setForeground(QColor("darkred"))
+            item.setIcon(self.ICON_RED)
+            item.setToolTip(_("Failed to load: {reason}").format(reason=info['reason']))
             self.plugin_list.addItem(item)
 
         self.plugin_list.blockSignals(False)
@@ -168,28 +199,44 @@ class PluginManagerDialog(QDialog):
                 return
 
             is_checked = item.checkState() == Qt.Checked
-
             enabled_plugins = self.config.get('enabled_plugins', [])
 
+            # 核心修改 4: 扩展启用/禁用逻辑
             if is_checked and plugin_id in self.manager.incompatible_plugins:
                 reply = QMessageBox.warning(
                     self,
                     _("Compatibility Warning"),
-                    _("The plugin '{plugin_name}' is not marked as compatible with this version of the application.\n\n"
+                    _("The plugin '{plugin_name}' is not marked as compatible with this application version.\n\n"
                       "Forcing it to enable may cause instability or crashes.\n\n"
                       "Are you sure you want to force enable it?").format(plugin_name=item.text()),
-                    QMessageBox.Yes | QMessageBox.No,
-                    QMessageBox.No
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No
                 )
-
                 if reply == QMessageBox.Yes:
-                    if plugin_id not in enabled_plugins:
-                        enabled_plugins.append(plugin_id)
+                    if plugin_id not in enabled_plugins: enabled_plugins.append(plugin_id)
                     item.setIcon(self.ICON_YELLOW_WARNING)
                     self.manager.main_window.update_statusbar(
-                        _("Plugin '{plugin_name}' force-enabled.").format(plugin_name=plugin.name()),
-                        persistent=True
-                    )
+                        _("Plugin '{plugin_name}' force-enabled.").format(plugin_name=plugin.name()), persistent=True)
+                else:
+                    item.setCheckState(Qt.Unchecked)
+                    item.setIcon(self.ICON_RED)
+                    self.plugin_list.blockSignals(False)
+                    return
+            elif is_checked and plugin_id in self.manager.missing_deps_plugins:
+                failed_deps = self.manager.missing_deps_plugins[plugin_id]['failed_deps']
+                failed_deps_str = "\n- ".join([f"{d['name']} ({d['status']})" for d in failed_deps])
+                reply = QMessageBox.warning(
+                    self,
+                    _("Missing Dependencies"),
+                    _("The plugin '{plugin_name}' is missing required external libraries:\n\n- {libs}\n\n"
+                      "The plugin will likely fail to run correctly. You can try to install them from the details panel.\n\n"
+                      "Are you sure you want to force enable it anyway?").format(plugin_name=item.text(), libs=failed_deps_str),
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    if plugin_id not in enabled_plugins: enabled_plugins.append(plugin_id)
+                    item.setIcon(self.ICON_GREEN_RED_WARNING)
+                    self.manager.main_window.update_statusbar(
+                        _("Plugin '{plugin_name}' force-enabled with missing libraries.").format(plugin_name=plugin.name()), persistent=True)
                 else:
                     item.setCheckState(Qt.Unchecked)
                     item.setIcon(self.ICON_RED)
@@ -201,35 +248,32 @@ class PluginManagerDialog(QDialog):
                     item.setIcon(self.ICON_GRAY)
                     self.plugin_list.blockSignals(False)
                     return
-
-                if plugin_id not in enabled_plugins:
-                    enabled_plugins.append(plugin_id)
+                if plugin_id not in enabled_plugins: enabled_plugins.append(plugin_id)
                 item.setIcon(self.ICON_GREEN)
                 self.manager.main_window.update_statusbar(
-                    _("Plugin '{plugin_name}' enabled.").format(plugin_name=plugin.name()),
-                    persistent=True
-                )
-            else:
+                    _("Plugin '{plugin_name}' enabled.").format(plugin_name=plugin.name()), persistent=True)
+            else: # Disabling
                 if self.manager.is_dependency_for_others(plugin_id):
                     item.setCheckState(Qt.Checked)
                     if plugin_id in self.manager.incompatible_plugins:
                         item.setIcon(self.ICON_YELLOW_WARNING)
+                    elif plugin_id in self.manager.missing_deps_plugins:
+                        item.setIcon(self.ICON_GREEN_RED_WARNING)
                     else:
                         item.setIcon(self.ICON_GREEN)
                     self.plugin_list.blockSignals(False)
                     return
 
-                if plugin_id in enabled_plugins:
-                    enabled_plugins.remove(plugin_id)
+                if plugin_id in enabled_plugins: enabled_plugins.remove(plugin_id)
 
                 if plugin_id in self.manager.incompatible_plugins:
+                    item.setIcon(self.ICON_RED)
+                elif plugin_id in self.manager.missing_deps_plugins:
                     item.setIcon(self.ICON_RED)
                 else:
                     item.setIcon(self.ICON_GRAY)
                 self.manager.main_window.update_statusbar(
-                    _("Plugin '{plugin_name}' disabled.").format(plugin_name=plugin.name()),
-                    persistent=True
-                )
+                    _("Plugin '{plugin_name}' disabled.").format(plugin_name=plugin.name()), persistent=True)
 
             self.config['enabled_plugins'] = enabled_plugins
             self.manager.main_window.save_config()
@@ -253,76 +297,104 @@ class PluginManagerDialog(QDialog):
     def update_details(self, current, previous):
         self.plugin_deps_label.hide()
         self.external_deps_label.hide()
-        self.settings_button.setVisible(False)
+        self.settings_button.hide()
+        self.compat_label.hide()
+
         if not current:
             self.name_label.clear()
             self.version_author_label.clear()
             self.description_browser.clear()
-            self.compat_label.clear()
-            self.dependencies_label.clear()
             return
 
         plugin_id = current.data(Qt.UserRole)
+
+        if plugin_id in self.manager.invalid_plugins:
+            info = self.manager.invalid_plugins[plugin_id]
+            metadata = info.get('spec', {}).get('metadata', {})
+            self.name_label.setText(metadata.get('name', plugin_id))
+            self.version_author_label.setText(
+                f"{_('Version')}: {metadata.get('version', 'N/A')}  |  {_('Author')}: {metadata.get('author', 'N/A')}"
+            )
+            self.description_browser.setHtml(f"<p>{metadata.get('description', '')}</p>")
+            self.compat_label.setText(
+                f"<b style='color:red;'>{_('Loading Failed')}</b><br><small>{info['reason']}</small>")
+            self.compat_label.setVisible(True)
+            return  # 处理完毕，直接返回
+
+        # 如果是已加载的插件
         plugin = self.manager.get_plugin(plugin_id)
-        if plugin:
-            self.name_label.setText(plugin.name())
+        if not plugin:
+            return
 
-            version_info = f"{_('Version')}: {plugin.version()}"
-            author_info = f"{_('Author')}: {plugin.author()}"
-            url = plugin.url()
+        # --- 显示基本信息 ---
+        self.name_label.setText(plugin.name())
+        self.version_author_label.setText(f"{_('Version')}: {plugin.version()}  |  {_('Author')}: {plugin.author()}")
+        self.description_browser.setHtml(f"<p>{plugin.description()}</p>")
 
-            html_info = f"{version_info}  |  {author_info}"
-            if url:
-                html_info += f"<br><a href='{url}'>{_('Visit Plugin Homepage')}</a>"
-
-            self.version_author_label.setText(html_info)
-
-            if plugin_id in self.manager.incompatible_plugins:
-                info = self.manager.incompatible_plugins[plugin_id]
+        # --- 显示兼容性信息 ---
+        if plugin_id in self.manager.incompatible_plugins:
+            info = self.manager.incompatible_plugins[plugin_id]
+            self.compat_label.setText(
+                f"<b style='color:#E74C3C;'>{_('Incompatible')}</b><br>"
+                f"<small>{_('Requires App Version')}: <b>{info['required']}</b> | {_('Current')}: {info['current']}</small>"
+            )
+            self.compat_label.setVisible(True)
+        elif plugin_id in self.manager.missing_deps_plugins:
+            failed_deps = self.manager.missing_deps_plugins[plugin_id]['failed_deps']
+            failed_deps_str = ", ".join([f"{d['name']} ({d['status']})" for d in failed_deps])
+            self.compat_label.setText(
+                f"<b style='color:#E74C3C;'>{_('Missing Libraries')}</b>"
+            )
+            self.compat_label.setVisible(True)
+        else:
+            required_version = plugin.compatible_app_version()
+            if required_version:
                 self.compat_label.setText(
-                    f"<b style='color:#E74C3C;'>{_('Incompatible')}</b><br>"
-                    f"<small>{_('Requires App Version')}: <b>{info['required']}</b> | {_('Current')}: {info['current']}</small>"
+                    f"<b style='color:#2ECC71;'>{_('Compatible')}</b><br>"
+                    f"<small>{_('Requires App Version')}: <b>{required_version}</b></small>"
                 )
                 self.compat_label.setVisible(True)
             else:
-                required_version = plugin.compatible_app_version()
-                if required_version:
-                    self.compat_label.setText(
-                        f"<b style='color:#2ECC71;'>{_('Compatible')}</b><br>"
-                        f"<small>{_('Requires App Version')}: <b>{required_version}</b></small>"
-                    )
-                    self.compat_label.setVisible(True)
-                else:
-                    self.compat_label.setVisible(False)
+                self.compat_label.setVisible(False)
 
-            # 插件依赖
-            plugin_deps = plugin.plugin_dependencies()
-            if plugin_deps:
-                html = f"<b>{_('Plugin Dependencies')}:</b> "
-                links = []
-                all_plugins = {p.plugin_id(): p for p in self.manager.plugins}
-                for dep_id, spec in plugin_deps.items():
-                    res = DependencyManager.get_instance().check_plugin_dependency(dep_id, spec, all_plugins)
-                    color = {'ok': 'green', 'missing': 'red', 'outdated': 'orange'}[res['status']]
-                    title = f"{_('Required')}: {res['required'] or 'any'}\n{_('Installed')}: {res['installed'] or 'N/A'}"
-                    links.append(f"<a href='plugin:{dep_id}' style='color:{color}; text-decoration:none;' title='{title}'>{res['name']}</a>")
-                html += ", ".join(links)
-                self.plugin_deps_label.setText(html)
-                self.plugin_deps_label.show()
+        # --- 显示依赖信息 ---
+        # (插件依赖)
+        plugin_deps = plugin.plugin_dependencies()
+        if plugin_deps:
+            html = f"<b>{_('Plugin Dependencies')}:</b> "
+            links = []
+            all_plugins = {p.plugin_id(): p for p in self.manager.plugins}
+            for dep_id, spec in plugin_deps.items():
+                res = DependencyManager.get_instance().check_plugin_dependency(dep_id, spec, all_plugins)
+                color = {'ok': 'green', 'missing': 'red', 'outdated': 'orange'}[res['status']]
+                title = f"{_('Required')}: {res['required'] or 'any'}\n{_('Installed')}: {res['installed'] or 'N/A'}"
+                links.append(
+                    f"<a href='plugin:{dep_id}' style='color:{color}; text-decoration:none;' title='{title}'>{res['name']}</a>")
+            html += ", ".join(links)
+            self.plugin_deps_label.setText(html)
+            self.plugin_deps_label.show()
 
-            # 外部库依赖
-            ext_deps = plugin.external_dependencies()
-            if ext_deps:
-                html = f"<b>{_('External Libraries')}:</b> "
-                links = []
-                for lib_name, spec in ext_deps.items():
-                    res = DependencyManager.get_instance().check_external_dependency(lib_name, spec)
-                    color = {'ok': 'green', 'missing': 'red', 'outdated': 'orange'}[res['status']]
-                    title = f"{_('Required')}: {res['required'] or 'any'}\n{_('Installed')}: {res['installed'] or 'N/A'}"
-                    links.append(f"<a href='lib:{lib_name}:{spec}' style='color:{color}; text-decoration:none;' title='{title}'>{res['name']}</a>")
-                html += ", ".join(links)
-                self.external_deps_label.setText(html)
-                self.external_deps_label.show()
+        # (外部库依赖)
+        ext_deps = plugin.external_dependencies()
+        if ext_deps:
+            html = f"<b>{_('External Libraries')}:</b> "
+            links = []
+            for lib_name, spec in ext_deps.items():
+                res = DependencyManager.get_instance().check_external_dependency(lib_name, spec)
+                color = {'ok': 'green', 'missing': 'red', 'outdated': 'orange'}[res['status']]
+                title = f"{_('Required')}: {res['required'] or 'any'}\n{_('Installed')}: {res['installed'] or 'N/A'}"
+                links.append(
+                    f"<a href='lib:{lib_name}:{spec}' style='color:{color}; text-decoration:none;' title='{title}'>{res['name']}</a>")
+            html += ", ".join(links)
+            self.external_deps_label.setText(html)
+            self.external_deps_label.show()
+
+        # --- 显示设置按钮 ---
+        method_on_instance_class = plugin.__class__.show_settings_dialog
+        method_on_base_class = PluginBase.show_settings_dialog
+        has_settings = method_on_instance_class is not method_on_base_class
+        self.settings_button.setVisible(has_settings)
+
 
     def on_link_activated(self, link: str):
         parts = link.split(':', 2)
