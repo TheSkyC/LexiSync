@@ -460,9 +460,11 @@ class OverwatchLocalizerApp(QMainWindow):
         self.tools_menu.addSeparator()
 
         self.tools_menu.addSeparator()
-        self.action_revalidate_all = QAction(_("Re-validate All Entries"), self)
-        self.action_revalidate_all.triggered.connect(self._run_and_refresh_with_validation)
-        self.tools_menu.addAction(self.action_revalidate_all)
+        self.action_run_validation_on_all = QAction(_("Re-validate All Entries"), self)
+        self.action_run_validation_on_all.triggered.connect(self._run_and_refresh_with_validation)
+        self.action_run_validation_on_all.setEnabled(False)
+        self.tools_menu.addAction(self.action_run_validation_on_all)
+
 
         self.action_reload_translatable_text = QAction(_("Reload Translatable Text"), self)
         self.action_reload_translatable_text.triggered.connect(self.reload_translatable_text)
@@ -558,6 +560,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_ai_translate_selected.setText(_("AI Translate Selected"))
         self.action_ai_translate_all_untranslated.setText(_("AI Translate All Untranslated"))
         self.action_stop_ai_batch_translation.setText(_("Stop AI Batch Translation"))
+        self.action_run_validation_on_all.setText(_("Re-validate All Entries"))
         self.action_reload_translatable_text.setText(_("Reload Translatable Text"))
         self.action_show_statistics.setText(_("Project Statistics..."))
 
@@ -590,15 +593,27 @@ class OverwatchLocalizerApp(QMainWindow):
         self.on_search_focus_out()
         self.on_search_focus_out()
 
-        self.details_dock.setWindowTitle(_("Edit && Details"))
-        self.context_dock.setWindowTitle(_("Context Preview"))
-        self.tm_dock.setWindowTitle(_("Translation Memory Matches"))
-        self.comment_status_dock.setWindowTitle(_("Comment && Status"))
+        if hasattr(self, 'file_explorer_dock'):
+            self.file_explorer_dock.setWindowTitle(_("File Explorer"))
+        if hasattr(self, 'details_dock'):
+            self.details_dock.setWindowTitle(_("Edit && Details"))
+        if hasattr(self, 'context_dock'):
+            self.context_dock.setWindowTitle(_("Context Preview"))
+        if hasattr(self, 'tm_dock'):
+            self.tm_dock.setWindowTitle(_("Translation Memory Matches"))
+        if hasattr(self, 'comment_status_dock'):
+            self.comment_status_dock.setWindowTitle(_("Comment && Status"))
 
-        self.details_panel.update_ui_texts()
-        self.comment_status_panel.update_ui_texts()
-        self.context_panel.update_ui_texts()
-        self.tm_panel.update_ui_texts()
+        if hasattr(self, 'file_explorer_dock'):
+            self.file_explorer_panel.update_ui_texts()
+        if hasattr(self, 'details_dock'):
+            self.details_panel.update_ui_texts()
+        if hasattr(self, 'details_dock'):
+            self.comment_status_panel.update_ui_texts()
+        if hasattr(self, 'tm_dock'):
+            self.context_panel.update_ui_texts()
+        if hasattr(self, 'comment_status_dock'):
+            self.tm_panel.update_ui_texts()
         if hasattr(self, 'plugin_manager'):
             self.plugin_manager.setup_plugin_ui()
 
@@ -1120,8 +1135,10 @@ class OverwatchLocalizerApp(QMainWindow):
 
         self.action_apply_tm_to_untranslated.setEnabled(has_content)
         self.action_reload_translatable_text.setEnabled(
-            bool(self.original_raw_code_content or self.current_code_file_path))
+            bool(self.original_raw_code_content or self.current_code_file_path)
+        )
         self.action_show_statistics.setEnabled(has_content)
+        self.action_run_validation_on_all.setEnabled(has_content)
 
         self.update_ai_related_ui_state()
         self.update_title()

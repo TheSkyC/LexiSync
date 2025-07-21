@@ -263,3 +263,7 @@ class FileExplorerPanel(QWidget):
                 except Exception as e:
                     QMessageBox.critical(self, _("Error"),
                                          _("Failed to delete {path}: {error}").format(path=path, error=e))
+
+    def update_ui_texts(self):
+        self.filter_edit.setPlaceholderText(_("Filter files..."))
+        self.show_all_checkbox.setText(_("Show All Files"))
