@@ -41,7 +41,7 @@ class ObfuscatorPlugin(PluginBase):
         return self._(
             "Obfuscate Overwatch Workshop code. "
             "Features include string obfuscation, rule padding, and removal of comments and rule names. "
-            "Currently only supports code written in Chinese or English."
+            "Some features Currently only supports code written in Chinese or English."
         )
 
     def version(self) -> str:
@@ -61,8 +61,7 @@ class ObfuscatorPlugin(PluginBase):
             (self.name(), [
                 (self._("Obfuscate Current File"), self.obfuscate_current_file),
                 (self._("Obfuscate Specific File..."), self.obfuscate_specific_files),
-                (self._("Obfuscator Settings..."),
-                self.show_settings_dialog
+                (self._("Obfuscator Settings..."), lambda checked=False: self.show_settings_dialog(self.main_window)
                 )
             ])
         ]
@@ -94,13 +93,15 @@ class ObfuscatorPlugin(PluginBase):
                                  self._("Failed to read file: {error}").format(error=e))
 
     def show_settings_dialog(self, parent_widget):
-        dialog = ObfuscatorDialog(parent_widget, self.config, self._)
+        dialog = ObfuscatorDialog(parent_widget, self.config, self._, is_settings_only=True)
         if dialog.exec():
             options, remember = dialog.get_options()
             self.config.update(options)
             self.config['remember_settings'] = remember
             self.save_config()
             self.main_window.update_statusbar(self._("Obfuscator settings saved."))
+            return True
+        return False
 
     def _start_obfuscation_flow(self, code_content):
         options_dialog = ObfuscatorDialog(self.main_window, self.config, self._)

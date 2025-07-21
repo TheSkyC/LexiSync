@@ -6,14 +6,14 @@ from PySide6.QtCore import Qt
 
 
 class ObfuscatorDialog(QDialog):
-    def __init__(self, parent, config, translator, is_standalone_settings=False):
+    def __init__(self, parent, config, translator, is_settings_only = False):
         super().__init__(parent)
         self._ = translator
         self.config = config.copy()
 
-        if is_standalone_settings:
+        if is_settings_only:
             self.setWindowTitle(self._("Obfuscator Settings"))
-            ok_button_text = self._("OK")
+            ok_button_text = self._("Save")
         else:
             self.setWindowTitle(self._("Code Obfuscation"))
             ok_button_text = self._("Start Obfuscation")
