@@ -168,6 +168,25 @@ class PluginBase(ABC):
         """
         return []
 
+    def on_tm_loaded(self, translation_memory: dict):
+        """
+        Hook called after the main Translation Memory has been loaded or updated.
+        Plugins can use this to build/update their own indexes.
+        :param translation_memory: The complete TM dictionary.
+        """
+        pass
+
+    def query_tm_suggestions(self, original_text: str) -> list[tuple[float, str, str]] | None:
+        """
+        Hook for plugins to provide high-performance TM suggestions.
+        This hook replaces the default fuzzy search logic if a plugin returns a valid list.
+
+        :param original_text: The source text to find suggestions for.
+        :return: A list of tuples: [(score, tm_original, tm_translation), ...],
+                 or None if the plugin cannot handle the query.
+                 Score should be a float between 0.0 and 1.0.
+        """
+        return None
 
     def get_default_config(self) -> dict:
         """

@@ -228,6 +228,20 @@ class PluginManager:
                                           exc_info=True)
             return processed_data
 
+        # TM
+        if hook_name == 'query_tm_suggestions':
+            for plugin in self.get_enabled_plugins():
+                if hasattr(plugin, hook_name):
+                    try:
+                        method = getattr(plugin, hook_name)
+                        result = method(*args, **kwargs)
+                        if result is not None:
+                            self.logger.info(f"TM query handled by plugin '{plugin.plugin_id()}'.")
+                            return result
+                    except Exception as e:
+                        self.logger.error(f"Error in plugin '{plugin.plugin_id()}' TM query hook: {e}", exc_info=True)
+            return None
+
         # 3. 收集型和通知型钩子 (Collecting & Notification Hooks)
         else:
             all_results = []

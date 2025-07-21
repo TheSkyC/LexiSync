@@ -3096,7 +3096,8 @@ class OverwatchLocalizerApp(QMainWindow):
                             loaded_count += 1
 
             self.translation_memory.update(new_tm_data)
-
+            if hasattr(self, 'plugin_manager'):
+                self.plugin_manager.run_hook('on_tm_loaded', self.translation_memory)
             if not silent:
                 QMessageBox.information(self, _("TM"),
                                         _("Loaded/merged {count} Excel TM records from '{filename}'.").format(
@@ -3200,7 +3201,8 @@ class OverwatchLocalizerApp(QMainWindow):
         if reply == QMessageBox.Yes:
             self.translation_memory.clear()
             self.update_statusbar(_("In-memory TM has been cleared."))
-
+            if hasattr(self, 'plugin_manager'):
+                self.plugin_manager.run_hook('on_tm_loaded', self.translation_memory)
             if self.current_selected_ts_id:
                 ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
                 if ts_obj:

@@ -55,6 +55,35 @@ class TMPanel(QWidget):
     def update_tm_suggestions_for_text(self, original_semantic_text, translation_memory):
         self.tm_suggestions_listbox.clear()
         if not original_semantic_text: return
+
+        plugin_suggestions = None
+        if hasattr(self.parent(), 'plugin_manager'):
+            plugin_suggestions = self.parent().plugin_manager.run_hook(
+                'query_tm_suggestions',
+                original_text=original_semantic_text
+            )
+
+        if plugin_suggestions is not None:
+            self.tm_suggestions_listbox.clear()
+            if not plugin_suggestions:
+                self.tm_suggestions_listbox.addItem(_("No matches found by TM Enhancer."))
+
+            for score, tm_orig, tm_trans in plugin_suggestions:
+                suggestion_for_ui = tm_trans.replace("\\n", "\n")
+                display_orig_match = tm_orig[:40].replace("\n", "↵") + ("..." if len(tm_orig) > 40 else "")
+                item_text = f"({score * 100:.0f}% ~ {display_orig_match}): {suggestion_for_ui}"
+                item = QListWidgetItem(item_text)
+
+                if score == 1.0:
+                    item.setForeground(QColor("darkgreen"))
+                elif score > 0.85:
+                    item.setForeground(QColor("purple"))
+                else:
+                    item.setForeground(QColor("darkblue"))
+
+                self.tm_suggestions_listbox.addItem(item)
+            return
+
         if original_semantic_text in translation_memory:
             suggestion_from_tm = translation_memory[original_semantic_text]
             suggestion_for_ui = suggestion_from_tm.replace("\\n", "\n")
