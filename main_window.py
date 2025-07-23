@@ -2870,22 +2870,34 @@ class OverwatchLocalizerApp(QMainWindow):
                                  _("Error extracting POT file: {error}").format(error=e))
 
     def import_po_file_dialog_with_path(self, po_filepath):
-
         try:
             self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(po_filepath)
             self.original_raw_code_content = ""
             self.current_code_file_path = None
             self.source_language = language_service.detect_source_language(
-                [ts.original_semantic for ts in self.translatable_objects])
-
-            target_lang_detected = False
+                [ts.original_semantic for ts in self.translatable_objects if ts.original_semantic.strip()]
+            )
+            target_lang_set = False
             if po_lang_full:
-                po_lang_short = po_lang_full.split('_')[0]
-                if po_lang_short in SUPPORTED_LANGUAGES.values():
-                    self.target_language = po_lang_short
-                    target_lang_detected = True
+                full_code_match = next((code for name, code in SUPPORTED_LANGUAGES.items() if code.lower() == po_lang_full.lower().replace('-', '_')), None)
+                if full_code_match:
+                    self.target_language = full_code_match
+                    target_lang_set = True
+                else:
+                    base_lang_code = po_lang_full.split('_')[0].split('-')[0].lower()
+                    if base_lang_code in SUPPORTED_LANGUAGES.values():
+                        self.target_language = base_lang_code
+                        target_lang_set = True
 
-            if not target_lang_detected:
+            if not target_lang_set:
+                translated_strings = [ts.translation for ts in self.translatable_objects if ts.translation.strip()]
+                if translated_strings:
+                    detected_target_lang = language_service.detect_source_language(translated_strings)
+                    if detected_target_lang and detected_target_lang in SUPPORTED_LANGUAGES.values():
+                        self.target_language = detected_target_lang
+                        target_lang_set = True
+
+            if not target_lang_set:
                 self.target_language = self.config.get("default_target_language", "zh")
             self.current_project_file_path = None
             self.project_custom_instructions = ""
