@@ -1478,10 +1478,14 @@ class OverwatchLocalizerApp(QMainWindow):
                 if not was_handled:
                     self.update_statusbar(_("Drag and drop failed: Invalid file type '{filename}'").format(
                         filename=os.path.basename(filepath)))
+        elif os.path.isdir(filepath):
+            self.file_explorer_panel.set_root_path(filepath)
+            self.update_statusbar(
+                _("Set file explorer root to: {directory}").format(directory=os.path.basename(filepath)))
         else:
             self.update_statusbar(_("Drag and drop failed: '{filename}' is not a file.").format(
                 filename=os.path.basename(filepath)))
-
+        event.acceptProposedAction()
         event.acceptProposedAction()
 
     def open_code_file_dialog(self):
