@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QTreeView, QFileSystemModel,
-                               QMenu, QToolBar, QLineEdit, QCheckBox, QMessageBox, QAbstractItemView, QApplication)
+                               QMenu, QToolBar, QLineEdit, QCheckBox, QMessageBox, QAbstractItemView, QApplication, QHeaderView)
 from PySide6.QtCore import Qt, QDir, QModelIndex, Signal, QUrl, QSortFilterProxyModel, QTimer
 from PySide6.QtGui import QAction, QDesktopServices
 import os
@@ -103,7 +103,8 @@ class FileExplorerPanel(QWidget):
         self.tree_view.setHeaderHidden(True)
         for i in range(1, self.source_model.columnCount()):
             self.tree_view.hideColumn(i)
-
+        self.tree_view.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        self.tree_view.setColumnWidth(0, 300)
         layout.addWidget(self.tree_view)
 
     def setup_connections(self):
