@@ -94,7 +94,6 @@ class ExtractionPatternManagerDialog(QDialog):
                 pattern.get("right_delimiter", "")
             ])
             item.setData(0, Qt.UserRole, pattern["id"])
-            item.setFlags(item.flags() | Qt.ItemIsEditable)
             self.tree.addTopLevelItem(item)
 
     def get_current_order_from_tree(self):

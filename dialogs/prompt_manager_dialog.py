@@ -4,7 +4,8 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QCheckBox, QTreeWidget, QTreeWidgetItem, QHeaderView, QMessageBox,
-    QFileDialog, QWidget, QTextEdit, QComboBox, QGroupBox, QTextBrowser
+    QFileDialog, QWidget, QTextEdit, QComboBox, QGroupBox, QTextBrowser,
+    QAbstractItemView
 )
 from PySide6.QtCore import Qt, Signal
 import json
@@ -61,7 +62,9 @@ class PromptManagerDialog(QDialog):
         self.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.tree.header().setSectionResizeMode(2, QHeaderView.Stretch)
         self.tree.setSelectionBehavior(QTreeWidget.SelectRows)
-        self.tree.setDragDropMode(QTreeWidget.InternalMove)
+        self.tree.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.tree.setDefaultDropAction(Qt.MoveAction)
+
         self.tree.itemDoubleClicked.connect(self.edit_item)
         main_layout.addWidget(self.tree)
 
@@ -90,7 +93,6 @@ class PromptManagerDialog(QDialog):
                 part["content"]
             ])
             item.setData(0, Qt.UserRole, part["id"])
-            item.setFlags(item.flags() | Qt.ItemIsEditable)
             self.tree.addTopLevelItem(item)
 
     def get_display_type(self, internal_type):
