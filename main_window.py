@@ -75,14 +75,14 @@ except ImportError:
     print("提示: requests 未找到, AI翻译功能不可用。pip install requests")
 
 class AITranslationWorker(QRunnable):
-    def __init__(self, app_instance, ts_id, original_text, target_language, context_dict, custom_instructions, is_batch_item):
+    def __init__(self, app_instance, ts_id, original_text, target_language, context_dict, plugin_placeholders, is_batch_item):
         super().__init__()
         self.app_ref = weakref.ref(app_instance)
         self.ts_id = ts_id
         self.original_text = original_text
         self.target_language = target_language
         self.context_dict = context_dict
-        self.custom_instructions = custom_instructions
+        self.plugin_placeholders = plugin_placeholders  # 新增
         self.is_batch_item = is_batch_item
 
     def run(self):
@@ -94,13 +94,17 @@ class AITranslationWorker(QRunnable):
         try:
             placeholders = {
                 '[Target Language]': self.target_language,
-                '[Custom Translate]': self.custom_instructions,
                 '[Untranslated Context]': self.context_dict.get("original_context", ""),
                 '[Translated Context]': self.context_dict.get("translation_context", "")
             }
+            if self.plugin_placeholders:
+                placeholders.update(self.plugin_placeholders)
             prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
             final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
-
+            # print("=" * 20 + " AI PROMPT DEBUG " + "=" * 20)
+            # print(f"Original Text to Translate:\n---\n{self.original_text}\n---")
+            # print(f"\nFinal System Prompt Sent to AI:\n---\n{final_prompt}\n---")
+            # print("=" * 57)
             translated_text = app.ai_translator.translate(self.original_text, final_prompt)
             app.thread_signals.handle_ai_result.emit(self.ts_id, translated_text, None, self.is_batch_item)
         except Exception as e:
@@ -145,7 +149,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.original_raw_code_content = ""
         self.current_project_modified = False
         self.is_po_mode = False
-        self.project_custom_instructions = ""
         self.current_po_metadata = None
         self.source_comment = ""
         self.current_focused_ts_id = None
@@ -1526,7 +1529,6 @@ class OverwatchLocalizerApp(QMainWindow):
             self.current_project_file_path = None
             self.current_po_file_path = None
             self.current_po_metadata = None
-            self.project_custom_instructions = ""
             self.add_to_recent_files(filepath)
             self.config["last_dir"] = os.path.dirname(filepath)
             self.save_config()
@@ -1587,7 +1589,6 @@ class OverwatchLocalizerApp(QMainWindow):
             self.source_language = loaded_data["source_language"]
             self.target_language = loaded_data["target_language"]
             self.current_po_metadata = project_data.get("po_metadata")
-            self.project_custom_instructions = project_data.get("project_custom_instructions", "")
 
             tm_path_from_project = project_data.get("current_tm_file_path")
             if tm_path_from_project and os.path.exists(tm_path_from_project):
@@ -1683,7 +1684,6 @@ class OverwatchLocalizerApp(QMainWindow):
         self.current_po_file_path = None
         self.current_po_metadata = None
         self.original_raw_code_content = ""
-        self.project_custom_instructions = ""
         self.translatable_objects = []
         self.undo_history.clear()
         self.redo_history.clear()
@@ -2900,7 +2900,6 @@ class OverwatchLocalizerApp(QMainWindow):
             if not target_lang_set:
                 self.target_language = self.config.get("default_target_language", "zh")
             self.current_project_file_path = None
-            self.project_custom_instructions = ""
 
             self.add_to_recent_files(po_filepath)
             self.config["last_dir"] = os.path.dirname(po_filepath)
@@ -3406,20 +3405,6 @@ class OverwatchLocalizerApp(QMainWindow):
         else:
             self.update_statusbar(_("Paste failed: Clipboard content is not text."))
 
-    def show_project_custom_instructions_dialog(self):
-        if not self.current_project_file_path:
-            QMessageBox.critical(self, _("Error"), _("This feature is only available when a project file is open."))
-            return
-
-        new_instructions, ok = QInputDialog.getMultiLineText(self, _("Project-specific Instructions"),
-                                                             _("Enter specific translation instructions for this project (e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a lively and cute style').\nThese instructions will be used during AI translation."),
-                                                             self.project_custom_instructions)
-
-        if ok and new_instructions != self.project_custom_instructions:
-            self.project_custom_instructions = new_instructions
-            self.mark_project_modified()
-            self.update_statusbar(_("Project-specific translation settings updated."))
-
     def show_prompt_manager(self):
         dialog = PromptManagerDialog(self, _("AI Prompt Manager"), self)
         dialog.exec()
@@ -3575,9 +3560,10 @@ class OverwatchLocalizerApp(QMainWindow):
                 _("AI is translating: \"{text}...\"").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
 
         context_dict = self._generate_ai_context_strings(ts_obj.id)
+        plugin_placeholders = self.plugin_manager.run_hook('get_ai_translation_context') or {}
         target_language_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == self.target_language), self.target_language)
         worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language_name,
-                                     context_dict, self.project_custom_instructions, False)
+                                     context_dict, plugin_placeholders, False)
         self.ai_thread_pool.start(worker)
         return True
 
@@ -3609,11 +3595,13 @@ class OverwatchLocalizerApp(QMainWindow):
 
             if ts_obj and not ts_obj.is_ignored:
                 context_dict = self._generate_ai_context_strings(ts_obj.id)
+                plugin_context = self.plugin_manager.run_hook('get_ai_translation_context') or {}
+                plugin_placeholders = self.plugin_manager.run_hook('get_ai_translation_context') or {}
                 target_language_name = next(
                     (name for name, code in SUPPORTED_LANGUAGES.items() if code == self.target_language),
                     self.target_language)
                 worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language_name,
-                                             context_dict, self.project_custom_instructions, True)
+                                             context_dict, plugin_placeholders , True)
                 self.ai_thread_pool.start(worker)
             else:
                 self.ai_batch_semaphore.release()

@@ -261,11 +261,7 @@ class AISettingsPage(BaseSettingsPage):
         context_layout.addSpacing(15)
         self.prompt_button = QPushButton(_("Prompt Manager..."))
         self.prompt_button.clicked.connect(self.app.show_prompt_manager)
-        self.project_instructions_button = QPushButton(_("Project-specific Instructions..."))
-        self.project_instructions_button.clicked.connect(self.app.show_project_custom_instructions_dialog)
-        self.project_instructions_button.setEnabled(self.app.current_project_file_path is not None)
         context_layout.addWidget(self.prompt_button)
-        context_layout.addWidget(self.project_instructions_button)
         self.page_layout.addWidget(context_group)
 
     def save_settings(self):

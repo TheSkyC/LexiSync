@@ -4,7 +4,7 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QCheckBox, QTreeWidget, QTreeWidgetItem, QHeaderView, QMessageBox,
-    QFileDialog, QWidget, QTextEdit, QComboBox
+    QFileDialog, QWidget, QTextEdit, QComboBox, QGroupBox, QTextBrowser
 )
 from PySide6.QtCore import Qt, Signal
 import json
@@ -142,8 +142,15 @@ class PromptManagerDialog(QDialog):
         part_to_edit = next((p for p in self.prompt_structure if p["id"] == item_id), None)
         if not part_to_edit:
             return
-
-        dialog = PromptItemEditor(self, _("Edit Prompt Fragment"), part_to_edit)
+        placeholders_data = [
+            {'placeholder': '[Target Language]', 'description': _('The target language for translation.'), 'provider': _('Main App')},
+            {'placeholder': '[Untranslated Context]', 'description': _('Nearby untranslated original text.'), 'provider': _('Main App')},
+            {'placeholder': '[Translated Context]', 'description': _('Nearby translated text for context.'), 'provider': _('Main App')},
+        ]
+        plugin_placeholders = self.app.plugin_manager.run_hook('register_ai_placeholders')
+        if plugin_placeholders:
+            placeholders_data.extend(plugin_placeholders)
+        dialog = PromptItemEditor(self, _("Edit Prompt Fragment"), part_to_edit, placeholders_data)
         if dialog.exec():
             for i, p_item in enumerate(self.prompt_structure):
                 if p_item["id"] == item_id:
@@ -209,14 +216,15 @@ class PromptManagerDialog(QDialog):
 
 
 class PromptItemEditor(QDialog):
-    def __init__(self, parent, title, initial_data):
+    def __init__(self, parent, title, initial_data, placeholders_data=None):
         super().__init__(parent)
         self.initial_data = initial_data
+        self.placeholders_data = placeholders_data or []
         self.result = None
 
         self.setWindowTitle(title)
         self.setModal(True)
-        self.resize(600, 400)
+        self.resize(600, 350)
 
         self.setup_ui()
 
@@ -245,6 +253,38 @@ class PromptItemEditor(QDialog):
         self.content_text_edit = QTextEdit(self.initial_data["content"])
         main_layout.addWidget(self.content_text_edit)
 
+        # Placeholders
+        if self.placeholders_data:
+            placeholders_group = QGroupBox(_("Available Placeholders (Click to Insert)"))
+            placeholders_layout = QVBoxLayout(placeholders_group)
+            self.placeholders_browser = QTextBrowser(self)
+            self.placeholders_browser.setOpenExternalLinks(False)  # 我们自己处理点击
+            self.placeholders_browser.setReadOnly(True)
+            self.placeholders_browser.anchorClicked.connect(self.insert_placeholder_from_url)
+            self.placeholders_browser.setStyleSheet("""
+                QTextBrowser { 
+                    border: none; 
+                    background-color: transparent; 
+                    font-size: 13px;
+                }
+            """)
+            doc_height = self.placeholders_browser.document().size().height()
+            self.placeholders_browser.setMaximumHeight(int(doc_height) + 10)
+
+            html_parts = []
+            for data in self.placeholders_data:
+                placeholder = data['placeholder']
+                description = data['description']
+                provider = data.get('provider', _('Unknown'))
+                tooltip_text = f"{_('Provider')}: {provider}\n{_('Description')}: {description}"
+
+                html_parts.append(
+                    f'<a href="{placeholder}" title="{tooltip_text}" style="color: #007BFF; text-decoration: none; background-color: #EAF2F8; padding: 2px 5px; border-radius: 3px; margin: 2px;">{placeholder}</a>'
+                )
+            self.placeholders_browser.setHtml(" ".join(html_parts))
+            placeholders_layout.addWidget(self.placeholders_browser)
+            main_layout.addWidget(placeholders_group)
+
         # OK/Cancel Buttons
         dialog_buttons = QHBoxLayout()
         dialog_buttons.addStretch(1)
@@ -256,6 +296,9 @@ class PromptItemEditor(QDialog):
         cancel_btn.clicked.connect(self.reject)
         dialog_buttons.addWidget(cancel_btn)
         main_layout.addLayout(dialog_buttons)
+
+    def insert_placeholder_from_url(self, url):
+        self.content_text_edit.insertPlainText(url.toDisplayString())
 
     def accept(self):
         selected_display_value = self.type_combo.currentText()
