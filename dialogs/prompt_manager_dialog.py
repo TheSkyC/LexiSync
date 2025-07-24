@@ -5,14 +5,34 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QCheckBox, QTreeWidget, QTreeWidgetItem, QHeaderView, QMessageBox,
     QFileDialog, QWidget, QTextEdit, QComboBox, QGroupBox, QTextBrowser,
-    QAbstractItemView
+    QAbstractItemView, QSizePolicy
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QSize
 import json
 import uuid
 from copy import deepcopy
 from utils.constants import PROMPT_PRESET_EXTENSION, DEFAULT_PROMPT_STRUCTURE, STRUCTURAL, STATIC, DYNAMIC
 from utils.localization import _
+
+
+class WrappingTextBrowser(QTextBrowser):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.document().contentsChanged.connect(self.updateGeometry)
+
+    def sizeHint(self) -> QSize:
+        self.document().setTextWidth(self.viewport().width())
+        doc_height = self.document().size().height()
+        margins = self.contentsMargins()
+        frame_width = self.frameWidth() * 2
+        required_height = doc_height + margins.top() + margins.bottom() + frame_width
+
+        return QSize(super().sizeHint().width(), int(required_height))
+
+    def resizeEvent(self, event: QSize) -> None:
+        super().resizeEvent(event)
+        self.updateGeometry()
 
 class PromptManagerDialog(QDialog):
     def __init__(self, parent, title, app_instance):
@@ -251,16 +271,20 @@ class PromptItemEditor(QDialog):
         main_layout.addLayout(type_layout)
 
         # Content editor
-        main_layout.addWidget(QLabel(_("Content:")))
-        self.content_text_edit = QTextEdit(self.initial_data["content"])
-        main_layout.addWidget(self.content_text_edit)
+        content_label = QLabel(_("Content:"))
+        main_layout.addWidget(content_label)
+
+        self.content_text_edit = QTextEdit()
+        self.content_text_edit.setAcceptRichText(False)
+        self.content_text_edit.setPlainText(self.initial_data.get("content", ""))
+        main_layout.addWidget(self.content_text_edit, 1)
 
         # Placeholders
         if self.placeholders_data:
             placeholders_group = QGroupBox(_("Available Placeholders (Click to Insert)"))
             placeholders_layout = QVBoxLayout(placeholders_group)
-            self.placeholders_browser = QTextBrowser(self)
-            self.placeholders_browser.setOpenExternalLinks(False)  # 我们自己处理点击
+            self.placeholders_browser = WrappingTextBrowser(self)
+            self.placeholders_browser.setOpenExternalLinks(False)
             self.placeholders_browser.setReadOnly(True)
             self.placeholders_browser.anchorClicked.connect(self.insert_placeholder_from_url)
             self.placeholders_browser.setStyleSheet("""
@@ -270,9 +294,6 @@ class PromptItemEditor(QDialog):
                     font-size: 13px;
                 }
             """)
-            doc_height = self.placeholders_browser.document().size().height()
-            self.placeholders_browser.setMaximumHeight(int(doc_height) + 10)
-
             html_parts = []
             for data in self.placeholders_data:
                 placeholder = data['placeholder']
