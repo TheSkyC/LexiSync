@@ -96,6 +96,15 @@ class PluginBase(ABC):
         """
         return {}
 
+    def register_ai_placeholders(self) -> list[dict]:
+        """
+        Return a list of AI prompt placeholders provided by this plugin.
+        Each item in the list should be a dictionary with 'placeholder' and 'description' keys.
+        Example: [{'placeholder': '[MyPlaceholder]', 'description': 'Inserts custom data.'}]
+        The 'provider' key will be added automatically by the PluginManager.
+        """
+        return []
+
     # --- Hooks ---
 
     def on_ui_setup_complete(self):

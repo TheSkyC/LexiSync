@@ -55,7 +55,6 @@ def save_project(filepath, app_instance):
         "translatable_objects_data": [ts.to_dict() for ts in app_instance.translatable_objects],
         "source_language": app_instance.source_language,
         "target_language": app_instance.target_language,
-        "project_custom_instructions": app_instance.project_custom_instructions,
         "current_tm_file_path": app_instance.current_tm_file or "",
         "filter_settings": {
             "show_ignored": app_instance.ignored_checkbox.isChecked(),

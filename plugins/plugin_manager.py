@@ -316,12 +316,24 @@ class PluginManager:
                     try:
                         method = getattr(plugin, hook_name)
                         result = method(*args, **kwargs)
-                        if result is not None:
+                        if hook_name == 'register_ai_placeholders' and isinstance(result, list):
+                            for item in result:
+                                item['provider'] = plugin.name()
+                            all_results.extend(result)
+                        elif result is not None:
                             all_results.append(result)
                     except Exception as e:
                         self.logger.error(
                             f"Error in plugin '{plugin.plugin_id()}' notification/collecting hook '{hook_name}': {e}",
                             exc_info=True)
+            if hook_name == 'get_ai_translation_context':
+                merged_context = {}
+                for res_dict in all_results:
+                    if isinstance(res_dict, dict):
+                        merged_context.update(res_dict)
+                return merged_context
+            if hook_name == 'register_ai_placeholders':
+                return all_results
             if hook_name == 'on_file_tree_context_menu':
                 flat_list = [item for sublist in all_results for item in sublist]
                 return flat_list
