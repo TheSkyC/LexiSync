@@ -3906,20 +3906,36 @@ class OverwatchLocalizerApp(QMainWindow):
             original_text_to_match = trigger_ts_obj.original_semantic
             changed_ids = set()
 
+            single_translation_undo_changes = []
+
             for ts_obj in self.translatable_objects:
                 if ts_obj.original_semantic == original_text_to_match and \
                         (not ts_obj.translation.strip() or ts_obj.id == trigger_ts_obj.id):
+
                     old_undo_val = ts_obj.get_translation_for_storage_and_tm()
-                    self.ai_batch_successful_translations_for_undo.append({
+                    new_undo_val = cleaned_translation.replace('\n', '\\n')
+
+                    change_data = {
                         'string_id': ts_obj.id,
                         'field': 'translation',
                         'old_value': old_undo_val,
-                        'new_value': cleaned_translation.replace('\n', '\\n')
-                    })
+                        'new_value': new_undo_val
+                    }
+
+                    if is_batch_item:
+                        self.ai_batch_successful_translations_for_undo.append(change_data)
+                    else:
+                        single_translation_undo_changes.append(change_data)
+
                     ts_obj.set_translation_internal(cleaned_translation)
                     changed_ids.add(ts_obj.id)
             if cleaned_translation:
                 self.translation_memory[original_text_to_match] = cleaned_translation.replace('\n', '\\n')
+            if not is_batch_item and single_translation_undo_changes:
+                if len(single_translation_undo_changes) > 1:
+                    self.add_to_undo_history('bulk_ai_translate', {'changes': single_translation_undo_changes})
+                else:
+                    self.add_to_undo_history('single_change', single_translation_undo_changes[0])
             if not is_batch_item:
                 self._update_view_for_ids(changed_ids)
             if self.current_selected_ts_id == trigger_ts_obj.id:
