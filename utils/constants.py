@@ -30,7 +30,7 @@ DEFAULT_PROMPT_STRUCTURE = [
     },
     {
         "id": str(uuid.uuid4()), "type": DYNAMIC, "enabled": True,
-        "content": "请遵循以下针对此项目的特定翻译指示：\n[Custom Translate]"
+        "content": "请遵循以下针对此项目的特定翻译指示：\n[Global Instructions]\n[Project Instructions]"
     },
     {
         "id": str(uuid.uuid4()), "type": STATIC, "enabled": True,
