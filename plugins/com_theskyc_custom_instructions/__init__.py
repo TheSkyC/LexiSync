@@ -99,7 +99,7 @@ class PersonalizedTranslationPlugin(PluginBase):
             self.main_window,
             self._("Project-specific Instructions"),
             self._(
-                "Enter instructions for this project. These will override global instructions.\n(e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a formal tone')."),
+                "Enter instructions for this project.\n(e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a formal tone')."),
             current_instructions
         )
 
@@ -115,7 +115,7 @@ class PersonalizedTranslationPlugin(PluginBase):
             self.main_window,
             self._("Global Instructions"),
             self._(
-                "Enter global instructions that will apply to all projects unless overridden by project-specific settings.\n(e.g., 'Always use simplified Chinese characters', 'Maintain a neutral tone')."),
+                "Enter global instructions that will apply to all projects\n(e.g., 'Always use simplified Chinese characters', 'Maintain a neutral tone')."),
             current_instructions
         )
 
