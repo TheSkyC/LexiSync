@@ -254,6 +254,9 @@ class OverwatchLocalizerApp(QMainWindow):
 
         ExpansionRatioService.initialize()
         QTimer.singleShot(100, self.prewarm_dependencies)
+        self.show()
+        if hasattr(self, 'plugin_manager'):
+            QTimer.singleShot(0, lambda: self.plugin_manager.run_hook('on_app_ready'))
 
     def prewarm_dependencies(self):
         self.update_statusbar(_("Initializing services in the background..."), persistent=True)
@@ -1341,6 +1344,8 @@ class OverwatchLocalizerApp(QMainWindow):
 
         self.save_config()
         self.save_window_state()
+        if hasattr(self, 'plugin_manager'):
+            self.plugin_manager.run_hook('on_app_shutdown')
         event.accept()
 
     def save_config(self):

@@ -3,6 +3,7 @@
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, List, Dict
+from models.translatable_string import TranslatableString
 import json
 import os
 
@@ -107,12 +108,55 @@ class PluginBase(ABC):
 
     # --- Hooks ---
 
+    def on_app_ready(self):
+        """
+        Called after the main window is initialized and shown.
+        Ideal for post-startup tasks like update checks.
+        """
+        pass
+
+    def on_app_shutdown(self):
+        """
+        Called just before the main application window closes.
+        Ideal for saving plugin state.
+        """
+        pass
+
+
     def on_ui_setup_complete(self):
         """
         Hook called after the main window's UI has been completely set up.
         Use this to add custom menu items, toolbars, etc.
         """
         pass
+
+    def process_raw_content_before_extraction(self, raw_content: str, filepath: str) -> str:
+        """
+        (Processing Hook) Called after loading a file but before extracting strings.
+        Allows for preprocessing of the raw file content.
+        Note: The order of arguments is (data_to_process, *other_args).
+        :param raw_content: The raw string content of the file.
+        :param filepath: The absolute path of the file being processed.
+        :return: The processed (or original) string content.
+        """
+        return raw_content
+
+    def process_string_before_save(self, translatable_string: 'TranslatableString') -> 'TranslatableString':
+        """
+        (Processing Hook) Called before a single string is saved (e.g., by Ctrl+Enter).
+        Allows for validation, correction, or formatting of the translation.
+        :param translatable_string: The TranslatableString object about to be saved.
+        :return: The modified (or original) TranslatableString object.
+        """
+        return translatable_string
+
+    def register_validation_rules(self) -> list:
+        """
+        (Collecting Hook) Called by the ValidationService to gather custom validation rules.
+        :return: A list of callable functions. Each function should accept a
+                 TranslatableString object and return a ValidationWarning object or None.
+        """
+        return []
 
     def on_project_loaded(self, strings: list):
         """
