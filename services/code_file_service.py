@@ -6,7 +6,7 @@ import os
 import shutil
 import datetime
 from models.translatable_string import TranslatableString
-from utils.localization import _ # Import _ for localization
+from utils.localization import _
 
 def unescape_overwatch_string(s):
     res = []
