@@ -2046,19 +2046,26 @@ class OverwatchLocalizerApp(QMainWindow):
 
     def _update_file_explorer(self, file_path):
         if not file_path: return
-        current_root = self.file_explorer_panel.source_model.rootPath()
-        if not file_path.startswith(current_root) or current_root == QDir.rootPath():
+        normalized_file_path = os.path.normpath(file_path)
+        current_root = os.path.normpath(self.file_explorer_panel.source_model.rootPath())
+        drive_file, _ = os.path.splitdrive(normalized_file_path)
+        drive_root, _ = os.path.splitdrive(current_root)
+        is_outside_current_root = False
+        if drive_file.lower() != drive_root.lower():
+            is_outside_current_root = True
+        else:
+            is_outside_current_root = os.path.commonpath([normalized_file_path, current_root]) != current_root
+        if is_outside_current_root or current_root == os.path.normpath(QDir.rootPath()):
             root_path = None
-            normalized_path = os.path.normpath(file_path)
-            path_parts = normalized_path.split(os.sep)
+            path_parts = normalized_file_path.split(os.sep)
             try:
                 locales_index = path_parts.index('locales')
                 root_path = os.sep.join(path_parts[:locales_index])
             except ValueError:
-                root_path = os.path.dirname(file_path)
+                root_path = os.path.dirname(normalized_file_path)
+
             if root_path and os.path.isdir(root_path):
                 self.file_explorer_panel.set_root_path(root_path)
-        from PySide6.QtCore import QTimer
         QTimer.singleShot(100, lambda: self.file_explorer_panel.select_file(file_path))
 
     def _update_details_panel_stats(self):
@@ -3477,8 +3484,6 @@ class OverwatchLocalizerApp(QMainWindow):
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return 0
-
-        # --- 核心修改：高效的批量处理逻辑 ---
         applied_count = 0
         bulk_changes_for_undo = []
         ids_to_update = set()
