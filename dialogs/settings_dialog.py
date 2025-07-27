@@ -113,6 +113,21 @@ class SettingsDialog(QDialog):
         validation_page = ValidationSettingsPage(self.app)
         self._add_page(validation_page, _("Validation"))
 
+        if hasattr(self.app, 'plugin_manager'):
+            plugin_pages_data = self.app.plugin_manager.run_hook('register_settings_pages')
+            if plugin_pages_data:
+                all_plugin_pages = {}
+                for page_dict in plugin_pages_data:
+                    all_plugin_pages.update(page_dict)
+
+                if all_plugin_pages:
+                    for page_title, page_class in sorted(all_plugin_pages.items()):
+                        try:
+                            page_instance = page_class(self.app)
+                            self._add_page(page_instance, page_title)
+                        except Exception as e:
+                            print(f"Error instantiating settings page for '{page_title}': {e}")
+
         self.nav_list.setCurrentRow(0)
 
     def _add_page(self, widget, name):
@@ -122,15 +137,21 @@ class SettingsDialog(QDialog):
 
     def apply_changes(self):
         language_was_changed = False
-        for page in self.pages.values():
-            if hasattr(page, 'save_settings'):
-                result = page.save_settings()
-                if result is True:
-                    language_was_changed = True
-
+        for page_widget in self.pages.values():
+            if hasattr(page_widget, 'save_settings'):
+                try:
+                    result = page_widget.save_settings()
+                    if result is True:
+                        language_was_changed = True
+                except Exception as e:
+                    page_title = ""
+                    for title, widget_instance in self.pages.items():
+                        if widget_instance == page_widget:
+                            page_title = title
+                            break
+                    print(f"Error saving settings for page '{page_title}': {e}")
         self.app.save_config()
         self.app.update_statusbar(_("Settings applied."), persistent=False)
-
         return language_was_changed
 
     def accept(self):

@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QPushButton, QLineEdit, QTextEdit, QCheckBox, QSpinBox, QFileDialog,
     QMessageBox, QInputDialog, QSplitter, QStatusBar, QProgressBar,
     QMenu, QToolBar, QSizePolicy, QTableView, QHeaderView, QDockWidget,
-    QAbstractItemView
+    QAbstractItemView, QFrame
 )
 from PySide6.QtCore import (
     Qt, QAbstractTableModel, QModelIndex, Signal, QObject, QTimer, QByteArray,
@@ -333,25 +333,70 @@ class OverwatchLocalizerApp(QMainWindow):
         self.file_menu.addAction(self.action_save_code_file)
         self.file_menu.addSeparator()
 
+        # IMPORT MENU
+        self.import_menu = QMenu(_("Import"), self)
+        self.file_menu.addMenu(self.import_menu)
+
         self.action_import_excel = QAction(_("Import Translations from Excel"), self)
         self.action_import_excel.triggered.connect(self.import_project_translations_from_excel)
         self.action_import_excel.setEnabled(False)
-        self.file_menu.addAction(self.action_import_excel)
+        self.import_menu.addAction(self.action_import_excel)
+
+        self.action_import_po = QAction(_("Import Translations from PO File..."), self)
+        self.action_import_po.triggered.connect(self.import_po_file_dialog)
+        self.import_menu.addAction(self.action_import_po)
+
+        self.action_import_tm_excel = QAction(_("Import TM (Excel)"), self)
+        self.action_import_tm_excel.triggered.connect(self.import_tm_excel_dialog)
+        self.import_menu.addAction(self.action_import_tm_excel)
+
+        # EXPORT MENU
+        self.export_menu = QMenu(_("Export"), self)
+        self.file_menu.addMenu(self.export_menu)
 
         self.action_export_excel = QAction(_("Export to Excel"), self)
         self.action_export_excel.triggered.connect(self.export_project_translations_to_excel)
         self.action_export_excel.setEnabled(False)
-        self.file_menu.addAction(self.action_export_excel)
+        self.export_menu.addAction(self.action_export_excel)
 
         self.action_export_json = QAction(_("Export to JSON"), self)
         self.action_export_json.triggered.connect(self.export_project_translations_to_json)
         self.action_export_json.setEnabled(False)
-        self.file_menu.addAction(self.action_export_json)
+        self.export_menu.addAction(self.action_export_json)
 
         self.action_export_yaml = QAction(_("Export to YAML"), self)
         self.action_export_yaml.triggered.connect(self.export_project_translations_to_yaml)
         self.action_export_yaml.setEnabled(False)
-        self.file_menu.addAction(self.action_export_yaml)
+        self.export_menu.addAction(self.action_export_yaml)
+
+        self.action_export_po = QAction(_("Export to PO File..."), self)
+        self.action_export_po.triggered.connect(self.export_to_po_file_dialog)
+        self.action_export_po.setEnabled(False)
+        self.export_menu.addAction(self.action_export_po)
+
+        self.action_export_tm_excel = QAction(_("Export Current TM (Excel)"), self)
+        self.action_export_tm_excel.triggered.connect(self.export_tm_excel_dialog)
+        self.export_menu.addAction(self.action_export_tm_excel)
+
+        # PLUGINS IMPORTERS & EXPORTERS
+        if hasattr(self, 'plugin_manager'):
+            importers = self.plugin_manager.run_hook('register_importers')
+            if importers:
+                self.import_menu.addSeparator()
+                for menu_text, callback in importers.items():
+                    action = QAction(menu_text, self)
+                    action.triggered.connect(callback)
+                    self.import_menu.addAction(action)
+
+            exporters = self.plugin_manager.run_hook('register_exporters')
+            if exporters:
+                self.export_menu.addSeparator()
+                for menu_text, callback in exporters.items():
+                    action = QAction(menu_text, self)
+                    action.triggered.connect(callback)
+                    action.setEnabled(bool(self.translatable_objects))
+                    self.export_menu.addAction(action)
+
         self.file_menu.addSeparator()
 
         self.action_extract_pot = QAction(_("Extract POT Template from Code..."), self)
@@ -818,6 +863,15 @@ class OverwatchLocalizerApp(QMainWindow):
         toolbar_layout.addWidget(self.unreviewed_checkbox)
         self.filter_checkboxes['show_unreviewed'] = self.unreviewed_checkbox
 
+        # Plugins
+        separator = QFrame()
+        separator.setFrameShape(QFrame.VLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        toolbar_layout.addWidget(separator)
+
+        if hasattr(self, 'plugin_manager'):
+            self.plugin_manager.run_hook('on_main_toolbar_setup', toolbar_layout=toolbar_layout)
+
         toolbar_layout.addStretch(1)
 
         self.search_entry = QLineEdit()
@@ -900,6 +954,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.table_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table_view.customContextMenuRequested.connect(self.show_sheet_context_menu)
         self.table_view.setItemDelegate(CustomCellDelegate(self.table_view, self))
+        self.table_view.selectionModel().selectionChanged.connect(self._on_selection_model_changed)
         main_layout.addWidget(self.table_view)
 
     def eventFilter(self, obj, event):
@@ -1046,6 +1101,13 @@ class OverwatchLocalizerApp(QMainWindow):
         self.counts_label = QLabel()
         self.statusBar.addPermanentWidget(self.counts_label)
         self.update_counts_display()
+
+        if hasattr(self, 'plugin_manager'):
+            plugin_widgets = self.plugin_manager.run_hook('add_statusbar_widgets')
+            if plugin_widgets:
+                flat_widgets = [widget for sublist in plugin_widgets for widget in sublist]
+                for widget in flat_widgets:
+                    self.statusBar.addPermanentWidget(widget)
 
         extra_info = []
         if not requests: extra_info.append(_("Hint: requests not found, AI translation is disabled."))
@@ -1195,7 +1257,15 @@ class OverwatchLocalizerApp(QMainWindow):
         if not self.undo_history:
             self.update_statusbar(_("No more actions to undo"))
             return
-
+        action_to_undo = self.undo_history[-1]
+        was_handled_by_plugin = self.plugin_manager.run_hook(
+            'on_before_undo_redo',
+            action_type=action_to_undo['type'],
+            is_undo=True,
+            action_data=action_to_undo['data']
+        )
+        if was_handled_by_plugin:
+            return
         action_log = self.undo_history.pop()
         action_type, action_data = action_log['type'], action_log['data']
         redo_payload_data = None
@@ -1261,7 +1331,15 @@ class OverwatchLocalizerApp(QMainWindow):
         if not self.redo_history:
             self.update_statusbar(_("No more actions to redo"))
             return
-
+        action_to_redo = self.redo_history[-1]
+        was_handled_by_plugin = self.plugin_manager.run_hook(
+            'on_before_undo_redo',
+            action_type=action_to_redo['type'],
+            is_undo=False,
+            action_data=action_to_redo['data']
+        )
+        if was_handled_by_plugin:
+            return
         action_log = self.redo_history.pop()
         action_type, action_data_to_apply = action_log['type'], action_log['data']
         undo_payload_data = None
@@ -1539,6 +1617,13 @@ class OverwatchLocalizerApp(QMainWindow):
             self.save_config()
             self.update_statusbar(_("Extracting strings..."), persistent=True)
             QApplication.processEvents()
+            extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+            extraction_patterns = self.plugin_manager.run_hook(
+                'process_extraction_patterns',
+                extraction_patterns,
+                filepath=filepath,
+                raw_content=self.original_raw_code_content
+            )
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
             self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
                                                                      extraction_patterns)
@@ -1875,6 +1960,12 @@ class OverwatchLocalizerApp(QMainWindow):
         context_menu.addAction(
             QAction(_("Use AI to Translate Selected Items"), self, triggered=self.cm_ai_translate_selected))
 
+        if hasattr(self, 'plugin_manager'):
+            plugin_menu_items = self.plugin_manager.run_hook('on_table_context_menu', selected_ts_objects=selected_objs)
+            if plugin_menu_items:
+                context_menu.addSeparator()
+                self.plugin_manager._create_menu_from_structure(context_menu, plugin_menu_items)
+
         context_menu.exec(self.table_view.viewport().mapToGlobal(pos))
 
     def on_sheet_double_click(self, index):
@@ -1887,6 +1978,11 @@ class OverwatchLocalizerApp(QMainWindow):
             self.details_panel.translation_edit_text.setFocus()
         elif col == 4:  # Comment
             self.comment_status_panel.comment_edit_text.setFocus()
+
+    def _on_selection_model_changed(self, selected, deselected):
+        if hasattr(self, 'plugin_manager'):
+            selected_objects = self._get_selected_ts_objects_from_sheet()
+            self.plugin_manager.run_hook('on_selection_changed', selected_ts_objects=selected_objects)
 
     def on_sheet_select(self, current_index, previous_index):
         if self.neighbor_select_timer.isActive():
@@ -2127,6 +2223,13 @@ class OverwatchLocalizerApp(QMainWindow):
         ids_to_update = {ts_obj.id}
         all_changes_for_undo_list = []
         ts_obj.set_translation_internal(processed_translation)
+        self.plugin_manager.run_hook(
+            'on_string_saved',
+            ts_object=ts_obj,
+            column='translation',
+            new_value=processed_translation,
+            old_value=old_translation_for_undo.replace("\\n", "\n")
+        )
         new_translation_for_tm_storage = ts_obj.get_translation_for_storage_and_tm()
         primary_change_data = {
             'string_id': ts_obj.id, 'field': 'translation',
@@ -2142,6 +2245,13 @@ class OverwatchLocalizerApp(QMainWindow):
                     other_ts_obj.translation != new_translation_from_ui:
                 old_other_translation_for_undo = other_ts_obj.get_translation_for_storage_and_tm()
                 other_ts_obj.set_translation_internal(new_translation_from_ui)
+                self.plugin_manager.run_hook(
+                    'on_string_saved',
+                    ts_object=other_ts_obj,
+                    column='translation',
+                    new_value=new_translation_from_ui,
+                    old_value=old_other_translation_for_undo.replace("\\n", "\n")
+                )
                 all_changes_for_undo_list.append({
                     'string_id': other_ts_obj.id, 'field': 'translation',
                     'old_value': old_other_translation_for_undo, 'new_value': new_translation_for_tm_storage
@@ -2219,6 +2329,10 @@ class OverwatchLocalizerApp(QMainWindow):
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return False
         full_comment_text = self.comment_status_panel.comment_edit_text.toPlainText()
+
+        old_po_comment_for_hook = ts_obj.po_comment
+        old_user_comment_for_hook = ts_obj.comment
+
         old_po_lines = ts_obj.po_comment.splitlines()
         old_user_lines = ts_obj.comment.splitlines()
         old_full_text = "\n".join(old_po_lines + old_user_lines)
@@ -2253,6 +2367,22 @@ class OverwatchLocalizerApp(QMainWindow):
         ts_obj.po_comment = new_po_comment
         ts_obj.comment = new_user_comment
         ts_obj.is_fuzzy = new_is_fuzzy
+        if old_user_comment_for_hook != new_user_comment:
+            self.plugin_manager.run_hook(
+                'on_string_saved',
+                ts_object=ts_obj,
+                column='comment',
+                new_value=new_user_comment,
+                old_value=old_user_comment_for_hook
+            )
+        if old_po_comment_for_hook != new_po_comment:
+            self.plugin_manager.run_hook(
+                'on_string_saved',
+                ts_object=ts_obj,
+                column='po_comment',
+                new_value=new_po_comment,
+                old_value=old_po_comment_for_hook
+            )
         ts_obj.update_style_cache()
         source_index = self.sheet_model.index_from_id(ts_obj.id)
         if source_index.isValid():
@@ -2427,6 +2557,8 @@ class OverwatchLocalizerApp(QMainWindow):
             self.update_statusbar(
                 _("Code file saved to: {filename}").format(filename=os.path.basename(filepath_to_save)),
                 persistent=True)
+            file_ext = os.path.splitext(filepath_to_save)[1].lstrip('.')
+            self.plugin_manager.run_hook('on_after_project_save', filepath=filepath_to_save, file_format=file_ext or 'txt')
             return True
         except Exception as e_save:
             QMessageBox.critical(self, _("Save Error"), _("Could not save code file: {error}").format(error=e_save))
@@ -2518,6 +2650,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.update_statusbar(_("PO file saved to: {filename}").format(filename=os.path.basename(filepath)),
                                   persistent=True)
             self.update_title()
+            self.plugin_manager.run_hook('on_after_project_save', filepath=filepath, file_format='po')
             if self.auto_compile_mo_var and compile_mo:
                 try:
                     mo_filepath = os.path.splitext(filepath)[0] + ".mo"
@@ -2547,7 +2680,6 @@ class OverwatchLocalizerApp(QMainWindow):
             "version": APP_VERSION,
             "original_code_file_path": self.current_code_file_path or "",
             "translatable_objects_data": [ts.to_dict() for ts in self.translatable_objects],
-            "project_custom_instructions": self.project_custom_instructions,
             "current_tm_file_path": self.current_tm_file or "",
             "filter_settings": {
                 "show_ignored": self.ignored_checkbox.isChecked(),
@@ -2572,7 +2704,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.update_title()
             self.config["last_dir"] = os.path.dirname(project_filepath)
             self.save_config()
-            self.action_project_instructions.setEnabled(True)
+            self.plugin_manager.run_hook('on_after_project_save', filepath=project_filepath, file_format='owproj')
             return True
         return False
 
@@ -2861,6 +2993,14 @@ class OverwatchLocalizerApp(QMainWindow):
                 code_content = f.read()
 
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+            extraction_patterns = self.plugin_manager.run_hook(
+                'process_extraction_patterns',
+                extraction_patterns,
+                filepath=code_filepath,
+                raw_content=code_content
+            )
+
+            extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
             project_name = os.path.basename(code_filepath)
 
             pot_object = po_file_service.extract_to_pot(code_content, extraction_patterns, project_name, APP_VERSION,
@@ -3032,6 +3172,12 @@ class OverwatchLocalizerApp(QMainWindow):
             self.update_statusbar(_("Re-extracting strings with new rules..."), persistent=True)
             QApplication.processEvents()
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+            extraction_patterns = self.plugin_manager.run_hook(
+                'process_extraction_patterns',
+                extraction_patterns,
+                filepath=self.current_code_file_path or "",
+                raw_content=current_content_to_reextract
+            )
             self.original_raw_code_content = current_content_to_reextract
             self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
                                                                      extraction_patterns)
@@ -3538,6 +3684,14 @@ class OverwatchLocalizerApp(QMainWindow):
 
         ts_obj = self._find_ts_obj_by_id(ts_id_to_translate)
         if not ts_obj: return False
+        if hasattr(self, 'plugin_manager'):
+            objects_to_process = self.plugin_manager.run_hook(
+                'process_ai_translate_list',
+                [ts_obj]
+            )
+            if not objects_to_process or objects_to_process[0].id != ts_obj.id:
+                self.update_statusbar(_("AI translation for '{text}...' was skipped by a plugin.").format(text=ts_obj.original_semantic[:20]))
+                return False
         if not called_from_cm and self.current_selected_ts_id == ts_id_to_translate:
             current_editor_text = self.details_panel.translation_edit_text.toPlainText()
             if current_editor_text != ts_obj.get_translation_for_ui():
@@ -3773,6 +3927,11 @@ class OverwatchLocalizerApp(QMainWindow):
         if self.is_ai_translating_batch:
             QMessageBox.warning(self, _("Operation Restricted"), _("AI batch translation is already in progress."))
             return
+        if hasattr(self, 'plugin_manager'):
+            items_to_translate = self.plugin_manager.run_hook(
+                'process_ai_translate_list',
+                items_to_translate
+            )
         untranslated_items = []
         already_translated_items = []
 
@@ -3907,7 +4066,16 @@ class OverwatchLocalizerApp(QMainWindow):
                                      _("AI translation failed for \"{text}...\":\n{error}").format(
                                          text=trigger_ts_obj.original_semantic[:50], error=error_message))
         elif translated_text is not None and translated_text.strip():
-            cleaned_translation = translated_text.strip()
+            if hasattr(self, 'plugin_manager'):
+                processed_text = self.plugin_manager.run_hook(
+                    'process_ai_translated_text',
+                    translated_text,
+                    ts_object=trigger_ts_obj
+                )
+            else:
+                processed_text = translated_text
+
+            cleaned_translation = processed_text.strip()
             original_text_to_match = trigger_ts_obj.original_semantic
             changed_ids = set()
 

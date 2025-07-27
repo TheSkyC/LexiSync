@@ -308,6 +308,8 @@ class PluginManager:
                         self.logger.error(f"Error in plugin '{plugin.plugin_id()}' TM query hook: {e}", exc_info=True)
             return None
 
+
+
         # 3. 收集型和通知型钩子 (Collecting & Notification Hooks)
         else:
             all_results = []
@@ -326,17 +328,23 @@ class PluginManager:
                         self.logger.error(
                             f"Error in plugin '{plugin.plugin_id()}' notification/collecting hook '{hook_name}': {e}",
                             exc_info=True)
+            if hook_name in ['on_file_tree_context_menu', 'on_table_context_menu']:
+                flat_list = [item for sublist in all_results for item in sublist]
+                return flat_list
+            if hook_name in ['add_statusbar_widgets', 'register_settings_pages', 'register_ai_placeholders']:
+                return all_results
+            if hook_name in ['register_importers', 'register_exporters']:
+                merged_dict = {}
+                for res_dict in all_results:
+                    if isinstance(res_dict, dict):
+                        merged_dict.update(res_dict)
+                return merged_dict
             if hook_name == 'get_ai_translation_context':
                 merged_context = {}
                 for res_dict in all_results:
                     if isinstance(res_dict, dict):
                         merged_context.update(res_dict)
                 return merged_context
-            if hook_name == 'register_ai_placeholders':
-                return all_results
-            if hook_name == 'on_file_tree_context_menu':
-                flat_list = [item for sublist in all_results for item in sublist]
-                return flat_list
             return None
 
     def _run_processing_hook(self, hook_name, *args, **kwargs):
