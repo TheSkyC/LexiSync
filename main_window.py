@@ -396,31 +396,13 @@ class OverwatchLocalizerApp(QMainWindow):
                     action.triggered.connect(callback)
                     action.setEnabled(bool(self.translatable_objects))
                     self.export_menu.addAction(action)
-
         self.file_menu.addSeparator()
 
         self.action_extract_pot = QAction(_("Extract POT Template from Code..."), self)
         self.action_extract_pot.triggered.connect(self.extract_to_pot_dialog)
         self.file_menu.addAction(self.action_extract_pot)
-
-        self.action_import_po = QAction(_("Import Translations from PO File..."), self)
-        self.action_import_po.triggered.connect(self.import_po_file_dialog)
-        self.file_menu.addAction(self.action_import_po)
-
-        self.action_export_po = QAction(_("Export to PO File..."), self)
-        self.action_export_po.triggered.connect(self.export_to_po_file_dialog)
-        self.action_export_po.setEnabled(False)
-        self.file_menu.addAction(self.action_export_po)
         self.file_menu.addSeparator()
 
-        self.action_import_tm_excel = QAction(_("Import TM (Excel)"), self)
-        self.action_import_tm_excel.triggered.connect(self.import_tm_excel_dialog)
-        self.file_menu.addAction(self.action_import_tm_excel)
-
-        self.action_export_tm_excel = QAction(_("Export Current TM (Excel)"), self)
-        self.action_export_tm_excel.triggered.connect(self.export_tm_excel_dialog)
-        self.file_menu.addAction(self.action_export_tm_excel)
-        self.file_menu.addSeparator()
 
         self.recent_files_menu = QMenu(_("Recent Files"), self)
         self.file_menu.addMenu(self.recent_files_menu)
@@ -574,6 +556,12 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_save_current_file.setText(_("Save"))
         self.action_save_current_file_as.setText(_("Save As..."))
         self.action_save_code_file.setText(_("Save Translation to New Code File"))
+
+        if hasattr(self, 'import_menu'):
+            self.import_menu.setTitle(_("Import"))
+        if hasattr(self, 'export_menu'):
+            self.export_menu.setTitle(_("Export"))
+
         self.action_import_excel.setText(_("Import Translations from Excel"))
         self.action_export_excel.setText(_("Export to Excel"))
         self.action_export_json.setText(_("Export to JSON"))

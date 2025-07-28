@@ -4,14 +4,14 @@ msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.1.2\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
 "POT-Creation-Date: 2025-07-28 07:41+0000\n"
-"PO-Revision-Date: 2025-07-21 14:31+0000\n"
+"PO-Revision-Date: 2025-07-28 08:28+0000\n"
 "Last-Translator: TheSkyC & Gemini Pro\n"
-"Language: zh_TW\n"
 "Language-Team: Chinese (Traditional) <zh_TW@li.org>\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh_TW\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
 
 #: main_window.py:4261 ui_components/comment_status_panel.py:79
@@ -88,8 +88,7 @@ msgstr "AI 提示詞管理員"
 msgid "AI Translate All Untranslated"
 msgstr "AI 翻譯所有未翻譯項"
 
-#: main_window.py:497 main_window.py:611 ui_components/details_panel.py:91
-#: ui_components/details_panel.py:197
+#: main_window.py:497 main_window.py:611 ui_components/details_panel.py:91 ui_components/details_panel.py:197
 msgid "AI Translate Selected"
 msgstr "AI 翻譯選定項"
 
@@ -107,12 +106,8 @@ msgstr "AI 翻譯正在進行中"
 
 #: main_window.py:4042
 #, python-brace-format
-msgid ""
-"AI batch translation complete. Successfully translated "
-"{success_count}/{processed_count} items (total {total_items} planned)."
-msgstr ""
-"AI 批次翻譯完成。成功翻譯 {success_count}/{processed_count} 個項目 (總計畫 {total_items} "
-"項)。"
+msgid "AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned)."
+msgstr "AI 批次翻譯完成。成功翻譯 {success_count}/{processed_count} 個項目 (總計畫 {total_items} 項)。"
 
 #: main_window.py:3933
 msgid "AI batch translation is already in progress."
@@ -123,15 +118,12 @@ msgid "AI batch translation is in progress."
 msgstr "AI 批次翻譯正在進行中。"
 
 #: main_window.py:1604
-msgid ""
-"AI batch translation is in progress. Please wait for it to complete or "
-"stop it before opening a new file."
+msgid "AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."
 msgstr "AI 批次翻譯正在進行中。請等待其完成或停止後再開啟新檔案。"
 
 #: main_window.py:1408
 msgid ""
-"AI batch translation is still in progress. Are you sure you want to exit?"
-"\n"
+"AI batch translation is still in progress. Are you sure you want to exit?\n"
 "Unfinished translations will be lost."
 msgstr ""
 "AI 批次翻譯仍在進行中。您確定要結束程式嗎？\n"
@@ -263,10 +255,8 @@ msgstr "已為 {count} 個預留位置不符的項目新增註解。"
 #: main_window.py:4156
 #, python-brace-format
 msgid ""
-"After AI batch translation, {count} items were found with placeholder "
-"mismatches.\n"
-"Do you want to add the comment \"Placeholder Mismatch\" to these items in"
-" bulk?"
+"After AI batch translation, {count} items were found with placeholder mismatches.\n"
+"Do you want to add the comment \"Placeholder Mismatch\" to these items in bulk?"
 msgstr ""
 "AI 批次翻譯後，發現 {count} 個項目的預留位置不符。\n"
 "您是否要為這些項目批次新增「預留位置不符」的註解？"
@@ -302,8 +292,7 @@ msgstr "已將翻譯記憶庫套用至 {count} 個字串。"
 msgid "Apply"
 msgstr "套用"
 
-#: ui_components/comment_status_panel.py:46
-#: ui_components/comment_status_panel.py:76
+#: ui_components/comment_status_panel.py:46 ui_components/comment_status_panel.py:76
 msgid "Apply Comment"
 msgstr "套用註解"
 
@@ -349,9 +338,7 @@ msgstr "您確定要清除所有最近的檔案歷史紀錄嗎？"
 
 #: main_window.py:4346
 #, python-brace-format
-msgid ""
-"Are you sure you want to clear the translations for the {count} selected "
-"items?"
+msgid "Are you sure you want to clear the translations for the {count} selected items?"
 msgstr "您確定要清除 {count} 個選定項目的翻譯嗎？"
 
 #: ui_components/file_explorer_panel.py:252
@@ -380,8 +367,7 @@ msgstr "您確定要將所有按鍵綁定重設為預設值嗎？"
 
 #: dialogs/extraction_pattern_dialog.py:153
 msgid ""
-"Are you sure you want to reset extraction rules to their default "
-"settings?\n"
+"Are you sure you want to reset extraction rules to their default settings?\n"
 "All current custom rules will be lost."
 msgstr ""
 "您確定要將擷取規則重設為預設值嗎？\n"
@@ -445,11 +431,7 @@ msgstr "已建立備份：{filename}"
 msgid "Calculation finished."
 msgstr "計算完成。"
 
-#: dialogs/diff_dialog.py:153 dialogs/extraction_pattern_dialog.py:80
-#: dialogs/extraction_pattern_dialog.py:278 dialogs/font_settings_dialog.py:61
-#: dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342
-#: dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:100
-#: dialogs/prompt_manager_dialog.py:318 main_window.py:3970
+#: dialogs/diff_dialog.py:153 dialogs/extraction_pattern_dialog.py:80 dialogs/extraction_pattern_dialog.py:278 dialogs/font_settings_dialog.py:61 dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342 dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:100 dialogs/prompt_manager_dialog.py:318 main_window.py:3970
 msgid "Cancel"
 msgstr "取消"
 
@@ -529,8 +511,7 @@ msgstr "已清除 {count} 筆翻譯。"
 msgid "Clipboard content pasted to translation."
 msgstr "已將剪貼簿內容貼上至翻譯。"
 
-#: dialogs/search_dialog.py:86 dialogs/statistics_dialog.py:395
-#: plugins/plugin_dialog.py:122
+#: dialogs/search_dialog.py:86 dialogs/statistics_dialog.py:395 plugins/plugin_dialog.py:122
 msgid "Close"
 msgstr "關閉"
 
@@ -547,8 +528,7 @@ msgstr "程式碼檔案載入失敗"
 msgid "Code file saved to: {filename}"
 msgstr "程式碼檔案已儲存至：{filename}"
 
-#: dialogs/search_dialog.py:58 main_window.py:629 main_window.py:2745
-#: main_window.py:2805 main_window.py:2813
+#: dialogs/search_dialog.py:58 main_window.py:629 main_window.py:2745 main_window.py:2805 main_window.py:2813
 msgid "Comment"
 msgstr "註解"
 
@@ -569,8 +549,7 @@ msgstr "ID {id} 的註解已更新..."
 msgid "Comment updated."
 msgstr "註解已更新。"
 
-#: ui_components/comment_status_panel.py:30
-#: ui_components/comment_status_panel.py:75
+#: ui_components/comment_status_panel.py:30 ui_components/comment_status_panel.py:75
 msgid "Comment:"
 msgstr "註解："
 
@@ -602,8 +581,7 @@ msgstr "兼容性警告"
 msgid "Compatible"
 msgstr "兼容"
 
-#: dialogs/extraction_pattern_dialog.py:153 dialogs/keybinding_dialog.py:137
-#: dialogs/prompt_manager_dialog.py:184
+#: dialogs/extraction_pattern_dialog.py:153 dialogs/keybinding_dialog.py:137 dialogs/prompt_manager_dialog.py:184
 msgid "Confirm"
 msgstr "確認"
 
@@ -728,10 +706,7 @@ msgstr "無法解碼 API 回應。回應文本"
 
 #: main_window.py:3270
 #, python-brace-format
-msgid ""
-"Could not determine original/translation columns from '{filename}' "
-"header. Will try to use the first two columns by default (A=Original, "
-"B=Translation)."
+msgid "Could not determine original/translation columns from '{filename}' header. Will try to use the first two columns by default (A=Original, B=Translation)."
 msgstr "無法從 '{filename}' 的標頭判斷原文/翻譯欄位。將嘗試預設使用前兩欄 (A=原文, B=翻譯)。"
 
 #: main_window.py:2777
@@ -762,8 +737,7 @@ msgstr "無法取得用於重新擷取的程式碼內容。"
 msgid "Could not import project translations from Excel: {error}"
 msgstr "無法從 Excel 匯入專案翻譯：{error}"
 
-#: dialogs/extraction_pattern_dialog.py:182
-#: dialogs/prompt_manager_dialog.py:212
+#: dialogs/extraction_pattern_dialog.py:182 dialogs/prompt_manager_dialog.py:212
 #, python-brace-format
 msgid "Could not load preset file: {error}"
 msgstr "無法載入預設集檔案：{error}"
@@ -794,8 +768,7 @@ msgstr ""
 msgid "Could not save code file: {error}"
 msgstr "無法儲存程式碼檔案：{error}"
 
-#: dialogs/extraction_pattern_dialog.py:197
-#: dialogs/prompt_manager_dialog.py:227
+#: dialogs/extraction_pattern_dialog.py:197 dialogs/prompt_manager_dialog.py:227
 #, python-brace-format
 msgid "Could not save preset file: {error}"
 msgstr "無法儲存預設集檔案：{error}"
@@ -808,11 +781,7 @@ msgstr "当前"
 msgid "Current Selection:"
 msgstr "目前選取："
 
-#: dialogs/extraction_pattern_dialog.py:92
-#: dialogs/extraction_pattern_dialog.py:114
-#: dialogs/extraction_pattern_dialog.py:174
-#: dialogs/extraction_pattern_dialog.py:243
-#: dialogs/extraction_pattern_dialog.py:292
+#: dialogs/extraction_pattern_dialog.py:92 dialogs/extraction_pattern_dialog.py:114 dialogs/extraction_pattern_dialog.py:174 dialogs/extraction_pattern_dialog.py:243 dialogs/extraction_pattern_dialog.py:292
 msgid "Custom"
 msgstr "自訂"
 
@@ -842,13 +811,8 @@ msgstr "顯示：0/0 | 已翻譯：0 | 未翻譯：0 | 已忽略：0"
 
 #: main_window.py:1151
 #, python-brace-format
-msgid ""
-"Displayed: {displayed_count}/{total_count} | Translated: "
-"{translated_visible} | Untranslated: {untranslated_visible} | Ignored: "
-"{ignored_visible}"
-msgstr ""
-"顯示：{displayed_count}/{total_count} | 已翻譯：{translated_visible} | "
-"未翻譯：{untranslated_visible} | 已忽略：{ignored_visible}"
+msgid "Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}"
+msgstr "顯示：{displayed_count}/{total_count} | 已翻譯：{translated_visible} | 未翻譯：{untranslated_visible} | 已忽略：{ignored_visible}"
 
 #: main_window.py:3967
 msgid "Do you want to overwrite them, skip them, or cancel the operation?"
@@ -868,8 +832,7 @@ msgstr "拖放失敗：'{filename}' 不是一個檔案。"
 msgid "Drag and drop failed: Invalid file type '{filename}'"
 msgstr "拖放失敗：無效的檔案類型 '{filename}'"
 
-#: dialogs/prompt_manager_dialog.py:121 dialogs/prompt_manager_dialog.py:128
-#: dialogs/prompt_manager_dialog.py:261
+#: dialogs/prompt_manager_dialog.py:121 dialogs/prompt_manager_dialog.py:128 dialogs/prompt_manager_dialog.py:261
 msgid "Dynamic Instruction"
 msgstr "動態指令"
 
@@ -931,14 +894,7 @@ msgstr "結尾標點存在與否不同。"
 msgid "Enter comment for {count} selected items:"
 msgstr "為 {count} 個選定項目輸入註解："
 
-#: dialogs/extraction_pattern_dialog.py:180
-#: dialogs/extraction_pattern_dialog.py:297
-#: dialogs/extraction_pattern_dialog.py:300
-#: dialogs/prompt_manager_dialog.py:210 main_window.py:1648 main_window.py:2291
-#: main_window.py:2295 main_window.py:2559 main_window.py:2576
-#: main_window.py:2580 main_window.py:3157 main_window.py:3300
-#: main_window.py:3347 main_window.py:3409 main_window.py:4578
-#: ui_components/file_explorer_panel.py:265
+#: dialogs/extraction_pattern_dialog.py:180 dialogs/extraction_pattern_dialog.py:297 dialogs/extraction_pattern_dialog.py:300 dialogs/prompt_manager_dialog.py:210 main_window.py:1648 main_window.py:2291 main_window.py:2295 main_window.py:2559 main_window.py:2576 main_window.py:2580 main_window.py:3157 main_window.py:3300 main_window.py:3347 main_window.py:3409 main_window.py:4578 ui_components/file_explorer_panel.py:265
 msgid "Error"
 msgstr "錯誤"
 
@@ -1000,12 +956,10 @@ msgstr "Excel 標頭格式不正確或為空。"
 #, python-brace-format
 msgid ""
 "Excel header must contain 'UUID' and '{translation_col}' columns.\n"
-"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', "
-"'{original_semantic_col}'."
+"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
 msgstr ""
 "Excel 標頭必須包含 'UUID' 和 '{translation_col}' 欄位。\n"
-"可選欄位：'{comment_col}', '{reviewed_col}', '{ignored_col}', "
-"'{original_semantic_col}'。"
+"可選欄位：'{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'。"
 
 #: main_window.py:430 main_window.py:587
 msgid "Exit"
@@ -1023,8 +977,7 @@ msgstr ""
 msgid "Export Current TM (Excel)"
 msgstr "匯出目前翻譯記憶庫 (Excel)"
 
-#: main_window.py:2776 main_window.py:2938 main_window.py:2978
-#: main_window.py:3127
+#: main_window.py:2776 main_window.py:2938 main_window.py:2978 main_window.py:3127
 msgid "Export Error"
 msgstr "匯出錯誤"
 
@@ -1032,8 +985,7 @@ msgstr "匯出錯誤"
 msgid "Export Extraction Rule Preset"
 msgstr "匯出擷取規則預設集"
 
-#: dialogs/extraction_pattern_dialog.py:197
-#: dialogs/prompt_manager_dialog.py:227
+#: dialogs/extraction_pattern_dialog.py:197 dialogs/prompt_manager_dialog.py:227
 msgid "Export Failed"
 msgstr "匯出失敗"
 
@@ -1111,9 +1063,7 @@ msgid "Extraction rules updated. Consider reloading the text."
 msgstr "擷取規則已更新。建議重新載入文本。"
 
 #: main_window.py:3134
-msgid ""
-"Extraction rules updated. Do you want to reload the translatable text of "
-"the current code using the new rules immediately?"
+msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"
 msgstr "擷取規則已更新。您要立即使用新規則重新載入目前程式碼的可翻譯文本嗎？"
 
 #: plugins/plugin_dialog.py:456
@@ -1170,9 +1120,7 @@ msgstr "我的最愛組合"
 
 #: main_window.py:2588
 #, python-brace-format
-msgid ""
-"File '{filename}' already exists. Overwrite? A backup file (.bak) will be"
-" created."
+msgid "File '{filename}' already exists. Overwrite? A backup file (.bak) will be created."
 msgstr "檔案 '{filename}' 已存在。要覆寫嗎？將會建立一個備份檔案 (.bak)。"
 
 #: main_window.py:1490
@@ -1202,13 +1150,10 @@ msgstr "找不到檔案"
 
 #: main_window.py:1762
 #, python-brace-format
-msgid ""
-"File type for '{filename}' is not supported by the application or any "
-"active plugin."
+msgid "File type for '{filename}' is not supported by the application or any active plugin."
 msgstr "檔案 '{filename}' 的類型不被應用程式或任何啟用的外掛程式支援。"
 
-#: ui_components/file_explorer_panel.py:69
-#: ui_components/file_explorer_panel.py:269
+#: ui_components/file_explorer_panel.py:69 ui_components/file_explorer_panel.py:269
 msgid "Filter files..."
 msgstr "篩選檔案..."
 
@@ -1266,9 +1211,7 @@ msgid "Font Settings..."
 msgstr "字型設定..."
 
 #: main_window.py:798
-msgid ""
-"Font settings have been changed. Please restart the application for the "
-"changes to take effect."
+msgid "Font settings have been changed. Please restart the application for the changes to take effect."
 msgstr "字型設定已變更。請重新啟動應用程式以使變更生效。"
 
 #: dialogs/settings_pages.py:173
@@ -1314,14 +1257,11 @@ msgstr "忽略選定項的警告"
 msgid "Ignore status for ID {id} -> {status}"
 msgstr "ID {id} 的忽略狀態 -> {status}"
 
-#: main_window.py:2155 main_window.py:4259
-#: ui_components/comment_status_panel.py:57
+#: main_window.py:2155 main_window.py:4259 ui_components/comment_status_panel.py:57
 msgid "Ignore this string"
 msgstr "忽略此字串"
 
-#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590
-#: main_window.py:635 main_window.py:842 main_window.py:2746
-#: main_window.py:2807 main_window.py:2815 main_window.py:3707
+#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590 main_window.py:635 main_window.py:842 main_window.py:2746 main_window.py:2807 main_window.py:2815 main_window.py:3707
 msgid "Ignored"
 msgstr "已忽略"
 
@@ -1334,8 +1274,7 @@ msgstr "已忽略 {count} 個項目的警告。"
 msgid "Import"
 msgstr ""
 
-#: main_window.py:2799 main_window.py:2811 main_window.py:2894
-#: main_window.py:2898
+#: main_window.py:2799 main_window.py:2811 main_window.py:2894 main_window.py:2898
 msgid "Import Error"
 msgstr "匯入錯誤"
 
@@ -1343,8 +1282,7 @@ msgstr "匯入錯誤"
 msgid "Import Extraction Rule Preset"
 msgstr "匯入擷取規則預設集"
 
-#: dialogs/extraction_pattern_dialog.py:182
-#: dialogs/prompt_manager_dialog.py:212
+#: dialogs/extraction_pattern_dialog.py:182 dialogs/prompt_manager_dialog.py:212
 msgid "Import Failed"
 msgstr "匯入失敗"
 
@@ -1390,14 +1328,7 @@ msgstr "不相容"
 msgid "Incompatible with app version (requires {req}, current is {curr})"
 msgstr "與應用程式版本不相容 (需要 {req}，目前為 {curr})"
 
-#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291
-#: dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:756
-#: main_window.py:2621 main_window.py:2720 main_window.py:2781
-#: main_window.py:2903 main_window.py:2943 main_window.py:3097
-#: main_window.py:3141 main_window.py:3404 main_window.py:3441
-#: main_window.py:3458 main_window.py:3475 main_window.py:3478
-#: main_window.py:3527 main_window.py:4180 main_window.py:4313
-#: main_window.py:4337
+#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291 dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:756 main_window.py:2621 main_window.py:2720 main_window.py:2781 main_window.py:2903 main_window.py:2943 main_window.py:3097 main_window.py:3141 main_window.py:3404 main_window.py:3441 main_window.py:3458 main_window.py:3475 main_window.py:3478 main_window.py:3527 main_window.py:4180 main_window.py:4313 main_window.py:4337
 msgid "Info"
 msgstr "資訊"
 
@@ -1525,9 +1456,7 @@ msgstr "長度偏差 (輕微)"
 
 #: services/validation_service.py:143 services/validation_service.py:151
 #, python-brace-format
-msgid ""
-"Length warning: Unusual expansion ratio ({actual:.1f}x), expected around "
-"{expected:.1f}x."
+msgid "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
 msgstr "長度警告：膨脹率異常 ({actual:.1f}x)，預期約為 {expected:.1f}x。"
 
 #: plugins/plugin_dialog.py:451
@@ -1579,8 +1508,7 @@ msgstr "載入失敗"
 msgid "MO Compilation Failed"
 msgstr "MO 編譯失敗"
 
-#: dialogs/prompt_manager_dialog.py:168 dialogs/prompt_manager_dialog.py:169
-#: dialogs/prompt_manager_dialog.py:170
+#: dialogs/prompt_manager_dialog.py:168 dialogs/prompt_manager_dialog.py:169 dialogs/prompt_manager_dialog.py:170
 msgid "Main App"
 msgstr ""
 
@@ -1677,8 +1605,7 @@ msgstr "新指令"
 msgid "New Rule"
 msgstr "新規則"
 
-#: main_window.py:2514 main_window.py:2550 main_window.py:2766
-#: main_window.py:2767
+#: main_window.py:2514 main_window.py:2550 main_window.py:2766 main_window.py:2767
 msgid "No"
 msgstr "否"
 
@@ -1710,8 +1637,7 @@ msgstr "訊息中無內容"
 msgid "No data to display."
 msgstr "無資料可顯示。"
 
-#: main_window.py:2720 main_window.py:2903 main_window.py:2943
-#: main_window.py:3097
+#: main_window.py:2720 main_window.py:2903 main_window.py:2943 main_window.py:3097
 msgid "No data to export."
 msgstr "無資料可匯出。"
 
@@ -1792,10 +1718,7 @@ msgstr "沒有可用於偵測語言的文本。"
 msgid "No untranslated and non-ignored strings found."
 msgstr "找不到未翻譯且未忽略的字串。"
 
-#: dialogs/extraction_pattern_dialog.py:76
-#: dialogs/extraction_pattern_dialog.py:274 dialogs/font_settings_dialog.py:57
-#: dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341
-#: dialogs/prompt_manager_dialog.py:96 dialogs/prompt_manager_dialog.py:314
+#: dialogs/extraction_pattern_dialog.py:76 dialogs/extraction_pattern_dialog.py:274 dialogs/font_settings_dialog.py:57 dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341 dialogs/prompt_manager_dialog.py:96 dialogs/prompt_manager_dialog.py:314
 msgid "OK"
 msgstr "確定"
 
@@ -1908,8 +1831,7 @@ msgstr ""
 "作者：TheSkyC\n"
 "中國伺服器 ID：小鸟游六花#56683／亞洲伺服器：小鳥游六花#31665"
 
-#: dialogs/extraction_pattern_dialog.py:164
-#: dialogs/extraction_pattern_dialog.py:189
+#: dialogs/extraction_pattern_dialog.py:164 dialogs/extraction_pattern_dialog.py:189
 #, python-brace-format
 msgid "Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)"
 msgstr "鬥陣特攻擷取範本檔案 (*{ext});;所有檔案 (*.*)"
@@ -2085,18 +2007,15 @@ msgstr "插件載入錯誤"
 msgid "Plugin Manager"
 msgstr "插件管理器"
 
-#: dialogs/extraction_pattern_dialog.py:195
-#: dialogs/prompt_manager_dialog.py:225
+#: dialogs/extraction_pattern_dialog.py:195 dialogs/prompt_manager_dialog.py:225
 msgid "Preset exported successfully."
 msgstr "預設集匯出成功。"
 
-#: dialogs/extraction_pattern_dialog.py:180
-#: dialogs/prompt_manager_dialog.py:210
+#: dialogs/extraction_pattern_dialog.py:180 dialogs/prompt_manager_dialog.py:210
 msgid "Preset file format is incorrect."
 msgstr "預設集檔案格式不正確。"
 
-#: dialogs/extraction_pattern_dialog.py:177
-#: dialogs/prompt_manager_dialog.py:208
+#: dialogs/extraction_pattern_dialog.py:177 dialogs/prompt_manager_dialog.py:208
 msgid "Preset imported successfully."
 msgstr "預設集匯入成功。"
 
@@ -2118,8 +2037,7 @@ msgstr "專案 '{filename}' 已載入。"
 msgid "Project Metrics"
 msgstr "專案指標"
 
-#: dialogs/statistics_dialog.py:136 dialogs/statistics_dialog.py:420
-#: dialogs/statistics_dialog.py:502
+#: dialogs/statistics_dialog.py:136 dialogs/statistics_dialog.py:420 dialogs/statistics_dialog.py:502
 msgid "Project Statistics"
 msgstr "專案統計"
 
@@ -2167,16 +2085,10 @@ msgid "Provider"
 msgstr ""
 
 #: main_window.py:3576
-msgid ""
-"Python 'requests' library not found. Please install it (pip install "
-"requests) to use AI translation features."
+msgid "Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."
 msgstr "未找到 Python 'requests' 函式庫。請安裝它 (pip install requests) 以使用 AI 翻譯功能。"
 
-#: main_window.py:643 main_window.py:878 main_window.py:963 main_window.py:968
-#: main_window.py:1440 main_window.py:1829 main_window.py:1854
-#: main_window.py:1871 main_window.py:1877 main_window.py:1878
-#: main_window.py:1895 main_window.py:1902 main_window.py:2455
-#: main_window.py:2698
+#: main_window.py:643 main_window.py:878 main_window.py:963 main_window.py:968 main_window.py:1440 main_window.py:1829 main_window.py:1854 main_window.py:1871 main_window.py:1877 main_window.py:1878 main_window.py:1895 main_window.py:1902 main_window.py:2455 main_window.py:2698
 msgid "Quick search..."
 msgstr "快速搜尋..."
 
@@ -2188,8 +2100,7 @@ msgstr "正在使用新規則重新擷取字串..."
 msgid "Re-validate All Entries"
 msgstr "重新驗證所有條目"
 
-#: main_window.py:270 main_window.py:671 main_window.py:1092
-#: main_window.py:1125
+#: main_window.py:270 main_window.py:671 main_window.py:1092 main_window.py:1125
 msgid "Ready"
 msgstr "就緒"
 
@@ -2290,8 +2201,7 @@ msgstr "重設"
 msgid "Reset all font settings to default?"
 msgstr "要將所有字型設定重設為預設值嗎？"
 
-#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52
-#: dialogs/keybinding_dialog.py:78 dialogs/prompt_manager_dialog.py:63
+#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52 dialogs/keybinding_dialog.py:78 dialogs/prompt_manager_dialog.py:63
 msgid "Reset to Defaults"
 msgstr "重設為預設值"
 
@@ -2316,9 +2226,7 @@ msgstr "在檔案總管中顯示"
 msgid "Review status for ID {id} -> {status}"
 msgstr "ID {id} 的審閱狀態 -> {status}"
 
-#: main_window.py:2745 main_window.py:2806 main_window.py:2814
-#: ui_components/comment_status_panel.py:62
-#: ui_components/comment_status_panel.py:82
+#: main_window.py:2745 main_window.py:2806 main_window.py:2814 ui_components/comment_status_panel.py:62 ui_components/comment_status_panel.py:82
 msgid "Reviewed"
 msgstr "已審閱"
 
@@ -2440,8 +2348,7 @@ msgstr "设置已应用。"
 msgid "Settings..."
 msgstr "設定..."
 
-#: ui_components/file_explorer_panel.py:70
-#: ui_components/file_explorer_panel.py:270
+#: ui_components/file_explorer_panel.py:70 ui_components/file_explorer_panel.py:270
 msgid "Show All Files"
 msgstr "顯示所有檔案"
 
@@ -2506,8 +2413,7 @@ msgstr "開頭標點不同：'{c1}' vs '{c2}'。"
 msgid "Starting punctuation presence differs."
 msgstr "開頭標點存在與否不同。"
 
-#: dialogs/prompt_manager_dialog.py:120 dialogs/prompt_manager_dialog.py:127
-#: dialogs/prompt_manager_dialog.py:260
+#: dialogs/prompt_manager_dialog.py:120 dialogs/prompt_manager_dialog.py:127 dialogs/prompt_manager_dialog.py:260
 msgid "Static Instruction"
 msgstr "靜態指令"
 
@@ -2525,9 +2431,7 @@ msgstr "停止 AI 批次翻譯"
 
 #: main_window.py:3716 main_window.py:3955
 #, python-brace-format
-msgid ""
-"String \"{text}...\" already has a translation. Overwrite with AI "
-"translation?"
+msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
 msgstr "字串「{text}...」已有翻譯。要用 AI 翻譯覆寫嗎？"
 
 #: dialogs/extraction_pattern_dialog.py:60
@@ -2538,8 +2442,7 @@ msgstr "字串類型"
 msgid "String Type:"
 msgstr "字串類型："
 
-#: dialogs/prompt_manager_dialog.py:119 dialogs/prompt_manager_dialog.py:126
-#: dialogs/prompt_manager_dialog.py:259
+#: dialogs/prompt_manager_dialog.py:119 dialogs/prompt_manager_dialog.py:126 dialogs/prompt_manager_dialog.py:259
 msgid "Structural Content"
 msgstr "結構性內容"
 
@@ -2547,15 +2450,11 @@ msgstr "結構性內容"
 msgid "Style:"
 msgstr "樣式："
 
-#: dialogs/extraction_pattern_dialog.py:177
-#: dialogs/extraction_pattern_dialog.py:195
-#: dialogs/prompt_manager_dialog.py:208 dialogs/prompt_manager_dialog.py:225
-#: plugins/plugin_dialog.py:450
+#: dialogs/extraction_pattern_dialog.py:177 dialogs/extraction_pattern_dialog.py:195 dialogs/prompt_manager_dialog.py:208 dialogs/prompt_manager_dialog.py:225 plugins/plugin_dialog.py:450
 msgid "Success"
 msgstr "成功"
 
-#: main_window.py:3292 main_window.py:3306 main_window.py:3340
-#: main_window.py:3369 main_window.py:3518 main_window.py:3521
+#: main_window.py:3292 main_window.py:3306 main_window.py:3340 main_window.py:3369 main_window.py:3518 main_window.py:3521
 msgid "TM"
 msgstr "翻譯記憶庫"
 
@@ -2568,9 +2467,7 @@ msgid "TM entry cleared for selected item."
 msgstr "已清除選定項目的翻譯記憶庫條目。"
 
 #: main_window.py:3362
-msgid ""
-"TM imported. Do you want to apply it to untranslated strings in the "
-"current project immediately?"
+msgid "TM imported. Do you want to apply it to untranslated strings in the current project immediately?"
 msgstr "翻譯記憶庫已匯入。您要立即將其套用至目前專案中未翻譯的字串嗎？"
 
 #: main_window.py:3385
@@ -2635,8 +2532,7 @@ msgstr "目前專案有未儲存的變更。您要儲存嗎？"
 #: main_window.py:3415
 #, python-brace-format
 msgid ""
-"The current translation is empty. Do you want to update the TM entry for:"
-"\n"
+"The current translation is empty. Do you want to update the TM entry for:\n"
 "'{text}...' with an empty translation?"
 msgstr ""
 "目前翻譯為空。您要用空翻譯更新以下翻譯記憶庫條目嗎：\n"
@@ -2666,8 +2562,7 @@ msgid ""
 "\n"
 "- {libs}\n"
 "\n"
-"The plugin will likely fail to run correctly. You can try to install them"
-" from the details panel.\n"
+"The plugin will likely fail to run correctly. You can try to install them from the details panel.\n"
 "\n"
 "Are you sure you want to force enable it anyway?"
 msgstr ""
@@ -2682,8 +2577,7 @@ msgstr ""
 #: plugins/plugin_dialog.py:206
 #, python-brace-format
 msgid ""
-"The plugin '{plugin_name}' is not marked as compatible with this "
-"application version.\n"
+"The plugin '{plugin_name}' is not marked as compatible with this application version.\n"
 "\n"
 "Forcing it to enable may cause instability or crashes.\n"
 "\n"
@@ -2708,9 +2602,7 @@ msgid "The target language for translation."
 msgstr ""
 
 #: main_window.py:2622
-msgid ""
-"There is no content to save as a project. Please open a code file or PO "
-"file first."
+msgid "There is no content to save as a project. Please open a code file or PO file first."
 msgstr "沒有內容可儲存為專案。請先開啟程式碼檔案或 PO 檔案。"
 
 #: main_window.py:2560
@@ -2734,17 +2626,14 @@ msgid "This plugin is incompatible. Check to force-enable."
 msgstr "此插件不相容。勾選以強制啟用。"
 
 #: main_window.py:3483
-msgid ""
-"This will apply TM to all matching strings, overwriting existing "
-"translations. Continue?"
+msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
 msgstr "這將把翻譯記憶庫套用至所有相符的字串，並覆寫現有翻譯。要繼續嗎？"
 
 #: main_window.py:3170
 #, python-brace-format
 msgid ""
 "This will re-extract strings from {source} using the new rules.\n"
-"Existing translations will be preserved where the original text matches, "
-"but unmatched translations and statuses may be lost.\n"
+"Existing translations will be preserved where the original text matches, but unmatched translations and statuses may be lost.\n"
 "This action will clear the undo history. Continue?"
 msgstr ""
 "這將使用新規則從 {source} 重新擷取字串。\n"
@@ -2767,13 +2656,11 @@ msgstr "項目總數"
 msgid "Trailing Whitespace Mismatch"
 msgstr "結尾空白不符"
 
-#: dialogs/statistics_dialog.py:523 dialogs/statistics_dialog.py:580
-#: main_window.py:637 main_window.py:854
+#: dialogs/statistics_dialog.py:523 dialogs/statistics_dialog.py:580 main_window.py:637 main_window.py:854
 msgid "Translated"
 msgstr "已翻譯"
 
-#: dialogs/search_dialog.py:57 main_window.py:628 main_window.py:2745
-#: main_window.py:2804 main_window.py:2813
+#: dialogs/search_dialog.py:57 main_window.py:628 main_window.py:2745 main_window.py:2804 main_window.py:2813
 msgid "Translation"
 msgstr "翻譯"
 
@@ -2899,8 +2786,7 @@ msgstr "未審閱"
 msgid "Unsaved Changes"
 msgstr "未儲存的變更"
 
-#: dialogs/statistics_dialog.py:528 dialogs/statistics_dialog.py:585
-#: main_window.py:636 main_window.py:848
+#: dialogs/statistics_dialog.py:528 dialogs/statistics_dialog.py:585 main_window.py:636 main_window.py:848
 msgid "Untranslated"
 msgstr "未翻譯"
 
@@ -2988,17 +2874,14 @@ msgstr "警告"
 
 #: main_window.py:2833
 #, python-brace-format
-msgid ""
-"Warning: Excel row {row_num}, UUID {uuid} - Original text does not match "
-"the one in Excel. Data will still be imported."
+msgid "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported."
 msgstr "警告：Excel 第 {row_num} 列，UUID {uuid} - 原文與 Excel 中的不符。資料仍將被匯入。"
 
 #: main_window.py:2961
 msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
 msgstr "YAML 檔案 (*.yaml *.yml);;所有檔案 (*.*)"
 
-#: main_window.py:2514 main_window.py:2550 main_window.py:2766
-#: main_window.py:2767 main_window.py:2859 main_window.py:2869
+#: main_window.py:2514 main_window.py:2550 main_window.py:2766 main_window.py:2767 main_window.py:2859 main_window.py:2869
 msgid "Yes"
 msgstr "是"
 
@@ -3069,4 +2952,3 @@ msgstr "{count} 個項目的審閱狀態已更新。"
 #, python-brace-format
 msgid "{removed} removed items, "
 msgstr "{removed} 個已移除的項目、"
-
