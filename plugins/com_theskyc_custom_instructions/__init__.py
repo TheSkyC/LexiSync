@@ -30,7 +30,7 @@ class PersonalizedTranslationPlugin(PluginBase):
         return "1.0.0"
 
     def url(self) -> str:
-        return "https://github.com/TheSkyC/overwatch-localizer/tree/master/plugins/com_theskyc_personalized_translation"
+        return "https://github.com/TheSkyC/overwatch-localizer/tree/master/plugins/com_theskyc_custom_instructions"
 
     def compatible_app_version(self) -> str:
         return "1.1"

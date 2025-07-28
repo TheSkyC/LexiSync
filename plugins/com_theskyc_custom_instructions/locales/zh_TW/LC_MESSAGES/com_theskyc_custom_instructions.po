@@ -1,0 +1,79 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Com Theskyc Custom Instructions Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2025-07-28 08:08+0000\n"
+"PO-Revision-Date: 2025-07-28 08:14+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: __init__.py:24
+msgid "Allows setting global and project-specific instructions for AI translation."
+msgstr "允許設定適用於所有專案的全局指令以及針對特定專案的指令。"
+
+#: __init__.py:21
+msgid "Custom Instructions"
+msgstr "自訂指示"
+
+#: __init__.py:118
+msgid ""
+"Enter global instructions that will apply to all projects\n"
+"(e.g., 'Always use simplified Chinese characters', 'Maintain a neutral tone')."
+msgstr ""
+"輸入適用於所有專案的全局指示\n"
+"（例如：「一律使用繁體中文」、「保持中立語氣」）。"
+
+#: __init__.py:102
+msgid ""
+"Enter instructions for this project.\n"
+"(e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a formal tone')."
+msgstr ""
+"輸入此專案的指示。\n"
+"（例如：「將「Hero」翻譯為「Agent」」、「使用正式語氣」）。"
+
+#: __init__.py:116
+msgid "Global Instructions"
+msgstr "全域指示"
+
+#: __init__.py:87
+msgid "Global Instructions..."
+msgstr "全域指令..."
+
+#: __init__.py:45
+msgid "Global instructions that apply to all projects."
+msgstr "適用於所有專案的全局指令。"
+
+#: __init__.py:125
+msgid "Global instructions updated."
+msgstr "全域指令已更新。"
+
+#: __init__.py:49
+msgid "Instructions specific to the current project."
+msgstr "當前專案的特定指令。"
+
+#: __init__.py:94
+msgid "No Project"
+msgstr "無專案"
+
+#: __init__.py:94
+msgid "Please open a file first."
+msgstr "請先開啟一個檔案。"
+
+#: __init__.py:100
+msgid "Project-specific Instructions"
+msgstr "特定專案指令"
+
+#: __init__.py:86
+msgid "Project-specific Instructions..."
+msgstr "特定專案指令..."
+
+#: __init__.py:109
+msgid "Project-specific instructions updated."
+msgstr "特定專案指令已更新。"

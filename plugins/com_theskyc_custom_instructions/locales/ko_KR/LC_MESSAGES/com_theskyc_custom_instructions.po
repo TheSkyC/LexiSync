@@ -1,0 +1,79 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Com Theskyc Custom Instructions Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2025-07-28 08:08+0000\n"
+"PO-Revision-Date: 2025-07-28 08:13+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: __init__.py:24
+msgid "Allows setting global and project-specific instructions for AI translation."
+msgstr "AI 번역을 위한 전역 및 프로젝트별 지침을 설정할 수 있습니다."
+
+#: __init__.py:21
+msgid "Custom Instructions"
+msgstr "사용자 지정 지침"
+
+#: __init__.py:118
+msgid ""
+"Enter global instructions that will apply to all projects\n"
+"(e.g., 'Always use simplified Chinese characters', 'Maintain a neutral tone')."
+msgstr ""
+"모든 프로젝트에 적용될 전역 지침 입력\n"
+"(예: '항상 한국어 사용', '중립적인 어조 유지')."
+
+#: __init__.py:102
+msgid ""
+"Enter instructions for this project.\n"
+"(e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a formal tone')."
+msgstr ""
+"이 프로젝트에 대한 지침을 입력하세요.\n"
+"(예: '\"Hero\"는 \"Agent\"로 번역', '격식 있는 어조 사용')."
+
+#: __init__.py:116
+msgid "Global Instructions"
+msgstr "글로벌 지침"
+
+#: __init__.py:87
+msgid "Global Instructions..."
+msgstr "글로벌 지침..."
+
+#: __init__.py:45
+msgid "Global instructions that apply to all projects."
+msgstr "모든 프로젝트에 적용되는 전역 지침."
+
+#: __init__.py:125
+msgid "Global instructions updated."
+msgstr "전역 지침이 업데이트되었습니다."
+
+#: __init__.py:49
+msgid "Instructions specific to the current project."
+msgstr "현재 프로젝트에 특화된 지침."
+
+#: __init__.py:94
+msgid "No Project"
+msgstr "프로젝트 없음"
+
+#: __init__.py:94
+msgid "Please open a file first."
+msgstr "파일을 먼저 열어주세요."
+
+#: __init__.py:100
+msgid "Project-specific Instructions"
+msgstr "프로젝트별 지침"
+
+#: __init__.py:86
+msgid "Project-specific Instructions..."
+msgstr "프로젝트별 지침..."
+
+#: __init__.py:109
+msgid "Project-specific instructions updated."
+msgstr "프로젝트별 지침이 업데이트되었습니다."

@@ -1,0 +1,92 @@
+# English (United States) translations for Com Theskyc Custom Instructions
+# Project.
+# Copyright (C) 2025 TheSkyC
+# This file is distributed under the same license as the Com Theskyc Custom
+# Instructions Project project.
+# Automatically generated, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Com Theskyc Custom Instructions Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2025-07-28 08:08+0000\n"
+"PO-Revision-Date: 2025-07-28 08:08+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language: en_US\n"
+"Language-Team: none\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: __init__.py:24
+msgid ""
+"Allows setting global and project-specific instructions for AI "
+"translation."
+msgstr ""
+"Allows setting global and project-specific instructions for AI "
+"translation."
+
+#: __init__.py:21
+msgid "Custom Instructions"
+msgstr "Custom Instructions"
+
+#: __init__.py:118
+msgid ""
+"Enter global instructions that will apply to all projects\n"
+"(e.g., 'Always use simplified Chinese characters', 'Maintain a neutral "
+"tone')."
+msgstr ""
+"Enter global instructions that will apply to all projects\n"
+"(e.g., 'Always use simplified Chinese characters', 'Maintain a neutral "
+"tone')."
+
+#: __init__.py:102
+msgid ""
+"Enter instructions for this project.\n"
+"(e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a formal tone')."
+msgstr ""
+"Enter instructions for this project.\n"
+"(e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a formal tone')."
+
+#: __init__.py:116
+msgid "Global Instructions"
+msgstr "Global Instructions"
+
+#: __init__.py:87
+msgid "Global Instructions..."
+msgstr "Global Instructions..."
+
+#: __init__.py:45
+msgid "Global instructions that apply to all projects."
+msgstr "Global instructions that apply to all projects."
+
+#: __init__.py:125
+msgid "Global instructions updated."
+msgstr "Global instructions updated."
+
+#: __init__.py:49
+msgid "Instructions specific to the current project."
+msgstr "Instructions specific to the current project."
+
+#: __init__.py:94
+msgid "No Project"
+msgstr "No Project"
+
+#: __init__.py:94
+msgid "Please open a file first."
+msgstr "Please open a file first."
+
+#: __init__.py:100
+msgid "Project-specific Instructions"
+msgstr "Project-specific Instructions"
+
+#: __init__.py:86
+msgid "Project-specific Instructions..."
+msgstr "Project-specific Instructions..."
+
+#: __init__.py:109
+msgid "Project-specific instructions updated."
+msgstr "Project-specific instructions updated."
+

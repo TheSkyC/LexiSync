@@ -1,0 +1,79 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Com Theskyc Custom Instructions Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2025-07-28 08:08+0000\n"
+"PO-Revision-Date: 2025-07-28 08:15+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: __init__.py:24
+msgid "Allows setting global and project-specific instructions for AI translation."
+msgstr "AI翻訳のためのグローバルおよびプロジェクト固有の指示を設定できます。"
+
+#: __init__.py:21
+msgid "Custom Instructions"
+msgstr "カスタム指示"
+
+#: __init__.py:118
+msgid ""
+"Enter global instructions that will apply to all projects\n"
+"(e.g., 'Always use simplified Chinese characters', 'Maintain a neutral tone')."
+msgstr ""
+"すべてのプロジェクトに適用されるグローバルな指示を入力してください\n"
+"（例: '「常に日本語を使用する'、'中立的なトーンを維持する'）"
+
+#: __init__.py:102
+msgid ""
+"Enter instructions for this project.\n"
+"(e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a formal tone')."
+msgstr ""
+"このプロジェクトの指示を入力してください。\n"
+"（例：「「Hero」は「Agent」と訳す」、「フォーマルなトーンを使用する」）"
+
+#: __init__.py:116
+msgid "Global Instructions"
+msgstr "グローバルインストラクション"
+
+#: __init__.py:87
+msgid "Global Instructions..."
+msgstr "グローバルインストラクション..."
+
+#: __init__.py:45
+msgid "Global instructions that apply to all projects."
+msgstr "すべてのプロジェクトに適用されるグローバルな指示。"
+
+#: __init__.py:125
+msgid "Global instructions updated."
+msgstr "グローバル指示が更新されました。"
+
+#: __init__.py:49
+msgid "Instructions specific to the current project."
+msgstr "現在のプロジェクトに固有の指示。"
+
+#: __init__.py:94
+msgid "No Project"
+msgstr "プロジェクトなし"
+
+#: __init__.py:94
+msgid "Please open a file first."
+msgstr "最初にファイルを開いてください。"
+
+#: __init__.py:100
+msgid "Project-specific Instructions"
+msgstr "プロジェクト固有のインストラクション"
+
+#: __init__.py:86
+msgid "Project-specific Instructions..."
+msgstr "プロジェクト固有のインストラクション..."
+
+#: __init__.py:109
+msgid "Project-specific instructions updated."
+msgstr "プロジェクト固有の指示が更新されました。"
