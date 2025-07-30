@@ -13,6 +13,9 @@ from utils.constants import APP_VERSION
 from utils.localization import _
 from services.dependency_service import DependencyManager
 import shutil
+import zipfile
+import tempfile
+
 
 class PluginManager:
     def __init__(self, main_window):
@@ -378,6 +381,64 @@ class PluginManager:
         self.plugins.clear()
         self.translators.clear()
         self.load_plugins()
+
+    def install_plugin_from_zip(self, zip_filepath: str) -> tuple[str | None, str]:
+        """
+        Installs a plugin from a .zip file. Handles different archive structures.
+
+        :param zip_filepath: Path to the .zip file.
+        :return: A tuple (installed_plugin_id, message).
+                 On success, plugin_id is the new plugin's ID and message is empty.
+                 On failure, plugin_id is None and message contains the error.
+        """
+        if not zipfile.is_zipfile(zip_filepath):
+            return None, _("The selected file is not a valid .zip archive.")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            try:
+                with zipfile.ZipFile(zip_filepath, 'r') as zip_ref:
+                    zip_ref.extractall(temp_dir)
+            except Exception as e:
+                return None, _("Failed to extract the archive: {error}").format(error=str(e))
+            content_list = os.listdir(temp_dir)
+            if not content_list:
+                return None, _("The archive is empty.")
+            source_path = ""
+            plugin_id_from_zip = ""
+            if len(content_list) == 1 and os.path.isdir(os.path.join(temp_dir, content_list[0])):
+                plugin_id_from_zip = content_list[0]
+                source_path = os.path.join(temp_dir, plugin_id_from_zip)
+                if not os.path.exists(os.path.join(source_path, '__init__.py')):
+                    return None, _(
+                        "The archive seems to contain a single folder, but it's not a valid plugin (missing __init__.py).")
+            elif '__init__.py' in content_list:
+                plugin_id_from_zip = os.path.splitext(os.path.basename(zip_filepath))[0]
+                source_path = temp_dir
+            else:
+                return None, _(
+                    "Invalid plugin archive structure. The archive must contain either a single plugin folder or the plugin's files (__init__.py, etc.) directly.")
+            destination_path = os.path.join(self.plugin_dir, plugin_id_from_zip)
+            if os.path.exists(destination_path):
+                reply = QMessageBox.question(
+                    self.main_window,
+                    _("Plugin Exists"),
+                    _("A plugin with the ID '{plugin_id}' already exists. Do you want to overwrite it?").format(
+                        plugin_id=plugin_id_from_zip),
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No
+                )
+                if reply == QMessageBox.No:
+                    return None, _("Installation cancelled by user.")
+                try:
+                    shutil.rmtree(destination_path)
+                except Exception as e:
+                    return None, _("Failed to remove the existing plugin directory: {error}").format(error=str(e))
+            try:
+                shutil.move(source_path, destination_path)
+                self.logger.info(f"Plugin '{plugin_id_from_zip}' installed successfully to '{destination_path}'.")
+                return plugin_id_from_zip, ""
+            except Exception as e:
+                return None, _("Failed to move plugin files to the destination: {error}").format(error=str(e))
 
     def delete_plugin(self, plugin_id: str) -> tuple[bool, str]:
         if self.is_dependency_for_others(plugin_id):

@@ -1,7 +1,7 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QHBoxLayout, QLabel, QTextBrowser, QPushButton, QSplitter, QWidget, QMessageBox, QMenu
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QHBoxLayout, QLabel, QTextBrowser, QPushButton, QSplitter, QWidget, QMessageBox, QMenu, QFileDialog
 from PySide6.QtCore import Qt, QUrl, Signal, QThread, QRectF
 from PySide6.QtGui import QColor, QFont, QIcon, QPixmap, QPainter, QDesktopServices, QAction
 from utils.localization import _
@@ -175,6 +175,10 @@ class PluginManagerDialog(QDialog):
         splitter.setSizes([280, 520])
 
         button_layout = QHBoxLayout()
+
+        install_button = QPushButton(_("Install from File..."))
+        install_button.clicked.connect(self.install_from_file)
+        button_layout.addWidget(install_button)
         reload_button = QPushButton(_("Reload All Plugins"))
         reload_button.setObjectName("reloadButton")
         reload_button.clicked.connect(self.reload_plugins)
@@ -479,6 +483,35 @@ class PluginManagerDialog(QDialog):
         delete_action.triggered.connect(self.delete_plugin)
         menu.addAction(delete_action)
         menu.exec(self.plugin_list.mapToGlobal(pos))
+
+    def install_from_file(self):
+        filepath, __ = QFileDialog.getOpenFileName(
+            self,
+            _("Select Plugin Archive"),
+            self.manager.main_window.config.get("last_dir", ""),
+            f"{_('Plugin Archives')} (*.zip)"
+        )
+        if not filepath:
+            return
+        try:
+            installed_plugin_id, message = self.manager.install_plugin_from_zip(filepath)
+            if installed_plugin_id:
+                QMessageBox.information(
+                    self,
+                    _("Installation Successful"),
+                    _("Plugin '{plugin_id}' has been installed.\n\nPlease restart the application to enable it.").format(
+                        plugin_id=installed_plugin_id)
+                )
+                self.reload_plugins()
+                for i in range(self.plugin_list.count()):
+                    item = self.plugin_list.item(i)
+                    if item.data(Qt.UserRole) == installed_plugin_id:
+                        self.plugin_list.setCurrentItem(item)
+                        break
+            else:
+                QMessageBox.critical(self, _("Installation Failed"), message)
+        except Exception as e:
+            QMessageBox.critical(self, _("Installation Error"), str(e))
 
     def open_plugin_directory(self):
         current_item = self.plugin_list.currentItem()
