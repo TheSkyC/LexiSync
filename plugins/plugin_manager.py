@@ -12,7 +12,7 @@ from plugins.plugin_dialog import PluginManagerDialog
 from utils.constants import APP_VERSION
 from utils.localization import _
 from services.dependency_service import DependencyManager
-
+import shutil
 
 class PluginManager:
     def __init__(self, main_window):
@@ -378,6 +378,30 @@ class PluginManager:
         self.plugins.clear()
         self.translators.clear()
         self.load_plugins()
+
+    def delete_plugin(self, plugin_id: str) -> tuple[bool, str]:
+        if self.is_dependency_for_others(plugin_id):
+            return False, _("Cannot delete a plugin that is a dependency for other enabled plugins.")
+        plugin_dir_to_delete = os.path.join(self.plugin_dir, plugin_id)
+        if not os.path.isdir(plugin_dir_to_delete):
+            return False, _("Plugin directory not found.")
+        try:
+            shutil.rmtree(plugin_dir_to_delete)
+            self.logger.info(f"Plugin '{plugin_id}' directory deleted.")
+            self.plugins = [p for p in self.plugins if p.plugin_id() != plugin_id]
+            self.invalid_plugins.pop(plugin_id, None)
+            self.incompatible_plugins.pop(plugin_id, None)
+            self.missing_deps_plugins.pop(plugin_id, None)
+            self.invalidate_cache()
+            enabled_plugins = self.main_window.config.get('enabled_plugins', [])
+            if plugin_id in enabled_plugins:
+                enabled_plugins.remove(plugin_id)
+                self.main_window.config['enabled_plugins'] = enabled_plugins
+                self.main_window.save_config()
+            return True, ""
+        except Exception as e:
+            self.logger.error(f"Failed to delete plugin '{plugin_id}': {e}", exc_info=True)
+            return False, str(e)
 
     def setup_plugin_ui(self):
         if not hasattr(self.main_window, 'plugin_menu') or self.main_window.plugin_menu is None:

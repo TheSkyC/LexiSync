@@ -1,12 +1,14 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QHBoxLayout, QLabel, QTextBrowser, QPushButton, QSplitter, QWidget, QMessageBox
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QHBoxLayout, QLabel, QTextBrowser, QPushButton, QSplitter, QWidget, QMessageBox, QMenu
 from PySide6.QtCore import Qt, QUrl, Signal, QThread, QRectF
-from PySide6.QtGui import QColor, QFont, QIcon, QPixmap, QPainter, QDesktopServices
+from PySide6.QtGui import QColor, QFont, QIcon, QPixmap, QPainter, QDesktopServices, QAction
 from utils.localization import _
 from services.dependency_service import DependencyManager
 from plugins.plugin_base import PluginBase
+import os
+import shutil
 
 def create_icon(color1, color2=None):
     pixmap = QPixmap(16, 16)
@@ -57,6 +59,45 @@ class PluginManagerDialog(QDialog):
         self.setWindowTitle(_("Plugin Manager"))
         self.setModal(True)
         self.resize(800, 600)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #F5F7FA;
+            }
+            QTextBrowser {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton {
+                padding: 6px 12px;
+                border-radius: 4px;
+                border: 1px solid #DCDFE6;
+                background-color: #FFFFFF;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #ECF5FF;
+                color: #409EFF;
+                border-color: #C6E2FF;
+            }
+            QPushButton#deleteButton {
+                color: #F56C6C;
+                border-color: #FBC4C4;
+            }
+            QPushButton#deleteButton:hover {
+                background-color: #FEF0F0;
+                color: #F56C6C;
+                border-color: #F56C6C;
+            }
+            QPushButton#reloadButton {
+                background-color: #F0F9EB;
+                color: #67C23A;
+                border-color: #E1F3D8;
+            }
+            QPushButton#reloadButton:hover {
+                background-color: #67C23A;
+                color: white;
+            }
+        """)
         if PluginManagerDialog.ICON_GREEN is None:
             PluginManagerDialog.ICON_GREEN = create_icon("#2ECC71")
             PluginManagerDialog.ICON_RED = create_icon("#E74C3C")
@@ -71,6 +112,8 @@ class PluginManagerDialog(QDialog):
         self.plugin_list.currentItemChanged.connect(self.update_details)
         self.plugin_list.itemChanged.connect(self.toggle_plugin_from_list)
         self.plugin_list.setStyleSheet("QListWidget::item { padding: 5px; }")
+        self.plugin_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.plugin_list.customContextMenuRequested.connect(self.show_list_context_menu)
         splitter.addWidget(self.plugin_list)
 
         details_widget = QWidget()
@@ -99,6 +142,22 @@ class PluginManagerDialog(QDialog):
         self.description_browser = QTextBrowser()
         self.description_browser.setOpenExternalLinks(True)
 
+        self.actions_layout = QHBoxLayout()
+        self.actions_layout.setContentsMargins(0, 10, 0, 0)
+
+        self.open_dir_button = QPushButton(_("Open Plugin Directory"))
+        self.open_dir_button.clicked.connect(self.open_plugin_directory)
+        self.open_dir_button.setVisible(False)
+        self.actions_layout.addWidget(self.open_dir_button)
+
+        self.delete_button = QPushButton(_("Delete Plugin"))
+        self.delete_button.setObjectName("deleteButton")
+        self.delete_button.clicked.connect(self.delete_plugin)
+        self.delete_button.setVisible(False)
+        self.actions_layout.addWidget(self.delete_button)
+
+        self.actions_layout.addStretch(1)
+
         self.settings_button = QPushButton(_("Settings..."))
         self.settings_button.clicked.connect(self.open_plugin_settings)
         self.settings_button.setVisible(False)
@@ -109,6 +168,7 @@ class PluginManagerDialog(QDialog):
         details_layout.addWidget(self.plugin_deps_label)
         details_layout.addWidget(self.external_deps_label)
         details_layout.addWidget(self.description_browser)
+        details_layout.addLayout(self.actions_layout)
         details_layout.addWidget(self.settings_button)
         splitter.addWidget(details_widget)
 
@@ -116,6 +176,7 @@ class PluginManagerDialog(QDialog):
 
         button_layout = QHBoxLayout()
         reload_button = QPushButton(_("Reload All Plugins"))
+        reload_button.setObjectName("reloadButton")
         reload_button.clicked.connect(self.reload_plugins)
         button_layout.addWidget(reload_button)
         button_layout.addStretch()
@@ -296,6 +357,8 @@ class PluginManagerDialog(QDialog):
         self.external_deps_label.hide()
         self.settings_button.hide()
         self.compat_label.hide()
+        self.open_dir_button.hide()
+        self.delete_button.hide()
 
         if not current:
             self.name_label.clear()
@@ -321,6 +384,8 @@ class PluginManagerDialog(QDialog):
         if not plugin:
             return
 
+        self.open_dir_button.show()
+        self.delete_button.show()
         # 显示基本信息
         self.name_label.setText(plugin.name())
         html_info = f"{_('Version')}: {plugin.version()}  |  {_('Author')}: {plugin.author()}"
@@ -393,6 +458,69 @@ class PluginManagerDialog(QDialog):
         has_settings = method_on_instance_class is not method_on_base_class
         self.settings_button.setVisible(has_settings)
 
+    def show_list_context_menu(self, pos):
+        item = self.plugin_list.itemAt(pos)
+        if not item:
+            return
+        plugin_id = item.data(Qt.UserRole)
+        plugin = self.manager.get_plugin(plugin_id)
+        if not plugin:
+            return
+        menu = QMenu()
+        is_checked = item.checkState() == Qt.Checked
+        toggle_action = QAction(_("Disable") if is_checked else _("Enable"), self)
+        toggle_action.triggered.connect(lambda: item.setCheckState(Qt.Unchecked if is_checked else Qt.Checked))
+        menu.addAction(toggle_action)
+        menu.addSeparator()
+        open_dir_action = QAction(_("Open Plugin Directory"), self)
+        open_dir_action.triggered.connect(self.open_plugin_directory)
+        menu.addAction(open_dir_action)
+        delete_action = QAction(_("Delete Plugin"), self)
+        delete_action.triggered.connect(self.delete_plugin)
+        menu.addAction(delete_action)
+        menu.exec(self.plugin_list.mapToGlobal(pos))
+
+    def open_plugin_directory(self):
+        current_item = self.plugin_list.currentItem()
+        if not current_item: return
+        plugin_id = current_item.data(Qt.UserRole)
+
+        plugin_dir = os.path.join(self.manager.plugin_dir, plugin_id)
+        if os.path.isdir(plugin_dir):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(plugin_dir))
+        else:
+            QMessageBox.warning(self, _("Error"), _("Plugin directory not found."))
+
+    def delete_plugin(self):
+        current_item = self.plugin_list.currentItem()
+        if not current_item: return
+        plugin_id = current_item.data(Qt.UserRole)
+        plugin = self.manager.get_plugin(plugin_id)
+        if not plugin: return
+
+        reply = QMessageBox.warning(
+            self,
+            _("Confirm Deletion"),
+            _("Are you sure you want to permanently delete the plugin '{plugin_name}'?\n\n"
+              "The application will need to be restarted after deletion.").format(plugin_name=plugin.name()),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            success, message = self.manager.delete_plugin(plugin_id)
+            if success:
+                QMessageBox.information(
+                    self,
+                    _("Plugin Deleted"),
+                    _("Plugin '{plugin_name}' has been deleted.\nPlease restart the application.").format(
+                        plugin_name=plugin.name())
+                )
+                self.populate_list()  # 刷新列表
+            else:
+                QMessageBox.critical(self, _("Error"), message)
+
+    ## FIX - END ##
 
     def on_link_activated(self, link: str):
         parts = link.split(':', 2)
