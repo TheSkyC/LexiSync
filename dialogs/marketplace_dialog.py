@@ -12,6 +12,7 @@ import requests
 import os
 import tempfile
 import re
+from ui_components.elided_label import ElidedLabel
 from utils.localization import _
 from utils.constants import APP_VERSION
 from layouts.flow_layout import FlowLayout
@@ -273,7 +274,8 @@ class PluginMarketplaceDialog(QDialog):
 
         bottom_bar = QHBoxLayout()
         bottom_bar.setContentsMargins(10, 0, 10, 0)
-        self.status_label = QLabel(_("Loading marketplace..."))
+        self.status_label = ElidedLabel()
+        self.status_label.setText(_("Loading marketplace..."))
         close_button = QPushButton(_("Close"))
         close_button.clicked.connect(self.accept)
         bottom_bar.addWidget(self.status_label, 1)
