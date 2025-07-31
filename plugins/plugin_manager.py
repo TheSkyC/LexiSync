@@ -9,6 +9,7 @@ import logging
 from PySide6.QtWidgets import QMessageBox
 from plugins.plugin_base import PluginBase
 from plugins.plugin_dialog import PluginManagerDialog
+from dialogs.marketplace_dialog import PluginMarketplaceDialog
 from utils.constants import APP_VERSION
 from utils.localization import _
 from services.dependency_service import DependencyManager
@@ -25,6 +26,7 @@ class PluginManager:
         self.incompatible_plugins = {}
         self.missing_deps_plugins = {}
         self.translators = {}
+        self.market_url = "https://raw.githubusercontent.com/TheSkyC/overwatch-localizer/refs/heads/master/market.json"
         self.plugin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
         self.logger = logging.getLogger(__name__)
 
@@ -32,6 +34,9 @@ class PluginManager:
         self._cache_valid = False
 
         self.load_plugins()
+
+    def get_market_url(self) -> str:
+        return self.market_url
 
     def _is_version_compatible(self, app_version, required_prefix):
         if not required_prefix:
@@ -498,6 +503,10 @@ class PluginManager:
         dialog = PluginManagerDialog(self.main_window, self)
         dialog.exec()
         self.setup_plugin_ui()
+
+    def show_marketplace_dialog(self):
+        dialog = PluginMarketplaceDialog(self.main_window)
+        dialog.exec()
 
     def is_dependency_for_others(self, plugin_id_to_check: str) -> bool:
         dependent_plugins = []

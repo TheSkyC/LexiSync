@@ -179,6 +179,9 @@ class PluginManagerDialog(QDialog):
         install_button = QPushButton(_("Install from File..."))
         install_button.clicked.connect(self.install_from_file)
         button_layout.addWidget(install_button)
+        marketplace_button = QPushButton(_("Open Marketplace..."))
+        marketplace_button.clicked.connect(self.open_marketplace)
+        button_layout.addWidget(marketplace_button)
         reload_button = QPushButton(_("Reload All Plugins"))
         reload_button.setObjectName("reloadButton")
         reload_button.clicked.connect(self.reload_plugins)
@@ -314,7 +317,7 @@ class PluginManagerDialog(QDialog):
                 item.setIcon(self.ICON_GREEN)
                 self.manager.main_window.update_statusbar(
                     _("Plugin '{plugin_name}' enabled.").format(plugin_name=plugin.name()), persistent=True)
-            else: # Disabling
+            else: # 禁用
                 if self.manager.is_dependency_for_others(plugin_id):
                     item.setCheckState(Qt.Checked)
                     if plugin_id in self.manager.incompatible_plugins:
@@ -513,6 +516,10 @@ class PluginManagerDialog(QDialog):
         except Exception as e:
             QMessageBox.critical(self, _("Installation Error"), str(e))
 
+    def open_marketplace(self):
+        self.accept()
+        self.manager.show_marketplace_dialog()
+
     def open_plugin_directory(self):
         current_item = self.plugin_list.currentItem()
         if not current_item: return
@@ -549,11 +556,9 @@ class PluginManagerDialog(QDialog):
                     _("Plugin '{plugin_name}' has been deleted.\nPlease restart the application.").format(
                         plugin_name=plugin.name())
                 )
-                self.populate_list()  # 刷新列表
+                self.populate_list()
             else:
                 QMessageBox.critical(self, _("Error"), message)
-
-    ## FIX - END ##
 
     def on_link_activated(self, link: str):
         parts = link.split(':', 2)

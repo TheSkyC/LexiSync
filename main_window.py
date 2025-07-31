@@ -523,6 +523,8 @@ class OverwatchLocalizerApp(QMainWindow):
 
         # Plugins Menu
         if hasattr(self, 'plugin_manager'):
+            self.plugin_menu.addAction(_("Plugin Marketplace..."), self.plugin_manager.show_marketplace_dialog)
+            self.plugin_menu.addSeparator()
             self.plugin_manager.setup_plugin_ui()
 
         # Help Menu
