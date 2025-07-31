@@ -243,7 +243,7 @@ class OverwatchLocalizerApp(QMainWindow):
 
         self.language_changed.connect(self.update_ui_texts)
         self.setAcceptDrops(True)
-
+        self.setStyleSheet("QPushButton:focus { outline: none; }")
         self.plugin_manager = PluginManager(self)
 
         self.UI_initialization()
