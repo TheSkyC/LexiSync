@@ -17,7 +17,7 @@ from utils.constants import APP_VERSION
 from layouts.flow_layout import FlowLayout
 
 class FetchIndexThread(QThread):
-    finished = Signal(dict, str)  # data, error_message
+    finished = Signal(dict, str)
 
     def __init__(self, url):
         super().__init__()
@@ -43,7 +43,7 @@ class FetchIndexThread(QThread):
 
 
 class DownloadPluginThread(QThread):
-    finished = Signal(str, str)  # temp_filepath, error_message
+    finished = Signal(str, str)
 
     def __init__(self, url, temp_dir):
         super().__init__()
@@ -78,9 +78,6 @@ class DownloadPluginThread(QThread):
         except Exception as e:
             self.finished.emit(None, str(e))
 
-
-# --- 可点击的标签 ---
-
 class ClickableLabel(QLabel):
     clicked = Signal(str)
 
@@ -104,9 +101,6 @@ class ClickableLabel(QLabel):
         if event.button() == Qt.LeftButton:
             self.clicked.emit(self.text())
         super().mousePressEvent(event)
-
-
-# --- 自定义列表项 ---
 
 class PluginMarketplaceItem(QWidget):
     tag_clicked = Signal(str)
@@ -174,11 +168,6 @@ class PluginMarketplaceItem(QWidget):
 
         self.install_button.style().unpolish(self.install_button)
         self.install_button.style().polish(self.install_button)
-
-
-# =============================================================================
-# 2. 主对话框类定义
-# =============================================================================
 
 class PluginMarketplaceDialog(QDialog):
     def __init__(self, parent):
@@ -302,33 +291,6 @@ class PluginMarketplaceDialog(QDialog):
             self.status_label.setText(_("Error: Could not load marketplace index. {error}").format(error=error_message))
             QMessageBox.critical(self, _("Network Error"), _("Failed to fetch plugin list from the server."))
             return
-
-        if data and 'plugins' in data:
-            # 遍历所有插件，为它们随机或固定地添加一些标签
-            all_possible_tags = ["UI", "Tools", "AI", "File Format", "Testing", "Productivity", "Theme", "Official",
-                                 "Community", "Experimental", "TEST1", "TEST2", "TEST3", "TEST4", "TEST5", "TEST6", "TEST7"]
-            import random
-
-            for plugin in data['plugins']:
-                # 确保每个插件都有 'tags' 字段
-                if 'tags' not in plugin:
-                    plugin['tags'] = []
-
-                # 为特定插件添加固定标签
-                if plugin['id'] == 'com_theskyc_obfuscator':
-                    plugin['tags'].extend(["Security", "Tools"])
-                elif plugin['id'] == 'com_theskyc_pseudo':
-                    plugin['tags'].extend(["UI", "Testing"])
-
-                # 为所有插件随机添加 1-2 个额外标签
-                num_random_tags = random.randint(8, 15)
-                for __ in range(num_random_tags):
-                    random_tag = random.choice(all_possible_tags)
-                    if random_tag not in plugin['tags']:
-                        plugin['tags'].append(random_tag)
-
-                # 去重并保持原始顺序的一部分
-                plugin['tags'] = sorted(list(set(plugin['tags'])))
 
         self.market_data = data
         self.refresh_installed_plugins_map()
