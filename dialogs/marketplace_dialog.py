@@ -8,15 +8,16 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QSize, QThread, Signal, QUrl
 from PySide6.QtGui import QFont, QDesktopServices, QMouseEvent
-from utils.constants import APP_VERSION
 import requests
 import os
 import tempfile
 import re
 from utils.localization import _
+from utils.constants import APP_VERSION
+from layouts.flow_layout import FlowLayout
 
 class FetchIndexThread(QThread):
-    finished = Signal(dict, str)
+    finished = Signal(dict, str)  # data, error_message
 
     def __init__(self, url):
         super().__init__()
@@ -28,12 +29,21 @@ class FetchIndexThread(QThread):
             response.raise_for_status()
             data = response.json()
             self.finished.emit(data, None)
+        except requests.exceptions.ConnectionError as e:
+            error_msg = _("Network connection failed. Please check your internet connection and firewall settings.")
+            self.finished.emit(None, error_msg)
+        except requests.exceptions.Timeout:
+            error_msg = _("The request timed out. The server might be busy or your connection is slow.")
+            self.finished.emit(None, error_msg)
+        except requests.exceptions.HTTPError as e:
+            error_msg = _("Failed to fetch data (HTTP {status_code}). The marketplace file might be missing or the server is down.").format(status_code=e.response.status_code)
+            self.finished.emit(None, error_msg)
         except Exception as e:
             self.finished.emit(None, str(e))
 
 
 class DownloadPluginThread(QThread):
-    finished = Signal(str, str)
+    finished = Signal(str, str)  # temp_filepath, error_message
 
     def __init__(self, url, temp_dir):
         super().__init__()
@@ -68,6 +78,9 @@ class DownloadPluginThread(QThread):
         except Exception as e:
             self.finished.emit(None, str(e))
 
+
+# --- 可点击的标签 ---
+
 class ClickableLabel(QLabel):
     clicked = Signal(str)
 
@@ -91,6 +104,9 @@ class ClickableLabel(QLabel):
         if event.button() == Qt.LeftButton:
             self.clicked.emit(self.text())
         super().mousePressEvent(event)
+
+
+# --- 自定义列表项 ---
 
 class PluginMarketplaceItem(QWidget):
     tag_clicked = Signal(str)
@@ -133,14 +149,13 @@ class PluginMarketplaceItem(QWidget):
         main_layout.addLayout(top_layout)
 
         if plugin_data.get('tags'):
-            self.tags_layout = QHBoxLayout()
+            self.tags_layout = FlowLayout()
             self.tags_layout.setContentsMargins(0, 5, 0, 0)
             self.tags_layout.setSpacing(5)
             for tag in plugin_data['tags']:
                 tag_label = ClickableLabel(tag)
                 tag_label.clicked.connect(self.tag_clicked.emit)
                 self.tags_layout.addWidget(tag_label)
-            self.tags_layout.addStretch()
             main_layout.addLayout(self.tags_layout)
 
     def set_status(self, status, version_info=""):
@@ -159,6 +174,11 @@ class PluginMarketplaceItem(QWidget):
 
         self.install_button.style().unpolish(self.install_button)
         self.install_button.style().polish(self.install_button)
+
+
+# =============================================================================
+# 2. 主对话框类定义
+# =============================================================================
 
 class PluginMarketplaceDialog(QDialog):
     def __init__(self, parent):
@@ -219,13 +239,13 @@ class PluginMarketplaceDialog(QDialog):
         self.search_box.setPlaceholderText(_("Search plugins..."))
         self.search_box.textChanged.connect(self.filter_plugins)
 
-        self.tags_bar = QHBoxLayout()
+        self.tags_bar_widget = QWidget()
+        self.tags_bar = FlowLayout(self.tags_bar_widget)
         self.tags_bar.setContentsMargins(0, 5, 0, 0)
         self.tags_bar.setSpacing(8)
-        self.tags_bar.setAlignment(Qt.AlignLeft)
 
         filter_layout.addWidget(self.search_box)
-        filter_layout.addLayout(self.tags_bar)
+        filter_layout.addWidget(self.tags_bar_widget)
         main_layout.addWidget(filter_container)
 
         splitter = QSplitter(Qt.Horizontal)
@@ -267,9 +287,8 @@ class PluginMarketplaceDialog(QDialog):
         self.status_label = QLabel(_("Loading marketplace..."))
         close_button = QPushButton(_("Close"))
         close_button.clicked.connect(self.accept)
-        bottom_bar.addWidget(self.status_label)
-        bottom_bar.addStretch()
-        bottom_bar.addWidget(close_button)
+        bottom_bar.addWidget(self.status_label, 1)
+        bottom_bar.addWidget(close_button, 0)
         main_layout.addLayout(bottom_bar)
 
     def load_market_index(self):
@@ -277,11 +296,40 @@ class PluginMarketplaceDialog(QDialog):
         self.fetch_thread = FetchIndexThread(self.manager.get_market_url())
         self.fetch_thread.finished.connect(self.on_index_loaded)
         self.fetch_thread.start()
+
     def on_index_loaded(self, data, error_message):
         if error_message:
             self.status_label.setText(_("Error: Could not load marketplace index. {error}").format(error=error_message))
             QMessageBox.critical(self, _("Network Error"), _("Failed to fetch plugin list from the server."))
             return
+
+        if data and 'plugins' in data:
+            # 遍历所有插件，为它们随机或固定地添加一些标签
+            all_possible_tags = ["UI", "Tools", "AI", "File Format", "Testing", "Productivity", "Theme", "Official",
+                                 "Community", "Experimental", "TEST1", "TEST2", "TEST3", "TEST4", "TEST5", "TEST6", "TEST7"]
+            import random
+
+            for plugin in data['plugins']:
+                # 确保每个插件都有 'tags' 字段
+                if 'tags' not in plugin:
+                    plugin['tags'] = []
+
+                # 为特定插件添加固定标签
+                if plugin['id'] == 'com_theskyc_obfuscator':
+                    plugin['tags'].extend(["Security", "Tools"])
+                elif plugin['id'] == 'com_theskyc_pseudo':
+                    plugin['tags'].extend(["UI", "Testing"])
+
+                # 为所有插件随机添加 1-2 个额外标签
+                num_random_tags = random.randint(8, 15)
+                for __ in range(num_random_tags):
+                    random_tag = random.choice(all_possible_tags)
+                    if random_tag not in plugin['tags']:
+                        plugin['tags'].append(random_tag)
+
+                # 去重并保持原始顺序的一部分
+                plugin['tags'] = sorted(list(set(plugin['tags'])))
+
         self.market_data = data
         self.refresh_installed_plugins_map()
         self.populate_tags_bar()
@@ -301,10 +349,12 @@ class PluginMarketplaceDialog(QDialog):
 
         if not self.market_data or 'plugins' not in self.market_data:
             return
+
         all_tags = set()
         for plugin in self.market_data['plugins']:
             for tag in plugin.get('tags', []):
                 all_tags.add(tag)
+
         all_btn = QPushButton(_("All"))
         all_btn.setObjectName("tagButton")
         all_btn.setCheckable(True)
@@ -320,7 +370,6 @@ class PluginMarketplaceDialog(QDialog):
             btn.toggled.connect(lambda checked, t=tag: self.on_tag_toggled(t, checked))
             self.tags_bar.addWidget(btn)
             self.tag_buttons[tag] = btn
-        self.tags_bar.addStretch()
 
     def on_all_tag_toggled(self, checked):
         if checked:
@@ -344,7 +393,11 @@ class PluginMarketplaceDialog(QDialog):
 
     def on_item_tag_clicked(self, tag):
         if tag in self.tag_buttons:
-            self.tag_buttons[tag].setChecked(True)
+            tag_button = self.tag_buttons[tag]
+            if not tag_button.isChecked():
+                tag_button.setChecked(True)
+            if not self.isActiveWindow():
+                self.activateWindow()
 
     def populate_plugin_list(self):
         self.plugin_list.clear()
@@ -425,15 +478,18 @@ class PluginMarketplaceDialog(QDialog):
         self.detail_links.setText(" | ".join(links))
 
         self.detail_desc.setMarkdown(plugin_data.get('description_long_md', plugin_data['description']))
+
         try:
             self.detail_install_button.clicked.disconnect()
         except RuntimeError:
             pass
         self.detail_install_button.clicked.connect(lambda: self.install_plugin(plugin_data))
+
         item_widget = self.plugin_list.itemWidget(current_item)
         status_property = item_widget.install_button.property("status")
         text = item_widget.install_button.text()
         is_enabled = item_widget.install_button.isEnabled()
+
         self.detail_install_button.setText(text)
         self.detail_install_button.setEnabled(is_enabled)
         self.detail_install_button.setProperty("status", status_property)
@@ -445,7 +501,9 @@ class PluginMarketplaceDialog(QDialog):
 
     def install_plugin(self, plugin_data):
         self.status_label.setText(_("Downloading {plugin_name}...").format(plugin_name=plugin_data['name']))
+
         self.temp_dir_for_download = tempfile.TemporaryDirectory()
+
         self.download_thread = DownloadPluginThread(plugin_data['download_url'], self.temp_dir_for_download.name)
         self.download_thread.finished.connect(lambda path, err: self.on_download_finished(path, err, plugin_data))
         self.download_thread.start()
@@ -457,8 +515,11 @@ class PluginMarketplaceDialog(QDialog):
             if self.temp_dir_for_download:
                 self.temp_dir_for_download.cleanup()
             return
+
         self.status_label.setText(_("Installing {plugin_name}...").format(plugin_name=plugin_data['name']))
+
         installed_id, install_error = self.manager.install_plugin_from_zip(temp_filepath)
+
         if self.temp_dir_for_download:
             self.temp_dir_for_download.cleanup()
 
@@ -470,6 +531,7 @@ class PluginMarketplaceDialog(QDialog):
                 _("Successfully installed {plugin_name}.").format(plugin_name=plugin_data['name']))
             QMessageBox.information(self, _("Success"),
                                     _("Plugin installed successfully. Please restart the application to take effect."))
+
             self.refresh_installed_plugins_map()
             self.populate_plugin_list()
             self.update_details_panel(self.plugin_list.currentItem(), None)
