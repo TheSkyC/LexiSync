@@ -571,7 +571,6 @@ class PluginManagerDialog(QDialog):
                 if item.data(Qt.UserRole) == plugin_id:
                     self.plugin_list.setCurrentItem(item)
                     return
-
         elif link_type == 'lib':
             lib_name, spec = parts[1], parts[2]
             self.install_dependency_dialog(lib_name, spec)
@@ -585,12 +584,11 @@ class PluginManagerDialog(QDialog):
             return
 
         action_text = _("Install") if res['status'] == 'missing' else _("Update")
-        package_spec = f"{lib_name}{spec}" if spec else lib_name
 
         reply = QMessageBox.question(
             self, _("Install Dependency"),
-            _("The library '{lib}' is {status}.\n\nDo you want to try to {action} it now?\n({cmd})").format(
-                lib=lib_name, status=res['status'], action=action_text, cmd=f"pip install {package_spec}"
+            _("The plugin requires the library '{lib}' (version: {spec}).\n\nDo you want to try to {action} it now?").format(
+                lib=lib_name, spec=spec or "any", action=action_text
             ),
             QMessageBox.Yes | QMessageBox.No
         )
@@ -598,11 +596,11 @@ class PluginManagerDialog(QDialog):
         if reply == QMessageBox.Yes:
             log_dialog = QDialog(self)
             log_dialog.setWindowTitle(_("Installing {lib}...").format(lib=lib_name))
+            log_dialog.setMinimumSize(600, 400)
             layout = QVBoxLayout(log_dialog)
             log_browser = QTextBrowser()
             layout.addWidget(log_browser)
-
-            self.install_thread = InstallThread(package_spec)
+            self.install_thread = InstallThread({lib_name: spec})  # 传递字典
             self.install_thread.progress.connect(log_browser.append)
             self.install_thread.finished.connect(
                 lambda success: self.on_install_finished(success, lib_name, log_dialog)
@@ -626,3 +624,15 @@ class PluginManagerDialog(QDialog):
     def reload_plugins(self):
         self.manager.reload_plugins()
         self.populate_list()
+
+class InstallThread(QThread):
+    progress = Signal(str)
+    finished = Signal(bool)
+
+    def __init__(self, dependencies_dict):
+        super().__init__()
+        self.dependencies = dependencies_dict
+
+    def run(self):
+        success = DependencyManager.get_instance().install_dependencies(self.dependencies, self.progress.emit)
+        self.finished.emit(success)

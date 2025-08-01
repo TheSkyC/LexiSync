@@ -3,6 +3,7 @@
 
 import re
 import os
+import sys
 import shutil
 import json
 import datetime
@@ -14,7 +15,6 @@ from openpyxl import Workbook, load_workbook
 import polib
 import weakref
 import traceback
-import inspect
 
 from PySide6.QtWidgets import (
     QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
@@ -66,7 +66,6 @@ from utils.constants import *
 from utils.enums import WarningType
 from utils.localization import lang_manager, _
 from utils.text_utils import get_linguistic_length
-
 
 try:
     import requests
@@ -252,6 +251,7 @@ class OverwatchLocalizerApp(QMainWindow):
         if last_path and os.path.isdir(last_path):
             self.file_explorer_panel.set_root_path(last_path)
 
+        print(os.sys._MEIPASS)
         ExpansionRatioService.initialize()
         QTimer.singleShot(100, self.prewarm_dependencies)
         self.show()
