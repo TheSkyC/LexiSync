@@ -107,10 +107,19 @@ jobs:
     - name: Install dependencies (into FULL env)
       shell: bash
       run: |
-        ${{ env.PYTHON_EXECUTABLE }} -m pip install --upgrade pip
-        ${{ env.PYTHON_EXECUTABLE }} -m pip install pyinstaller
-        if [ -f requirements.txt ]; then
-          ${{ env.PYTHON_EXECUTABLE }} -m pip install -r requirements.txt
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          # Windows下使用cmd调用Python
+          cmd //c "${{ env.PYTHON_EXECUTABLE }} -m pip install --upgrade pip"
+          cmd //c "${{ env.PYTHON_EXECUTABLE }} -m pip install pyinstaller"
+          if [ -f requirements.txt ]; then
+            cmd //c "${{ env.PYTHON_EXECUTABLE }} -m pip install -r requirements.txt"
+          fi
+        else
+          ${{ env.PYTHON_EXECUTABLE }} -m pip install --upgrade pip
+          ${{ env.PYTHON_EXECUTABLE }} -m pip install pyinstaller
+          if [ -f requirements.txt ]; then
+            ${{ env.PYTHON_EXECUTABLE }} -m pip install -r requirements.txt
+          fi
         fi
 
     - name: Update pip in MINIMAL env
@@ -118,8 +127,8 @@ jobs:
       run: |
         PYTHON_MINIMAL_DIR="${{ steps.setup_standalone_python.outputs.PYTHON_MINIMAL_DIR }}"
         if [[ "${{ runner.os }}" == "Windows" ]]; then
-          PYTHON_MINIMAL_EXE="$PYTHON_MINIMAL_DIR/python.exe"
-          "$PYTHON_MINIMAL_EXE" -m pip install --upgrade pip
+          PYTHON_MINIMAL_DIR=$(echo "$PYTHON_MINIMAL_DIR" | sed 's|/|\\|g')
+          cmd //c "$PYTHON_MINIMAL_DIR\\python.exe -m pip install --upgrade pip"
         elif [[ "${{ runner.os }}" != "macOS" ]]; then
           $PYTHON_MINIMAL_DIR/bin/python3 -m pip install --upgrade pip
         fi
@@ -149,65 +158,42 @@ jobs:
       if: runner.os == 'macOS'
       run: brew install upx
 
-    - name: Create Python scripts for directory preparation
-      shell: bash
-      run: |
-        # Create Python scripts to avoid quote escaping issues
-        cat > prepare_locales.py << 'EOF'
-        import os, shutil
-        source_dir = 'locales'
-        target_dir = 'dist_locales'
-        if os.path.exists(target_dir):
-            shutil.rmtree(target_dir)
-        for root, dirs, files in os.walk(source_dir):
-            for file in files:
-                if file.endswith('.mo'):
-                    source_path = os.path.join(root, file)
-                    relative_path = os.path.relpath(source_path, source_dir)
-                    target_path = os.path.join(target_dir, relative_path)
-                    os.makedirs(os.path.dirname(target_path), exist_ok=True)
-                    shutil.copy2(source_path, target_path)
-        EOF
-
-        cat > prepare_expansion_data.py << 'EOF'
-        import os, shutil
-        source_dir = 'expansion_data'
-        target_dir = 'dist_expansion_data'
-        if os.path.exists(target_dir):
-            shutil.rmtree(target_dir)
-        if os.path.exists(source_dir):
-            shutil.copytree(source_dir, target_dir)
-        EOF
-
-        cat > prepare_plugins.py << 'EOF'
-        import os, shutil
-        source_dir = 'plugins'
-        target_dir = 'dist_plugins'
-        if os.path.exists(target_dir):
-            shutil.rmtree(target_dir)
-        if os.path.exists(source_dir):
-            shutil.copytree(source_dir, target_dir)
-        EOF
-
     - name: Build with PyInstaller
       shell: bash
       run: |
-        echo "Preparing locales directory for packaging..."
-        ${{ env.PYTHON_EXECUTABLE }} prepare_locales.py
+        echo "Preparing data directories for packaging..."
+        ${{ env.PYTHON_EXECUTABLE }} -c "
+        import os, shutil
         
-        echo "Preparing expansion_data directory for packaging..."
-        ${{ env.PYTHON_EXECUTABLE }} prepare_expansion_data.py
+        def prepare_dir(source_dir, target_dir, extension=None):
+            if os.path.exists(target_dir):
+                shutil.rmtree(target_dir)
+            if not os.path.exists(source_dir):
+                print(f'Source directory {source_dir} not found, skipping.')
+                return
         
-        echo "Preparing plugins directory for packaging..."
-        ${{ env.PYTHON_EXECUTABLE }} prepare_plugins.py
-        
+            if extension:
+                for root, dirs, files in os.walk(source_dir):
+                    for file in files:
+                        if file.endswith(extension):
+                            source_path = os.path.join(root, file)
+                            relative_path = os.path.relpath(source_path, source_dir)
+                            target_path = os.path.join(target_dir, relative_path)
+                            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                            shutil.copy2(source_path, target_path)
+            else:
+                shutil.copytree(source_dir, target_dir)
+
+        prepare_dir('locales', 'dist_locales', '.mo')
+        prepare_dir('expansion_data', 'dist_expansion_data')
+        prepare_dir('plugins', 'dist_plugins')
+        "
         echo "Building for ${{ matrix.os_name }}..."
         DATA_SEPARATOR=':'
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           DATA_SEPARATOR=';'
         fi
-        
-        echo "Running PyInstaller..."
+
         ${{ env.PYTHON_EXECUTABLE }} -m PyInstaller \
           --name "${{ env.APP_NAME }}" \
           --windowed \
@@ -240,11 +226,12 @@ jobs:
 
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           echo "Bundling MINIMAL Windows Python runtime..."
-          cp "$PYTHON_MINIMAL_DIR/python.exe" "$DIST_DIR/"
-          cp "$PYTHON_MINIMAL_DIR/pythonw.exe" "$DIST_DIR/"
-          cp "$PYTHON_MINIMAL_DIR"/*.dll "$DIST_DIR/"
-          cp -r "$PYTHON_MINIMAL_DIR/Lib" "$DIST_DIR/"
-          cp -r "$PYTHON_MINIMAL_DIR/DLLs" "$DIST_DIR/"
+          PYTHON_MINIMAL_DIR=$(echo "$PYTHON_MINIMAL_DIR" | sed 's|/|\\|g')
+          cp "$PYTHON_MINIMAL_DIR\\python.exe" "$DIST_DIR/"
+          cp "$PYTHON_MINIMAL_DIR\\pythonw.exe" "$DIST_DIR/"
+          cp "$PYTHON_MINIMAL_DIR"\\*.dll "$DIST_DIR/"
+          cp -r "$PYTHON_MINIMAL_DIR\\Lib" "$DIST_DIR/"
+          cp -r "$PYTHON_MINIMAL_DIR\\DLLs" "$DIST_DIR/"
         elif [[ "${{ runner.os }}" == "Linux" ]]; then
           echo "Bundling MINIMAL Linux Python runtime..."
           cp -r "$PYTHON_MINIMAL_DIR/lib" "$DIST_DIR/"
