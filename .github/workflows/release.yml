@@ -101,19 +101,6 @@ jobs:
         Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $pythonFullDir "Scripts")
         echo "PYTHON_EXECUTABLE=$(Join-Path $pythonFullDir 'python.exe')" >> $env:GITHUB_ENV
 
-    - name: Set up Python Path and Executable
-      shell: bash
-      run: |
-        PYTHON_FULL_DIR="${{ steps.setup_standalone_python.outputs.PYTHON_FULL_DIR }}"
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          echo "$PYTHON_FULL_DIR" >> $GITHUB_PATH
-          echo "$PYTHON_FULL_DIR/Scripts" >> $GITHUB_PATH
-          echo "PYTHON_EXECUTABLE=$PYTHON_FULL_DIR/python.exe" >> $GITHUB_ENV
-        else
-          echo "$PYTHON_FULL_DIR/bin" >> $GITHUB_PATH
-          echo "PYTHON_EXECUTABLE=$PYTHON_FULL_DIR/bin/python3" >> $GITHUB_ENV
-        fi
-
     - name: Install dependencies (into FULL env)
       shell: bash
       run: |
