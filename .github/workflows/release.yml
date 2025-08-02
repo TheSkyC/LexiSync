@@ -8,7 +8,8 @@ on:
 
 env:
   APP_NAME: OverwatchLocalizer
-  PYTHON_VERSION: '3.11.0'
+  PYTHON_STANDALONE_VERSION: '3.11.11'
+  PYTHON_STANDALONE_RELEASE_TAG: '20240526'
 
 jobs:
   build:
@@ -21,16 +22,18 @@ jobs:
           - os_name: windows
             os_image: windows-latest
             arch_display: x64
-            python_arch: x64
+            python_arch: x86_64-pc-windows-msvc
             asset_suffix: win-x64.zip
           - os_name: linux
             os_image: ubuntu-latest
             arch_display: x64
-            python_arch: x64
+            python_arch: x86_64-unknown-linux-gnu
             asset_suffix: linux-x64.tar.gz
           - os_name: macos
-            os_image: macos-latest
+            os_image: macos-13
             arch_display: universal
+            python_arch_arm64: aarch64-apple-darwin
+            python_arch_x64: x86_64-apple-darwin
             asset_suffix: macos-universal.dmg
 
     steps:
@@ -53,17 +56,64 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
         architecture: ${{ (matrix.os_name == 'macos' && steps.mac_arch.outputs.python_arch_for_macos) || matrix.python_arch }}
 
-    - name: Install dependencies
+    - name: Download and Prepare Standalone Python
+      id: setup_standalone_python
       shell: bash
       run: |
-        python -m pip install --upgrade pip
-        pip install pyinstaller
-        if [ -f requirements.txt ]; then
-          pip install -r requirements.txt
+        PYTHON_VERSION="${{ env.PYTHON_STANDALONE_VERSION }}"
+        RELEASE_TAG="${{ env.PYTHON_STANDALONE_RELEASE_TAG }}"
+
+        if [[ "${{ matrix.os_name }}" == "macos" && "${{ matrix.arch_display }}" == "universal" ]]; then
+          URL_ARM="https://github.com/indygreg/python-build-standalone/releases/download/$RELEASE_TAG/cpython-$PYTHON_VERSION+$RELEASE_TAG-${{ matrix.python_arch_arm64 }}-install_only_stripped.tar.gz"
+          URL_X64="https://github.com/indygreg/python-build-standalone/releases/download/$RELEASE_TAG/cpython-$PYTHON_VERSION+$RELEASE_TAG-${{ matrix.python_arch_x64 }}-install_only_stripped.tar.gz"
+          echo "Downloading Python for ARM64..." && curl -L $URL_ARM | tar -xz && mv python python_arm64
+          echo "Downloading Python for x86_64..." && curl -L $URL_X64 | tar -xz && mv python python_x64
+          echo "PYTHON_FULL_DIR=${{ github.workspace }}/python_arm64" >> $GITHUB_OUTPUT
+          echo "PYTHON_MINIMAL_DIR=${{ github.workspace }}/python_arm64" >> $GITHUB_OUTPUT # 简化处理，macOS .app 结构复杂
         else
-          echo "requirements.txt not found, installing default dependencies."
-          pip install PySide6 PySide6-Charts openpyxl polib requests
+          URL="https://github.com/indygreg/python-build-standalone/releases/download/$RELEASE_TAG/cpython-$PYTHON_VERSION+$RELEASE_TAG-${{ matrix.python_arch }}-install_only_stripped.tar.gz"
+          echo "Downloading Python from $URL"
+          curl -L $URL | tar -xz
+          echo "Preparing Python environments..."
+          mv python python_standalone_src
+          cp -r python_standalone_src python_full
+          cp -r python_standalone_src python_minimal
+          echo "PYTHON_FULL_DIR=${{ github.workspace }}/python_full" >> $GITHUB_OUTPUT
+          echo "PYTHON_MINIMAL_DIR=${{ github.workspace }}/python_minimal" >> $GITHUB_OUTPUT
         fi
+
+    - name: Set up Python Path and Executable
+      shell: bash
+      run: |
+        PYTHON_FULL_DIR="${{ steps.setup_standalone_python.outputs.PYTHON_FULL_DIR }}"
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          echo "$PYTHON_FULL_DIR" >> $GITHUB_PATH
+          echo "$PYTHON_FULL_DIR/Scripts" >> $GITHUB_PATH
+          echo "PYTHON_EXECUTABLE=$PYTHON_FULL_DIR/python.exe" >> $GITHUB_ENV
+        else
+          echo "$PYTHON_FULL_DIR/bin" >> $GITHUB_PATH
+          echo "PYTHON_EXECUTABLE=$PYTHON_FULL_DIR/bin/python3" >> $GITHUB_ENV
+        fi
+
+    - name: Install dependencies (into FULL env)
+      shell: bash
+      run: |
+        ${{ env.PYTHON_EXECUTABLE }} -m pip install --upgrade pip
+        ${{ env.PYTHON_EXECUTABLE }} -m pip install pyinstaller
+        if [ -f requirements.txt ]; then
+          ${{ env.PYTHON_EXECUTABLE }} -m pip install -r requirements.txt
+        fi
+
+    - name: Update pip in MINIMAL env
+      shell: bash
+      run: |
+        PYTHON_MINIMAL_DIR="${{ steps.setup_standalone_python.outputs.PYTHON_MINIMAL_DIR }}"
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          $PYTHON_MINIMAL_DIR/python.exe -m pip install --upgrade pip
+        elif [[ "${{ runner.os }}" != "macOS" ]]; then # macOS .app 结构特殊，不需要单独的 minimal pip
+          $PYTHON_MINIMAL_DIR/bin/python3 -m pip install --upgrade pip
+        fi
+
     - name: Install UPX (Linux)
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y upx-ucl
@@ -138,7 +188,7 @@ jobs:
         
         echo "Building for ${{ matrix.os_name }}..."
         
-        pyinstaller \
+        ${{ env.PYTHON_EXECUTABLE }} -m PyInstaller \
           --name "${{ env.APP_NAME }}" \
           --windowed \
           --noconfirm \
@@ -160,6 +210,26 @@ jobs:
           --exclude-module Qt6DataVisualization \
           --exclude-module Qt6Multimedia \
           main.py
+
+    - name: Bundle Python Runtime
+      if: runner.os != 'macOS'
+      shell: bash
+      run: |
+        DIST_DIR="dist/${{ env.APP_NAME }}"
+        PYTHON_MINIMAL_DIR="${{ steps.setup_standalone_python.outputs.PYTHON_MINIMAL_DIR }}"
+
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          echo "Bundling MINIMAL Windows Python runtime..."
+          cp "$PYTHON_MINIMAL_DIR/python.exe" "$DIST_DIR/"
+          cp "$PYTHON_MINIMAL_DIR/pythonw.exe" "$DIST_DIR/"
+          cp "$PYTHON_MINIMAL_DIR"/*.dll "$DIST_DIR/"
+          cp -r "$PYTHON_MINIMAL_DIR/Lib" "$DIST_DIR/"
+          cp -r "$PYTHON_MINIMAL_DIR/DLLs" "$DIST_DIR/"
+        elif [[ "${{ runner.os }}" == "Linux" ]]; then
+          echo "Bundling MINIMAL Linux Python runtime..."
+          cp -r "$PYTHON_MINIMAL_DIR/lib" "$DIST_DIR/"
+        fi
+
     - name: Compress with UPX (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
@@ -199,6 +269,7 @@ jobs:
         
         $LASTEXITCODE = 0
         Write-Host "UPX compression finished for Windows."
+
     - name: Compress with UPX (macOS)
       if: runner.os == 'macOS'
       shell: bash
@@ -210,6 +281,7 @@ jobs:
           upx --best --lzma --force-macos "$DIST_DIR/${{ env.APP_NAME }}" || echo "Warning: Failed to compress main executable"
         fi
         echo "UPX compression finished for macOS."
+
     - name: Prepare Artifacts (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
@@ -222,11 +294,13 @@ jobs:
         Push-Location $sourceDir
         Compress-Archive -Path * -DestinationPath "../../$destinationZip"
         Pop-Location
+
     - name: Prepare Artifacts (Linux)
       if: runner.os == 'Linux'
       shell: bash
       run: |
         tar -czvf ${{ env.APP_NAME }}-${{ matrix.asset_suffix }} -C dist/ ${{ env.APP_NAME }}
+
     - name: Prepare Artifacts (macOS)
       if: runner.os == 'macOS'
       shell: bash
@@ -240,6 +314,7 @@ jobs:
           echo "Error: .app bundle not found in dist/ for macOS."
           exit 1
         fi
+
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
