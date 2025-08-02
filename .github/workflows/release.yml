@@ -8,7 +8,6 @@ on:
 
 env:
   APP_NAME: OverwatchLocalizer
-  PYTHON_VERSION: '3.11'
   PYTHON_STANDALONE_VERSION: '3.11.13'
   PYTHON_STANDALONE_RELEASE_TAG: '20250723'
 
@@ -21,7 +20,7 @@ jobs:
       matrix:
         include:
           - os_name: windows
-            os_image: windows-2022
+            os_image: windows-latest
             arch_display: x64
             python_arch: x86_64-pc-windows-msvc
             asset_suffix: win-x64.zip
