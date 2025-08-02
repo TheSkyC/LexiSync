@@ -68,8 +68,10 @@ jobs:
           URL_X64="https://github.com/indygreg/python-build-standalone/releases/download/$RELEASE_TAG/cpython-$PYTHON_VERSION+$RELEASE_TAG-${{ matrix.python_arch_x64 }}-install_only_stripped.tar.gz"
           echo "Downloading Python for ARM64..." && curl -L $URL_ARM | tar -xz && mv python python_arm64
           echo "Downloading Python for x86_64..." && curl -L $URL_X64 | tar -xz && mv python python_x64
-          echo "PYTHON_FULL_DIR=${{ github.workspace }}/python_arm64" >> $GITHUB_OUTPUT
-          echo "PYTHON_MINIMAL_DIR=${{ github.workspace }}/python_arm64" >> $GITHUB_OUTPUT # 简化处理，macOS .app 结构复杂
+          
+          echo "Using x86_64 Python for build on Intel runner."
+          echo "PYTHON_FULL_DIR=${{ github.workspace }}/python_x64" >> $GITHUB_OUTPUT
+          echo "PYTHON_MINIMAL_DIR=${{ github.workspace }}/python_x64" >> $GITHUB_OUTPUT
         else
           URL="https://github.com/indygreg/python-build-standalone/releases/download/$RELEASE_TAG/cpython-$PYTHON_VERSION+$RELEASE_TAG-${{ matrix.python_arch }}-install_only_stripped.tar.gz"
           echo "Downloading Python from $URL"
@@ -81,6 +83,23 @@ jobs:
           echo "PYTHON_FULL_DIR=${{ github.workspace }}/python_full" >> $GITHUB_OUTPUT
           echo "PYTHON_MINIMAL_DIR=${{ github.workspace }}/python_minimal" >> $GITHUB_OUTPUT
         fi
+
+    - name: Set up Python Path and Executable (Linux, macOS)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        PYTHON_FULL_DIR="${{ steps.setup_standalone_python.outputs.PYTHON_FULL_DIR }}"
+        echo "$PYTHON_FULL_DIR/bin" >> $GITHUB_PATH
+        echo "PYTHON_EXECUTABLE=$PYTHON_FULL_DIR/bin/python3" >> $GITHUB_ENV
+
+    - name: Set up Python Path and Executable (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $pythonFullDir = "${{ steps.setup_standalone_python.outputs.PYTHON_FULL_DIR }}"
+        Add-Content -Path $env:GITHUB_PATH -Value $pythonFullDir
+        Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $pythonFullDir "Scripts")
+        echo "PYTHON_EXECUTABLE=$(Join-Path $pythonFullDir 'python.exe')" >> $env:GITHUB_ENV
 
     - name: Set up Python Path and Executable
       shell: bash
