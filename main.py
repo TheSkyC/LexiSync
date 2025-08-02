@@ -2,11 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-import os
 import logging
-import re
-from PySide6.QtWidgets import QApplication
-from main_window import OverwatchLocalizerApp
 
 def setup_plugin_library_path():
     try:
@@ -18,13 +14,15 @@ def setup_plugin_library_path():
     except Exception as e:
         logging.error(f"Error setting up plugin library path: {e}", exc_info=True)
 
-if __name__ == "__main__":
+def main():
     setup_plugin_library_path()
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         stream=sys.stdout,
     )
+    from PySide6.QtWidgets import QApplication
+    from main_window import OverwatchLocalizerApp
     app = QApplication(sys.argv)
     main_window = OverwatchLocalizerApp()
     main_window.show()
@@ -32,3 +30,6 @@ if __name__ == "__main__":
         sys.exit(app.exec())
     except KeyboardInterrupt:
         print("\nExit")
+
+if __name__ == "__main__":
+    main()

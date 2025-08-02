@@ -5,6 +5,9 @@ __pycache__/
 *.so
 
 .Python
+python_standalone_src/
+bundle_python_full/
+bundle_python_minimal/
 build/
 develop-eggs/
 dist/

@@ -111,79 +111,57 @@ class DependencyManager:
 
         libs_path = get_plugin_libs_path()
         deps_to_install = [f"{name}{spec}" for name, spec in dependencies.items()]
+        python_executable = sys.executable
+        command = []
         if not getattr(sys, 'frozen', False):
-            try:
-                import pip._internal.cli.main as pip_main
-
-                command_args = [
-                                   "install",
-                                   "--target", libs_path,
-                                   "--no-cache-dir",
-                                   "--upgrade"
-                               ] + deps_to_install
-
-                if progress_callback:
-                    progress_callback(f"Running pip internally with args: {command_args}")
-                from io import StringIO
-                import contextlib
-
-                stdout_capture = StringIO()
-                stderr_capture = StringIO()
-
-                with contextlib.redirect_stdout(stdout_capture), contextlib.redirect_stderr(stderr_capture):
-                    result = pip_main.main(command_args)
-                if progress_callback:
-                    progress_callback(stdout_capture.getvalue())
-                    if stderr_capture.getvalue():
-                        progress_callback(f"Errors:\n{stderr_capture.getvalue()}")
-                if result != 0:
-                    error_msg = f"Dependency installation failed with exit code {result}."
-                    logger.error(error_msg)
-                    if progress_callback: progress_callback(error_msg)
-                    return False
-                if progress_callback:
-                    progress_callback("Dependencies installed successfully!")
-                self._cache.clear()
-                return True
-            except Exception as e:
-                error_msg = f"An error occurred while running pip internally: {e}"
-                logger.error(error_msg, exc_info=True)
+            # 开发环境：直接调用 pip
+            command = [
+                          python_executable, "-m", "pip", "install",
+                          "--target", libs_path,
+                          "--no-cache-dir", "--upgrade", "--no-user"
+                      ] + deps_to_install
+        else:
+            # 编译环境
+            base_path = os.path.dirname(sys.executable)
+            python_executable = os.path.join(base_path, 'python.exe')
+            if not os.path.exists(python_executable):
+                error_msg = "FATAL: Bundled python.exe not found. Cannot install dependencies."
+                logger.error(error_msg)
                 if progress_callback: progress_callback(error_msg)
                 return False
-        else:
-            python_executable = sys.executable
             command = [
-                          python_executable,
-                          '--install-deps'
+                          python_executable, "-m", "pip", "install",
+                          "--target", libs_path,
+                          "--no-cache-dir", "--upgrade", "--no-user"
                       ] + deps_to_install
 
-            if progress_callback:
-                progress_callback(f"Running command: {' '.join(command)}")
-
-            try:
-                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                                           encoding='utf-8',
-                                           creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
-
-                for stdout_line in iter(process.stdout.readline, ""):
-                    if progress_callback:
-                        progress_callback(stdout_line.strip())
-
-                stderr_output = process.communicate()[1]
-
-                if process.returncode != 0:
-                    error_msg = f"Dependency installation failed!\n\nError:\n{stderr_output}"
-                    logger.error(error_msg)
-                    if progress_callback: progress_callback(error_msg)
-                    return False
-
+        if progress_callback:
+            progress_callback(f"Running command: {' '.join(command)}")
+        try:
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding='utf-8',
+                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+            )
+            for line in iter(process.stdout.readline, ''):
                 if progress_callback:
-                    progress_callback("Dependencies installed successfully!")
-                self._cache.clear()
-                return True
-
-            except Exception as e:
-                error_msg = f"An unknown error occurred while running subprocess: {e}"
-                logger.error(error_msg, exc_info=True)
+                    progress_callback(line.strip())
+            process.wait()
+            if process.returncode != 0:
+                error_msg = f"Dependency installation failed with exit code {process.returncode}."
+                logger.error(error_msg)
                 if progress_callback: progress_callback(error_msg)
                 return False
+
+            if progress_callback:
+                progress_callback("Dependencies installed successfully!")
+            self._cache.clear()
+            return True
+        except Exception as e:
+            error_msg = f"An unknown error occurred while running subprocess: {e}"
+            logger.error(error_msg, exc_info=True)
+            if progress_callback: progress_callback(error_msg)
+            return False
