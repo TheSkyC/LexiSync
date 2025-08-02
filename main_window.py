@@ -251,7 +251,6 @@ class OverwatchLocalizerApp(QMainWindow):
         if last_path and os.path.isdir(last_path):
             self.file_explorer_panel.set_root_path(last_path)
 
-        print(os.sys._MEIPASS)
         ExpansionRatioService.initialize()
         QTimer.singleShot(100, self.prewarm_dependencies)
         self.show()
@@ -1443,6 +1442,8 @@ class OverwatchLocalizerApp(QMainWindow):
     def restore_window_state(self):
         if "window_state" in self.config and self.config["window_state"]:
             self.restoreState(QByteArray.fromBase64(self.config["window_state"].encode('utf-8')))
+        else:
+            QTimer.singleShot(0, self.restore_default_layout)
 
 
     def add_to_recent_files(self, filepath):
