@@ -8,6 +8,7 @@ on:
 
 env:
   APP_NAME: OverwatchLocalizer
+  PYTHON_VERSION: '3.11'
   PYTHON_STANDALONE_VERSION: '3.11.13'
   PYTHON_STANDALONE_RELEASE_TAG: '20250723'
 
@@ -20,7 +21,7 @@ jobs:
       matrix:
         include:
           - os_name: windows
-            os_image: windows-latest
+            os_image: windows-2022
             arch_display: x64
             python_arch: x86_64-pc-windows-msvc
             asset_suffix: win-x64.zip
@@ -64,14 +65,23 @@ jobs:
         $PYTHON_VERSION = "${{ env.PYTHON_STANDALONE_VERSION }}"
         $RELEASE_TAG = "${{ env.PYTHON_STANDALONE_RELEASE_TAG }}"
         $URL = "https://github.com/indygreg/python-build-standalone/releases/download/$RELEASE_TAG/cpython-$PYTHON_VERSION+$RELEASE_TAG-${{ matrix.python_arch }}-install_only_stripped.tar.gz"
+        
         Write-Host "Downloading Python from $URL"
+        
+        # Download and extract
         Invoke-WebRequest -Uri $URL -OutFile "python-standalone.tar.gz"
+        
+        # Use tar command available in Windows
         tar -xzf python-standalone.tar.gz
+        
+        # Prepare environments
         Move-Item python python_standalone_src
         Copy-Item -Recurse python_standalone_src python_full
         Copy-Item -Recurse python_standalone_src python_minimal
+        
         $pythonFullDir = Join-Path $PWD "python_full"
         $pythonMinimalDir = Join-Path $PWD "python_minimal"
+        
         echo "PYTHON_FULL_DIR=$pythonFullDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
         echo "PYTHON_MINIMAL_DIR=$pythonMinimalDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
@@ -201,7 +211,7 @@ jobs:
         $pythonExe = $env:PYTHON_EXECUTABLE
         & $pythonExe -c @"
         import os, shutil
-
+        
         def prepare_dir(source_dir, target_dir, extension=None):
             if os.path.exists(target_dir):
                 shutil.rmtree(target_dir)
