@@ -67,8 +67,8 @@ class ExpansionRatioService:
                 })
             return pd.Series({
                 'mean': np.average(group['mean'], weights=weights),
-                'std': np.average(group['std'], weights=weights),  # 简化为加权平均
-                'median': np.average(group['median'], weights=weights),  # 简化为加权平均
+                'std': np.average(group['std'], weights=weights),
+                'median': np.average(group['median'], weights=weights),
                 'count': weights.sum()
             })
 
