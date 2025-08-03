@@ -2,11 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QSortFilterProxyModel, Signal, QObject
-from PySide6.QtGui import QColor, QFont
-from difflib import SequenceMatcher
-import re
 from utils.localization import _
-from services.validation_service import placeholder_regex
 
 NewlineColorRole = Qt.UserRole + 1
 
