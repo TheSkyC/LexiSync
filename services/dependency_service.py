@@ -9,6 +9,7 @@ from importlib.metadata import version, PackageNotFoundError
 from packaging.version import parse as parse_version
 from packaging.specifiers import SpecifierSet
 from utils.path_utils import get_plugin_libs_path
+from utils.plugin_context import plugin_libs_context
 
 logger = logging.getLogger(__name__)
 
@@ -35,24 +36,22 @@ class DependencyManager:
             'installed': None,
             'status': 'missing'
         }
+        with plugin_libs_context():
+            try:
+                installed_version_str = version(lib_name)
+                result['installed'] = installed_version_str
 
-        try:
-            installed_version_str = version(lib_name)
-            result['installed'] = installed_version_str
-
-            if not specifier_str:
-                result['status'] = 'ok'
-            else:
-                spec = SpecifierSet(specifier_str)
-                installed_version = parse_version(installed_version_str)
-                if installed_version in spec:
+                if not specifier_str:
                     result['status'] = 'ok'
                 else:
-                    result['status'] = 'outdated'
-
-        except PackageNotFoundError:
-            result['status'] = 'missing'
-
+                    spec = SpecifierSet(specifier_str)
+                    installed_version = parse_version(installed_version_str)
+                    if installed_version in spec:
+                        result['status'] = 'ok'
+                    else:
+                        result['status'] = 'outdated'
+            except PackageNotFoundError:
+                result['status'] = 'missing'
         self._cache[lib_name] = result
         return result
 

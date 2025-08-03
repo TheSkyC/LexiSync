@@ -11,6 +11,7 @@ from plugins.plugin_base import PluginBase
 from plugins.plugin_dialog import PluginManagerDialog
 from dialogs.marketplace_dialog import PluginMarketplaceDialog
 from utils.constants import APP_VERSION
+from utils.plugin_context import plugin_libs_context
 from utils.localization import _
 from services.dependency_service import DependencyManager
 import shutil
@@ -272,88 +273,89 @@ class PluginManager:
         - Collecting hooks (e.g., on_file_tree_context_menu) gather results from all plugins.
         - Notification hooks (other on_*) are called without returning a value.
         """
-        # 1. 拦截型钩子 (Intercepting Hooks)
-        INTERCEPTING_HOOKS = ['on_file_dropped', 'on_files_dropped']
-        if hook_name in INTERCEPTING_HOOKS:
-            for plugin in self.get_enabled_plugins():
-                if hasattr(plugin, hook_name):
-                    try:
-                        method = getattr(plugin, hook_name)
-                        if method(*args, **kwargs) is True:
-                            self.logger.info(f"Hook '{hook_name}' was handled by plugin '{plugin.plugin_id()}'.")
-                            return True
-                    except Exception as e:
-                        self.logger.error(
-                            f"Error in plugin '{plugin.plugin_id()}' intercepting hook '{hook_name}': {e}",
-                            exc_info=True)
-            return False  # 循环结束，没有任何插件处理
+        with plugin_libs_context():
+            # 1. 拦截型钩子 (Intercepting Hooks)
+            INTERCEPTING_HOOKS = ['on_file_dropped', 'on_files_dropped']
+            if hook_name in INTERCEPTING_HOOKS:
+                for plugin in self.get_enabled_plugins():
+                    if hasattr(plugin, hook_name):
+                        try:
+                            method = getattr(plugin, hook_name)
+                            if method(*args, **kwargs) is True:
+                                self.logger.info(f"Hook '{hook_name}' was handled by plugin '{plugin.plugin_id()}'.")
+                                return True
+                        except Exception as e:
+                            self.logger.error(
+                                f"Error in plugin '{plugin.plugin_id()}' intercepting hook '{hook_name}': {e}",
+                                exc_info=True)
+                return False  # 循环结束，没有任何插件处理
 
-        # 2. 处理型钩子 (Processing Hooks)
-        elif hook_name.startswith('process_'):
-            processed_data = args[0]
-            other_args = args[1:]
-            for plugin in self.get_enabled_plugins():
-                if hasattr(plugin, hook_name):
-                    try:
-                        method = getattr(plugin, hook_name)
-                        processed_data = method(processed_data, *other_args, **kwargs)
-                    except Exception as e:
-                        self.logger.error(f"Error in plugin '{plugin.plugin_id()}' processing hook '{hook_name}': {e}",
-                                          exc_info=True)
-            return processed_data
+            # 2. 处理型钩子 (Processing Hooks)
+            elif hook_name.startswith('process_'):
+                processed_data = args[0]
+                other_args = args[1:]
+                for plugin in self.get_enabled_plugins():
+                    if hasattr(plugin, hook_name):
+                        try:
+                            method = getattr(plugin, hook_name)
+                            processed_data = method(processed_data, *other_args, **kwargs)
+                        except Exception as e:
+                            self.logger.error(f"Error in plugin '{plugin.plugin_id()}' processing hook '{hook_name}': {e}",
+                                              exc_info=True)
+                return processed_data
 
-        # TM
-        if hook_name == 'query_tm_suggestions':
-            for plugin in self.get_enabled_plugins():
-                if hasattr(plugin, hook_name):
-                    try:
-                        method = getattr(plugin, hook_name)
-                        result = method(*args, **kwargs)
-                        if result is not None:
-                            # self.logger.info(f"TM query handled by plugin '{plugin.plugin_id()}'.")
-                            return result
-                    except Exception as e:
-                        self.logger.error(f"Error in plugin '{plugin.plugin_id()}' TM query hook: {e}", exc_info=True)
-            return None
+            # TM
+            if hook_name == 'query_tm_suggestions':
+                for plugin in self.get_enabled_plugins():
+                    if hasattr(plugin, hook_name):
+                        try:
+                            method = getattr(plugin, hook_name)
+                            result = method(*args, **kwargs)
+                            if result is not None:
+                                # self.logger.info(f"TM query handled by plugin '{plugin.plugin_id()}'.")
+                                return result
+                        except Exception as e:
+                            self.logger.error(f"Error in plugin '{plugin.plugin_id()}' TM query hook: {e}", exc_info=True)
+                return None
 
 
 
-        # 3. 收集型和通知型钩子 (Collecting & Notification Hooks)
-        else:
-            all_results = []
-            for plugin in self.get_enabled_plugins():
-                if hasattr(plugin, hook_name):
-                    try:
-                        method = getattr(plugin, hook_name)
-                        result = method(*args, **kwargs)
-                        if hook_name == 'register_ai_placeholders' and isinstance(result, list):
-                            for item in result:
-                                item['provider'] = plugin.name()
-                            all_results.extend(result)
-                        elif result is not None:
-                            all_results.append(result)
-                    except Exception as e:
-                        self.logger.error(
-                            f"Error in plugin '{plugin.plugin_id()}' notification/collecting hook '{hook_name}': {e}",
-                            exc_info=True)
-            if hook_name in ['on_file_tree_context_menu', 'on_table_context_menu']:
-                flat_list = [item for sublist in all_results for item in sublist]
-                return flat_list
-            if hook_name in ['add_statusbar_widgets', 'register_settings_pages', 'register_ai_placeholders']:
-                return all_results
-            if hook_name in ['register_importers', 'register_exporters']:
-                merged_dict = {}
-                for res_dict in all_results:
-                    if isinstance(res_dict, dict):
-                        merged_dict.update(res_dict)
-                return merged_dict
-            if hook_name == 'get_ai_translation_context':
-                merged_context = {}
-                for res_dict in all_results:
-                    if isinstance(res_dict, dict):
-                        merged_context.update(res_dict)
-                return merged_context
-            return None
+            # 3. 收集型和通知型钩子 (Collecting & Notification Hooks)
+            else:
+                all_results = []
+                for plugin in self.get_enabled_plugins():
+                    if hasattr(plugin, hook_name):
+                        try:
+                            method = getattr(plugin, hook_name)
+                            result = method(*args, **kwargs)
+                            if hook_name == 'register_ai_placeholders' and isinstance(result, list):
+                                for item in result:
+                                    item['provider'] = plugin.name()
+                                all_results.extend(result)
+                            elif result is not None:
+                                all_results.append(result)
+                        except Exception as e:
+                            self.logger.error(
+                                f"Error in plugin '{plugin.plugin_id()}' notification/collecting hook '{hook_name}': {e}",
+                                exc_info=True)
+                if hook_name in ['on_file_tree_context_menu', 'on_table_context_menu']:
+                    flat_list = [item for sublist in all_results for item in sublist]
+                    return flat_list
+                if hook_name in ['add_statusbar_widgets', 'register_settings_pages', 'register_ai_placeholders']:
+                    return all_results
+                if hook_name in ['register_importers', 'register_exporters']:
+                    merged_dict = {}
+                    for res_dict in all_results:
+                        if isinstance(res_dict, dict):
+                            merged_dict.update(res_dict)
+                    return merged_dict
+                if hook_name == 'get_ai_translation_context':
+                    merged_context = {}
+                    for res_dict in all_results:
+                        if isinstance(res_dict, dict):
+                            merged_context.update(res_dict)
+                    return merged_context
+                return None
 
     def _run_processing_hook(self, hook_name, *args, **kwargs):
         processed_data = args[0]
