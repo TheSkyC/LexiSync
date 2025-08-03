@@ -2119,7 +2119,8 @@ class OverwatchLocalizerApp(QMainWindow):
         self.action_paste_translation.setEnabled(state)
         # DetailsPanel
         self.details_panel.apply_btn.setEnabled(state)
-        self.details_panel.ai_translate_current_btn.setEnabled(state and self.config.get("ai_api_key") and requests is not None)
+        can_ai_translate = state and self.config.get("ai_api_key") and requests is not None
+        self.details_panel.ai_translate_current_btn.setEnabled(bool(can_ai_translate))
         # CommentPanel
         self.comment_status_panel.apply_comment_btn.setEnabled(state)
         self.comment_status_panel.ignore_checkbox.setEnabled(state)
