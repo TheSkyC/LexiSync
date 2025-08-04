@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import gettext
+import logging
 import os
 import locale
 from PySide6.QtCore import QObject, Signal
@@ -69,7 +70,7 @@ class LanguageManager(QObject):
             lang = gettext.translation(self.app_name, localedir=self.locale_dir, languages=[lang_code], fallback=True)
             lang.install()
             self.translator = lang.gettext
-            print(f"Successfully set up translation for '{lang_code}'")
+            logging.info(f"Successfully set up translation for '{lang_code}'")
         except Exception as e:
             print(f"Warning: Translation for '{lang_code}' not found or failed to load: {e}. Falling back to default.")
             self.translator = lambda s: s

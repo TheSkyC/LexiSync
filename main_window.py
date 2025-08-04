@@ -7,7 +7,6 @@ import sys
 import shutil
 import json
 import datetime
-import time
 import threading
 from copy import deepcopy
 from rapidfuzz import fuzz
@@ -124,9 +123,9 @@ class ThreadSafeSignals(QObject):
 
 class OverwatchLocalizerApp(QMainWindow):
     language_changed = Signal()
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
-        self.config = config_manager.load_config()
+        self.config = config
         self.lang_manager = lang_manager
         language_code = self.config.get('language')
         if not language_code:
@@ -253,7 +252,6 @@ class OverwatchLocalizerApp(QMainWindow):
 
         ExpansionRatioService.initialize()
         QTimer.singleShot(100, self.prewarm_dependencies)
-        self.show()
         if hasattr(self, 'plugin_manager'):
             QTimer.singleShot(0, lambda: self.plugin_manager.run_hook('on_app_ready'))
 
@@ -677,6 +675,28 @@ class OverwatchLocalizerApp(QMainWindow):
         setattr(self, f"{var_name}_var", value)
         self.config[var_name] = value
         self.save_config()
+
+    def execute_action(self, action_name: str, path: str = None) -> bool:
+        if action_name == "open_specific_file":
+            return self.open_file_by_path(path) if path else self.open_code_file_dialog()
+
+        if action_name == "open_code_file_dialog":
+            return self.open_code_file_dialog()
+
+        if action_name == "open_project_dialog":
+            return self.open_project_dialog()
+
+        if action_name == "open_recent_file":
+            return self.open_recent_file(path) if path else False
+
+        if action_name == "show_marketplace":
+            self.plugin_manager.show_marketplace_dialog()
+            return True
+
+        if action_name == "show_settings":
+            self.show_settings_dialog()
+            return True
+        return False
 
     def _setup_keybindings(self):
         bindings = self.config.get('keybindings', DEFAULT_KEYBINDINGS)
@@ -1484,10 +1504,10 @@ class OverwatchLocalizerApp(QMainWindow):
                 recent_files.remove(filepath)
                 self.config["recent_files"] = recent_files
                 self.update_recent_files_menu()
-            return
+            return False
 
         if not self.prompt_save_if_modified():
-            return
+            return False
 
         if filepath.lower().endswith(PROJECT_FILE_EXTENSION):
             self.open_project_file(filepath)
@@ -1495,6 +1515,32 @@ class OverwatchLocalizerApp(QMainWindow):
             self.open_code_file_path(filepath)
         elif filepath.lower().endswith((".po", ".pot")):
             self.import_po_file_dialog_with_path(filepath)
+        return self.open_file_by_path(filepath)
+
+    def open_file_by_path(self, filepath: str) -> bool:
+        if not filepath or not os.path.exists(filepath):
+            return False
+        lower_path = filepath.lower()
+        try:
+            if lower_path.endswith((".ow", ".txt")):
+                self.open_code_file_path(filepath)
+            elif lower_path.endswith(PROJECT_FILE_EXTENSION):
+                self.open_project_file(filepath)
+            elif lower_path.endswith((".po", ".pot")):
+                self.import_po_file_dialog_with_path(filepath)
+            else:
+                if hasattr(self, 'plugin_manager'):
+                    if self.plugin_manager.run_hook('on_file_dropped', filepath):
+                        return True
+                QMessageBox.warning(self, _("Unsupported File"),
+                                    _("The file type of '{filename}' is not supported.").format(
+                                        filename=os.path.basename(filepath)))
+                return False
+            return bool(self.translatable_objects)
+        except Exception as e:
+            QMessageBox.critical(self, _("Error"), _("Failed to open file '{filename}':\n{error}").format(
+                filename=os.path.basename(filepath), error=str(e)))
+            return False
 
     def clear_recent_files(self):
         reply = QMessageBox.question(self, _("Confirmation"),
@@ -1566,7 +1612,7 @@ class OverwatchLocalizerApp(QMainWindow):
         event.acceptProposedAction()
 
     def open_code_file_dialog(self):
-        if not self.prompt_save_if_modified(): return
+        if not self.prompt_save_if_modified(): return False
         dialog_title = _("Open File")
         file_filters = (
                 _("All Supported Files (*.ow *.txt *.po *.pot);;") +
@@ -1588,6 +1634,8 @@ class OverwatchLocalizerApp(QMainWindow):
                 self.import_po_file_dialog_with_path(filepath)
             else:
                 self.open_code_file_path(filepath)
+            return True
+        return False
 
     def open_code_file_path(self, filepath):
         if self.is_ai_translating_batch:
@@ -1643,7 +1691,7 @@ class OverwatchLocalizerApp(QMainWindow):
         self.update_counts_display()
 
     def open_project_dialog(self):
-        if not self.prompt_save_if_modified(): return
+        if not self.prompt_save_if_modified(): return False
 
         filepath, selected_filter = QFileDialog.getOpenFileName(
             self,
@@ -1653,6 +1701,8 @@ class OverwatchLocalizerApp(QMainWindow):
         )
         if filepath:
             self.open_project_file(filepath)
+            return True
+        return False
 
     def open_project_file(self, project_filepath):
         if self.is_ai_translating_batch:
