@@ -448,8 +448,22 @@ jobs:
       run: |
         APP_BUNDLE_PATH="dist/${{ env.APP_NAME }}.app"
         if [ -d "$APP_BUNDLE_PATH" ]; then
-          echo "Waiting for 3 seconds to ensure file handles are released..."
-          sleep 3
+          echo "Waiting for file handles on $APP_BUNDLE_PATH to be released..."
+          MAX_WAIT_SECONDS=30
+          SECONDS_WAITED=0
+          while lsof +D "$APP_BUNDLE_PATH" >/dev/null 2>&1 && [ $SECONDS_WAITED -lt $MAX_WAIT_SECONDS ]; do
+            echo "Handles still busy, waiting 2 more seconds..."
+            sleep 2
+            SECONDS_WAITED=$((SECONDS_WAITED + 2))
+          done
+
+          if [ $SECONDS_WAITED -ge $MAX_WAIT_SECONDS ]; then
+            echo "Error: Timed out waiting for file handles to be released."
+            lsof +D "$APP_BUNDLE_PATH" # 打印出仍然占用句柄的进程以供调试
+            exit 1
+          fi
+          
+          echo "File handles released. Creating DMG..."
           hdiutil create -volname "${{ env.APP_NAME }}" -srcfolder "$APP_BUNDLE_PATH" -ov -format UDZO "${{ env.APP_NAME }}-${{ matrix.asset_suffix }}"
         else
           echo "Error: .app bundle not found in dist/ for macOS."
