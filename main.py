@@ -36,7 +36,11 @@ if __name__ == "__main__":
     from utils.localization import lang_manager
 
     config = load_config()
-    lang_manager.setup_translation(config.get('language'))
+    language_code = config.get('language')
+    if not language_code:
+        language_code = lang_manager.get_best_match_language()
+        config['language'] = language_code
+    lang_manager.setup_translation(language_code)
 
     app_controller = AppController(config)
     app_controller.start()

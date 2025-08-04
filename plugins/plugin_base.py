@@ -100,6 +100,18 @@ class PluginBase(ABC):
         """
         return {}
 
+    def load_on_prewarm(self) -> bool:
+        """
+        Return True if this plugin is safe to be loaded during the application's
+        pre-warming phase (when the main window is created but still hidden).
+
+        Plugins that perform complex UI operations or depend on the window being
+        visible in their setup() method should return False.
+
+        Defaults to True for backward compatibility.
+        """
+        return True
+
     def on_app_ready(self):
         """
         Called after the main window is initialized and shown.

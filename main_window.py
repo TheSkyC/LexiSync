@@ -126,12 +126,6 @@ class OverwatchLocalizerApp(QMainWindow):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.lang_manager = lang_manager
-        language_code = self.config.get('language')
-        if not language_code:
-            language_code = lang_manager.get_best_match_language()
-            self.config['language'] = language_code
-        lang_manager.setup_translation(language_code)
         if "window_geometry" in self.config and self.config["window_geometry"]:
             self.restoreGeometry(QByteArray.fromBase64(self.config["window_geometry"].encode('utf-8')))
         else:
