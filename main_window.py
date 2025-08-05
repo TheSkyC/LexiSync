@@ -63,7 +63,7 @@ from services.expansion_ratio_service import ExpansionRatioService
 from utils import config_manager
 from utils.constants import *
 from utils.enums import WarningType
-from utils.localization import lang_manager, _
+from utils.localization import _, lang_manager
 from utils.text_utils import get_linguistic_length
 
 try:
@@ -821,7 +821,7 @@ class LexiSyncApp(QMainWindow):
     def change_language(self, new_lang_code):
         if new_lang_code != self.config.get('language'):
             self.config['language'] = new_lang_code
-            self.lang_manager.setup_translation(new_lang_code)
+            lang_manager.setup_translation(new_lang_code)
             self.save_config()
             if hasattr(self, 'plugin_manager'):
                 self.plugin_manager.on_main_app_language_changed()

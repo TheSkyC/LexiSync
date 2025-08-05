@@ -14,7 +14,7 @@ class LanguageManager(QObject):
     def __init__(self):
         super().__init__()
         self.translator = lambda s: s
-        self.app_name = "overwatch_localizer"
+        self.app_name = "lexisync"
         self.locale_dir = get_resource_path('locales')
         self.supported_languages = self._get_supported_languages()
         self.default_lang = 'en_US'

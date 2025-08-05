@@ -4,7 +4,7 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QComboBox, QCheckBox, QSpinBox, QPushButton, QGroupBox, \
     QHBoxLayout, QLineEdit, QMessageBox, QLabel
 from PySide6.QtCore import Qt
-from utils.localization import _
+from utils.localization import _, lang_manager
 from utils.constants import DEFAULT_API_URL
 
 
@@ -91,9 +91,9 @@ class GeneralSettingsPage(BaseSettingsPage):
 
         # UI Language
         self.lang_combo = QComboBox()
-        available_langs = self.app.lang_manager.get_available_languages()
+        available_langs = lang_manager.get_available_languages()
         for code in available_langs:
-            name = self.app.lang_manager.get_language_name(code)
+            name = lang_manager.get_language_name(code)
             self.lang_combo.addItem(f"{name} ({code})", code)
         self.current_lang_on_open = self.app.config.get('language', 'en_US')
         index = self.lang_combo.findData(self.current_lang_on_open)
@@ -218,7 +218,7 @@ class AISettingsPage(BaseSettingsPage):
         target_lang_layout = QHBoxLayout()
         target_lang_label = QLabel(_("Target Language:"))
         target_lang_code = self.app.target_language
-        target_lang_name = self.app.lang_manager.get_language_name(target_lang_code)
+        target_lang_name = lang_manager.get_language_name(target_lang_code)
         self.target_language_display = QLineEdit(f"{target_lang_name} ({target_lang_code})")
         self.target_language_display.setReadOnly(True)
         self.target_language_display.setToolTip(_("Target language is set in 'Settings > Language Pair Settings...'"))

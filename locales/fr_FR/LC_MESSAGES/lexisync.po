@@ -4,19 +4,19 @@ msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
 "POT-Creation-Date: 2025-08-02 10:48+0000\n"
-"PO-Revision-Date: 2025-08-02 12:04+0000\n"
+"PO-Revision-Date: 2025-08-02 12:15+0000\n"
 "Last-Translator: Automatically generated\n"
+"Language: fr\n"
 "Language-Team: none\n"
-"Language: ko\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
 
 #: main_window.py:4252 ui_components/comment_status_panel.py:79
 msgid " (Auto)"
-msgstr " (자동)"
+msgstr " (Auto)"
 
 #: dialogs/settings_pages.py:110
 msgid " s"
@@ -24,141 +24,158 @@ msgstr " s"
 
 #: main_window.py:295 main_window.py:545
 msgid "&Edit"
-msgstr "&편집"
+msgstr "&Éditer"
 
 #: main_window.py:294 main_window.py:544
 msgid "&File"
-msgstr "&파일"
+msgstr "&Fichier"
 
 #: main_window.py:300 main_window.py:551
 msgid "&Help"
-msgstr "&도움말"
+msgstr "&Aide"
 
 #: main_window.py:299 main_window.py:550
 msgid "&Plugins"
-msgstr "&플러그인"
+msgstr "&Plugiciels"
 
 #: main_window.py:298 main_window.py:548
 msgid "&Settings"
-msgstr "&설정"
+msgstr "&Paramètres"
 
 #: main_window.py:297 main_window.py:547
 msgid "&Tools"
-msgstr "&도구"
+msgstr "&Outils"
 
 #: main_window.py:296 main_window.py:546
 msgid "&View"
-msgstr "&보기"
+msgstr "&Affichage"
 
 #: services/ai_translator.py:23
 msgid "'requests' library not found. AI translation feature is unavailable."
-msgstr "'requests' 라이브러리를 찾을 수 없습니다. AI 번역 기능을 사용할 수 없습니다."
+msgstr ""
+"Bibliothèque 'requests' introuvable. La fonctionnalité de traduction "
+"automatique est indisponible."
 
 #: dialogs/settings_pages.py:112
 msgid "(0 to disable)"
-msgstr "(0으로 설정 시 비활성화)"
+msgstr "(0 pour désactiver)"
 
 #: dialogs/pot_drop_dialog.py:20
 msgid "A POT file was dropped. What would you like to do?"
-msgstr "POT 파일이 드롭되었습니다. 어떻게 하시겠습니까?"
+msgstr "Un fichier POT a été déposé. Que souhaitez-vous faire ?"
 
 #: plugins/plugin_manager.py:430
 #, python-brace-format
-msgid "A plugin with the ID '{plugin_id}' already exists. Do you want to overwrite it?"
-msgstr "ID가 '{plugin_id}'인 플러그인이 이미 존재합니다. 덮어쓰시겠습니까?"
+msgid ""
+"A plugin with the ID '{plugin_id}' already exists. Do you want to "
+"overwrite it?"
+msgstr "Un plugin avec l'ID '{plugin_id}' existe déjà. Voulez-vous l'écraser ?"
 
 #: main_window.py:4178
 msgid "AI Batch Translation"
-msgstr "AI 일괄 번역"
+msgstr "Traduction IA par lots"
 
 #: main_window.py:3746
 #, python-brace-format
 msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
-msgstr "AI 일괄: 처리 중 {current}/{total} (동시 처리: {threads})..."
+msgstr "Lot IA : Traitement {current}/{total} (Concurrence : {threads})..."
 
 #: main_window.py:4124
 #, python-brace-format
 msgid "AI Batch: {current}/{total} completed ({progress_percent:.0f}%)."
-msgstr "AI 일괄: {current}/{total} 완료 ({progress_percent:.0f}%)."
+msgstr "Lot IA : {current}/{total} terminé ({progress_percent:.0f}%)."
 
 #: main_window.py:3566
 msgid "AI Feature Unavailable"
-msgstr "AI 기능 사용 불가"
+msgstr "Fonctionnalité IA indisponible"
 
 #: main_window.py:3556
 msgid "AI Prompt Manager"
-msgstr "AI 프롬프트 관리자"
+msgstr "Gestionnaire d'invites IA"
 
 #: main_window.py:483 main_window.py:601
 msgid "AI Translate All Untranslated"
-msgstr "AI로 모든 미번역 항목 번역"
+msgstr "Traduire tous les non-traduits par IA"
 
-#: main_window.py:478 main_window.py:600 ui_components/details_panel.py:91 ui_components/details_panel.py:197
+#: main_window.py:478 main_window.py:600 ui_components/details_panel.py:91
+#: ui_components/details_panel.py:197
 msgid "AI Translate Selected"
-msgstr "AI로 선택 항목 번역"
+msgstr "Traduire la sélection par IA"
 
 #: dialogs/settings_dialog.py:111 main_window.py:3976
 msgid "AI Translation"
-msgstr "AI 번역"
+msgstr "Traduction IA"
 
 #: main_window.py:4061
 msgid "AI Translation Error"
-msgstr "AI 번역 오류"
+msgstr "Erreur de traduction IA"
 
 #: main_window.py:1396
 msgid "AI Translation in Progress"
-msgstr "AI 번역 진행 중"
+msgstr "Traduction IA en cours"
 
 #: main_window.py:4033
 #, python-brace-format
-msgid "AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned)."
-msgstr "AI 일괄 번역 완료. {success_count}/{processed_count}개 항목 성공적으로 번역됨 (총 {total_items}개 예정)."
+msgid ""
+"AI batch translation complete. Successfully translated "
+"{success_count}/{processed_count} items (total {total_items} planned)."
+msgstr ""
+"Traduction IA par lots terminée. {success_count}/{processed_count} "
+"éléments traduits avec succès (total {total_items} prévus)."
 
 #: main_window.py:3924
 msgid "AI batch translation is already in progress."
-msgstr "AI 일괄 번역이 이미 진행 중입니다."
+msgstr "La traduction IA par lots est déjà en cours."
 
 #: main_window.py:1659
 msgid "AI batch translation is in progress."
-msgstr "AI 일괄 번역 진행 중입니다."
+msgstr "La traduction IA par lots est en cours."
 
 #: main_window.py:1595
-msgid "AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."
-msgstr "AI 일괄 번역이 진행 중입니다. 새 파일을 열기 전에 완료되거나 중지될 때까지 기다려 주십시오."
+msgid ""
+"AI batch translation is in progress. Please wait for it to complete or "
+"stop it before opening a new file."
+msgstr ""
+"La traduction IA par lots est en cours. Veuillez attendre qu'elle se "
+"termine ou l'arrêter avant d'ouvrir un nouveau fichier."
 
 #: main_window.py:1397
 msgid ""
-"AI batch translation is still in progress. Are you sure you want to exit?\n"
+"AI batch translation is still in progress. Are you sure you want to exit?"
+"\n"
 "Unfinished translations will be lost."
 msgstr ""
-"AI 일괄 번역이 아직 진행 중입니다. 종료하시겠습니까?\n"
-"미완료된 번역은 손실됩니다."
+"La traduction IA par lots est toujours en cours. Êtes-vous sûr de vouloir"
+" quitter ?\n"
+"Les traductions non terminées seront perdues."
 
 #: main_window.py:4010
 #, python-brace-format
 msgid "AI batch translation started for {count} unique strings..."
-msgstr "AI 일괄 번역 시작: {count}개의 고유 문자열에 대해..."
+msgstr "Traduction par IA par lots démarrée pour {count} chaînes uniques..."
 
 #: main_window.py:4179
 msgid ""
 "AI batch translation stop requested.\n"
 "Dispatched tasks will continue to complete, please wait."
 msgstr ""
-"AI 일괄 번역 중지 요청됨.\n"
-"할당된 작업은 계속 완료됩니다. 잠시 기다려 주십시오."
+"Arrêt de la traduction IA par lots demandé.\n"
+"Les tâches déjà lancées continueront de se terminer, veuillez patienter."
 
 #: main_window.py:4181
 msgid "AI batch translation stop requested. Finishing dispatched tasks..."
-msgstr "AI 일괄 번역 중지 요청됨. 할당된 작업 완료 중..."
+msgstr ""
+"Arrêt de la traduction IA par lots demandé. Finalisation des tâches "
+"lancées..."
 
 #: main_window.py:3715
 #, python-brace-format
 msgid "AI is translating: \"{text}...\""
-msgstr "AI 번역 중: \"{text}...\""
+msgstr "L'IA traduit : \"{text}...\""
 
 #: dialogs/prompt_manager_dialog.py:233
 msgid "AI prompt structure updated."
-msgstr "AI 프롬프트 구조 업데이트됨."
+msgstr "Structure de l'invite IA mise à jour."
 
 #: main_window.py:4062
 #, python-brace-format
@@ -166,189 +183,203 @@ msgid ""
 "AI translation failed for \"{text}...\":\n"
 "{error}"
 msgstr ""
-"\"{text}...\"에 대한 AI 번역 실패:\n"
+"La traduction IA a échoué pour \"{text}...\":\n"
 "{error}"
 
 #: main_window.py:4057
 #, python-brace-format
 msgid "AI translation failed for \"{text}...\": {error}"
-msgstr "AI 번역 실패: \"{text}...\" - {error}"
+msgstr "La traduction IA a échoué pour \"{text}...\": {error}"
 
 #: main_window.py:3689
 #, python-brace-format
 msgid "AI translation for '{text}...' was skipped by a plugin."
-msgstr "AI 번역 '{text}...'이(가) 플러그인에 의해 건너뛰었습니다."
+msgstr "La traduction IA pour '{text}...' a été ignorée par un plugin."
 
 #: main_window.py:4114
 #, python-brace-format
 msgid "AI translation successful: \"{text}...\""
-msgstr "AI 번역 성공: \"{text}...\""
+msgstr "Traduction IA réussie : \"{text}...\""
 
 #: dialogs/settings_pages.py:199
 msgid "API Base URL:"
-msgstr "API 기본 URL:"
+msgstr "URL de base de l'API :"
 
 #: dialogs/settings_pages.py:212
 msgid "API Call Interval:"
-msgstr "API 호출 간격:"
+msgstr "Intervalle d'appel d'API :"
 
 #: services/ai_translator.py:53
 msgid "API Error"
-msgstr "API 오류"
+msgstr "Erreur d'API"
 
 #: main_window.py:3571
 msgid "API Key Missing"
-msgstr "API 키 누락"
+msgstr "Clé API manquante"
 
 #: main_window.py:3572
 msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
-msgstr "API 키가 설정되지 않았습니다. '도구 > AI 설정'에서 구성해 주십시오."
+msgstr ""
+"La clé API n'est pas définie. Veuillez la configurer dans 'Outils > "
+"Paramètres IA'."
 
 #: services/ai_translator.py:21
 msgid "API Key not set."
-msgstr "API 키가 설정되지 않았습니다."
+msgstr "Clé API non configurée."
 
 #: dialogs/settings_pages.py:198
 msgid "API Key:"
-msgstr "API 키:"
+msgstr "Clé API :"
 
 #: dialogs/settings_pages.py:192
 msgid "API Settings"
-msgstr "API 설정"
+msgstr "Paramètres API"
 
 #: services/ai_translator.py:55
 msgid "API request timed out."
-msgstr "API 요청 시간이 초과되었습니다."
+msgstr "La requête API a expiré."
 
 #: main_window.py:530 main_window.py:612
 msgid "About"
-msgstr "정보"
+msgstr "À propos"
 
 #: main_window.py:1509
 msgid "About Overwatch Localizer"
-msgstr "Overwatch Localizer 정보"
+msgstr "À propos d'Overwatch Localizer"
 
 #: dialogs/language_pair_dialog.py:278
 msgid "Actions"
-msgstr "동작"
+msgstr "Actions"
 
 #: dialogs/extraction_pattern_dialog.py:35 dialogs/prompt_manager_dialog.py:55
 msgid "Add"
-msgstr "추가"
+msgstr "Ajouter"
 
 #: dialogs/language_pair_dialog.py:282
 msgid "Add Current Pair to Favorites"
-msgstr "현재 쌍 즐겨찾기에 추가"
+msgstr "Ajouter la paire actuelle aux favoris"
 
 #: dialogs/extraction_pattern_dialog.py:119
 msgid "Add Extraction Rule"
-msgstr "추출 규칙 추가"
+msgstr "Ajouter une règle d'extraction"
 
 #: dialogs/prompt_manager_dialog.py:143
 msgid "Add Prompt Fragment"
-msgstr "프롬프트 조각 추가"
+msgstr "Ajouter un fragment d'invite"
 
 #: dialogs/diff_dialog.py:165
 msgid "Added"
-msgstr "추가됨"
+msgstr "Ajouté"
 
 #: main_window.py:4165
 #, python-brace-format
 msgid "Added comments to {count} placeholder mismatched items."
-msgstr "{count}개 자리표시자 불일치 항목에 주석 추가됨."
+msgstr ""
+"Commentaires ajoutés à {count} éléments avec des incohérences de "
+"marqueurs."
 
 #: main_window.py:4147
 #, python-brace-format
 msgid ""
-"After AI batch translation, {count} items were found with placeholder mismatches.\n"
-"Do you want to add the comment \"Placeholder Mismatch\" to these items in bulk?"
+"After AI batch translation, {count} items were found with placeholder "
+"mismatches.\n"
+"Do you want to add the comment \"Placeholder Mismatch\" to these items in"
+" bulk?"
 msgstr ""
-"AI 일괄 번역 후, {count}개 항목에서 자리표시자 불일치가 발견되었습니다.\n"
-"이 항목들에 \"자리표시자 불일치\" 주석을 일괄 추가하시겠습니까?"
+"Après la traduction IA par lots, {count} éléments ont été trouvés avec "
+"des incohérences de marqueurs.\n"
+"Voulez-vous ajouter le commentaire \"Incohérence de marqueur\" à ces "
+"éléments en masse ?"
 
 #: dialogs/marketplace_dialog.py:322
 msgid "All"
-msgstr "전체"
+msgstr "Tous"
 
 #: main_window.py:1575
 msgid "All Files (*.*)"
-msgstr "모든 파일 (*.*)"
+msgstr "Tous les fichiers (*.*)"
 
 #: main_window.py:1572
 msgid "All Supported Files (*.ow *.txt *.po *.pot);;"
-msgstr "지원되는 모든 파일 (*.ow *.txt *.po *.pot);;"
+msgstr "Tous les fichiers pris en charge (*.ow *.txt *.po *.pot);;"
 
 #: main_window.py:4564
 #, python-brace-format
 msgid "An error occurred: {error}"
-msgstr "오류 발생: {error}"
+msgstr "Une erreur s'est produite : {error}"
 
 #: dialogs/settings_dialog.py:108
 msgid "Appearance"
-msgstr "외관"
+msgstr "Apparence"
 
 #: main_window.py:4325
 #, python-brace-format
 msgid "Applied TM to {count} selected items."
-msgstr "선택된 {count}개 항목에 TM 적용됨."
+msgstr "MT appliquée à {count} éléments sélectionnés."
 
 #: main_window.py:3509 main_window.py:3510
 #, python-brace-format
 msgid "Applied TM to {count} strings."
-msgstr "{count}개 문자열에 TM 적용됨."
+msgstr "MT appliquée à {count} chaînes."
 
 #: dialogs/settings_dialog.py:88
 msgid "Apply"
-msgstr "적용"
+msgstr "Appliquer"
 
-#: ui_components/comment_status_panel.py:46 ui_components/comment_status_panel.py:76
+#: ui_components/comment_status_panel.py:46
+#: ui_components/comment_status_panel.py:76
 msgid "Apply Comment"
-msgstr "주석 적용"
+msgstr "Appliquer le commentaire"
 
 #: dialogs/language_pair_dialog.py:280
 msgid "Apply Favorite"
-msgstr "즐겨찾기 적용"
+msgstr "Appliquer le favori"
 
 #: main_window.py:1947
 msgid "Apply Memory to Selected Items"
-msgstr "선택된 항목에 번역 메모리 적용 或 선택된 항목에 TM 적용"
+msgstr "Appliquer la mémoire à la sélection"
 
 #: main_window.py:3352
 msgid "Apply TM"
-msgstr "TM 적용"
+msgstr "Appliquer la MT"
 
 #: main_window.py:473 main_window.py:599
 msgid "Apply TM to Untranslated"
-msgstr "미번역 항목에 TM 적용"
+msgstr "Appliquer la MT aux non traduits"
 
 #: ui_components/details_panel.py:85 ui_components/details_panel.py:196
 msgid "Apply Translation"
-msgstr "번역 적용"
+msgstr "Appliquer la traduction"
 
 #: dialogs/keybinding_dialog.py:30
 msgid "Apply and Go to Next Untranslated"
-msgstr "적용 후 다음 미번역 항목으로 이동"
+msgstr "Appliquer et passer au suivant non traduit"
 
 #: main_window.py:4457 main_window.py:4547
 msgid "Applying updates..."
-msgstr "업데이트 적용 중..."
+msgstr "Application des mises à jour..."
 
 #: main_window.py:3380
 msgid ""
 "Are you sure you want to clear all entries from the in-memory TM?\n"
 "This cannot be undone."
 msgstr ""
-"메모리 내 모든 TM 항목을 지우시겠습니까?\n"
-"이 작업은 되돌릴 수 없습니다."
+"Êtes-vous sûr de vouloir effacer toutes les entrées de la MT en mémoire ?"
+"\n"
+"Cette action est irréversible."
 
 #: main_window.py:1501
 msgid "Are you sure you want to clear all recent file history?"
-msgstr "모든 최근 파일 기록을 지우시겠습니까?"
+msgstr "Êtes-vous sûr de vouloir effacer tout l'historique des fichiers récents ?"
 
 #: main_window.py:4337
 #, python-brace-format
-msgid "Are you sure you want to clear the translations for the {count} selected items?"
-msgstr "선택된 {count}개 항목의 번역을 지우시겠습니까?"
+msgid ""
+"Are you sure you want to clear the translations for the {count} selected "
+"items?"
+msgstr ""
+"Êtes-vous sûr de vouloir effacer les traductions de {count} éléments "
+"sélectionnés ?"
 
 #: ui_components/file_explorer_panel.py:252
 #, python-brace-format
@@ -357,7 +388,8 @@ msgid ""
 "\n"
 "- {items}"
 msgstr ""
-"다음 항목을 영구적으로 삭제하시겠습니까?\n"
+"Êtes-vous sûr de vouloir supprimer définitivement le(s) élément(s) "
+"suivant(s) ?\n"
 "\n"
 "- {items}"
 
@@ -368,9 +400,10 @@ msgid ""
 "\n"
 "The application will need to be restarted after deletion."
 msgstr ""
-"'{plugin_name}' 플러그인을 영구적으로 삭제하시겠습니까?\n"
+"Êtes-vous sûr de vouloir supprimer définitivement le plugin "
+"'{plugin_name}' ?\n"
 "\n"
-"삭제 후에는 애플리케이션을 다시 시작해야 합니다."
+"L'application devra être redémarrée après la suppression."
 
 #: main_window.py:3439
 #, python-brace-format
@@ -378,86 +411,99 @@ msgid ""
 "Are you sure you want to remove the TM entry for:\n"
 "'{text}...'?"
 msgstr ""
-"TM에서 다음 항목을 제거하시겠습니까?\n"
-"'{text}...'?"
+"Êtes-vous sûr de vouloir supprimer l'entrée de MT pour :\n"
+"'{text}...' ?"
 
 #: dialogs/keybinding_dialog.py:137
 msgid "Are you sure you want to reset all keybindings to their default settings?"
-msgstr "모든 단축키를 기본 설정으로 재설정하시겠습니까?"
+msgstr ""
+"Êtes-vous sûr de vouloir réinitialiser tous les raccourcis clavier à "
+"leurs paramètres par défaut ?"
 
 #: dialogs/extraction_pattern_dialog.py:153
 msgid ""
-"Are you sure you want to reset extraction rules to their default settings?\n"
+"Are you sure you want to reset extraction rules to their default "
+"settings?\n"
 "All current custom rules will be lost."
 msgstr ""
-"추출 규칙을 기본 설정으로 재설정하시겠습니까?\n"
-"현재 사용자 지정 규칙은 모두 손실됩니다."
+"Êtes-vous sûr de vouloir réinitialiser les règles d'extraction à leurs "
+"paramètres par défaut ?\n"
+"Toutes les règles personnalisées actuelles seront perdues."
 
 #: dialogs/prompt_manager_dialog.py:184
 msgid ""
 "Are you sure you want to reset the prompt to its default settings?\n"
 "All current customizations will be lost."
 msgstr ""
-"프롬프트를 기본 설정으로 재설정하시겠습니까?\n"
-"현재 사용자 지정 내용은 모두 손실됩니다."
+"Êtes-vous sûr de vouloir réinitialiser l'invite à ses paramètres par "
+"défaut ?\n"
+"Toutes les personnalisations actuelles seront perdues."
 
 #: main_window.py:3196
 #, python-brace-format
 msgid "Attempted to restore {count} old translations/statuses."
-msgstr "{count}개 이전 번역/상태 복원 시도됨."
+msgstr "Tentative de restauration de {count} anciennes traductions/statuts."
 
 #: plugins/plugin_dialog.py:383 plugins/plugin_dialog.py:398
 msgid "Author"
-msgstr "작성자"
+msgstr "Auteur"
 
 #: dialogs/settings_pages.py:129
 msgid "Auto-backup Translation Memory"
-msgstr "번역 메모리 자동 백업"
+msgstr "Sauvegarde automatique de la mémoire de traduction"
 
 #: dialogs/settings_pages.py:131
 msgid "Auto-compile .mo file when save .po file"
-msgstr ".po 파일 저장 시 .mo 파일 자동 컴파일"
+msgstr ""
+"Compilation automatique du fichier .mo lors de la sauvegarde du fichier "
+".po"
 
 #: dialogs/language_pair_dialog.py:243
 msgid "Auto-detect Source"
-msgstr "원본 언어 자동 감지"
+msgstr "Détection automatique de la source"
 
 #: dialogs/language_pair_dialog.py:255
 msgid "Auto-detect Target"
-msgstr "대상 언어 자동 감지"
+msgstr "Détection automatique de la cible"
 
 #: dialogs/settings_pages.py:117
 msgid "Auto-save Interval:"
-msgstr "자동 저장 간격:"
+msgstr "Intervalle de sauvegarde automatique :"
 
 #: main_window.py:795
 msgid "Auto-saving..."
-msgstr "자동 저장 중..."
+msgstr "Sauvegarde automatique en cours..."
 
 #: dialogs/prompt_manager_dialog.py:284
 msgid "Available Placeholders (Click to Insert)"
-msgstr "사용 가능한 플레이스홀더 (클릭하여 삽입)"
+msgstr "Espaces réservés disponibles (Cliquez pour insérer)"
 
 #: main_window.py:3313 services/code_file_service.py:160
 msgid "Backup Failed"
-msgstr "백업 실패"
+msgstr "Échec de la sauvegarde"
 
 #: services/code_file_service.py:156
 #, python-brace-format
 msgid "Backup created: {filename}"
-msgstr "백업이 생성되었습니다: {filename}"
+msgstr "Sauvegarde créée : {filename}"
 
 #: dialogs/statistics_dialog.py:46
 msgid "Calculation finished."
-msgstr "계산이 완료되었습니다."
+msgstr "Calcul terminé."
 
-#: dialogs/diff_dialog.py:153 dialogs/extraction_pattern_dialog.py:80 dialogs/extraction_pattern_dialog.py:278 dialogs/font_settings_dialog.py:61 dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342 dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:100 dialogs/prompt_manager_dialog.py:318 main_window.py:3961
+#: dialogs/diff_dialog.py:153 dialogs/extraction_pattern_dialog.py:80
+#: dialogs/extraction_pattern_dialog.py:278 dialogs/font_settings_dialog.py:61
+#: dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342
+#: dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:100
+#: dialogs/prompt_manager_dialog.py:318 main_window.py:3961
 msgid "Cancel"
-msgstr "취소"
+msgstr "Annuler"
 
 #: plugins/plugin_manager.py:450
 msgid "Cannot delete a plugin that is a dependency for other enabled plugins."
-msgstr "다른 활성화된 플러그인에서 사용 중인 의존성이므로 삭제할 수 없습니다."
+msgstr ""
+"Impossible de supprimer un plugin qui est une dépendance pour d'autres "
+"plugins activés."
 
 #: plugins/plugin_manager.py:519
 #, python-brace-format
@@ -467,8 +513,8 @@ msgid ""
 "\n"
 "- {deps}"
 msgstr ""
-"'{plugin_name}'을 비활성화할 수 없습니다.\n"
-"다음 활성화된 플러그인이 이에 의존하고 있습니다:\n"
+"Impossible de désactiver '{plugin_name}'.\n"
+"Les plugins suivants dépendent de lui :\n"
 "\n"
 "- {deps}"
 
@@ -480,301 +526,318 @@ msgid ""
 "\n"
 "- {deps}"
 msgstr ""
-"'{plugin_name}'을(를) 활성화할 수 없습니다.\n"
-"다음 비활성화된 플러그인이 필요합니다:\n"
+"Impossible d'activer '{plugin_name}'.\n"
+"Il nécessite les plugins désactivés suivants :\n"
 "\n"
 "- {deps}"
 
 #: utils/enums.py:38
 msgid "Capitalization Mismatch"
-msgstr "대소문자 불일치"
+msgstr "Différence de capitalisation"
 
 #: dialogs/search_dialog.py:49
 msgid "Case sensitive"
-msgstr "대소문자 구분"
+msgstr "Sensible à la casse"
 
 #: dialogs/settings_pages.py:294
 msgid "Check for formatting differences (whitespace, punctuation, etc.)"
-msgstr "형식 차이 확인 (공백, 구두점 등)"
+msgstr "Vérifier les différences de formatage (espaces, ponctuation, etc.)"
 
 #: dialogs/settings_pages.py:290
 msgid "Check for missing/extra placeholders"
-msgstr "누락/추가된 플레이스홀더 확인"
+msgstr "Vérifier les marqueurs manquants/supplémentaires"
 
 #: dialogs/settings_pages.py:302
 msgid "Check for unusual translation length/expansion ratio"
-msgstr "비정상적인 번역 길이/확장 비율 확인"
+msgstr "Vérifier la longueur inhabituelle/le ratio d'expansion de la traduction"
 
 #: plugins/plugin_manager.py:195
 #, python-brace-format
 msgid "Circular dependency detected in plugins: {nodes}. Cannot load."
-msgstr "플러그인에서 순환 종속성이 감지되었습니다: {nodes}. 로드할 수 없습니다."
+msgstr ""
+"Dépendance circulaire détectée dans les plugins : {nodes}. Chargement "
+"impossible."
 
 #: main_window.py:1474
 msgid "Clear History"
-msgstr "기록 지우기"
+msgstr "Effacer l'historique"
 
 #: main_window.py:1949
 msgid "Clear Selected Translations"
-msgstr "선택된 번역 지우기"
+msgstr "Effacer les traductions sélectionnées"
 
 #: main_window.py:3376
 msgid "Clear TM"
-msgstr "TM 지우기"
+msgstr "Effacer la MT"
 
 #: ui_components/tm_panel.py:40 ui_components/tm_panel.py:125
 msgid "Clear TM for Selected"
-msgstr "선택된 항목의 TM 지우기"
+msgstr "Effacer la MT pour la sélection"
 
 #: main_window.py:4366
 #, python-brace-format
 msgid "Cleared {count} translations."
-msgstr "{count}개 번역 지워짐."
+msgstr "{count} traductions effacées."
 
 #: main_window.py:3551
 msgid "Clipboard content pasted to translation."
-msgstr "클립보드 내용이 번역에 붙여넣어졌습니다."
+msgstr "Contenu du presse-papiers collé dans la traduction."
 
-#: dialogs/marketplace_dialog.py:279 dialogs/search_dialog.py:86 dialogs/statistics_dialog.py:395 plugins/plugin_dialog.py:190
+#: dialogs/marketplace_dialog.py:279 dialogs/search_dialog.py:86
+#: dialogs/statistics_dialog.py:395 plugins/plugin_dialog.py:190
 msgid "Close"
-msgstr "닫기"
+msgstr "Fermer"
 
 #: dialogs/font_settings_dialog.py:48
 msgid "Code Context"
-msgstr "코드 컨텍스트"
+msgstr "Contexte du code"
 
 #: main_window.py:1642
 msgid "Code file loading failed"
-msgstr "코드 파일 로드 실패"
+msgstr "Échec du chargement du fichier de code"
 
 #: main_window.py:2556
 #, python-brace-format
 msgid "Code file saved to: {filename}"
-msgstr "코드 파일이 다음 위치에 저장됨: {filename}"
+msgstr "Fichier de code enregistré sous : {filename}"
 
-#: dialogs/search_dialog.py:58 main_window.py:618 main_window.py:2736 main_window.py:2796 main_window.py:2804
+#: dialogs/search_dialog.py:58 main_window.py:618 main_window.py:2736
+#: main_window.py:2796 main_window.py:2804
 msgid "Comment"
-msgstr "주석"
+msgstr "Commentaire"
 
 #: main_window.py:645 main_window.py:1022
 msgid "Comment && Status"
-msgstr "주석 && 상태"
+msgstr "Commentaire && Statut"
 
 #: main_window.py:593 main_window.py:1049
 msgid "Comment && Status Panel"
-msgstr "주석 && 상태 패널"
+msgstr "Commentaire && Panneau d'état"
 
 #: main_window.py:2414
 #, python-brace-format
 msgid "Comment updated for ID {id}..."
-msgstr "ID {id}에 대한 주석 업데이트됨..."
+msgstr "Commentaire mis à jour pour l'ID {id}..."
 
 #: main_window.py:2391
 msgid "Comment updated."
-msgstr "주석 업데이트됨."
+msgstr "Commentaire mis à jour."
 
-#: ui_components/comment_status_panel.py:30 ui_components/comment_status_panel.py:75
+#: ui_components/comment_status_panel.py:30
+#: ui_components/comment_status_panel.py:75
 msgid "Comment:"
-msgstr "주석:"
+msgstr "Commentaire :"
 
 #: main_window.py:312 main_window.py:556
 msgid "Compare/Import New Version..."
-msgstr "새 버전 비교/가져오기..."
+msgstr "Comparer/Importer une nouvelle version..."
 
 #: main_window.py:4472
 msgid "Comparing versions..."
-msgstr "버전 비교 중..."
+msgstr "Comparaison des versions..."
 
 #: main_window.py:4564
 msgid "Comparison Failed"
-msgstr "비교 실패"
+msgstr "Comparaison échouée"
 
 #: dialogs/diff_dialog.py:103
 msgid "Comparison Results Summary"
-msgstr "비교 결과 요약"
+msgstr "Résumé des résultats de comparaison"
 
 #: main_window.py:4447 main_window.py:4537
 msgid "Comparison complete. Found "
-msgstr "비교 완료. 발견됨 "
+msgstr "Comparaison terminée. Trouvé "
 
 #: plugins/plugin_dialog.py:273
 msgid "Compatibility Warning"
-msgstr "호환성 경고"
+msgstr "Avertissement de compatibilité"
 
 #: dialogs/marketplace_dialog.py:432 plugins/plugin_dialog.py:426
 msgid "Compatible"
-msgstr "호환 가능"
+msgstr "Compatible"
 
-#: dialogs/extraction_pattern_dialog.py:153 dialogs/keybinding_dialog.py:137 dialogs/prompt_manager_dialog.py:184
+#: dialogs/extraction_pattern_dialog.py:153 dialogs/keybinding_dialog.py:137
+#: dialogs/prompt_manager_dialog.py:184
 msgid "Confirm"
-msgstr "확인"
+msgstr "Confirmer"
 
 #: main_window.py:3991
 msgid "Confirm Batch Translation"
-msgstr "일괄 번역 확인"
+msgstr "Confirmer la traduction par lots"
 
 #: main_window.py:3379 main_window.py:3438 main_window.py:4336
 msgid "Confirm Clear"
-msgstr "지우기 확인"
+msgstr "Confirmer l'effacement"
 
 #: plugins/plugin_dialog.py:543 ui_components/file_explorer_panel.py:251
 msgid "Confirm Deletion"
-msgstr "삭제 확인"
+msgstr "Confirmer la suppression"
 
 #: main_window.py:3473
 msgid "Confirm Operation"
-msgstr "작업 확인"
+msgstr "Confirmer l'opération"
 
 #: main_window.py:2578
 msgid "Confirm Overwrite"
-msgstr "덮어쓰기 확인"
+msgstr "Confirmer l'écrasement"
 
 #: main_window.py:3160
 msgid "Confirm Reload"
-msgstr "재로드 확인"
+msgstr "Confirmer le rechargement"
 
 #: main_window.py:3405
 msgid "Confirm Update TM"
-msgstr "TM 업데이트 확인"
+msgstr "Confirmer la mise à jour de la MT"
 
 #: dialogs/diff_dialog.py:146
 msgid "Confirm and Update Project"
-msgstr "확인 후 프로젝트 업데이트"
+msgstr "Confirmer et mettre à jour le projet"
 
 #: dialogs/font_settings_dialog.py:118 main_window.py:1500
 msgid "Confirmation"
-msgstr "확인"
+msgstr "Confirmation"
 
 #: services/ai_translator.py:69
 msgid "Connection failed"
-msgstr "연결 실패"
+msgstr "Échec de la connexion"
 
 #: services/ai_translator.py:67
 msgid "Connection successful. Test translation"
-msgstr "연결 성공. 테스트 번역"
+msgstr "Connexion réussie. Test de traduction"
 
 #: dialogs/prompt_manager_dialog.py:80
 msgid "Content"
-msgstr "내용"
+msgstr "Contenu"
 
 #: dialogs/prompt_manager_dialog.py:274
 msgid "Content:"
-msgstr "내용:"
+msgstr "Contenu :"
 
 #: dialogs/settings_pages.py:216
 msgid "Context & Prompts"
-msgstr "컨텍스트 및 프롬프트"
+msgstr "Contexte et invites"
 
 #: main_window.py:641 main_window.py:1003
 msgid "Context Preview"
-msgstr "컨텍스트 미리보기"
+msgstr "Aperçu du contexte"
 
 #: main_window.py:594 main_window.py:1041
 msgid "Context Preview Panel"
-msgstr "컨텍스트 미리보기 패널"
+msgstr "Panneau d'aperçu du contexte"
 
 #: ui_components/file_explorer_panel.py:235
 #, python-brace-format
 msgid "Copied {count} file name(s) to clipboard."
-msgstr "파일 이름 {count}개가 클립보드에 복사되었습니다."
+msgstr "{count} nom(s) de fichier copié(s) dans le presse-papiers."
 
 #: ui_components/file_explorer_panel.py:223
 #, python-brace-format
 msgid "Copied {count} full path(s) to clipboard."
-msgstr "전체 경로 {count}개가 클립보드에 복사되었습니다."
+msgstr "{count} chemins complets copiés dans le presse-papiers."
 
 #: main_window.py:3528
 #, python-brace-format
 msgid "Copied {count} original strings to clipboard."
-msgstr "원본 문자열 {count}개가 클립보드에 복사되었습니다."
+msgstr "{count} chaînes originales copiées dans le presse-papiers."
 
 #: main_window.py:3535
 #, python-brace-format
 msgid "Copied {count} translations to clipboard."
-msgstr "번역 {count}개가 클립보드에 복사되었습니다."
+msgstr "{count} traductions copiées dans le presse-papiers."
 
 #: ui_components/file_explorer_panel.py:229
 msgid "Copy File Name"
-msgstr "파일 이름 복사"
+msgstr "Copier le nom du fichier"
 
 #: ui_components/file_explorer_panel.py:218
 msgid "Copy Full Path"
-msgstr "전체 경로 복사"
+msgstr "Copier le chemin complet"
 
 #: main_window.py:432 main_window.py:582 main_window.py:1913
 msgid "Copy Original"
-msgstr "원본 복사"
+msgstr "Copier l'original"
 
 #: main_window.py:1914
 msgid "Copy Translation"
-msgstr "번역 복사"
+msgstr "Copier la traduction"
 
 #: main_window.py:2659
 #, python-brace-format
 msgid "Could not compile MO file: {error}"
-msgstr "MO 파일을 컴파일할 수 없습니다: {error}"
+msgstr "Impossible de compiler le fichier MO : {error}"
 
 #: main_window.py:3314
 #, python-brace-format
 msgid "Could not create backup for TM: {error}"
-msgstr "TM 백업을 생성할 수 없습니다: {error}"
+msgstr "Impossible de créer une sauvegarde pour la MT : {error}"
 
 #: services/code_file_service.py:161
 #, python-brace-format
 msgid "Could not create code file backup '{filename}': {error}"
-msgstr "코드 파일 백업 '{filename}'을 생성할 수 없습니다: {error}"
+msgstr ""
+"Impossible de créer une sauvegarde du fichier de code '{filename}' : "
+"{error}"
 
 #: services/ai_translator.py:60
 msgid "Could not decode API response. Response text"
-msgstr "API 응답을 디코딩할 수 없습니다. 응답 텍스트"
+msgstr "Impossible de décoder la réponse de l'API. Texte de la réponse"
 
 #: main_window.py:3261
 #, python-brace-format
-msgid "Could not determine original/translation columns from '{filename}' header. Will try to use the first two columns by default (A=Original, B=Translation)."
-msgstr "'{filename}' 헤더에서 원본/번역 열을 확인할 수 없습니다. 기본적으로 처음 두 열을 사용합니다 (A=원본, B=번역)."
+msgid ""
+"Could not determine original/translation columns from '{filename}' "
+"header. Will try to use the first two columns by default (A=Original, "
+"B=Translation)."
+msgstr ""
+"Impossible de déterminer les colonnes original/traduction à partir de l"
+"'en-tête de '{filename}'. Tentative d'utilisation des deux premières "
+"colonnes par défaut (A=Original, B=Traduction)."
 
 #: main_window.py:2768
 #, python-brace-format
 msgid "Could not export project translations to Excel: {error}"
-msgstr "프로젝트 번역을 Excel로 내보낼 수 없습니다: {error}"
+msgstr "Impossible d'exporter les traductions du projet vers Excel : {error}"
 
 #: main_window.py:2930
 #, python-brace-format
 msgid "Could not export project translations to JSON: {error}"
-msgstr "프로젝트 번역을 JSON으로 내보낼 수 없습니다: {error}"
+msgstr "Impossible d'exporter les traductions du projet vers JSON : {error}"
 
 #: main_window.py:2970
 #, python-brace-format
 msgid "Could not export project translations to YAML: {error}"
-msgstr "프로젝트 번역을 YAML로 내보낼 수 없습니다: {error}"
+msgstr "Impossible d'exporter les traductions du projet vers YAML : {error}"
 
 #: main_window.py:3400
 msgid "Could not find data for the selected item."
-msgstr "선택된 항목에 대한 데이터를 찾을 수 없습니다."
+msgstr "Impossible de trouver les données pour l'élément sélectionné."
 
 #: main_window.py:3148
 msgid "Could not get code content for re-extraction."
-msgstr "재추출을 위한 코드 내용을 가져올 수 없습니다."
+msgstr "Impossible d'obtenir le contenu du code pour la ré-extraction."
 
 #: main_window.py:2890
 #, python-brace-format
 msgid "Could not import project translations from Excel: {error}"
-msgstr "Excel에서 프로젝트 번역을 가져올 수 없습니다: {error}"
+msgstr "Impossible d'importer les traductions du projet depuis Excel : {error}"
 
-#: dialogs/extraction_pattern_dialog.py:182 dialogs/prompt_manager_dialog.py:212
+#: dialogs/extraction_pattern_dialog.py:182
+#: dialogs/prompt_manager_dialog.py:212
 #, python-brace-format
 msgid "Could not load preset file: {error}"
-msgstr "프리셋 파일을 로드할 수 없습니다: {error}"
+msgstr "Impossible de charger le fichier de préréglage : {error}"
 
 #: main_window.py:1713
 #, python-brace-format
 msgid "Could not load project file '{filename}': {error}"
-msgstr "프로젝트 파일 '{filename}'을(를) 로드할 수 없습니다: {error}"
+msgstr "Impossible de charger le fichier de projet '{filename}' : {error}"
 
 #: main_window.py:1639
 #, python-brace-format
 msgid "Could not open or parse code file '{filename}': {error}"
-msgstr "코드 파일 '{filename}'을(를) 열거나 구문 분석할 수 없습니다: {error}"
+msgstr ""
+"Impossible d'ouvrir ou d'analyser le fichier de code '{filename}' : "
+"{error}"
 
 #: main_window.py:3144
 #, python-brace-format
@@ -783,371 +846,408 @@ msgid ""
 "Using in-memory version.\n"
 "Error: {error}"
 msgstr ""
-"{filepath}을(를) 디스크에서 다시 읽을 수 없습니다.\n"
-"메모리 내 버전을 사용합니다.\n"
-"오류: {error}"
+"Impossible de relire {filepath} depuis le disque.\n"
+"Utilisation de la version en mémoire.\n"
+"Erreur : {error}"
 
 #: main_window.py:2562
 #, python-brace-format
 msgid "Could not save code file: {error}"
-msgstr "코드 파일을 저장할 수 없습니다: {error}"
+msgstr "Impossible d'enregistrer le fichier de code : {error}"
 
-#: dialogs/extraction_pattern_dialog.py:197 dialogs/prompt_manager_dialog.py:227
+#: dialogs/extraction_pattern_dialog.py:197
+#: dialogs/prompt_manager_dialog.py:227
 #, python-brace-format
 msgid "Could not save preset file: {error}"
-msgstr "프리셋 파일을 저장할 수 없습니다: {error}"
+msgstr "Impossible d'enregistrer le fichier de préréglage : {error}"
 
 #: plugins/plugin_dialog.py:412
 msgid "Current"
-msgstr "현재"
+msgstr "Actuel"
 
 #: dialogs/language_pair_dialog.py:308
 msgid "Current Selection:"
-msgstr "현재 선택:"
+msgstr "Sélection actuelle :"
 
-#: dialogs/extraction_pattern_dialog.py:92 dialogs/extraction_pattern_dialog.py:114 dialogs/extraction_pattern_dialog.py:174 dialogs/extraction_pattern_dialog.py:243 dialogs/extraction_pattern_dialog.py:292
+#: dialogs/extraction_pattern_dialog.py:92
+#: dialogs/extraction_pattern_dialog.py:114
+#: dialogs/extraction_pattern_dialog.py:174
+#: dialogs/extraction_pattern_dialog.py:243
+#: dialogs/extraction_pattern_dialog.py:292
 msgid "Custom"
-msgstr "사용자 지정"
+msgstr "Personnalisé"
 
 #: ui_components/file_explorer_panel.py:212
 msgid "Delete"
-msgstr "삭제"
+msgstr "Supprimer"
 
 #: plugins/plugin_dialog.py:153 plugins/plugin_dialog.py:485
 msgid "Delete Plugin"
-msgstr "플러그인 삭제"
+msgstr "Supprimer le plugin"
 
 #: dialogs/extraction_pattern_dialog.py:39 dialogs/prompt_manager_dialog.py:59
 msgid "Delete Selected"
-msgstr "선택 삭제"
+msgstr "Supprimer la sélection"
 
 #: plugins/plugin_dialog.py:582
 msgid "Dependency Check"
-msgstr "종속성 확인"
+msgstr "Vérification des dépendances"
 
 #: plugins/plugin_manager.py:263 plugins/plugin_manager.py:523
 msgid "Dependency Error"
-msgstr "종속성 오류"
+msgstr "Erreur de dépendance"
 
 #: dialogs/prompt_manager_dialog.py:302
 msgid "Description"
-msgstr "설명"
+msgstr "Description"
 
 #: plugins/plugin_dialog.py:478
 msgid "Disable"
-msgstr "비활성화"
+msgstr "Désactiver"
 
 #: main_window.py:1118
 msgid "Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"
-msgstr "표시됨: 0/0 | 번역됨: 0 | 미번역: 0 | 무시됨: 0"
+msgstr "Affiché : 0/0 | Traduit : 0 | Non traduit : 0 | Ignoré : 0"
 
 #: main_window.py:1140
 #, python-brace-format
-msgid "Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}"
-msgstr "표시됨: {displayed_count}/{total_count} | 번역됨: {translated_visible} | 미번역: {untranslated_visible} | 무시됨: {ignored_visible}"
+msgid ""
+"Displayed: {displayed_count}/{total_count} | Translated: "
+"{translated_visible} | Untranslated: {untranslated_visible} | Ignored: "
+"{ignored_visible}"
+msgstr ""
+"Affiché : {displayed_count}/{total_count} | Traduit : "
+"{translated_visible} | Non traduit : {untranslated_visible} | Ignoré : "
+"{ignored_visible}"
 
 #: main_window.py:3958
 msgid "Do you want to overwrite them, skip them, or cancel the operation?"
-msgstr "덮어쓰기, 건너뛰기 또는 작업을 취소하시겠습니까?"
+msgstr "Voulez-vous les remplacer, les ignorer ou annuler l'opération ?"
 
 #: dialogs/statistics_dialog.py:671
 msgid "Double-click to locate."
-msgstr "더블 클릭으로 위치 확인."
+msgstr "Double-cliquez pour localiser."
 
 #: dialogs/marketplace_dialog.py:478
 msgid "Download Error"
-msgstr "다운로드 오류"
+msgstr "Erreur de téléchargement"
 
 #: dialogs/marketplace_dialog.py:477
 #, python-brace-format
 msgid "Download failed: {error}"
-msgstr "다운로드 실패: {error}"
+msgstr "Téléchargement échoué : {error}"
 
 #: dialogs/marketplace_dialog.py:467
 #, python-brace-format
 msgid "Downloading {plugin_name}..."
-msgstr "{plugin_name} 다운로드 중..."
+msgstr "Téléchargement de {plugin_name} en cours..."
 
 #: main_window.py:1563
 #, python-brace-format
 msgid "Drag and drop failed: '{filename}' is not a file."
-msgstr "드래그 앤 드롭 실패: '{filename}'은(는) 파일이 아닙니다."
+msgstr "Échec du glisser-déposer : '{filename}' n'est pas un fichier."
 
 #: main_window.py:1556
 #, python-brace-format
 msgid "Drag and drop failed: Invalid file type '{filename}'"
-msgstr "드래그 앤 드롭 실패: 유효하지 않은 파일 형식 '{filename}'"
+msgstr "Échec du glisser-déposer : Type de fichier invalide '{filename}'"
 
-#: dialogs/prompt_manager_dialog.py:121 dialogs/prompt_manager_dialog.py:128 dialogs/prompt_manager_dialog.py:261
+#: dialogs/prompt_manager_dialog.py:121 dialogs/prompt_manager_dialog.py:128
+#: dialogs/prompt_manager_dialog.py:261
 msgid "Dynamic Instruction"
-msgstr "동적 지침"
+msgstr "Instruction dynamique"
 
 #: main_window.py:735
 msgid "Dynamic sorting enabled."
-msgstr "동적 정렬 활성화됨."
+msgstr "Tri dynamique activé."
 
 #: main_window.py:639 main_window.py:994
 msgid "Edit && Details"
-msgstr "편집 및 세부 정보"
+msgstr "Modifier && Détails"
 
 #: main_window.py:592 main_window.py:1037
 msgid "Edit && Details Panel"
-msgstr "편집 && 상세 정보 패널"
+msgstr "Édition && Panneau de détails"
 
 #: main_window.py:1944 main_window.py:4279
 msgid "Edit Comment..."
-msgstr "주석 편집..."
+msgstr "Modifier le commentaire..."
 
 #: dialogs/extraction_pattern_dialog.py:144
 msgid "Edit Extraction Rule"
-msgstr "추출 규칙 편집"
+msgstr "Modifier la règle d'extraction"
 
 #: dialogs/prompt_manager_dialog.py:175
 msgid "Edit Prompt Fragment"
-msgstr "프롬프트 조각 편집"
+msgstr "Modifier le fragment d'invite"
 
 #: plugins/plugin_dialog.py:478
 msgid "Enable"
-msgstr "활성화"
+msgstr "Activer"
 
 #: dialogs/prompt_manager_dialog.py:267
 msgid "Enable this fragment"
-msgstr "이 조각 활성화"
+msgstr "Activer ce fragment"
 
 #: dialogs/extraction_pattern_dialog.py:235
 msgid "Enable this rule"
-msgstr "이 규칙 활성화"
+msgstr "Activer cette règle"
 
 #: dialogs/extraction_pattern_dialog.py:60 dialogs/prompt_manager_dialog.py:80
 msgid "Enabled"
-msgstr "활성화됨"
+msgstr "Activé"
 
 #: dialogs/settings_pages.py:287
 msgid "Enabled Validation Checks"
-msgstr "활성화된 유효성 검사"
+msgstr "Validations activées"
 
 #: utils/enums.py:48
 msgid "Ending Punctuation Mismatch"
-msgstr "종료 구두점 불일치"
+msgstr "Ponctuation finale non concordante"
 
 #: services/validation_service.py:103
 #, python-brace-format
 msgid "Ending punctuation differs: '{c1}' vs '{c2}'."
-msgstr "종료 구두점이 다릅니다: '{c1}' vs '{c2}'."
+msgstr "La ponctuation finale diffère : '{c1}' par rapport à '{c2}'."
 
 #: services/validation_service.py:99
 msgid "Ending punctuation presence differs."
-msgstr "끝 구두점 존재 여부가 다릅니다."
+msgstr "La ponctuation finale est différente."
 
 #: main_window.py:4275
 #, python-brace-format
 msgid "Enter comment for {count} selected items:"
-msgstr "선택된 {count}개 항목에 대한 주석 입력:"
+msgstr "Entrez un commentaire pour {count} éléments sélectionnés :"
 
-#: dialogs/extraction_pattern_dialog.py:180 dialogs/extraction_pattern_dialog.py:297 dialogs/extraction_pattern_dialog.py:300 dialogs/prompt_manager_dialog.py:210 main_window.py:1639 main_window.py:2282 main_window.py:2286 main_window.py:2550 main_window.py:2567 main_window.py:2571 main_window.py:3148 main_window.py:3291 main_window.py:3338 main_window.py:3400 main_window.py:4569 plugins/plugin_dialog.py:532 plugins/plugin_dialog.py:561 ui_components/file_explorer_panel.py:265
+#: dialogs/extraction_pattern_dialog.py:180
+#: dialogs/extraction_pattern_dialog.py:297
+#: dialogs/extraction_pattern_dialog.py:300
+#: dialogs/prompt_manager_dialog.py:210 main_window.py:1639 main_window.py:2282
+#: main_window.py:2286 main_window.py:2550 main_window.py:2567
+#: main_window.py:2571 main_window.py:3148 main_window.py:3291
+#: main_window.py:3338 main_window.py:3400 main_window.py:4569
+#: plugins/plugin_dialog.py:532 plugins/plugin_dialog.py:561
+#: ui_components/file_explorer_panel.py:265
 msgid "Error"
-msgstr "오류"
+msgstr "Erreur"
 
 #: main_window.py:3013
 #, python-brace-format
 msgid "Error extracting POT file: {error}"
-msgstr "POT 파일 추출 오류: {error}"
+msgstr "Erreur lors de l'extraction du fichier POT : {error}"
 
 #: main_window.py:3068
 #, python-brace-format
 msgid "Error importing PO file '{filename}': {error}"
-msgstr "PO 파일 '{filename}' 가져오기 오류: {error}"
+msgstr "Erreur lors de l'importation du fichier PO '{filename}' : {error}"
 
 #: main_window.py:2886
 #, python-brace-format
 msgid "Error processing Excel file (possibly column names issue): {error}"
-msgstr "Excel 파일 처리 오류 (열 이름 문제일 수 있음): {error}"
+msgstr ""
+"Erreur lors du traitement du fichier Excel (problème de noms de colonnes "
+"possible) : {error}"
 
 #: main_window.py:2871
 #, python-brace-format
 msgid "Error processing Excel row {row_num}: {error}. Skipping this row."
-msgstr "Excel {row_num}행 처리 오류: {error}. 이 행 건너뛰기."
+msgstr ""
+"Erreur lors du traitement de la ligne Excel {row_num} : {error}. Cette "
+"ligne est ignorée."
 
 #: main_window.py:3215
 #, python-brace-format
 msgid "Error reloading translatable text: {error}"
-msgstr "번역 가능한 텍스트 재로드 오류: {error}"
+msgstr "Erreur lors du rechargement du texte traduisible : {error}"
 
 #: dialogs/statistics_dialog.py:505
 msgid "Error:"
-msgstr "오류:"
+msgstr "Erreur :"
 
 #: main_window.py:1722
 #, python-brace-format
 msgid "Error: '{filename}' is not a valid file."
-msgstr "오류: '{filename}'은(는) 유효한 파일이 아닙니다."
+msgstr "Erreur : '{filename}' n'est pas un fichier valide."
 
 #: dialogs/marketplace_dialog.py:293
 #, python-brace-format
 msgid "Error: Could not load marketplace index. {error}"
-msgstr "오류: 마켓 인덱스를 불러올 수 없습니다. {error}"
+msgstr "Erreur : Impossible de charger l'index de la boutique. {error}"
 
 #: dialogs/extraction_pattern_dialog.py:261
 msgid "Escape for Regex (Left)"
-msgstr "정규식 이스케이프 (왼쪽)"
+msgstr "Échapper pour Regex (Gauche)"
 
 #: dialogs/extraction_pattern_dialog.py:265
 msgid "Escape for Regex (Right)"
-msgstr "정규식 이스케이프 (오른쪽)"
+msgstr "Échapper pour Regex (Droite)"
 
 #: main_window.py:2780
 msgid "Excel files (*.xlsx)"
-msgstr "Excel 파일 (*.xlsx)"
+msgstr "Fichiers Excel (*.xlsx)"
 
 #: main_window.py:3345 main_window.py:3369
 msgid "Excel files (*.xlsx);;All files (*.*)"
-msgstr "Excel 파일 (*.xlsx);;모든 파일 (*.*)"
+msgstr "Fichiers Excel (*.xlsx);;Tous les fichiers (*.*)"
 
 #: main_window.py:2790
 msgid "Excel header format is incorrect or empty."
-msgstr "Excel 헤더 형식이 올바르지 않거나 비어 있습니다."
+msgstr "Le format de l'en-tête Excel est incorrect ou vide."
 
 #: main_window.py:2803
 #, python-brace-format
 msgid ""
 "Excel header must contain 'UUID' and '{translation_col}' columns.\n"
-"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
+"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', "
+"'{original_semantic_col}'."
 msgstr ""
-"Excel 헤더에는 'UUID' 및 '{translation_col}' 열이 포함되어야 합니다.\n"
-"선택적 열: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
+"L'en-tête Excel doit contenir les colonnes 'UUID' et '{translation_col}'."
+"\n"
+"Colonnes optionnelles : '{comment_col}', '{reviewed_col}', "
+"'{ignored_col}', '{original_semantic_col}'."
 
 #: main_window.py:411 main_window.py:576
 msgid "Exit"
-msgstr "종료"
+msgstr "Quitter"
 
 #: dialogs/statistics_dialog.py:565
 msgid "Expansion Ratio"
-msgstr "확장 비율"
+msgstr "Taux d'expansion"
 
 #: main_window.py:353 main_window.py:564
 msgid "Export"
-msgstr "내보내기"
+msgstr "Exporter"
 
 #: main_window.py:376 main_window.py:574 main_window.py:3367
 msgid "Export Current TM (Excel)"
-msgstr "현재 TM 내보내기 (Excel)"
+msgstr "Exporter la MT actuelle (Excel)"
 
-#: main_window.py:2767 main_window.py:2929 main_window.py:2969 main_window.py:3118
+#: main_window.py:2767 main_window.py:2929 main_window.py:2969
+#: main_window.py:3118
 msgid "Export Error"
-msgstr "내보내기 오류"
+msgstr "Erreur d'exportation"
 
 #: dialogs/extraction_pattern_dialog.py:187
 msgid "Export Extraction Rule Preset"
-msgstr "추출 규칙 프리셋 내보내기"
+msgstr "Exporter le préréglage de règle d'extraction"
 
-#: dialogs/extraction_pattern_dialog.py:197 dialogs/prompt_manager_dialog.py:227
+#: dialogs/extraction_pattern_dialog.py:197
+#: dialogs/prompt_manager_dialog.py:227
 msgid "Export Failed"
-msgstr "내보내기 실패"
+msgstr "Échec de l'exportation"
 
 #: dialogs/extraction_pattern_dialog.py:53 dialogs/prompt_manager_dialog.py:73
 msgid "Export Preset"
-msgstr "프리셋 내보내기"
+msgstr "Exporter le préréglage"
 
 #: main_window.py:2727
 msgid "Export Project Translations to Excel"
-msgstr "프로젝트 번역을 Excel로 내보내기"
+msgstr "Exporter les traductions du projet vers Excel"
 
 #: main_window.py:2910
 msgid "Export Project Translations to JSON"
-msgstr "프로젝트 번역을 JSON으로 내보내기"
+msgstr "Exporter les traductions du projet vers JSON"
 
 #: main_window.py:2950
 msgid "Export Project Translations to YAML"
-msgstr "프로젝트 번역을 YAML로 내보내기"
+msgstr "Exporter les traductions du projet vers YAML"
 
 #: dialogs/prompt_manager_dialog.py:217
 msgid "Export Prompt Preset"
-msgstr "프롬프트 프리셋 내보내기"
+msgstr "Exporter le préréglage d'invite"
 
 #: main_window.py:356 main_window.py:567
 msgid "Export to Excel"
-msgstr "Excel로 내보내기"
+msgstr "Exporter vers Excel"
 
 #: main_window.py:361 main_window.py:568
 msgid "Export to JSON"
-msgstr "JSON으로 내보내기"
+msgstr "Exporter vers JSON"
 
 #: main_window.py:371 main_window.py:572 main_window.py:3103
 msgid "Export to PO File..."
-msgstr "PO 파일로 내보내기..."
+msgstr "Exporter vers le fichier PO..."
 
 #: main_window.py:366 main_window.py:569
 msgid "Export to YAML"
-msgstr "YAML로 내보내기"
+msgstr "Exporter vers YAML"
 
 #: plugins/plugin_dialog.py:452
 msgid "External Libraries"
-msgstr "외부 라이브러리"
+msgstr "Bibliothèques externes"
 
 #: utils/enums.py:36
 msgid "Extra Placeholder"
-msgstr "추가 플레이스홀더"
+msgstr "Placeholder supplémentaire"
 
 #: services/validation_service.py:49
 #, python-brace-format
 msgid "Extra placeholders: {placeholders}"
-msgstr "추가 플레이스홀더: {placeholders}"
+msgstr "Placeholders supplémentaires : {placeholders}"
 
 #: main_window.py:400 main_window.py:570
 msgid "Extract POT Template from Code..."
-msgstr "코드에서 POT 템플릿 추출..."
+msgstr "Extraire le modèle POT du code..."
 
 #: main_window.py:1609
 msgid "Extracting strings..."
-msgstr "문자열 추출 중..."
+msgstr "Extraction des chaînes..."
 
 #: main_window.py:3121
 msgid "Extraction Rule Manager"
-msgstr "추출 규칙 관리자"
+msgstr "Gestionnaire de règles d'extraction"
 
 #: main_window.py:3124
 msgid "Extraction Rules Updated"
-msgstr "추출 규칙 업데이트됨"
+msgstr "Règles d'extraction mises à jour"
 
 #: dialogs/settings_pages.py:122
 msgid "Extraction Rules:"
-msgstr "추출 규칙:"
+msgstr "Règles d'extraction :"
 
 #: dialogs/extraction_pattern_dialog.py:204
 msgid "Extraction rules updated. Consider reloading the text."
-msgstr "추출 규칙이 업데이트되었습니다. 텍스트를 다시 로드하는 것이 좋습니다."
+msgstr "Règles d'extraction mises à jour. Envisagez de recharger le texte."
 
 #: main_window.py:3125
-msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"
-msgstr "추출 규칙이 업데이트되었습니다. 새 규칙을 사용하여 현재 코드의 번역 가능한 텍스트를 즉시 다시 로드하시겠습니까?"
+msgid ""
+"Extraction rules updated. Do you want to reload the translatable text of "
+"the current code using the new rules immediately?"
+msgstr ""
+"Règles d'extraction mises à jour. Voulez-vous recharger immédiatement le "
+"texte traduisible du code actuel en utilisant les nouvelles règles ?"
 
 #: plugins/plugin_dialog.py:620
 msgid "Failed"
-msgstr "실패"
+msgstr "Échec"
 
 #: ui_components/file_explorer_panel.py:266
 #, python-brace-format
 msgid "Failed to delete {path}: {error}"
-msgstr "{path} 삭제 실패: {error}"
+msgstr "Échec de la suppression de {path} : {error}"
 
 #: main_window.py:3118
 #, python-brace-format
 msgid "Failed to export to PO file: {error}"
-msgstr "PO 파일로 내보내기 실패: {error}"
+msgstr "Échec de l'exportation vers le fichier PO : {error}"
 
 #: plugins/plugin_manager.py:407
 #, python-brace-format
 msgid "Failed to extract the archive: {error}"
-msgstr "압축 파일 풀기 실패: {error}"
+msgstr "Échec de l'extraction de l'archive : {error}"
 
 #: dialogs/marketplace_dialog.py:40
 #, python-brace-format
-msgid "Failed to fetch data (HTTP {status_code}). The marketplace file might be missing or the server is down."
-msgstr "데이터 가져오기 실패 (HTTP {status_code}). 마켓 파일이 없거나 서버가 다운되었을 수 있습니다."
+msgid ""
+"Failed to fetch data (HTTP {status_code}). The marketplace file might be "
+"missing or the server is down."
+msgstr ""
+"Échec de la récupération des données (HTTP {status_code}). Le fichier de "
+"la boutique est peut-être manquant ou le serveur est indisponible."
 
 #: dialogs/marketplace_dialog.py:294
 msgid "Failed to fetch plugin list from the server."
-msgstr "서버에서 플러그인 목록을 가져오지 못했습니다."
+msgstr "Échec de la récupération de la liste des plugins depuis le serveur."
 
 #: plugins/plugin_dialog.py:621
 #, python-brace-format
@@ -1155,430 +1255,469 @@ msgid ""
 "Failed to install library '{lib}'.\n"
 "Please check the log for details."
 msgstr ""
-"'{lib}' 라이브러리 설치 실패.\n"
-"자세한 내용은 로그를 확인하세요."
+"Échec de l'installation de la bibliothèque '{lib}'.\n"
+"Veuillez vérifier le journal pour plus de détails."
 
 #: main_window.py:3291 main_window.py:3292
 #, python-brace-format
 msgid "Failed to load Excel TM: {error}"
-msgstr "Excel TM 로드 실패: {error}"
+msgstr "Échec du chargement de la MT Excel : {error}"
 
 #: plugins/plugin_dialog.py:249
 #, python-brace-format
 msgid "Failed to load: {reason}"
-msgstr "로드 실패: {reason}"
+msgstr "Échec du chargement : {reason}"
 
 #: plugins/plugin_manager.py:446
 #, python-brace-format
 msgid "Failed to move plugin files to the destination: {error}"
-msgstr "플러그인 파일을 목적지로 이동하지 못했습니다: {error}"
+msgstr "Échec du déplacement des fichiers du plugin vers la destination : {error}"
 
 #: main_window.py:1758
 #, python-brace-format
 msgid "Failed to open '{filename}': {error}"
-msgstr "'{filename}' 파일 열기 실패: {error}"
+msgstr "Échec d'ouverture du fichier '{filename}' : {error}"
 
 #: plugins/plugin_manager.py:440
 #, python-brace-format
 msgid "Failed to remove the existing plugin directory: {error}"
-msgstr "기존 플러그인 폴더 제거 실패: {error}"
+msgstr "Échec de la suppression du répertoire du plugin existant : {error}"
 
 #: main_window.py:2662
 #, python-brace-format
 msgid "Failed to save PO file: {error}"
-msgstr "PO 파일 저장 실패: {error}"
+msgstr "Échec de l'enregistrement du fichier PO : {error}"
 
 #: main_window.py:3338
 #, python-brace-format
 msgid "Failed to save TM: {error}"
-msgstr "TM 저장 실패: {error}"
+msgstr "Échec de l'enregistrement de la MT : {error}"
 
 #: dialogs/language_pair_dialog.py:270 dialogs/language_pair_dialog.py:296
 msgid "Favorite Pairs"
-msgstr "즐겨찾는 쌍"
+msgstr "Paires favorites"
 
 #: dialogs/marketplace_dialog.py:286
 msgid "Fetching plugin index..."
-msgstr "플러그인 인덱스 가져오는 중..."
+msgstr "Récupération de l'index des plugins..."
 
 #: main_window.py:2579
 #, python-brace-format
-msgid "File '{filename}' already exists. Overwrite? A backup file (.bak) will be created."
-msgstr "파일 '{filename}'이(가) 이미 존재합니다. 덮어쓰시겠습니까? 백업 파일(.bak)이 생성됩니다."
+msgid ""
+"File '{filename}' already exists. Overwrite? A backup file (.bak) will be"
+" created."
+msgstr ""
+"Le fichier '{filename}' existe déjà. Écraser ? Une copie de sauvegarde "
+"(.bak) sera créée."
 
 #: main_window.py:1481
 #, python-brace-format
 msgid "File '{filepath}' does not exist."
-msgstr "파일 '{filepath}'이(가) 존재하지 않습니다."
+msgstr "Le fichier '{filepath}' n'existe pas."
 
 #: main_window.py:637 main_window.py:969
 msgid "File Explorer"
-msgstr "파일 탐색기"
+msgstr "Explorateur de fichiers"
 
 #: main_window.py:591 main_window.py:1033
 msgid "File Explorer Panel"
-msgstr "파일 탐색기 패널"
+msgstr "Panneau de l'explorateur de fichiers"
 
 #: main_window.py:1760
 msgid "File Open Error"
-msgstr "파일 열기 오류"
+msgstr "Erreur d'ouverture du fichier"
 
 #: main_window.py:3143
 msgid "File Read Error"
-msgstr "파일 읽기 오류"
+msgstr "Erreur de lecture du fichier"
 
 #: main_window.py:1480
 msgid "File not found"
-msgstr "파일을 찾을 수 없습니다"
+msgstr "Fichier introuvable"
 
 #: main_window.py:1753
 #, python-brace-format
-msgid "File type for '{filename}' is not supported by the application or any active plugin."
-msgstr "'{filename}' 파일 유형은 애플리케이션 또는 활성 플러그인에서 지원되지 않습니다."
+msgid ""
+"File type for '{filename}' is not supported by the application or any "
+"active plugin."
+msgstr ""
+"Le type de fichier pour '{filename}' n'est pas pris en charge par "
+"l'application ou par tout plugin actif."
 
-#: ui_components/file_explorer_panel.py:69 ui_components/file_explorer_panel.py:269
+#: ui_components/file_explorer_panel.py:69
+#: ui_components/file_explorer_panel.py:269
 msgid "Filter files..."
-msgstr "파일 필터링..."
+msgstr "Filtrer les fichiers..."
 
 #: main_window.py:623 main_window.py:828
 msgid "Filter:"
-msgstr "필터:"
+msgstr "Filtrer :"
 
 #: main_window.py:1861
 #, python-brace-format
 msgid "Filtered by '{search_term}'."
-msgstr "'{search_term}'(으)로 필터링됨."
+msgstr "Filtré par '{search_term}'."
 
 #: dialogs/statistics_dialog.py:44
 msgid "Finalizing..."
-msgstr "완료 중..."
+msgstr "Finalisation en cours..."
 
 #: main_window.py:628 main_window.py:875
 msgid "Find"
-msgstr "찾기"
+msgstr "Rechercher"
 
 #: dialogs/search_dialog.py:73
 msgid "Find Next"
-msgstr "다음 찾기"
+msgstr "Rechercher suivant"
 
 #: dialogs/search_dialog.py:76
 msgid "Find Previous"
-msgstr "이전 찾기"
+msgstr "Rechercher précédent"
 
 #: main_window.py:3520
 msgid "Find and Replace"
-msgstr "찾기 및 바꾸기"
+msgstr "Rechercher et remplacer"
 
 #: dialogs/search_dialog.py:33
 msgid "Find what:"
-msgstr "찾을 내용:"
+msgstr "Rechercher quoi :"
 
 #: main_window.py:426 main_window.py:581
 msgid "Find/Replace..."
-msgstr "찾기/바꾸기..."
+msgstr "Rechercher/Remplacer..."
 
 #: dialogs/settings_pages.py:298
 msgid "Flag entries marked as 'Fuzzy'"
-msgstr "'Fuzzy'로 표시된 항목 플래그"
+msgstr "Entrées marquées comme 'Floues'"
 
 #: dialogs/font_settings_dialog.py:74
 msgid "Font Family:"
-msgstr "폰트 패밀리:"
+msgstr "Famille de police :"
 
 #: main_window.py:784
 msgid "Font Settings"
-msgstr "폰트 설정"
+msgstr "Paramètres de police"
 
 #: dialogs/settings_pages.py:171
 msgid "Font Settings..."
-msgstr "폰트 설정..."
+msgstr "Paramètres de police..."
 
 #: main_window.py:787
-msgid "Font settings have been changed. Please restart the application for the changes to take effect."
-msgstr "글꼴 설정이 변경되었습니다. 변경 사항을 적용하려면 애플리케이션을 재시작하세요."
+msgid ""
+"Font settings have been changed. Please restart the application for the "
+"changes to take effect."
+msgstr ""
+"Les paramètres de police ont été modifiés. Veuillez redémarrer "
+"l'application pour que les modifications prennent effet."
 
 #: dialogs/settings_pages.py:173
 msgid "Fonts:"
-msgstr "폰트:"
+msgstr "Polices :"
 
 #: plugins/plugin_dialog.py:225
 #, python-brace-format
 msgid "Force-enabled with missing libraries: {libs}"
-msgstr "누락된 라이브러리로 강제 활성화됨: {libs}"
+msgstr "Activé de force avec des bibliothèques manquantes : {libs}"
 
 #: dialogs/search_dialog.py:182
 #, python-brace-format
 msgid "Found {count} matches."
-msgstr "{count}개 일치 항목 발견."
+msgstr "{count} correspondances trouvées."
 
 #: utils/enums.py:58
 msgid "Fuzzy Translation"
-msgstr "퍼지 번역"
+msgstr "Traduction floue"
 
 #: main_window.py:4517
 msgid "Fuzzy match, please review."
-msgstr "퍼지 매칭, 검토 필요."
+msgstr "Correspondance approximative, veuillez vérifier."
 
 #: dialogs/settings_dialog.py:105
 msgid "General"
-msgstr "일반"
+msgstr "Général"
 
 #: main_window.py:1104
 msgid "Hint: "
-msgstr "힌트: "
+msgstr "Indice : "
 
 #: main_window.py:1102
 msgid "Hint: requests not found, AI translation is disabled."
-msgstr "힌트: requests를 찾을 수 없습니다. AI 번역 기능이 비활성화됩니다."
+msgstr "Indice : 'requests' introuvable, la traduction IA est désactivée."
 
 #: dialogs/marketplace_dialog.py:439
 msgid "Homepage"
-msgstr "홈페이지"
+msgstr "Page d'accueil"
 
 #: main_window.py:1934
 msgid "Ignore Warnings for Selected"
-msgstr "선택된 항목에 대한 경고 무시"
+msgstr "Ignorer les avertissements pour la sélection"
 
 #: main_window.py:2504
 #, python-brace-format
 msgid "Ignore status for ID {id} -> {status}"
-msgstr "ID {id}에 대한 무시 상태 -> {status}"
+msgstr "Statut d'ignoré pour l'ID {id} -> {status}"
 
-#: main_window.py:2146 main_window.py:4250 ui_components/comment_status_panel.py:57
+#: main_window.py:2146 main_window.py:4250
+#: ui_components/comment_status_panel.py:57
 msgid "Ignore this string"
-msgstr "이 문자열 무시"
+msgstr "Ignorer cette chaîne"
 
-#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590 main_window.py:624 main_window.py:831 main_window.py:2737 main_window.py:2798 main_window.py:2806 main_window.py:3698
+#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590
+#: main_window.py:624 main_window.py:831 main_window.py:2737
+#: main_window.py:2798 main_window.py:2806 main_window.py:3698
 msgid "Ignored"
-msgstr "무시됨"
+msgstr "Ignoré"
 
 #: main_window.py:2201
 #, python-brace-format
 msgid "Ignored warnings for {count} item(s)."
-msgstr "{count}개 항목에 대한 경고를 무시했습니다."
+msgstr "Avertissements ignorés pour {count} élément(s)."
 
 #: main_window.py:336 main_window.py:562
 msgid "Import"
-msgstr "가져오기"
+msgstr "Importer"
 
-#: main_window.py:2790 main_window.py:2802 main_window.py:2885 main_window.py:2889
+#: main_window.py:2790 main_window.py:2802 main_window.py:2885
+#: main_window.py:2889
 msgid "Import Error"
-msgstr "가져오기 오류"
+msgstr "Erreur d'importation"
 
 #: dialogs/extraction_pattern_dialog.py:162
 msgid "Import Extraction Rule Preset"
-msgstr "추출 규칙 프리셋 가져오기"
+msgstr "Importer un préréglage de règle d'extraction"
 
-#: dialogs/extraction_pattern_dialog.py:182 dialogs/prompt_manager_dialog.py:212
+#: dialogs/extraction_pattern_dialog.py:182
+#: dialogs/prompt_manager_dialog.py:212
 msgid "Import Failed"
-msgstr "가져오기 실패"
+msgstr "Échec de l'importation"
 
 #: dialogs/extraction_pattern_dialog.py:49 dialogs/prompt_manager_dialog.py:69
 msgid "Import Preset"
-msgstr "프리셋 가져오기"
+msgstr "Importer un préréglage"
 
 #: dialogs/prompt_manager_dialog.py:193
 msgid "Import Prompt Preset"
-msgstr "프롬프트 프리셋 가져오기"
+msgstr "Importer un préréglage d'invite"
 
 #: main_window.py:348 main_window.py:573 main_window.py:3343
 msgid "Import TM (Excel)"
-msgstr "TM 가져오기 (Excel)"
+msgstr "Importer la MT (Excel)"
 
 #: main_window.py:339 main_window.py:566 main_window.py:2778
 msgid "Import Translations from Excel"
-msgstr "Excel에서 번역 가져오기"
+msgstr "Importer les traductions depuis Excel"
 
 #: main_window.py:344 main_window.py:571
 msgid "Import Translations from PO File..."
-msgstr "PO 파일에서 번역 가져오기..."
+msgstr "Importer les traductions depuis le fichier PO..."
 
 #: dialogs/pot_drop_dialog.py:28
 msgid "Import as New File"
-msgstr "새 파일로 가져오기"
+msgstr "Importer comme nouveau fichier"
 
 #: main_window.py:2881
 #, python-brace-format
 msgid "Imported/updated {field_count} fields for {item_count} items from Excel."
-msgstr "Excel에서 {item_count}개 항목에 대해 {field_count}개 필드 가져오기/업데이트됨."
+msgstr ""
+"{field_count} champs importés/mis à jour pour {item_count} éléments "
+"depuis Excel."
 
 #: main_window.py:3384
 msgid "In-memory TM has been cleared."
-msgstr "메모리 내 TM이 지워졌습니다."
+msgstr "La MT en mémoire a été effacée."
 
 #: dialogs/marketplace_dialog.py:435 plugins/plugin_dialog.py:411
 msgid "Incompatible"
-msgstr "호환되지 않음"
+msgstr "Incompatible"
 
 #: plugins/plugin_manager.py:111
 #, python-brace-format
 msgid "Incompatible with app version (requires {req}, current is {curr})"
-msgstr "앱 버전과 호환되지 않음 (필요 버전: {req}, 현재 버전: {curr})"
+msgstr ""
+"Incompatible avec la version de l'application (requiert {req}, version "
+"actuelle {curr})"
 
-#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291 dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:745 main_window.py:2612 main_window.py:2711 main_window.py:2772 main_window.py:2894 main_window.py:2934 main_window.py:3088 main_window.py:3132 main_window.py:3395 main_window.py:3432 main_window.py:3449 main_window.py:3466 main_window.py:3469 main_window.py:3518 main_window.py:4171 main_window.py:4304 main_window.py:4328
+#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291
+#: dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:745
+#: main_window.py:2612 main_window.py:2711 main_window.py:2772
+#: main_window.py:2894 main_window.py:2934 main_window.py:3088
+#: main_window.py:3132 main_window.py:3395 main_window.py:3432
+#: main_window.py:3449 main_window.py:3466 main_window.py:3469
+#: main_window.py:3518 main_window.py:4171 main_window.py:4304
+#: main_window.py:4328
 msgid "Info"
-msgstr "정보"
+msgstr "Info"
 
 #: services/diff_service.py:35
 msgid "Inherited from old version"
-msgstr "이전 버전에서 상속됨"
+msgstr "Hérité de l'ancienne version"
 
 #: services/validation_service.py:111
 msgid "Initial capitalization mismatch."
-msgstr "초기 대문자 불일치."
+msgstr "Différence de capitalisation initiale."
 
 #: dialogs/statistics_dialog.py:37
 msgid "Initialization complete."
-msgstr "초기화 완료."
+msgstr "Initialisation terminée."
 
 #: main_window.py:261
 msgid "Initializing services in the background..."
-msgstr "백그라운드에서 서비스 초기화 중..."
+msgstr "Initialisation des services en arrière-plan..."
 
 #: dialogs/statistics_dialog.py:34
 msgid "Initializing..."
-msgstr "초기화 중..."
+msgstr "Initialisation en cours..."
 
 #: dialogs/diff_dialog.py:132
 msgid "Inline Differences"
-msgstr "인라인 차이"
+msgstr "Différences en ligne"
 
 #: dialogs/marketplace_dialog.py:166 plugins/plugin_dialog.py:586
 msgid "Install"
-msgstr "설치"
+msgstr "Installer"
 
 #: plugins/plugin_dialog.py:589
 msgid "Install Dependency"
-msgstr "의존성 설치"
+msgstr "Installer la dépendance"
 
 #: plugins/plugin_dialog.py:179
 msgid "Install from File..."
-msgstr "파일에서 설치..."
+msgstr "Installer à partir d'un fichier..."
 
 #: dialogs/marketplace_dialog.py:492 plugins/plugin_dialog.py:517
 msgid "Installation Error"
-msgstr "설치 오류"
+msgstr "Erreur d'installation"
 
 #: plugins/plugin_dialog.py:515
 msgid "Installation Failed"
-msgstr "설치 실패"
+msgstr "Échec de l'installation"
 
 #: plugins/plugin_dialog.py:504
 msgid "Installation Successful"
-msgstr "설치 성공"
+msgstr "Installation réussie"
 
 #: plugins/plugin_manager.py:436
 msgid "Installation cancelled by user."
-msgstr "사용자가 설치를 취소했습니다."
+msgstr "Installation annulée par l'utilisateur."
 
 #: dialogs/marketplace_dialog.py:491
 #, python-brace-format
 msgid "Installation failed: {error}"
-msgstr "설치 실패: {error}"
+msgstr "Échec de l'installation : {error}"
 
-#: dialogs/marketplace_dialog.py:158 plugins/plugin_dialog.py:442 plugins/plugin_dialog.py:457
+#: dialogs/marketplace_dialog.py:158 plugins/plugin_dialog.py:442
+#: plugins/plugin_dialog.py:457
 msgid "Installed"
-msgstr "설치됨"
+msgstr "Installé"
 
 #: plugins/plugin_dialog.py:598
 #, python-brace-format
 msgid "Installing {lib}..."
-msgstr "{lib} 설치 중..."
+msgstr "Installation de {lib} en cours..."
 
 #: dialogs/marketplace_dialog.py:483
 #, python-brace-format
 msgid "Installing {plugin_name}..."
-msgstr "{plugin_name} 설치 중..."
+msgstr "Installation de {plugin_name} en cours..."
 
 #: plugins/plugin_manager.py:424
-msgid "Invalid plugin archive structure. The archive must contain either a single plugin folder or the plugin's files (__init__.py, etc.) directly."
-msgstr "잘못된 플러그인 압축 파일 구조입니다. 압축 파일은 단일 플러그인 폴더 또는 플러그인 파일(__init__.py 등)을 직접 포함해야 합니다."
+msgid ""
+"Invalid plugin archive structure. The archive must contain either a "
+"single plugin folder or the plugin's files (__init__.py, etc.) directly."
+msgstr ""
+"Structure d'archive de plugin invalide. L'archive doit contenir soit un "
+"seul dossier de plugin, soit les fichiers du plugin (__init__.py, etc.) "
+"directement."
 
 #: dialogs/statistics_dialog.py:623
 msgid "Issue Description"
-msgstr "문제 설명"
+msgstr "Description du problème"
 
 #: dialogs/statistics_dialog.py:290
 msgid "Issues & Warnings"
-msgstr "문제 및 경고"
+msgstr "Problèmes et avertissements"
 
 #: dialogs/statistics_dialog.py:551
 msgid "Items with Warnings"
-msgstr "경고가 있는 항목"
+msgstr "Éléments avec avertissements"
 
 #: main_window.py:2912
 msgid "JSON files (*.json);;All Files (*.*)"
-msgstr "JSON 파일 (*.json);;모든 파일 (*.*)"
+msgstr "Fichiers JSON (*.json);;Tous les fichiers (*.*)"
 
 #: main_window.py:779
 msgid "Keybinding Settings"
-msgstr "단축키 설정"
+msgstr "Paramètres des raccourcis clavier"
 
 #: dialogs/settings_pages.py:175
 msgid "Keybinding Settings..."
-msgstr "단축키 설정..."
+msgstr "Paramètres des raccourcis clavier..."
 
 #: dialogs/keybinding_dialog.py:151
 msgid "Keybindings have been updated."
-msgstr "단축키가 업데이트되었습니다."
+msgstr "Les raccourcis clavier ont été mis à jour."
 
 #: dialogs/settings_pages.py:177
 msgid "Keybindings:"
-msgstr "단축키:"
+msgstr "Raccourcis clavier :"
 
 #: dialogs/settings_dialog.py:165
 msgid "Language Changed"
-msgstr "언어 변경됨"
+msgstr "Langue modifiée"
 
 #: dialogs/language_pair_dialog.py:183
 msgid "Language Pair Settings"
-msgstr "언어 쌍 설정"
+msgstr "Paramètres de la paire de langues"
 
 #: main_window.py:519 main_window.py:609
 msgid "Language Pair Settings..."
-msgstr "언어 쌍 설정..."
+msgstr "Paramètres de la paire de langues..."
 
 #: dialogs/language_pair_dialog.py:263
 msgid "Language Selection"
-msgstr "언어 선택"
+msgstr "Sélection de la langue"
 
 #: main_window.py:775
 #, python-brace-format
 msgid "Language pair set to {src} -> {tgt}."
-msgstr "언어 쌍이 {src} -> {tgt}(으)로 설정되었습니다."
+msgstr "Paire de langues définie sur {src} -> {tgt}."
 
 #: main_window.py:768
 msgid "Language pair updated. Re-validating all entries..."
-msgstr "언어 쌍이 업데이트되었습니다. 모든 항목을 다시 검증 중..."
+msgstr "Paire de langues mise à jour. Revalidation de toutes les entrées..."
 
 #: utils/enums.py:40
 msgid "Leading Whitespace Mismatch"
-msgstr "선행 공백 불일치"
+msgstr "Espace blanc de début incohérent"
 
 #: dialogs/extraction_pattern_dialog.py:60
 msgid "Left Delimiter (Regex)"
-msgstr "왼쪽 구분 기호 (정규식)"
+msgstr "Délimiteur gauche (Regex)"
 
 #: dialogs/extraction_pattern_dialog.py:248
 msgid "Left Delimiter:"
-msgstr "왼쪽 구분 기호:"
+msgstr "Délimiteur gauche :"
 
 #: dialogs/extraction_pattern_dialog.py:300
 msgid "Left and right delimiters cannot be empty."
-msgstr "왼쪽 및 오른쪽 구분 기호는 비워둘 수 없습니다."
+msgstr "Les délimiteurs gauche et droit ne peuvent pas être vides."
 
 #: utils/enums.py:52
 msgid "Length Deviation (Major)"
-msgstr "길이 편차 (심각)"
+msgstr "Écart de longueur (Majeur)"
 
 #: utils/enums.py:50
 msgid "Length Deviation (Minor)"
-msgstr "길이 편차 (경미)"
+msgstr "Écart de longueur (mineur)"
 
 #: services/validation_service.py:143 services/validation_service.py:151
 #, python-brace-format
-msgid "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
-msgstr "길이 경고: 비정상적인 확장 비율({actual:.1f}x), 예상 값은 약 {expected:.1f}x."
+msgid ""
+"Length warning: Unusual expansion ratio ({actual:.1f}x), expected around "
+"{expected:.1f}x."
+msgstr ""
+"Avertissement de longueur : Ratio d'expansion inhabituel ({actual:.1f}x),"
+" attendu autour de {expected:.1f}x."
 
 #: plugins/plugin_dialog.py:615
 #, python-brace-format
@@ -1586,364 +1725,384 @@ msgid ""
 "Library '{lib}' installed successfully.\n"
 "Please restart the application to use the plugin."
 msgstr ""
-"라이브러리 '{lib}'이(가) 성공적으로 설치되었습니다.\n"
-"플러그인을 사용하려면 애플리케이션을 다시 시작하세요."
+"Bibliothèque '{lib}' installée avec succès.\n"
+"Veuillez redémarrer l'application pour utiliser le plugin."
 
 #: plugins/plugin_dialog.py:583
 #, python-brace-format
 msgid "Library '{lib}' is already installed and compatible."
-msgstr "라이브러리 '{lib}'이(가) 이미 설치되어 있으며 호환됩니다."
+msgstr "La bibliothèque '{lib}' est déjà installée et compatible."
 
 #: main_window.py:620
 msgid "Line"
-msgstr "줄"
+msgstr "Ligne"
 
 #: utils/enums.py:44
 msgid "Line Count Mismatch"
-msgstr "줄 수 불일치"
+msgstr "Incompatibilité du nombre de lignes"
 
 #: services/validation_service.py:56
 msgid "Line count differs from original."
-msgstr "원본과 줄 수가 다릅니다."
+msgstr "Le nombre de lignes diffère de l'original."
 
 #: main_window.py:3059
 #, python-brace-format
 msgid "Loaded {count} entries from PO file {filename}."
-msgstr "PO 파일 {filename}에서 {count}개 항목 로드됨."
+msgstr "{count} entrées chargées depuis le fichier PO {filename}."
 
 #: main_window.py:1633
 #, python-brace-format
 msgid "Loaded {count} translatable strings from {filename}"
-msgstr "{filename}에서 {count}개 번역 가능한 문자열 로드됨"
+msgstr "{count} chaînes traduisibles chargées depuis {filename}"
 
 #: main_window.py:3284
 #, python-brace-format
 msgid "Loaded/merged {count} Excel TM records from '{filename}'."
-msgstr "'{filename}'에서 {count}개 Excel TM 기록 로드/병합됨."
+msgstr "{count} enregistrements de MT Excel chargés/fusionnés depuis '{filename}'."
 
 #: plugins/plugin_dialog.py:387
 msgid "Loading Failed"
-msgstr "로드 실패"
+msgstr "Échec du chargement"
 
 #: dialogs/marketplace_dialog.py:278
 msgid "Loading marketplace..."
-msgstr "마켓 불러오는 중..."
+msgstr "Chargement de la boutique..."
 
 #: main_window.py:2659
 msgid "MO Compilation Failed"
-msgstr "MO 컴파일 실패"
+msgstr "Échec de la compilation du fichier MO"
 
-#: dialogs/prompt_manager_dialog.py:168 dialogs/prompt_manager_dialog.py:169 dialogs/prompt_manager_dialog.py:170
+#: dialogs/prompt_manager_dialog.py:168 dialogs/prompt_manager_dialog.py:169
+#: dialogs/prompt_manager_dialog.py:170
 msgid "Main App"
-msgstr "메인 앱"
+msgstr "Application principale"
 
 #: dialogs/settings_pages.py:120
 msgid "Manage Extraction Rules..."
-msgstr "추출 규칙 관리..."
+msgstr "Gérer les règles d'extraction..."
 
 #: plugins/plugin_manager.py:477
 msgid "Manage Plugins..."
-msgstr "플러그인 관리..."
+msgstr "Gérer les extensions..."
 
 #: main_window.py:1919
 msgid "Mark as Ignored"
-msgstr "무시됨으로 표시"
+msgstr "Marquer comme ignoré"
 
 #: main_window.py:1926
 msgid "Mark as Reviewed"
-msgstr "검토됨으로 표시"
+msgstr "Marquer comme révisé"
 
 #: main_window.py:1927
 msgid "Mark as Unreviewed"
-msgstr "미검토됨으로 표시"
+msgstr "Marquer comme non révisé"
 
 #: dialogs/marketplace_dialog.py:302
 #, python-brace-format
 msgid "Marketplace loaded. Found {count} plugins."
-msgstr "마켓을 불러왔습니다. {count}개의 플러그인을 찾았습니다."
+msgstr "Boutique chargée. {count} plugins trouvés."
 
 #: dialogs/search_dialog.py:292
 msgid "Match is not in a replaceable column (Translation or Comment)."
-msgstr "일치 항목이 교체 가능한 열(번역 또는 주석)에 없습니다."
+msgstr ""
+"La correspondance ne se trouve pas dans une colonne remplaçable "
+"(Traduction ou Commentaire)."
 
 #: dialogs/search_dialog.py:212
 #, python-brace-format
 msgid "Match {current}/{total}"
-msgstr "일치 {current}/{total}"
+msgstr "Correspondance {current}/{total}"
 
 #: dialogs/settings_pages.py:213
 msgid "Max Concurrent Requests:"
-msgstr "최대 동시 요청 수:"
+msgstr "Nombre max. de requêtes concurrentes :"
 
 #: plugins/plugin_dialog.py:294
 msgid "Missing Dependencies"
-msgstr "누락된 종속성"
+msgstr "Dépendances manquantes"
 
 #: plugins/plugin_dialog.py:419
 msgid "Missing Libraries"
-msgstr "누락된 라이브러리"
+msgstr "Bibliothèques manquantes"
 
 #: plugins/plugin_manager.py:81
 #, python-brace-format
 msgid "Missing dependencies: {deps}"
-msgstr "누락된 종속성: {deps}"
+msgstr "Dépendances manquantes : {deps}"
 
 #: plugins/plugin_dialog.py:230
 #, python-brace-format
 msgid "Missing external libraries: {libs}. Check to force-enable."
-msgstr "누락된 외부 라이브러리: {libs}. 강제 활성화하려면 확인하세요."
+msgstr ""
+"Bibliothèques externes manquantes : {libs}. Cochez pour forcer "
+"l'activation."
 
 #: services/validation_service.py:45
 #, python-brace-format
 msgid "Missing placeholders: {placeholders}"
-msgstr "누락된 플레이스홀더: {placeholders}"
+msgstr "Placeholders manquants : {placeholders}"
 
 #: dialogs/settings_pages.py:200
 msgid "Model Name:"
-msgstr "모델 이름:"
+msgstr "Nom du modèle :"
 
 #: dialogs/diff_dialog.py:177
 msgid "Modified/Inherited"
-msgstr "수정됨/상속됨"
+msgstr "Modifié/Hérité"
 
 #: main_window.py:1535
 #, python-brace-format
 msgid "Multiple files dropped. Opening the first one: {filename}"
-msgstr "여러 파일이 삭제되었습니다. 첫 번째 파일 열기: {filename}"
+msgstr "Plusieurs fichiers déposés. Ouverture du premier : {filename}"
 
 #: dialogs/prompt_manager_dialog.py:170
 msgid "Nearby translated text for context."
-msgstr "문맥을 위한 주변의 번역된 텍스트입니다."
+msgstr "Texte traduit à proximité pour contexte."
 
 #: dialogs/prompt_manager_dialog.py:169
 msgid "Nearby untranslated original text."
-msgstr "문맥을 위한 주변의 번역되지 않은 원문입니다."
+msgstr "Texte original non traduit à proximité."
 
 #: dialogs/marketplace_dialog.py:294
 msgid "Network Error"
-msgstr "네트워크 오류"
+msgstr "Erreur réseau"
 
 #: dialogs/marketplace_dialog.py:34
-msgid "Network connection failed. Please check your internet connection and firewall settings."
-msgstr "네트워크 연결에 실패했습니다. 인터넷 연결과 방화벽 설정을 확인해주세요."
+msgid ""
+"Network connection failed. Please check your internet connection and "
+"firewall settings."
+msgstr ""
+"Échec de la connexion réseau. Veuillez vérifier votre connexion Internet "
+"et les paramètres de votre pare-feu."
 
 #: services/ai_translator.py:57
 msgid "Network error or API request failed"
-msgstr "네트워크 오류 또는 API 요청 실패"
+msgstr "Erreur réseau ou échec de la requête API"
 
 #: dialogs/diff_dialog.py:237
 msgid "New"
-msgstr "새로 추가됨"
+msgstr "Nouveau"
 
 #: dialogs/prompt_manager_dialog.py:142
 msgid "New Instruction"
-msgstr "새 지침"
+msgstr "Nouvelle instruction"
 
 #: dialogs/extraction_pattern_dialog.py:112
 msgid "New Rule"
-msgstr "새 규칙"
+msgstr "Nouvelle règle"
 
-#: main_window.py:2505 main_window.py:2541 main_window.py:2757 main_window.py:2758
+#: main_window.py:2505 main_window.py:2541 main_window.py:2757
+#: main_window.py:2758
 msgid "No"
-msgstr "아니요"
+msgstr "Non"
 
 #: main_window.py:4171
 msgid "No AI batch translation task is in progress."
-msgstr "진행 중인 AI 일괄 번역 작업이 없습니다."
+msgstr "Aucune tâche de traduction IA par lots n'est en cours."
 
 #: main_window.py:1464
 msgid "No History"
-msgstr "기록 없음"
+msgstr "Aucun historique"
 
 #: main_window.py:3915
 msgid "No Translation Needed"
-msgstr "번역 필요 없음"
+msgstr "Aucune traduction nécessaire"
 
 #: main_window.py:3512
 msgid "No applicable translations found in TM (or no changes needed)."
-msgstr "TM에서 적용 가능한 번역을 찾을 수 없습니다 (또는 변경 필요 없음)."
+msgstr ""
+"Aucune traduction applicable trouvée dans la MT (ou aucun changement "
+"nécessaire)."
 
 #: main_window.py:3132
 msgid "No code content loaded to reload."
-msgstr "다시 로드할 코드 내용이 로드되지 않았습니다."
+msgstr "Aucun contenu de code chargé à recharger."
 
 #: services/ai_translator.py:52
 msgid "No content in message"
-msgstr "메시지에 내용이 없습니다"
+msgstr "Aucun contenu dans le message"
 
 #: dialogs/statistics_dialog.py:505
 msgid "No data to display."
-msgstr "표시할 데이터가 없습니다."
+msgstr "Aucune donnée à afficher."
 
-#: main_window.py:2711 main_window.py:2894 main_window.py:2934 main_window.py:3088
+#: main_window.py:2711 main_window.py:2894 main_window.py:2934
+#: main_window.py:3088
 msgid "No data to export."
-msgstr "내보낼 데이터가 없습니다."
+msgstr "Aucune donnée à exporter."
 
 #: dialogs/statistics_dialog.py:631
 msgid "No issues found"
-msgstr "발견된 문제 없음"
+msgstr "Aucun problème trouvé"
 
 #: main_window.py:4371
 msgid "No items selected for AI translation."
-msgstr "AI 번역을 위해 선택된 항목이 없습니다."
+msgstr "Aucun élément sélectionné pour la traduction IA."
 
 #: main_window.py:2179
 msgid "No items selected to modify warning status."
-msgstr "경고 상태를 수정할 항목이 선택되지 않았습니다."
+msgstr "Aucun élément sélectionné pour modifier le statut d'avertissement."
 
 #: main_window.py:3976
 msgid "No items to process."
-msgstr "처리할 항목이 없습니다."
+msgstr "Aucun élément à traiter."
 
 #: main_window.py:1863
 #, python-brace-format
 msgid "No matches found for '{search_term}' under current filters."
-msgstr "현재 필터에서 '{search_term}'에 대한 일치 항목을 찾을 수 없습니다."
+msgstr ""
+"Aucune correspondance trouvée pour '{search_term}' sous les filtres "
+"actuels."
 
 #: dialogs/search_dialog.py:312
 msgid "No matches found in Translation or Comment columns."
-msgstr "번역 또는 주석 열에서 일치하는 항목을 찾을 수 없습니다."
+msgstr "Aucune correspondance trouvée dans les colonnes Traduction ou Commentaire."
 
 #: dialogs/search_dialog.py:264 dialogs/search_dialog.py:300
 msgid "No matches found to replace."
-msgstr "교체할 일치 항목이 없습니다."
+msgstr "Aucune correspondance trouvée à remplacer."
 
 #: dialogs/search_dialog.py:187
 msgid "No matches found."
-msgstr "일치 항목 없음."
+msgstr "Aucune correspondance trouvée."
 
 #: main_window.py:4329
 msgid "No matching TM entries or no changes needed for selected items."
-msgstr "일치하는 TM 항목이 없거나 선택된 항목에 변경이 필요 없습니다."
+msgstr ""
+"Aucune entrée de MT correspondante ou aucun changement nécessaire pour "
+"les éléments sélectionnés."
 
 #: main_window.py:1321
 msgid "No more actions to redo"
-msgstr "더 이상 되돌릴 작업이 없습니다"
+msgstr "Plus aucune action à refaire"
 
 #: main_window.py:1247
 msgid "No more actions to undo"
-msgstr "더 이상 실행 취소할 작업이 없습니다"
+msgstr "Plus aucune action à annuler"
 
 #: main_window.py:3622
 msgid "No more untranslated items."
-msgstr "더 이상 미번역 항목이 없습니다."
+msgstr "Plus d'éléments non traduits."
 
 #: main_window.py:2571
 msgid "No original code content to save."
-msgstr "저장할 원본 코드 내용이 없습니다."
+msgstr "Aucun contenu de code original à enregistrer."
 
 #: main_window.py:2567
 msgid "No original code file path."
-msgstr "원본 코드 파일 경로가 없습니다."
+msgstr "Aucun chemin de fichier de code original."
 
 #: main_window.py:3221
 msgid "No project data loaded to generate statistics."
-msgstr "통계 생성에 사용할 프로젝트 데이터가 로드되지 않았습니다."
+msgstr "Aucune donnée de projet chargée pour générer des statistiques."
 
 #: services/ai_translator.py:60
 msgid "No response object"
-msgstr "응답 객체 없음"
+msgstr "Aucun objet de réponse"
 
 #: main_window.py:3466
 msgid "No strings to apply TM to."
-msgstr "TM을 적용할 문자열이 없습니다."
+msgstr "Aucune chaîne à laquelle appliquer la MT."
 
 #: main_window.py:745
 msgid "No text available to detect language from."
-msgstr "감지할 수 있는 텍스트가 없습니다."
+msgstr "Aucun texte disponible pour la détection de la langue."
 
 #: main_window.py:3916
 msgid "No untranslated and non-ignored strings found."
-msgstr "미번역 및 무시되지 않은 문자열을 찾을 수 없습니다."
+msgstr "Aucune chaîne non traduite et non ignorée trouvée."
 
-#: dialogs/extraction_pattern_dialog.py:76 dialogs/extraction_pattern_dialog.py:274 dialogs/font_settings_dialog.py:57 dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341 dialogs/prompt_manager_dialog.py:96 dialogs/prompt_manager_dialog.py:314
+#: dialogs/extraction_pattern_dialog.py:76
+#: dialogs/extraction_pattern_dialog.py:274 dialogs/font_settings_dialog.py:57
+#: dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341
+#: dialogs/prompt_manager_dialog.py:96 dialogs/prompt_manager_dialog.py:314
 msgid "OK"
-msgstr "확인"
+msgstr "OK"
 
 #: dialogs/settings_pages.py:127
 msgid "On File Save"
-msgstr "파일 저장 시"
+msgstr "Lors de l'enregistrement du fichier"
 
 #: ui_components/file_explorer_panel.py:187
 msgid "Open"
-msgstr "열기"
+msgstr "Ouvrir"
 
 #: main_window.py:1570
 msgid "Open File"
-msgstr "파일 열기"
+msgstr "Ouvrir le fichier"
 
 #: plugins/plugin_dialog.py:182
 msgid "Open Marketplace..."
-msgstr "플러그인 마켓 열기..."
+msgstr "Ouvrir la Boutique de plugins..."
 
 #: plugins/plugin_dialog.py:148 plugins/plugin_dialog.py:482
 msgid "Open Plugin Directory"
-msgstr "플러그인 폴더 열기"
+msgstr "Ouvrir le répertoire des plugins"
 
 #: main_window.py:1712
 msgid "Open Project Error"
-msgstr "프로젝트 열기 오류"
+msgstr "Erreur d'ouverture du projet"
 
 #: main_window.py:1650
 msgid "Open Project File"
-msgstr "프로젝트 파일 열기"
+msgstr "Ouvrir le fichier de projet"
 
 #: main_window.py:307 main_window.py:555
 msgid "Open Project..."
-msgstr "프로젝트 열기..."
+msgstr "Ouvrir le projet..."
 
 #: main_window.py:1730
 msgid "Open operation cancelled by user."
-msgstr "사용자에 의해 열기 작업이 취소되었습니다."
+msgstr "Opération d'ouverture annulée par l'utilisateur."
 
 #: main_window.py:303 main_window.py:554
 msgid "Open..."
-msgstr "열기..."
+msgstr "Ouvrir..."
 
 #: main_window.py:1733
 #, python-brace-format
 msgid "Opening '{filename}'..."
-msgstr "'{filename}' 열기 중..."
+msgstr "Ouverture de '{filename}'..."
 
 #: main_window.py:1594 main_window.py:1659 main_window.py:3924
 msgid "Operation Restricted"
-msgstr "작업 제한됨"
+msgstr "Opération restreinte"
 
 #: dialogs/search_dialog.py:47
 msgid "Options"
-msgstr "옵션"
+msgstr "Options"
 
 #: dialogs/diff_dialog.py:160 dialogs/search_dialog.py:56 main_window.py:616
 msgid "Original"
-msgstr "원본"
+msgstr "Original"
 
 #: main_window.py:2738
 msgid "Original (Raw)"
-msgstr "원본 (Raw)"
+msgstr "Original (Brut)"
 
 #: main_window.py:2736 main_window.py:2800 main_window.py:2806
 msgid "Original (Semantic)"
-msgstr "원본 (Semantic)"
+msgstr "Original (Sémantique)"
 
 #: utils/enums.py:56
 msgid "Original Empty, Translation Not"
-msgstr "원본 비어 있음, 번역 없음"
+msgstr "Original vide, traduction non"
 
 #: services/validation_service.py:68
 msgid "Original ends with space, translation does not."
-msgstr "원본은 공백으로 끝나지만 번역은 그렇지 않습니다."
+msgstr "L'original se termine par un espace, la traduction non."
 
 #: services/validation_service.py:61
 msgid "Original starts with space, translation does not."
-msgstr "원본은 공백으로 시작하지만, 번역은 그렇지 않습니다."
+msgstr "L'original commence par un espace, la traduction non."
 
 #: main_window.py:2282
 msgid "Original text cannot be empty for a new entry."
-msgstr "새 항목의 원본 텍스트는 비워둘 수 없습니다."
+msgstr "Le texte original ne peut pas être vide pour une nouvelle entrée."
 
 #: ui_components/details_panel.py:43 ui_components/details_panel.py:194
 msgid "Original:"
-msgstr "원본:"
+msgstr "Original:"
 
 #: main_window.py:4276
 #, python-brace-format
@@ -1953,14 +2112,14 @@ msgid ""
 "\n"
 "Enter comment:"
 msgstr ""
-"원본:\n"
+"Original :\n"
 "{original_semantic}...\n"
 "\n"
-"주석 입력:"
+"Entrez un commentaire :"
 
 #: dialogs/font_settings_dialog.py:32
 msgid "Override default font settings"
-msgstr "기본 글꼴 설정 재정의"
+msgstr "Remplacer les paramètres de police par défaut"
 
 #: main_window.py:1510
 #, python-brace-format
@@ -1971,16 +2130,19 @@ msgid ""
 "Author: TheSkyC\n"
 "China Server ID: 小鸟游六花#56683 / Asia Server: 小鳥游六花#31665"
 msgstr ""
-"오버워치 사용자 지정 코드 번역 도구\n"
+"Outil de traduction de code personnalisé Overwatch\n"
 "\n"
-"버전: {version}\n"
-"제작자: TheSkyC\n"
-"중국 서버 ID: 小鸟游六花#56683 / 아시아 서버: 小鳥游六花#31665"
+"Version : {version}\n"
+"Auteur : TheSkyC\n"
+"ID Serveur Chine : 小鸟游六花#56683 / Serveur Asie : 小鳥游六花#31665"
 
-#: dialogs/extraction_pattern_dialog.py:164 dialogs/extraction_pattern_dialog.py:189
+#: dialogs/extraction_pattern_dialog.py:164
+#: dialogs/extraction_pattern_dialog.py:189
 #, python-brace-format
 msgid "Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)"
-msgstr "오버워치 추출 패턴 파일 (*{ext});;모든 파일 (*.*)"
+msgstr ""
+"Fichiers de motifs d'extraction Overwatch (*{ext});;Tous les fichiers "
+"(*.*)"
 
 #: main_window.py:140 main_window.py:541
 #, python-brace-format
@@ -1990,131 +2152,133 @@ msgstr "Overwatch Localizer - v{version}"
 #: main_window.py:1652 main_window.py:2634
 #, python-brace-format
 msgid "Overwatch Project Files (*{ext});;All Files (*.*)"
-msgstr "오버워치 프로젝트 파일 (*{ext});;모든 파일 (*.*)"
+msgstr "Fichiers de projet Overwatch (*{ext});;Tous les fichiers (*.*)"
 
 #: dialogs/prompt_manager_dialog.py:195 dialogs/prompt_manager_dialog.py:219
 #, python-brace-format
 msgid "Overwatch Prompt Files (*{ext});;All Files (*.*)"
-msgstr "오버워치 프롬프트 파일 (*{ext});;모든 파일 (*.*)"
+msgstr "Fichiers de prompts Overwatch (*{ext});;Tous les fichiers (*.*)"
 
 #: main_window.py:1573
 msgid "Overwatch Workshop Files (*.ow *.txt);;"
-msgstr "오버워치 워크샵 파일 (*.ow *.txt);;"
+msgstr "Fichiers d'atelier Overwatch (*.ow *.txt);;"
 
 #: main_window.py:2977 main_window.py:4580
 msgid "Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)"
-msgstr "오버워치 워크샵 파일 (*.ow *.txt);;모든 파일 (*.*)"
+msgstr "Fichiers d'atelier Overwatch (*.ow *.txt);;Tous les fichiers (*.*)"
 
 #: main_window.py:3959
 msgid "Overwrite All"
-msgstr "모두 덮어쓰기"
+msgstr "Écraser tout"
 
 #: main_window.py:3706 main_window.py:3945 main_window.py:3955
 msgid "Overwrite Confirmation"
-msgstr "덮어쓰기 확인"
+msgstr "Confirmation d'écrasement"
 
 #: main_window.py:3068
 msgid "PO Import Error"
-msgstr "PO 가져오기 오류"
+msgstr "Erreur d'importation PO"
 
 #: main_window.py:4575
 msgid "PO Template Files (*.pot);;All Files (*.*)"
-msgstr "PO 템플릿 파일 (*.pot);;모든 파일 (*.*)"
+msgstr "Fichiers de modèle PO (*.pot);;Tous les fichiers (*.*)"
 
 #: main_window.py:2985
 msgid "PO Template files (*.pot);;All files (*.*)"
-msgstr "PO 템플릿 파일 (*.pot);;모든 파일 (*.*)"
+msgstr "Fichiers modèles PO (*.pot);;Tous les fichiers (*.*)"
 
 #: main_window.py:1574
 msgid "PO Translation Files (*.po *.pot);;"
-msgstr "PO 번역 파일 (*.po *.pot);;"
+msgstr "Fichiers de traduction PO (*.po *.pot);;"
 
 #: main_window.py:3071
 msgid "PO file loading failed"
-msgstr "PO 파일 로드 실패"
+msgstr "Échec du chargement du fichier PO"
 
 #: main_window.py:2657
 #, python-brace-format
 msgid "PO file saved and MO file compiled: {filename}"
-msgstr "PO 파일 저장 및 MO 파일 컴파일 완료: {filename}"
+msgstr "Fichier PO enregistré et fichier MO compilé : {filename}"
 
 #: main_window.py:2648
 #, python-brace-format
 msgid "PO file saved to: {filename}"
-msgstr "PO 파일이 다음 위치에 저장됨: {filename}"
+msgstr "Fichier PO enregistré sous : {filename}"
 
 #: main_window.py:2670 main_window.py:3105
 msgid "PO files (*.po);;All Files (*.*)"
-msgstr "PO 파일 (*.po);;모든 파일 (*.*)"
+msgstr "Fichiers PO (*.po);;Tous les fichiers (*.*)"
 
 #: main_window.py:3081
 msgid "PO files (*.po);;POT files (*.pot);;All files (*.*)"
-msgstr "PO 파일 (*.po);;POT 파일 (*.pot);;모든 파일 (*.*)"
+msgstr "Fichiers PO (*.po);;Fichiers POT (*.pot);;Tous les fichiers (*.*)"
 
 #: main_window.py:3012
 msgid "POT Extraction Error"
-msgstr "POT 추출 오류"
+msgstr "Erreur d'extraction POT"
 
 #: dialogs/pot_drop_dialog.py:13
 msgid "POT File Detected"
-msgstr "POT 파일이 감지되었습니다"
+msgstr "Fichier POT détecté"
 
 #: main_window.py:3008
 #, python-brace-format
 msgid "POT template saved to: {filename}"
-msgstr "POT 템플릿이 다음 위치에 저장됨: {filename}"
+msgstr "Modèle POT enregistré sous : {filename}"
 
 #: main_window.py:4384
 msgid "Parsing new file..."
-msgstr "새 파일 구문 분석 중..."
+msgstr "Analyse du nouveau fichier..."
 
 #: main_window.py:3553
 msgid "Paste failed: Clipboard content is not text."
-msgstr "붙여넣기 실패: 클립보드 내용이 텍스트가 아닙니다."
+msgstr "Échec du collage : Le contenu du presse-papiers n'est pas du texte."
 
 #: main_window.py:437 main_window.py:583
 msgid "Paste to Translation"
-msgstr "번역에 붙여넣기"
+msgstr "Coller dans la traduction"
 
 #: dialogs/settings_pages.py:203
 msgid "Performance"
-msgstr "성능"
+msgstr "Performance"
 
 #: main_window.py:4149 main_window.py:4155
 msgid "Placeholder Mismatch"
-msgstr "자리표시자 불일치"
+msgstr "Incohérence de marqueur"
 
 #: utils/enums.py:34
 msgid "Placeholder Missing"
-msgstr "플레이스홀더 누락"
+msgstr "Placeholder manquant"
 
 #: dialogs/search_dialog.py:153
 msgid "Please enter a search term."
-msgstr "검색어를 입력하십시오."
+msgstr "Veuillez entrer un terme de recherche."
 
 #: main_window.py:2773
 msgid "Please load a code file or project first to match imported translations."
-msgstr "가져온 번역과 일치시키려면 먼저 코드 파일 또는 프로젝트를 로드하십시오."
+msgstr ""
+"Veuillez d'abord charger un fichier de code ou un projet pour faire "
+"correspondre les traductions importées."
 
 #: main_window.py:3518
 msgid "Please load a file or project first."
-msgstr "먼저 파일 또는 프로젝트를 로드하십시오."
+msgstr "Veuillez d'abord charger un fichier ou un projet."
 
 #: main_window.py:4569
 msgid "Please open a project or file first."
-msgstr "먼저 프로젝트 또는 파일을 열어주세요."
+msgstr "Veuillez d'abord ouvrir un projet ou un fichier."
 
 #: main_window.py:3395 main_window.py:3432
 msgid "Please select an item first."
-msgstr "먼저 항목을 선택하십시오."
+msgstr "Veuillez d'abord sélectionner un élément."
 
 #: main_window.py:3903
 msgid "Please select an item to AI translate."
-msgstr "AI 번역할 항목을 선택해 주세요."
+msgstr "Veuillez sélectionner un élément à traduire par IA."
 
 #: main_window.py:3539
 msgid "Please select an item."
-msgstr "항목을 선택하십시오."
+msgstr "Veuillez sélectionner un élément."
 
 #: plugins/plugin_dialog.py:505
 #, python-brace-format
@@ -2123,34 +2287,36 @@ msgid ""
 "\n"
 "Please restart the application to enable it."
 msgstr ""
-"'{plugin_id}' 플러그인이 설치되었습니다.\n"
+"Le plugin '{plugin_id}' a été installé.\n"
 "\n"
-"활성화하려면 애플리케이션을 다시 시작하세요."
+"Veuillez redémarrer l'application pour l'activer."
 
 #: plugins/plugin_manager.py:167
 #, python-brace-format
 msgid "Plugin '{plugin_id}' has missing dependencies: {deps}"
-msgstr "플러그인 '{plugin_id}'에 필요한 종속성이 누락되었습니다: {deps}"
+msgstr "Le plugin '{plugin_id}' a des dépendances manquantes : {deps}"
 
 #: plugins/plugin_dialog.py:341
 #, python-brace-format
 msgid "Plugin '{plugin_name}' disabled."
-msgstr "플러그인 '{plugin_name}'이(가) 비활성화되었습니다."
+msgstr "Plugin '{plugin_name}' désactivé."
 
 #: plugins/plugin_dialog.py:319
 #, python-brace-format
 msgid "Plugin '{plugin_name}' enabled."
-msgstr "플러그인 '{plugin_name}'이(가) 활성화되었습니다."
+msgstr "Plugin '{plugin_name}' activé."
 
 #: plugins/plugin_dialog.py:304
 #, python-brace-format
 msgid "Plugin '{plugin_name}' force-enabled with missing libraries."
-msgstr "플러그인 '{plugin_name}'이(가) 누락된 라이브러리와 함께 강제 활성화되었습니다."
+msgstr ""
+"Plugin '{plugin_name}' forcé à être activé avec des bibliothèques "
+"manquantes."
 
 #: plugins/plugin_dialog.py:283
 #, python-brace-format
 msgid "Plugin '{plugin_name}' force-enabled."
-msgstr "플러그인 '{plugin_name}'이(가) 강제 활성화되었습니다."
+msgstr "Plugin '{plugin_name}' forcé à être activé."
 
 #: plugins/plugin_dialog.py:556
 #, python-brace-format
@@ -2158,617 +2324,666 @@ msgid ""
 "Plugin '{plugin_name}' has been deleted.\n"
 "Please restart the application."
 msgstr ""
-"'{plugin_name}' 플러그인이 삭제되었습니다.\n"
-"애플리케이션을 다시 시작하세요."
+"Le plugin '{plugin_name}' a été supprimé.\n"
+"Veuillez redémarrer l'application."
 
 #: plugins/plugin_dialog.py:495
 msgid "Plugin Archives"
-msgstr "플러그인 압축 파일"
+msgstr "Archives de plugins"
 
 #: plugins/plugin_dialog.py:555
 msgid "Plugin Deleted"
-msgstr "플러그인 삭제됨"
+msgstr "Plugin supprimé"
 
 #: plugins/plugin_dialog.py:436
 msgid "Plugin Dependencies"
-msgstr "플러그인 종속성"
+msgstr "Dépendances du plugin"
 
 #: plugins/plugin_manager.py:429
 msgid "Plugin Exists"
-msgstr "플러그인 존재함"
+msgstr "Le plugin existe déjà"
 
 #: plugins/plugin_manager.py:142
 msgid "Plugin Loading Error"
-msgstr "플러그인 로딩 오류"
+msgstr "Erreur de chargement du plugin"
 
 #: plugins/plugin_dialog.py:59
 msgid "Plugin Manager"
-msgstr "플러그인 관리자"
+msgstr "Gestionnaire de plugins"
 
 #: dialogs/marketplace_dialog.py:184
 msgid "Plugin Marketplace"
-msgstr "플러그인 마켓"
+msgstr "Boutique de plugins"
 
 #: main_window.py:525
 msgid "Plugin Marketplace..."
-msgstr "플러그인 마켓..."
+msgstr "Boutique de plugins..."
 
 #: plugins/plugin_dialog.py:532 plugins/plugin_manager.py:453
 msgid "Plugin directory not found."
-msgstr "플러그인 폴더를 찾을 수 없습니다."
+msgstr "Répertoire du plugin introuvable."
 
 #: dialogs/marketplace_dialog.py:497
-msgid "Plugin installed successfully. Please restart the application to take effect."
-msgstr "플러그인이 성공적으로 설치되었습니다. 적용하려면 애플리케이션을 다시 시작하세요."
+msgid ""
+"Plugin installed successfully. Please restart the application to take "
+"effect."
+msgstr ""
+"Plugin installé avec succès. Veuillez redémarrer l'application pour "
+"appliquer les modifications."
 
-#: dialogs/extraction_pattern_dialog.py:195 dialogs/prompt_manager_dialog.py:225
+#: dialogs/extraction_pattern_dialog.py:195
+#: dialogs/prompt_manager_dialog.py:225
 msgid "Preset exported successfully."
-msgstr "프리셋이 성공적으로 내보내졌습니다."
+msgstr "Préréglage exporté avec succès."
 
-#: dialogs/extraction_pattern_dialog.py:180 dialogs/prompt_manager_dialog.py:210
+#: dialogs/extraction_pattern_dialog.py:180
+#: dialogs/prompt_manager_dialog.py:210
 msgid "Preset file format is incorrect."
-msgstr "프리셋 파일 형식이 올바르지 않습니다."
+msgstr "Le format du fichier de préréglage est incorrect."
 
-#: dialogs/extraction_pattern_dialog.py:177 dialogs/prompt_manager_dialog.py:208
+#: dialogs/extraction_pattern_dialog.py:177
+#: dialogs/prompt_manager_dialog.py:208
 msgid "Preset imported successfully."
-msgstr "프리셋이 성공적으로 가져와졌습니다."
+msgstr "Préréglage importé avec succès."
 
 #: dialogs/keybinding_dialog.py:96
 msgid "Press a key combination..."
-msgstr "키 조합을 누르세요..."
+msgstr "Appuyez sur une combinaison de touches..."
 
 #: dialogs/statistics_dialog.py:72
 #, python-brace-format
 msgid "Processing item {i}/{total}..."
-msgstr "항목 {i}/{total} 처리 중..."
+msgstr "Traitement de l'élément {i}/{total}..."
 
 #: main_window.py:1707
 #, python-brace-format
 msgid "Project '{filename}' loaded."
-msgstr "프로젝트 '{filename}' 로드됨."
+msgstr "Projet '{filename}' chargé."
 
 #: dialogs/statistics_dialog.py:348
 msgid "Project Metrics"
-msgstr "프로젝트 메트릭"
+msgstr "Métriques du projet"
 
-#: dialogs/statistics_dialog.py:136 dialogs/statistics_dialog.py:420 dialogs/statistics_dialog.py:502
+#: dialogs/statistics_dialog.py:136 dialogs/statistics_dialog.py:420
+#: dialogs/statistics_dialog.py:502
 msgid "Project Statistics"
-msgstr "프로젝트 통계"
+msgstr "Statistiques du projet"
 
 #: main_window.py:507 main_window.py:605
 msgid "Project Statistics..."
-msgstr "프로젝트 통계..."
+msgstr "Statistiques du projet..."
 
 #: main_window.py:1678
 msgid "Project Warning"
-msgstr "프로젝트 경고"
+msgstr "Avertissement du projet"
 
 #: main_window.py:802
 msgid "Project auto-saved."
-msgstr "프로젝트 자동 저장됨."
+msgstr "Projet sauvegardé automatiquement."
 
 #: main_window.py:1716
 msgid "Project file loading failed."
-msgstr "프로젝트 파일 로드 실패."
+msgstr "Échec du chargement du fichier de projet."
 
 #: main_window.py:2700
 #, python-brace-format
 msgid "Project saved to: {filename}"
-msgstr "프로젝트가 다음 위치에 저장됨: {filename}"
+msgstr "Projet enregistré sous : {filename}"
 
 #: main_window.py:2765 main_window.py:2927 main_window.py:2967
 #, python-brace-format
 msgid "Project translations exported to: {filename}"
-msgstr "프로젝트 번역이 다음 위치에 내보내짐: {filename}"
+msgstr "Traductions du projet exportées vers : {filename}"
 
 #: main_window.py:4462 main_window.py:4558
 msgid "Project updated to new version."
-msgstr "프로젝트가 새 버전으로 업데이트되었습니다."
+msgstr "Projet mis à jour vers la nouvelle version."
 
 #: main_window.py:1679
 #, python-brace-format
 msgid "Project's associated TM file '{tm_path}' not found."
-msgstr "프로젝트와 연결된 TM 파일 '{tm_path}'을(를) 찾을 수 없습니다."
+msgstr "Le fichier MT associé au projet '{tm_path}' est introuvable."
 
 #: dialogs/settings_pages.py:262
 msgid "Prompt Manager..."
-msgstr "프롬프트 관리자..."
+msgstr "Gestionnaire d'invites..."
 
 #: dialogs/prompt_manager_dialog.py:302
 msgid "Provider"
-msgstr "제공자"
+msgstr "Fournisseur"
 
 #: main_window.py:3567
-msgid "Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."
-msgstr "Python 'requests' 라이브러리를 찾을 수 없습니다. AI 번역 기능을 사용하려면 'pip install requests'를 실행하십시오."
+msgid ""
+"Python 'requests' library not found. Please install it (pip install "
+"requests) to use AI translation features."
+msgstr ""
+"La bibliothèque 'requests' n'est pas installée, la traduction IA est "
+"indisponible.\n"
+"Veuillez exécuter : pip install requests."
 
-#: main_window.py:632 main_window.py:867 main_window.py:952 main_window.py:957 main_window.py:1429 main_window.py:1820 main_window.py:1845 main_window.py:1862 main_window.py:1868 main_window.py:1869 main_window.py:1886 main_window.py:1893 main_window.py:2446 main_window.py:2689
+#: main_window.py:632 main_window.py:867 main_window.py:952 main_window.py:957
+#: main_window.py:1429 main_window.py:1820 main_window.py:1845
+#: main_window.py:1862 main_window.py:1868 main_window.py:1869
+#: main_window.py:1886 main_window.py:1893 main_window.py:2446
+#: main_window.py:2689
 msgid "Quick search..."
-msgstr "빠른 검색..."
+msgstr "Recherche rapide..."
 
 #: main_window.py:3170
 msgid "Re-extracting strings with new rules..."
-msgstr "새 규칙으로 문자열 재추출 중..."
+msgstr "Ré-extraction des chaînes avec de nouvelles règles..."
 
 #: main_window.py:495 main_window.py:603
 msgid "Re-validate All Entries"
-msgstr "모든 항목 재검증"
+msgstr "Revalider toutes les entrées"
 
-#: main_window.py:269 main_window.py:660 main_window.py:1081 main_window.py:1114
+#: main_window.py:269 main_window.py:660 main_window.py:1081
+#: main_window.py:1114
 msgid "Ready"
-msgstr "준비됨"
+msgstr "Prêt"
 
 #: main_window.py:406 main_window.py:575
 msgid "Recent Files"
-msgstr "최근 파일"
+msgstr "Fichiers récents"
 
 #: main_window.py:420 main_window.py:580
 msgid "Redo"
-msgstr "다시 실행"
+msgstr "Rétablir"
 
 #: main_window.py:1353
 #, python-brace-format
 msgid "Redo error: Object ID {obj_id} not found"
-msgstr "다시 실행 오류: 개체 ID {obj_id}을(를) 찾을 수 없습니다"
+msgstr "Erreur de rétablissement : ID d'objet {obj_id} introuvable"
 
 #: main_window.py:1371
 #, python-brace-format
 msgid "Redo: Bulk change ({count} items)"
-msgstr "다시 실행: 일괄 변경 ({count}개 항목)"
+msgstr "Rétablir : Modification en masse ({count} éléments)"
 
 #: main_window.py:1350
 #, python-brace-format
 msgid "Redo: {field} for ID {id} -> '{value}'"
-msgstr "다시 실행: ID {id}에 대한 {field} -> '{value}'"
+msgstr "Rétablir : {field} pour l'ID {id} -> '{value}'"
 
 #: dialogs/statistics_dialog.py:375
 msgid "Refresh Data"
-msgstr "데이터 새로 고침"
+msgstr "Actualiser les données"
 
 #: plugins/plugin_dialog.py:185
 msgid "Reload All Plugins"
-msgstr "모든 플러그인 재로드"
+msgstr "Recharger tous les plugins"
 
 #: main_window.py:3214
 msgid "Reload Error"
-msgstr "재로드 오류"
+msgstr "Erreur de rechargement"
 
 #: main_window.py:501 main_window.py:604
 msgid "Reload Translatable Text"
-msgstr "번역 가능한 텍스트 재로드"
+msgstr "Recharger le texte traduisible"
 
 #: main_window.py:3216
 msgid "Reload failed."
-msgstr "재로드 실패."
+msgstr "Rechargement échoué."
 
 #: main_window.py:3208
 #, python-brace-format
 msgid "Reloaded {count} strings from {source} using new rules."
-msgstr "새 규칙을 사용하여 {source}에서 {count}개 문자열 재로드됨."
+msgstr ""
+"{count} chaînes rechargées depuis {source} en utilisant de nouvelles "
+"règles."
 
 #: dialogs/language_pair_dialog.py:284
 msgid "Remove Selected Favorite"
-msgstr "선택한 즐겨찾기 제거"
+msgstr "Supprimer le favori sélectionné"
 
 #: dialogs/diff_dialog.py:190 dialogs/diff_dialog.py:240
 msgid "Removed"
-msgstr "제거됨"
+msgstr "Supprimé"
 
 #: ui_components/file_explorer_panel.py:194
 msgid "Rename"
-msgstr "이름 바꾸기"
+msgstr "Renommer"
 
 #: dialogs/search_dialog.py:79
 msgid "Replace"
-msgstr "바꾸기"
+msgstr "Remplacer"
 
 #: dialogs/search_dialog.py:82
 msgid "Replace All"
-msgstr "모두 바꾸기"
+msgstr "Tout remplacer"
 
 #: dialogs/search_dialog.py:346
 msgid "Replace All Complete"
-msgstr "모두 바꾸기 완료"
+msgstr "Remplacement complet"
 
 #: dialogs/search_dialog.py:41
 msgid "Replace with:"
-msgstr "바꿀 내용:"
+msgstr "Remplacer par :"
 
 #: dialogs/search_dialog.py:347
 #, python-brace-format
 msgid "Replaced occurrences in {count} item(s)."
-msgstr "{count}개 항목에서 일치하는 항목을 바꿨습니다."
+msgstr "Occurrences remplacées dans {count} élément(s)."
 
 #: dialogs/marketplace_dialog.py:441
 msgid "Report Issue"
-msgstr "문제 보고"
+msgstr "Signaler un problème"
 
 #: plugins/plugin_dialog.py:442 plugins/plugin_dialog.py:457
 msgid "Required"
-msgstr "필요"
+msgstr "Requis"
 
 #: plugins/plugin_dialog.py:412 plugins/plugin_dialog.py:427
 msgid "Requires App Version"
-msgstr "필요한 앱 버전"
+msgstr "Nécessite la version de l'application"
 
 #: dialogs/marketplace_dialog.py:435
 #, python-brace-format
 msgid "Requires v{req}"
-msgstr "v{req} 필요"
+msgstr "Nécessite la version {req}"
 
 #: dialogs/language_pair_dialog.py:327
 msgid "Reset"
-msgstr "재설정"
+msgstr "Réinitialiser"
 
 #: dialogs/font_settings_dialog.py:118
 msgid "Reset all font settings to default?"
-msgstr "모든 글꼴 설정을 기본값으로 재설정하시겠습니까?"
+msgstr "Réinitialiser tous les paramètres de police par défaut ?"
 
-#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52 dialogs/keybinding_dialog.py:78 dialogs/prompt_manager_dialog.py:63
+#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52
+#: dialogs/keybinding_dialog.py:78 dialogs/prompt_manager_dialog.py:63
 msgid "Reset to Defaults"
-msgstr "기본값으로 재설정"
+msgstr "Réinitialiser par défaut"
 
 #: services/ai_translator.py:53
 msgid "Response"
-msgstr "응답"
+msgstr "Réponse"
 
 #: main_window.py:786
 msgid "Restart Required"
-msgstr "재시작 필요"
+msgstr "Redémarrage requis"
 
 #: main_window.py:468 main_window.py:596
 msgid "Restore Default Layout"
-msgstr "기본 레이아웃 복원"
+msgstr "Restaurer la disposition par défaut"
 
 #: ui_components/file_explorer_panel.py:205
 msgid "Reveal in File Explorer"
-msgstr "파일 탐색기에서 열기"
+msgstr "Afficher dans l'Explorateur de fichiers"
 
 #: main_window.py:2540
 #, python-brace-format
 msgid "Review status for ID {id} -> {status}"
-msgstr "ID {id}에 대한 검토 상태 -> {status}"
+msgstr "Statut de révision pour l'ID {id} -> {status}"
 
-#: main_window.py:2736 main_window.py:2797 main_window.py:2805 ui_components/comment_status_panel.py:62 ui_components/comment_status_panel.py:82
+#: main_window.py:2736 main_window.py:2797 main_window.py:2805
+#: ui_components/comment_status_panel.py:62
+#: ui_components/comment_status_panel.py:82
 msgid "Reviewed"
-msgstr "검토됨"
+msgstr "Révisé"
 
 #: dialogs/statistics_dialog.py:541
 msgid "Reviewed (of total)"
-msgstr "검토됨 (전체 중)"
+msgstr "Révisés (sur total)"
 
 #: dialogs/statistics_dialog.py:545
 msgid "Reviewed (of translated)"
-msgstr "검토됨 (번역된 항목 중)"
+msgstr "Révisé (sur traduit)"
 
 #: dialogs/extraction_pattern_dialog.py:60
 msgid "Right Delimiter (Regex)"
-msgstr "오른쪽 구분 기호 (정규식)"
+msgstr "Délimiteur droit (Regex)"
 
 #: dialogs/extraction_pattern_dialog.py:254
 msgid "Right Delimiter:"
-msgstr "오른쪽 구분 기호:"
+msgstr "Délimiteur droit :"
 
 #: dialogs/extraction_pattern_dialog.py:60
 msgid "Rule Name"
-msgstr "규칙 이름"
+msgstr "Nom de la règle"
 
 #: dialogs/extraction_pattern_dialog.py:232
 msgid "Rule Name:"
-msgstr "규칙 이름:"
+msgstr "Nom de la règle :"
 
 #: dialogs/extraction_pattern_dialog.py:297
 msgid "Rule name cannot be empty."
-msgstr "규칙 이름은 비워둘 수 없습니다."
+msgstr "Le nom de la règle ne peut pas être vide."
 
 #: main_window.py:318 main_window.py:557
 msgid "Save"
-msgstr "저장"
+msgstr "Enregistrer"
 
 #: main_window.py:323 main_window.py:558
 msgid "Save As..."
-msgstr "다른 이름으로 저장..."
+msgstr "Enregistrer sous..."
 
 #: main_window.py:2562
 msgid "Save Error"
-msgstr "저장 오류"
+msgstr "Erreur d'enregistrement"
 
 #: main_window.py:2662
 msgid "Save PO Error"
-msgstr "PO 저장 오류"
+msgstr "Erreur d'enregistrement du fichier PO"
 
 #: main_window.py:2668
 msgid "Save PO File As"
-msgstr "PO 파일 다른 이름으로 저장"
+msgstr "Enregistrer le fichier PO sous"
 
 #: main_window.py:2983
 msgid "Save POT Template File"
-msgstr "POT 템플릿 파일 저장"
+msgstr "Enregistrer le fichier de modèle POT"
 
 #: main_window.py:2632
 msgid "Save Project As"
-msgstr "프로젝트 다른 이름으로 저장"
+msgstr "Enregistrer le projet sous"
 
 #: main_window.py:329 main_window.py:559
 msgid "Save Translation to New Code File"
-msgstr "번역을 새 코드 파일로 저장"
+msgstr "Enregistrer la traduction dans un nouveau fichier de code"
 
 #: main_window.py:1866
 msgid "Search cleared."
-msgstr "검색 지워짐."
+msgstr "Recherche effacée."
 
 #: dialogs/search_dialog.py:55
 msgid "Search in:"
-msgstr "검색 위치:"
+msgstr "Rechercher dans :"
 
 #: dialogs/language_pair_dialog.py:240 dialogs/language_pair_dialog.py:252
 msgid "Search languages..."
-msgstr "언어 검색..."
+msgstr "Rechercher des langues..."
 
 #: dialogs/marketplace_dialog.py:229
 msgid "Search plugins..."
-msgstr "플러그인 검색..."
+msgstr "Rechercher des plugins..."
 
 #: main_window.py:2975
 msgid "Select Code File to Extract POT From"
-msgstr "POT 추출을 위한 코드 파일 선택"
+msgstr "Sélectionner le fichier de code pour extraire le POT"
 
 #: main_window.py:3079
 msgid "Select PO File to Import"
-msgstr "가져올 PO 파일 선택"
+msgstr "Sélectionner le fichier PO à importer"
 
 #: plugins/plugin_dialog.py:493
 msgid "Select Plugin Archive"
-msgstr "플러그인 압축 파일 선택"
+msgstr "Sélectionner l'archive du plugin"
 
 #: dialogs/marketplace_dialog.py:253 dialogs/marketplace_dialog.py:415
 msgid "Select a plugin"
-msgstr "플러그인 선택"
+msgstr "Sélectionner un plugin"
 
 #: main_window.py:4574
 msgid "Select new POT template for comparison"
-msgstr "비교를 위한 새 POT 템플릿 선택"
+msgstr "Sélectionner un nouveau modèle POT pour comparaison"
 
 #: main_window.py:4579
 msgid "Select new version code file for comparison"
-msgstr "비교를 위한 새 버전 코드 파일 선택"
+msgstr "Sélectionner le fichier de code de la nouvelle version pour comparaison"
 
 #: main_window.py:2206
 msgid "Selected item(s) already have the desired warning status."
-msgstr "선택된 항목에 이미 원하는 경고 상태가 적용되어 있습니다."
+msgstr "Les éléments sélectionnés ont déjà le statut d'avertissement souhaité."
 
 #: main_window.py:2022
 #, python-brace-format
 msgid "Selected: \"{text}...\" (Line: {line_num})"
-msgstr "선택됨: \"{text}...\" (줄: {line_num})"
+msgstr "Sélectionné : \"{text}...\" (Ligne : {line_num})"
 
 #: ui_components/file_explorer_panel.py:200
 msgid "Set as Root"
-msgstr "루트로 설정"
+msgstr "Définir comme racine"
 
 #: main_window.py:1561
 #, python-brace-format
 msgid "Set file explorer root to: {directory}"
-msgstr "파일 탐색기 루트를 {directory}(으)로 설정"
+msgstr "Définir la racine de l'explorateur de fichiers sur : {directory}"
 
 #: dialogs/settings_dialog.py:15
 msgid "Settings"
-msgstr "설정"
+msgstr "Paramètres"
 
 #: dialogs/settings_dialog.py:154
 msgid "Settings applied."
-msgstr "설정이 적용되었습니다."
+msgstr "Paramètres appliqués."
 
 #: main_window.py:513 main_window.py:608 plugins/plugin_dialog.py:161
 msgid "Settings..."
-msgstr "설정..."
+msgstr "Paramètres..."
 
-#: ui_components/file_explorer_panel.py:70 ui_components/file_explorer_panel.py:270
+#: ui_components/file_explorer_panel.py:70
+#: ui_components/file_explorer_panel.py:270
 msgid "Show All Files"
-msgstr "모든 파일 표시"
+msgstr "Afficher tous les fichiers"
 
 #: main_window.py:443 main_window.py:587
 msgid "Show Ignored"
-msgstr "무시된 항목 표시"
+msgstr "Afficher les ignorés"
 
 #: main_window.py:455 main_window.py:589
 msgid "Show Translated"
-msgstr "번역된 항목 표시"
+msgstr "Afficher les traduits"
 
 #: main_window.py:461 main_window.py:590
 msgid "Show Unreviewed"
-msgstr "미검토된 항목 표시"
+msgstr "Afficher les non révisés"
 
 #: main_window.py:449 main_window.py:588
 msgid "Show Untranslated"
-msgstr "미번역 항목 표시"
+msgstr "Afficher les non traduits"
 
 #: dialogs/diff_dialog.py:160
 msgid "Similarity"
-msgstr "유사도"
+msgstr "Similarité"
 
 #: dialogs/font_settings_dialog.py:83
 msgid "Size:"
-msgstr "크기:"
+msgstr "Taille :"
 
 #: main_window.py:3960
 msgid "Skip Translated"
-msgstr "이미 번역된 항목 건너뛰기"
+msgstr "Ignorer les traductions existantes"
 
 #: dialogs/settings_pages.py:169
 msgid "Sorting Mode:"
-msgstr "정렬 모드:"
+msgstr "Mode de tri :"
 
 #: dialogs/statistics_dialog.py:560
 msgid "Source Chars (Translated only)"
-msgstr "원본 문자 (번역된 항목만)"
+msgstr "Caractères source (uniquement traduits)"
 
 #: dialogs/language_pair_dialog.py:237
 msgid "Source Language"
-msgstr "원본 언어"
+msgstr "Langue source"
 
 #: main_window.py:2737
 msgid "Source Line"
-msgstr "소스 줄"
+msgstr "Ligne source"
 
 #: dialogs/language_pair_dialog.py:470
 msgid "Source and target languages cannot be the same."
-msgstr "원본 언어와 대상 언어는 같을 수 없습니다."
+msgstr "La langue source et la langue cible ne peuvent pas être identiques."
 
 #: utils/enums.py:46
 msgid "Starting Punctuation Mismatch"
-msgstr "시작 구두점 불일치"
+msgstr "Ponctuation de début non correspondante"
 
 #: services/validation_service.py:91
 #, python-brace-format
 msgid "Starting punctuation differs: '{c1}' vs '{c2}'."
-msgstr "시작 구두점이 다릅니다: '{c1}' vs '{c2}'."
+msgstr "La ponctuation de début diffère : '{c1}' vs '{c2}'."
 
 #: services/validation_service.py:87
 msgid "Starting punctuation presence differs."
-msgstr "시작 구두점 존재 여부가 다릅니다."
+msgstr "La présence de ponctuation de début diffère."
 
-#: dialogs/prompt_manager_dialog.py:120 dialogs/prompt_manager_dialog.py:127 dialogs/prompt_manager_dialog.py:260
+#: dialogs/prompt_manager_dialog.py:120 dialogs/prompt_manager_dialog.py:127
+#: dialogs/prompt_manager_dialog.py:260
 msgid "Static Instruction"
-msgstr "정적 지침"
+msgstr "Instruction statique"
 
 #: main_window.py:733
 msgid "Static sorting enabled. Press F5 to refresh."
-msgstr "정적 정렬 활성화됨. 새로고침하려면 F5를 누르세요."
+msgstr "Tri statique activé. Appuyez sur F5 pour rafraîchir."
 
 #: main_window.py:3221
 msgid "Statistics"
-msgstr "통계"
+msgstr "Statistiques"
 
 #: main_window.py:488 main_window.py:602
 msgid "Stop AI Batch Translation"
-msgstr "AI 일괄 번역 중지"
+msgstr "Arrêter la traduction IA par lots"
 
 #: main_window.py:3707 main_window.py:3946
 #, python-brace-format
-msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
-msgstr "문자열 \"{text}...\"에 이미 번역이 있습니다. AI 번역으로 덮어쓰시겠습니까?"
+msgid ""
+"String \"{text}...\" already has a translation. Overwrite with AI "
+"translation?"
+msgstr ""
+"La chaîne \"{text}...\" a déjà une traduction. Écraser avec la traduction"
+" IA ?"
 
 #: dialogs/extraction_pattern_dialog.py:60
 msgid "String Type"
-msgstr "문자열 유형"
+msgstr "Type de chaîne"
 
 #: dialogs/extraction_pattern_dialog.py:242
 msgid "String Type:"
-msgstr "문자열 유형:"
+msgstr "Type de chaîne :"
 
-#: dialogs/prompt_manager_dialog.py:119 dialogs/prompt_manager_dialog.py:126 dialogs/prompt_manager_dialog.py:259
+#: dialogs/prompt_manager_dialog.py:119 dialogs/prompt_manager_dialog.py:126
+#: dialogs/prompt_manager_dialog.py:259
 msgid "Structural Content"
-msgstr "구조적 콘텐츠"
+msgstr "Contenu structurel"
 
 #: dialogs/font_settings_dialog.py:93
 msgid "Style:"
-msgstr "스타일:"
+msgstr "Style :"
 
-#: dialogs/extraction_pattern_dialog.py:177 dialogs/extraction_pattern_dialog.py:195 dialogs/marketplace_dialog.py:496 dialogs/prompt_manager_dialog.py:208 dialogs/prompt_manager_dialog.py:225 plugins/plugin_dialog.py:614
+#: dialogs/extraction_pattern_dialog.py:177
+#: dialogs/extraction_pattern_dialog.py:195 dialogs/marketplace_dialog.py:496
+#: dialogs/prompt_manager_dialog.py:208 dialogs/prompt_manager_dialog.py:225
+#: plugins/plugin_dialog.py:614
 msgid "Success"
-msgstr "성공"
+msgstr "Succès"
 
 #: dialogs/marketplace_dialog.py:495
 #, python-brace-format
 msgid "Successfully installed {plugin_name}."
-msgstr "{plugin_name}을(를) 성공적으로 설치했습니다."
+msgstr "{plugin_name} installé avec succès."
 
-#: main_window.py:3283 main_window.py:3297 main_window.py:3331 main_window.py:3360 main_window.py:3509 main_window.py:3512
+#: main_window.py:3283 main_window.py:3297 main_window.py:3331
+#: main_window.py:3360 main_window.py:3509 main_window.py:3512
 msgid "TM"
-msgstr "TM"
+msgstr "MT"
 
 #: main_window.py:3260
 msgid "TM Load Warning"
-msgstr "TM 로드 경고"
+msgstr "Avertissement de chargement MT"
 
 #: main_window.py:3444
 msgid "TM entry cleared for selected item."
-msgstr "선택된 항목에 대한 TM 항목이 지워졌습니다."
+msgstr "Entrée MT effacée pour l'élément sélectionné."
 
 #: main_window.py:3353
-msgid "TM imported. Do you want to apply it to untranslated strings in the current project immediately?"
-msgstr "TM이 가져와졌습니다. 현재 프로젝트의 미번역 문자열에 즉시 적용하시겠습니까?"
+msgid ""
+"TM imported. Do you want to apply it to untranslated strings in the "
+"current project immediately?"
+msgstr ""
+"MT importée. Voulez-vous l'appliquer immédiatement aux chaînes non "
+"traduites du projet actuel ?"
 
 #: main_window.py:3376
 msgid "TM is already empty."
-msgstr "TM이 이미 비어 있습니다."
+msgstr "La MT est déjà vide."
 
 #: main_window.py:3297 main_window.py:3360
 msgid "TM is empty, nothing to export."
-msgstr "TM이 비어 있습니다. 내보낼 것이 없습니다."
+msgstr "La MT est vide, rien à exporter."
 
 #: main_window.py:3469 main_window.py:4304
 msgid "TM is empty."
-msgstr "TM이 비어 있습니다."
+msgstr "La MT est vide."
 
 #: main_window.py:3287
 #, python-brace-format
 msgid "TM loaded from '{filename}' (Excel)."
-msgstr "TM이 '{filename}'(으)로부터 로드됨 (Excel)."
+msgstr "MT chargée depuis '{filename}' (Excel)."
 
 #: main_window.py:3332 main_window.py:3335
 #, python-brace-format
 msgid "TM saved to '{filename}'."
-msgstr "TM이 '{filename}'(으)로 저장됨."
+msgstr "MT enregistrée sous '{filename}'."
 
 #: main_window.py:3462
 msgid "TM suggestion applied."
-msgstr "TM 제안 적용됨."
+msgstr "Suggestion MT appliquée."
 
 #: main_window.py:3410
 msgid "TM update cancelled."
-msgstr "TM 업데이트 취소됨."
+msgstr "Mise à jour MT annulée."
 
 #: main_window.py:3419
 #, python-brace-format
 msgid "TM updated for original: '{text}...'"
-msgstr "원본에 대한 TM 업데이트됨: '{text}'..."
+msgstr "MT mise à jour pour l'original : '{text}'..."
 
 #: dialogs/language_pair_dialog.py:249
 msgid "Target Language"
-msgstr "대상 언어"
+msgstr "Langue cible"
 
 #: dialogs/settings_pages.py:219
 msgid "Target Language:"
-msgstr "대상 언어:"
+msgstr "Langue cible :"
 
 #: dialogs/settings_pages.py:224
 msgid "Target language is set in 'Settings > Language Pair Settings...'"
-msgstr "대상 언어는 '설정 > 언어 쌍 설정...'에서 설정됩니다."
+msgstr ""
+"La langue cible est définie dans 'Paramètres > Paramètres de la paire de "
+"langues...'"
 
 #: dialogs/settings_dialog.py:166
 msgid ""
 "The UI language has been changed.\n"
 "Some changes may require a restart of the application to take full effect."
 msgstr ""
-"UI 언어가 변경되었습니다.\n"
-"일부 변경 사항은 완전히 적용되려면 애플리케이션을 다시 시작해야 할 수 있습니다."
+"La langue de l'interface a été modifiée.\n"
+"Certains changements peuvent nécessiter un redémarrage de l'application "
+"pour prendre pleinement effet."
 
 #: plugins/plugin_manager.py:410
 msgid "The archive is empty."
-msgstr "압축 파일이 비어있습니다."
+msgstr "L'archive est vide."
 
 #: plugins/plugin_manager.py:418
-msgid "The archive seems to contain a single folder, but it's not a valid plugin (missing __init__.py)."
-msgstr "압축 파일에 단일 폴더만 있는 것 같지만, 유효한 플러그인이 아닙니다 (__init__.py 파일 없음)."
+msgid ""
+"The archive seems to contain a single folder, but it's not a valid plugin"
+" (missing __init__.py)."
+msgstr ""
+"L'archive semble contenir un seul dossier, mais ce n'est pas un plugin "
+"valide (__init__.py manquant)."
 
 #: main_window.py:1798
 msgid "The current project has unsaved changes. Do you want to save?"
-msgstr "현재 프로젝트에 저장되지 않은 변경 사항이 있습니다. 저장하시겠습니까?"
+msgstr ""
+"Le projet actuel contient des modifications non enregistrées. Voulez-vous"
+" enregistrer ?"
 
 #: main_window.py:3406
 #, python-brace-format
 msgid ""
-"The current translation is empty. Do you want to update the TM entry for:\n"
+"The current translation is empty. Do you want to update the TM entry for:"
+"\n"
 "'{text}...' with an empty translation?"
 msgstr ""
-"현재 번역이 비어 있습니다. 다음 항목에 대한 TM 항목을 빈 번역으로 업데이트하시겠습니까:\n"
-"'{text}...'?"
+"La traduction actuelle est vide. Voulez-vous mettre à jour l'entrée de la"
+" TM pour :\n"
+"'{text}...' avec une traduction vide ?"
 
 #: main_window.py:1075
 msgid "The layout has been restored to its default state."
-msgstr "레이아웃이 기본 상태로 복원되었습니다."
+msgstr "La disposition a été rétablie à son état par défaut."
 
 #: plugins/plugin_dialog.py:295
 #, python-brace-format
@@ -2777,32 +2992,36 @@ msgid ""
 "\n"
 "- {libs}\n"
 "\n"
-"The plugin will likely fail to run correctly. You can try to install them from the details panel.\n"
+"The plugin will likely fail to run correctly. You can try to install them"
+" from the details panel.\n"
 "\n"
 "Are you sure you want to force enable it anyway?"
 msgstr ""
-"플러그인 '{plugin_name}'에 필요한 외부 라이브러리가 없습니다:\n"
+"Le plugin '{plugin_name}' manque des bibliothèques externes requises :\n"
 "\n"
 "- {libs}\n"
 "\n"
-"플러그인이 제대로 실행되지 않을 가능성이 있습니다. 상세 패널에서 라이브러리를 설치해 볼 수 있습니다.\n"
+"Le plugin risque de ne pas fonctionner correctement. Vous pouvez essayer "
+"de les installer depuis le panneau de détails.\n"
 "\n"
-"그래도 강제로 활성화하시겠습니까?"
+"Voulez-vous quand même forcer son activation ?"
 
 #: plugins/plugin_dialog.py:274
 #, python-brace-format
 msgid ""
-"The plugin '{plugin_name}' is not marked as compatible with this application version.\n"
+"The plugin '{plugin_name}' is not marked as compatible with this "
+"application version.\n"
 "\n"
 "Forcing it to enable may cause instability or crashes.\n"
 "\n"
 "Are you sure you want to force enable it?"
 msgstr ""
-"플러그인 '{plugin_name}'은(는) 이 애플리케이션 버전과 호환되는 것으로 표시되지 않았습니다.\n"
+"Le plugin '{plugin_name}' n'est pas marqué comme compatible avec cette "
+"version de l'application.\n"
 "\n"
-"강제로 활성화하면 불안정성이나 충돌이 발생할 수 있습니다.\n"
+"Le forcer à s'activer peut provoquer des instabilités ou des plantages.\n"
 "\n"
-"정말로 강제 활성화하시겠습니까?"
+"Êtes-vous sûr de vouloir forcer son activation ?"
 
 #: plugins/plugin_dialog.py:590
 #, python-brace-format
@@ -2811,313 +3030,343 @@ msgid ""
 "\n"
 "Do you want to try to {action} it now?"
 msgstr ""
-"이 플러그인은 '{lib}' 라이브러리(버전: {spec})가 필요합니다.\n"
+"Le plugin requiert la bibliothèque '{lib}' (version : {spec}).\n"
 "\n"
-"지금 {action}하시겠습니까?"
+"Voulez-vous essayer de l'{action} maintenant ?"
 
 #: dialogs/marketplace_dialog.py:37
-msgid "The request timed out. The server might be busy or your connection is slow."
-msgstr "요청 시간이 초과되었습니다. 서버가 사용 중이거나 연결이 느릴 수 있습니다."
+msgid ""
+"The request timed out. The server might be busy or your connection is "
+"slow."
+msgstr ""
+"La requête a expiré. Le serveur peut être occupé ou votre connexion est "
+"lente."
 
 #: plugins/plugin_manager.py:400
 msgid "The selected file is not a valid .zip archive."
-msgstr "선택한 파일이 유효한 .zip 압축 파일이 아닙니다."
+msgstr "Le fichier sélectionné n'est pas une archive .zip valide."
 
 #: main_window.py:3449
 msgid "The selected item has no entry in the TM."
-msgstr "선택된 항목에 TM 항목이 없습니다."
+msgstr "L'élément sélectionné n'a aucune entrée dans la MT."
 
 #: main_window.py:3699
 msgid "The selected string is marked as ignored and will not be AI translated."
-msgstr "선택된 문자열은 무시됨으로 표시되어 AI 번역되지 않습니다."
+msgstr ""
+"La chaîne sélectionnée est marquée comme ignorée et ne sera pas traduite "
+"par l'IA."
 
 #: dialogs/prompt_manager_dialog.py:168
 msgid "The target language for translation."
-msgstr "번역 대상 언어입니다."
+msgstr "La langue cible pour la traduction."
 
 #: main_window.py:2613
-msgid "There is no content to save as a project. Please open a code file or PO file first."
-msgstr "프로젝트로 저장할 내용이 없습니다. 먼저 코드 파일이나 PO 파일을 열어주세요."
+msgid ""
+"There is no content to save as a project. Please open a code file or PO "
+"file first."
+msgstr ""
+"Il n'y a aucun contenu à enregistrer en tant que projet. Veuillez d'abord"
+" ouvrir un fichier de code ou un fichier PO."
 
 #: main_window.py:2551
 msgid ""
 "There is no original code file content to save.\n"
 "Please ensure the code file associated with the project is loaded."
 msgstr ""
-"저장할 원본 코드 파일 내용이 없습니다.\n"
-"프로젝트와 연결된 코드 파일이 로드되었는지 확인하세요."
+"Il n'y a pas de contenu de fichier de code original à enregistrer.\n"
+"Veuillez vous assurer que le fichier de code associé au projet est chargé."
 
 #: main_window.py:2286
 msgid "This original text already exists."
-msgstr "이 원본 텍스트는 이미 존재합니다."
+msgstr "Ce texte original existe déjà."
 
 #: plugins/plugin_dialog.py:214
 msgid "This plugin is force-enabled despite being incompatible."
-msgstr "이 플러그인은 호환되지 않음에도 강제로 활성화되었습니다."
+msgstr "Ce plugin est forcé d'être activé malgré son incompatibilité."
 
 #: plugins/plugin_dialog.py:219
 msgid "This plugin is incompatible. Check to force-enable."
-msgstr "이 플러그인은 호환되지 않습니다. 강제 활성화하려면 확인하세요."
+msgstr "Ce plugin est incompatible. Cochez pour forcer l'activation."
 
 #: main_window.py:3474
-msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
-msgstr "이것은 모든 일치하는 문자열에 TM을 적용하여 기존 번역을 덮어씁니다. 계속하시겠습니까?"
+msgid ""
+"This will apply TM to all matching strings, overwriting existing "
+"translations. Continue?"
+msgstr ""
+"Ceci appliquera la MT à toutes les chaînes correspondantes, écrasant les "
+"traductions existantes. Continuer ?"
 
 #: main_window.py:3161
 #, python-brace-format
 msgid ""
 "This will re-extract strings from {source} using the new rules.\n"
-"Existing translations will be preserved where the original text matches, but unmatched translations and statuses may be lost.\n"
+"Existing translations will be preserved where the original text matches, "
+"but unmatched translations and statuses may be lost.\n"
 "This action will clear the undo history. Continue?"
 msgstr ""
-"이것은 새 규칙을 사용하여 {source}에서 문자열을 재추출합니다.\n"
-"원본 텍스트가 일치하는 경우 기존 번역은 유지되지만, 일치하지 않는 번역 및 상태는 손실될 수 있습니다.\n"
-"이 작업은 실행 취소 기록을 지웁니다. 계속하시겠습니까?"
+"Ceci ré-extraira les chaînes de {source} en utilisant les nouvelles "
+"règles.\n"
+"Les traductions existantes seront conservées là où le texte original "
+"correspond, mais les traductions et statuts non correspondants pourraient"
+" être perdus.\n"
+"Cette action effacera l'historique d'annulation. Continuer ?"
 
 #: dialogs/keybinding_dialog.py:29
 msgid "Toggle Ignored Status"
-msgstr "무시 상태 전환"
+msgstr "Basculer le statut ignoré"
 
 #: dialogs/keybinding_dialog.py:28
 msgid "Toggle Reviewed Status"
-msgstr "검토 상태 전환"
+msgstr "Basculer le statut révisé"
 
 #: dialogs/statistics_dialog.py:517
 msgid "Total Items"
-msgstr "전체 항목"
+msgstr "Total des éléments"
 
 #: utils/enums.py:42
 msgid "Trailing Whitespace Mismatch"
-msgstr "후행 공백 불일치"
+msgstr "Espace de fin non concordant"
 
-#: dialogs/statistics_dialog.py:523 dialogs/statistics_dialog.py:580 main_window.py:626 main_window.py:843
+#: dialogs/statistics_dialog.py:523 dialogs/statistics_dialog.py:580
+#: main_window.py:626 main_window.py:843
 msgid "Translated"
-msgstr "번역됨"
+msgstr "Traduit"
 
-#: dialogs/search_dialog.py:57 main_window.py:617 main_window.py:2736 main_window.py:2795 main_window.py:2804
+#: dialogs/search_dialog.py:57 main_window.py:617 main_window.py:2736
+#: main_window.py:2795 main_window.py:2804
 msgid "Translation"
-msgstr "번역"
+msgstr "Traduction"
 
 #: dialogs/statistics_dialog.py:561
 msgid "Translation Chars (Translated only)"
-msgstr "번역된 문자 (번역된 항목만)"
+msgstr "Caractères de traduction (uniquement traduits)"
 
 #: utils/enums.py:54
 msgid "Translation Empty"
-msgstr "번역 없음"
+msgstr "Traduction vide"
 
 #: main_window.py:643 main_window.py:1012
 msgid "Translation Memory Matches"
-msgstr "번역 메모리 일치"
+msgstr "Correspondances de mémoire de traduction"
 
 #: main_window.py:595 main_window.py:1045
 msgid "Translation Memory Panel"
-msgstr "번역 메모리 패널"
+msgstr "Panneau de mémoire de traduction"
 
 #: dialogs/statistics_dialog.py:329
 msgid "Translation Progress"
-msgstr "번역 진행 상태"
+msgstr "Progression de la traduction"
 
 #: main_window.py:2266
 #, python-brace-format
 msgid "Translation applied: \"{original_semantic}...\""
-msgstr "번역 적용됨: \"{original_semantic}...\""
+msgstr "Traduction appliquée : \"{original_semantic}...\""
 
 #: services/validation_service.py:71
 msgid "Translation ends with space, original does not."
-msgstr "번역 끝에 공백이 있음, 원본에는 없음."
+msgstr "La traduction se termine par un espace, l'original non."
 
 #: models/translatable_string.py:154 services/validation_service.py:34
 msgid "Translation is marked as fuzzy and needs review."
-msgstr "번역이 모호하게 표시되어 검토가 필요합니다."
+msgstr "La traduction est marquée comme floue et nécessite une révision."
 
 #: services/validation_service.py:64
 msgid "Translation starts with space, original does not."
-msgstr "번역이 공백으로 시작하지만 원본은 그렇지 않습니다."
+msgstr "La traduction commence par un espace, l'original non."
 
 #: ui_components/details_panel.py:63 ui_components/details_panel.py:195
 msgid "Translation:"
-msgstr "번역:"
+msgstr "Traduction :"
 
 #: main_window.py:3115
 #, python-brace-format
 msgid "Translations exported to PO file: {filename}"
-msgstr "번역이 PO 파일로 내보내짐: {filename}"
+msgstr "Traductions exportées vers le fichier PO : {filename}"
 
 #: main_window.py:4358
 msgid "Translations for selected items are already empty, no clearing needed."
-msgstr "선택된 항목의 번역이 이미 비어 있습니다. 지울 필요가 없습니다."
+msgstr ""
+"Les traductions des éléments sélectionnés sont déjà vides, aucun "
+"effacement nécessaire."
 
 #: dialogs/prompt_manager_dialog.py:80
 msgid "Type"
-msgstr "유형"
+msgstr "Type"
 
 #: dialogs/prompt_manager_dialog.py:256
 msgid "Type:"
-msgstr "유형:"
+msgstr "Type :"
 
 #: dialogs/settings_pages.py:102
 msgid "UI Language:"
-msgstr "UI 언어:"
+msgstr "Langue de l'interface :"
 
 #: main_window.py:1936
 msgid "Un-ignore Warnings for Selected"
-msgstr "선택된 항목에 대한 경고 무시 해제"
+msgstr "Ne plus ignorer les avertissements pour la sélection"
 
 #: main_window.py:2203
 #, python-brace-format
 msgid "Un-ignored warnings for {count} item(s)."
-msgstr "{count}개 항목에 대한 경고 무시 해제됨."
+msgstr "Avertissements non ignorés pour {count} élément(s)."
 
 #: dialogs/diff_dialog.py:202 dialogs/diff_dialog.py:214
 msgid "Unchanged"
-msgstr "변경 없음"
+msgstr "Inchangé"
 
 #: main_window.py:415 main_window.py:579
 msgid "Undo"
-msgstr "실행 취소"
+msgstr "Annuler"
 
 #: main_window.py:1279
 #, python-brace-format
 msgid "Undo error: Object ID {obj_id} not found"
-msgstr "실행 취소 오류: 개체 ID {obj_id}을(를) 찾을 수 없습니다"
+msgstr "Erreur d'annulation : ID d'objet {obj_id} introuvable"
 
 #: main_window.py:1297
 #, python-brace-format
 msgid "Undo: Bulk change ({count} items)"
-msgstr "실행 취소: 일괄 변경 ({count}개 항목)"
+msgstr "Annuler : Modification en masse ({count} éléments)"
 
 #: main_window.py:1276
 #, python-brace-format
 msgid "Undo: {field} for ID {id} -> '{value}'"
-msgstr "실행 취소: ID {id}에 대한 {field} -> '{value}'"
+msgstr "Annuler : {field} pour l'ID {id} -> '{value}'"
 
 #: dialogs/prompt_manager_dialog.py:301
 msgid "Unknown"
-msgstr "알 수 없음"
+msgstr "Inconnu"
 
 #: services/ai_translator.py:48
 msgid "Unknown API error structure"
-msgstr "알 수 없는 API 오류 구조"
+msgstr "Structure d'erreur API inconnue"
 
 #: services/ai_translator.py:62
 msgid "Unknown error occurred during translation"
-msgstr "번역 중 알 수 없는 오류가 발생했습니다"
+msgstr "Une erreur inconnue s'est produite lors de la traduction"
 
 #: main_window.py:1920
 msgid "Unmark as Ignored"
-msgstr "무시됨 표시 해제"
+msgstr "Démarquer comme ignoré"
 
 #: dialogs/extraction_pattern_dialog.py:91
 msgid "Unnamed Rule"
-msgstr "이름 없는 규칙"
+msgstr "Règle sans nom"
 
 #: main_window.py:627 main_window.py:849
 msgid "Unreviewed"
-msgstr "미검토됨"
+msgstr "Non révisé"
 
 #: main_window.py:1797
 msgid "Unsaved Changes"
-msgstr "저장되지 않은 변경 사항"
+msgstr "Modifications non enregistrées"
 
-#: dialogs/statistics_dialog.py:528 dialogs/statistics_dialog.py:585 main_window.py:625 main_window.py:837
+#: dialogs/statistics_dialog.py:528 dialogs/statistics_dialog.py:585
+#: main_window.py:625 main_window.py:837
 msgid "Untranslated"
-msgstr "미번역"
+msgstr "Non traduit"
 
 #: dialogs/marketplace_dialog.py:162 plugins/plugin_dialog.py:586
 msgid "Update"
-msgstr "업데이트"
+msgstr "Mettre à jour"
 
 #: ui_components/tm_panel.py:34 ui_components/tm_panel.py:124
 msgid "Update TM for Selected"
-msgstr "선택된 항목의 TM 업데이트"
+msgstr "Mettre à jour la MT pour la sélection"
 
 #: dialogs/pot_drop_dialog.py:24
 msgid "Update from POT"
-msgstr "POT에서 업데이트"
+msgstr "Mise à jour à partir du POT"
 
 #: main_window.py:4297
 #, python-brace-format
 msgid "Updated comments for {count} items."
-msgstr "{count}개 항목에 대한 주석 업데이트됨."
+msgstr "Commentaires mis à jour pour {count} éléments."
 
 #: main_window.py:1952
 msgid "Use AI to Translate Selected Items"
-msgstr "AI로 선택된 항목 번역"
+msgstr "Utiliser l'IA pour traduire les éléments sélectionnés"
 
 #: dialogs/settings_pages.py:234 dialogs/settings_pages.py:248
 msgid "Use nearby"
-msgstr "근처 사용"
+msgstr "Utiliser à proximité"
 
 #: dialogs/settings_pages.py:229
 msgid "Use nearby original text as context"
-msgstr "근처 원본 텍스트를 컨텍스트로 사용"
+msgstr "Utiliser le texte original à proximité comme contexte"
 
 #: dialogs/settings_pages.py:243
 msgid "Use nearby translated text as context"
-msgstr "근처 번역된 텍스트를 컨텍스트로 사용"
+msgstr "Utiliser le texte traduit à proximité comme contexte"
 
 #: dialogs/settings_pages.py:167
 msgid "Use static sorting (Press F5 to manual refresh)"
-msgstr "정적 정렬 사용 (F5를 눌러 수동 새로고침)"
+msgstr "Utiliser le tri statique (Appuyez sur F5 pour rafraîchir manuellement)"
 
 #: main_window.py:2162
 msgid "Validating all entries..."
-msgstr "모든 항목 유효성 검사 중..."
+msgstr "Validation de toutes les entrées..."
 
 #: dialogs/settings_dialog.py:114
 msgid "Validation"
-msgstr "유효성 검사"
+msgstr "Validation"
 
 #: main_window.py:2174
 msgid "Validation complete."
-msgstr "유효성 검사 완료."
+msgstr "Validation terminée."
 
 #: main_window.py:772
 #, python-brace-format
 msgid "Validation complete. Language pair set to {src} -> {tgt}."
-msgstr "유효성 검사 완료. 언어 쌍이 {src} -> {tgt}로 설정되었습니다."
+msgstr "Validation terminée. Paire de langues définie sur {src} -> {tgt}."
 
-#: dialogs/marketplace_dialog.py:429 plugins/plugin_dialog.py:383 plugins/plugin_dialog.py:398
+#: dialogs/marketplace_dialog.py:429 plugins/plugin_dialog.py:383
+#: plugins/plugin_dialog.py:398
 msgid "Version"
-msgstr "버전"
+msgstr "Version"
 
 #: main_window.py:4453 main_window.py:4543
 msgid "Version Comparison Results"
-msgstr "버전 비교 결과"
+msgstr "Résultats de comparaison de version"
 
 #: main_window.py:4565
 msgid "Version comparison failed."
-msgstr "버전 비교 실패."
+msgstr "Comparaison de version échouée."
 
 #: main_window.py:4464 main_window.py:4560
 msgid "Version update cancelled."
-msgstr "버전 업데이트 취소됨."
+msgstr "Mise à jour de version annulée."
 
 #: main_window.py:741
 msgid "View refreshed."
-msgstr "보기가 새로고침되었습니다."
+msgstr "Vue rafraîchie."
 
 #: plugins/plugin_dialog.py:402
 msgid "Visit Plugin Homepage"
-msgstr "플러그인 홈페이지 방문"
+msgstr "Visiter la page d'accueil du plugin"
 
 #: dialogs/language_pair_dialog.py:470
 msgid "Warning"
-msgstr "경고"
+msgstr "Avertissement"
 
 #: main_window.py:2824
 #, python-brace-format
-msgid "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported."
-msgstr "경고: Excel {row_num}행, UUID {uuid} - 원본 텍스트가 Excel의 텍스트와 일치하지 않습니다. 데이터는 계속 가져와집니다."
+msgid ""
+"Warning: Excel row {row_num}, UUID {uuid} - Original text does not match "
+"the one in Excel. Data will still be imported."
+msgstr ""
+"Avertissement : Ligne Excel {row_num}, UUID {uuid} - Le texte original ne"
+" correspond pas à celui d'Excel. Les données seront tout de même "
+"importées."
 
 #: main_window.py:2952
 msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
-msgstr "YAML 파일 (*.yaml *.yml);;모든 파일 (*.*)"
+msgstr "Fichiers YAML (*.yaml *.yml);;Tous les fichiers (*.*)"
 
-#: main_window.py:2505 main_window.py:2541 main_window.py:2757 main_window.py:2758 main_window.py:2850 main_window.py:2860
+#: main_window.py:2505 main_window.py:2541 main_window.py:2757
+#: main_window.py:2758 main_window.py:2850 main_window.py:2860
 msgid "Yes"
-msgstr "예"
+msgstr "Oui"
 
 #: main_window.py:3992
 #, python-brace-format
@@ -3127,70 +3376,72 @@ msgid ""
 "Estimated time: ~{time_s:.1f} seconds.\n"
 "Continue?"
 msgstr ""
-"{count}개의 고유 문자열을 AI로 번역하려고 합니다.\n"
-"이 작업은 동일한 원본 텍스트 모두에 적용됩니다.\n"
-"예상 소요 시간: 약 {time_s:.1f}초.\n"
-"계속하시겠습니까?"
+"Vous êtes sur le point de traduire automatiquement {count} chaînes "
+"uniques.\n"
+"Cela sera appliqué à tous les textes originaux identiques.\n"
+"Temps estimé : ~{time_s:.1f} secondes.\n"
+"Continuer ?"
 
 #: main_window.py:4449 main_window.py:4539
 #, python-brace-format
 msgid "and {modified} modified/inherited items."
-msgstr "및 {modified}개 수정/상속된 항목."
+msgstr "et {modified} éléments modifiés/hérités."
 
 #: dialogs/marketplace_dialog.py:126 dialogs/marketplace_dialog.py:429
 msgid "by"
-msgstr "작성자:"
+msgstr "par"
 
 #: main_window.py:3136
 msgid "current in-memory code"
-msgstr "현재 메모리 내 코드"
+msgstr "code actuel en mémoire"
 
 #: main_window.py:3141
 #, python-brace-format
 msgid "file '{filename}'"
-msgstr "파일 '{filename}'"
+msgstr "fichier '{filename}'"
 
 #: main_window.py:3253
 msgid "original"
-msgstr "원본"
+msgstr "original"
 
 #: dialogs/settings_pages.py:240
 msgid "original strings (0 for all)"
-msgstr "원본 문자열 (0은 모두)"
+msgstr "chaînes originales (0 pour toutes)"
 
 #: main_window.py:3255
 msgid "translation"
-msgstr "번역"
+msgstr "traduction"
 
 #: dialogs/settings_pages.py:254
 msgid "translations (0 for all)"
-msgstr "번역 (0은 모두)"
+msgstr "traductions (0 pour toutes)"
 
 #: dialogs/marketplace_dialog.py:432
 msgid "with your app version."
-msgstr "현재 앱 버전과 호환."
+msgstr "avec votre version de l'application."
 
 #: main_window.py:4447 main_window.py:4537
 #, python-brace-format
 msgid "{added} new items, "
-msgstr "{added}개 새 항목, "
+msgstr "{added} nouveaux éléments, "
 
 #: main_window.py:3957
 #, python-brace-format
 msgid "{count} item(s) already have translations."
-msgstr "{count}개 항목에 이미 번역이 있습니다."
+msgstr "{count} élément(s) a/ont déjà une/des traduction(s)."
 
 #: main_window.py:3792 main_window.py:3847
 #, python-brace-format
 msgid "{count} items' ignore status updated."
-msgstr "{count}개 항목의 무시 상태 업데이트됨."
+msgstr "Statut d'ignoré de {count} éléments mis à jour."
 
 #: main_window.py:3819 main_window.py:3875
 #, python-brace-format
 msgid "{count} items' review status updated."
-msgstr "{count}개 항목의 검토 상태 업데이트됨."
+msgstr "Statut de révision de {count} éléments mis à jour."
 
 #: main_window.py:4448 main_window.py:4538
 #, python-brace-format
 msgid "{removed} removed items, "
-msgstr "{removed}개 제거된 항목, "
+msgstr "{removed} éléments supprimés, "
+

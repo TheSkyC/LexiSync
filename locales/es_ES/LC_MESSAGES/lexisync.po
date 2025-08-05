@@ -6,12 +6,12 @@ msgstr ""
 "POT-Creation-Date: 2025-08-02 10:48+0000\n"
 "PO-Revision-Date: 2025-08-02 12:24+0000\n"
 "Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
 "Language: es\n"
+"Language-Team: none\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "Generated-By: Babel 2.17.0\n"
 
 #: main_window.py:4252 ui_components/comment_status_panel.py:79
@@ -52,7 +52,9 @@ msgstr "&Ver"
 
 #: services/ai_translator.py:23
 msgid "'requests' library not found. AI translation feature is unavailable."
-msgstr "No se encontró la biblioteca 'requests'. La función de traducción automática no está disponible."
+msgstr ""
+"No se encontró la biblioteca 'requests'. La función de traducción "
+"automática no está disponible."
 
 #: dialogs/settings_pages.py:112
 msgid "(0 to disable)"
@@ -64,7 +66,9 @@ msgstr "Se ha soltado un archivo POT. ¿Qué deseas hacer?"
 
 #: plugins/plugin_manager.py:430
 #, python-brace-format
-msgid "A plugin with the ID '{plugin_id}' already exists. Do you want to overwrite it?"
+msgid ""
+"A plugin with the ID '{plugin_id}' already exists. Do you want to "
+"overwrite it?"
 msgstr "Ya existe un complemento con el ID '{plugin_id}'. ¿Deseas sobrescribirlo?"
 
 #: main_window.py:4178
@@ -93,7 +97,8 @@ msgstr "Gestor de Prompts de IA"
 msgid "AI Translate All Untranslated"
 msgstr "Traducir todo lo no Traducido por IA"
 
-#: main_window.py:478 main_window.py:600 ui_components/details_panel.py:91 ui_components/details_panel.py:197
+#: main_window.py:478 main_window.py:600 ui_components/details_panel.py:91
+#: ui_components/details_panel.py:197
 msgid "AI Translate Selected"
 msgstr "Traducir Selección por IA"
 
@@ -111,8 +116,13 @@ msgstr "Traducción por IA en Curso"
 
 #: main_window.py:4033
 #, python-brace-format
-msgid "AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned)."
-msgstr "Traducción por IA en lotes completada. Se tradujeron {success_count}/{processed_count} elementos con éxito (total {total_items} planificados)."
+msgid ""
+"AI batch translation complete. Successfully translated "
+"{success_count}/{processed_count} items (total {total_items} planned)."
+msgstr ""
+"Traducción por IA en lotes completada. Se tradujeron "
+"{success_count}/{processed_count} elementos con éxito (total "
+"{total_items} planificados)."
 
 #: main_window.py:3924
 msgid "AI batch translation is already in progress."
@@ -123,15 +133,21 @@ msgid "AI batch translation is in progress."
 msgstr "La traducción por IA en lotes está en curso."
 
 #: main_window.py:1595
-msgid "AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."
-msgstr "La traducción por IA en lotes está en curso. Espere a que finalice o deténgala antes de abrir un nuevo archivo."
+msgid ""
+"AI batch translation is in progress. Please wait for it to complete or "
+"stop it before opening a new file."
+msgstr ""
+"La traducción por IA en lotes está en curso. Espere a que finalice o "
+"deténgala antes de abrir un nuevo archivo."
 
 #: main_window.py:1397
 msgid ""
-"AI batch translation is still in progress. Are you sure you want to exit?\n"
+"AI batch translation is still in progress. Are you sure you want to exit?"
+"\n"
 "Unfinished translations will be lost."
 msgstr ""
-"La traducción por IA en lotes aún está en curso. ¿Está seguro de que desea salir?\n"
+"La traducción por IA en lotes aún está en curso. ¿Está seguro de que "
+"desea salir?\n"
 "Las traducciones incompletas se perderán."
 
 #: main_window.py:4010
@@ -149,7 +165,9 @@ msgstr ""
 
 #: main_window.py:4181
 msgid "AI batch translation stop requested. Finishing dispatched tasks..."
-msgstr "Se ha solicitado la detención de la traducción por IA en lotes. Finalizando tareas enviadas..."
+msgstr ""
+"Se ha solicitado la detención de la traducción por IA en lotes. "
+"Finalizando tareas enviadas..."
 
 #: main_window.py:3715
 #, python-brace-format
@@ -202,7 +220,9 @@ msgstr "Clave de API Faltante"
 
 #: main_window.py:3572
 msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
-msgstr "La Clave de API no está configurada. Por favor, configúrela en 'Herramientas > Configuración de IA'."
+msgstr ""
+"La Clave de API no está configurada. Por favor, configúrela en "
+"'Herramientas > Configuración de IA'."
 
 #: services/ai_translator.py:21
 msgid "API Key not set."
@@ -255,16 +275,22 @@ msgstr "Añadido"
 #: main_window.py:4165
 #, python-brace-format
 msgid "Added comments to {count} placeholder mismatched items."
-msgstr "Comentarios añadidos a {count} elementos con marcadores de posición no coincidentes."
+msgstr ""
+"Comentarios añadidos a {count} elementos con marcadores de posición no "
+"coincidentes."
 
 #: main_window.py:4147
 #, python-brace-format
 msgid ""
-"After AI batch translation, {count} items were found with placeholder mismatches.\n"
-"Do you want to add the comment \"Placeholder Mismatch\" to these items in bulk?"
+"After AI batch translation, {count} items were found with placeholder "
+"mismatches.\n"
+"Do you want to add the comment \"Placeholder Mismatch\" to these items in"
+" bulk?"
 msgstr ""
-"Después de la traducción por IA en lotes, se encontraron {count} elementos con marcadores de posición no coincidentes.\n"
-"¿Desea añadir el comentario \"Marcador de Posición no Coincidente\" a estos elementos de forma masiva?"
+"Después de la traducción por IA en lotes, se encontraron {count} "
+"elementos con marcadores de posición no coincidentes.\n"
+"¿Desea añadir el comentario \"Marcador de Posición no Coincidente\" a "
+"estos elementos de forma masiva?"
 
 #: dialogs/marketplace_dialog.py:322
 msgid "All"
@@ -301,7 +327,8 @@ msgstr "MT aplicada a {count} cadenas."
 msgid "Apply"
 msgstr "Aplicar"
 
-#: ui_components/comment_status_panel.py:46 ui_components/comment_status_panel.py:76
+#: ui_components/comment_status_panel.py:46
+#: ui_components/comment_status_panel.py:76
 msgid "Apply Comment"
 msgstr "Aplicar Comentario"
 
@@ -338,7 +365,8 @@ msgid ""
 "Are you sure you want to clear all entries from the in-memory TM?\n"
 "This cannot be undone."
 msgstr ""
-"¿Está seguro de que desea borrar todas las entradas de la Memoria de Traducción en memoria?\n"
+"¿Está seguro de que desea borrar todas las entradas de la Memoria de "
+"Traducción en memoria?\n"
 "Esto no se puede deshacer."
 
 #: main_window.py:1501
@@ -347,8 +375,12 @@ msgstr "¿Está seguro de que desea borrar todo el historial de archivos recient
 
 #: main_window.py:4337
 #, python-brace-format
-msgid "Are you sure you want to clear the translations for the {count} selected items?"
-msgstr "¿Está seguro de que desea borrar las traducciones de los {count} elementos seleccionados?"
+msgid ""
+"Are you sure you want to clear the translations for the {count} selected "
+"items?"
+msgstr ""
+"¿Está seguro de que desea borrar las traducciones de los {count} "
+"elementos seleccionados?"
 
 #: ui_components/file_explorer_panel.py:252
 #, python-brace-format
@@ -357,7 +389,8 @@ msgid ""
 "\n"
 "- {items}"
 msgstr ""
-"¿Está seguro de que desea eliminar permanentemente los siguientes elementos?\n"
+"¿Está seguro de que desea eliminar permanentemente los siguientes "
+"elementos?\n"
 "\n"
 "- {items}"
 
@@ -368,7 +401,8 @@ msgid ""
 "\n"
 "The application will need to be restarted after deletion."
 msgstr ""
-"¿Está seguro de que desea eliminar permanentemente el complemento '{plugin_name}'?\n"
+"¿Está seguro de que desea eliminar permanentemente el complemento "
+"'{plugin_name}'?\n"
 "\n"
 "La aplicación deberá reiniciarse después de la eliminación."
 
@@ -383,14 +417,18 @@ msgstr ""
 
 #: dialogs/keybinding_dialog.py:137
 msgid "Are you sure you want to reset all keybindings to their default settings?"
-msgstr "¿Está seguro de que desea restablecer todas las combinaciones de teclas a su configuración predeterminada?"
+msgstr ""
+"¿Está seguro de que desea restablecer todas las combinaciones de teclas a"
+" su configuración predeterminada?"
 
 #: dialogs/extraction_pattern_dialog.py:153
 msgid ""
-"Are you sure you want to reset extraction rules to their default settings?\n"
+"Are you sure you want to reset extraction rules to their default "
+"settings?\n"
 "All current custom rules will be lost."
 msgstr ""
-"¿Está seguro de que desea restablecer las reglas de extracción a su configuración predeterminada?\n"
+"¿Está seguro de que desea restablecer las reglas de extracción a su "
+"configuración predeterminada?\n"
 "Todas las reglas personalizadas actuales se perderán."
 
 #: dialogs/prompt_manager_dialog.py:184
@@ -398,7 +436,8 @@ msgid ""
 "Are you sure you want to reset the prompt to its default settings?\n"
 "All current customizations will be lost."
 msgstr ""
-"¿Está seguro de que desea restablecer el prompt a su configuración predeterminada?\n"
+"¿Está seguro de que desea restablecer el prompt a su configuración "
+"predeterminada?\n"
 "Todas las personalizaciones actuales se perderán."
 
 #: main_window.py:3196
@@ -451,13 +490,19 @@ msgstr "Copia de seguridad creada: {filename}"
 msgid "Calculation finished."
 msgstr "Cálculo finalizado."
 
-#: dialogs/diff_dialog.py:153 dialogs/extraction_pattern_dialog.py:80 dialogs/extraction_pattern_dialog.py:278 dialogs/font_settings_dialog.py:61 dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342 dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:100 dialogs/prompt_manager_dialog.py:318 main_window.py:3961
+#: dialogs/diff_dialog.py:153 dialogs/extraction_pattern_dialog.py:80
+#: dialogs/extraction_pattern_dialog.py:278 dialogs/font_settings_dialog.py:61
+#: dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342
+#: dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:100
+#: dialogs/prompt_manager_dialog.py:318 main_window.py:3961
 msgid "Cancel"
 msgstr "Cancelar"
 
 #: plugins/plugin_manager.py:450
 msgid "Cannot delete a plugin that is a dependency for other enabled plugins."
-msgstr "No se puede eliminar un complemento que es una dependencia para otros complementos activos."
+msgstr ""
+"No se puede eliminar un complemento que es una dependencia para otros "
+"complementos activos."
 
 #: plugins/plugin_manager.py:519
 #, python-brace-format
@@ -508,7 +553,9 @@ msgstr "Verificar longitud/relación de expansión inusual de la traducción"
 #: plugins/plugin_manager.py:195
 #, python-brace-format
 msgid "Circular dependency detected in plugins: {nodes}. Cannot load."
-msgstr "Se detectó una dependencia circular en los complementos: {nodes}. No se puede cargar."
+msgstr ""
+"Se detectó una dependencia circular en los complementos: {nodes}. No se "
+"puede cargar."
 
 #: main_window.py:1474
 msgid "Clear History"
@@ -535,7 +582,8 @@ msgstr "Se borraron {count} traducciones."
 msgid "Clipboard content pasted to translation."
 msgstr "Contenido del portapapeles pegado a la traducción."
 
-#: dialogs/marketplace_dialog.py:279 dialogs/search_dialog.py:86 dialogs/statistics_dialog.py:395 plugins/plugin_dialog.py:190
+#: dialogs/marketplace_dialog.py:279 dialogs/search_dialog.py:86
+#: dialogs/statistics_dialog.py:395 plugins/plugin_dialog.py:190
 msgid "Close"
 msgstr "Cerrar"
 
@@ -552,7 +600,8 @@ msgstr "Fallo al cargar archivo de código"
 msgid "Code file saved to: {filename}"
 msgstr "Archivo de código guardado en: {filename}"
 
-#: dialogs/search_dialog.py:58 main_window.py:618 main_window.py:2736 main_window.py:2796 main_window.py:2804
+#: dialogs/search_dialog.py:58 main_window.py:618 main_window.py:2736
+#: main_window.py:2796 main_window.py:2804
 msgid "Comment"
 msgstr "Comentario"
 
@@ -573,7 +622,8 @@ msgstr "Comentario actualizado para ID {id}..."
 msgid "Comment updated."
 msgstr "Comentario actualizado."
 
-#: ui_components/comment_status_panel.py:30 ui_components/comment_status_panel.py:75
+#: ui_components/comment_status_panel.py:30
+#: ui_components/comment_status_panel.py:75
 msgid "Comment:"
 msgstr "Comentario:"
 
@@ -605,7 +655,8 @@ msgstr "Advertencia de Compatibilidad"
 msgid "Compatible"
 msgstr "Compatible"
 
-#: dialogs/extraction_pattern_dialog.py:153 dialogs/keybinding_dialog.py:137 dialogs/prompt_manager_dialog.py:184
+#: dialogs/extraction_pattern_dialog.py:153 dialogs/keybinding_dialog.py:137
+#: dialogs/prompt_manager_dialog.py:184
 msgid "Confirm"
 msgstr "Confirmar"
 
@@ -722,7 +773,9 @@ msgstr "No se pudo crear una copia de seguridad para la MT: {error}"
 #: services/code_file_service.py:161
 #, python-brace-format
 msgid "Could not create code file backup '{filename}': {error}"
-msgstr "No se pudo crear la copia de seguridad del archivo de código '{filename}': {error}"
+msgstr ""
+"No se pudo crear la copia de seguridad del archivo de código "
+"'{filename}': {error}"
 
 #: services/ai_translator.py:60
 msgid "Could not decode API response. Response text"
@@ -730,8 +783,14 @@ msgstr "No se pudo decodificar la respuesta de la API. Texto de respuesta"
 
 #: main_window.py:3261
 #, python-brace-format
-msgid "Could not determine original/translation columns from '{filename}' header. Will try to use the first two columns by default (A=Original, B=Translation)."
-msgstr "No se pudieron determinar las columnas original/traducción del encabezado de '{filename}'. Se intentará usar las dos primeras columnas por defecto (A=Original, B=Traducción)."
+msgid ""
+"Could not determine original/translation columns from '{filename}' "
+"header. Will try to use the first two columns by default (A=Original, "
+"B=Translation)."
+msgstr ""
+"No se pudieron determinar las columnas original/traducción del encabezado"
+" de '{filename}'. Se intentará usar las dos primeras columnas por defecto"
+" (A=Original, B=Traducción)."
 
 #: main_window.py:2768
 #, python-brace-format
@@ -761,7 +820,8 @@ msgstr "No se pudo obtener el contenido del código para la re-extracción."
 msgid "Could not import project translations from Excel: {error}"
 msgstr "No se pudieron importar las traducciones del proyecto desde Excel: {error}"
 
-#: dialogs/extraction_pattern_dialog.py:182 dialogs/prompt_manager_dialog.py:212
+#: dialogs/extraction_pattern_dialog.py:182
+#: dialogs/prompt_manager_dialog.py:212
 #, python-brace-format
 msgid "Could not load preset file: {error}"
 msgstr "No se pudo cargar el archivo de preajuste: {error}"
@@ -792,7 +852,8 @@ msgstr ""
 msgid "Could not save code file: {error}"
 msgstr "No se pudo guardar el archivo de código: {error}"
 
-#: dialogs/extraction_pattern_dialog.py:197 dialogs/prompt_manager_dialog.py:227
+#: dialogs/extraction_pattern_dialog.py:197
+#: dialogs/prompt_manager_dialog.py:227
 #, python-brace-format
 msgid "Could not save preset file: {error}"
 msgstr "No se pudo guardar el archivo de preajuste: {error}"
@@ -805,7 +866,11 @@ msgstr "Actual"
 msgid "Current Selection:"
 msgstr "Selección actual:"
 
-#: dialogs/extraction_pattern_dialog.py:92 dialogs/extraction_pattern_dialog.py:114 dialogs/extraction_pattern_dialog.py:174 dialogs/extraction_pattern_dialog.py:243 dialogs/extraction_pattern_dialog.py:292
+#: dialogs/extraction_pattern_dialog.py:92
+#: dialogs/extraction_pattern_dialog.py:114
+#: dialogs/extraction_pattern_dialog.py:174
+#: dialogs/extraction_pattern_dialog.py:243
+#: dialogs/extraction_pattern_dialog.py:292
 msgid "Custom"
 msgstr "Personalizado"
 
@@ -843,8 +908,14 @@ msgstr "Mostrados: 0/0 | Traducidos: 0 | No traducidos: 0 | Ignorados: 0"
 
 #: main_window.py:1140
 #, python-brace-format
-msgid "Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}"
-msgstr "Mostrados: {displayed_count}/{total_count} | Traducidos: {translated_visible} | No traducidos: {untranslated_visible} | Ignorados: {ignored_visible}"
+msgid ""
+"Displayed: {displayed_count}/{total_count} | Translated: "
+"{translated_visible} | Untranslated: {untranslated_visible} | Ignored: "
+"{ignored_visible}"
+msgstr ""
+"Mostrados: {displayed_count}/{total_count} | Traducidos: "
+"{translated_visible} | No traducidos: {untranslated_visible} | Ignorados:"
+" {ignored_visible}"
 
 #: main_window.py:3958
 msgid "Do you want to overwrite them, skip them, or cancel the operation?"
@@ -878,7 +949,8 @@ msgstr "Fallo al arrastrar y soltar: '{filename}' no es un archivo."
 msgid "Drag and drop failed: Invalid file type '{filename}'"
 msgstr "Fallo al arrastrar y soltar: Tipo de archivo inválido '{filename}'"
 
-#: dialogs/prompt_manager_dialog.py:121 dialogs/prompt_manager_dialog.py:128 dialogs/prompt_manager_dialog.py:261
+#: dialogs/prompt_manager_dialog.py:121 dialogs/prompt_manager_dialog.py:128
+#: dialogs/prompt_manager_dialog.py:261
 msgid "Dynamic Instruction"
 msgstr "Instrucción dinámica"
 
@@ -944,7 +1016,15 @@ msgstr "La presencia de puntuación final difiere."
 msgid "Enter comment for {count} selected items:"
 msgstr "Introducir comentario para {count} elementos seleccionados:"
 
-#: dialogs/extraction_pattern_dialog.py:180 dialogs/extraction_pattern_dialog.py:297 dialogs/extraction_pattern_dialog.py:300 dialogs/prompt_manager_dialog.py:210 main_window.py:1639 main_window.py:2282 main_window.py:2286 main_window.py:2550 main_window.py:2567 main_window.py:2571 main_window.py:3148 main_window.py:3291 main_window.py:3338 main_window.py:3400 main_window.py:4569 plugins/plugin_dialog.py:532 plugins/plugin_dialog.py:561 ui_components/file_explorer_panel.py:265
+#: dialogs/extraction_pattern_dialog.py:180
+#: dialogs/extraction_pattern_dialog.py:297
+#: dialogs/extraction_pattern_dialog.py:300
+#: dialogs/prompt_manager_dialog.py:210 main_window.py:1639 main_window.py:2282
+#: main_window.py:2286 main_window.py:2550 main_window.py:2567
+#: main_window.py:2571 main_window.py:3148 main_window.py:3291
+#: main_window.py:3338 main_window.py:3400 main_window.py:4569
+#: plugins/plugin_dialog.py:532 plugins/plugin_dialog.py:561
+#: ui_components/file_explorer_panel.py:265
 msgid "Error"
 msgstr "Error"
 
@@ -961,7 +1041,9 @@ msgstr "Error al importar el archivo PO '{filename}': {error}"
 #: main_window.py:2886
 #, python-brace-format
 msgid "Error processing Excel file (possibly column names issue): {error}"
-msgstr "Error al procesar el archivo Excel (posiblemente problema de nombres de columna): {error}"
+msgstr ""
+"Error al procesar el archivo Excel (posiblemente problema de nombres de "
+"columna): {error}"
 
 #: main_window.py:2871
 #, python-brace-format
@@ -1011,10 +1093,13 @@ msgstr "El formato del encabezado de Excel es incorrecto o está vacío."
 #, python-brace-format
 msgid ""
 "Excel header must contain 'UUID' and '{translation_col}' columns.\n"
-"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
+"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', "
+"'{original_semantic_col}'."
 msgstr ""
-"El encabezado de Excel debe contener las columnas 'UUID' y '{translation_col}'.\n"
-"Columnas opcionales: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
+"El encabezado de Excel debe contener las columnas 'UUID' y "
+"'{translation_col}'.\n"
+"Columnas opcionales: '{comment_col}', '{reviewed_col}', '{ignored_col}', "
+"'{original_semantic_col}'."
 
 #: main_window.py:411 main_window.py:576
 msgid "Exit"
@@ -1032,7 +1117,8 @@ msgstr "Exportar"
 msgid "Export Current TM (Excel)"
 msgstr "Exportar MT Actual (Excel)"
 
-#: main_window.py:2767 main_window.py:2929 main_window.py:2969 main_window.py:3118
+#: main_window.py:2767 main_window.py:2929 main_window.py:2969
+#: main_window.py:3118
 msgid "Export Error"
 msgstr "Error de Exportación"
 
@@ -1040,7 +1126,8 @@ msgstr "Error de Exportación"
 msgid "Export Extraction Rule Preset"
 msgstr "Exportar Preajuste de Reglas de Extracción"
 
-#: dialogs/extraction_pattern_dialog.py:197 dialogs/prompt_manager_dialog.py:227
+#: dialogs/extraction_pattern_dialog.py:197
+#: dialogs/prompt_manager_dialog.py:227
 msgid "Export Failed"
 msgstr "Exportación Fallida"
 
@@ -1118,8 +1205,12 @@ msgid "Extraction rules updated. Consider reloading the text."
 msgstr "Reglas de extracción actualizadas. Considere recargar el texto."
 
 #: main_window.py:3125
-msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"
-msgstr "Reglas de extracción actualizadas. ¿Desea recargar el texto traducible del código actual usando las nuevas reglas inmediatamente?"
+msgid ""
+"Extraction rules updated. Do you want to reload the translatable text of "
+"the current code using the new rules immediately?"
+msgstr ""
+"Reglas de extracción actualizadas. ¿Desea recargar el texto traducible "
+"del código actual usando las nuevas reglas inmediatamente?"
 
 #: plugins/plugin_dialog.py:620
 msgid "Failed"
@@ -1142,8 +1233,12 @@ msgstr "Error al extraer el archivo: {error}"
 
 #: dialogs/marketplace_dialog.py:40
 #, python-brace-format
-msgid "Failed to fetch data (HTTP {status_code}). The marketplace file might be missing or the server is down."
-msgstr "Error al obtener datos (HTTP {status_code}). Es posible que falte el archivo del mercado o el servidor esté caído."
+msgid ""
+"Failed to fetch data (HTTP {status_code}). The marketplace file might be "
+"missing or the server is down."
+msgstr ""
+"Error al obtener datos (HTTP {status_code}). Es posible que falte el "
+"archivo del mercado o el servidor esté caído."
 
 #: dialogs/marketplace_dialog.py:294
 msgid "Failed to fetch plugin list from the server."
@@ -1203,8 +1298,12 @@ msgstr "Obteniendo índice de complementos..."
 
 #: main_window.py:2579
 #, python-brace-format
-msgid "File '{filename}' already exists. Overwrite? A backup file (.bak) will be created."
-msgstr "El archivo '{filename}' ya existe. ¿Sobrescribir? Se creará un archivo de copia de seguridad (.bak)."
+msgid ""
+"File '{filename}' already exists. Overwrite? A backup file (.bak) will be"
+" created."
+msgstr ""
+"El archivo '{filename}' ya existe. ¿Sobrescribir? Se creará un archivo de"
+" copia de seguridad (.bak)."
 
 #: main_window.py:1481
 #, python-brace-format
@@ -1233,10 +1332,15 @@ msgstr "Archivo no encontrado"
 
 #: main_window.py:1753
 #, python-brace-format
-msgid "File type for '{filename}' is not supported by the application or any active plugin."
-msgstr "El tipo de archivo '{filename}' no es compatible con la aplicación ni con ningún complemento activo."
+msgid ""
+"File type for '{filename}' is not supported by the application or any "
+"active plugin."
+msgstr ""
+"El tipo de archivo '{filename}' no es compatible con la aplicación ni con"
+" ningún complemento activo."
 
-#: ui_components/file_explorer_panel.py:69 ui_components/file_explorer_panel.py:269
+#: ui_components/file_explorer_panel.py:69
+#: ui_components/file_explorer_panel.py:269
 msgid "Filter files..."
 msgstr "Filtrar archivos..."
 
@@ -1294,8 +1398,12 @@ msgid "Font Settings..."
 msgstr "Configuración de fuente..."
 
 #: main_window.py:787
-msgid "Font settings have been changed. Please restart the application for the changes to take effect."
-msgstr "Se han modificado los ajustes de fuente. Por favor, reinicie la aplicación para que los cambios surtan efecto."
+msgid ""
+"Font settings have been changed. Please restart the application for the "
+"changes to take effect."
+msgstr ""
+"Se han modificado los ajustes de fuente. Por favor, reinicie la "
+"aplicación para que los cambios surtan efecto."
 
 #: dialogs/settings_pages.py:173
 msgid "Fonts:"
@@ -1329,7 +1437,9 @@ msgstr "Sugerencia: "
 
 #: main_window.py:1102
 msgid "Hint: requests not found, AI translation is disabled."
-msgstr "Sugerencia: 'requests' no encontrado, la traducción por IA está deshabilitada."
+msgstr ""
+"Sugerencia: 'requests' no encontrado, la traducción por IA está "
+"deshabilitada."
 
 #: dialogs/marketplace_dialog.py:439
 msgid "Homepage"
@@ -1344,11 +1454,14 @@ msgstr "Ignorar advertencias para los seleccionados"
 msgid "Ignore status for ID {id} -> {status}"
 msgstr "Estado de ignorado para ID {id} -> {status}"
 
-#: main_window.py:2146 main_window.py:4250 ui_components/comment_status_panel.py:57
+#: main_window.py:2146 main_window.py:4250
+#: ui_components/comment_status_panel.py:57
 msgid "Ignore this string"
 msgstr "Ignorar esta cadena"
 
-#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590 main_window.py:624 main_window.py:831 main_window.py:2737 main_window.py:2798 main_window.py:2806 main_window.py:3698
+#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590
+#: main_window.py:624 main_window.py:831 main_window.py:2737
+#: main_window.py:2798 main_window.py:2806 main_window.py:3698
 msgid "Ignored"
 msgstr "Ignorado"
 
@@ -1361,7 +1474,8 @@ msgstr "Advertencias ignoradas para {count} elemento(s)."
 msgid "Import"
 msgstr "Importar"
 
-#: main_window.py:2790 main_window.py:2802 main_window.py:2885 main_window.py:2889
+#: main_window.py:2790 main_window.py:2802 main_window.py:2885
+#: main_window.py:2889
 msgid "Import Error"
 msgstr "Error de Importación"
 
@@ -1369,7 +1483,8 @@ msgstr "Error de Importación"
 msgid "Import Extraction Rule Preset"
 msgstr "Importar Preajuste de Reglas de Extracción"
 
-#: dialogs/extraction_pattern_dialog.py:182 dialogs/prompt_manager_dialog.py:212
+#: dialogs/extraction_pattern_dialog.py:182
+#: dialogs/prompt_manager_dialog.py:212
 msgid "Import Failed"
 msgstr "Importación Fallida"
 
@@ -1400,7 +1515,9 @@ msgstr "Importar como archivo nuevo"
 #: main_window.py:2881
 #, python-brace-format
 msgid "Imported/updated {field_count} fields for {item_count} items from Excel."
-msgstr "Se importaron/actualizaron {field_count} campos para {item_count} elementos desde Excel."
+msgstr ""
+"Se importaron/actualizaron {field_count} campos para {item_count} "
+"elementos desde Excel."
 
 #: main_window.py:3384
 msgid "In-memory TM has been cleared."
@@ -1413,9 +1530,18 @@ msgstr "Incompatible"
 #: plugins/plugin_manager.py:111
 #, python-brace-format
 msgid "Incompatible with app version (requires {req}, current is {curr})"
-msgstr "Incompatible con la versión de la aplicación (requiere {req}, la actual es {curr})"
+msgstr ""
+"Incompatible con la versión de la aplicación (requiere {req}, la actual "
+"es {curr})"
 
-#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291 dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:745 main_window.py:2612 main_window.py:2711 main_window.py:2772 main_window.py:2894 main_window.py:2934 main_window.py:3088 main_window.py:3132 main_window.py:3395 main_window.py:3432 main_window.py:3449 main_window.py:3466 main_window.py:3469 main_window.py:3518 main_window.py:4171 main_window.py:4304 main_window.py:4328
+#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291
+#: dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:745
+#: main_window.py:2612 main_window.py:2711 main_window.py:2772
+#: main_window.py:2894 main_window.py:2934 main_window.py:3088
+#: main_window.py:3132 main_window.py:3395 main_window.py:3432
+#: main_window.py:3449 main_window.py:3466 main_window.py:3469
+#: main_window.py:3518 main_window.py:4171 main_window.py:4304
+#: main_window.py:4328
 msgid "Info"
 msgstr "Información"
 
@@ -1476,7 +1602,8 @@ msgstr "Instalación cancelada por el usuario."
 msgid "Installation failed: {error}"
 msgstr "Instalación fallida: {error}"
 
-#: dialogs/marketplace_dialog.py:158 plugins/plugin_dialog.py:442 plugins/plugin_dialog.py:457
+#: dialogs/marketplace_dialog.py:158 plugins/plugin_dialog.py:442
+#: plugins/plugin_dialog.py:457
 msgid "Installed"
 msgstr "Instalado"
 
@@ -1491,8 +1618,13 @@ msgid "Installing {plugin_name}..."
 msgstr "Instalando {plugin_name}..."
 
 #: plugins/plugin_manager.py:424
-msgid "Invalid plugin archive structure. The archive must contain either a single plugin folder or the plugin's files (__init__.py, etc.) directly."
-msgstr "Estructura de archivo de plugin no válida. El archivo debe contener una única carpeta de plugin o los archivos del plugin (__init__.py, etc.) directamente."
+msgid ""
+"Invalid plugin archive structure. The archive must contain either a "
+"single plugin folder or the plugin's files (__init__.py, etc.) directly."
+msgstr ""
+"Estructura de archivo de plugin no válida. El archivo debe contener una "
+"única carpeta de plugin o los archivos del plugin (__init__.py, etc.) "
+"directamente."
 
 #: dialogs/statistics_dialog.py:623
 msgid "Issue Description"
@@ -1577,8 +1709,12 @@ msgstr "Desviación de longitud (menor)"
 
 #: services/validation_service.py:143 services/validation_service.py:151
 #, python-brace-format
-msgid "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
-msgstr "Advertencia de longitud: Ratio de expansión inusual ({actual:.1f}x), esperado alrededor de {expected:.1f}x."
+msgid ""
+"Length warning: Unusual expansion ratio ({actual:.1f}x), expected around "
+"{expected:.1f}x."
+msgstr ""
+"Advertencia de longitud: Ratio de expansión inusual ({actual:.1f}x), "
+"esperado alrededor de {expected:.1f}x."
 
 #: plugins/plugin_dialog.py:615
 #, python-brace-format
@@ -1619,7 +1755,9 @@ msgstr "Se cargaron {count} cadenas traducibles de {filename}"
 #: main_window.py:3284
 #, python-brace-format
 msgid "Loaded/merged {count} Excel TM records from '{filename}'."
-msgstr "Se cargaron/fusionaron {count} registros de MT de Excel desde '{filename}'."
+msgstr ""
+"Se cargaron/fusionaron {count} registros de MT de Excel desde "
+"'{filename}'."
 
 #: plugins/plugin_dialog.py:387
 msgid "Loading Failed"
@@ -1633,7 +1771,8 @@ msgstr "Cargando marketplace..."
 msgid "MO Compilation Failed"
 msgstr "Falló la compilación del MO"
 
-#: dialogs/prompt_manager_dialog.py:168 dialogs/prompt_manager_dialog.py:169 dialogs/prompt_manager_dialog.py:170
+#: dialogs/prompt_manager_dialog.py:168 dialogs/prompt_manager_dialog.py:169
+#: dialogs/prompt_manager_dialog.py:170
 msgid "Main App"
 msgstr "Aplicación Principal"
 
@@ -1664,7 +1803,9 @@ msgstr "Mercado cargado. Se encontraron {count} complementos."
 
 #: dialogs/search_dialog.py:292
 msgid "Match is not in a replaceable column (Translation or Comment)."
-msgstr "La coincidencia no está en una columna reemplazable (Traducción o Comentario)."
+msgstr ""
+"La coincidencia no está en una columna reemplazable (Traducción o "
+"Comentario)."
 
 #: dialogs/search_dialog.py:212
 #, python-brace-format
@@ -1691,7 +1832,9 @@ msgstr "Dependencias faltantes: {deps}"
 #: plugins/plugin_dialog.py:230
 #, python-brace-format
 msgid "Missing external libraries: {libs}. Check to force-enable."
-msgstr "Bibliotecas externas faltantes: {libs}. Marque para habilitar forzosamente."
+msgstr ""
+"Bibliotecas externas faltantes: {libs}. Marque para habilitar "
+"forzosamente."
 
 #: services/validation_service.py:45
 #, python-brace-format
@@ -1724,8 +1867,12 @@ msgid "Network Error"
 msgstr "Error de Red"
 
 #: dialogs/marketplace_dialog.py:34
-msgid "Network connection failed. Please check your internet connection and firewall settings."
-msgstr "Error de conexión de red. Por favor, verifique su conexión a internet y la configuración del firewall."
+msgid ""
+"Network connection failed. Please check your internet connection and "
+"firewall settings."
+msgstr ""
+"Error de conexión de red. Por favor, verifique su conexión a internet y "
+"la configuración del firewall."
 
 #: services/ai_translator.py:57
 msgid "Network error or API request failed"
@@ -1743,7 +1890,8 @@ msgstr "Nueva Instrucción"
 msgid "New Rule"
 msgstr "Nueva Regla"
 
-#: main_window.py:2505 main_window.py:2541 main_window.py:2757 main_window.py:2758
+#: main_window.py:2505 main_window.py:2541 main_window.py:2757
+#: main_window.py:2758
 msgid "No"
 msgstr "No"
 
@@ -1761,7 +1909,9 @@ msgstr "No se Necesita Traducción"
 
 #: main_window.py:3512
 msgid "No applicable translations found in TM (or no changes needed)."
-msgstr "No se encontraron traducciones aplicables en la MT (o no se necesitan cambios)."
+msgstr ""
+"No se encontraron traducciones aplicables en la MT (o no se necesitan "
+"cambios)."
 
 #: main_window.py:3132
 msgid "No code content loaded to reload."
@@ -1775,7 +1925,8 @@ msgstr "Sin contenido en el mensaje"
 msgid "No data to display."
 msgstr "No hay datos para mostrar."
 
-#: main_window.py:2711 main_window.py:2894 main_window.py:2934 main_window.py:3088
+#: main_window.py:2711 main_window.py:2894 main_window.py:2934
+#: main_window.py:3088
 msgid "No data to export."
 msgstr "No hay datos para exportar."
 
@@ -1798,11 +1949,15 @@ msgstr "No hay elementos para procesar."
 #: main_window.py:1863
 #, python-brace-format
 msgid "No matches found for '{search_term}' under current filters."
-msgstr "No se encontraron coincidencias para '{search_term}' bajo los filtros actuales."
+msgstr ""
+"No se encontraron coincidencias para '{search_term}' bajo los filtros "
+"actuales."
 
 #: dialogs/search_dialog.py:312
 msgid "No matches found in Translation or Comment columns."
-msgstr "No se encontraron coincidencias en las columnas de Traducción o Comentario."
+msgstr ""
+"No se encontraron coincidencias en las columnas de Traducción o "
+"Comentario."
 
 #: dialogs/search_dialog.py:264 dialogs/search_dialog.py:300
 msgid "No matches found to replace."
@@ -1814,7 +1969,9 @@ msgstr "No se encontraron coincidencias."
 
 #: main_window.py:4329
 msgid "No matching TM entries or no changes needed for selected items."
-msgstr "No hay entradas de MT coincidentes o no se necesitan cambios para los elementos seleccionados."
+msgstr ""
+"No hay entradas de MT coincidentes o no se necesitan cambios para los "
+"elementos seleccionados."
 
 #: main_window.py:1321
 msgid "No more actions to redo"
@@ -1856,7 +2013,10 @@ msgstr "No hay texto disponible para detectar el idioma."
 msgid "No untranslated and non-ignored strings found."
 msgstr "No se encontraron cadenas sin traducir y no ignoradas."
 
-#: dialogs/extraction_pattern_dialog.py:76 dialogs/extraction_pattern_dialog.py:274 dialogs/font_settings_dialog.py:57 dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341 dialogs/prompt_manager_dialog.py:96 dialogs/prompt_manager_dialog.py:314
+#: dialogs/extraction_pattern_dialog.py:76
+#: dialogs/extraction_pattern_dialog.py:274 dialogs/font_settings_dialog.py:57
+#: dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341
+#: dialogs/prompt_manager_dialog.py:96 dialogs/prompt_manager_dialog.py:314
 msgid "OK"
 msgstr "OK"
 
@@ -1977,10 +2137,13 @@ msgstr ""
 "Autor: TheSkyC\n"
 "ID Servidor China: 小鸟游六花#56683 / Servidor Asia: 小鳥游六花#31665"
 
-#: dialogs/extraction_pattern_dialog.py:164 dialogs/extraction_pattern_dialog.py:189
+#: dialogs/extraction_pattern_dialog.py:164
+#: dialogs/extraction_pattern_dialog.py:189
 #, python-brace-format
 msgid "Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)"
-msgstr "Archivos de Patrones de Extracción de Overwatch (*{ext});;Todos los Archivos (*.*)"
+msgstr ""
+"Archivos de Patrones de Extracción de Overwatch (*{ext});;Todos los "
+"Archivos (*.*)"
 
 #: main_window.py:140 main_window.py:541
 #, python-brace-format
@@ -2094,7 +2257,9 @@ msgstr "Por favor, introduzca un término de búsqueda."
 
 #: main_window.py:2773
 msgid "Please load a code file or project first to match imported translations."
-msgstr "Por favor, cargue un archivo de código o proyecto primero para que coincida con las traducciones importadas."
+msgstr ""
+"Por favor, cargue un archivo de código o proyecto primero para que "
+"coincida con las traducciones importadas."
 
 #: main_window.py:3518
 msgid "Please load a file or project first."
@@ -2145,7 +2310,9 @@ msgstr "Complemento '{plugin_name}' habilitado."
 #: plugins/plugin_dialog.py:304
 #, python-brace-format
 msgid "Plugin '{plugin_name}' force-enabled with missing libraries."
-msgstr "El complemento '{plugin_name}' habilitado forzosamente con bibliotecas faltantes."
+msgstr ""
+"El complemento '{plugin_name}' habilitado forzosamente con bibliotecas "
+"faltantes."
 
 #: plugins/plugin_dialog.py:283
 #, python-brace-format
@@ -2198,18 +2365,25 @@ msgid "Plugin directory not found."
 msgstr "Directorio de complementos no encontrado."
 
 #: dialogs/marketplace_dialog.py:497
-msgid "Plugin installed successfully. Please restart the application to take effect."
-msgstr "Complemento instalado con éxito. Por favor, reinicie la aplicación para que surta efecto."
+msgid ""
+"Plugin installed successfully. Please restart the application to take "
+"effect."
+msgstr ""
+"Complemento instalado con éxito. Por favor, reinicie la aplicación para "
+"que surta efecto."
 
-#: dialogs/extraction_pattern_dialog.py:195 dialogs/prompt_manager_dialog.py:225
+#: dialogs/extraction_pattern_dialog.py:195
+#: dialogs/prompt_manager_dialog.py:225
 msgid "Preset exported successfully."
 msgstr "Preajuste exportado con éxito."
 
-#: dialogs/extraction_pattern_dialog.py:180 dialogs/prompt_manager_dialog.py:210
+#: dialogs/extraction_pattern_dialog.py:180
+#: dialogs/prompt_manager_dialog.py:210
 msgid "Preset file format is incorrect."
 msgstr "El formato del archivo de preajuste es incorrecto."
 
-#: dialogs/extraction_pattern_dialog.py:177 dialogs/prompt_manager_dialog.py:208
+#: dialogs/extraction_pattern_dialog.py:177
+#: dialogs/prompt_manager_dialog.py:208
 msgid "Preset imported successfully."
 msgstr "Preajuste importado con éxito."
 
@@ -2231,7 +2405,8 @@ msgstr "Proyecto '{filename}' cargado."
 msgid "Project Metrics"
 msgstr "Métricas del Proyecto"
 
-#: dialogs/statistics_dialog.py:136 dialogs/statistics_dialog.py:420 dialogs/statistics_dialog.py:502
+#: dialogs/statistics_dialog.py:136 dialogs/statistics_dialog.py:420
+#: dialogs/statistics_dialog.py:502
 msgid "Project Statistics"
 msgstr "Estadísticas del Proyecto"
 
@@ -2279,10 +2454,18 @@ msgid "Provider"
 msgstr "Proveedor"
 
 #: main_window.py:3567
-msgid "Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."
-msgstr "La librería 'requests' de Python no se encontró. Por favor, instálela (pip install requests) para usar las funciones de traducción por IA."
+msgid ""
+"Python 'requests' library not found. Please install it (pip install "
+"requests) to use AI translation features."
+msgstr ""
+"La librería 'requests' de Python no se encontró. Por favor, instálela "
+"(pip install requests) para usar las funciones de traducción por IA."
 
-#: main_window.py:632 main_window.py:867 main_window.py:952 main_window.py:957 main_window.py:1429 main_window.py:1820 main_window.py:1845 main_window.py:1862 main_window.py:1868 main_window.py:1869 main_window.py:1886 main_window.py:1893 main_window.py:2446 main_window.py:2689
+#: main_window.py:632 main_window.py:867 main_window.py:952 main_window.py:957
+#: main_window.py:1429 main_window.py:1820 main_window.py:1845
+#: main_window.py:1862 main_window.py:1868 main_window.py:1869
+#: main_window.py:1886 main_window.py:1893 main_window.py:2446
+#: main_window.py:2689
 msgid "Quick search..."
 msgstr "Búsqueda rápida..."
 
@@ -2294,7 +2477,8 @@ msgstr "Re-extrayendo cadenas con nuevas reglas..."
 msgid "Re-validate All Entries"
 msgstr "Revalidar Todas las Entradas"
 
-#: main_window.py:269 main_window.py:660 main_window.py:1081 main_window.py:1114
+#: main_window.py:269 main_window.py:660 main_window.py:1081
+#: main_window.py:1114
 msgid "Ready"
 msgstr "Listo"
 
@@ -2402,9 +2586,12 @@ msgstr "Restablecer"
 
 #: dialogs/font_settings_dialog.py:118
 msgid "Reset all font settings to default?"
-msgstr "¿Restablecer todas las configuraciones de fuente a los valores predeterminados?"
+msgstr ""
+"¿Restablecer todas las configuraciones de fuente a los valores "
+"predeterminados?"
 
-#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52 dialogs/keybinding_dialog.py:78 dialogs/prompt_manager_dialog.py:63
+#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52
+#: dialogs/keybinding_dialog.py:78 dialogs/prompt_manager_dialog.py:63
 msgid "Reset to Defaults"
 msgstr "Restablecer a Valores Predeterminados"
 
@@ -2429,7 +2616,9 @@ msgstr "Mostrar en el Explorador de Archivos"
 msgid "Review status for ID {id} -> {status}"
 msgstr "Estado de revisión para ID {id} -> {status}"
 
-#: main_window.py:2736 main_window.py:2797 main_window.py:2805 ui_components/comment_status_panel.py:62 ui_components/comment_status_panel.py:82
+#: main_window.py:2736 main_window.py:2797 main_window.py:2805
+#: ui_components/comment_status_panel.py:62
+#: ui_components/comment_status_panel.py:82
 msgid "Reviewed"
 msgstr "Revisado"
 
@@ -2563,7 +2752,8 @@ msgstr "Configuración aplicada."
 msgid "Settings..."
 msgstr "Configuración..."
 
-#: ui_components/file_explorer_panel.py:70 ui_components/file_explorer_panel.py:270
+#: ui_components/file_explorer_panel.py:70
+#: ui_components/file_explorer_panel.py:270
 msgid "Show All Files"
 msgstr "Mostrar Todos los Archivos"
 
@@ -2628,7 +2818,8 @@ msgstr "Signo de puntuación inicial difiere: '{c1}' vs '{c2}'."
 msgid "Starting punctuation presence differs."
 msgstr "La presencia de puntuación inicial difiere."
 
-#: dialogs/prompt_manager_dialog.py:120 dialogs/prompt_manager_dialog.py:127 dialogs/prompt_manager_dialog.py:260
+#: dialogs/prompt_manager_dialog.py:120 dialogs/prompt_manager_dialog.py:127
+#: dialogs/prompt_manager_dialog.py:260
 msgid "Static Instruction"
 msgstr "Instrucción estática"
 
@@ -2646,8 +2837,12 @@ msgstr "Detener traducción automática por lotes"
 
 #: main_window.py:3707 main_window.py:3946
 #, python-brace-format
-msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
-msgstr "La cadena \"{text}...\" ya tiene una traducción. ¿Sobrescribir con la traducción de IA?"
+msgid ""
+"String \"{text}...\" already has a translation. Overwrite with AI "
+"translation?"
+msgstr ""
+"La cadena \"{text}...\" ya tiene una traducción. ¿Sobrescribir con la "
+"traducción de IA?"
 
 #: dialogs/extraction_pattern_dialog.py:60
 msgid "String Type"
@@ -2657,7 +2852,8 @@ msgstr "Tipo de cadena"
 msgid "String Type:"
 msgstr "Tipo de cadena:"
 
-#: dialogs/prompt_manager_dialog.py:119 dialogs/prompt_manager_dialog.py:126 dialogs/prompt_manager_dialog.py:259
+#: dialogs/prompt_manager_dialog.py:119 dialogs/prompt_manager_dialog.py:126
+#: dialogs/prompt_manager_dialog.py:259
 msgid "Structural Content"
 msgstr "Contenido Estructural"
 
@@ -2665,7 +2861,10 @@ msgstr "Contenido Estructural"
 msgid "Style:"
 msgstr "Estilo:"
 
-#: dialogs/extraction_pattern_dialog.py:177 dialogs/extraction_pattern_dialog.py:195 dialogs/marketplace_dialog.py:496 dialogs/prompt_manager_dialog.py:208 dialogs/prompt_manager_dialog.py:225 plugins/plugin_dialog.py:614
+#: dialogs/extraction_pattern_dialog.py:177
+#: dialogs/extraction_pattern_dialog.py:195 dialogs/marketplace_dialog.py:496
+#: dialogs/prompt_manager_dialog.py:208 dialogs/prompt_manager_dialog.py:225
+#: plugins/plugin_dialog.py:614
 msgid "Success"
 msgstr "Éxito"
 
@@ -2674,7 +2873,8 @@ msgstr "Éxito"
 msgid "Successfully installed {plugin_name}."
 msgstr "{plugin_name} instalado correctamente."
 
-#: main_window.py:3283 main_window.py:3297 main_window.py:3331 main_window.py:3360 main_window.py:3509 main_window.py:3512
+#: main_window.py:3283 main_window.py:3297 main_window.py:3331
+#: main_window.py:3360 main_window.py:3509 main_window.py:3512
 msgid "TM"
 msgstr "TM"
 
@@ -2687,8 +2887,12 @@ msgid "TM entry cleared for selected item."
 msgstr "Entrada de TM eliminada para el elemento seleccionado."
 
 #: main_window.py:3353
-msgid "TM imported. Do you want to apply it to untranslated strings in the current project immediately?"
-msgstr "TM importado. ¿Quieres aplicarlo a las cadenas sin traducir en el proyecto actual inmediatamente?"
+msgid ""
+"TM imported. Do you want to apply it to untranslated strings in the "
+"current project immediately?"
+msgstr ""
+"TM importado. ¿Quieres aplicarlo a las cadenas sin traducir en el "
+"proyecto actual inmediatamente?"
 
 #: main_window.py:3376
 msgid "TM is already empty."
@@ -2735,7 +2939,9 @@ msgstr "Idioma objetivo:"
 
 #: dialogs/settings_pages.py:224
 msgid "Target language is set in 'Settings > Language Pair Settings...'"
-msgstr "El idioma de destino se configura en 'Ajustes > Configuración de par de idiomas...'"
+msgstr ""
+"El idioma de destino se configura en 'Ajustes > Configuración de par de "
+"idiomas...'"
 
 #: dialogs/settings_dialog.py:166
 msgid ""
@@ -2743,15 +2949,20 @@ msgid ""
 "Some changes may require a restart of the application to take full effect."
 msgstr ""
 "El idioma de la interfaz ha sido cambiado.\n"
-"Algunos cambios pueden requerir reiniciar la aplicación para que surtan efecto completo."
+"Algunos cambios pueden requerir reiniciar la aplicación para que surtan "
+"efecto completo."
 
 #: plugins/plugin_manager.py:410
 msgid "The archive is empty."
 msgstr "El archivo está vacío."
 
 #: plugins/plugin_manager.py:418
-msgid "The archive seems to contain a single folder, but it's not a valid plugin (missing __init__.py)."
-msgstr "El archivo parece contener una sola carpeta, pero no es un complemento válido (falta __init__.py)."
+msgid ""
+"The archive seems to contain a single folder, but it's not a valid plugin"
+" (missing __init__.py)."
+msgstr ""
+"El archivo parece contener una sola carpeta, pero no es un complemento "
+"válido (falta __init__.py)."
 
 #: main_window.py:1798
 msgid "The current project has unsaved changes. Do you want to save?"
@@ -2760,10 +2971,12 @@ msgstr "El proyecto actual tiene cambios sin guardar. ¿Deseas guardarlos?"
 #: main_window.py:3406
 #, python-brace-format
 msgid ""
-"The current translation is empty. Do you want to update the TM entry for:\n"
+"The current translation is empty. Do you want to update the TM entry for:"
+"\n"
 "'{text}...' with an empty translation?"
 msgstr ""
-"La traducción actual está vacía. ¿Deseas actualizar la entrada de la TM para:\n"
+"La traducción actual está vacía. ¿Deseas actualizar la entrada de la TM "
+"para:\n"
 "'{text}...' con una traducción vacía?"
 
 #: main_window.py:1075
@@ -2777,28 +2990,33 @@ msgid ""
 "\n"
 "- {libs}\n"
 "\n"
-"The plugin will likely fail to run correctly. You can try to install them from the details panel.\n"
+"The plugin will likely fail to run correctly. You can try to install them"
+" from the details panel.\n"
 "\n"
 "Are you sure you want to force enable it anyway?"
 msgstr ""
-"Al complemento '{plugin_name}' le faltan bibliotecas externas requeridas:\n"
+"Al complemento '{plugin_name}' le faltan bibliotecas externas requeridas:"
+"\n"
 "\n"
 "- {libs}\n"
 "\n"
-"Es probable que el complemento no funcione correctamente. Puedes intentar instalarlas desde el panel de detalles.\n"
+"Es probable que el complemento no funcione correctamente. Puedes intentar"
+" instalarlas desde el panel de detalles.\n"
 "\n"
 "¿Estás seguro de que deseas forzar su habilitación de todos modos?"
 
 #: plugins/plugin_dialog.py:274
 #, python-brace-format
 msgid ""
-"The plugin '{plugin_name}' is not marked as compatible with this application version.\n"
+"The plugin '{plugin_name}' is not marked as compatible with this "
+"application version.\n"
 "\n"
 "Forcing it to enable may cause instability or crashes.\n"
 "\n"
 "Are you sure you want to force enable it?"
 msgstr ""
-"El complemento '{plugin_name}' no está marcado como compatible con esta versión de la aplicación.\n"
+"El complemento '{plugin_name}' no está marcado como compatible con esta "
+"versión de la aplicación.\n"
 "\n"
 "Forzar su habilitación puede causar inestabilidad o fallos.\n"
 "\n"
@@ -2816,8 +3034,12 @@ msgstr ""
 "¿Desea intentar {action} ahora?"
 
 #: dialogs/marketplace_dialog.py:37
-msgid "The request timed out. The server might be busy or your connection is slow."
-msgstr "La solicitud ha caducado. Es posible que el servidor esté ocupado o que tu conexión sea lenta."
+msgid ""
+"The request timed out. The server might be busy or your connection is "
+"slow."
+msgstr ""
+"La solicitud ha caducado. Es posible que el servidor esté ocupado o que "
+"tu conexión sea lenta."
 
 #: plugins/plugin_manager.py:400
 msgid "The selected file is not a valid .zip archive."
@@ -2829,15 +3051,21 @@ msgstr "El elemento seleccionado no tiene ninguna entrada en la TM."
 
 #: main_window.py:3699
 msgid "The selected string is marked as ignored and will not be AI translated."
-msgstr "La cadena seleccionada está marcada como ignorada y no será traducida por IA."
+msgstr ""
+"La cadena seleccionada está marcada como ignorada y no será traducida por"
+" IA."
 
 #: dialogs/prompt_manager_dialog.py:168
 msgid "The target language for translation."
 msgstr "El idioma de destino para la traducción."
 
 #: main_window.py:2613
-msgid "There is no content to save as a project. Please open a code file or PO file first."
-msgstr "No hay contenido para guardar como proyecto. Por favor, abre primero un archivo de código o un archivo PO."
+msgid ""
+"There is no content to save as a project. Please open a code file or PO "
+"file first."
+msgstr ""
+"No hay contenido para guardar como proyecto. Por favor, abre primero un "
+"archivo de código o un archivo PO."
 
 #: main_window.py:2551
 msgid ""
@@ -2860,18 +3088,26 @@ msgid "This plugin is incompatible. Check to force-enable."
 msgstr "Este complemento es incompatible. Marque para forzar la habilitación."
 
 #: main_window.py:3474
-msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
-msgstr "Esto aplicará la TM a todas las cadenas coincidentes, sobrescribiendo las traducciones existentes. ¿Continuar?"
+msgid ""
+"This will apply TM to all matching strings, overwriting existing "
+"translations. Continue?"
+msgstr ""
+"Esto aplicará la TM a todas las cadenas coincidentes, sobrescribiendo las"
+" traducciones existentes. ¿Continuar?"
 
 #: main_window.py:3161
 #, python-brace-format
 msgid ""
 "This will re-extract strings from {source} using the new rules.\n"
-"Existing translations will be preserved where the original text matches, but unmatched translations and statuses may be lost.\n"
+"Existing translations will be preserved where the original text matches, "
+"but unmatched translations and statuses may be lost.\n"
 "This action will clear the undo history. Continue?"
 msgstr ""
-"Esto volverá a extraer las cadenas de {source} utilizando las nuevas reglas.  \n"
-"Las traducciones existentes se conservarán cuando el texto original coincida, pero las traducciones y estados no coincidentes pueden perderse.  \n"
+"Esto volverá a extraer las cadenas de {source} utilizando las nuevas "
+"reglas.  \n"
+"Las traducciones existentes se conservarán cuando el texto original "
+"coincida, pero las traducciones y estados no coincidentes pueden "
+"perderse.  \n"
 "Esta acción borrará el historial de deshacer. ¿Continuar?"
 
 #: dialogs/keybinding_dialog.py:29
@@ -2890,11 +3126,13 @@ msgstr "Elementos totales"
 msgid "Trailing Whitespace Mismatch"
 msgstr "Espacio en Blanco Final no Coincide"
 
-#: dialogs/statistics_dialog.py:523 dialogs/statistics_dialog.py:580 main_window.py:626 main_window.py:843
+#: dialogs/statistics_dialog.py:523 dialogs/statistics_dialog.py:580
+#: main_window.py:626 main_window.py:843
 msgid "Translated"
 msgstr "Traducido"
 
-#: dialogs/search_dialog.py:57 main_window.py:617 main_window.py:2736 main_window.py:2795 main_window.py:2804
+#: dialogs/search_dialog.py:57 main_window.py:617 main_window.py:2736
+#: main_window.py:2795 main_window.py:2804
 msgid "Translation"
 msgstr "Traducción"
 
@@ -2946,7 +3184,9 @@ msgstr "Traducciones exportadas al archivo PO: {filename}"
 
 #: main_window.py:4358
 msgid "Translations for selected items are already empty, no clearing needed."
-msgstr "Las traducciones de los elementos seleccionados ya están vacías, no es necesario borrarlas."
+msgstr ""
+"Las traducciones de los elementos seleccionados ya están vacías, no es "
+"necesario borrarlas."
 
 #: dialogs/prompt_manager_dialog.py:80
 msgid "Type"
@@ -3020,7 +3260,8 @@ msgstr "Sin revisar"
 msgid "Unsaved Changes"
 msgstr "Cambios no guardados"
 
-#: dialogs/statistics_dialog.py:528 dialogs/statistics_dialog.py:585 main_window.py:625 main_window.py:837
+#: dialogs/statistics_dialog.py:528 dialogs/statistics_dialog.py:585
+#: main_window.py:625 main_window.py:837
 msgid "Untranslated"
 msgstr "Sin traducir"
 
@@ -3078,7 +3319,8 @@ msgstr "Validación completada."
 msgid "Validation complete. Language pair set to {src} -> {tgt}."
 msgstr "Validación completada. Par de idiomas establecido en {src} -> {tgt}."
 
-#: dialogs/marketplace_dialog.py:429 plugins/plugin_dialog.py:383 plugins/plugin_dialog.py:398
+#: dialogs/marketplace_dialog.py:429 plugins/plugin_dialog.py:383
+#: plugins/plugin_dialog.py:398
 msgid "Version"
 msgstr "Versión"
 
@@ -3108,14 +3350,19 @@ msgstr "Advertencia"
 
 #: main_window.py:2824
 #, python-brace-format
-msgid "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported."
-msgstr "Advertencia: Fila de Excel {row_num}, UUID {uuid} - El texto original no coincide con el de Excel. Los datos se importarán de todos modos."
+msgid ""
+"Warning: Excel row {row_num}, UUID {uuid} - Original text does not match "
+"the one in Excel. Data will still be imported."
+msgstr ""
+"Advertencia: Fila de Excel {row_num}, UUID {uuid} - El texto original no "
+"coincide con el de Excel. Los datos se importarán de todos modos."
 
 #: main_window.py:2952
 msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
 msgstr "Archivos YAML (*.yaml *.yml);;Todos los archivos (*.*)"
 
-#: main_window.py:2505 main_window.py:2541 main_window.py:2757 main_window.py:2758 main_window.py:2850 main_window.py:2860
+#: main_window.py:2505 main_window.py:2541 main_window.py:2757
+#: main_window.py:2758 main_window.py:2850 main_window.py:2860
 msgid "Yes"
 msgstr "Sí"
 
@@ -3194,3 +3441,4 @@ msgstr "El estado de revisión de {count} elementos ha sido actualizado."
 #, python-brace-format
 msgid "{removed} removed items, "
 msgstr "{removed} elementos eliminados, "
+
