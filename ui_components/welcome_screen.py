@@ -21,7 +21,7 @@ class WelcomeScreen(QWidget):
         self.is_loading = False
         self.pending_action = None
 
-        self.setWindowTitle("Overwatch Localizer")
+        self.setWindowTitle("LexiSync")
         self.resize(800, 550)
         self.setStyleSheet("background-color: #FFFFFF;")
         self.setAcceptDrops(True)
@@ -167,7 +167,7 @@ class WelcomeScreen(QWidget):
             self.set_status(_("Loading core libraries..."), "loading")
             QApplication.processEvents()
 
-            from main_window import OverwatchLocalizerApp
+            from main_window import LexiSyncApp
             from utils.path_utils import get_plugin_libs_path
             import sys
             import logging
@@ -183,7 +183,7 @@ class WelcomeScreen(QWidget):
             self.set_status(_("Initializing main window and plugins..."), "loading")
             QApplication.processEvents()
 
-            self.main_window_instance = OverwatchLocalizerApp(self.config)
+            self.main_window_instance = LexiSyncApp(self.config)
             self.main_window_instance.hide()
 
             self.set_status(_("Ready"), "ready")

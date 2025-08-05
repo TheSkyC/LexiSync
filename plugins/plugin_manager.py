@@ -27,7 +27,7 @@ class PluginManager:
         self.incompatible_plugins = {}
         self.missing_deps_plugins = {}
         self.translators = {}
-        self.market_url = "https://raw.githubusercontent.com/TheSkyC/overwatch-localizer/refs/heads/master/market.json"
+        self.market_url = "https://raw.githubusercontent.com/TheSkyC/lexisync/refs/heads/master/market.json"
         self.plugin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
         self.logger = logging.getLogger(__name__)
 

@@ -41,7 +41,7 @@ class TMEnhancerPlugin(PluginBase):
         return "TheSkyC"
 
     def url(self) -> str:
-        return "https://github.com/TheSkyC/overwatch-localizer/tree/master/plugins/com_theskyc_tm_enhancer"
+        return "https://github.com/TheSkyC/lexisync/tree/master/plugins/com_theskyc_tm_enhancer"
 
     def compatible_app_version(self) -> str:
         return "1.1"

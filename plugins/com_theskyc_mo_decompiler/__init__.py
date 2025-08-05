@@ -33,7 +33,7 @@ class MODecompilerPlugin(PluginBase):
         return "1.1"
 
     def url(self) -> str:
-        return "https://github.com/TheSkyC/overwatch-localizer/tree/master/plugins/com_theskyc_mo_decompiler"
+        return "https://github.com/TheSkyC/lexisync/tree/master/plugins/com_theskyc_mo_decompiler"
 
     def get_supported_file_patterns(self) -> list[str]:
         return ["*.mo"]

@@ -23,7 +23,7 @@ def get_plugin_libs_path():
         base_path = os.path.expanduser('~/Library/Application Support')
     else:
         base_path = os.path.expanduser('~/.local/share')
-    app_data_path = os.path.join(base_path, "OverwatchLocalizer")
+    app_data_path = os.path.join(base_path, "LexiSync")
     libs_path = os.path.join(app_data_path, "plugin_libs")
     os.makedirs(libs_path, exist_ok=True)
     return libs_path

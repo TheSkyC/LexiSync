@@ -8,7 +8,7 @@ import json
 import os
 
 if TYPE_CHECKING:
-    from main_window import OverwatchLocalizerApp
+    from main_window import LexiSyncApp
     from plugins.plugin_manager import PluginManager
     from PySide6.QtGui import QPainter
     from PySide6.QtWidgets import QStyleOptionViewItem, QHBoxLayout
@@ -17,17 +17,17 @@ if TYPE_CHECKING:
 
 class PluginBase(ABC):
     """
-    The base class for all Overwatch Localizer plugins.
+    The base class for all LexiSync plugins.
     """
 
     def __init__(self):
-        self.main_window: 'OverwatchLocalizerApp' = None
+        self.main_window: 'LexiSyncApp' = None
         self.plugin_manager: 'PluginManager' = None
         self._ = lambda s: s
         self.config = {}
         self.config_path = ""
 
-    def setup(self, main_window: 'OverwatchLocalizerApp', plugin_manager: 'PluginManager'):
+    def setup(self, main_window: 'LexiSyncApp', plugin_manager: 'PluginManager'):
         """
         Called when the plugin is loaded. Use this to initialize resources.
         The main window instance and plugin manager are provided.

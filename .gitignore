@@ -51,4 +51,4 @@ plugins/*/config.json
 
 .DS_Store
 Thumbs.db
-/OverwatchLocalizer.spec
+/LexiSync.spec

@@ -121,7 +121,7 @@ class ThreadSafeSignals(QObject):
     handle_ai_result = Signal(str, str, str, bool)
     decrement_active_threads = Signal()
 
-class OverwatchLocalizerApp(QMainWindow):
+class LexiSyncApp(QMainWindow):
     language_changed = Signal()
     def __init__(self, config):
         super().__init__()
@@ -130,7 +130,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.restoreGeometry(QByteArray.fromBase64(self.config["window_geometry"].encode('utf-8')))
         else:
             self.setGeometry(100, 100, 1600, 900)
-        self.setWindowTitle(_("Overwatch Localizer - v{version}").format(version=APP_VERSION))
+        self.setWindowTitle(_("LexiSync - v{version}").format(version=APP_VERSION))
         self.thread_signals = ThreadSafeSignals()
         self.thread_signals.handle_ai_result.connect(self._handle_ai_translation_result)
         self.thread_signals.decrement_active_threads.connect(self._decrement_active_threads_and_dispatch_more)
@@ -530,7 +530,7 @@ class OverwatchLocalizerApp(QMainWindow):
             self.auto_save_timer.stop()
 
     def update_ui_texts(self):
-        self.setWindowTitle(_("Overwatch Localizer - v{version}").format(version=APP_VERSION))
+        self.setWindowTitle(_("LexiSync - v{version}").format(version=APP_VERSION))
         self.update_title()
 
         self.file_menu.setTitle(_("&File"))
@@ -1161,7 +1161,7 @@ class OverwatchLocalizerApp(QMainWindow):
         )
 
     def update_title(self):
-        base_title = f"Overwatch Localizer - v{APP_VERSION}"
+        base_title = f"LexiSync - v{APP_VERSION}"
         file_name_part = ""
         if self.current_project_file_path:
             file_name_part = os.path.basename(self.current_project_file_path)
@@ -1546,8 +1546,8 @@ class OverwatchLocalizerApp(QMainWindow):
             self.save_config()
 
     def about(self):
-        QMessageBox.about(self, _("About Overwatch Localizer"),
-                          _("Overwatch Custom Code Translation Tool\n\n"
+        QMessageBox.about(self, _("About"),
+                          _("LexiSync\n\n"
                             "Version: {version}\n"
                             "Author: TheSkyC\n"
                             "China Server ID: 小鸟游六花#56683 / Asia Server: 小鳥游六花#31665").format(

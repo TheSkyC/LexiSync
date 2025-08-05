@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  APP_NAME: OverwatchLocalizer
+  APP_NAME: LexiSync
   PYTHON_STANDALONE_VERSION: '3.11.13'
   PYTHON_STANDALONE_RELEASE_TAG: '20250723'
 
@@ -233,6 +233,7 @@ jobs:
         prepare_dir('locales', 'dist_locales', '.mo')
         prepare_dir('expansion_data', 'dist_expansion_data')
         prepare_dir('plugins', 'dist_plugins')
+        prepare_dir('icons', 'dist_icons')
         "@
         
         Write-Host "Building for Windows..."
@@ -244,6 +245,7 @@ jobs:
           --add-data "dist_locales;locales" `
           --add-data "dist_expansion_data;expansion_data" `
           --add-data "dist_plugins;plugins" `
+          --add-data "dist_icons;icons" `
           --exclude-module "Qt6Sql" `
           --exclude-module "Qt6Test" `
           --exclude-module "Qt6Xml" `

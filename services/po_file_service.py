@@ -108,7 +108,7 @@ def extract_to_pot(code_content, extraction_patterns, project_name="Untitled Pro
         'MIME-Version': '1.0',
         'Content-Type': 'text/plain; charset=utf-8',
         'Content-Transfer-Encoding': '8bit',
-        'Generated-By': f'OverwatchLocalizer {app_version_from_app}',
+        'Generated-By': f'LexiSync {app_version_from_app}',
     }
     translatable_objects = extract_translatable_strings(code_content, extraction_patterns)
     for ts_obj in translatable_objects:

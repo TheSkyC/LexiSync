@@ -10,9 +10,9 @@
       "description": "Allows setting global and project-specific instructions for AI translation.",
       "description_long_md": "### Overview\n\nThis plugin enhances the AI translation feature by allowing you to inject custom instructions into the prompt. You can set both global instructions that apply to all projects and specific instructions for the current project.\n\n**Features:**\n\n*   Set global translation guidelines.\n*   Add project-specific terminology or style guides.\n*   Easy to configure via the main menu.",
       "tags": ["AI", "Official", "Productivity"],
-      "download_url": "https://github.com/TheSkyC/overwatch-localizer/raw/master/plugin_zips/com_theskyc_custom_instructions.zip",
-      "homepage_url": "https://github.com/TheSkyC/overwatch-localizer",
-      "issue_tracker_url": "https://github.com/TheSkyC/overwatch-localizer/issues",
+      "download_url": "https://github.com/TheSkyC/lexisync/raw/master/plugin_zips/com_theskyc_custom_instructions.zip",
+      "homepage_url": "https://github.com/TheSkyC/lexisync",
+      "issue_tracker_url": "https://github.com/TheSkyC/lexisync/issues",
       "last_updated": "2025-07-28T10:00:00Z",
       "changelog": {
         "1.0.0": "Initial release."
@@ -27,8 +27,8 @@
       "description": "A pseudo-localization plugin with multiple modes and extensive customization.",
       "description_long_md": "## What is Pseudo-Localization?\n\nPseudo-localization is a software testing method used for testing internationalization aspects of software. Instead of translating the text of the software into a foreign language, the textual elements of an application are replaced with an altered version of the original language.\n\nThis plugin provides:\n\n*   **Three modes:** Basic, Comprehensive, and Extreme.\n*   Automatic length expansion to test for UI clipping issues.\n*   Preservation of placeholders, HTML, and URLs.",
       "tags": ["Testing", "UI", "Official"],
-      "download_url": "https://github.com/TheSkyC/overwatch-localizer/raw/master/plugin_zips/com_theskyc_pseudo.zip",
-      "homepage_url": "https://github.com/TheSkyC/overwatch-localizer",
+      "download_url": "https://github.com/TheSkyC/lexisync/raw/master/plugin_zips/com_theskyc_pseudo.zip",
+      "homepage_url": "https://github.com/TheSkyC/lexisync",
       "last_updated": "2025-07-27T15:30:00Z",
       "changelog": {
         "1.1.0": "Added new 'Extreme' mode and improved placeholder detection.",
@@ -70,9 +70,9 @@
       "description": "Provides smarter, context-aware Translation Memory suggestions.",
       "description_long_md": "## Translation Memory Enhancer\n\nThis plugin replaces the default fuzzy matching algorithm with a more advanced TF-IDF (Term Frequency-Inverse Document Frequency) vector-based search.\n\n### Advantages\n\n- **Smarter Matches**: Finds relevant translations even if the exact word order is different.\n- **Better Performance**: Can be faster for very large Translation Memories.\n- **Context-Aware**: Understands which words are more important in a sentence, leading to more meaningful matches.",
       "tags": ["TM", "Productivity", "Official"],
-      "download_url": "https://github.com/TheSkyC/overwatch-localizer/releases/download/v1.1.6/com_theskyc_tm_enhancer.zip",
-      "homepage_url": "https://github.com/TheSkyC/overwatch-localizer",
-      "issue_tracker_url": "https://github.com/TheSkyC/overwatch-localizer/issues",
+      "download_url": "https://github.com/TheSkyC/lexisync/releases/download/v1.1.6/com_theskyc_tm_enhancer.zip",
+      "homepage_url": "https://github.com/TheSkyC/lexisync",
+      "issue_tracker_url": "https://github.com/TheSkyC/lexisync/issues",
       "last_updated": "2025-07-24T09:00:00Z"
     },
     {
@@ -84,9 +84,9 @@
       "description": "Obfuscates Overwatch Workshop code to protect your work.",
       "description_long_md": "## Overwatch Code Obfuscator\n\nProtect your intellectual property by making your workshop code difficult to read and understand. This is essential for creators who want to share their modes without revealing their complex logic.\n\n### Obfuscation Techniques\n\n- **String Obfuscation**: Converts readable text into non-standard Unicode characters.\n- **Rule Padding**: Injects empty, harmless rules to increase code size and confuse reverse-engineering efforts.\n- **Comment & Name Removal**: Strips out all comments and descriptive rule names.",
       "tags": ["Tools", "Security", "Official"],
-      "download_url": "https://github.com/TheSkyC/overwatch-localizer/releases/download/v1.1.6/com_theskyc_obfuscator.zip",
-      "homepage_url": "https://github.com/TheSkyC/overwatch-localizer",
-      "issue_tracker_url": "https://github.com/TheSkyC/overwatch-localizer/issues",
+      "download_url": "https://github.com/TheSkyC/lexisync/releases/download/v1.1.6/com_theskyc_obfuscator.zip",
+      "homepage_url": "https://github.com/TheSkyC/lexisync",
+      "issue_tracker_url": "https://github.com/TheSkyC/lexisync/issues",
       "last_updated": "2025-07-26T12:00:00Z"
     }
   ]
