@@ -1,15 +1,14 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QFrame, \
     QApplication, QMessageBox, QLabel
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
-
+from utils.path_utils import get_resource_path
 from utils.localization import _
 from .action_button import ActionButton
-import os
-
 
 class WelcomeScreen(QWidget):
     request_main_window = Signal(str, str)
@@ -43,11 +42,26 @@ class WelcomeScreen(QWidget):
         action_layout.setSpacing(15)
         action_layout.setAlignment(Qt.AlignTop)
 
-        self.new_button = ActionButton("icons/file-plus.svg", _("New from Code"), _("Extract from .ow or .txt file"))
-        self.open_button = ActionButton("icons/folder.svg", _("Open Project"), _("Open .owproj or .po file"))
-        self.market_button = ActionButton("icons/package.svg", _("Plugin Marketplace"),
-                                          _("Discover and install plugins"))
-        self.settings_button = ActionButton("icons/settings.svg", _("Settings"), _("Configure the application"))
+        self.new_button = ActionButton(
+            get_resource_path("icons/file-plus.svg"),
+            _("New from Code"),
+            _("Extract from .ow or .txt file")
+        )
+        self.open_button = ActionButton(
+            get_resource_path("icons/folder.svg"),
+            _("Open Project"),
+            _("Open .owproj or .po file")
+        )
+        self.market_button = ActionButton(
+            get_resource_path("icons/package.svg"),
+            _("Plugin Marketplace"),
+            _("Discover and install plugins")
+        )
+        self.settings_button = ActionButton(
+            get_resource_path("icons/settings.svg"),
+            _("Settings"),
+            _("Configure the application")
+        )
 
         action_layout.addWidget(self.new_button)
         action_layout.addWidget(self.open_button)
