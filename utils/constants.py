@@ -62,19 +62,19 @@ DEFAULT_EXTRACTION_PATTERNS = [
     {
         "id": str(uuid.uuid4()), "name": "Custom String (EN/CN)", "enabled": True,
         "left_delimiter": r'(?:自定义字符串|Custom String)\s*\(\s*"',
-        "right_delimiter": r'"',
+        "right_delimiter": r'(?<!\\)"',
         "string_type": "Custom String"
     },
     {
         "id": str(uuid.uuid4()), "name": "Description (EN/CN)", "enabled": True,
         "left_delimiter": r'(?:Description|描述)\s*:\s*"',
-        "right_delimiter": r'"',
+        "right_delimiter": r'(?<!\\)"',
         "string_type": "Description"
     },
     {
         "id": str(uuid.uuid4()), "name": "Mode Name (EN/CN)", "enabled": True,
         "left_delimiter": r'(?:Mode Name|模式名称)\s*:\s*"',
-        "right_delimiter": r'"',
+        "right_delimiter": r'(?<!\\)"',
         "string_type": "Mode Name"
     }
 ]
