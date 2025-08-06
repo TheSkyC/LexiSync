@@ -14,6 +14,7 @@ from openpyxl import Workbook, load_workbook
 import polib
 import weakref
 import traceback
+import time
 
 from PySide6.QtWidgets import (
     QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
@@ -1502,13 +1503,6 @@ class LexiSyncApp(QMainWindow):
 
         if not self.prompt_save_if_modified():
             return False
-
-        if filepath.lower().endswith(PROJECT_FILE_EXTENSION):
-            self.open_project_file(filepath)
-        elif filepath.lower().endswith((".ow", ".txt")):
-            self.open_code_file_path(filepath)
-        elif filepath.lower().endswith((".po", ".pot")):
-            self.import_po_file_dialog_with_path(filepath)
         return self.open_file_by_path(filepath)
 
     def open_file_by_path(self, filepath: str) -> bool:
@@ -1636,7 +1630,7 @@ class LexiSyncApp(QMainWindow):
             QMessageBox.warning(self, _("Operation Restricted"),
                                 _("AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."))
             return
-
+        self._reset_app_state()
         try:
             with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
                 self.original_raw_code_content = f.read()
@@ -1702,7 +1696,7 @@ class LexiSyncApp(QMainWindow):
         if self.is_ai_translating_batch:
             QMessageBox.warning(self, _("Operation Restricted"), _("AI batch translation is in progress."))
             return
-
+        self._reset_app_state()
         try:
             loaded_data = load_project(project_filepath)
             project_data = loaded_data["project_data"]
@@ -3058,6 +3052,7 @@ class LexiSyncApp(QMainWindow):
                                  _("Error extracting POT file: {error}").format(error=e))
 
     def import_po_file_dialog_with_path(self, po_filepath):
+        self._reset_app_state()
         try:
             self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(po_filepath)
             self.original_raw_code_content = ""
