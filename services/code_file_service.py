@@ -15,7 +15,7 @@ def unescape_overwatch_string(s):
         if s[i] == '\\':
             if i + 1 < len(s):
                 char_after_backslash = s[i + 1]
-                if char_after_backslash == 'n':
+                if char_after_backslash in ('n', 'r'):
                     res.append('\n')
                 elif char_after_backslash == 't':
                     res.append('\t')
