@@ -1,11 +1,8 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import re
 import os
-import sys
 import shutil
-import json
 import datetime
 import threading
 from copy import deepcopy
@@ -14,7 +11,6 @@ from openpyxl import Workbook, load_workbook
 import polib
 import weakref
 import traceback
-import time
 
 from PySide6.QtWidgets import (
     QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
