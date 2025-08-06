@@ -19,6 +19,7 @@ class WelcomeScreen(QWidget):
         self.main_window_instance = None
         self.is_prewarming = False
         self.is_loading = False
+        self.is_closed = False
         self.pending_action = None
 
         self.setWindowTitle("LexiSync")
@@ -166,7 +167,7 @@ class WelcomeScreen(QWidget):
         try:
             self.set_status(_("Loading core libraries..."), "loading")
             QApplication.processEvents()
-
+            if self.is_closed: return
             from main_window import LexiSyncApp
             from utils.path_utils import get_plugin_libs_path
             import sys
@@ -174,7 +175,7 @@ class WelcomeScreen(QWidget):
 
             self.set_status(_("Setting up plugin environment..."), "loading")
             QApplication.processEvents()
-
+            if self.is_closed: return
             plugin_libs_path = get_plugin_libs_path()
             if plugin_libs_path not in sys.path:
                 sys.path.insert(0, plugin_libs_path)
@@ -182,10 +183,13 @@ class WelcomeScreen(QWidget):
 
             self.set_status(_("Initializing main window and plugins..."), "loading")
             QApplication.processEvents()
-
+            if self.is_closed: return
             self.main_window_instance = LexiSyncApp(self.config)
             self.main_window_instance.hide()
-
+            if self.is_closed:
+                self.main_window_instance.close()
+                self.main_window_instance = None
+                return
             self.set_status(_("Ready"), "ready")
             QApplication.processEvents()
             if self.pending_action:
@@ -286,3 +290,12 @@ class WelcomeScreen(QWidget):
         path = item.data(Qt.UserRole)
         if path:
             self.on_action_triggered("open_recent_file", path)
+
+    def closeEvent(self, event):
+        self.is_closed = True
+        if self.is_prewarming and not self.pending_action:
+            QApplication.quit()
+        if self.main_window_instance:
+            self.main_window_instance.close()
+
+        super().closeEvent(event)
