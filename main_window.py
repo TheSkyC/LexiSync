@@ -4546,7 +4546,7 @@ class LexiSyncApp(QMainWindow):
                         new_obj.context_lines = best_match_old_s.context_lines
                         new_obj.current_line_in_context_idx = best_match_old_s.current_line_in_context_idx
 
-                        if new_obj.translation:
+                        if new_obj.translation.strip():
                             if not hasattr(new_obj, 'minor_warnings') or not isinstance(new_obj.minor_warnings, list):
                                 new_obj.minor_warnings = []
                             new_obj.minor_warnings.append(
