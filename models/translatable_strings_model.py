@@ -139,7 +139,7 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         self.sort(current_sort_column, current_sort_order)
 
     def filterAcceptsRow(self, source_row, source_parent):
-        ts_obj = self.sourceModel().data(self.sourceModel().index(source_row, 0, source_parent), Qt.UserRole)
+        ts_obj = self.sourceModel()._data[source_row]
         if not ts_obj:
             return False
         if self.is_po_mode and ts_obj.id == self.new_entry_id:
@@ -158,8 +158,9 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         return True
 
     def lessThan(self, left_index, right_index):
-        left_obj = self.sourceModel().data(left_index, Qt.UserRole)
-        right_obj = self.sourceModel().data(right_index, Qt.UserRole)
+        source_model = self.sourceModel()
+        left_obj = source_model._data[left_index.row()]
+        right_obj = source_model._data[right_index.row()]
 
         if not left_obj or not right_obj:
             return False
