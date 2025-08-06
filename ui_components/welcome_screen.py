@@ -17,6 +17,7 @@ class WelcomeScreen(QWidget):
         super().__init__()
         self.config = config
         self.main_window_instance = None
+        self.is_closed_by_user = True
         self.is_prewarming = False
         self.is_loading = False
         self.is_closed = False
@@ -224,12 +225,14 @@ class WelcomeScreen(QWidget):
         self.execute_main_window_action(action, path)
 
     def execute_main_window_action(self, action, path):
+
         if self.is_loading:
             return
         self.is_loading = True
         try:
             success = self.main_window_instance.execute_action(action, path)
             if success:
+                self.is_closed_by_user = False
                 self.main_window_instance.show()
                 self.close()
             else:
@@ -292,10 +295,10 @@ class WelcomeScreen(QWidget):
             self.on_action_triggered("open_recent_file", path)
 
     def closeEvent(self, event):
-        self.is_closed = True
-        if self.is_prewarming and not self.pending_action:
-            QApplication.quit()
-        if self.main_window_instance:
-            self.main_window_instance.close()
-
+        if self.is_closed_by_user:
+            self.is_closed = True
+            if self.main_window_instance:
+                self.main_window_instance.close()
+            if self.is_prewarming:
+                QApplication.quit()
         super().closeEvent(event)
