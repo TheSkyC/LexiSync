@@ -217,33 +217,54 @@ class GlossaryService:
         db_path = os.path.join(glossary_dir_path, DB_FILE)
         manifest_path = os.path.join(glossary_dir_path, MANIFEST_FILE)
 
-        with self._get_db_connection(db_path) as conn:
-            try:
-                cursor = conn.cursor()
-                cursor.execute("BEGIN TRANSACTION;")
+        conn = None
+        try:
+            conn = self._get_db_connection(db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("BEGIN TRANSACTION;")
+            logger.info(f"Starting transaction to remove source: {source_key}")
+
+            cursor.execute("SELECT id FROM terms WHERE source_manifest_key = ?", (source_key,))
+            term_ids_to_delete = [row['id'] for row in cursor.fetchall()]
+
+            if term_ids_to_delete:
+                chunk_size = 900
+                for i in range(0, len(term_ids_to_delete), chunk_size):
+                    chunk = term_ids_to_delete[i:i + chunk_size]
+                    placeholders = ','.join('?' for __ in chunk)
+                    cursor.execute(f"DELETE FROM translations WHERE term_id IN ({placeholders})", chunk)
+                    logger.debug(f"Deleted a chunk of {len(chunk)} translations.")
                 cursor.execute("DELETE FROM terms WHERE source_manifest_key = ?", (source_key,))
                 rows_deleted = cursor.rowcount
-                cursor.execute("""
-                    DELETE FROM translations 
-                    WHERE term_id NOT IN (SELECT id FROM terms)
-                """)
+                logger.info(
+                    f"Deleted {rows_deleted} term(s) and their associated translations from DB for source: {source_key}")
+            else:
+                rows_deleted = 0
+                logger.warning(f"No terms found in DB for source_key '{source_key}'. Only manifest will be updated.")
 
-                conn.commit()
-                manifest = self._read_manifest(manifest_path)
-                if "imported_sources" in manifest and source_key in manifest["imported_sources"]:
-                    del manifest["imported_sources"][source_key]
-                    self._write_manifest(manifest_path, manifest)
+            conn.commit()
+            logger.info("Transaction committed successfully.")
 
-                return True, _("Successfully removed {count} terms from source '{source}'.").format(count=rows_deleted,
-                                                                                                    source=source_key)
+            manifest = self._read_manifest(manifest_path)
+            if "imported_sources" in manifest and source_key in manifest["imported_sources"]:
+                del manifest["imported_sources"][source_key]
+                self._write_manifest(manifest_path, manifest)
+                logger.info(f"Removed '{source_key}' from manifest.json.")
 
-            except Exception as e:
+            return True, _("Successfully removed {count} terms from source '{source}'.").format(count=rows_deleted,
+                                                                                                source=source_key)
+
+        except Exception as e:
+            if conn:
                 conn.rollback()
-                logger.error(f"Failed to remove source '{source_key}': {e}", exc_info=True)
-                return False, str(e)
-            finally:
-                if conn:
-                    conn.close()
+                logger.error(f"Transaction rolled back due to an error while removing source '{source_key}'.")
+
+            logger.error(f"Failed to remove source '{source_key}': {e}", exc_info=True)
+            return False, str(e)
+        finally:
+            if conn:
+                conn.close()
 
     def _read_manifest(self, manifest_path: str) -> Dict:
         try:
@@ -295,7 +316,7 @@ class GlossaryService:
     def _query_terms_batch_in_db(self, conn: sqlite3.Connection, words: List[str]) -> Dict:
         if not words:
             return {}
-        placeholders = ','.join('?' for _ in words)
+        placeholders = ','.join('?' for __ in words)
         query = f"""
             SELECT t.source_term_lower, tr.target_term, tr.comment
             FROM terms t
