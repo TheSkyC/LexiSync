@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
-import logging
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QObject
 from utils import debug_utils
 debug_utils.setup_debug_mode()
 app_controller = None
+import logging
+logger = logging.getLogger(__name__)
+
 
 class AppController(QObject):
     def __init__(self, config):
@@ -23,7 +25,7 @@ class AppController(QObject):
         self.welcome_screen.show()
 
     def handle_welcome_request(self, action, path):
-        logging.info(f"Welcome screen requested action: {action}, path: {path}")
+        logger.info(f"Welcome screen requested action: {action}, path: {path}")
 
 
 if __name__ == "__main__":

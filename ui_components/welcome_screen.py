@@ -180,6 +180,7 @@ class WelcomeScreen(QWidget):
             from utils.path_utils import get_plugin_libs_path
             import sys
             import logging
+            logger = logging.getLogger(__name__)
 
             self.set_status(_("Setting up plugin environment..."), "loading")
             QApplication.processEvents()
@@ -187,7 +188,7 @@ class WelcomeScreen(QWidget):
             plugin_libs_path = get_plugin_libs_path()
             if plugin_libs_path not in sys.path:
                 sys.path.insert(0, plugin_libs_path)
-                logging.info(f"Plugin library path added: {plugin_libs_path}")
+                logger.info(f"Plugin library path added: {plugin_libs_path}")
 
             self.set_status(_("Initializing main window and plugins..."), "loading")
             QApplication.processEvents()
@@ -206,7 +207,7 @@ class WelcomeScreen(QWidget):
                 self.execute_main_window_action(action, path)
 
         except Exception as e:
-            print(f"Failed to prewarm main window: {e}")
+            logger.error(f"Failed to prewarm main window: {e}")
             QMessageBox.critical(self, "Error", f"Failed to initialize the main application:\n{str(e)}")
             self.set_status(_("Initialization Failed!"), "error")
         finally:

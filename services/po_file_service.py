@@ -8,7 +8,8 @@ from models.translatable_string import TranslatableString
 from services.code_file_service import extract_translatable_strings
 from utils.constants import APP_VERSION
 from utils.localization import _
-
+import logging
+logger = logging.getLogger(__name__)
 
 def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_path=None):
     line_num = 0
@@ -25,7 +26,7 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
             elif isinstance(first_occurrence, str):
                 source_path = first_occurrence
     except Exception as e:
-        print(f"    Occurrences value was: {getattr(entry, 'occurrences', 'N/A')}")
+        logger.warning(f"Occurrences value was: {getattr(entry, 'occurrences', 'N/A')}")
 
     ts = TranslatableString(
         original_raw=entry.msgid,
@@ -146,7 +147,7 @@ def load_from_po(filepath):
                         file_content_cache[full_source_path] = lines
                         full_code_lines = lines
             except Exception as e:
-                print(f"Warning: Could not load context file for entry '{entry.msgid[:20]}...': {e}")
+                logger.warning(f"Warning: Could not load context file for entry '{entry.msgid[:20]}...': {e}")
 
         ts = _po_entry_to_translatable_string(entry, full_code_lines)
         translatable_objects.append(ts)
@@ -210,5 +211,5 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
     try:
         po_file.save(filepath)
     except Exception as e:
-        print(f"Error saving PO file to {filepath}: {e}")
+        logger.error(f"Error saving PO file to {filepath}: {e}")
         raise e

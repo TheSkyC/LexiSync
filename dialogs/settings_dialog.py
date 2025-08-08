@@ -6,6 +6,9 @@ from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QStackedWidget,
 from utils.localization import _
 from .settings_pages import GeneralSettingsPage, AppearanceSettingsPage, AISettingsPage, ValidationSettingsPage
 from .glossary_settings_page import GlossarySettingsPage
+import logging
+logger = logging.getLogger(__name__)
+
 
 class SettingsDialog(QDialog):
     def __init__(self, parent):
@@ -128,7 +131,7 @@ class SettingsDialog(QDialog):
                             page_instance = page_class(self.app)
                             self._add_page(page_instance, page_title)
                         except Exception as e:
-                            print(f"Error instantiating settings page for '{page_title}': {e}")
+                            logger.error(f"Error instantiating settings page for '{page_title}': {e}")
 
         self.nav_list.setCurrentRow(0)
 
@@ -151,7 +154,7 @@ class SettingsDialog(QDialog):
                         if widget_instance == page_widget:
                             page_title = title
                             break
-                    print(f"Error saving settings for page '{page_title}': {e}")
+                    logger.error(f"Error saving settings for page '{page_title}': {e}")
         self.app.save_config()
         self.app.update_statusbar(_("Settings applied."), persistent=False)
         return language_was_changed

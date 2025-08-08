@@ -7,6 +7,9 @@ import shutil
 import datetime
 from models.translatable_string import TranslatableString
 from utils.localization import _
+import logging
+logger = logging.getLogger(__name__)
+
 
 def unescape_overwatch_string(s):
     res = []
@@ -68,7 +71,7 @@ def extract_translatable_strings(code_content, extraction_patterns):
             full_regex_str = f"({left_delimiter_str})(.*?)({right_delimiter_str})"
             compiled_pattern = re.compile(full_regex_str, re.DOTALL)
         except re.error as e:
-            print(f"Warning: Invalid regex for pattern '{pattern_name}': {e}. Skipping.")
+            logger.warning(f"Warning: Invalid regex for pattern '{pattern_name}': {e}. Skipping.")
             continue
 
         for match in compiled_pattern.finditer(code_content):
@@ -160,7 +163,7 @@ def save_translated_code(filepath_to_save, original_raw_code_content, translatab
                 QMessageBox.warning(app_instance, _("Backup Failed"),
                                        _("Could not create code file backup '{filename}': {error}").format(filename=os.path.basename(backup_path), error=e_backup))
             else:
-                print(f"Backup Failed: {e_backup}")
+                logger.warning(f"Backup Failed: {e_backup}")
 
     with open(filepath_to_save, 'w', encoding='utf-8') as f:
         f.write(final_content)

@@ -9,6 +9,9 @@ from models.translatable_string import TranslatableString
 from services.code_file_service import extract_translatable_strings
 from utils.constants import APP_VERSION
 from utils.localization import _
+import logging
+logger = logging.getLogger(__package__)
+
 
 PROJECT_CONFIG_FILE = "project.json"
 SOURCE_DIR = "source"
@@ -90,7 +93,6 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
 def load_project(project_path: str):
     proj_path = Path(project_path)
     config_path = proj_path / PROJECT_CONFIG_FILE
-
     if not config_path.is_file():
         raise FileNotFoundError(_("This is not a valid LexiSync project folder (missing project.json)."))
 
@@ -104,7 +106,10 @@ def load_project(project_path: str):
     translation_file = proj_path / TRANSLATION_DIR / f"{current_lang}.json"
     if not translation_file.is_file():
         raise FileNotFoundError(_("Translation data for language '{lang}' not found.").format(lang=current_lang))
-
+    logger.debug(f"Loading project from: {project_path}")
+    logger.debug(f"  - Reading config: {config_path}")
+    logger.debug(f"  - Current language: {current_lang}")
+    logger.debug(f"  - Loading translation data from: {translation_file}")
     with open(translation_file, 'r', encoding='utf-8') as f:
         translation_data = json.load(f)
 
@@ -138,6 +143,9 @@ def save_project(project_path: str, app_instance):
     translation_data = [ts.to_dict() for ts in app_instance.translatable_objects]
 
     temp_file = translation_file.with_suffix(".json.tmp")
+    logger.debug(f"Saving project to: {project_path}")
+    logger.debug(f"  - Saving translation data for '{current_lang}' to: {translation_file}")
+    logger.debug(f"  - Saving main config: {config_path}")
     with open(temp_file, 'w', encoding='utf-8') as f:
         json.dump(translation_data, f, indent=4, ensure_ascii=False)
     shutil.move(temp_file, translation_file)

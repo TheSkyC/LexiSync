@@ -6,6 +6,8 @@ from PySide6.QtGui import QColor, QFont
 from utils.constants import APP_NAMESPACE_UUID, MAX_UNDO_HISTORY
 from utils.localization import _
 from utils.enums import WarningType
+import logging
+logger = logging.getLogger(__name__)
 
 
 class TranslatableString:
@@ -139,14 +141,14 @@ class TranslatableString:
                 try:
                     ts.warnings.append((WarningType[wt_name], msg))
                 except KeyError:
-                    print(
+                    logger.warning(
                         f"Warning: Unknown warning type name '{wt_name}' found in project file for ID {ts.id}. Original message: {msg}")
         if 'minor_warnings' in data:
             for wt_name, msg in data['minor_warnings']:
                 try:
                     ts.minor_warnings.append((WarningType[wt_name], msg))
                 except KeyError:
-                    print(
+                    logger.warning(
                         f"Warning: Unknown minor warning type name '{wt_name}' found in project file for ID {ts.id}. Original message: {msg}")
         return ts
 

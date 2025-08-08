@@ -4,13 +4,12 @@
 import os
 import sys
 import subprocess
-import logging
 from importlib.metadata import version, PackageNotFoundError
 from packaging.version import parse as parse_version
 from packaging.specifiers import SpecifierSet
 from utils.path_utils import get_plugin_libs_path
 from utils.plugin_context import plugin_libs_context
-
+import logging
 logger = logging.getLogger(__name__)
 
 

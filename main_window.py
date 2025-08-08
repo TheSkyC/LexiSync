@@ -11,6 +11,7 @@ import weakref
 import traceback
 import re
 import logging
+logger = logging.getLogger(__name__)
 
 from PySide6.QtWidgets import (
     QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
@@ -75,7 +76,7 @@ try:
     import requests
 except ImportError:
     requests = None
-    print("提示: requests 未找到, AI翻译功能不可用。pip install requests")
+    logger.warning("提示: requests 未找到, AI翻译功能不可用。pip install requests")
 
 class GlossaryHighlighter(QSyntaxHighlighter):
     def __init__(self, parent, matches_list):
@@ -158,11 +159,12 @@ class AITranslationWorker(QRunnable):
                 placeholders.update(self.plugin_placeholders)
             prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
             final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
-            logging.debug("=" * 20 + " AI PROMPT" + "=" * 20)
-            logging.debug(f"Original Text to Translate:\n---\n{self.original_text}\n---")
-            logging.debug(f"\nFinal System Prompt Sent to AI:\n---\n{final_prompt}\n---")
-            logging.debug("=" * 57)
+            logger.debug("=" * 20 + " AI PROMPT" + "=" * 20)
+            logger.debug(f"Original Text to Translate:\n---\n{self.original_text}\n---")
+            logger.debug(f"\nFinal System Prompt Sent to AI:\n---\n{final_prompt}\n---")
+            logger.debug("=" * 57)
             translated_text = app.ai_translator.translate(self.original_text, final_prompt)
+            logger.debug(f"Raw response from AI for ts_id '{self.ts_id}': '{translated_text}'")
             app.thread_signals.handle_ai_result.emit(self.ts_id, translated_text, None, self.is_batch_item)
         except Exception as e:
             app = self.app_ref()
@@ -333,7 +335,7 @@ class LexiSyncApp(QMainWindow):
 
         except Exception as e:
             error_msg = f"Failed to pre-warm dependencies: {e}"
-            print(error_msg)
+            logger.error(error_msg)
             self.update_statusbar(error_msg)
 
     def UI_initialization(self):
@@ -1798,7 +1800,6 @@ class LexiSyncApp(QMainWindow):
         if self.is_ai_translating_batch:
             QMessageBox.warning(self, _("Operation Restricted"), _("AI batch translation is in progress."))
             return
-
         try:
             self._reset_app_state()
             loaded_data = load_project(project_path)
@@ -1947,7 +1948,7 @@ class LexiSyncApp(QMainWindow):
                 filepath=filepath
             )
             if not isinstance(processed_content, str):
-                print(
+                logger.warning(
                     f"Warning: Plugin hook 'process_raw_content_before_extraction' returned a non-string value (type: {type(processed_content)}). Reverting to original content.")
                 content = original_content
             else:
@@ -3107,7 +3108,7 @@ class LexiSyncApp(QMainWindow):
 
                     if orig_col_idx != -1 and row_cells[orig_col_idx] is not None:
                         if ts_obj.original_semantic != str(row_cells[orig_col_idx]):
-                            print(
+                            logger.warning(
                                 _("Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported.").format(
                                     row_num=r_idx + 2, uuid=obj_id_from_excel))
 
@@ -3165,7 +3166,7 @@ class LexiSyncApp(QMainWindow):
                             if not imported_count: imported_count = 1
 
                 except Exception as cell_err:
-                    print(
+                    logger.warning(
                         _("Error processing Excel row {row_num}: {error}. Skipping this row.").format(row_num=r_idx + 2,
                                                                                                       error=cell_err))
 
@@ -3369,9 +3370,9 @@ class LexiSyncApp(QMainWindow):
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
-            print("--- AN EXCEPTION OCCURRED DURING PO IMPORT ---")
+            logger.error("--- AN EXCEPTION OCCURRED DURING PO IMPORT ---")
             traceback.print_exc()
-            print("---------------------------------------------")
+            logger.error("---------------------------------------------")
             QMessageBox.critical(self, _("PO Import Error"), _("Error importing PO file '{filename}': {error}").format(
                 filename=os.path.basename(po_filepath), error=e))
             self._reset_app_state()

@@ -8,6 +8,9 @@ from utils.constants import (
     CONFIG_FILE, DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS,
     DEFAULT_EXTRACTION_PATTERNS
 )
+import logging
+logger = logging.getLogger(__name__)
+
 
 def get_default_font_settings():
     return {
@@ -101,4 +104,4 @@ def save_config(app_instance):
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4, ensure_ascii=False)
     except Exception as e:
-        print(f"Error saving config file: {e}")
+        logger.error(f"Error saving config file: {e}")

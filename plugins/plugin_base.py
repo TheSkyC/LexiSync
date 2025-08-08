@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING, List, Dict
 from models.translatable_string import TranslatableString
 import json
 import os
+import logging
+logger = logging.getLogger(__name__)
+
 
 if TYPE_CHECKING:
     from main_window import LexiSyncApp
@@ -19,7 +22,6 @@ class PluginBase(ABC):
     """
     The base class for all LexiSync plugins.
     """
-
     def __init__(self):
         self.main_window: 'LexiSyncApp' = None
         self.plugin_manager: 'PluginManager' = None
@@ -437,5 +439,5 @@ class PluginBase(ABC):
             with open(self.config_path, 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
         except Exception as e:
-            print(f"Error saving config for plugin {self.plugin_id()}: {e}")
+            logger.error(f"Error saving config for plugin {self.plugin_id()}: {e}")
 

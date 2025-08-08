@@ -5,7 +5,6 @@ import os
 import importlib.util
 import inspect
 import gettext
-import logging
 from PySide6.QtWidgets import QMessageBox
 from plugins.plugin_base import PluginBase
 from plugins.plugin_dialog import PluginManagerDialog
@@ -17,6 +16,8 @@ from services.dependency_service import DependencyManager
 import shutil
 import zipfile
 import tempfile
+import logging
+logger = logging.getLogger(__package__)
 
 
 class PluginManager:
@@ -29,7 +30,6 @@ class PluginManager:
         self.translators = {}
         self.market_url = "https://raw.githubusercontent.com/TheSkyC/lexisync/refs/heads/master/market.json"
         self.plugin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
-        self.logger = logging.getLogger(__name__)
 
         self._enabled_plugins_cache = None
         self._cache_valid = False
@@ -60,7 +60,7 @@ class PluginManager:
         self.missing_deps_plugins = {}
         self._cache_valid = False
         if not os.path.isdir(self.plugin_dir):
-            self.logger.warning(f"Plugin directory not found: {self.plugin_dir}")
+            logger.warning(f"Plugin directory not found: {self.plugin_dir}")
             return
 
         all_specs = {}
@@ -71,7 +71,7 @@ class PluginManager:
                     if spec:
                         all_specs[spec['id']] = spec
                 except Exception as e:
-                    self.logger.error(f"Failed to load plugin spec for '{item_name}': {e}", exc_info=True)
+                    logger.error(f"Failed to load plugin spec for '{item_name}': {e}", exc_info=True)
                     self.invalid_plugins[item_name] = {'spec': None, 'reason': str(e)}
 
         valid_specs = {}
@@ -94,7 +94,7 @@ class PluginManager:
                 except Exception:
                     spec['metadata'] = {'name': plugin_id}
                 self.invalid_plugins[plugin_id] = {'spec': spec, 'reason': reason}
-                self.logger.warning(f"Plugin '{plugin_id}' is invalid. {reason}")
+                logger.warning(f"Plugin '{plugin_id}' is invalid. {reason}")
             else:
                 valid_specs[plugin_id] = spec
 
@@ -117,7 +117,7 @@ class PluginManager:
                         'required': required_version,
                         'current': APP_VERSION
                     }
-                    self.logger.warning(f"Plugin '{instance.plugin_id()}' is incompatible. {reason}")
+                    logger.warning(f"Plugin '{instance.plugin_id()}' is incompatible. {reason}")
 
                 # 检查外部库依赖
                 failed_deps = []
@@ -133,13 +133,12 @@ class PluginManager:
                         'failed_deps': failed_deps
                     }
                     reason_text = ", ".join([f"{d['name']} ({d['status']})" for d in failed_deps])
-                    self.logger.warning(
+                    logger.warning(
                         f"Plugin '{instance.plugin_id()}' has missing/outdated external dependencies: {reason_text}")
-
-                self.logger.info(f"Successfully loaded plugin: {instance.name()} (ID: {instance.plugin_id()})")
+                logger.info(f"Successfully loaded plugin: {instance.name()} (ID: {instance.plugin_id()})")
 
         except RuntimeError as e:
-            self.logger.critical(f"Failed to sort plugins due to circular dependency: {e}", exc_info=True)
+            logger.critical(f"Failed to sort plugins due to circular dependency: {e}", exc_info=True)
             QMessageBox.critical(self.main_window, _("Plugin Loading Error"), str(e))
 
     def _get_plugin_spec(self, dir_name):
@@ -154,11 +153,10 @@ class PluginManager:
         for name, obj in inspect.getmembers(module, inspect.isclass):
             if issubclass(obj, PluginBase) and obj is not PluginBase:
                 return {'class': obj, 'id': obj().plugin_id(), 'deps': list(obj().plugin_dependencies().keys())}
+            logger.debug(f"Found potential plugin class '{obj.__name__}' in '{dir_name}'.")
         return None
 
     def _sort_and_instantiate_plugins(self, plugin_specs):
-        from collections import defaultdict
-
         id_to_spec = {spec['id']: spec for spec in plugin_specs}
         all_plugin_ids = set(id_to_spec.keys())
         for spec in plugin_specs:
@@ -192,6 +190,7 @@ class PluginManager:
                     nodes=", ".join(cycle_nodes)
                 )
             )
+        logger.debug(f"Plugin dependency graph resolved. Load order: {sorted_ids}")
         return [id_to_spec[id]['class']() for id in sorted_ids]
 
     def get_all_supported_file_patterns(self) -> list[str]:
@@ -203,22 +202,22 @@ class PluginManager:
                     if patterns:
                         all_patterns.extend(patterns)
                 except Exception as e:
-                    self.logger.error(f"Error getting file patterns from plugin '{plugin.plugin_id()}': {e}", exc_info=True)
+                    logger.error(f"Error getting file patterns from plugin '{plugin.plugin_id()}': {e}", exc_info=True)
         return list(set(all_patterns))
 
     def reload_plugins(self):
-        self.logger.info("Reloading all plugins...")
+        logger.info("Reloading all plugins...")
         for plugin in self.plugins:
             try:
                 plugin.teardown()
             except Exception as e:
-                self.logger.error(f"Error during teardown of plugin {plugin.plugin_id()}: {e}", exc_info=True)
+                logger.error(f"Error during teardown of plugin {plugin.plugin_id()}: {e}", exc_info=True)
 
         self.plugins.clear()
         self.translators.clear()
         self.load_plugins()
         self.setup_plugin_ui()
-        self.logger.info("Plugins reloaded.")
+        logger.info("Plugins reloaded.")
 
     def setup_plugin_translation(self, plugin_id):
         locale_dir = os.path.join(self.plugin_dir, plugin_id, 'locales')
@@ -277,10 +276,10 @@ class PluginManager:
                         try:
                             method = getattr(plugin, hook_name)
                             if method(*args, **kwargs) is True:
-                                self.logger.info(f"Hook '{hook_name}' was handled by plugin '{plugin.plugin_id()}'.")
+                                logger.info(f"Hook '{hook_name}' was handled by plugin '{plugin.plugin_id()}'.")
                                 return True
                         except Exception as e:
-                            self.logger.error(
+                            logger.error(
                                 f"Error in plugin '{plugin.plugin_id()}' intercepting hook '{hook_name}': {e}",
                                 exc_info=True)
                 return False  # 循环结束，没有任何插件处理
@@ -298,13 +297,13 @@ class PluginManager:
                             if isinstance(result, original_type):
                                 processed_data = result
                             else:
-                                self.logger.warning(
+                                logger.warning(
                                     f"Plugin '{plugin.plugin_id()}' hook '{hook_name}' returned wrong type "
                                     f"(expected {original_type.__name__}, got {type(result).__name__}). "
                                     f"Ignoring result."
                                 )
                         except Exception as e:
-                            self.logger.error(f"Error in plugin '{plugin.plugin_id()}' processing hook '{hook_name}': {e}",
+                            logger.error(f"Error in plugin '{plugin.plugin_id()}' processing hook '{hook_name}': {e}",
                                               exc_info=True)
                 return processed_data
 
@@ -316,10 +315,10 @@ class PluginManager:
                             method = getattr(plugin, hook_name)
                             result = method(*args, **kwargs)
                             if result is not None:
-                                # self.logger.info(f"TM query handled by plugin '{plugin.plugin_id()}'.")
+                                logger.debug(f"TM query handled by plugin '{plugin.plugin_id()}'.")
                                 return result
                         except Exception as e:
-                            self.logger.error(f"Error in plugin '{plugin.plugin_id()}' TM query hook: {e}", exc_info=True)
+                            logger.error(f"Error in plugin '{plugin.plugin_id()}' TM query hook: {e}", exc_info=True)
                 return None
 
 
@@ -339,7 +338,7 @@ class PluginManager:
                             elif result is not None:
                                 all_results.append(result)
                         except Exception as e:
-                            self.logger.error(
+                            logger.error(
                                 f"Error in plugin '{plugin.plugin_id()}' notification/collecting hook '{hook_name}': {e}",
                                 exc_info=True)
                 if hook_name in ['on_file_tree_context_menu', 'on_table_context_menu']:
@@ -370,7 +369,7 @@ class PluginManager:
                     method = getattr(plugin, hook_name)
                     processed_data = method(processed_data, *other_args, **kwargs)
                 except Exception as e:
-                    self.logger.error(f"Error in plugin '{plugin.plugin_id()}' hook '{hook_name}': {e}", exc_info=True)
+                    logger.error(f"Error in plugin '{plugin.plugin_id()}' hook '{hook_name}': {e}", exc_info=True)
         return processed_data
 
     def _run_notification_hook(self, hook_name, *args, **kwargs):
@@ -380,15 +379,15 @@ class PluginManager:
                     method = getattr(plugin, hook_name)
                     method(*args, **kwargs)
                 except Exception as e:
-                    self.logger.error(f"Error in plugin '{plugin.plugin_id()}' hook '{hook_name}': {e}", exc_info=True)
+                    logger.error(f"Error in plugin '{plugin.plugin_id()}' hook '{hook_name}': {e}", exc_info=True)
 
     def on_main_app_language_changed(self):
-        self.logger.info(f"Main app language changed. Reloading all plugins to apply new language...")
+        logger.info(f"Main app language changed. Reloading all plugins to apply new language...")
         for plugin in self.plugins:
             try:
                 plugin.teardown()
             except Exception as e:
-                self.logger.error(f"Error during teardown of plugin {plugin.plugin_id()}: {e}", exc_info=True)
+                logger.error(f"Error during teardown of plugin {plugin.plugin_id()}: {e}", exc_info=True)
         self.plugins.clear()
         self.translators.clear()
         self.load_plugins()
@@ -446,7 +445,7 @@ class PluginManager:
                     return None, _("Failed to remove the existing plugin directory: {error}").format(error=str(e))
             try:
                 shutil.move(source_path, destination_path)
-                self.logger.info(f"Plugin '{plugin_id_from_zip}' installed successfully to '{destination_path}'.")
+                logger.info(f"Plugin '{plugin_id_from_zip}' installed successfully to '{destination_path}'.")
                 return plugin_id_from_zip, ""
             except Exception as e:
                 return None, _("Failed to move plugin files to the destination: {error}").format(error=str(e))
@@ -459,7 +458,7 @@ class PluginManager:
             return False, _("Plugin directory not found.")
         try:
             shutil.rmtree(plugin_dir_to_delete)
-            self.logger.info(f"Plugin '{plugin_id}' directory deleted.")
+            logger.info(f"Plugin '{plugin_id}' directory deleted.")
             self.plugins = [p for p in self.plugins if p.plugin_id() != plugin_id]
             self.invalid_plugins.pop(plugin_id, None)
             self.incompatible_plugins.pop(plugin_id, None)
@@ -472,7 +471,7 @@ class PluginManager:
                 self.main_window.save_config()
             return True, ""
         except Exception as e:
-            self.logger.error(f"Failed to delete plugin '{plugin_id}': {e}", exc_info=True)
+            logger.error(f"Failed to delete plugin '{plugin_id}': {e}", exc_info=True)
             return False, str(e)
 
     def setup_plugin_ui(self):

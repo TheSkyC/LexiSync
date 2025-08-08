@@ -123,7 +123,6 @@ class GlossaryService:
             file_stats['term_count'] = term_count
             manifest.setdefault("imported_sources", {})[filename] = file_stats
             self._write_manifest(manifest_path, manifest)
-
             return True, _("Successfully imported {count} terms.").format(count=len(terms_to_import))
         except Exception as e:
             logger.error(f"Failed to import TBX file '{tbx_filepath}': {e}", exc_info=True)
@@ -296,7 +295,6 @@ class GlossaryService:
     def _query_terms_batch_in_db(self, conn: sqlite3.Connection, words: List[str]) -> Dict:
         if not words:
             return {}
-
         placeholders = ','.join('?' for _ in words)
         query = f"""
             SELECT t.source_term_lower, tr.target_term, tr.comment
@@ -306,7 +304,6 @@ class GlossaryService:
         """
         cursor = conn.cursor()
         cursor.execute(query, words)
-
         results = {}
         for row in cursor.fetchall():
             source_lower = row['source_term_lower']
@@ -316,4 +313,5 @@ class GlossaryService:
                 "target": row["target_term"],
                 "comment": row["comment"]
             })
+        logger.debug(f"  -> Found {len(results)} matches.")
         return results

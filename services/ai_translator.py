@@ -3,7 +3,7 @@
 
 import json
 from utils.constants import DEFAULT_API_URL
-from utils.localization import _ # Import _ for localization
+from utils.localization import _
 
 try:
     import requests

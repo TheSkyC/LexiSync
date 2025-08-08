@@ -5,6 +5,7 @@ import re
 import regex
 import random
 import logging
+logger = logging.getLogger(__name__)
 
 
 class ObfuscatorLogic:
