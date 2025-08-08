@@ -29,7 +29,6 @@ MANIFEST
 
 .ipynb_checkpoints
 
-translation_diffs/
 .env
 .venv
 env/
@@ -42,14 +41,12 @@ venv.bak/
 .vscode/
 
 build.ps1
-localization_tool_config.json
-ow_translator_tm.xlsx
-*.owprompt
-manage_translations.py
+config.json
+*.prompt
+*.extract
 babel.cfg
 plugins/*/config.json
-
 .DS_Store
 Thumbs.db
 /LexiSync.spec
-/OverwatchLocalizer.spec
+/identifier.sqlite

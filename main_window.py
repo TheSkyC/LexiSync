@@ -11,6 +11,7 @@ from openpyxl import Workbook, load_workbook
 import polib
 import weakref
 import traceback
+import re
 
 from PySide6.QtWidgets import (
     QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
@@ -23,18 +24,20 @@ from PySide6.QtCore import (
     Qt, QModelIndex, Signal, QObject, QTimer, QByteArray, QEvent,
     QRunnable, QThreadPool, QItemSelectionModel, QSize, QDir
 )
-from PySide6.QtGui import QAction, QKeySequence, QFont, QPalette, QColor
+from PySide6.QtGui import QAction, QKeySequence, QFont, QPalette, QColor, QSyntaxHighlighter, QTextCharFormat
 
 from models.translatable_string import TranslatableString
 from models.translatable_strings_model import TranslatableStringsModel, TranslatableStringsProxyModel
 from plugins.plugin_manager import PluginManager
-from ui_components.file_explorer_panel import FileExplorerPanel
-from ui_components.details_panel import DetailsPanel
 from ui_components.comment_status_panel import CommentStatusPanel
 from ui_components.context_panel import ContextPanel
-from ui_components.tm_panel import TMPanel
 from ui_components.custom_cell_delegate import CustomCellDelegate
 from ui_components.custom_table_view import CustomTableView
+from ui_components.details_panel import DetailsPanel
+from ui_components.elided_label import ElidedLabel
+from ui_components.file_explorer_panel import FileExplorerPanel
+from ui_components.tm_panel import TMPanel
+from ui_components.glossary_panel import GlossaryPanel
 
 
 from dialogs.font_settings_dialog import FontSettingsDialog
@@ -59,6 +62,7 @@ from services.validation_service import run_validation_on_all, placeholder_regex
 from services.expansion_ratio_service import ExpansionRatioService
 from services.tm_service import TMService
 from services.glossary_service import GlossaryService
+from services.glossary_worker import GlossaryAnalysisWorker
 from services.project_service import TM_DIR
 
 from utils import config_manager
@@ -73,6 +77,25 @@ try:
 except ImportError:
     requests = None
     print("提示: requests 未找到, AI翻译功能不可用。pip install requests")
+
+class GlossaryHighlighter(QSyntaxHighlighter):
+    def __init__(self, parent, matches_list):
+        super().__init__(parent)
+        self.highlight_format = QTextCharFormat()
+        self.highlight_format.setUnderlineColor(QColor("teal"))
+        self.highlight_format.setUnderlineStyle(QTextCharFormat.WaveUnderline)
+        self.rules = []
+        if matches_list:
+            keywords = [re.escape(match['source']) for match in matches_list]
+            if keywords:
+                pattern = r'\b(' + '|'.join(keywords) + r')\b'
+                self.rules.append((re.compile(pattern, re.IGNORECASE), self.highlight_format))
+
+    def highlightBlock(self, text):
+        for pattern, format in self.rules:
+            for match in pattern.finditer(text):
+                start, end = match.span()
+                self.setFormat(start, end - start, format)
 
 class AITranslationWorker(QRunnable):
     def __init__(self, app_instance, ts_id, original_text, target_language, context_dict, plugin_placeholders, is_batch_item):
@@ -92,16 +115,30 @@ class AITranslationWorker(QRunnable):
         app.running_workers.add(self)
 
         try:
+            glossary_terms = {}
+            original_words = set(re.findall(r'\b\w+\b', self.original_text.lower()))
+            if original_words:
+                glossary_terms = app.glossary_service.get_terms_batch(list(original_words))
+
+            glossary_prompt_part = ""
+            if glossary_terms:
+                parts = []
+                for word, term_info in glossary_terms.items():
+                    targets = " or ".join(f"'{t['target']}'" for t in term_info['translations'])
+                    parts.append(f"'{word}' must be translated as {targets}")
+                glossary_prompt_part = "Strictly follow these glossary rules: " + "; ".join(parts)
+
             placeholders = {
                 '[Target Language]': self.target_language,
                 '[Untranslated Context]': self.context_dict.get("original_context", ""),
-                '[Translated Context]': self.context_dict.get("translation_context", "")
+                '[Translated Context]': self.context_dict.get("translation_context", ""),
+                '[Glossary]': glossary_prompt_part
             }
             if self.plugin_placeholders:
                 placeholders.update(self.plugin_placeholders)
             prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
             final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
-            # print("=" * 20 + " AI PROMPT DEBUG " + "=" * 20)
+            # print("=" * 20 + " AI PROMPT" + "=" * 20)
             # print(f"Original Text to Translate:\n---\n{self.original_text}\n---")
             # print(f"\nFinal System Prompt Sent to AI:\n---\n{final_prompt}\n---")
             # print("=" * 57)
@@ -185,6 +222,8 @@ class LexiSyncApp(QMainWindow):
 
         self.glossary_service = GlossaryService()
         self.setup_glossary_service()
+        self.glossary_analysis_cache = {}
+        self.original_highlighter = None
 
         self.undo_history = []
         self.redo_history = []
@@ -1061,6 +1100,7 @@ class LexiSyncApp(QMainWindow):
         self.context_panel = ContextPanel(self)
         self.tm_panel = TMPanel(self, app_instance=self)
         self.comment_status_panel = CommentStatusPanel(self)
+        self.glossary_panel = GlossaryPanel(self)
 
         #FileExplorerPanel
         self.file_explorer_panel = FileExplorerPanel(self, self)
@@ -1068,6 +1108,15 @@ class LexiSyncApp(QMainWindow):
         self.file_explorer_dock.setObjectName("fileExplorerDock")
         self.file_explorer_dock.setWidget(self.file_explorer_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.file_explorer_dock)
+
+        # GlossaryPanel
+        self.glossary_dock = QDockWidget(_("Glossary"), self)
+        self.glossary_dock.setObjectName("glossaryDock")
+        self.glossary_dock.setWidget(self.glossary_panel)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.glossary_dock)
+
+        self.splitDockWidget(self.file_explorer_dock, self.glossary_dock, Qt.Vertical)
+        self.resizeDocks([self.file_explorer_dock, self.glossary_dock], [400, 200], Qt.Vertical)
 
         # DetailsPanel
         self.details_panel.apply_translation_signal.connect(self.apply_translation_from_button)
@@ -1146,6 +1195,11 @@ class LexiSyncApp(QMainWindow):
         self.action_toggle_comment_status_panel = self.comment_status_dock.toggleViewAction()
         self.action_toggle_comment_status_panel.setText(_("Comment && Status Panel"))
 
+        # Glossary Panel Action
+        self.action_toggle_glossary_panel = self.glossary_dock.toggleViewAction()
+        self.action_toggle_glossary_panel.setText(_("Glossary Panel"))
+        self.view_menu.addAction(self.action_toggle_glossary_panel)
+
         self.view_menu.addAction(self.action_toggle_file_explorer)
         self.view_menu.addAction(self.action_toggle_details_panel)
         self.view_menu.addAction(self.action_toggle_context_panel)
@@ -1158,25 +1212,32 @@ class LexiSyncApp(QMainWindow):
     def restore_default_layout(self):
         if self.default_window_state:
             self.restoreState(self.default_window_state)
-            self.details_dock.setVisible(True)
-            self.context_dock.setVisible(True)
-            self.tm_dock.setVisible(True)
-            self.comment_status_dock.setVisible(True)
-            right_dock_total_height = self.context_dock.height() + self.tm_dock.height() + self.comment_status_dock.height()
-            if right_dock_total_height > 0:
-                self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)
-                self.resizeDocks([self.context_dock, self.tm_dock],
-                                 [right_dock_total_height // 3, right_dock_total_height // 3], Qt.Vertical)
-            main_height = self.size().height()
-            details_panel_height = max(200, int(main_height * 0.25))
-            self.resizeDocks([self.details_dock], [details_panel_height], Qt.Vertical)
-            self.update_statusbar(_("The layout has been restored to its default state."))
+        docks_to_show = [
+            self.file_explorer_dock, self.glossary_dock, self.details_dock,
+            self.context_dock, self.tm_dock, self.comment_status_dock
+        ]
+        for dock in docks_to_show:
+            dock.setVisible(True)
+        main_width = self.size().width()
+        main_height = self.size().height()
+        left_width = max(200, int(main_width * 0.15)) # 至少250px，或20%窗口宽度
+        self.resizeDocks([self.file_explorer_dock, self.glossary_dock], [left_width, left_width], Qt.Horizontal)
+        self.resizeDocks([self.file_explorer_dock, self.glossary_dock], [int(main_height * 0.6), int(main_height * 0.4)], Qt.Vertical)
+        right_width = max(200, int(main_width * 0.15))
+        right_docks = [self.context_dock, self.tm_dock, self.glossary_dock, self.comment_status_dock]
+        self.resizeDocks(right_docks, [right_width] * len(right_docks), Qt.Horizontal)
+        self.resizeDocks(right_docks, [int(main_height * 0.25)] * len(right_docks), Qt.Vertical)
+        bottom_height = max(200, int(main_height * 0.30))
+        self.resizeDocks([self.details_dock], [bottom_height], Qt.Vertical)
+
+        self.update_statusbar(_("The layout has been restored to its default state."))
 
     def _setup_statusbar(self):
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
 
-        self.statusbar_label = QLabel(_("Ready"))
+        self.statusbar_label = ElidedLabel()
+        self.statusbar_label.setText(_("Ready"))
         self.statusBar.addWidget(self.statusbar_label, 1)
 
         self.progress_bar = QProgressBar()
@@ -2190,6 +2251,7 @@ class LexiSyncApp(QMainWindow):
                 self.current_selected_ts_id = newly_focused_id
                 self.force_refresh_ui_for_current_selection()
                 self.update_ui_state_for_selection(self.current_selected_ts_id)
+                self.trigger_glossary_analysis(ts_obj)
                 self._update_details_panel_stats()
         tm_to_check = self.project_tm if self.is_project_mode else self.global_tm
         if tm_to_check is None:
@@ -2320,6 +2382,26 @@ class LexiSyncApp(QMainWindow):
         if not selected_id:
             self.tm_panel.clear_selected_tm_btn.setEnabled(False)
         self.update_ai_related_ui_state()
+
+    def trigger_glossary_analysis(self, ts_obj):
+        if ts_obj.id in self.glossary_analysis_cache:
+            self._handle_glossary_analysis_result(ts_obj.id, self.glossary_analysis_cache[ts_obj.id])
+            return
+
+        self.glossary_panel.clear_matches()
+        worker = GlossaryAnalysisWorker(self, ts_obj.id, ts_obj.original_semantic)
+        worker.signals.finished.connect(self._handle_glossary_analysis_result)
+        self.ai_thread_pool.start(worker)
+
+    def _handle_glossary_analysis_result(self, ts_id, matches):
+        self.glossary_analysis_cache[ts_id] = matches
+        if self.current_selected_ts_id == ts_id:
+            self.glossary_panel.update_matches(matches)
+            if self.original_highlighter:
+                self.original_highlighter.setParent(None)
+
+            self.original_highlighter = GlossaryHighlighter(self.details_panel.original_text_display.document(),
+                                                            matches)
 
     def clear_details_pane(self):
         # 清空 DetailsPanel

@@ -2,11 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QStackedWidget, QDialogButtonBox, QListWidgetItem, \
-    QPushButton, QVBoxLayout, QWidget, QMessageBox
-from PySide6.QtCore import Qt
+    QVBoxLayout, QMessageBox
 from utils.localization import _
 from .settings_pages import GeneralSettingsPage, AppearanceSettingsPage, AISettingsPage, ValidationSettingsPage
-
+from .glossary_settings_page import GlossarySettingsPage
 
 class SettingsDialog(QDialog):
     def __init__(self, parent):
@@ -112,6 +111,9 @@ class SettingsDialog(QDialog):
 
         validation_page = ValidationSettingsPage(self.app)
         self._add_page(validation_page, _("Validation"))
+
+        glossary_page = GlossarySettingsPage(self.app)
+        self._add_page(glossary_page, _("Glossary"))
 
         if hasattr(self.app, 'plugin_manager'):
             plugin_pages_data = self.app.plugin_manager.run_hook('register_settings_pages')

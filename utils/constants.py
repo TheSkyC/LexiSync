@@ -5,9 +5,7 @@ import uuid
 from utils.localization import _
 
 APP_NAMESPACE_UUID = uuid.UUID('c2e02333-2f1d-48ba-bc8d-90d49da373af')
-CONFIG_FILE = "localization_tool_config.json"
-PROJECT_FILE_EXTENSION = ".owproj"
-TM_FILE_EXCEL = "ow_translator_tm.xlsx"
+CONFIG_FILE = "config.json"
 EXPANSION_DATA_DIR = "expansion_data"
 MAX_UNDO_HISTORY = 30
 DEFAULT_API_URL = "https://api.deepseek.com/chat/completions"

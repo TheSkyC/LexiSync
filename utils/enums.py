@@ -24,6 +24,8 @@ class WarningType(Enum):
     TRANSLATION_EMPTY_BUT_ORIGINAL_NOT = auto()  # 译文为空但原文不为空
     ORIGINAL_EMPTY_BUT_TRANSLATION_NOT = auto()  # 原文为空但译文不为空
 
+    # --- 其他 ---
+    GLOSSARY_MISMATCH = auto()
 
     FUZZY_TRANSLATION = auto()
     UNUSUAL_EXPANSION_RATIO = auto()
@@ -50,10 +52,12 @@ class WarningType(Enum):
             return _("Length Deviation (Minor)")
         if self == WarningType.LENGTH_DEVIATION_MAJOR:
             return _("Length Deviation (Major)")
+        if self == WarningType.GLOSSARY_MISMATCH:
+            return _("Glossary Mismatch")
         if self == WarningType.TRANSLATION_EMPTY_BUT_ORIGINAL_NOT:
             return _("Translation Empty")
         if self == WarningType.ORIGINAL_EMPTY_BUT_TRANSLATION_NOT:
-            return _("Original Empty, Translation Not")
+            return _("Translated an Empty Original")
         if self == WarningType.FUZZY_TRANSLATION:
             return _("Fuzzy Translation")
         return self.name.replace('_', ' ').title()

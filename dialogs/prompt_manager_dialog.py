@@ -192,7 +192,7 @@ class PromptManagerDialog(QDialog):
             self,
             _("Import Prompt Preset"),
             "",
-            _("Overwatch Prompt Files (*{ext});;All Files (*.*)").format(ext=PROMPT_PRESET_EXTENSION)
+            _("Prompt Files (*{ext});;All Files (*.*)").format(ext=PROMPT_PRESET_EXTENSION)
         )
         if not filepath: return
         try:
@@ -215,8 +215,8 @@ class PromptManagerDialog(QDialog):
         filepath, selected_filter = QFileDialog.getSaveFileName(
             self,
             _("Export Prompt Preset"),
-            "my_prompt_preset.owprompt",
-            _("Overwatch Prompt Files (*{ext});;All Files (*.*)").format(ext=PROMPT_PRESET_EXTENSION)
+            "my_prompt_preset.prompt",
+            _("Prompt Files (*{ext});;All Files (*.*)").format(ext=PROMPT_PRESET_EXTENSION)
         )
         if not filepath: return
         try:

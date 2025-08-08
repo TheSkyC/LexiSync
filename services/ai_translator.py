@@ -61,7 +61,7 @@ class AITranslator:
         except Exception as e:
             raise Exception(f"{_('Unknown error occurred during translation')}: {e}")
 
-    def test_connection(self, test_text="Hello, OverWatch.", system_prompt="Translate to Chinese:"):
+    def test_connection(self, test_text="你好，世界！", system_prompt="Translate to English:"):
         try:
             translation = self.translate(test_text, system_prompt)
             return True, f"{_('Connection successful. Test translation')} ('{test_text}' -> '{translation[:30]}...')"

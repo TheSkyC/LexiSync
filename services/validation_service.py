@@ -1,7 +1,6 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import regex as re
 from utils.localization import _
 from utils.enums import WarningType
@@ -18,7 +17,7 @@ def get_starting_cased_char(s):
         return stripped_s[0]
     return None
 
-def validate_string(ts_obj, config, app_instance=None):
+def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     ts_obj.warnings = []
     ts_obj.minor_warnings = []
 
@@ -151,8 +150,31 @@ def validate_string(ts_obj, config, app_instance=None):
                                 "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x.").format(
                                 actual=actual_ratio, expected=expected_ratio)
                             ts_obj.minor_warnings.append((WarningType.LENGTH_DEVIATION_MINOR, warning_msg))
+        # 术语库检查
+        if config.get('check_glossary', True) and term_cache is not None:
+            original_words = set(re.findall(r'\b\w+\b', original.lower()))
+            translation_lower = translation.lower()
+
+            for word in original_words:
+                if word in term_cache:
+                    term_info = term_cache[word]
+                    required_targets = [t['target'].lower() for t in term_info['translations']]
+                    if not any(target in translation_lower for target in required_targets):
+                        ts_obj.minor_warnings.append((
+                            WarningType.GLOSSARY_MISMATCH,
+                            _("Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'.").format(
+                                term=word, targets=" / ".join(required_targets)
+                            )
+                        ))
 
 
 def run_validation_on_all(translatable_objects, config, app_instance=None):
+    term_cache = {}
+    if config.get('check_glossary', True) and app_instance:
+        all_words = set()
+        for ts_obj in translatable_objects:
+            if not ts_obj.is_ignored:
+                all_words.update(re.findall(r'\b\w+\b', ts_obj.original_semantic.lower()))
+        term_cache = app_instance.glossary_service.get_terms_batch(list(all_words))
     for ts_obj in translatable_objects:
-        validate_string(ts_obj, config, app_instance)
+        validate_string(ts_obj, config, app_instance, term_cache)

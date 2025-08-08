@@ -161,7 +161,7 @@ class ExtractionPatternManagerDialog(QDialog):
             self,
             _("Import Extraction Rule Preset"),
             "",
-            _("Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)").format(ext=EXTRACTION_PATTERN_PRESET_EXTENSION)
+            _("Extraction Pattern Files (*{ext});;All Files (*.*)").format(ext=EXTRACTION_PATTERN_PRESET_EXTENSION)
         )
         if not filepath: return
         try:
@@ -185,8 +185,8 @@ class ExtractionPatternManagerDialog(QDialog):
         filepath, selected_filter = QFileDialog.getSaveFileName(
             self,
             _("Export Extraction Rule Preset"),
-            "my_extraction_patterns.owextract",
-            _("Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)").format(ext=EXTRACTION_PATTERN_PRESET_EXTENSION)
+            "my_extraction_patterns.extract",
+            _("Extraction Pattern Files (*{ext});;All Files (*.*)").format(ext=EXTRACTION_PATTERN_PRESET_EXTENSION)
         )
         if not filepath: return
         try:
