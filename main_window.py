@@ -105,7 +105,7 @@ class AITranslationWorker(QRunnable):
         self.original_text = original_text
         self.target_language = target_language
         self.context_dict = context_dict
-        self.plugin_placeholders = plugin_placeholders  # 新增
+        self.plugin_placeholders = plugin_placeholders
         self.is_batch_item = is_batch_item
 
     def run(self):
@@ -1224,7 +1224,7 @@ class LexiSyncApp(QMainWindow):
             dock.setVisible(True)
         main_width = self.size().width()
         main_height = self.size().height()
-        left_width = max(200, int(main_width * 0.15)) # 至少250px，或20%窗口宽度
+        left_width = max(200, int(main_width * 0.15))
         self.resizeDocks([self.file_explorer_dock, self.glossary_dock], [left_width, left_width], Qt.Horizontal)
         self.resizeDocks([self.file_explorer_dock, self.glossary_dock], [int(main_height * 0.6), int(main_height * 0.4)], Qt.Vertical)
         right_width = max(200, int(main_width * 0.15))
@@ -2338,7 +2338,6 @@ class LexiSyncApp(QMainWindow):
             self.source_language,
             self.target_language,
             ts_obj.original_semantic,
-            "none"  # 未实现-占位符密度
         )
         ratios = (actual_ratio, expected_ratio)
 
@@ -4527,20 +4526,15 @@ class LexiSyncApp(QMainWindow):
 
     def perform_tm_update(self):
         if self.last_tm_query:
-            # --- Defensive checks for TMs ---
             project_tm_data = self.project_tm or {}
             global_tm_data = self.global_tm or {}
 
-            # Combine TMs for suggestions, giving project TM priority
             combined_tm_data = {}
-            # First, process global TM TUs
             for k, tu in global_tm_data.items():
                 combined_tm_data[k] = tu['target_text']
-            # Then, process project TM TUs, overwriting global ones if keys match
             for k, tu in project_tm_data.items():
                 combined_tm_data[k] = tu['target_text']
 
-            # Create a source map for the UI
             source_map = {
                 k: _("[Project]") for k in project_tm_data
             }
