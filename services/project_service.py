@@ -2,81 +2,159 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import os
-from PySide6.QtWidgets import QMessageBox # Use PySide6 QMessageBox
+import shutil
+import uuid
+from pathlib import Path
 from models.translatable_string import TranslatableString
+from services.code_file_service import extract_translatable_strings
 from utils.constants import APP_VERSION
+from utils.localization import _
 
-def load_project(project_filepath):
-    with open(project_filepath, 'r', encoding='utf-8') as f:
-        project_data = json.load(f)
+PROJECT_CONFIG_FILE = "project.json"
+SOURCE_DIR = "source"
+TRANSLATION_DIR = "translation"
+TM_DIR = "tm"
+GLOSSARY_DIR = "glossary"
+TARGET_DIR = "target"
+METADATA_DIR = "metadata"
 
-    if not all(k in project_data for k in ["version", "original_code_file_path", "translatable_objects_data"]):
-        raise ValueError("项目文件格式不正确或缺少必要字段。")
 
-    original_code_file_path = project_data["original_code_file_path"]
-    original_raw_code_content = ""
-    full_code_lines_for_project = []
-
-    if original_code_file_path and os.path.exists(original_code_file_path):
-        try:
-            with open(original_code_file_path, 'r', encoding='utf-8', errors='replace') as cf:
-                original_raw_code_content = cf.read()
-            full_code_lines_for_project = original_raw_code_content.splitlines()
-        except Exception as e_code:
-            QMessageBox.warning(None, "项目警告",
-                                   f"无法加载项目关联的代码文件 '{original_code_file_path}': {e_code}\n上下文预览可能不可用。")
-    elif original_code_file_path:
-        QMessageBox.warning(None, "项目警告",
-                               f"项目关联的代码文件 '{original_code_file_path}' 未找到。\n上下文预览和保存到代码文件功能将受限。")
-
-    translatable_objects = [
-        TranslatableString.from_dict(ts_data, full_code_lines_for_project)
-        for ts_data in project_data["translatable_objects_data"]
-    ]
-
-    return {
-        "project_data": project_data,
-        "original_code_file_path": original_code_file_path,
-        "original_raw_code_content": original_raw_code_content,
-        "translatable_objects": translatable_objects,
-        "source_language": project_data.get("source_language", "en"),
-        "target_language": project_data.get("target_language", "en"),
-    }
-
-def save_project(filepath, app_instance):
-    if not app_instance.current_code_file_path and not app_instance.translatable_objects and not app_instance.original_raw_code_content and not app_instance.current_po_file_path:
-        QMessageBox.critical(app_instance, "保存项目错误", "无法保存项目：没有关联的代码文件、PO源或可翻译内容。")
-        return False
-
-    project_data = {
-        "version": APP_VERSION,
-        "original_code_file_path": app_instance.current_code_file_path or "",
-        "translatable_objects_data": [ts.to_dict() for ts in app_instance.translatable_objects],
-        "source_language": app_instance.source_language,
-        "target_language": app_instance.target_language,
-        "current_tm_file_path": app_instance.current_tm_file or "",
-        "filter_settings": {
-            "show_ignored": app_instance.ignored_checkbox.isChecked(),
-            "show_untranslated": app_instance.untranslated_checkbox.isChecked(),
-            "show_translated": app_instance.translated_checkbox.isChecked(),
-            "show_unreviewed": app_instance.unreviewed_checkbox.isChecked(),
-        },
-        "ui_state": {
-            "search_term": app_instance.search_entry.text() if app_instance.search_entry.text() != "快速搜索..." else "",
-            "selected_ts_id": app_instance.current_selected_ts_id or ""
-        },
-    }
-    if app_instance.current_po_metadata:
-        project_data["po_metadata"] = app_instance.current_po_metadata
-    if app_instance.is_po_mode and app_instance.current_po_file_path:
-        project_data["current_po_file_path"] = app_instance.current_po_file_path
-
+def create_project(project_path: str, project_name: str, source_lang: str, target_langs: list, source_files: list, use_global_tm: bool):
+    proj_path = Path(project_path)
+    if proj_path.exists():
+        raise FileExistsError(_("A file or directory with this name already exists."))
 
     try:
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(project_data, f, indent=4, ensure_ascii=False)
-        return True
+        proj_path.mkdir(parents=True)
+        (proj_path / SOURCE_DIR).mkdir()
+        (proj_path / TRANSLATION_DIR).mkdir()
+        (proj_path / TM_DIR).mkdir()
+        (proj_path / GLOSSARY_DIR).mkdir()
+        (proj_path / TARGET_DIR).mkdir()
+        (proj_path / METADATA_DIR).mkdir()
+
+        processed_source_files = []
+        all_translatable_objects = []
+
+        for file_info in source_files:
+            original_path = Path(file_info['path'])
+            destination_path = proj_path / SOURCE_DIR / original_path.name
+            shutil.copy2(original_path, destination_path)
+
+            relative_path = destination_path.relative_to(proj_path).as_posix()
+            processed_source_files.append({
+                "id": str(uuid.uuid4()),
+                "original_path": str(original_path),
+                "project_path": relative_path,
+                "type": file_info['type'],
+                "linked": False
+            })
+
+            if not all_translatable_objects:
+                with open(destination_path, 'r', encoding='utf-8') as f:
+                    content = f.read().replace('\r\n', '\n').replace('\r', '\n')
+
+                extraction_patterns = file_info['patterns']
+                all_translatable_objects = extract_translatable_strings(content, extraction_patterns)
+
+        project_config = {
+            "lexisync_version": APP_VERSION,
+            "name": project_name,
+            "source_language": source_lang,
+            "target_languages": target_langs,
+            "current_target_language": target_langs[0] if target_langs else "",
+            "source_files": processed_source_files,
+            "settings": {
+                "use_global_tm": use_global_tm
+            },
+            "ui_state": {}
+        }
+
+        with open(proj_path / PROJECT_CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(project_config, f, indent=4, ensure_ascii=False)
+
+        for lang in target_langs:
+            translation_path = proj_path / TRANSLATION_DIR / f"{lang}.json"
+            initial_data = [ts.to_dict() for ts in all_translatable_objects]
+            with open(translation_path, 'w', encoding='utf-8') as f:
+                json.dump(initial_data, f, indent=4, ensure_ascii=False)
+
+        return str(proj_path)
+
     except Exception as e:
-        QMessageBox.critical(app_instance, "保存项目错误", f"无法保存项目文件: {e}")
-        return False
+        if proj_path.exists():
+            shutil.rmtree(proj_path)
+        raise IOError(_("Failed to create project: {error}").format(error=str(e)))
+
+
+def load_project(project_path: str):
+    proj_path = Path(project_path)
+    config_path = proj_path / PROJECT_CONFIG_FILE
+
+    if not config_path.is_file():
+        raise FileNotFoundError(_("This is not a valid LexiSync project folder (missing project.json)."))
+
+    with open(config_path, 'r', encoding='utf-8') as f:
+        project_config = json.load(f)
+
+    current_lang = project_config.get("current_target_language")
+    if not current_lang:
+        raise ValueError(_("Project has no target language selected."))
+
+    translation_file = proj_path / TRANSLATION_DIR / f"{current_lang}.json"
+    if not translation_file.is_file():
+        raise FileNotFoundError(_("Translation data for language '{lang}' not found.").format(lang=current_lang))
+
+    with open(translation_file, 'r', encoding='utf-8') as f:
+        translation_data = json.load(f)
+
+    source_code_content = ""
+    full_code_lines = []
+    if project_config["source_files"]:
+        source_file_path = proj_path / project_config["source_files"][0]["project_path"]
+        if source_file_path.is_file():
+            with open(source_file_path, 'r', encoding='utf-8') as f:
+                source_code_content = f.read()
+                full_code_lines = source_code_content.splitlines()
+
+    translatable_objects = [TranslatableString.from_dict(data, full_code_lines) for data in translation_data]
+
+    return {
+        "project_config": project_config,
+        "translatable_objects": translatable_objects,
+        "original_raw_code_content": source_code_content
+    }
+
+
+def save_project(project_path: str, app_instance):
+    proj_path = Path(project_path)
+    config_path = proj_path / PROJECT_CONFIG_FILE
+
+    if not config_path.is_file():
+        raise FileNotFoundError(_("Cannot save, project configuration file is missing."))
+
+    current_lang = app_instance.current_target_language
+    translation_file = proj_path / TRANSLATION_DIR / f"{current_lang}.json"
+    translation_data = [ts.to_dict() for ts in app_instance.translatable_objects]
+
+    temp_file = translation_file.with_suffix(".json.tmp")
+    with open(temp_file, 'w', encoding='utf-8') as f:
+        json.dump(translation_data, f, indent=4, ensure_ascii=False)
+    shutil.move(temp_file, translation_file)
+
+    with open(config_path, 'r', encoding='utf-8') as f:
+        project_config = json.load(f)
+
+    project_config["current_target_language"] = app_instance.current_target_language
+    project_config["ui_state"] = {
+        "search_term": app_instance.search_entry.text() if app_instance.search_entry.text() != _(
+            "Quick search...") else "",
+        "selected_ts_id": app_instance.current_selected_ts_id or ""
+    }
+
+    temp_config_file = config_path.with_suffix(".json.tmp")
+    with open(temp_config_file, 'w', encoding='utf-8') as f:
+        json.dump(project_config, f, indent=4, ensure_ascii=False)
+    shutil.move(temp_config_file, config_path)
+
+    return True

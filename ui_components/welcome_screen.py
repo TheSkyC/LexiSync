@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QFrame, \
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, \
     QApplication, QMessageBox, QLabel
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
@@ -44,15 +44,20 @@ class WelcomeScreen(QWidget):
         action_layout.setSpacing(15)
         action_layout.setAlignment(Qt.AlignTop)
 
-        self.new_button = ActionButton(
-            get_resource_path("icons/file-plus.svg"),
-            _("New from Code"),
-            _("Extract from .ow or .txt file")
+        self.quick_edit_button = ActionButton(
+            get_resource_path("icons/file.svg"),
+            _("Quick Edit File"),
+            _("Open a single file for fast translation")
         )
-        self.open_button = ActionButton(
+        self.new_project_button = ActionButton(
             get_resource_path("icons/folder.svg"),
+            _("New Project"),
+            _("Create a structured project folder")
+        )
+        self.open_project_button = ActionButton(
+            get_resource_path("icons/folder-open.svg"),
             _("Open Project"),
-            _("Open .owproj or .po file")
+            _("Open an existing project folder")
         )
         self.market_button = ActionButton(
             get_resource_path("icons/package.svg"),
@@ -65,8 +70,9 @@ class WelcomeScreen(QWidget):
             _("Configure the application")
         )
 
-        action_layout.addWidget(self.new_button)
-        action_layout.addWidget(self.open_button)
+        action_layout.addWidget(self.quick_edit_button)
+        action_layout.addWidget(self.new_project_button)
+        action_layout.addWidget(self.open_project_button)
         action_layout.addStretch(1)
         action_layout.addWidget(self.market_button)
         action_layout.addWidget(self.settings_button)
@@ -122,8 +128,9 @@ class WelcomeScreen(QWidget):
         top_level_layout.addWidget(status_widget)
 
         # --- Connect Signals ---
-        self.new_button.clicked.connect(lambda: self.on_action_triggered("open_code_file_dialog"))
-        self.open_button.clicked.connect(lambda: self.on_action_triggered("open_project_dialog"))
+        self.quick_edit_button.clicked.connect(lambda: self.on_action_triggered("open_code_file_dialog"))
+        self.new_project_button.clicked.connect(lambda: self.on_action_triggered("new_project"))
+        self.open_project_button.clicked.connect(lambda: self.on_action_triggered("open_project_dialog"))
         self.market_button.clicked.connect(lambda: self.on_action_triggered("show_marketplace"))
         self.settings_button.clicked.connect(lambda: self.on_action_triggered("show_settings"))
         self.recent_files_list.itemClicked.connect(self.on_recent_file_selected)
@@ -292,7 +299,7 @@ class WelcomeScreen(QWidget):
     def on_recent_file_selected(self, item):
         path = item.data(Qt.UserRole)
         if path:
-            self.on_action_triggered("open_recent_file", path)
+            self.on_action_triggered("open_specific_project", path)
 
     def closeEvent(self, event):
         if self.is_closed_by_user:

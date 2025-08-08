@@ -33,7 +33,7 @@ class PersonalizedTranslationPlugin(PluginBase):
         return "https://github.com/TheSkyC/lexisync/tree/master/plugins/com_theskyc_custom_instructions"
 
     def compatible_app_version(self) -> str:
-        return "1.1"
+        return "1.2"
 
     def has_settings_dialog(self) -> bool:
         return False
@@ -72,8 +72,8 @@ class PersonalizedTranslationPlugin(PluginBase):
             print(f"Error saving personalized settings: {e}")
 
     def get_current_project_key(self):
-        if self.main_window.current_project_file_path:
-            return self.main_window.current_project_file_path
+        if self.main_window.current_project_path:
+            return self.main_window.current_project_path
         if self.main_window.current_po_file_path:
             return self.main_window.current_po_file_path
         if self.main_window.current_code_file_path:

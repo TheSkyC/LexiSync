@@ -53,9 +53,11 @@ class TMPanel(QWidget):
             translation_text_ui = full_text.strip()
         self.apply_tm_suggestion_signal.emit(translation_text_ui)
 
-    def update_tm_suggestions_for_text(self, original_semantic_text, translation_memory):
+    def update_tm_suggestions_for_text(self, original_semantic_text, translation_memory, source_map=None):
         self.tm_suggestions_listbox.clear()
         if not original_semantic_text: return
+
+        source_map = source_map or {}
 
         plugin_suggestions = None
         if self.app and hasattr(self.app, 'plugin_manager'):
@@ -65,7 +67,6 @@ class TMPanel(QWidget):
             )
 
         if plugin_suggestions is not None:
-            self.tm_suggestions_listbox.clear()
             for score, tm_orig, tm_trans in plugin_suggestions:
                 suggestion_for_ui = tm_trans.replace("\\n", "\n")
                 display_orig_match = tm_orig[:40].replace("\n", "↵") + ("..." if len(tm_orig) > 40 else "")
@@ -84,8 +85,9 @@ class TMPanel(QWidget):
 
         if original_semantic_text in translation_memory:
             suggestion_from_tm = translation_memory[original_semantic_text]
+            source_tag = source_map.get(original_semantic_text, "")
             suggestion_for_ui = suggestion_from_tm.replace("\\n", "\n")
-            item = QListWidgetItem(f"(100% Exact Match): {suggestion_for_ui}")
+            item = QListWidgetItem(f"{source_tag} (100%): {suggestion_for_ui}")
             item.setForeground(QColor("darkgreen"))
             self.tm_suggestions_listbox.addItem(item)
 
@@ -104,9 +106,8 @@ class TMPanel(QWidget):
 
         fuzzy_matches = []
         for tm_orig, tm_trans_with_slash_n in translation_memory.items():
-            if tm_orig == original_semantic_text or tm_orig.lower() == original_lower:
+            if tm_orig == original_semantic_text:
                 continue
-
             ratio = fuzz.ratio(original_semantic_text, tm_orig) / 100.0
             if ratio > 0.65:
                 fuzzy_matches.append((ratio, tm_orig, tm_trans_with_slash_n))
@@ -114,9 +115,10 @@ class TMPanel(QWidget):
         fuzzy_matches.sort(key=lambda x: x[0], reverse=True)
 
         for ratio, orig_match_text, trans_match_text in fuzzy_matches[:3]:
+            source_tag = source_map.get(orig_match_text, "")
             suggestion_for_ui = trans_match_text.replace("\\n", "\n")
             display_orig_match = orig_match_text[:40].replace("\n", "↵") + ("..." if len(orig_match_text) > 40 else "")
-            item = QListWidgetItem(f"({ratio * 100:.0f}% ~ {display_orig_match}): {suggestion_for_ui}")
+            item = QListWidgetItem(f"{source_tag} ({ratio * 100:.0f}% ~ {display_orig_match}): {suggestion_for_ui}")
             item.setForeground(QColor("purple"))
             self.tm_suggestions_listbox.addItem(item)
 

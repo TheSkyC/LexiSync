@@ -44,7 +44,7 @@ class TMEnhancerPlugin(PluginBase):
         return "https://github.com/TheSkyC/lexisync/tree/master/plugins/com_theskyc_tm_enhancer"
 
     def compatible_app_version(self) -> str:
-        return "1.1"
+        return "1.2"
 
     def external_dependencies(self) -> Dict[str, str]:
         return {
@@ -56,7 +56,7 @@ class TMEnhancerPlugin(PluginBase):
         super().setup(main_window, plugin_manager)
         if not SKLEARN_AVAILABLE:
             self.logger.warning("scikit-learn or numpy not found. TM Enhancer plugin will be disabled.")
-        self.on_tm_loaded(self.main_window.translation_memory)
+        self.on_tm_loaded({})
 
     def on_tm_loaded(self, translation_memory: dict):
         if not SKLEARN_AVAILABLE or not translation_memory:

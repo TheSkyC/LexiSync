@@ -54,7 +54,7 @@ class ObfuscatorPlugin(PluginBase):
         return "https://github.com/TheSkyC/lexisync/tree/master/plugins/com_theskyc_obfuscator"
 
     def compatible_app_version(self) -> str:
-        return "1.1"
+        return "1.2"
 
     def add_menu_items(self) -> list:
         return [

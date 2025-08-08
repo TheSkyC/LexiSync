@@ -11,9 +11,9 @@ TM_FILE_EXCEL = "ow_translator_tm.xlsx"
 EXPANSION_DATA_DIR = "expansion_data"
 MAX_UNDO_HISTORY = 30
 DEFAULT_API_URL = "https://api.deepseek.com/chat/completions"
-APP_VERSION = "1.1.7"
-PROMPT_PRESET_EXTENSION = ".owprompt"
-EXTRACTION_PATTERN_PRESET_EXTENSION = ".owextract"
+APP_VERSION = "1.2.0"
+PROMPT_PRESET_EXTENSION = ".prompt"
+EXTRACTION_PATTERN_PRESET_EXTENSION = ".extract"
 
 STRUCTURAL = "Structural Content"
 STATIC = "Static Instruction"
@@ -81,6 +81,7 @@ DEFAULT_EXTRACTION_PATTERNS = [
 
 DEFAULT_KEYBINDINGS = {
     'open_code_file': 'Ctrl+O',
+    'new_project': 'Ctrl+Shift+N',
     'open_project': 'Ctrl+Shift+O',
     'save_current_file': 'Ctrl+S',
     'save_code_file': 'Ctrl+Shift+S',

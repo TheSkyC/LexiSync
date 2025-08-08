@@ -90,8 +90,8 @@ def save_config(app_instance):
     config = app_instance.config
     config['extraction_patterns'] = app_instance.config.get("extraction_patterns", deepcopy(DEFAULT_EXTRACTION_PATTERNS))
 
-    if app_instance.current_project_file_path:
-        config["last_dir"] = os.path.dirname(app_instance.current_project_file_path)
+    if app_instance.current_project_path:
+        config["last_dir"] = os.path.dirname(app_instance.current_project_path)
     elif app_instance.current_code_file_path:
         config["last_dir"] = os.path.dirname(app_instance.current_code_file_path)
     elif app_instance.current_po_file_path:
