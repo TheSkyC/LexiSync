@@ -170,11 +170,6 @@ class PluginManager:
                         deps=", ".join(missing_deps)
                     )
                 )
-        dep_graph = {spec['id']: set(spec['deps']) for spec in plugin_specs}
-        in_degree = {uid: 0 for uid in all_plugin_ids}
-        for uid, deps in dep_graph.items():
-            for dep in deps:
-                in_degree[uid] += 1
         in_degree = {uid: 0 for uid in all_plugin_ids}
         graph = {uid: [] for uid in all_plugin_ids}
         for uid, spec in id_to_spec.items():
@@ -293,12 +288,21 @@ class PluginManager:
             # 2. 处理型钩子 (Processing Hooks)
             elif hook_name.startswith('process_'):
                 processed_data = args[0]
+                original_type = type(processed_data)
                 other_args = args[1:]
                 for plugin in self.get_enabled_plugins():
                     if hasattr(plugin, hook_name):
                         try:
                             method = getattr(plugin, hook_name)
-                            processed_data = method(processed_data, *other_args, **kwargs)
+                            result = method(processed_data, *other_args, **kwargs)
+                            if isinstance(result, original_type):
+                                processed_data = result
+                            else:
+                                self.logger.warning(
+                                    f"Plugin '{plugin.plugin_id()}' hook '{hook_name}' returned wrong type "
+                                    f"(expected {original_type.__name__}, got {type(result).__name__}). "
+                                    f"Ignoring result."
+                                )
                         except Exception as e:
                             self.logger.error(f"Error in plugin '{plugin.plugin_id()}' processing hook '{hook_name}': {e}",
                                               exc_info=True)

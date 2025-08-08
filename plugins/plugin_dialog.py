@@ -37,12 +37,12 @@ class InstallThread(QThread):
     progress = Signal(str)
     finished = Signal(bool)
 
-    def __init__(self, package_spec):
+    def __init__(self, dependencies_dict):
         super().__init__()
-        self.package_spec = package_spec
+        self.dependencies = dependencies_dict
 
     def run(self):
-        success = DependencyManager.get_instance().install_package(self.package_spec, self.progress.emit)
+        success = DependencyManager.get_instance().install_dependencies(self.dependencies, self.progress.emit)
         self.finished.emit(success)
 
 class PluginManagerDialog(QDialog):
@@ -624,15 +624,3 @@ class PluginManagerDialog(QDialog):
     def reload_plugins(self):
         self.manager.reload_plugins()
         self.populate_list()
-
-class InstallThread(QThread):
-    progress = Signal(str)
-    finished = Signal(bool)
-
-    def __init__(self, dependencies_dict):
-        super().__init__()
-        self.dependencies = dependencies_dict
-
-    def run(self):
-        success = DependencyManager.get_instance().install_dependencies(self.dependencies, self.progress.emit)
-        self.finished.emit(success)
