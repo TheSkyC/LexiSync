@@ -4,7 +4,9 @@
 import sys
 import logging
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QObject, QTimer, Qt
+from PySide6.QtCore import QObject
+from utils import debug_utils
+debug_utils.setup_debug_mode()
 app_controller = None
 
 class AppController(QObject):
@@ -25,8 +27,9 @@ class AppController(QObject):
 
 
 if __name__ == "__main__":
+    log_level = logging.DEBUG if debug_utils.IS_DEBUG_MODE else logging.INFO
     logging.basicConfig(
-        level=logging.INFO,
+        level=log_level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         stream=sys.stdout,
     )

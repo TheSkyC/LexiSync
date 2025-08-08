@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import shutil
-import datetime
 import threading
 from copy import deepcopy
 from rapidfuzz import fuzz
@@ -12,6 +10,7 @@ import polib
 import weakref
 import traceback
 import re
+import logging
 
 from PySide6.QtWidgets import (
     QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
@@ -115,22 +114,39 @@ class AITranslationWorker(QRunnable):
         app.running_workers.add(self)
 
         try:
-            glossary_terms = {}
+            placeholder_spans = [m.span() for m in app.placeholder_regex.finditer(self.original_text)]
+            def is_inside_placeholder(pos):
+                for start, end in placeholder_spans:
+                    if start <= pos < end:
+                        return True
+                return False
             original_words = set(re.findall(r'\b\w+\b', self.original_text.lower()))
+            potential_glossary_terms = {}
             if original_words:
-                glossary_terms = app.glossary_service.get_terms_batch(list(original_words))
+                potential_glossary_terms = app.glossary_service.get_terms_batch(list(original_words))
+            valid_glossary_terms = {}
+            if potential_glossary_terms:
+                for word, term_info in potential_glossary_terms.items():
+                    is_valid_term = False
+                    try:
+                        for match in re.finditer(r'\b' + re.escape(word) + r'\b', self.original_text, re.IGNORECASE):
+                            if not is_inside_placeholder(match.start()):
+                                is_valid_term = True
+                                break
+                    except re.error:
+                        continue
 
-            if glossary_terms:
+                    if is_valid_term:
+                        valid_glossary_terms[word] = term_info
+            glossary_prompt_part = ""
+            if valid_glossary_terms:
                 header = f"| {_('Source Term')} | {_('Should be Translated As')} |\n|---|---|\n"
                 rows = []
-                for word, term_info in glossary_terms.items():
+                for word, term_info in valid_glossary_terms.items():
                     targets = " or ".join(f"'{t['target']}'" for t in term_info['translations'])
                     source_term_escaped = word.replace('|', '\\|')
                     rows.append(f"| {source_term_escaped} | {targets} |")
-
-                glossary_prompt_part = header + "\n".join(rows)
-            else:
-                glossary_prompt_part = ""
+                glossary_prompt_part = f"{header}" + "\n".join(rows)
 
             placeholders = {
                 '[Target Language]': self.target_language,
@@ -142,10 +158,10 @@ class AITranslationWorker(QRunnable):
                 placeholders.update(self.plugin_placeholders)
             prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
             final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
-            # print("=" * 20 + " AI PROMPT" + "=" * 20)
-            # print(f"Original Text to Translate:\n---\n{self.original_text}\n---")
-            # print(f"\nFinal System Prompt Sent to AI:\n---\n{final_prompt}\n---")
-            # print("=" * 57)
+            logging.debug("=" * 20 + " AI PROMPT" + "=" * 20)
+            logging.debug(f"Original Text to Translate:\n---\n{self.original_text}\n---")
+            logging.debug(f"\nFinal System Prompt Sent to AI:\n---\n{final_prompt}\n---")
+            logging.debug("=" * 57)
             translated_text = app.ai_translator.translate(self.original_text, final_prompt)
             app.thread_signals.handle_ai_result.emit(self.ts_id, translated_text, None, self.is_batch_item)
         except Exception as e:
