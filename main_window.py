@@ -120,13 +120,17 @@ class AITranslationWorker(QRunnable):
             if original_words:
                 glossary_terms = app.glossary_service.get_terms_batch(list(original_words))
 
-            glossary_prompt_part = ""
             if glossary_terms:
-                parts = []
+                header = f"| {_('Source Term')} | {_('Should be Translated As')} |\n|---|---|\n"
+                rows = []
                 for word, term_info in glossary_terms.items():
                     targets = " or ".join(f"'{t['target']}'" for t in term_info['translations'])
-                    parts.append(f"'{word}' must be translated as {targets}")
-                glossary_prompt_part = "Strictly follow these glossary rules: " + "; ".join(parts)
+                    source_term_escaped = word.replace('|', '\\|')
+                    rows.append(f"| {source_term_escaped} | {targets} |")
+
+                glossary_prompt_part = header + "\n".join(rows)
+            else:
+                glossary_prompt_part = ""
 
             placeholders = {
                 '[Target Language]': self.target_language,
@@ -3873,47 +3877,54 @@ class LexiSyncApp(QMainWindow):
         except IndexError:
             return contexts
 
-        if self.config.get("ai_use_translation_context", False):
-            trans_context_items = []
-            max_neighbors = self.config.get("ai_context_neighbors", 0)
-            preceding_context = []
+        # --- 处理 [Translated Context] ---
+        if self.config.get("ai_use_translation_context", True):
+            max_neighbors = self.config.get("ai_context_neighbors", 3)
+            context_pairs = []
             count = 0
             for i in range(current_item_index - 1, -1, -1):
-                if max_neighbors > 0 and count >= max_neighbors: break
+                if 0 < max_neighbors <= count: break
                 ts = self.translatable_objects[i]
                 if ts.translation.strip() and not ts.is_ignored:
-                    orig_for_ctx = ts.original_semantic.replace("|", " ").replace("\n", " ")[:100]
-                    trans_for_ctx = ts.get_translation_for_storage_and_tm().replace("|", " ").replace("\\n", " ")[:100]
-                    preceding_context.append(f"{orig_for_ctx} -> {trans_for_ctx}")
+                    context_pairs.insert(0, (ts.original_semantic, ts.get_translation_for_ui()))
                     count += 1
-            succeeding_context = []
             count = 0
             for i in range(current_item_index + 1, len(self.translatable_objects)):
-                if max_neighbors > 0 and count >= max_neighbors: break
+                if 0 < max_neighbors <= count: break
                 ts = self.translatable_objects[i]
                 if ts.translation.strip() and not ts.is_ignored:
-                    orig_for_ctx = ts.original_semantic.replace("|", " ").replace("\n", " ")[:100]
-                    trans_for_ctx = ts.get_translation_for_storage_and_tm().replace("|", " ").replace("\\n", " ")[:100]
-                    succeeding_context.append(f"{orig_for_ctx} -> {trans_for_ctx}")
+                    context_pairs.append((ts.original_semantic, ts.get_translation_for_ui()))
                     count += 1
-            trans_context_items = list(reversed(preceding_context)) + succeeding_context
-            contexts["translation_context"] = " ||| ".join(trans_context_items)
+            if context_pairs:
+                header = f"| {_('Original')} | {_('Translation')} |\n|---|---|\n"
+                rows = [
+                    f"| {orig.replace('|', '\\|').replace(chr(10), ' ')} | {trans.replace('|', '\\|').replace(chr(10), ' ')} |"
+                    for orig, trans in context_pairs]
+                contexts["translation_context"] = header + "\n".join(rows)
 
+        # --- [Untranslated Context] ---
         if self.config.get("ai_use_original_context", True):
-            orig_context_items = []
             max_neighbors = self.config.get("ai_original_context_neighbors", 3)
-            start_idx = max(0, current_item_index - max_neighbors)
-            end_idx = min(len(self.translatable_objects), current_item_index + max_neighbors + 1)
-
-            for i in range(start_idx, end_idx):
-                if i == current_item_index: continue
+            context_items = []
+            count = 0
+            for i in range(current_item_index - 1, -1, -1):
+                if 0 < max_neighbors <= count: break
                 ts = self.translatable_objects[i]
                 if not ts.is_ignored:
-                    orig_context_items.append(ts.original_semantic.replace("|", " ").replace("\n", " "))
-            contexts["original_context"] = " ||| ".join(orig_context_items)
+                    context_items.insert(0, ts.original_semantic)
+                    count += 1
+            count = 0
+            for i in range(current_item_index + 1, len(self.translatable_objects)):
+                if 0 < max_neighbors <= count: break
+                ts = self.translatable_objects[i]
+                if not ts.is_ignored:
+                    context_items.append(ts.original_semantic)
+                    count += 1
+            if context_items:
+                formatted_items = [f"- \"{item.replace(chr(10), ' ').strip()}\"" for item in context_items]
+                contexts["original_context"] = "\n".join(formatted_items)
 
         return contexts
-
     def _initiate_single_ai_translation(self, ts_id_to_translate, called_from_cm=False):
         if not ts_id_to_translate:
             return False

@@ -166,6 +166,8 @@ class PromptManagerDialog(QDialog):
             return
         placeholders_data = [
             {'placeholder': '[Target Language]', 'description': _('The target language for translation.'), 'provider': _('Main App')},
+            {'placeholder': '[Glossary]', 'description': _('Injects glossary terms found in the original text to enforce specific translations.'),
+             'provider': _('Main App')},
             {'placeholder': '[Untranslated Context]', 'description': _('Nearby untranslated original text.'), 'provider': _('Main App')},
             {'placeholder': '[Translated Context]', 'description': _('Nearby translated text for context.'), 'provider': _('Main App')},
         ]

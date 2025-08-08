@@ -19,40 +19,76 @@ DYNAMIC = "Dynamic Instruction"
 
 DEFAULT_PROMPT_STRUCTURE = [
     {
-        "id": str(uuid.uuid4()), "type": STRUCTURAL, "enabled": True,
-        "content": "你是一个专业的游戏文本翻译器，负责将《守望先锋》自定义模式的界面UI文本和描述翻译成[Target Language]。\n请严格遵循以下要求："
+        "id": str(uuid.uuid4()),
+        "type": STRUCTURAL,
+        "enabled": True,
+        "content": "你是一位专业的本地化专家，负责将软件或游戏中的UI文本翻译成[Target Language]。这些文本来自标准的 PO/POT 本地化文件。\n请严格遵循以下要求："
     },
     {
-        "id": str(uuid.uuid4()), "type": STATIC, "enabled": True,
-        "content": "将以下文本翻译成[Target Language]语言。"
+        "id": str(uuid.uuid4()),
+        "type": STATIC,
+        "enabled": True,
+        "content": "你的唯一任务是将文本翻译成[Target Language]。"
     },
     {
-        "id": str(uuid.uuid4()), "type": DYNAMIC, "enabled": True,
+        "id": str(uuid.uuid4()),
+        "type": DYNAMIC,
+        "enabled": True,
         "content": "请遵循以下针对此项目的特定翻译指示：\n[Global Instructions]\n[Project Instructions]"
     },
     {
-        "id": str(uuid.uuid4()), "type": STATIC, "enabled": True,
-        "content": "如果原来的语言与目标语言一样，则不需要作改动。"
+        "id": str(uuid.uuid4()),
+        "type": STATIC,
+        "enabled": True,
+        "content": "如果原文已经是目标语言，则无需改动，直接返回原文。"
     },
     {
-        "id": str(uuid.uuid4()), "type": STATIC, "enabled": True,
-        "content": "所有符号必须保留。比如'\\n'，'\\r'，'任何空格'，'()'，'[]'，以及'.。?/\\'等等必须保留原样，无需翻译。同时，原来没有的符号也不要乱添加。"
+        "id": str(uuid.uuid4()),
+        "type": STATIC,
+        "enabled": True,
+        "content": "必须完整保留所有的占位符，例如 `%s`, `%d`, `%{count}`, `{variable}` 等，占位符本身无需翻译。确保占位符的数量和名称在译文中与原文完全一致。"
     },
     {
-        "id": str(uuid.uuid4()), "type": DYNAMIC, "enabled": True,
+        "id": str(uuid.uuid4()),
+        "type": STATIC,
+        "enabled": True,
+        "content": "必须保留所有的格式化标记和控制字符，例如换行符 `\\n`、制表符 `\\t` 以及其他特殊转义字符。"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": STATIC,
+        "enabled": True,
+        "content": "除了翻译本身，不得增加或删除任何原文中没有的字符、符号或空格。除非是为了匹配当地的符号使用习惯"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": DYNAMIC,
+        "enabled": True,
+        "content": "请参考以下术语库信息：\n[Glossary]"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": DYNAMIC,
+        "enabled": True,
         "content": "请参考以下未翻译的原文上下文信息，以确保术语和风格的一致性（如果上下文与当前文本相关）：\n[Untranslated Context]"
     },
     {
-        "id": str(uuid.uuid4()), "type": DYNAMIC, "enabled": True,
+        "id": str(uuid.uuid4()),
+        "type": DYNAMIC,
+        "enabled": True,
         "content": "请参考以下已翻译的译文上下文信息，以确保术语和风格的一致性（如果上下文与当前文本相关）：\n[Translated Context]"
     },
     {
-        "id": str(uuid.uuid4()), "type": STATIC, "enabled": True,
-        "content": "翻译结果应准确、简洁，并符合《守望先锋》的游戏内语言风格。"
+        "id": str(uuid.uuid4()),
+        "type": STATIC,
+        "enabled": True,
+        "content": "翻译结果应准确、地道，并符合目标语言用户的阅读习惯。"
     },
     {
-        "id": str(uuid.uuid4()), "type": STRUCTURAL, "enabled": True,
-        "content": "**重要：你的回答[必须且仅能包含翻译后的文本内容]，不要添加任何额外的解释、说明。**"
+        "id": str(uuid.uuid4()),
+        "type": STRUCTURAL,
+        "enabled": True,
+        "content": "重要：你的回答[必须且仅能包含翻译后的内容]，不要添加任何额外的解释、说明或引用标记。"
     }
 ]
 
