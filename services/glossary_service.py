@@ -2,13 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sqlite3
-import re
 import os
 import json
 import hashlib
 import logging
 from datetime import datetime
-from xml.etree import ElementTree as ET
 from typing import List, Dict, Tuple, Optional
 from utils.tbx_parser import TBXParser
 from utils.localization import _
@@ -47,89 +45,111 @@ class GlossaryService:
         conn.row_factory = sqlite3.Row
         return conn
 
-
     def _create_schema(self, conn: sqlite3.Connection):
         cursor = conn.cursor()
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS terms (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                source_term TEXT NOT NULL UNIQUE,
-                source_term_lower TEXT NOT NULL,
+                term_text TEXT NOT NULL,
+                term_text_lower TEXT NOT NULL,
+                language_code TEXT NOT NULL,
                 case_sensitive INTEGER NOT NULL DEFAULT 0,
-                comment TEXT, 
-                source_manifest_key TEXT NOT NULL
-            );
-        """)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS translations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                term_id INTEGER NOT NULL,
-                target_term TEXT NOT NULL,
                 comment TEXT,
-                FOREIGN KEY (term_id) REFERENCES terms (id) ON DELETE CASCADE
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(term_text, language_code)
             );
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_source_term_lower ON terms (source_term_lower);")
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS term_translations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_term_id INTEGER NOT NULL,
+                target_term_id INTEGER NOT NULL,
+                is_bidirectional INTEGER NOT NULL DEFAULT 0,
+                relationship_type TEXT DEFAULT 'translation',
+                confidence_score REAL DEFAULT 1.0,
+                comment TEXT,
+                source_manifest_key TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (source_term_id) REFERENCES terms (id) ON DELETE CASCADE,
+                FOREIGN KEY (target_term_id) REFERENCES terms (id) ON DELETE CASCADE,
+                UNIQUE(source_term_id, target_term_id)
+            );
+        """)
+
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_terms_text_lower_lang ON terms (term_text_lower, language_code);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_translations_source ON term_translations (source_term_id);")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_translations_target_bidirectional ON term_translations (target_term_id, is_bidirectional);")
+
         conn.commit()
 
-    def get_term(self, source_text: str, case_sensitive: bool = False) -> Optional[List[Dict]]:
+    def get_translations(self, term_text: str, source_lang: str, target_lang: str = None,
+                         include_reverse: bool = True) -> Optional[List[Dict]]:
         if self.project_db_path:
             with self._get_db_connection(self.project_db_path) as conn:
-                result = self._query_term_in_db(conn, source_text, case_sensitive)
+                result = self._query_translations_in_db(conn, term_text, source_lang, target_lang, include_reverse)
                 if result:
                     return result
 
         if self.global_db_path:
             with self._get_db_connection(self.global_db_path) as conn:
-                return self._query_term_in_db(conn, source_text, case_sensitive)
+                return self._query_translations_in_db(conn, term_text, source_lang, target_lang, include_reverse)
         return None
 
-    def _query_term_in_db(self, conn: sqlite3.Connection, source_text: str, case_sensitive: bool) -> Optional[List[Dict]]:
+    def _query_translations_in_db(self, conn: sqlite3.Connection, term_text: str, source_lang: str,
+                                  target_lang: str = None, include_reverse: bool = True) -> Optional[List[Dict]]:
         cursor = conn.cursor()
-        if case_sensitive:
-            cursor.execute("SELECT id FROM terms WHERE source_term = ?", (source_text,))
-        else:
-            cursor.execute("SELECT id FROM terms WHERE source_term_lower = ?", (source_text.lower(),))
 
-        term_row = cursor.fetchone()
-        if not term_row:
-            return None
+        base_query = """
+        SELECT DISTINCT
+            t_target.term_text as target_term,
+            t_target.language_code as target_lang,
+            tt.comment,
+            tt.confidence_score,
+            'forward' as direction
+        FROM terms t_source
+        JOIN term_translations tt ON t_source.id = tt.source_term_id
+        JOIN terms t_target ON tt.target_term_id = t_target.id
+        WHERE t_source.term_text_lower = ? 
+        AND t_source.language_code = ?
+        """
 
-        term_id = term_row['id']
-        cursor.execute("SELECT target_term, comment FROM translations WHERE term_id = ?", (term_id,))
-        translations = [{"target": row["target_term"], "comment": row["comment"]} for row in cursor.fetchall()]
-        return translations
+        params = [term_text.lower(), source_lang]
 
-    def import_from_tbx(self, tbx_filepath: str, glossary_dir_path: str, progress_callback=None) -> Tuple[bool, str]:
-        db_path = os.path.join(glossary_dir_path, DB_FILE)
-        manifest_path = os.path.join(glossary_dir_path, MANIFEST_FILE)
-        manifest = self._read_manifest(manifest_path)
-        file_stats = self._get_file_stats(tbx_filepath)
-        filename = os.path.basename(tbx_filepath)
+        if target_lang:
+            base_query += " AND t_target.language_code = ?"
+            params.append(target_lang)
 
-        if filename in manifest.get("imported_sources", {}):
-            existing_stats = manifest["imported_sources"][filename]
-            if all(existing_stats.get(k) == file_stats.get(k) for k in ["filesize", "last_modified", "checksum"]):
-                return True, _("This file has already been imported and has not changed.")
+        if include_reverse:
+            reverse_query = """
+            UNION
+            SELECT DISTINCT
+                t_source.term_text as target_term,
+                t_source.language_code as target_lang,
+                tt.comment,
+                tt.confidence_score,
+                'reverse' as direction
+            FROM terms t_target
+            JOIN term_translations tt ON t_target.id = tt.target_term_id
+            JOIN terms t_source ON tt.source_term_id = t_source.id
+            WHERE t_target.term_text_lower = ? 
+            AND t_target.language_code = ?
+            AND tt.is_bidirectional = 1
+            """
 
-        try:
-            if progress_callback: progress_callback(_("Parsing TBX file..."))
-            terms_to_import = self._parse_tbx(tbx_filepath)
-            term_count = len(terms_to_import)
-            if progress_callback: progress_callback(_("Connecting to database..."))
-            with self._get_db_connection(db_path) as conn:
-                self._merge_terms_into_db(conn, terms_to_import, filename, progress_callback)
-            file_stats['import_date'] = datetime.now().isoformat() + "Z"
-            file_stats['term_count'] = term_count
-            manifest.setdefault("imported_sources", {})[filename] = file_stats
-            self._write_manifest(manifest_path, manifest)
-            return True, _("Successfully imported {count} terms.").format(count=len(terms_to_import))
-        except Exception as e:
-            logger.error(f"Failed to import TBX file '{tbx_filepath}': {e}", exc_info=True)
-            return False, str(e)
-        finally:
-            if 'conn' in locals() and conn:
-                conn.close()
+            base_query += reverse_query
+            params.extend([term_text.lower(), source_lang])
+
+            if target_lang:
+                base_query += " AND t_source.language_code = ?"
+                params.append(target_lang)
+
+        cursor.execute(base_query, params)
+        results = [dict(row) for row in cursor.fetchall()]
+        return results if results else None
 
     def _parse_tbx(self, filepath: str) -> List[Dict]:
         try:
@@ -137,72 +157,88 @@ class GlossaryService:
             terms = parser.parse_tbx(filepath)
             return terms
         except Exception as e:
-            logger.error(f"UniversalTBXParser failed for file '{filepath}': {e}", exc_info=True)
+            logger.error(f"TBXParser failed for file '{filepath}': {e}", exc_info=True)
             raise e
 
-    def _merge_terms_into_db(self, conn: sqlite3.Connection, terms: List[Dict], source_key: str, progress_callback=None):
+    def _merge_terms_into_db(self, conn: sqlite3.Connection, terms: List[Dict], source_key: str,
+                             source_lang: str, target_lang: str, is_bidirectional: bool, progress_callback=None):
         cursor = conn.cursor()
         total = len(terms)
+
         try:
             if progress_callback: progress_callback(_("Preparing data for database..."))
 
-            cursor.execute("SELECT source_term_lower, id FROM terms")
-            existing_terms_map = {row['source_term_lower']: row['id'] for row in cursor.fetchall()}
-
-            new_terms_to_insert = []
-            new_translations_to_insert = []
-            seen_in_this_batch = set()
-
-            if progress_callback: progress_callback(_("Analyzing new and existing terms..."))
-
-            for i, term_data in enumerate(terms):
-                source = term_data["source"]
-                source_lower = source.lower()
-
-                if source_lower in existing_terms_map:
-                    term_id = existing_terms_map[source_lower]
-                    cursor.execute("SELECT target_term FROM translations WHERE term_id = ?", (term_id,))
-                    existing_targets = {row['target_term'] for row in cursor.fetchall()}
-
-                    for trans in term_data["translations"]:
-                        if trans["target"] not in existing_targets:
-                            new_translations_to_insert.append(
-                                (term_id, trans["target"], trans["comment"])
-                            )
-                elif source_lower not in seen_in_this_batch:
-                    new_terms_to_insert.append(
-                        (source, source_lower, term_data["case_sensitive"], term_data["comment"], source_key)
-                    )
-                    seen_in_this_batch.add(source_lower)
-
             cursor.execute("BEGIN TRANSACTION;")
 
+            cursor.execute("SELECT term_text_lower, language_code, id FROM terms")
+            existing_terms_map = {(row['term_text_lower'], row['language_code']): row['id']
+                                  for row in cursor.fetchall()}
+
+            new_terms_to_insert = []
+            seen_terms = set()
+
+            if progress_callback: progress_callback(_("Processing terms..."))
+
+            for term_data in terms:
+                source_text = term_data["source"]
+                source_key_tuple = (source_text.lower(), source_lang)
+
+                if source_key_tuple not in existing_terms_map and source_key_tuple not in seen_terms:
+                    new_terms_to_insert.append((
+                        source_text, source_text.lower(), source_lang,
+                        term_data.get("case_sensitive", 0), term_data.get("comment", "")
+                    ))
+                    seen_terms.add(source_key_tuple)
+
+                for trans in term_data["translations"]:
+                    target_text = trans["target"]
+                    target_key_tuple = (target_text.lower(), target_lang)
+
+                    if target_key_tuple not in existing_terms_map and target_key_tuple not in seen_terms:
+                        new_terms_to_insert.append((
+                            target_text, target_text.lower(), target_lang,
+                            0, trans.get("comment", "")
+                        ))
+                        seen_terms.add(target_key_tuple)
+
             if new_terms_to_insert:
-                if progress_callback: progress_callback(
-                    _("Inserting {count} new source terms...").format(count=len(new_terms_to_insert)))
+                if progress_callback: progress_callback(_("Inserting new terms..."))
                 cursor.executemany(
-                    "INSERT INTO terms (source_term, source_term_lower, case_sensitive, comment, source_manifest_key) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO terms (term_text, term_text_lower, language_code, case_sensitive, comment) VALUES (?, ?, ?, ?, ?)",
                     new_terms_to_insert
                 )
 
-            if progress_callback: progress_callback(_("Fetching new term IDs..."))
-            cursor.execute("SELECT source_term_lower, id FROM terms")
-            all_terms_map = {row['source_term_lower']: row['id'] for row in cursor.fetchall()}
+            all_terms_map = existing_terms_map.copy()
+            if new_terms_to_insert:
+                last_inserted_id = cursor.lastrowid
+                first_new_id = last_inserted_id - len(new_terms_to_insert) + 1
+                for i, term_tuple in enumerate(new_terms_to_insert):
+                    key = (term_tuple[1], term_tuple[2])
+                    all_terms_map[key] = first_new_id + i
+
+            cursor.execute("SELECT source_term_id, target_term_id FROM term_translations")
+            existing_translations = {(row['source_term_id'], row['target_term_id']) for row in cursor.fetchall()}
+            new_translations_to_insert = []
+
             for term_data in terms:
-                source_lower = term_data["source"].lower()
-                if source_lower in seen_in_this_batch:
-                    term_id = all_terms_map.get(source_lower)
-                    if term_id:
-                        for trans in term_data["translations"]:
-                            new_translations_to_insert.append(
-                                (term_id, trans["target"], trans["comment"])
-                            )
+                source_text = term_data["source"]
+                source_term_id = all_terms_map.get((source_text.lower(), source_lang))
+
+                if source_term_id:
+                    for trans in term_data["translations"]:
+                        target_text = trans["target"]
+                        target_term_id = all_terms_map.get((target_text.lower(), target_lang))
+
+                        if target_term_id and (source_term_id, target_term_id) not in existing_translations:
+                            new_translations_to_insert.append((
+                                source_term_id, target_term_id, int(is_bidirectional),
+                                "translation", 1.0, trans.get("comment", ""), source_key
+                            ))
 
             if new_translations_to_insert:
-                if progress_callback: progress_callback(
-                    _("Inserting {count} new translations...").format(count=len(new_translations_to_insert)))
+                if progress_callback: progress_callback(_("Inserting translations..."))
                 cursor.executemany(
-                    "INSERT INTO translations (term_id, target_term, comment) VALUES (?, ?, ?)",
+                    "INSERT INTO term_translations (source_term_id, target_term_id, is_bidirectional, relationship_type, confidence_score, comment, source_manifest_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     new_translations_to_insert
                 )
 
@@ -224,54 +260,148 @@ class GlossaryService:
 
             cursor.execute("BEGIN TRANSACTION;")
             logger.info(f"Starting transaction to remove source: {source_key}")
-
-            cursor.execute("SELECT id FROM terms WHERE source_manifest_key = ?", (source_key,))
-            term_ids_to_delete = [row['id'] for row in cursor.fetchall()]
-
-            if term_ids_to_delete:
-                chunk_size = 900
-                for i in range(0, len(term_ids_to_delete), chunk_size):
-                    chunk = term_ids_to_delete[i:i + chunk_size]
-                    placeholders = ','.join('?' for __ in chunk)
-                    cursor.execute(f"DELETE FROM translations WHERE term_id IN ({placeholders})", chunk)
-                    logger.debug(f"Deleted a chunk of {len(chunk)} translations.")
-                cursor.execute("DELETE FROM terms WHERE source_manifest_key = ?", (source_key,))
-                rows_deleted = cursor.rowcount
-                logger.info(
-                    f"Deleted {rows_deleted} term(s) and their associated translations from DB for source: {source_key}")
-            else:
-                rows_deleted = 0
-                logger.warning(f"No terms found in DB for source_key '{source_key}'. Only manifest will be updated.")
+            cursor.execute("DELETE FROM term_translations WHERE source_manifest_key = ?", (source_key,))
+            rows_deleted = cursor.rowcount
+            logger.info(f"Deleted {rows_deleted} translation relationships from source: {source_key}")
+            cursor.execute("""
+                DELETE FROM terms 
+                WHERE id NOT IN (
+                    SELECT DISTINCT source_term_id FROM term_translations
+                    UNION
+                    SELECT DISTINCT target_term_id FROM term_translations
+                )
+            """)
+            orphaned_terms_cleaned = cursor.rowcount
+            if orphaned_terms_cleaned > 0:
+                logger.info(f"Cleaned up {orphaned_terms_cleaned} orphaned terms.")
 
             conn.commit()
-            logger.info("Transaction committed successfully.")
 
             manifest = self._read_manifest(manifest_path)
             if "imported_sources" in manifest and source_key in manifest["imported_sources"]:
                 del manifest["imported_sources"][source_key]
                 self._write_manifest(manifest_path, manifest)
-                logger.info(f"Removed '{source_key}' from manifest.json.")
 
-            return True, _("Successfully removed {count} terms from source '{source}'.").format(count=rows_deleted,
-                                                                                                source=source_key)
+            return True, _("Successfully removed {count} translations from source '{source}'.").format(
+                count=rows_deleted, source=source_key)
 
         except Exception as e:
             if conn:
                 conn.rollback()
-                logger.error(f"Transaction rolled back due to an error while removing source '{source_key}'.")
-
             logger.error(f"Failed to remove source '{source_key}': {e}", exc_info=True)
             return False, str(e)
         finally:
             if conn:
                 conn.close()
 
+    def get_translations_batch(self, words: List[str], source_lang: str = "auto", target_lang: str = None,
+                               include_reverse: bool = True) -> Dict:
+        if not words:
+            return {}
+
+        all_matches = {}
+
+        if self.project_db_path:
+            with self._get_db_connection(self.project_db_path) as conn:
+                matches = self._query_translations_batch_in_db(conn, words, source_lang, target_lang, include_reverse)
+                all_matches.update(matches)
+
+        if self.global_db_path:
+            remaining_words = [w for w in words if w not in all_matches]
+            if remaining_words:
+                with self._get_db_connection(self.global_db_path) as conn:
+                    matches = self._query_translations_batch_in_db(conn, remaining_words, source_lang, target_lang,
+                                                                   include_reverse)
+                    all_matches.update(matches)
+
+        return all_matches
+
+    def _query_translations_batch_in_db(self, conn: sqlite3.Connection, words: List[str],
+                                        source_lang: str = "auto", target_lang: str = None,
+                                        include_reverse: bool = True) -> Dict:
+        if not words:
+            return {}
+
+        words_lower = [w.lower() for w in words]
+        placeholders = ','.join('?' for __ in words_lower)
+
+        base_query = f"""
+        SELECT 
+            t_source.term_text_lower as source_key,
+            t_target.term_text as target_term,
+            t_target.language_code as target_lang,
+            tt.comment,
+            tt.confidence_score,
+            'forward' as direction
+        FROM terms t_source
+        JOIN term_translations tt ON t_source.id = tt.source_term_id
+        JOIN terms t_target ON tt.target_term_id = t_target.id
+        WHERE t_source.term_text_lower IN ({placeholders})
+        """
+
+        params = words_lower[:]
+
+        if source_lang != "auto":
+            base_query += " AND t_source.language_code = ?"
+            params.append(source_lang)
+
+        if target_lang:
+            base_query += " AND t_target.language_code = ?"
+            params.append(target_lang)
+
+        if include_reverse:
+            reverse_query = f"""
+            UNION
+            SELECT 
+                t_target.term_text_lower as source_key,
+                t_source.term_text as target_term,
+                t_source.language_code as target_lang,
+                tt.comment,
+                tt.confidence_score,
+                'reverse' as direction
+            FROM terms t_target
+            JOIN term_translations tt ON t_target.id = tt.target_term_id
+            JOIN terms t_source ON tt.source_term_id = t_source.id
+            WHERE t_target.term_text_lower IN ({placeholders})
+            AND tt.is_bidirectional = 1
+            """
+
+            base_query += reverse_query
+            params.extend(words_lower)
+
+            if source_lang != "auto":
+                base_query += " AND t_target.language_code = ?"
+                params.append(source_lang)
+
+            if target_lang:
+                base_query += " AND t_source.language_code = ?"
+                params.append(target_lang)
+
+        cursor = conn.cursor()
+        cursor.execute(base_query, params)
+
+        results = {}
+        for row in cursor.fetchall():
+            source_key = row['source_key']
+            if source_key not in results:
+                results[source_key] = {"translations": []}
+            results[source_key]["translations"].append({
+                "target": row["target_term"],
+                "target_lang": row["target_lang"],
+                "comment": row["comment"],
+                "confidence_score": row["confidence_score"],
+                "direction": row["direction"]
+            })
+
+        logger.debug(f"Found {len(results)} matches in batch query.")
+        return results
+
     def _read_manifest(self, manifest_path: str) -> Dict:
         try:
             with open(manifest_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
-            return {"version": 1, "imported_sources": {}}
+            return {"version": 2, "imported_sources": {}}
 
     def _write_manifest(self, manifest_path: str, manifest_data: Dict):
         with open(manifest_path, 'w', encoding='utf-8') as f:
@@ -292,47 +422,3 @@ class GlossaryService:
             while chunk := f.read(8192):
                 h.update(chunk)
         return h.hexdigest()
-
-    def get_terms_batch(self, words: List[str]) -> Dict:
-        """Efficiently gets all terms for a list of words."""
-        if not words:
-            return {}
-
-        all_matches = {}
-
-        if self.project_db_path:
-            with self._get_db_connection(self.project_db_path) as conn:
-                matches = self._query_terms_batch_in_db(conn, words)
-                all_matches.update(matches)
-
-        if self.global_db_path:
-            remaining_words = [w for w in words if w not in all_matches]
-            if remaining_words:
-                with self._get_db_connection(self.global_db_path) as conn:
-                    matches = self._query_terms_batch_in_db(conn, remaining_words)
-                    all_matches.update(matches)
-        return all_matches
-
-    def _query_terms_batch_in_db(self, conn: sqlite3.Connection, words: List[str]) -> Dict:
-        if not words:
-            return {}
-        placeholders = ','.join('?' for __ in words)
-        query = f"""
-            SELECT t.source_term_lower, tr.target_term, tr.comment
-            FROM terms t
-            JOIN translations tr ON t.id = tr.term_id
-            WHERE t.source_term_lower IN ({placeholders})
-        """
-        cursor = conn.cursor()
-        cursor.execute(query, words)
-        results = {}
-        for row in cursor.fetchall():
-            source_lower = row['source_term_lower']
-            if source_lower not in results:
-                results[source_lower] = {"translations": []}
-            results[source_lower]["translations"].append({
-                "target": row["target_term"],
-                "comment": row["comment"]
-            })
-        logger.debug(f"  -> Found {len(results)} matches.")
-        return results
