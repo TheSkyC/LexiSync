@@ -44,11 +44,11 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
             destination_path = proj_path / SOURCE_DIR / original_path.name
             shutil.copy2(original_path, destination_path)
 
-            relative_path = destination_path.relative_to(proj_path).as_posix()
+            relative_path_obj = destination_path.relative_to(proj_path)
             processed_source_files.append({
                 "id": str(uuid.uuid4()),
                 "original_path": str(original_path),
-                "project_path": relative_path,
+                "project_path": str(relative_path_obj),
                 "type": file_info['type'],
                 "linked": False
             })
