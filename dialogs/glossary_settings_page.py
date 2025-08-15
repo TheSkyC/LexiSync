@@ -7,7 +7,9 @@ from PySide6.QtCore import Qt, QThread, Signal
 from .settings_pages import BaseSettingsPage
 from utils.localization import _
 from utils.path_utils import get_app_data_path
+from utils.tbx_parser import TBXParser
 from services.glossary_service import MANIFEST_FILE, DB_FILE
+from .import_configuration_dialog import ImportConfigurationDialog
 import os
 import logging
 import datetime
@@ -16,18 +18,23 @@ class TbxImportThread(QThread):
     progress = Signal(str)
     finished = Signal(bool, str)
 
-    def __init__(self, glossary_service, tbx_path, glossary_dir):
+    def __init__(self, glossary_service, tbx_path, glossary_dir, source_lang, target_langs, is_bidirectional, lang_mapping):
         super().__init__()
         self.glossary_service = glossary_service
         self.tbx_path = tbx_path
         self.glossary_dir = glossary_dir
+        self.source_lang = source_lang
+        self.target_langs = target_langs
+        self.is_bidirectional = is_bidirectional
+        self.lang_mapping = lang_mapping
 
     def run(self):
         success, message = self.glossary_service.import_from_tbx(
-            self.tbx_path, self.glossary_dir, self.progress.emit
+            self.tbx_path, self.glossary_dir, self.source_lang,
+            self.target_langs, self.is_bidirectional, self.lang_mapping,
+            self.progress.emit
         )
         self.finished.emit(success, message)
-
 
 class GlossarySettingsPage(BaseSettingsPage):
     def __init__(self, app_instance):
@@ -50,9 +57,10 @@ class GlossarySettingsPage(BaseSettingsPage):
 
         # Table for displaying imported sources
         self.sources_table = QTableWidget()
-        self.sources_table.setColumnCount(4)
+        self.sources_table.setColumnCount(5)
         self.sources_table.setHorizontalHeaderLabels([
-            _("Source File"), _("Term Count"), _("Import Date"), _("Original Path")
+            _("Source File"), _("Entry Count"), _("Source Lang"),
+            _("Target Lang(s)"), _("Import Date")
         ])
         self.sources_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.sources_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -71,12 +79,38 @@ class GlossarySettingsPage(BaseSettingsPage):
         if not filepath:
             return
 
+        try:
+            parser = TBXParser()
+            parse_result = parser.parse_tbx(filepath, analyze_only=True)
+            detected_languages = parse_result.get("detected_languages", [])
+            if not detected_languages:
+                QMessageBox.warning(self, _("Analysis Failed"),
+                                    _("Could not detect any languages in the TBX file. Please check the file format."))
+                return
+        except Exception as e:
+            QMessageBox.critical(self, _("Parse Error"),
+                                 _("Failed to analyze the TBX file: {error}").format(error=str(e)))
+            return
+        config_dialog = ImportConfigurationDialog(self, os.path.basename(filepath), detected_languages, "Glossary")
+        if not config_dialog.exec():
+            return
+
+        import_settings = config_dialog.get_data()
+        source_lang = import_settings['source_lang']
+        target_langs = import_settings['target_langs']
+        is_bidirectional = import_settings['is_bidirectional']
+        lang_mapping = import_settings['lang_mapping']
+
         self.progress_dialog = QProgressDialog(_("Importing TBX file..."), _("Cancel"), 0, 100, self)
         self.progress_dialog.setWindowModality(Qt.WindowModal)
         self.progress_dialog.setAutoClose(True)
         self.progress_dialog.show()
 
-        self.import_thread = TbxImportThread(self.glossary_service, filepath, self.global_glossary_dir)
+        self.import_thread = TbxImportThread(
+            self.glossary_service, filepath, self.global_glossary_dir,
+            source_lang, target_langs, is_bidirectional, lang_mapping
+        )
+
         self.import_thread.progress.connect(self.update_progress)
         self.import_thread.finished.connect(self.on_import_finished)
         self.progress_dialog.canceled.connect(self.import_thread.terminate)
@@ -128,43 +162,29 @@ class GlossarySettingsPage(BaseSettingsPage):
 
         self.sources_table.setRowCount(len(sources))
         for row_idx, (filename, data) in enumerate(sources.items()):
+            # 列 0: Source File
             self.sources_table.setItem(row_idx, 0, QTableWidgetItem(filename))
+
+            # 列 1: Entry Count
             self.sources_table.setItem(row_idx, 1, QTableWidgetItem(str(data.get("term_count", "N/A"))))
 
+            # 列 2: Source Lang
+            self.sources_table.setItem(row_idx, 2, QTableWidgetItem(data.get("source_lang", "N/A")))
+
+            # 列 3: Target Lang(s)
+            target_langs_list = data.get("target_langs", [])
+            target_langs_str = ", ".join(target_langs_list)
+            self.sources_table.setItem(row_idx, 3, QTableWidgetItem(target_langs_str))
+
+            # 列 4: Import Date
             import_date_str = "N/A"
             if "import_date" in data:
                 try:
                     dt = datetime.datetime.fromisoformat(data["import_date"].replace("Z", "+00:00"))
                     import_date_str = dt.strftime("%Y-%m-%d %H:%M")
-                except ValueError:
+                except (ValueError, TypeError):
                     import_date_str = data["import_date"]
-            self.sources_table.setItem(row_idx, 2, QTableWidgetItem(import_date_str))
-
-            self.sources_table.setItem(row_idx, 3, QTableWidgetItem(data.get("filepath", "N/A")))
-
-    def load_terms_into_table(self):
-        self.terms_table.setRowCount(0)
-        db_path = os.path.join(self.global_glossary_dir, DB_FILE)
-        if not os.path.exists(db_path):
-            return
-
-        try:
-            with self.glossary_service._get_db_connection(db_path) as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT t.source_term, GROUP_CONCAT(tr.target_term, '; ') 
-                    FROM terms t 
-                    JOIN translations tr ON t.id = tr.term_id 
-                    GROUP BY t.id 
-                    LIMIT 500
-                """)
-                rows = cursor.fetchall()
-                self.terms_table.setRowCount(len(rows))
-                for row_idx, row_data in enumerate(rows):
-                    self.terms_table.setItem(row_idx, 0, QTableWidgetItem(row_data[0]))
-                    self.terms_table.setItem(row_idx, 1, QTableWidgetItem(row_data[1]))
-        except Exception as e:
-            logging.error(f"Failed to load terms for display: {e}")
+            self.sources_table.setItem(row_idx, 4, QTableWidgetItem(import_date_str))
 
     def save_settings(self):
         pass

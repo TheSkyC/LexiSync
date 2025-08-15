@@ -151,94 +151,118 @@ class GlossaryService:
         results = [dict(row) for row in cursor.fetchall()]
         return results if results else None
 
+    def import_from_tbx(self, tbx_filepath: str, glossary_dir_path: str,
+                        source_lang: str, target_langs: List[str], is_bidirectional: bool,
+                        lang_mapping: Dict[str, str], progress_callback=None) -> Tuple[bool, str]:
+        db_path = os.path.join(glossary_dir_path, DB_FILE)
+        manifest_path = os.path.join(glossary_dir_path, MANIFEST_FILE)
+        manifest = self._read_manifest(manifest_path)
+        file_stats = self._get_file_stats(tbx_filepath)
+        filename = os.path.basename(tbx_filepath)
+
+        if filename in manifest.get("imported_sources", {}):
+            existing_stats = manifest["imported_sources"][filename]
+            if all(existing_stats.get(k) == file_stats.get(k) for k in ["filesize", "last_modified", "checksum"]):
+                return True, _("This file has already been imported and has not changed.")
+        try:
+            if progress_callback: progress_callback(_("Parsing TBX file..."))
+            terms_to_import = self._parse_tbx(tbx_filepath)
+            term_count = len(terms_to_import)
+
+            with self._get_db_connection(db_path) as conn:
+                self._merge_terms_into_db(conn, terms_to_import, filename, source_lang, target_langs, is_bidirectional,
+                                          lang_mapping, progress_callback)
+            file_stats['import_date'] = datetime.now().isoformat() + "Z"
+            file_stats['term_count'] = term_count
+            file_stats['source_lang'] = source_lang
+            file_stats['target_langs'] = target_langs
+            file_stats['is_bidirectional'] = is_bidirectional
+            manifest.setdefault("imported_sources", {})[filename] = file_stats
+            self._write_manifest(manifest_path, manifest)
+
+            return True, _("Successfully imported relationships for {count} entries.").format(count=term_count)
+        except Exception as e:
+            logger.error(f"Failed to import TBX file '{tbx_filepath}': {e}", exc_info=True)
+            return False, str(e)
+
     def _parse_tbx(self, filepath: str) -> List[Dict]:
         try:
             parser = TBXParser()
-            terms = parser.parse_tbx(filepath)
-            return terms
+            parse_result = parser.parse_tbx(filepath)
+            return parse_result.get("term_entries", [])
         except Exception as e:
             logger.error(f"TBXParser failed for file '{filepath}': {e}", exc_info=True)
             raise e
 
-    def _merge_terms_into_db(self, conn: sqlite3.Connection, terms: List[Dict], source_key: str,
-                             source_lang: str, target_lang: str, is_bidirectional: bool, progress_callback=None):
+    def _merge_terms_into_db(self, conn: sqlite3.Connection, term_entries: List[Dict], source_key: str,
+                             source_lang_code: str, target_lang_codes: List[str], is_bidirectional: bool,
+                             lang_mapping: Dict[str, str], progress_callback=None):
         cursor = conn.cursor()
-        total = len(terms)
 
         try:
             if progress_callback: progress_callback(_("Preparing data for database..."))
-
             cursor.execute("BEGIN TRANSACTION;")
 
-            cursor.execute("SELECT term_text_lower, language_code, id FROM terms")
-            existing_terms_map = {(row['term_text_lower'], row['language_code']): row['id']
-                                  for row in cursor.fetchall()}
-
             new_terms_to_insert = []
-            seen_terms = set()
+            seen_terms_in_batch = set()
 
-            if progress_callback: progress_callback(_("Processing terms..."))
+            for lang_map in term_entries:
+                for lang_in_file, terms in lang_map.items():
+                    lexisync_lang = lang_mapping.get(lang_in_file)
+                    if not lexisync_lang: continue
 
-            for term_data in terms:
-                source_text = term_data["source"]
-                source_key_tuple = (source_text.lower(), source_lang)
-
-                if source_key_tuple not in existing_terms_map and source_key_tuple not in seen_terms:
-                    new_terms_to_insert.append((
-                        source_text, source_text.lower(), source_lang,
-                        term_data.get("case_sensitive", 0), term_data.get("comment", "")
-                    ))
-                    seen_terms.add(source_key_tuple)
-
-                for trans in term_data["translations"]:
-                    target_text = trans["target"]
-                    target_key_tuple = (target_text.lower(), target_lang)
-
-                    if target_key_tuple not in existing_terms_map and target_key_tuple not in seen_terms:
-                        new_terms_to_insert.append((
-                            target_text, target_text.lower(), target_lang,
-                            0, trans.get("comment", "")
-                        ))
-                        seen_terms.add(target_key_tuple)
+                    for term_text in terms:
+                        key = (term_text.lower(), lexisync_lang)
+                        if key not in seen_terms_in_batch:
+                            new_terms_to_insert.append((term_text, term_text.lower(), lexisync_lang, 0, ""))
+                            seen_terms_in_batch.add(key)
 
             if new_terms_to_insert:
                 if progress_callback: progress_callback(_("Inserting new terms..."))
                 cursor.executemany(
-                    "INSERT INTO terms (term_text, term_text_lower, language_code, case_sensitive, comment) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT OR IGNORE INTO terms (term_text, term_text_lower, language_code, case_sensitive, comment) VALUES (?, ?, ?, ?, ?)",
                     new_terms_to_insert
                 )
 
-            all_terms_map = existing_terms_map.copy()
-            if new_terms_to_insert:
-                last_inserted_id = cursor.lastrowid
-                first_new_id = last_inserted_id - len(new_terms_to_insert) + 1
-                for i, term_tuple in enumerate(new_terms_to_insert):
-                    key = (term_tuple[1], term_tuple[2])
-                    all_terms_map[key] = first_new_id + i
+            cursor.execute("SELECT term_text_lower, language_code, id FROM terms")
+            all_terms_map = {(row['term_text_lower'], row['language_code']): row['id'] for row in cursor.fetchall()}
 
-            cursor.execute("SELECT source_term_id, target_term_id FROM term_translations")
-            existing_translations = {(row['source_term_id'], row['target_term_id']) for row in cursor.fetchall()}
             new_translations_to_insert = []
+            seen_translations_in_batch = set()
 
-            for term_data in terms:
-                source_text = term_data["source"]
-                source_term_id = all_terms_map.get((source_text.lower(), source_lang))
+            for lang_map in term_entries:
+                source_terms_in_file = []
+                for lang_in_file, terms in lang_map.items():
+                    if lang_mapping.get(lang_in_file) == source_lang_code:
+                        source_terms_in_file.extend(terms)
 
-                if source_term_id:
-                    for trans in term_data["translations"]:
-                        target_text = trans["target"]
-                        target_term_id = all_terms_map.get((target_text.lower(), target_lang))
+                if not source_terms_in_file: continue
 
-                        if target_term_id and (source_term_id, target_term_id) not in existing_translations:
-                            new_translations_to_insert.append((
-                                source_term_id, target_term_id, int(is_bidirectional),
-                                "translation", 1.0, trans.get("comment", ""), source_key
-                            ))
+                for target_lang_code in target_lang_codes:
+                    target_terms_in_file = []
+                    for lang_in_file, terms in lang_map.items():
+                        if lang_mapping.get(lang_in_file) == target_lang_code:
+                            target_terms_in_file.extend(terms)
+
+                    if not target_terms_in_file: continue
+
+                    for s_term in source_terms_in_file:
+                        for t_term in target_terms_in_file:
+                            s_id = all_terms_map.get((s_term.lower(), source_lang_code))
+                            t_id = all_terms_map.get((t_term.lower(), target_lang_code))
+
+                            if s_id and t_id:
+                                pair = tuple(sorted((s_id, t_id)))
+                                if pair not in seen_translations_in_batch:
+                                    new_translations_to_insert.append((
+                                        s_id, t_id, int(is_bidirectional), source_key
+                                    ))
+                                    seen_translations_in_batch.add(pair)
 
             if new_translations_to_insert:
                 if progress_callback: progress_callback(_("Inserting translations..."))
                 cursor.executemany(
-                    "INSERT INTO term_translations (source_term_id, target_term_id, is_bidirectional, relationship_type, confidence_score, comment, source_manifest_key) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT OR IGNORE INTO term_translations (source_term_id, target_term_id, is_bidirectional, source_manifest_key) VALUES (?, ?, ?, ?)",
                     new_translations_to_insert
                 )
 
