@@ -1,122 +1,321 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import json
-import logging
+import sqlite3
+import re
 import os
-import shutil
-from datetime import datetime, timezone
-from openpyxl import load_workbook, Workbook
+import json
+import hashlib
+import logging
+from rapidfuzz import fuzz
+from datetime import datetime
+from typing import List, Dict, Tuple, Optional
+from openpyxl import load_workbook
 from utils.localization import _
 
-def create_tu(source_text, target_text, source_lang, target_lang, created_by="LexiSync", comment=""):
-    now = datetime.now(timezone.utc).isoformat()
-    return {
-        "source_text": source_text,
-        "target_text": target_text,
-        "source_lang": source_lang,
-        "target_lang": target_lang,
-        "created_by": created_by,
-        "creation_date": now,
-        "modified_by": created_by,
-        "last_modified_date": now,
-        "usage_count": 1,
-        "comment": comment
-    }
+logger = logging.getLogger(__name__)
 
-class BaseTMProvider:
-    def read(self, filepath: str) -> dict:
-        raise NotImplementedError
+MANIFEST_FILE = "manifest.json"
+DB_FILE = "tm.db"
 
-    def write(self, filepath: str, tm_data: dict):
-        raise NotImplementedError
-
-class JsonlTMProvider(BaseTMProvider):
-    def read(self, filepath: str) -> dict:
-        tm_data = {}
-        try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if line.strip():
-                        tu = json.loads(line)
-                        tm_data[tu["source_text"]] = tu
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass
-        return tm_data
-
-    def write(self, filepath: str, tm_data: dict):
-        temp_filepath = filepath + ".tmp"
-        with open(temp_filepath, 'w', encoding='utf-8') as f:
-            for tu in tm_data.values():
-                f.write(json.dumps(tu, ensure_ascii=False) + '\n')
-        shutil.move(temp_filepath, filepath)
-
-class XlsxTMProvider(BaseTMProvider):
-    def read(self, filepath: str) -> dict:
-        tm_data = {}
-        try:
-            workbook = load_workbook(filepath, read_only=True)
-            sheet = workbook.active
-            for row in sheet.iter_rows(min_row=2, values_only=True):
-                if len(row) >= 2 and row[0] is not None:
-                    source_text = str(row[0])
-                    target_text = str(row[1]) if row[1] is not None else ""
-                    tm_data[source_text] = create_tu(source_text, target_text, "unknown", "unknown", "Legacy Import")
-        except FileNotFoundError:
-            pass
-        return tm_data
-
-    def write(self, filepath: str, tm_data: dict):
-        raise NotImplementedError(_("Saving to legacy .xlsx TM format is not supported. Please use .jsonl."))
 
 class TMService:
     def __init__(self):
-        self.providers = {
-            '.jsonl': JsonlTMProvider(),
-            '.xlsx': XlsxTMProvider(),
-        }
+        self.project_db_path: Optional[str] = None
+        self.global_db_path: Optional[str] = None
 
-    def get_provider(self, filepath: str) -> BaseTMProvider | None:
-        _, ext = os.path.splitext(filepath)
-        return self.providers.get(ext.lower())
+    def connect_databases(self, global_tm_path: Optional[str], project_tm_path: Optional[str] = None):
+        self.disconnect_databases()
 
-    def load_tm_from_directory(self, directory_path: str) -> dict:
-        merged_tm = {}
-        if not os.path.isdir(directory_path):
-            return merged_tm
+        if global_tm_path:
+            os.makedirs(global_tm_path, exist_ok=True)
+            self.global_db_path = os.path.join(global_tm_path, DB_FILE)
+            with self._get_db_connection(self.global_db_path) as conn:
+                self._create_schema(conn)
 
-        for filename in os.listdir(directory_path):
-            filepath = os.path.join(directory_path, filename)
-            if os.path.isfile(filepath):
-                tm_data = self.load_tm(filepath)
-                if tm_data:
-                    merged_tm.update(tm_data)
+        if project_tm_path:
+            os.makedirs(project_tm_path, exist_ok=True)
+            self.project_db_path = os.path.join(project_tm_path, DB_FILE)
+            with self._get_db_connection(self.project_db_path) as conn:
+                self._create_schema(conn)
+
+    def disconnect_databases(self):
+        self.project_db_path = None
+        self.global_db_path = None
+
+    def _get_db_connection(self, db_path: str) -> sqlite3.Connection:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _create_schema(self, conn: sqlite3.Connection):
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS translation_units (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_lang TEXT NOT NULL,
+                target_lang TEXT NOT NULL,
+                source_text TEXT NOT NULL,
+                target_text TEXT NOT NULL,
+                source_manifest_key TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(source_lang, target_lang, source_text)
+            );
+        """)
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_tm_source ON translation_units (source_lang, target_lang, source_text);")
+        conn.commit()
+
+    def delete_tm_entry(self, db_path: str, source_text: str, source_lang: str, target_lang: str) -> bool:
+        if not source_text.strip() or not db_path:
+            return False
+
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    DELETE FROM translation_units
+                    WHERE source_text = ? AND source_lang = ? AND target_lang = ?
+                """, (source_text, source_lang, target_lang))
+                conn.commit()
+                if cursor.rowcount > 0:
+                    logger.info(
+                        f"Deleted TM entry for '{source_text}' ({source_lang}->{target_lang}) from {os.path.basename(db_path)}")
+                    return True
                 else:
-                    logging.warning(f"TMService: File '{filename}' was loaded, but it's empty or unsupported.")
-        return merged_tm
+                    logger.warning(f"Attempted to delete TM entry for '{source_text}', but it was not found.")
+                    return False
+        except Exception as e:
+            logger.error(f"Failed to delete TM entry: {e}", exc_info=True)
+            return False
 
-    def load_tm(self, filepath: str) -> dict:
-        provider = self.get_provider(filepath)
-        if provider:
-            return provider.read(filepath)
-        return {}
+    def get_translation(self, source_text: str, source_lang: str, target_lang: str, db_to_check: str = 'all') -> \
+    Optional[str]:
+        if db_to_check in ('all', 'project') and self.project_db_path:
+            with self._get_db_connection(self.project_db_path) as conn:
+                result = self._query_translation_in_db(conn, source_text, source_lang, target_lang)
+                if result is not None:
+                    return result
+        if db_to_check in ('all', 'global') and self.global_db_path:
+            with self._get_db_connection(self.global_db_path) as conn:
+                return self._query_translation_in_db(conn, source_text, source_lang, target_lang)
+        return None
 
-    def save_tm(self, filepath: str, tm_data: dict):
-        jsonl_provider = self.providers['.jsonl']
-        base, _ = os.path.splitext(filepath)
-        jsonl_filepath = base + ".jsonl"
-        jsonl_provider.write(jsonl_filepath, tm_data)
-        return jsonl_filepath
+    def _query_translation_in_db(self, conn: sqlite3.Connection, source_text: str, source_lang: str,
+                                 target_lang: str) -> Optional[str]:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT target_text FROM translation_units WHERE source_text = ? AND source_lang = ? AND target_lang = ?",
+            (source_text, source_lang, target_lang)
+        )
+        row = cursor.fetchone()
+        return row['target_text'] if row else None
 
-    def update_tm_entry(self, tm_data: dict, source_text: str, target_text: str, source_lang: str, target_lang: str):
-        if not source_text.strip():
+    def update_tm_entry(self, db_path: str, source_text: str, target_text: str, source_lang: str, target_lang: str,
+                        source_key: str = "manual"):
+        if not source_text.strip() or not db_path:
             return
 
-        if source_text in tm_data:
-            tu = tm_data[source_text]
-            tu["target_text"] = target_text
-            tu["last_modified_date"] = datetime.now(timezone.utc).isoformat()
-            tu["usage_count"] = tu.get("usage_count", 0) + 1
+        with self._get_db_connection(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT OR REPLACE INTO translation_units 
+                (source_lang, target_lang, source_text, target_text, source_manifest_key)
+                VALUES (?, ?, ?, ?, ?)
+            """, (source_lang, target_lang, source_text, target_text, source_key))
+            conn.commit()
+
+    def import_from_file(self, source_filepath: str, tm_dir_path: str, source_lang: str, target_lang: str,
+                         progress_callback=None) -> Tuple[bool, str]:
+        db_path = os.path.join(tm_dir_path, DB_FILE)
+        manifest_path = os.path.join(tm_dir_path, MANIFEST_FILE)
+        manifest = self._read_manifest(manifest_path)
+        file_stats = self._get_file_stats(source_filepath)
+        filename = os.path.basename(source_filepath)
+
+        if filename in manifest.get("imported_sources", {}):
+            existing_stats = manifest["imported_sources"][filename]
+            if all(existing_stats.get(k) == file_stats.get(k) for k in ["filesize", "last_modified", "checksum"]):
+                return True, _("This TM file has already been imported and has not changed.")
+        try:
+            if progress_callback: progress_callback(_("Parsing TM file..."))
+            tus_to_import = self._parse_tm_file(source_filepath, source_lang, target_lang)
+
+            if progress_callback: progress_callback(_("Connecting to database..."))
+            with self._get_db_connection(db_path) as conn:
+                self._merge_tus_into_db(conn, tus_to_import, filename, progress_callback)
+            file_stats['import_date'] = datetime.now().isoformat() + "Z"
+            file_stats['tu_count'] = len(tus_to_import)
+            file_stats['source_lang'] = source_lang
+            file_stats['target_lang'] = target_lang
+            manifest.setdefault("imported_sources", {})[filename] = file_stats
+            self._write_manifest(manifest_path, manifest)
+
+            return True, _("Successfully imported {count} TM entries.").format(count=len(tus_to_import))
+        except Exception as e:
+            logger.error(f"Failed to import TM file '{source_filepath}': {e}", exc_info=True)
+            return False, str(e)
+
+    def get_fuzzy_matches(self, source_text: str, source_lang: str, target_lang: str, limit: int = 5,
+                          threshold: float = 0.7) -> List[Dict]:
+        all_matches = []
+        if self.project_db_path:
+            with self._get_db_connection(self.project_db_path) as conn:
+                matches = self._query_fuzzy_in_db(conn, source_text, source_lang, target_lang, limit)
+                all_matches.extend(matches)
+        if self.global_db_path:
+            with self._get_db_connection(self.global_db_path) as conn:
+                matches = self._query_fuzzy_in_db(conn, source_text, source_lang, target_lang, limit)
+                all_matches.extend(matches)
+        if not all_matches:
+            return []
+        unique_matches = {(m['source_text'], m['target_text']): m for m in all_matches}.values()
+        scored_matches = []
+        for match in unique_matches:
+            score = fuzz.ratio(source_text, match['source_text']) / 100.0
+            if score >= threshold:
+                scored_matches.append({
+                    "score": score,
+                    "source_text": match['source_text'],
+                    "target_text": match['target_text']
+                })
+        scored_matches.sort(key=lambda x: x['score'], reverse=True)
+
+        return scored_matches[:limit]
+
+    def _query_fuzzy_in_db(self, conn: sqlite3.Connection, source_text: str, source_lang: str, target_lang: str,
+                           limit: int) -> List[Dict]:
+        cursor = conn.cursor()
+        keywords = [word for word in re.findall(r'\b\w+\b', source_text) if len(word) > 3]
+        if not keywords:
+            keywords = [source_text[:10]]
+        like_clauses = " OR ".join(["source_text LIKE ?"] * len(keywords))
+        like_params = [f"%{kw}%" for kw in keywords]
+        query = f"""
+            SELECT source_text, target_text
+            FROM translation_units
+            WHERE source_lang = ? AND target_lang = ? AND ({like_clauses})
+            LIMIT ?
+        """
+        params = [source_lang, target_lang] + like_params + [limit * 5]
+        cursor.execute(query, params)
+        return [dict(row) for row in cursor.fetchall()]
+
+    def _parse_tm_file(self, filepath: str, source_lang: str, target_lang: str) -> List[Dict]:
+        _, ext = os.path.splitext(filepath)
+        ext = ext.lower()
+
+        if ext == '.jsonl':
+            return self._parse_jsonl(filepath)
+        elif ext == '.xlsx':
+            return self._parse_xlsx(filepath, source_lang, target_lang)
         else:
-            tu = create_tu(source_text, target_text, source_lang, target_lang)
-            tm_data[source_text] = tu
+            raise ValueError(_("Unsupported TM file format: {ext}").format(ext=ext))
+
+    def _parse_jsonl(self, filepath: str) -> List[Dict]:
+        tus = []
+        with open(filepath, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        tus.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        logger.warning(f"Skipping invalid JSON line in {filepath}: {line.strip()}")
+        return tus
+
+    def _parse_xlsx(self, filepath: str, source_lang: str, target_lang: str) -> List[Dict]:
+        tus = []
+        wb = load_workbook(filepath, read_only=True)
+        ws = wb.active
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if len(row) >= 2 and row[0] is not None and row[1] is not None:
+                source_text = str(row[0])
+                target_text = str(row[1])
+                tus.append({
+                    "source_lang": source_lang,
+                    "target_lang": target_lang,
+                    "source_text": source_text,
+                    "target_text": target_text
+                })
+        return tus
+
+    def _merge_tus_into_db(self, conn: sqlite3.Connection, tus: List[Dict], source_key: str, progress_callback=None):
+        cursor = conn.cursor()
+        data_to_insert = [
+            (
+                tu['source_lang'], tu['target_lang'], tu['source_text'],
+                tu['target_text'], source_key
+            )
+            for tu in tus if tu.get('source_text') and tu.get('target_text')
+        ]
+
+        if not data_to_insert:
+            return
+
+        try:
+            cursor.execute("BEGIN TRANSACTION;")
+            if progress_callback: progress_callback(
+                _("Inserting {count} TM entries...").format(count=len(data_to_insert)))
+
+            cursor.executemany("""
+                INSERT OR REPLACE INTO translation_units 
+                (source_lang, target_lang, source_text, target_text, source_manifest_key)
+                VALUES (?, ?, ?, ?, ?)
+            """, data_to_insert)
+
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise IOError(f"Database operation failed: {e}")
+
+    def remove_source(self, source_key: str, tm_dir_path: str) -> Tuple[bool, str]:
+        db_path = os.path.join(tm_dir_path, DB_FILE)
+        manifest_path = os.path.join(tm_dir_path, MANIFEST_FILE)
+
+        with self._get_db_connection(db_path) as conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute("BEGIN TRANSACTION;")
+
+                cursor.execute("DELETE FROM translation_units WHERE source_manifest_key = ?", (source_key,))
+                rows_deleted = cursor.rowcount
+
+                conn.commit()
+
+                manifest = self._read_manifest(manifest_path)
+                if "imported_sources" in manifest and source_key in manifest["imported_sources"]:
+                    del manifest["imported_sources"][source_key]
+                    self._write_manifest(manifest_path, manifest)
+
+                return True, _("Successfully removed {count} TM entries from source '{source}'.").format(
+                    count=rows_deleted, source=source_key)
+            except Exception as e:
+                conn.rollback()
+                logger.error(f"Failed to remove TM source '{source_key}': {e}", exc_info=True)
+                return False, str(e)
+    def _read_manifest(self, manifest_path: str) -> Dict:
+        try:
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {"version": 1, "imported_sources": {}}
+
+    def _write_manifest(self, manifest_path: str, manifest_data: Dict):
+        with open(manifest_path, 'w', encoding='utf-8') as f:
+            json.dump(manifest_data, f, indent=4, ensure_ascii=False)
+
+    def _get_file_stats(self, filepath: str) -> Dict:
+        stat = os.stat(filepath)
+        return {
+            "filepath": filepath,
+            "filesize": stat.st_size,
+            "last_modified": datetime.fromtimestamp(stat.st_mtime).isoformat() + "Z",
+            "checksum": self._calculate_checksum(filepath)
+        }
+
+    def _calculate_checksum(self, filepath: str, hash_algo="sha256") -> str:
+        h = hashlib.new(hash_algo)
+        with open(filepath, 'rb') as f:
+            while chunk := f.read(8192):
+                h.update(chunk)
+        return h.hexdigest()

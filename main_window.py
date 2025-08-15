@@ -14,10 +14,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 from PySide6.QtWidgets import (
-    QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLineEdit, QTextEdit, QCheckBox, QFileDialog,
     QMessageBox, QInputDialog, QStatusBar, QProgressBar,
-    QMenu, QToolBar, QSizePolicy, QTableView, QHeaderView, QDockWidget,
+    QMenu, QTableView, QHeaderView, QDockWidget, QLabel,
     QAbstractItemView, QFrame, QComboBox, QListWidgetItem
 )
 from PySide6.QtCore import (
@@ -63,7 +63,6 @@ from services.expansion_ratio_service import ExpansionRatioService
 from services.tm_service import TMService
 from services.glossary_service import GlossaryService
 from services.glossary_worker import GlossaryAnalysisWorker
-from services.project_service import TM_DIR
 
 from utils import config_manager
 from utils.constants import *
@@ -124,7 +123,14 @@ class AITranslationWorker(QRunnable):
             original_words = set(re.findall(r'\b\w+\b', self.original_text.lower()))
             potential_glossary_terms = {}
             if original_words:
-                potential_glossary_terms = app.glossary_service.get_terms_batch(list(original_words))
+                source_lang = app.source_language
+                target_lang_code = app.current_target_language if app.is_project_mode else app.target_language
+                potential_glossary_terms = app.glossary_service.get_translations_batch(
+                    words=list(original_words),
+                    source_lang=source_lang,
+                    target_lang=target_lang_code,
+                    include_reverse=False
+                )
             valid_glossary_terms = {}
             if potential_glossary_terms:
                 for word, term_info in potential_glossary_terms.items():
@@ -237,10 +243,7 @@ class LexiSyncApp(QMainWindow):
 
         self.translatable_objects = []
         self.tm_service = TMService()
-        self.project_tm = {}
-        self.global_tm = {}
-        self.current_project_tm_path = None
-        self.global_tm_path = ""
+        self.setup_tm_service()
 
         self.glossary_service = GlossaryService()
         self.setup_glossary_service()
@@ -425,10 +428,6 @@ class LexiSyncApp(QMainWindow):
         self.action_import_po.triggered.connect(self.import_po_file_dialog)
         self.import_menu.addAction(self.action_import_po)
 
-        self.action_import_tm_excel = QAction(_("Import TM (Excel)"), self)
-        self.action_import_tm_excel.triggered.connect(self.import_tm_excel_dialog)
-        self.import_menu.addAction(self.action_import_tm_excel)
-
         # EXPORT MENU
         self.export_menu = QMenu(_("Export"), self)
         self.file_menu.addMenu(self.export_menu)
@@ -452,10 +451,6 @@ class LexiSyncApp(QMainWindow):
         self.action_export_po.triggered.connect(self.export_to_po_file_dialog)
         self.action_export_po.setEnabled(False)
         self.export_menu.addAction(self.action_export_po)
-
-        self.action_export_tm_excel = QAction(_("Export Current TM (Excel)"), self)
-        self.action_export_tm_excel.triggered.connect(self.export_tm_excel_dialog)
-        self.export_menu.addAction(self.action_export_tm_excel)
 
         # PLUGINS IMPORTERS & EXPORTERS
         if hasattr(self, 'plugin_manager'):
@@ -617,6 +612,17 @@ class LexiSyncApp(QMainWindow):
         else:
             self.auto_save_timer.stop()
 
+    def setup_tm_service(self):
+        global_tm_dir = os.path.join(get_app_data_path(), "tm")
+        project_tm_dir = None
+        use_global = True
+        if self.is_project_mode and self.current_project_path:
+            project_tm_dir = os.path.join(self.current_project_path, "tm")
+            project_settings = self.project_config.get("settings", {})
+            use_global = project_settings.get("use_global_tm", True)
+        final_global_tm_dir = global_tm_dir if use_global else None
+        self.tm_service.connect_databases(final_global_tm_dir, project_tm_dir)
+
     def setup_glossary_service(self):
         global_glossary_dir = os.path.join(get_app_data_path(), "glossary")
         project_glossary_dir = None
@@ -658,8 +664,6 @@ class LexiSyncApp(QMainWindow):
         self.action_extract_pot.setText(_("Extract POT Template from Code..."))
         self.action_import_po.setText(_("Import Translations from PO File..."))
         self.action_export_po.setText(_("Export to PO File..."))
-        self.action_import_tm_excel.setText(_("Import TM (Excel)"))
-        self.action_export_tm_excel.setText(_("Export Current TM (Excel)"))
         self.recent_files_menu.setTitle(_("Recent Files"))
         self.action_exit.setText(_("Exit"))
 
@@ -1585,13 +1589,7 @@ class LexiSyncApp(QMainWindow):
                 return
             else:
                 self.stop_batch_ai_translation(silent=True)
-
-        if self.is_project_mode:
-            if self.project_tm and self.current_project_tm_path:
-                self.tm_service.save_tm(self.current_project_tm_path, self.project_tm)
-        else: # Quick Edit Mode
-            if self.global_tm and self.global_tm_path:
-                self.tm_service.save_tm(self.global_tm_path, self.global_tm)
+        self.tm_service.disconnect_databases()
         self.glossary_service.disconnect_databases()
         self.save_config()
         self.save_window_state()
@@ -1814,23 +1812,9 @@ class LexiSyncApp(QMainWindow):
             self.target_languages = self.project_config.get("target_languages", [])
             self.current_target_language = self.project_config.get("current_target_language")
 
-            project_tm_dir = os.path.join(self.current_project_path, TM_DIR)
-            self.project_tm = self.tm_service.load_tm_from_directory(project_tm_dir)
-            self.current_project_tm_path = os.path.join(
-                project_tm_dir,
-                f"{self.source_language}_{self.current_target_language}.jsonl"
-            )
-
-            self.global_tm = {}
-            project_settings = self.project_config.get("settings", {})
-            if project_settings.get("use_global_tm", True):
-                global_tm_path = self._get_global_tm_path()
-                if os.path.exists(global_tm_path):
-                    self.global_tm = self.tm_service.load_tm_from_directory(global_tm_path)
-                self.global_tm_path = os.path.join(global_tm_path, "global_tm.jsonl")
-            else:
-                self.global_tm_path = ""
+            self.setup_tm_service()
             self.setup_glossary_service()
+
             self.plugin_manager.run_hook('on_project_loaded', self.translatable_objects)
 
             self.add_to_recent_files(project_path)
@@ -1879,8 +1863,6 @@ class LexiSyncApp(QMainWindow):
             return
         if self.current_project_modified:
             save_project(self.current_project_path, self)
-        if self.project_tm and self.current_project_tm_path:
-            self.tm_service.save_tm(self.current_project_tm_path, self.project_tm)
         self.current_target_language = new_lang
         self.open_project(self.current_project_path)
 
@@ -1933,12 +1915,6 @@ class LexiSyncApp(QMainWindow):
                                 _("AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."))
             return
         self._reset_app_state()
-        self.project_tm = {}
-        self.current_project_tm_path = None
-        global_tm_dir = self._get_global_tm_path()
-        self.global_tm = self.tm_service.load_tm_from_directory(global_tm_dir)
-
-        self.global_tm_path = os.path.join(global_tm_dir, "global_tm.jsonl")
         try:
             with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
                 original_content = f.read()
@@ -2029,6 +2005,7 @@ class LexiSyncApp(QMainWindow):
         self.current_code_file_path = None
         self.current_project_path = None
         self.is_project_mode = False
+        self.setup_tm_service()
         self.setup_glossary_service()
         self.project_config = {}
         self.current_po_file_path = None
@@ -2274,12 +2251,7 @@ class LexiSyncApp(QMainWindow):
                 self.update_ui_state_for_selection(self.current_selected_ts_id)
                 self.trigger_glossary_analysis(ts_obj)
                 self._update_details_panel_stats()
-        tm_to_check = self.project_tm if self.is_project_mode else self.global_tm
-        if tm_to_check is None:
-            tm_to_check = {}
-        tm_exists_for_selected = ts_obj.original_semantic in tm_to_check
-
-        self.tm_panel.clear_selected_tm_btn.setEnabled(tm_exists_for_selected)
+        self.tm_panel.clear_selected_tm_btn.setEnabled(True)
         old_source_index = self.sheet_model.index_from_id(old_focused_id)
         new_source_index = self.sheet_model.index_from_id(self.current_focused_ts_id)
 
@@ -2442,7 +2414,7 @@ class LexiSyncApp(QMainWindow):
 
         # 清空其他面板
         self.context_panel.set_context([])
-        self.tm_panel.update_tm_suggestions_for_text("", {})
+        self.tm_panel.update_tm_suggestions(exact_match=None, fuzzy_matches=[])
         self.tm_panel.update_selected_tm_btn.setEnabled(False)
         self.tm_panel.clear_selected_tm_btn.setEnabled(False)
 
@@ -2527,17 +2499,15 @@ class LexiSyncApp(QMainWindow):
         }
         all_changes_for_undo_list.append(primary_change_data)
         if new_translation_from_ui.strip():
-            if self.is_project_mode:
+            db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
+            source_lang = self.source_language
+            target_lang = self.current_target_language if self.is_project_mode else self.target_language
+
+            if db_path_to_use:
                 self.tm_service.update_tm_entry(
-                    self.project_tm, ts_obj.original_semantic,
+                    db_path_to_use, ts_obj.original_semantic,
                     ts_obj.get_translation_for_storage_and_tm(),
-                    self.source_language, self.current_target_language
-                )
-            else:
-                self.tm_service.update_tm_entry(
-                    self.global_tm, ts_obj.original_semantic,
-                    ts_obj.get_translation_for_storage_and_tm(),
-                    self.source_language, self.target_language
+                    source_lang, target_lang
                 )
         for other_ts_obj in self.translatable_objects:
             if other_ts_obj.id != ts_obj.id and \
@@ -2887,8 +2857,6 @@ class LexiSyncApp(QMainWindow):
                 return False
             try:
                 if save_project(self.current_project_path, self):
-                    if self.project_tm and self.current_project_tm_path:
-                        self.tm_service.save_tm(self.current_project_tm_path, self.project_tm)
                     self.mark_project_modified(False)
                     self.update_statusbar(_("Project saved."), persistent=True)
                     return True
@@ -2896,9 +2864,6 @@ class LexiSyncApp(QMainWindow):
                 QMessageBox.critical(self, _("Save Error"), str(e))
             return False
         else:
-            if self.global_tm:
-                if self.global_tm_path:
-                    self.tm_service.save_tm(self.global_tm_path, self.global_tm)
             if self.is_po_mode:
                 if self.current_po_file_path:
                     return self.save_po_file(self.current_po_file_path)
@@ -3121,20 +3086,16 @@ class LexiSyncApp(QMainWindow):
                                                  'new_value': translation_from_excel_raw})
                         ts_obj.set_translation_internal(translation_for_model)
                         if translation_for_model.strip():
-                            if self.is_project_mode:
+                            db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
+                            source_lang = self.source_language
+                            target_lang = self.current_target_language if self.is_project_mode else self.target_language
+                            if db_path_to_use:
                                 self.tm_service.update_tm_entry(
-                                    self.project_tm, ts_obj.original_semantic,
+                                    db_path_to_use, ts_obj.original_semantic,
                                     translation_from_excel_raw,
-                                    self.source_language, self.current_target_language
-                                )
-                            else:
-                                self.tm_service.update_tm_entry(
-                                    self.global_tm, ts_obj.original_semantic,
-                                    translation_from_excel_raw,
-                                    self.source_language, self.target_language
+                                    source_lang, target_lang
                                 )
                         imported_count += 1
-
                     if comment_col_idx != -1 and row_cells[comment_col_idx] is not None:
                         comment_from_excel = str(row_cells[comment_col_idx])
                         if ts_obj.comment != comment_from_excel:
@@ -3313,13 +3274,6 @@ class LexiSyncApp(QMainWindow):
 
     def import_po_file_dialog_with_path(self, po_filepath):
         self._reset_app_state()
-        self.project_tm = {}
-        self.current_project_tm_path = None
-        self.global_tm = {}
-        global_tm_path = self._get_global_tm_path()
-        if os.path.exists(global_tm_path):
-            self.global_tm = self.tm_service.load_tm_from_directory(global_tm_path)
-        self.global_tm_path = global_tm_path
         try:
             self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(po_filepath)
             self.original_raw_code_content = ""
@@ -3536,120 +3490,6 @@ class LexiSyncApp(QMainWindow):
         self.select_sheet_row_by_id(ts_id, see=True)
         self.activateWindow()
 
-    def load_tm_from_excel(self, filepath, silent=False):
-        try:
-            loaded_tm = self.tm_service.load_tm(filepath)
-
-            if not self.is_project_mode:
-                self.global_tm.update(loaded_tm)
-                self.global_tm_path = filepath
-                self.config["global_tm_path"] = filepath
-                self.save_config()
-            else:
-                self.project_tm.update(loaded_tm)
-
-            if hasattr(self, 'plugin_manager'):
-                combined_tm = self.global_tm.copy()
-                combined_tm.update(self.project_tm)
-                self.plugin_manager.run_hook('on_tm_loaded', combined_tm)
-
-            if not silent:
-                QMessageBox.information(self, _("TM"),
-                                        _("Loaded/merged {count} Excel TM records from '{filename}'.").format(
-                                            count=len(loaded_tm), filename=os.path.basename(filepath)))
-            self.update_statusbar(_("TM loaded from '{filename}' (Excel).").format(filename=os.path.basename(filepath)))
-
-        except Exception as e:
-            if not silent:
-                QMessageBox.critical(self, _("Error"), _("Failed to load Excel TM: {error}").format(error=e))
-            self.update_statusbar(_("Failed to load Excel TM: {error}").format(error=e))
-
-    def save_tm_to_excel(self, filepath_to_save, silent=False, backup=True):
-        tm_to_save = self.global_tm if not self.is_project_mode else self.project_tm
-
-        if not tm_to_save:
-            if not silent:
-                QMessageBox.information(self, _("TM"), _("TM is empty, nothing to export."))
-            return
-
-        try:
-            saved_path = self.tm_service.save_tm(filepath_to_save, tm_to_save)
-            if not silent:
-                QMessageBox.information(self, _("TM"),
-                                        _("TM saved to '{filename}'.").format(
-                                            filename=os.path.basename(saved_path)))
-            self.update_statusbar(_("TM saved to '{filename}'.").format(filename=os.path.basename(saved_path)))
-        except Exception as e_save:
-            if not silent:
-                QMessageBox.critical(self, _("Error"), _("Failed to save TM: {error}").format(error=e_save))
-
-    def import_tm_excel_dialog(self):
-        filepath, selected_filter = QFileDialog.getOpenFileName(
-            self,
-            _("Import TM (Excel)"),
-            self.config.get("last_dir", os.getcwd()),
-            _("Excel files (*.xlsx);;All files (*.*)")
-        )
-        if not filepath: return
-
-        self.load_tm_from_excel(filepath)
-
-        if self.translatable_objects:
-            reply = QMessageBox.question(self, _("Apply TM"),
-                                         _("TM imported. Do you want to apply it to untranslated strings in the current project immediately?"),
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
-                self.apply_tm_to_all_current_strings(only_if_empty=True)
-
-    def export_tm_excel_dialog(self):
-        if self.is_project_mode:
-            tm_to_export = self.project_tm
-            default_filename = os.path.basename(self.current_project_tm_path or "project_tm.jsonl")
-        else:
-            tm_to_export = self.global_tm
-            default_filename = os.path.basename(self.global_tm_path or "global_tm.jsonl")
-
-        if not tm_to_export:
-            QMessageBox.information(self, _("TM"), _("The active TM is empty, nothing to export."))
-            return
-
-        filepath, selected_filter = QFileDialog.getSaveFileName(
-            self,
-            _("Export Current TM"),
-            default_filename,
-            _("TM files (*.jsonl);;All files (*.*)")
-        )
-        if not filepath: return
-        self.tm_service.save_tm(filepath, tm_to_export)
-
-    def clear_entire_translation_memory(self):
-        if self.is_project_mode:
-            tm_to_clear = self.project_tm
-            tm_name = _("Project TM")
-        else:
-            tm_to_clear = self.global_tm
-            tm_name = _("Global TM")
-
-        if not tm_to_clear:
-            QMessageBox.information(self, _("Clear TM"), _("{tm_name} is already empty.").format(tm_name=tm_name))
-            return
-
-        reply = QMessageBox.question(self, _("Confirm Clear"),
-                                     _("Are you sure you want to clear all entries from the in-memory {tm_name}?\n"
-                                       "This cannot be undone.").format(tm_name=tm_name),
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            tm_to_clear.clear()
-            self.update_statusbar(_("In-memory {tm_name} has been cleared.").format(tm_name=tm_name))
-
-            if hasattr(self, 'plugin_manager'):
-                combined_tm = self.global_tm.copy()
-                combined_tm.update(self.project_tm)
-                self.plugin_manager.run_hook('on_tm_loaded', combined_tm)
-
-            if self.current_selected_ts_id:
-                self.perform_tm_update()
-
     def update_tm_for_selected_string(self):
         if not self.current_selected_ts_id:
             QMessageBox.information(self, _("Info"), _("Please select an item first."))
@@ -3660,12 +3500,12 @@ class LexiSyncApp(QMainWindow):
 
         current_translation_ui = self.details_panel.translation_edit_text.toPlainText()
 
-        tm_to_update = self.project_tm if self.is_project_mode else self.global_tm
+        db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
         source_lang = self.source_language
         target_lang = self.current_target_language if self.is_project_mode else self.target_language
 
         self.tm_service.update_tm_entry(
-            tm_to_update,
+            db_path_to_use,
             ts_obj.original_semantic,
             current_translation_ui.replace("\n", "\\n"),
             source_lang,
@@ -3684,18 +3524,32 @@ class LexiSyncApp(QMainWindow):
             return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return
-        tm_to_update = self.project_tm if self.is_project_mode else self.global_tm
+        source_lang = self.source_language
+        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
 
-        if ts_obj.original_semantic in tm_to_update:
+        if not db_path_to_use:
+            QMessageBox.warning(self, _("Warning"), _("No active TM database found to clear the entry from."))
+            return
+        existing_translation = self.tm_service.get_translation(ts_obj.original_semantic, source_lang, target_lang)
+        if existing_translation is not None:
             reply = QMessageBox.question(self, _("Confirm Clear"),
                                          _("Are you sure you want to remove the TM entry for:\n'{text}...'?").format(
                                              text=ts_obj.original_semantic[:100].replace(chr(10), '↵')),
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
-                del tm_to_update[ts_obj.original_semantic]
-                self.update_statusbar(_("TM entry cleared for selected item."))
-                self.perform_tm_update()
-                self.mark_project_modified()
+                success = self.tm_service.delete_tm_entry(
+                    db_path=db_path_to_use,
+                    source_text=ts_obj.original_semantic,
+                    source_lang=source_lang,
+                    target_lang=target_lang
+                )
+
+                if success:
+                    self.update_statusbar(_("TM entry cleared for selected item."))
+                    self.perform_tm_update()
+                else:
+                    QMessageBox.critical(self, _("Error"), _("Failed to delete the TM entry from the database."))
         else:
             QMessageBox.information(self, _("Info"), _("The selected item has no entry in the current TM."))
 
@@ -3710,17 +3564,8 @@ class LexiSyncApp(QMainWindow):
         self.update_statusbar(_("TM suggestion applied."))
 
     def apply_tm_to_all_current_strings(self, silent=False, only_if_empty=False, confirm=False):
-        if self.is_project_mode:
-            tm_to_use = self.global_tm.copy()
-            tm_to_use.update(self.project_tm)
-        else:
-            tm_to_use = self.global_tm
-
         if not self.translatable_objects:
             if not silent: QMessageBox.information(self, _("Info"), _("No strings to apply TM to."))
-            return 0
-        if not tm_to_use:
-            if not silent: QMessageBox.information(self, _("Info"), _("TM is empty."))
             return 0
 
         if confirm and not only_if_empty:
@@ -3734,25 +3579,25 @@ class LexiSyncApp(QMainWindow):
         bulk_changes_for_undo = []
         ids_to_update = set()
 
+        source_lang = self.source_language
+        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+
         for ts_obj in self.translatable_objects:
-            if ts_obj.is_ignored:
-                continue
-            if only_if_empty and ts_obj.translation.strip() != "":
-                continue
+            if ts_obj.is_ignored: continue
+            if only_if_empty and ts_obj.translation.strip() != "": continue
 
-            if ts_obj.original_semantic in tm_to_use:
-                translation_unit = tm_to_use[ts_obj.original_semantic]
-                translation_from_tm_storage = translation_unit.get('target_text', '')
+            translation_from_tm = self.tm_service.get_translation(
+                ts_obj.original_semantic, source_lang, target_lang
+            )
 
-                translation_for_model_ui = translation_from_tm_storage.replace("\\n", "\n")
-
-                if ts_obj.translation != translation_for_model_ui:
-                    old_translation_for_undo = ts_obj.get_translation_for_storage_and_tm()
-                    ts_obj.set_translation_internal(translation_for_model_ui)
+            if translation_from_tm:
+                tm_translation_ui = translation_from_tm.replace("\\n", "\n")
+                if ts_obj.translation != tm_translation_ui:
+                    old_val = ts_obj.get_translation_for_storage_and_tm()
+                    ts_obj.set_translation_internal(tm_translation_ui)
                     bulk_changes_for_undo.append({
                         'string_id': ts_obj.id, 'field': 'translation',
-                        'old_value': old_translation_for_undo,
-                        'new_value': translation_from_tm_storage
+                        'old_value': old_val, 'new_value': translation_from_tm
                     })
                     ids_to_update.add(ts_obj.id)
                     applied_count += 1
@@ -4366,18 +4211,7 @@ class LexiSyncApp(QMainWindow):
                     ts_obj.set_translation_internal(cleaned_translation)
                     changed_ids.add(ts_obj.id)
             if cleaned_translation:
-                if self.is_project_mode:
-                    self.tm_service.update_tm_entry(
-                        self.project_tm, original_text_to_match,
-                        cleaned_translation.replace('\n', '\\n'),
-                        self.source_language, self.current_target_language
-                    )
-                else:
-                    self.tm_service.update_tm_entry(
-                        self.global_tm, original_text_to_match,
-                        cleaned_translation.replace('\n', '\\n'),
-                        self.source_language, self.target_language
-                    )
+                pass
             if not is_batch_item and single_translation_undo_changes:
                 if len(single_translation_undo_changes) > 1:
                     self.add_to_undo_history('bulk_ai_translate', {'changes': single_translation_undo_changes})
@@ -4543,23 +4377,27 @@ class LexiSyncApp(QMainWindow):
 
     def perform_tm_update(self):
         if self.last_tm_query:
-            project_tm_data = self.project_tm or {}
-            global_tm_data = self.global_tm or {}
-
-            combined_tm_data = {}
-            for k, tu in global_tm_data.items():
-                combined_tm_data[k] = tu['target_text']
-            for k, tu in project_tm_data.items():
-                combined_tm_data[k] = tu['target_text']
-
-            source_map = {
-                k: _("[Project]") for k in project_tm_data
-            }
-            source_map.update({
-                k: _("[Global]") for k in global_tm_data if k not in project_tm_data
-            })
-
-            self.tm_panel.update_tm_suggestions_for_text(self.last_tm_query, combined_tm_data, source_map)
+            source_lang = self.source_language
+            target_lang = self.current_target_language if self.is_project_mode else self.target_language
+            suggestions = {}
+            source_map = {}
+            exact_match = self.tm_service.get_translation(self.last_tm_query, source_lang, target_lang)
+            if exact_match:
+                suggestions[self.last_tm_query] = exact_match
+                if self.tm_service.project_db_path and self.tm_service.get_translation(self.last_tm_query, source_lang,
+                                                                                       target_lang,
+                                                                                       db_to_check='project'):
+                    source_map[self.last_tm_query] = _("[Project]")
+                else:
+                    source_map[self.last_tm_query] = _("[Global]")
+            fuzzy_matches = self.tm_service.get_fuzzy_matches(
+                source_text=self.last_tm_query,
+                source_lang=source_lang,
+                target_lang=target_lang,
+                limit=5,
+                threshold=0.70
+            )
+            self.tm_panel.update_tm_suggestions(exact_match, fuzzy_matches)
 
     def cm_edit_comment(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()
@@ -4595,31 +4433,25 @@ class LexiSyncApp(QMainWindow):
         selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
 
-        if self.is_project_mode:
-            tm_to_use = self.global_tm.copy()
-            tm_to_use.update(self.project_tm)
-        else:
-            tm_to_use = self.global_tm
-
-        if not tm_to_use:
-            QMessageBox.information(self, _("Info"), _("TM is empty."))
-            return
-
         applied_count = 0
         bulk_changes = []
+        source_lang = self.source_language
+        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+
         for ts_obj in selected_objs:
             if ts_obj.is_ignored: continue
-            if ts_obj.original_semantic in tm_to_use:
-                translation_unit = tm_to_use[ts_obj.original_semantic]
-                tm_translation_storage = translation_unit.get('target_text', '')
 
-                tm_translation_ui = tm_translation_storage.replace("\\n", "\n")
+            translation_from_tm = self.tm_service.get_translation(
+                ts_obj.original_semantic, source_lang, target_lang
+            )
 
+            if translation_from_tm:
+                tm_translation_ui = translation_from_tm.replace("\\n", "\n")
                 if ts_obj.translation != tm_translation_ui:
                     old_val = ts_obj.get_translation_for_storage_and_tm()
                     ts_obj.set_translation_internal(tm_translation_ui)
                     bulk_changes.append({'string_id': ts_obj.id, 'field': 'translation', 'old_value': old_val,
-                                         'new_value': tm_translation_storage})
+                                         'new_value': translation_from_tm})
                     applied_count += 1
 
         if bulk_changes:

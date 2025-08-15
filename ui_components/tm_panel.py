@@ -4,7 +4,7 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, QSizePolicy
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
-from rapidfuzz import fuzz
+from typing import List, Dict, Optional
 from utils.localization import _
 
 class TMPanel(QWidget):
@@ -53,73 +53,39 @@ class TMPanel(QWidget):
             translation_text_ui = full_text.strip()
         self.apply_tm_suggestion_signal.emit(translation_text_ui)
 
-    def update_tm_suggestions_for_text(self, original_semantic_text, translation_memory, source_map=None):
+    def update_tm_suggestions(self, exact_match: Optional[str], fuzzy_matches: List[Dict]):
         self.tm_suggestions_listbox.clear()
-        if not original_semantic_text: return
 
-        source_map = source_map or {}
+        has_results = False
+        if exact_match:
+            has_results = True
+            suggestion_for_ui = exact_match.replace("\\n", "\n")
+            item = QListWidgetItem(f"(100%): {suggestion_for_ui}")
+            item.setForeground(QColor("darkgreen"))
+            self.tm_suggestions_listbox.addItem(item)
 
-        plugin_suggestions = None
-        if self.app and hasattr(self.app, 'plugin_manager'):
-            plugin_suggestions = self.app.plugin_manager.run_hook(
-                'query_tm_suggestions',
-                original_text=original_semantic_text
-            )
+        if fuzzy_matches:
+            has_results = True
+            for match in fuzzy_matches:
+                score = match['score']
+                orig_text = match['source_text']
+                trans_text = match['target_text']
 
-        if plugin_suggestions is not None:
-            for score, tm_orig, tm_trans in plugin_suggestions:
-                suggestion_for_ui = tm_trans.replace("\\n", "\n")
-                display_orig_match = tm_orig[:40].replace("\n", "↵") + ("..." if len(tm_orig) > 40 else "")
-                item_text = f"({score * 100:.0f}% ~ {display_orig_match}): {suggestion_for_ui}"
-                item = QListWidgetItem(item_text)
+                suggestion_for_ui = trans_text.replace("\\n", "\n")
+                display_orig = orig_text[:40].replace("\n", "↵") + ("..." if len(orig_text) > 40 else "")
 
-                if score == 1.0:
-                    item.setForeground(QColor("darkgreen"))
-                elif score > 0.85:
+                item = QListWidgetItem(f"({score:.0%}): {suggestion_for_ui}  ~{display_orig}")
+
+                if score > 0.85:
                     item.setForeground(QColor("purple"))
                 else:
                     item.setForeground(QColor("darkblue"))
 
                 self.tm_suggestions_listbox.addItem(item)
-            return
 
-        if original_semantic_text in translation_memory:
-            suggestion_from_tm = translation_memory[original_semantic_text]
-            source_tag = source_map.get(original_semantic_text, "")
-            suggestion_for_ui = suggestion_from_tm.replace("\\n", "\n")
-            item = QListWidgetItem(f"{source_tag} (100%): {suggestion_for_ui}")
-            item.setForeground(QColor("darkgreen"))
-            self.tm_suggestions_listbox.addItem(item)
-
-        original_lower = original_semantic_text.lower()
-        case_insensitive_match = None
-        for tm_orig, tm_trans in translation_memory.items():
-            if tm_orig.lower() == original_lower and tm_orig != original_semantic_text:
-                case_insensitive_match = tm_trans
-                break
-
-        if case_insensitive_match:
-            suggestion_for_ui = case_insensitive_match.replace("\\n", "\n")
-            item = QListWidgetItem(f"(Case Mismatch): {suggestion_for_ui}")
-            item.setForeground(QColor("orange red"))
-            self.tm_suggestions_listbox.addItem(item)
-
-        fuzzy_matches = []
-        for tm_orig, tm_trans_with_slash_n in translation_memory.items():
-            if tm_orig == original_semantic_text:
-                continue
-            ratio = fuzz.ratio(original_semantic_text, tm_orig) / 100.0
-            if ratio > 0.65:
-                fuzzy_matches.append((ratio, tm_orig, tm_trans_with_slash_n))
-
-        fuzzy_matches.sort(key=lambda x: x[0], reverse=True)
-
-        for ratio, orig_match_text, trans_match_text in fuzzy_matches[:3]:
-            source_tag = source_map.get(orig_match_text, "")
-            suggestion_for_ui = trans_match_text.replace("\\n", "\n")
-            display_orig_match = orig_match_text[:40].replace("\n", "↵") + ("..." if len(orig_match_text) > 40 else "")
-            item = QListWidgetItem(f"{source_tag} ({ratio * 100:.0f}% ~ {display_orig_match}): {suggestion_for_ui}")
-            item.setForeground(QColor("purple"))
+        if not has_results:
+            item = QListWidgetItem(_("No TM matches found."))
+            item.setForeground(Qt.gray)
             self.tm_suggestions_listbox.addItem(item)
 
     def update_ui_texts(self):

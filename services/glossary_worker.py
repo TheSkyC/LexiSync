@@ -30,11 +30,20 @@ class GlossaryAnalysisWorker(QRunnable):
             return
 
         matches = []
+        source_lang = app.source_language
+        target_lang = app.current_target_language if app.is_project_mode else app.target_language
         for word in words:
-            term_results = app.glossary_service.get_term(word, case_sensitive=False)
+            term_results = app.glossary_service.get_translations(
+                term_text=word,
+                source_lang=source_lang,
+                target_lang=target_lang,
+                include_reverse=False
+            )
             if term_results:
+                ui_translations = [{"target": res["target_term"], "comment": res["comment"]} for res in term_results]
+
                 matches.append({
                     "source": word,
-                    "translations": term_results
+                    "translations": ui_translations
                 })
         self.signals.finished.emit(self.ts_id, matches)

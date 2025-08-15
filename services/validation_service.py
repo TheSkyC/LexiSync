@@ -175,6 +175,14 @@ def run_validation_on_all(translatable_objects, config, app_instance=None):
         for ts_obj in translatable_objects:
             if not ts_obj.is_ignored:
                 all_words.update(re.findall(r'\b\w+\b', ts_obj.original_semantic.lower()))
-        term_cache = app_instance.glossary_service.get_terms_batch(list(all_words))
+        if all_words:
+            source_lang = app_instance.source_language
+            target_lang = app_instance.current_target_language if app_instance.is_project_mode else app_instance.target_language
+            term_cache = app_instance.glossary_service.get_translations_batch(
+                words=list(all_words),
+                source_lang=source_lang,
+                target_lang=target_lang,
+                include_reverse=False
+            )
     for ts_obj in translatable_objects:
         validate_string(ts_obj, config, app_instance, term_cache)

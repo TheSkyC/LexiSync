@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QStackedWidget,
     QVBoxLayout, QMessageBox
 from utils.localization import _
 from .settings_pages import GeneralSettingsPage, AppearanceSettingsPage, AISettingsPage, ValidationSettingsPage
-from .glossary_settings_page import GlossarySettingsPage
+from .global_resources_page import GlobalResourcesSettingsPage
 import logging
 logger = logging.getLogger(__name__)
 
@@ -115,8 +115,8 @@ class SettingsDialog(QDialog):
         validation_page = ValidationSettingsPage(self.app)
         self._add_page(validation_page, _("Validation"))
 
-        glossary_page = GlossarySettingsPage(self.app)
-        self._add_page(glossary_page, _("Glossary"))
+        resources_page = GlobalResourcesSettingsPage(self.app)
+        self._add_page(resources_page, _("Global Resources"))
 
         if hasattr(self.app, 'plugin_manager'):
             plugin_pages_data = self.app.plugin_manager.run_hook('register_settings_pages')
