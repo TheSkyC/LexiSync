@@ -1821,6 +1821,7 @@ class LexiSyncApp(QMainWindow):
             self.config["last_dir"] = os.path.dirname(project_path)
             self.save_config()
 
+            self.file_explorer_panel.set_root_path(project_path)
             self._update_language_switcher()
             self._run_and_refresh_with_validation()
             self.mark_project_modified(False)
