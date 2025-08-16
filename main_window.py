@@ -4380,23 +4380,35 @@ class LexiSyncApp(QMainWindow):
         if self.last_tm_query:
             source_lang = self.source_language
             target_lang = self.current_target_language if self.is_project_mode else self.target_language
-
             exact_match = self.tm_service.get_translation(self.last_tm_query, source_lang, target_lang)
+            fuzzy_matches_from_plugin = None
+            if hasattr(self, 'plugin_manager'):
+                fuzzy_matches_from_plugin = self.plugin_manager.run_hook(
+                    'query_tm_suggestions',
+                    original_text=self.last_tm_query
+                )
 
-            fuzzy_matches = self.tm_service.get_fuzzy_matches(
-                source_text=self.last_tm_query,
-                source_lang=source_lang,
-                target_lang=target_lang,
-                limit=5,
-                threshold=0.70
-            )
-
+            fuzzy_matches = []
+            if fuzzy_matches_from_plugin is not None:
+                for score, src, tgt in fuzzy_matches_from_plugin:
+                    fuzzy_matches.append({
+                        "score": score,
+                        "source_text": src,
+                        "target_text": tgt
+                    })
+            else:
+                fuzzy_matches = self.tm_service.get_fuzzy_matches(
+                    source_text=self.last_tm_query,
+                    source_lang=source_lang,
+                    target_lang=target_lang,
+                    limit=5,
+                    threshold=0.70
+                )
             if exact_match and fuzzy_matches:
                 fuzzy_matches = [
                     match for match in fuzzy_matches
                     if match['source_text'] != self.last_tm_query
                 ]
-
             self.tm_panel.update_tm_suggestions(exact_match, fuzzy_matches)
 
     def cm_edit_comment(self):
