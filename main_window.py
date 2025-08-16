@@ -58,6 +58,7 @@ from services import export_service, po_file_service
 from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
 from services.project_service import create_project, load_project, save_project
+from services.project_manager import ProjectManager
 from services.prompt_service import generate_prompt_from_structure
 from services.validation_service import run_validation_on_all, placeholder_regex
 from services.expansion_ratio_service import ExpansionRatioService
@@ -203,6 +204,7 @@ class LexiSyncApp(QMainWindow):
         self.thread_signals.handle_ai_result.connect(self._handle_ai_translation_result)
         self.thread_signals.decrement_active_threads.connect(self._decrement_active_threads_and_dispatch_more)
         self.running_workers = set()
+        self.project_manager = ProjectManager(self)
         self.drop_target_widget = None
         self.current_project_path = None
         self.current_code_file_path = None
@@ -1764,9 +1766,21 @@ class LexiSyncApp(QMainWindow):
 
         if self.drop_target_widget is self.table_view:
             if self.is_project_mode:
-                # TODO: 实现将文件添加到项目的功能
-                QMessageBox.information(self, "TODO",
-                                        f"TODO: Implement adding '{os.path.basename(filepath)}' to the current project.")
+                reply = QMessageBox.question(
+                    self,
+                    _("Add Source File"),
+                    _("Do you want to add '{filename}' as a new source file to the current project?").format(
+                        filename=os.path.basename(filepath)),
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.Yes
+                )
+                if reply == QMessageBox.Yes:
+                    success, message = self.project_manager.add_source_file(filepath)
+                    if success:
+                        self.update_statusbar(message, persistent=True)
+                        self.open_project(self.current_project_path)
+                    else:
+                        QMessageBox.critical(self, _("Error"), message)
             else:
                 if self.prompt_save_if_modified():
                     self.open_file_by_path(filepath)
@@ -1825,10 +1839,9 @@ class LexiSyncApp(QMainWindow):
             QMessageBox.warning(self, _("Operation Restricted"), _("AI batch translation is in progress."))
             return
         try:
-            self._reset_app_state()
-            loaded_data = load_project(project_path)
-
-            self.current_project_path = project_path
+            loaded_data = self.project_manager.load_project(project_path)
+            self.current_project_path = self.project_manager.current_project_path
+            self.project_config = self.project_manager.project_config
             self.is_project_mode = True
             self.project_config = loaded_data["project_config"]
             self.translatable_objects = loaded_data["translatable_objects"]
@@ -2030,6 +2043,7 @@ class LexiSyncApp(QMainWindow):
 
     def _reset_app_state(self):
         self.current_code_file_path = None
+        self.project_manager.close_project()
         self.current_project_path = None
         self.is_project_mode = False
         self.setup_tm_service()
