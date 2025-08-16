@@ -24,7 +24,7 @@ from PySide6.QtCore import (
     Qt, QModelIndex, Signal, QObject, QTimer, QByteArray, QEvent,
     QRunnable, QThreadPool, QItemSelectionModel, QSize, QDir
 )
-from PySide6.QtGui import QAction, QKeySequence, QFont, QPalette, QColor, QSyntaxHighlighter, QTextCharFormat
+from PySide6.QtGui import QAction, QKeySequence, QFont, QPalette, QColor, QSyntaxHighlighter, QTextCharFormat, QDropEvent, QDragMoveEvent, QDragEnterEvent
 
 from models.translatable_string import TranslatableString
 from models.translatable_strings_model import TranslatableStringsModel, TranslatableStringsProxyModel
@@ -38,6 +38,7 @@ from ui_components.elided_label import ElidedLabel
 from ui_components.file_explorer_panel import FileExplorerPanel
 from ui_components.tm_panel import TMPanel
 from ui_components.glossary_panel import GlossaryPanel
+from ui_components.drop_overlay import DropOverlay
 
 
 from dialogs.font_settings_dialog import FontSettingsDialog
@@ -202,6 +203,7 @@ class LexiSyncApp(QMainWindow):
         self.thread_signals.handle_ai_result.connect(self._handle_ai_translation_result)
         self.thread_signals.decrement_active_threads.connect(self._decrement_active_threads_and_dispatch_more)
         self.running_workers = set()
+        self.drop_target_widget = None
         self.current_project_path = None
         self.current_code_file_path = None
         self.current_po_file_path = None
@@ -357,6 +359,7 @@ class LexiSyncApp(QMainWindow):
         self._setup_statusbar()
         self._setup_dock_widgets()
         self._setup_keybindings()
+        self.drop_overlay = DropOverlay(self.centralWidget())
 
     def _setup_toolbars(self):
         self.project_toolbar = self.addToolBar(_("Project"))
@@ -1575,6 +1578,11 @@ class LexiSyncApp(QMainWindow):
         self.action_undo.setEnabled(bool(self.undo_history))
         self.mark_project_modified()
 
+    def resizeEvent(self, event):
+        if hasattr(self, 'drop_overlay'):
+            self.drop_overlay.resize(self.centralWidget().size())
+        super().resizeEvent(event)
+
     def closeEvent(self, event):
         if not self.prompt_save_if_modified():
             event.ignore()
@@ -1715,55 +1723,73 @@ class LexiSyncApp(QMainWindow):
                             "China Server ID: 小鸟游六花#56683 / Asia Server: 小鳥游六花#31665").format(
                               version=APP_VERSION))
 
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasUrls():
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        mime_data = event.mimeData()
+        if mime_data.hasUrls() and all(url.isLocalFile() for url in mime_data.urls()):
             event.acceptProposedAction()
+            self.drop_overlay.show()  # 显示蒙版
         else:
             event.ignore()
 
-    def dropEvent(self, event):
-        dropped_files = [url.toLocalFile() for url in event.mimeData().urls() if url.isLocalFile()]
-        if not dropped_files:
-            event.acceptProposedAction()
-            return
-        was_handled_by_plugins = False
-        if hasattr(self, 'plugin_manager'):
-            was_handled_by_plugins = self.plugin_manager.run_hook('on_files_dropped', dropped_files)
-        if was_handled_by_plugins:
-            event.acceptProposedAction()
-            return
-        filepath = dropped_files[0]
-        if len(dropped_files) > 1:
-            self.update_statusbar(_("Multiple files dropped. Opening the first one: {filename}").format(
-                filename=os.path.basename(filepath)))
+    def dragLeaveEvent(self, event):
+        self.drop_overlay.hide()
 
-        if os.path.isfile(filepath):
-            if filepath.lower().endswith(".pot"):
-                self.handle_pot_file_drop(filepath)
-            elif filepath.lower().endswith((".ow", ".txt", ".po")):
+    def dragMoveEvent(self, event: QDragMoveEvent):
+        self.drop_target_widget = None
+        pos = event.position().toPoint()
+        global_pos = self.mapToGlobal(pos)
+        if self.table_view.rect().contains(self.table_view.mapFromGlobal(global_pos)):
+            self.drop_target_widget = self.table_view
+            message = _("Add as Source File") if self.is_project_mode else _("Open for Quick Edit")
+            self.drop_overlay.show_message(message)
+        elif self.glossary_dock.isVisible() and self.glossary_dock.rect().contains(self.glossary_dock.mapFromGlobal(global_pos)):
+            self.drop_target_widget = self.glossary_panel
+            message = _("Import to Project Glossary") if self.is_project_mode else _("Import to Global Glossary")
+            self.drop_overlay.show_message(message)
+        elif self.tm_dock.isVisible() and self.tm_dock.rect().contains(self.tm_dock.mapFromGlobal(global_pos)):
+            self.drop_target_widget = self.tm_panel
+            message = _("Import to Project TM") if self.is_project_mode else _("Import to Global TM")
+            self.drop_overlay.show_message(message)
+        else:
+            self.drop_overlay.show_message(_("Unsupported Area"))
+
+        event.accept()
+
+    def dropEvent(self, event: QDropEvent):
+        self.drop_overlay.hide()
+
+        filepath = event.mimeData().urls()[0].toLocalFile()
+        if not filepath:
+            return
+
+        if self.drop_target_widget is self.table_view:
+            if self.is_project_mode:
+                # TODO: 实现将文件添加到项目的功能
+                QMessageBox.information(self, "TODO",
+                                        f"TODO: Implement adding '{os.path.basename(filepath)}' to the current project.")
+            else:
                 if self.prompt_save_if_modified():
                     self.open_file_by_path(filepath)
-            else:
-                was_handled = False
-                if hasattr(self, 'plugin_manager'):
-                    was_handled = self.plugin_manager.run_hook('on_file_dropped', filepath)
 
-                if not was_handled:
-                    self.update_statusbar(_("Drag and drop failed: Invalid file type '{filename}'").format(
-                        filename=os.path.basename(filepath)))
-        elif os.path.isdir(filepath):
-            if os.path.exists(os.path.join(filepath, "project.json")):
-                if self.prompt_save_if_modified():
-                    self.open_project(filepath)
-            else:
-                self.file_explorer_panel.set_root_path(filepath)
-                self.update_statusbar(
-                    _("Set file explorer root to: {directory}").format(directory=os.path.basename(filepath)))
+        elif self.drop_target_widget is self.glossary_panel:
+            if not filepath.lower().endswith('.tbx'):
+                QMessageBox.warning(self, _("Invalid File"), _("Only .tbx files can be imported into the glossary."))
+                return
+            self.settings_dialog_instance = SettingsDialog(self)
+            glossary_page = self.settings_dialog_instance.pages.get(_("Global Resources")).glossary_tab
+            glossary_page.import_tbx(filepath)
+
+        elif self.drop_target_widget is self.tm_panel:
+            if not (filepath.lower().endswith('.jsonl') or filepath.lower().endswith('.xlsx')):
+                QMessageBox.warning(self, _("Invalid File"),
+                                    _("Only .jsonl or .xlsx files can be imported into the TM."))
+                return
+            self.settings_dialog_instance = SettingsDialog(self)
+            tm_page = self.settings_dialog_instance.pages.get(_("Global Resources")).tm_tab
+            tm_page.import_tm_file(filepath)
+
         else:
-            self.update_statusbar(_("Drag and drop failed: '{filename}' is not a file.").format(
-                filename=os.path.basename(filepath)))
-        event.acceptProposedAction()
-        event.acceptProposedAction()
+            super().dropEvent(event)
 
     def new_project_dialog(self):
         if not self.prompt_save_if_modified():

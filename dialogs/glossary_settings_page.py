@@ -4,6 +4,7 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget, \
     QHeaderView, QAbstractItemView, QFileDialog, QMessageBox, QProgressDialog, QTableWidgetItem
 from PySide6.QtCore import Qt, QThread, Signal
+from typing import Optional
 from .settings_pages import BaseSettingsPage
 from utils.localization import _
 from utils.path_utils import get_app_data_path
@@ -72,10 +73,11 @@ class GlossarySettingsPage(BaseSettingsPage):
 
         self.load_sources_into_table()
 
-    def import_tbx(self):
-        filepath, __ = QFileDialog.getOpenFileName(
-            self, _("Select TBX File to Import"), "", "TBX Files (*.tbx);;All Files (*.*)"
-        )
+    def import_tbx(self, filepath: Optional[str] = None):
+        if not filepath:
+            filepath, __ = QFileDialog.getOpenFileName(
+                self, _("Select TBX File to Import"), "", "TBX Files (*.tbx);;All Files (*.*)"
+            )
         if not filepath:
             return
 

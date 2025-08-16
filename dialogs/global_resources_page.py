@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QTabWidget, QLabel, QHBoxLa
                                QPushButton, QTableWidget, QHeaderView, QAbstractItemView,
                                QFileDialog, QMessageBox, QProgressDialog, QTableWidgetItem)
 from PySide6.QtCore import QThread, Signal, Qt
+from typing import Optional
 from .settings_pages import BaseSettingsPage
 from .glossary_settings_page import GlossarySettingsPage
 from utils.localization import _
@@ -67,11 +68,12 @@ class TMSettingsPage(BaseSettingsPage):
 
         self.load_sources_into_table()
 
-    def import_tm_file(self):
-        filepath, __ = QFileDialog.getOpenFileName(
-            self, _("Select TM File to Import"), "",
-            _("TM Files (*.jsonl *.xlsx);;All Files (*.*)")
-        )
+    def import_tm_file(self, filepath: Optional[str] = None):
+        if not filepath:
+            filepath, __ = QFileDialog.getOpenFileName(
+                self, _("Select TM File to Import"), "",
+                _("TM Files (*.jsonl *.xlsx);;All Files (*.*)")
+            )
         if not filepath:
             return
 
