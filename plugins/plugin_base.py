@@ -349,14 +349,6 @@ class PluginBase(ABC):
         """
         return translated_text
 
-    def on_tm_loaded(self, translation_memory: dict):
-        """
-        Hook called after the main Translation Memory has been loaded or updated.
-        Plugins can use this to build/update their own indexes.
-        :param translation_memory: The complete TM dictionary.
-        """
-        pass
-
     def query_tm_suggestions(self, original_text: str) -> list[tuple[float, str, str]] | None:
         """
         Hook for plugins to provide high-performance TM suggestions.
