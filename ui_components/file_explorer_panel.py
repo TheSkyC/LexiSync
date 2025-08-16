@@ -9,12 +9,40 @@ from PySide6.QtCore import (Qt, QDir, QModelIndex, Signal, QUrl, QSortFilterProx
                             QSize, QTimer)
 from PySide6.QtGui import QAction, QDesktopServices, QIcon
 import os
-import logging
 from collections import deque
 from utils.localization import _
 from utils.path_utils import get_resource_path
 import logging
 logger = logging.getLogger(__name__)
+
+class CustomTreeView(QTreeView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._logger = logging.getLogger(__name__)
+        self._prevent_horizontal_scroll = True
+
+    def scrollTo(self, index, hint=QAbstractItemView.ScrollHint.EnsureVisible):
+        try:
+            if not index.isValid():
+                return
+            if self._prevent_horizontal_scroll:
+                horizontal_scrollbar = self.horizontalScrollBar()
+                current_horizontal_value = horizontal_scrollbar.value() if horizontal_scrollbar else 0
+                super().scrollTo(index, hint)
+                if horizontal_scrollbar:
+                    horizontal_scrollbar.setValue(current_horizontal_value)
+            else:
+                super().scrollTo(index, hint)
+
+        except Exception as e:
+            self._logger.error(f"Error in custom scrollTo: {e}")
+            try:
+                super().scrollTo(index, hint)
+            except Exception as fallback_error:
+                self._logger.error(f"Error in fallback scrollTo: {fallback_error}")
+
+    def setPreventHorizontalScroll(self, prevent):
+        self._prevent_horizontal_scroll = prevent
 
 class FileFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
@@ -97,7 +125,6 @@ class FileExplorerPanel(QWidget):
             self.forward_stack = deque(maxlen=50)
             self.home_path = None
             self._is_navigating = False
-            logger.debug("Navigation history initialized")
         except Exception as e:
             logger.error(f"Error initializing navigation history: {e}")
             self.history_stack = deque()
@@ -114,7 +141,6 @@ class FileExplorerPanel(QWidget):
 
             self.proxy_model = FileFilterProxyModel(self)
             self.proxy_model.setSourceModel(self.source_model)
-            logger.debug("File system models initialized")
         except Exception as e:
             logger.error(f"Error initializing models: {e}")
             self._show_error(_("Initialization Error"), _("Failed to initialize file system models."))
@@ -139,7 +165,6 @@ class FileExplorerPanel(QWidget):
             if hasattr(self, 'show_all_checkbox'):
                 self.toggle_show_all(self.show_all_checkbox.checkState())
             self._update_nav_buttons_state()
-            logger.debug("Initial settings applied")
         except Exception as e:
             logger.error(f"Error applying initial settings: {e}")
 
@@ -246,7 +271,7 @@ class FileExplorerPanel(QWidget):
 
     def _create_tree_view(self):
         try:
-            self.tree_view = QTreeView()
+            self.tree_view = CustomTreeView()
             self.tree_view.setModel(self.proxy_model)
             self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
             self.tree_view.setSelectionMode(QTreeView.SelectionMode.ExtendedSelection)
@@ -257,6 +282,7 @@ class FileExplorerPanel(QWidget):
                     border: none;
                     background-color: #FFFFFF;
                     alternate-background-color: #F8F9FA;
+                    outline: 0;
                 }
                 QTreeView::item { 
                     padding: 4px; 
@@ -292,7 +318,6 @@ class FileExplorerPanel(QWidget):
             header.setMinimumSectionSize(150)
             header.setStretchLastSection(False)
             self.tree_view.setHeaderHidden(True)
-            logger.debug("Tree view columns configured for horizontal scrolling")
 
         except Exception as e:
             logger.error(f"Error configuring tree view columns: {e}")
