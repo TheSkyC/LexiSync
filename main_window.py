@@ -18,7 +18,8 @@ from PySide6.QtWidgets import (
     QPushButton, QLineEdit, QTextEdit, QCheckBox, QFileDialog,
     QMessageBox, QInputDialog, QStatusBar, QProgressBar,
     QMenu, QTableView, QHeaderView, QDockWidget, QLabel,
-    QAbstractItemView, QFrame, QComboBox, QListWidgetItem
+    QAbstractItemView, QFrame, QComboBox, QListWidgetItem,
+    QProgressDialog
 )
 from PySide6.QtCore import (
     Qt, QModelIndex, Signal, QObject, QTimer, QByteArray, QEvent,
@@ -2415,6 +2416,80 @@ class LexiSyncApp(QMainWindow):
         if not selected_id:
             self.tm_panel.clear_selected_tm_btn.setEnabled(False)
         self.update_ai_related_ui_state()
+
+    def _trigger_glossary_import(self, filepath: str, is_project_import: bool):
+        """
+        A reusable helper method to handle the entire glossary import process.
+
+        :param filepath: The path to the TBX file.
+        :param is_project_import: True if importing into the project glossary, False for global.
+        """
+        if is_project_import and not self.is_project_mode:
+            QMessageBox.critical(self, _("Error"), _("Cannot import to a project glossary when no project is open."))
+            return
+        from dialogs.import_configuration_dialog import ImportConfigurationDialog
+
+        try:
+            from utils.tbx_parser import TBXParser
+            parser = TBXParser()
+            parse_result = parser.parse_tbx(filepath, analyze_only=True)
+            detected_languages = parse_result.get("detected_languages", [])
+            if not detected_languages:
+                QMessageBox.warning(self, _("Analysis Failed"), _("Could not detect any languages in the TBX file."))
+                return
+        except Exception as e:
+            QMessageBox.critical(self, _("Parse Error"),
+                                 _("Failed to analyze the TBX file: {error}").format(error=str(e)))
+            return
+
+        config_dialog = ImportConfigurationDialog(self, os.path.basename(filepath), detected_languages, "Glossary")
+        if not config_dialog.exec():
+            return
+
+        import_settings = config_dialog.get_data()
+        source_lang = import_settings['source_lang']
+        target_langs = import_settings['target_langs']
+        is_bidirectional = import_settings['is_bidirectional']
+        lang_mapping = import_settings['lang_mapping']
+
+        if is_project_import:
+            target_dir = os.path.join(self.current_project_path, "glossary")
+            dialog_title = _("Importing to Project Glossary...")
+        else:
+            target_dir = os.path.join(get_app_data_path(), "glossary")
+            dialog_title = _("Importing to Global Glossary...")
+
+        progress_dialog = QProgressDialog(dialog_title, _("Cancel"), 0, 100, self)
+        progress_dialog.setWindowModality(Qt.WindowModal)
+        progress_dialog.setAutoClose(True)
+        progress_dialog.show()
+
+        from dialogs.glossary_settings_page import TbxImportWorker
+
+        import_thread = TbxImportWorker(
+            self.glossary_service, filepath, target_dir,
+            source_lang, target_langs, is_bidirectional, lang_mapping
+        )
+
+        def on_finished(success, message):
+            progress_dialog.setValue(100)
+            if success:
+                QMessageBox.information(self, _("Import Successful"), message)
+                if is_project_import:
+                    self._run_and_refresh_with_validation()
+            else:
+                QMessageBox.critical(self, _("Import Failed"), message)
+
+        def update_progress(message):
+            if progress_dialog.wasCanceled():
+                return
+            progress_dialog.setLabelText(message)
+            progress_dialog.setValue(progress_dialog.value() + 1)
+
+        import_thread.progress.connect(update_progress)
+        import_thread.finished.connect(on_finished)
+        progress_dialog.canceled.connect(import_thread.terminate)
+        import_thread.start()
 
     def trigger_glossary_analysis(self, ts_obj):
         if ts_obj.id in self.glossary_analysis_cache:
