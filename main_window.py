@@ -23,7 +23,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import (
     Qt, QModelIndex, Signal, QObject, QTimer, QByteArray, QEvent,
-    QRunnable, QThreadPool, QItemSelectionModel, QSize, QDir
+    QRunnable, QThreadPool, QItemSelectionModel, QSize, QDir,
+    QThread
 )
 from PySide6.QtGui import QAction, QKeySequence, QFont, QPalette, QColor, QSyntaxHighlighter, QTextCharFormat, QDropEvent, QDragMoveEvent, QDragEnterEvent
 
@@ -1790,9 +1791,7 @@ class LexiSyncApp(QMainWindow):
             if not filepath.lower().endswith('.tbx'):
                 QMessageBox.warning(self, _("Invalid File"), _("Only .tbx files can be imported into the glossary."))
                 return
-            self.settings_dialog_instance = SettingsDialog(self)
-            glossary_page = self.settings_dialog_instance.pages.get(_("Global Resources")).glossary_tab
-            glossary_page.import_tbx(filepath)
+            self._trigger_glossary_import(filepath, is_project_import=self.is_project_mode)
 
         elif self.drop_target_widget is self.tm_panel:
             if not (filepath.lower().endswith('.jsonl') or filepath.lower().endswith('.xlsx')):
@@ -2427,10 +2426,11 @@ class LexiSyncApp(QMainWindow):
         if is_project_import and not self.is_project_mode:
             QMessageBox.critical(self, _("Error"), _("Cannot import to a project glossary when no project is open."))
             return
-        from dialogs.import_configuration_dialog import ImportConfigurationDialog
 
         try:
             from utils.tbx_parser import TBXParser
+            from dialogs.import_configuration_dialog import ImportConfigurationDialog
+            from dialogs.glossary_settings_page import TbxImportWorker, SimpleProgressDialog
             parser = TBXParser()
             parse_result = parser.parse_tbx(filepath, analyze_only=True)
             detected_languages = parse_result.get("detected_languages", [])
@@ -2459,37 +2459,38 @@ class LexiSyncApp(QMainWindow):
             target_dir = os.path.join(get_app_data_path(), "glossary")
             dialog_title = _("Importing to Global Glossary...")
 
-        progress_dialog = QProgressDialog(dialog_title, _("Cancel"), 0, 100, self)
-        progress_dialog.setWindowModality(Qt.WindowModal)
-        progress_dialog.setAutoClose(True)
-        progress_dialog.show()
+        from dialogs.glossary_settings_page import TbxImportWorker, SimpleProgressDialog
 
-        from dialogs.glossary_settings_page import TbxImportWorker
+        progress_dialog = SimpleProgressDialog(self)
+        progress_dialog.setWindowTitle(dialog_title)
 
-        import_thread = TbxImportWorker(
+        worker_thread = QThread()
+        worker = TbxImportWorker(
             self.glossary_service, filepath, target_dir,
             source_lang, target_langs, is_bidirectional, lang_mapping
         )
+        worker.moveToThread(worker_thread)
 
         def on_finished(success, message):
-            progress_dialog.setValue(100)
+            progress_dialog.accept()
             if success:
                 QMessageBox.information(self, _("Import Successful"), message)
                 if is_project_import:
+                    self.setup_glossary_service()
                     self._run_and_refresh_with_validation()
             else:
                 QMessageBox.critical(self, _("Import Failed"), message)
+            worker_thread.quit()
 
-        def update_progress(message):
-            if progress_dialog.wasCanceled():
-                return
-            progress_dialog.setLabelText(message)
-            progress_dialog.setValue(progress_dialog.value() + 1)
+        worker_thread.started.connect(worker.do_import)
+        worker.finished.connect(on_finished)
+        worker.finished.connect(worker.deleteLater)
+        worker_thread.finished.connect(worker_thread.deleteLater)
+        worker.progress.connect(progress_dialog.setLabelText)
+        progress_dialog.cancelled.connect(worker.cancel)
 
-        import_thread.progress.connect(update_progress)
-        import_thread.finished.connect(on_finished)
-        progress_dialog.canceled.connect(import_thread.terminate)
-        import_thread.start()
+        worker_thread.start()
+        progress_dialog.exec()
 
     def trigger_glossary_analysis(self, ts_obj):
         if ts_obj.id in self.glossary_analysis_cache:
