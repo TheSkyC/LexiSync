@@ -53,6 +53,7 @@ from dialogs.prompt_manager_dialog import PromptManagerDialog
 from dialogs.diff_dialog import DiffDialog
 from dialogs.statistics_dialog import StatisticsDialog
 from dialogs.settings_dialog import SettingsDialog
+from dialogs.project_settings_dialog import ProjectSettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
 
 from services import language_service
@@ -595,6 +596,10 @@ class LexiSyncApp(QMainWindow):
         self.action_show_settings = QAction(_("Settings..."), self)
         self.action_show_settings.triggered.connect(self.show_settings_dialog)
         self.settings_menu.addAction(self.action_show_settings)
+
+        self.action_show_project_settings = QAction(_("Project Settings..."), self)
+        self.action_show_project_settings.triggered.connect(self.show_project_settings_dialog)
+        self.settings_menu.addAction(self.action_show_project_settings)
 
         self.settings_menu.addSeparator()
 
@@ -1391,9 +1396,17 @@ class LexiSyncApp(QMainWindow):
         )
         self.action_show_statistics.setEnabled(has_content)
         self.action_run_validation_on_all.setEnabled(has_content)
-
+        if hasattr(self, 'action_show_project_settings'):
+            self.action_show_project_settings.setEnabled(self.is_project_mode)
         self.update_ai_related_ui_state()
         self.update_title()
+
+    def show_project_settings_dialog(self):
+        if not self.is_project_mode:
+            QMessageBox.warning(self, _("Warning"), _("A project must be open to access project settings."))
+            return
+        dialog = ProjectSettingsDialog(self)
+        dialog.exec()
 
     def update_ai_related_ui_state(self):
         ai_available = requests is not None
@@ -2430,7 +2443,7 @@ class LexiSyncApp(QMainWindow):
         try:
             from utils.tbx_parser import TBXParser
             from dialogs.import_configuration_dialog import ImportConfigurationDialog
-            from dialogs.glossary_settings_page import TbxImportWorker, SimpleProgressDialog
+            from dialogs.management_tabs import TbxImportWorker, SimpleProgressDialog
             parser = TBXParser()
             parse_result = parser.parse_tbx(filepath, analyze_only=True)
             detected_languages = parse_result.get("detected_languages", [])
@@ -2459,10 +2472,10 @@ class LexiSyncApp(QMainWindow):
             target_dir = os.path.join(get_app_data_path(), "glossary")
             dialog_title = _("Importing to Global Glossary...")
 
-        from dialogs.glossary_settings_page import TbxImportWorker, SimpleProgressDialog
+        from dialogs.management_tabs import TbxImportWorker, SimpleProgressDialog
 
-        progress_dialog = SimpleProgressDialog(self)
-        progress_dialog.setWindowTitle(dialog_title)
+        self.progress_dialog = SimpleProgressDialog(self)
+        self.progress_dialog.setWindowTitle(dialog_title)
 
         worker_thread = QThread()
         worker = TbxImportWorker(
@@ -2472,7 +2485,9 @@ class LexiSyncApp(QMainWindow):
         worker.moveToThread(worker_thread)
 
         def on_finished(success, message):
-            progress_dialog.accept()
+            if self.progress_dialog:
+                self.progress_dialog.close()
+                self.progress_dialog = None
             if success:
                 QMessageBox.information(self, _("Import Successful"), message)
                 if is_project_import:
@@ -2486,11 +2501,11 @@ class LexiSyncApp(QMainWindow):
         worker.finished.connect(on_finished)
         worker.finished.connect(worker.deleteLater)
         worker_thread.finished.connect(worker_thread.deleteLater)
-        worker.progress.connect(progress_dialog.setLabelText)
-        progress_dialog.cancelled.connect(worker.cancel)
+        worker.progress.connect(self.progress_dialog.setLabelText)
+        self.progress_dialog.cancelled.connect(worker.cancel)
 
         worker_thread.start()
-        progress_dialog.exec()
+        self.progress_dialog.show()
 
     def trigger_glossary_analysis(self, ts_obj):
         if ts_obj.id in self.glossary_analysis_cache:

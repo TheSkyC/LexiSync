@@ -1,11 +1,11 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QStackedWidget, QDialogButtonBox, QListWidgetItem, \
-    QVBoxLayout, QMessageBox
+from PySide6.QtWidgets import (QDialog, QHBoxLayout, QListWidget, QStackedWidget,
+                               QDialogButtonBox, QListWidgetItem,QVBoxLayout, QMessageBox)
 from utils.localization import _
 from .settings_pages import GeneralSettingsPage, AppearanceSettingsPage, AISettingsPage, ValidationSettingsPage
-from .global_resources_page import GlobalResourcesSettingsPage
+from .resources_page import ResourcesSettingsPage
 import logging
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class SettingsDialog(QDialog):
         validation_page = ValidationSettingsPage(self.app)
         self._add_page(validation_page, _("Validation"))
 
-        resources_page = GlobalResourcesSettingsPage(self.app)
+        resources_page = ResourcesSettingsPage(self.app, context="global")
         self._add_page(resources_page, _("Global Resources"))
 
         if hasattr(self.app, 'plugin_manager'):
