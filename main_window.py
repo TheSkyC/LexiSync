@@ -1652,13 +1652,16 @@ class LexiSyncApp(QMainWindow):
         else:
             QTimer.singleShot(0, self.restore_default_layout)
 
-
     def add_to_recent_files(self, filepath):
         if not filepath: return
+        normalized_path = filepath.replace('\\', '/')
         recent_files = self.config.get("recent_files", [])
-        if filepath in recent_files:
-            recent_files.remove(filepath)
-        recent_files.insert(0, filepath)
+        if normalized_path in recent_files:
+            recent_files.remove(normalized_path)
+        unnormalized_path = filepath.replace('/', '\\')
+        if unnormalized_path in recent_files:
+            recent_files.remove(unnormalized_path)
+        recent_files.insert(0, normalized_path)
         self.config["recent_files"] = recent_files[:10]
         self.update_recent_files_menu()
         self.save_config()
