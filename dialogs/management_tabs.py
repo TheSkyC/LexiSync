@@ -12,7 +12,6 @@ from utils.localization import _
 from utils.path_utils import get_app_data_path
 from utils.tbx_parser import TBXParser
 from services.glossary_service import MANIFEST_FILE as GLOSSARY_MANIFEST_FILE
-from services.tm_service import MANIFEST_FILE as TM_MANIFEST_FILE
 from .import_configuration_dialog import ImportConfigurationDialog
 from .tm_import_dialog import TMImportDialog
 import os
@@ -23,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 class TbxImportWorker(QObject):
-    """独立的工作对象，避免QThread子类化问题"""
     progress = Signal(str)
     finished = Signal(bool, str)
 
@@ -49,7 +47,6 @@ class TbxImportWorker(QObject):
             return self._is_cancelled
 
     def do_import(self):
-        """执行导入工作"""
         try:
             logger.info("Starting TBX import worker")
 
@@ -91,22 +88,20 @@ class SimpleProgressDialog(QWidget):
         layout.addWidget(self.label)
 
         self.cancel_btn = QPushButton(_("Cancel"))
-        self.cancel_btn.clicked.connect(self.cancelled.emit)
+        self.cancel_btn.clicked.connect(self.cancel)
         layout.addWidget(self.cancel_btn)
 
-        self._cancelled = False
-
     def setLabelText(self, text):
-        if self.label:
-            self.label.setText(text)
-
-    def wasCanceled(self):
-        return self._cancelled
+        self.label.setText(text)
 
     def cancel(self):
-        self._cancelled = True
+        self.cancel_btn.setEnabled(False)
+        self.cancel_btn.setText(_("Cancelling..."))
         self.cancelled.emit()
 
+    def closeEvent(self, event):
+        self.cancel()
+        event.ignore()
 
 class GlossaryManagementTab(QWidget):
     def __init__(self, app_instance, context: str):
@@ -152,7 +147,6 @@ class GlossaryManagementTab(QWidget):
         toolbar_layout.addStretch()
         self.main_layout.addLayout(toolbar_layout)
 
-        # Table for displaying imported sources
         self.sources_table = QTableWidget()
         self.sources_table.setColumnCount(5)
         self.sources_table.setHorizontalHeaderLabels([
@@ -248,7 +242,6 @@ class GlossaryManagementTab(QWidget):
             return
 
         try:
-            # 分析TBX文件
             parser = TBXParser()
             parse_result = parser.parse_tbx(filepath, analyze_only=True)
             detected_languages = parse_result.get("detected_languages", [])
@@ -262,7 +255,6 @@ class GlossaryManagementTab(QWidget):
                                  _("Failed to analyze the TBX file: {error}").format(error=str(e)))
             return
 
-        # 配置对话框
         config_dialog = ImportConfigurationDialog(self, os.path.basename(filepath), detected_languages, "Glossary")
         if not config_dialog.exec():
             return
@@ -273,7 +265,6 @@ class GlossaryManagementTab(QWidget):
         is_bidirectional = import_settings['is_bidirectional']
         lang_mapping = import_settings['lang_mapping']
 
-        # 导入
         self._start_import_process(filepath, source_lang, target_langs, is_bidirectional, lang_mapping)
 
     def _start_import_process(self, filepath, source_lang, target_langs, is_bidirectional, lang_mapping):
@@ -300,7 +291,6 @@ class GlossaryManagementTab(QWidget):
             self._import_thread.finished.connect(self._import_worker.deleteLater, Qt.QueuedConnection)
 
             self._progress_dialog.show()
-            QApplication.processEvents()
 
             self._import_thread.start()
             logger.info("Import process started successfully")
@@ -347,11 +337,9 @@ class GlossaryManagementTab(QWidget):
                         self._progress_dialog = None
 
                     if success:
-                        # 重新加载表格
                         self.load_sources_into_table()
                         QApplication.processEvents()
 
-                        # 显示成功消息
                         msg = QMessageBox(self)
                         msg.setIcon(QMessageBox.Information)
                         msg.setWindowTitle(_("Import Successful"))
@@ -366,7 +354,6 @@ class GlossaryManagementTab(QWidget):
                         msg.setStandardButtons(QMessageBox.Ok)
                         msg.exec()
 
-                    # 延迟清理
                     self._cleanup_timer.start(1000)
                     logger.info("Completion handling finished")
 

@@ -53,6 +53,7 @@ from dialogs.prompt_manager_dialog import PromptManagerDialog
 from dialogs.diff_dialog import DiffDialog
 from dialogs.statistics_dialog import StatisticsDialog
 from dialogs.settings_dialog import SettingsDialog
+from dialogs.management_tabs import TbxImportWorker, SimpleProgressDialog
 from dialogs.project_settings_dialog import ProjectSettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
 
@@ -1739,8 +1740,7 @@ class LexiSyncApp(QMainWindow):
         QMessageBox.about(self, _("About"),
                           _("LexiSync\n\n"
                             "Version: {version}\n"
-                            "Author: TheSkyC\n"
-                            "China Server ID: 小鸟游六花#56683 / Asia Server: 小鳥游六花#31665").format(
+                            "Author: TheSkyC").format(
                               version=APP_VERSION))
 
     def dragEnterEvent(self, event: QDragEnterEvent):
@@ -2433,20 +2433,13 @@ class LexiSyncApp(QMainWindow):
         self.update_ai_related_ui_state()
 
     def _trigger_glossary_import(self, filepath: str, is_project_import: bool):
-        """
-        A reusable helper method to handle the entire glossary import process.
-
-        :param filepath: The path to the TBX file.
-        :param is_project_import: True if importing into the project glossary, False for global.
-        """
         if is_project_import and not self.is_project_mode:
             QMessageBox.critical(self, _("Error"), _("Cannot import to a project glossary when no project is open."))
             return
-
+        from utils.tbx_parser import TBXParser
+        from dialogs.import_configuration_dialog import ImportConfigurationDialog
+        from dialogs.management_tabs import TbxImportWorker, SimpleProgressDialog
         try:
-            from utils.tbx_parser import TBXParser
-            from dialogs.import_configuration_dialog import ImportConfigurationDialog
-            from dialogs.management_tabs import TbxImportWorker, SimpleProgressDialog
             parser = TBXParser()
             parse_result = parser.parse_tbx(filepath, analyze_only=True)
             detected_languages = parse_result.get("detected_languages", [])
@@ -2475,40 +2468,67 @@ class LexiSyncApp(QMainWindow):
             target_dir = os.path.join(get_app_data_path(), "glossary")
             dialog_title = _("Importing to Global Glossary...")
 
-        from dialogs.management_tabs import TbxImportWorker, SimpleProgressDialog
+        progress_dialog = SimpleProgressDialog(self)
+        progress_dialog.setWindowTitle(dialog_title)
 
-        self.progress_dialog = SimpleProgressDialog(self)
-        self.progress_dialog.setWindowTitle(dialog_title)
-
-        worker_thread = QThread()
+        worker_thread = QThread(self)
         worker = TbxImportWorker(
             self.glossary_service, filepath, target_dir,
             source_lang, target_langs, is_bidirectional, lang_mapping
         )
         worker.moveToThread(worker_thread)
 
-        def on_finished(success, message):
-            if self.progress_dialog:
-                self.progress_dialog.close()
-                self.progress_dialog = None
+        def on_import_finished(success, message):
+            logger.debug("on_import_finished slot triggered.")
+
+            if "cancelled" in message.lower():
+                self.update_statusbar(_("Import cancelled."))
+                logger.debug("Import was cancelled.")
+                return
+
             if success:
+                logger.debug("Import successful. Showing information message box.")
                 QMessageBox.information(self, _("Import Successful"), message)
+                logger.debug("Information message box closed.")
+
                 if is_project_import:
-                    self.setup_glossary_service()
-                    self._run_and_refresh_with_validation()
+                    logger.debug("Project import: Scheduling UI refresh.")
+
+                    def do_refresh():
+                        logger.debug("Executing delayed refresh for project import.")
+                        self.setup_glossary_service()
+                        self._run_and_refresh_with_validation()
+
+                    QTimer.singleShot(0, do_refresh)
+                else:
+                    if hasattr(self, 'settings_dialog_instance') and \
+                            self.settings_dialog_instance and \
+                            self.settings_dialog_instance.isVisible():
+                        logger.debug("Global import: Refreshing settings dialog.")
+                        resources_page = self.settings_dialog_instance.pages.get(_("Global Resources"))
+                        if resources_page:
+                            resources_page.glossary_tab.load_sources_into_table()
             else:
+                logger.debug(f"Import failed. Showing critical message box: {message}")
                 QMessageBox.critical(self, _("Import Failed"), message)
-            worker_thread.quit()
+                logger.debug("Critical message box closed.")
+
+            logger.debug("on_import_finished slot completed.")
 
         worker_thread.started.connect(worker.do_import)
-        worker.finished.connect(on_finished)
-        worker.finished.connect(worker.deleteLater)
-        worker_thread.finished.connect(worker_thread.deleteLater)
-        worker.progress.connect(self.progress_dialog.setLabelText)
-        self.progress_dialog.cancelled.connect(worker.cancel)
+        worker.finished.connect(lambda s, m: QTimer.singleShot(0, lambda: on_import_finished(s, m)))
+        worker.finished.connect(worker_thread.quit)
 
+        worker_thread.finished.connect(worker.deleteLater)
+        worker_thread.finished.connect(progress_dialog.deleteLater)
+        worker_thread.finished.connect(worker_thread.deleteLater)
+
+        worker.progress.connect(progress_dialog.setLabelText)
+        progress_dialog.cancelled.connect(worker.cancel, Qt.DirectConnection)
+
+        logger.debug("Starting worker thread for glossary import.")
         worker_thread.start()
-        self.progress_dialog.show()
+        progress_dialog.show()
 
     def trigger_glossary_analysis(self, ts_obj):
         if ts_obj.id in self.glossary_analysis_cache:
