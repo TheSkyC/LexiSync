@@ -2491,6 +2491,8 @@ class LexiSyncApp(QMainWindow):
                 QMessageBox.information(self, _("Import Successful"), message)
                 logger.debug("Information message box closed.")
 
+                self.update_statusbar(message, persistent=True)
+
                 if is_project_import:
                     logger.debug("Project import: Scheduling UI refresh.")
 
