@@ -1770,6 +1770,10 @@ class LexiSyncApp(QMainWindow):
             self.drop_target_widget = self.tm_panel
             message = _("Import to Project TM") if self.is_project_mode else _("Import to Global TM")
             self.drop_overlay.show_message(message)
+        elif self.file_explorer_dock.isVisible() and self.file_explorer_dock.rect().contains(self.file_explorer_dock.mapFromGlobal(global_pos)):
+            self.drop_target_widget = self.file_explorer_panel
+            message = _("Open or Set as Root")
+            self.drop_overlay.show_message(message)
         else:
             self.drop_overlay.show_message(_("Unsupported Area"))
 
@@ -1817,7 +1821,16 @@ class LexiSyncApp(QMainWindow):
             self.settings_dialog_instance = SettingsDialog(self)
             tm_page = self.settings_dialog_instance.pages.get(_("Global Resources")).tm_tab
             tm_page.import_tm_file(filepath)
-
+        elif self.drop_target_widget is self.file_explorer_panel:
+            if os.path.isdir(filepath):
+                if os.path.exists(os.path.join(filepath, "project.json")):
+                    if self.prompt_save_if_modified():
+                            self.open_project(filepath)
+                else:
+                    self.file_explorer_panel.set_root_path(filepath)
+            elif os.path.isfile(filepath):
+                if self.prompt_save_if_modified():
+                    self.open_file_by_path(filepath)
         else:
             super().dropEvent(event)
 
