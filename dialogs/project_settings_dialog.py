@@ -3,18 +3,314 @@
 
 from PySide6.QtWidgets import (QDialog, QHBoxLayout, QListWidget, QStackedWidget,
                                QDialogButtonBox, QListWidgetItem, QVBoxLayout, QLabel,
-                               QTabWidget)
+                               QTabWidget, QFormLayout, QLineEdit, QPushButton,
+                               QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView,
+                               QFileDialog, QWidget)
+from PySide6.QtCore import Qt
+import uuid
+import os
+import json
+from pathlib import Path
+import shutil
+import copy
+
 from utils.localization import _
 from .settings_pages import BaseSettingsPage
 from .management_tabs import GlossaryManagementTab, TMManagementTab
+from utils.constants import SUPPORTED_LANGUAGES
+from services import project_service
+from services.code_file_service import extract_translatable_strings
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class LanguageSelectionDialog(QDialog):
+    def __init__(self, parent, existing_langs):
+        super().__init__(parent)
+        self.setWindowTitle(_("Add Target Language"))
+        self.setModal(True)
+        self.selected_language = None
+
+        layout = QVBoxLayout(self)
+        self.lang_list = QListWidget()
+
+        sorted_langs = sorted(SUPPORTED_LANGUAGES.items())
+        for name, code in sorted_langs:
+            if code not in existing_langs:
+                item = QListWidgetItem(f"{name} ({code})")
+                item.setData(Qt.UserRole, code)
+                self.lang_list.addItem(item)
+
+        layout.addWidget(QLabel(_("Select a new target language to add to the project:")))
+        layout.addWidget(self.lang_list)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+
+    def accept(self):
+        selected_item = self.lang_list.currentItem()
+        if selected_item:
+            self.selected_language = selected_item.data(Qt.UserRole)
+            super().accept()
+        else:
+            QMessageBox.warning(self, _("No Selection"), _("Please select a language."))
+
 
 class ProjectGeneralSettingsPage(BaseSettingsPage):
     def __init__(self, app_instance):
         super().__init__()
-        label = QLabel(_("Project General Settings.."))
-        # TODO: 完善项目设置
-        self.page_layout.addWidget(label)
-    def save_settings(self): pass
+        self.app = app_instance
+        self.project_config = copy.deepcopy(self.app.project_config)
+        self.changes_made = False
+
+        form_layout = QFormLayout()
+
+        self.project_name_edit = QLineEdit(self.project_config.get('name', ''))
+        self.project_name_edit.textChanged.connect(self._mark_changed)
+        form_layout.addRow(_("Project Name:"), self.project_name_edit)
+
+        source_lang_code = self.project_config.get('source_language', '')
+        source_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == source_lang_code),
+                                source_lang_code)
+        self.source_lang_display = QLineEdit(f"{source_lang_name} ({source_lang_code})")
+        self.source_lang_display.setReadOnly(True)
+        self.source_lang_display.setToolTip(_("Source language cannot be changed after project creation."))
+        form_layout.addRow(_("Source Language:"), self.source_lang_display)
+
+        lang_widget = QWidget()
+        lang_layout = QVBoxLayout(lang_widget)
+        lang_layout.setContentsMargins(0, 0, 0, 0)
+        self.target_langs_list = QListWidget()
+        self.target_langs_list.setFixedHeight(100)
+        self._populate_target_langs()
+
+        lang_buttons_layout = QHBoxLayout()
+        self.add_lang_button = QPushButton(_("Add..."))
+        self.remove_lang_button = QPushButton(_("Remove"))
+        self.add_lang_button.clicked.connect(self._add_language)
+        self.remove_lang_button.clicked.connect(self._remove_language)
+        lang_buttons_layout.addStretch()
+        lang_buttons_layout.addWidget(self.add_lang_button)
+        lang_buttons_layout.addWidget(self.remove_lang_button)
+
+        lang_layout.addWidget(self.target_langs_list)
+        lang_layout.addLayout(lang_buttons_layout)
+
+        form_layout.addRow(_("Target Languages:"), lang_widget)
+
+        self.page_layout.addLayout(form_layout)
+
+    def _populate_target_langs(self):
+        self.target_langs_list.clear()
+        for lang_code in self.project_config.get('target_languages', []):
+            lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == lang_code), lang_code)
+            self.target_langs_list.addItem(f"{lang_name} ({lang_code})")
+
+    def _add_language(self):
+        existing_langs = self.project_config.get('target_languages', []) + [self.project_config.get('source_language')]
+        dialog = LanguageSelectionDialog(self, existing_langs)
+        if dialog.exec():
+            new_lang = dialog.selected_language
+            if new_lang:
+                self.project_config.get('target_languages', []).append(new_lang)
+                self._populate_target_langs()
+                self._mark_changed()
+
+    def _remove_language(self):
+        current_item = self.target_langs_list.currentItem()
+        if not current_item:
+            return
+
+        lang_text = current_item.text()
+        lang_code = lang_text.split('(')[-1].strip(')')
+
+        if len(self.project_config.get('target_languages', [])) <= 1:
+            QMessageBox.warning(self, _("Cannot Remove"), _("A project must have at least one target language."))
+            return
+
+        reply = QMessageBox.warning(self, _("Confirm Removal"),
+                                    _("Are you sure you want to remove the language '{lang}'?\nThis will permanently delete its translation file.").format(
+                                        lang=lang_text),
+                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.project_config.get('target_languages', []).remove(lang_code)
+            self._populate_target_langs()
+            self._mark_changed()
+
+    def _mark_changed(self):
+        self.changes_made = True
+
+    def save_settings(self):
+        if not self.changes_made:
+            return False
+
+        self.app.project_config['name'] = self.project_name_edit.text()
+        self.app.project_config['target_languages'] = self.project_config['target_languages']
+
+        backup_config = self.app.config.get('project_config_backup_on_dialog_open', {})
+        old_langs = set(backup_config.get('target_languages', []))
+        new_langs = set(self.app.project_config.get('target_languages', []))
+
+        added_langs = new_langs - old_langs
+        removed_langs = old_langs - new_langs
+
+        if not added_langs and not removed_langs:
+            self.changes_made = False
+            return False
+
+        proj_path = Path(self.app.current_project_path)
+
+        for lang in added_langs:
+            translation_path = proj_path / project_service.TRANSLATION_DIR / f"{lang}.json"
+            if not translation_path.exists():
+                if not self.app.project_config.get("source_files"):
+                    logger.error("Cannot add new language: No source files in project to create structure from.")
+                    continue
+                source_file_path = proj_path / self.app.project_config["source_files"][0]["project_path"]
+                with open(source_file_path, 'r', encoding='utf-8') as f:
+                    content = f.read().replace('\r\n', '\n').replace('\r', '\n')
+                patterns = self.app.config.get("extraction_patterns", [])
+                initial_objects = [ts.to_dict() for ts in extract_translatable_strings(content, patterns)]
+                with open(translation_path, 'w', encoding='utf-8') as f:
+                    json.dump(initial_objects, f, indent=4, ensure_ascii=False)
+
+        for lang in removed_langs:
+            translation_path = proj_path / project_service.TRANSLATION_DIR / f"{lang}.json"
+            if translation_path.exists():
+                os.remove(translation_path)
+            if self.app.current_target_language == lang:
+                if self.app.project_config['target_languages']:
+                    self.app.project_config['current_target_language'] = self.app.project_config['target_languages'][0]
+                else:
+                    self.app.project_config['current_target_language'] = ""
+
+        self.changes_made = False
+        return True
+
+
+class ProjectSourceFilesPage(BaseSettingsPage):
+    def __init__(self, app_instance):
+        super().__init__()
+        self.app = app_instance
+        self.project_config = copy.deepcopy(self.app.project_config)
+        self.changes_made = False
+
+        self.table = QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels([_("File Name"), _("Type"), _("Original Path")])
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self._populate_files_table()
+
+        buttons_layout = QHBoxLayout()
+        add_button = QPushButton(_("Add..."))
+        remove_button = QPushButton(_("Remove"))
+        rescan_button = QPushButton(_("Re-scan Selected"))
+        add_button.clicked.connect(self._add_file)
+        remove_button.clicked.connect(self._remove_file)
+        rescan_button.clicked.connect(self._rescan_file)
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(add_button)
+        buttons_layout.addWidget(remove_button)
+        buttons_layout.addWidget(rescan_button)
+
+        self.page_layout.addWidget(self.table)
+        self.page_layout.addLayout(buttons_layout)
+
+    def _populate_files_table(self):
+        self.table.setRowCount(0)
+        for file_info in self.project_config.get('source_files', []):
+            row_position = self.table.rowCount()
+            self.table.insertRow(row_position)
+            self.table.setItem(row_position, 0, QTableWidgetItem(
+                Path(file_info['project_path']).name if file_info['project_path'] else Path(
+                    file_info['original_path']).name))
+            self.table.setItem(row_position, 1, QTableWidgetItem(file_info['type']))
+            self.table.setItem(row_position, 2, QTableWidgetItem(file_info['original_path']))
+            self.table.item(row_position, 0).setData(Qt.UserRole, file_info['id'])
+
+    def _add_file(self):
+        filepath, __ = QFileDialog.getOpenFileName(
+            self, _("Select Source File"), "",
+            _("All Supported Files (*.ow *.txt *.po *.pot);;All Files (*.*)")
+        )
+        if not filepath:
+            return
+
+        if any(Path(f['original_path']).name == Path(filepath).name for f in self.project_config['source_files']):
+            QMessageBox.warning(self, _("File Exists"), _("A file with this name already exists in the project."))
+            return
+
+        file_type = 'po' if Path(filepath).suffix.lower() in ['.po', '.pot'] else 'code'
+        new_file_entry = {
+            "id": str(uuid.uuid4()),
+            "original_path": filepath,
+            "project_path": "",
+            "type": file_type,
+            "linked": False
+        }
+        self.project_config['source_files'].append(new_file_entry)
+        self._populate_files_table()
+        self._mark_changed()
+
+    def _remove_file(self):
+        current_row = self.table.currentRow()
+        if current_row < 0:
+            return
+
+        if len(self.project_config.get('source_files', [])) <= 1:
+            QMessageBox.warning(self, _("Cannot Remove"), _("A project must have at least one source file."))
+            return
+
+        file_id = self.table.item(current_row, 0).data(Qt.UserRole)
+        file_name = self.table.item(current_row, 0).text()
+
+        reply = QMessageBox.warning(self, _("Confirm Removal"),
+                                    _("Are you sure you want to remove '{file}' from the project?\nThis action cannot be undone and will affect all translations.").format(
+                                        file=file_name),
+                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.project_config['source_files'] = [f for f in self.project_config['source_files'] if f['id'] != file_id]
+            self._populate_files_table()
+            self._mark_changed()
+
+    def _rescan_file(self):
+        QMessageBox.information(self, _("Re-scan"), _("Re-scanning source files is not yet implemented."))
+
+    def _mark_changed(self):
+        self.changes_made = True
+
+    def save_settings(self):
+        if not self.changes_made:
+            return False
+
+        self.app.project_config['source_files'] = self.project_config['source_files']
+
+        proj_path = Path(self.app.current_project_path)
+
+        for file_info in self.app.project_config['source_files']:
+            if not file_info['project_path']:
+                original_path = Path(file_info['original_path'])
+                destination_path = proj_path / project_service.SOURCE_DIR / original_path.name
+                shutil.copy2(original_path, destination_path)
+                file_info['project_path'] = str(destination_path.relative_to(proj_path).as_posix())
+
+        config_files_on_disk = {f.name for f in (proj_path / project_service.SOURCE_DIR).iterdir()}
+        config_files_in_memory = {Path(f['project_path']).name for f in self.app.project_config['source_files']}
+        files_to_remove = config_files_on_disk - config_files_in_memory
+
+        for filename in files_to_remove:
+            (proj_path / project_service.SOURCE_DIR / filename).unlink(missing_ok=True)
+
+        self.changes_made = False
+        return True
+
 
 class ProjectResourcesPage(BaseSettingsPage):
     def __init__(self, app_instance):
@@ -28,10 +324,15 @@ class ProjectResourcesPage(BaseSettingsPage):
         self.tm_tab = TMManagementTab(self.app, context="project")
         self.tab_widget.addTab(self.tm_tab, _("Translation Memory"))
 
+
 class ProjectSettingsDialog(QDialog):
     def __init__(self, parent):
         super().__init__(parent)
         self.app = parent
+
+        import copy
+        self.app.config['project_config_backup_on_dialog_open'] = copy.deepcopy(self.app.project_config)
+
         self.setWindowTitle(_("Project Settings"))
         self.setModal(True)
         self.resize(850, 650)
@@ -104,6 +405,9 @@ class ProjectSettingsDialog(QDialog):
         general_page = ProjectGeneralSettingsPage(self.app)
         self._add_page(general_page, _("General"))
 
+        source_files_page = ProjectSourceFilesPage(self.app)
+        self._add_page(source_files_page, _("Source Files"))
+
         resources_page = ProjectResourcesPage(self.app)
         self._add_page(resources_page, _("Project Resources"))
 
@@ -115,4 +419,26 @@ class ProjectSettingsDialog(QDialog):
         self.nav_list.addItem(QListWidgetItem(name))
 
     def accept(self):
+        needs_ui_update = False
+        for page_name, page in self.pages.items():
+            if hasattr(page, 'save_settings'):
+                if page.save_settings():
+                    needs_ui_update = True
+
+        if 'project_config_backup_on_dialog_open' in self.app.config:
+            del self.app.config['project_config_backup_on_dialog_open']
+
+        project_service.save_project(self.app.current_project_path, self.app)
+
+        if needs_ui_update:
+            # We need to reload data, but not the entire project config which is already in memory
+            loaded_data = project_service.load_project(self.app.current_project_path)
+            self.app.translatable_objects = loaded_data["translatable_objects"]
+            self.app.original_raw_code_content = loaded_data["original_raw_code_content"]
+
+            self.app._update_language_switcher()
+            self.app._run_and_refresh_with_validation()
+
+        self.app.update_title()
+
         super().accept()
