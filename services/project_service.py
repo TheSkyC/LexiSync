@@ -143,18 +143,18 @@ def save_project(project_path: str, app_instance):
     translation_data = [ts.to_dict() for ts in app_instance.translatable_objects]
 
     temp_file = translation_file.with_suffix(".json.tmp")
-    logger.debug(f"Saving project to: {project_path}")
-    logger.debug(f"  - Saving translation data for '{current_lang}' to: {translation_file}")
-    logger.debug(f"  - Saving main config: {config_path}")
+
+    logger.debug(f"[SAVE_PROJECT] Starting save for project at: {project_path}")
+    logger.debug(f"[SAVE_PROJECT] Current target language: {current_lang}")
+
     with open(temp_file, 'w', encoding='utf-8') as f:
         json.dump(translation_data, f, indent=4, ensure_ascii=False)
     shutil.move(temp_file, translation_file)
 
-    with open(config_path, 'r', encoding='utf-8') as f:
-        project_config = json.load(f)
+    project_config_to_save = app_instance.project_config
 
-    project_config["current_target_language"] = app_instance.current_target_language
-    project_config["ui_state"] = {
+    project_config_to_save["current_target_language"] = app_instance.current_target_language
+    project_config_to_save["ui_state"] = {
         "search_term": app_instance.search_entry.text() if app_instance.search_entry.text() != _(
             "Quick search...") else "",
         "selected_ts_id": app_instance.current_selected_ts_id or ""
@@ -162,7 +162,8 @@ def save_project(project_path: str, app_instance):
 
     temp_config_file = config_path.with_suffix(".json.tmp")
     with open(temp_config_file, 'w', encoding='utf-8') as f:
-        json.dump(project_config, f, indent=4, ensure_ascii=False)
+        json.dump(project_config_to_save, f, indent=4, ensure_ascii=False)
     shutil.move(temp_config_file, config_path)
 
+    logger.debug(f"[SAVE_PROJECT] Save operation finished.")
     return True

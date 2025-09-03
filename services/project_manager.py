@@ -24,6 +24,10 @@ class ProjectManager:
         loaded_data = project_service.load_project(project_path)
         self.current_project_path = project_path
         self.project_config = loaded_data["project_config"]
+        self.app.current_project_path = self.current_project_path
+        self.app.project_config = self.project_config
+        self.app.translatable_objects = loaded_data["translatable_objects"]
+        self.app.original_raw_code_content = loaded_data["original_raw_code_content"]
         return loaded_data
 
     def close_project(self):
