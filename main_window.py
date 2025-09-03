@@ -1814,9 +1814,9 @@ class LexiSyncApp(QMainWindow):
             self._trigger_glossary_import(filepath, is_project_import=self.is_project_mode)
 
         elif self.drop_target_widget is self.tm_panel:
-            if not (filepath.lower().endswith('.jsonl') or filepath.lower().endswith('.xlsx')):
+            if not filepath.lower().endswith('.xlsx'):
                 QMessageBox.warning(self, _("Invalid File"),
-                                    _("Only .jsonl or .xlsx files can be imported into the TM."))
+                                    _("Only .xlsx files can be imported into the TM."))
                 return
             self.settings_dialog_instance = SettingsDialog(self)
             tm_page = self.settings_dialog_instance.pages.get(_("Global Resources")).tm_tab

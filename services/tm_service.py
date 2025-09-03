@@ -205,23 +205,10 @@ class TMService:
         _, ext = os.path.splitext(filepath)
         ext = ext.lower()
 
-        if ext == '.jsonl':
-            return self._parse_jsonl(filepath)
-        elif ext == '.xlsx':
+        if ext == '.xlsx':
             return self._parse_xlsx(filepath, source_lang, target_lang)
         else:
             raise ValueError(_("Unsupported TM file format: {ext}").format(ext=ext))
-
-    def _parse_jsonl(self, filepath: str) -> List[Dict]:
-        tus = []
-        with open(filepath, 'r', encoding='utf-8') as f:
-            for line in f:
-                if line.strip():
-                    try:
-                        tus.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        logger.warning(f"Skipping invalid JSON line in {filepath}: {line.strip()}")
-        return tus
 
     def _parse_xlsx(self, filepath: str, source_lang: str, target_lang: str) -> List[Dict]:
         tus = []
