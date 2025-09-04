@@ -3,18 +3,18 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
-"POT-Creation-Date: 2025-08-02 10:48+0000\n"
-"PO-Revision-Date: 2025-08-02 12:30+0000\n"
+"POT-Creation-Date: 2025-09-03 04:05+0000\n"
+"PO-Revision-Date: 2025-09-03 04:46+0000\n"
 "Last-Translator: Automatically generated\n"
-"Language: zh\n"
 "Language-Team: none\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: main_window.py:4252 ui_components/comment_status_panel.py:79
+#: main_window.py:4534 ui_components/comment_status_panel.py:79
 msgid " (Auto)"
 msgstr " (自动)"
 
@@ -22,31 +22,31 @@ msgstr " (自动)"
 msgid " s"
 msgstr " s"
 
-#: main_window.py:295 main_window.py:545
+#: main_window.py:383 main_window.py:652
 msgid "&Edit"
 msgstr "编辑(&E)"
 
-#: main_window.py:294 main_window.py:544
+#: main_window.py:382 main_window.py:651
 msgid "&File"
 msgstr "文件(&F)"
 
-#: main_window.py:300 main_window.py:551
+#: main_window.py:388 main_window.py:658
 msgid "&Help"
 msgstr "帮助(&H)"
 
-#: main_window.py:299 main_window.py:550
+#: main_window.py:387 main_window.py:657
 msgid "&Plugins"
 msgstr "插件(&P)"
 
-#: main_window.py:298 main_window.py:548
+#: main_window.py:386 main_window.py:655
 msgid "&Settings"
 msgstr "设置(&S)"
 
-#: main_window.py:297 main_window.py:547
+#: main_window.py:385 main_window.py:654
 msgid "&Tools"
 msgstr "工具(&T)"
 
-#: main_window.py:296 main_window.py:546
+#: main_window.py:384 main_window.py:653
 msgid "&View"
 msgstr "视图(&V)"
 
@@ -62,92 +62,104 @@ msgstr "(0 为禁用)"
 msgid "A POT file was dropped. What would you like to do?"
 msgstr "检测到POT文件。您希望执行什么操作？"
 
-#: plugins/plugin_manager.py:430
+#: services/project_service.py:28
+msgid "A file or directory with this name already exists."
+msgstr "已存在同名的文件或目录。"
+
+#: dialogs/project_settings_dialog.py:246 services/project_manager.py:48
+msgid "A file with this name already exists in the project."
+msgstr "项目中已存在同名文件。"
+
+#: plugins/plugin_manager.py:435
 #, python-brace-format
-msgid ""
-"A plugin with the ID '{plugin_id}' already exists. Do you want to "
-"overwrite it?"
+msgid "A plugin with the ID '{plugin_id}' already exists. Do you want to overwrite it?"
 msgstr "ID为“{plugin_id}”的插件已存在。您想覆盖它吗？"
 
-#: main_window.py:4178
+#: main_window.py:1407
+msgid "A project must be open to access project settings."
+msgstr "必须先打开一个项目才能访问项目设置。"
+
+#: dialogs/project_settings_dialog.py:267
+msgid "A project must have at least one source file."
+msgstr "项目必须至少有一个源文件。"
+
+#: dialogs/project_settings_dialog.py:131
+msgid "A project must have at least one target language."
+msgstr "项目必须至少有一个目标语言。"
+
+#: main_window.py:4460
 msgid "AI Batch Translation"
 msgstr "AI批量翻译"
 
-#: main_window.py:3746
+#: main_window.py:4028
 #, python-brace-format
 msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
 msgstr "AI批量: 处理中 {current}/{total} (并发: {threads})..."
 
-#: main_window.py:4124
+#: main_window.py:4406
 #, python-brace-format
 msgid "AI Batch: {current}/{total} completed ({progress_percent:.0f}%)."
 msgstr "AI批量: {current}/{total} 完成 ({progress_percent:.0f}%)."
 
-#: main_window.py:3566
+#: main_window.py:3841
 msgid "AI Feature Unavailable"
 msgstr "AI功能不可用"
 
-#: main_window.py:3556
+#: main_window.py:3831
 msgid "AI Prompt Manager"
 msgstr "AI提示词管理器"
 
-#: main_window.py:483 main_window.py:601
+#: main_window.py:567 main_window.py:706
 msgid "AI Translate All Untranslated"
 msgstr "使用AI翻译所有未翻译项"
 
-#: main_window.py:478 main_window.py:600 ui_components/details_panel.py:91
-#: ui_components/details_panel.py:197
+#: main_window.py:562 main_window.py:705 ui_components/details_panel.py:91 ui_components/details_panel.py:197
 msgid "AI Translate Selected"
 msgstr "使用AI翻译选中项"
 
-#: dialogs/settings_dialog.py:111 main_window.py:3976
+#: dialogs/settings_dialog.py:113 main_window.py:4258
 msgid "AI Translation"
 msgstr "AI 翻译"
 
-#: main_window.py:4061
+#: main_window.py:4343
 msgid "AI Translation Error"
 msgstr "AI翻译错误"
 
-#: main_window.py:1396
+#: main_window.py:1610
 msgid "AI Translation in Progress"
 msgstr "AI翻译进行中"
 
-#: main_window.py:4033
+#: main_window.py:4315
 #, python-brace-format
-msgid ""
-"AI batch translation complete. Successfully translated "
-"{success_count}/{processed_count} items (total {total_items} planned)."
+msgid "AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned)."
 msgstr "AI批量翻译完成。成功翻译 {success_count}/{processed_count} 项 (共 {total_items} 项计划)。"
 
-#: main_window.py:3924
+#: main_window.py:4206
 msgid "AI batch translation is already in progress."
 msgstr "AI批量翻译已在进行中。"
 
-#: main_window.py:1659
+#: main_window.py:1868
 msgid "AI batch translation is in progress."
 msgstr "AI批量翻译正在进行中。"
 
-#: main_window.py:1595
-msgid ""
-"AI batch translation is in progress. Please wait for it to complete or "
-"stop it before opening a new file."
+#: main_window.py:1984
+msgid "AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."
 msgstr "AI批量翻译正在进行中。请等待其完成或停止后再打开新文件。"
 
-#: main_window.py:1397
+#: main_window.py:1611
 msgid ""
-"AI batch translation is still in progress. Are you sure you want to exit?"
-"\n"
+"AI batch translation is still in progress. Are you sure you want to exit?\n"
 "Unfinished translations will be lost."
 msgstr ""
 "AI批量翻译仍在进行中。确定要退出吗？\n"
 "未完成的翻译将丢失。"
 
-#: main_window.py:4010
+#: main_window.py:4292
 #, python-brace-format
 msgid "AI batch translation started for {count} unique strings..."
 msgstr "已为 {count} 个独立字符串启动 AI 批量翻译..."
 
-#: main_window.py:4179
+#: main_window.py:4461
 msgid ""
 "AI batch translation stop requested.\n"
 "Dispatched tasks will continue to complete, please wait."
@@ -155,20 +167,20 @@ msgstr ""
 "AI批量翻译已请求停止。\n"
 "已派发的任务将继续完成，请稍候。"
 
-#: main_window.py:4181
+#: main_window.py:4463
 msgid "AI batch translation stop requested. Finishing dispatched tasks..."
 msgstr "AI批量翻译正在停止...等待已派发任务完成。"
 
-#: main_window.py:3715
+#: main_window.py:3997
 #, python-brace-format
 msgid "AI is translating: \"{text}...\""
 msgstr "AI正在翻译: \"{text}...\""
 
-#: dialogs/prompt_manager_dialog.py:233
+#: dialogs/prompt_manager_dialog.py:235
 msgid "AI prompt structure updated."
 msgstr "AI提示词结构已更新。"
 
-#: main_window.py:4062
+#: main_window.py:4344
 #, python-brace-format
 msgid ""
 "AI translation failed for \"{text}...\":\n"
@@ -177,17 +189,17 @@ msgstr ""
 "对 \"{text}...\" 的AI翻译失败:\n"
 "{error}"
 
-#: main_window.py:4057
+#: main_window.py:4339
 #, python-brace-format
 msgid "AI translation failed for \"{text}...\": {error}"
 msgstr "AI翻译失败 for \"{text}...\": {error}"
 
-#: main_window.py:3689
+#: main_window.py:3971
 #, python-brace-format
 msgid "AI translation for '{text}...' was skipped by a plugin."
 msgstr "AI翻译'{text}...'已被插件跳过。"
 
-#: main_window.py:4114
+#: main_window.py:4396
 #, python-brace-format
 msgid "AI translation successful: \"{text}...\""
 msgstr "AI翻译成功: \"{text}...\""
@@ -204,11 +216,11 @@ msgstr "API 调用间隔:"
 msgid "API Error"
 msgstr "API 错误"
 
-#: main_window.py:3571
+#: main_window.py:3846
 msgid "API Key Missing"
 msgstr "API Key缺失"
 
-#: main_window.py:3572
+#: main_window.py:3847
 msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
 msgstr "API Key 未设置。请前往“工具 > AI翻译设置”进行配置。"
 
@@ -228,13 +240,9 @@ msgstr "API 设置"
 msgid "API request timed out."
 msgstr "API 请求超时。"
 
-#: main_window.py:530 main_window.py:612
+#: main_window.py:618 main_window.py:717 main_window.py:1740
 msgid "About"
 msgstr "关于"
-
-#: main_window.py:1509
-msgid "About Overwatch Localizer"
-msgstr "关于 Overwatch Localizer"
 
 #: dialogs/language_pair_dialog.py:278
 msgid "Actions"
@@ -256,22 +264,48 @@ msgstr "新增提取规则"
 msgid "Add Prompt Fragment"
 msgstr "添加提示词片段"
 
+#: main_window.py:1793
+msgid "Add Source File"
+msgstr "添加源文件"
+
+#: dialogs/new_project_dialog.py:39
+msgid "Add Source File..."
+msgstr "添加源文件..."
+
+#: dialogs/project_settings_dialog.py:31
+msgid "Add Target Language"
+msgstr "添加目标语言"
+
+#: main_window.py:1763
+msgid "Add as Source File"
+msgstr "添加为源文件"
+
+#: dialogs/management_tabs.py:485
+msgid "Add from File..."
+msgstr "从文件添加..."
+
+#: dialogs/management_tabs.py:141
+msgid "Add from TBX..."
+msgstr "从TBX添加..."
+
+#: dialogs/project_settings_dialog.py:91 dialogs/project_settings_dialog.py:211
+msgid "Add..."
+msgstr "添加..."
+
 #: dialogs/diff_dialog.py:165
 msgid "Added"
 msgstr "新增"
 
-#: main_window.py:4165
+#: main_window.py:4447
 #, python-brace-format
 msgid "Added comments to {count} placeholder mismatched items."
 msgstr "为 {count} 个占位符不匹配项添加了注释。"
 
-#: main_window.py:4147
+#: main_window.py:4429
 #, python-brace-format
 msgid ""
-"After AI batch translation, {count} items were found with placeholder "
-"mismatches.\n"
-"Do you want to add the comment \"Placeholder Mismatch\" to these items in"
-" bulk?"
+"After AI batch translation, {count} items were found with placeholder mismatches.\n"
+"Do you want to add the comment \"Placeholder Mismatch\" to these items in bulk?"
 msgstr ""
 "AI批量翻译后，发现 {count} 项的占位符不匹配。\n"
 "是否为这些项批量添加注释“占位符不匹配”？"
@@ -280,39 +314,54 @@ msgstr ""
 msgid "All"
 msgstr "全部"
 
-#: main_window.py:1575
+#: main_window.py:1945
 msgid "All Files (*.*)"
 msgstr "所有文件 (*.*)"
 
-#: main_window.py:1572
+#: main_window.py:1942
 msgid "All Supported Files (*.ow *.txt *.po *.pot);;"
 msgstr "所有支持的文件 (*.ow *.txt *.po *.pot);;"
 
-#: main_window.py:4564
+#: dialogs/new_project_dialog.py:79 dialogs/project_settings_dialog.py:240
+msgid "All Supported Files (*.ow *.txt *.po *.pot);;All Files (*.*)"
+msgstr "所有支持的文件 (*.ow *.txt *.po *.pot);;所有文件 (*.*)"
+
+#: main_window.py:4881
 #, python-brace-format
 msgid "An error occurred: {error}"
 msgstr "发生错误: {error}"
 
-#: dialogs/settings_dialog.py:108
+#: dialogs/management_tabs.py:233
+msgid "An import operation is already in progress. Please wait for it to complete."
+msgstr "导入操作正在进行中，请等待其完成。"
+
+#: ui_components/file_explorer_panel.py:857
+msgid "An unexpected error occurred during deletion."
+msgstr "删除过程中发生意外错误。"
+
+#: dialogs/management_tabs.py:249 main_window.py:2460
+msgid "Analysis Failed"
+msgstr "分析失败"
+
+#: dialogs/settings_dialog.py:110
 msgid "Appearance"
 msgstr "界面"
 
-#: main_window.py:4325
+#: main_window.py:4642
 #, python-brace-format
 msgid "Applied TM to {count} selected items."
 msgstr "向 {count} 个选中项应用了记忆库翻译。"
 
-#: main_window.py:3509 main_window.py:3510
+#: main_window.py:3784 main_window.py:3785
 #, python-brace-format
 msgid "Applied TM to {count} strings."
 msgstr "已向 {count} 个字符串应用记忆库翻译。"
 
-#: dialogs/settings_dialog.py:88
+#: dialogs/settings_dialog.py:90
 msgid "Apply"
 msgstr "应用"
 
-#: ui_components/comment_status_panel.py:46
-#: ui_components/comment_status_panel.py:76
+#: ui_components/comment_status_panel.py:46 ui_components/comment_status_panel.py:76
 msgid "Apply Comment"
 msgstr "应用注释"
 
@@ -320,15 +369,11 @@ msgstr "应用注释"
 msgid "Apply Favorite"
 msgstr "应用收藏项"
 
-#: main_window.py:1947
+#: main_window.py:2263
 msgid "Apply Memory to Selected Items"
 msgstr "应用记忆库到选中项"
 
-#: main_window.py:3352
-msgid "Apply TM"
-msgstr "应用记忆库"
-
-#: main_window.py:473 main_window.py:599
+#: main_window.py:557 main_window.py:704
 msgid "Apply TM to Untranslated"
 msgstr "应用记忆库到未翻译项"
 
@@ -340,30 +385,20 @@ msgstr "应用翻译"
 msgid "Apply and Go to Next Untranslated"
 msgstr "应用并到下一未译项"
 
-#: main_window.py:4457 main_window.py:4547
+#: main_window.py:4774 main_window.py:4864
 msgid "Applying updates..."
 msgstr "正在应用更新..."
 
-#: main_window.py:3380
-msgid ""
-"Are you sure you want to clear all entries from the in-memory TM?\n"
-"This cannot be undone."
-msgstr ""
-"确定要清除内存中所有的翻译记忆库条目吗？\n"
-"此操作无法撤销，但不会立即修改磁盘上的TM文件（除非之后保存）。"
-
-#: main_window.py:1501
+#: main_window.py:1732
 msgid "Are you sure you want to clear all recent file history?"
 msgstr "确定要清除所有最近文件历史记录吗？"
 
-#: main_window.py:4337
+#: main_window.py:4654
 #, python-brace-format
-msgid ""
-"Are you sure you want to clear the translations for the {count} selected "
-"items?"
+msgid "Are you sure you want to clear the translations for the {count} selected items?"
 msgstr "确定要清除选中的 {count} 项的译文吗？"
 
-#: ui_components/file_explorer_panel.py:252
+#: ui_components/file_explorer_panel.py:809
 #, python-brace-format
 msgid ""
 "Are you sure you want to permanently delete the following item(s)?\n"
@@ -385,7 +420,34 @@ msgstr ""
 "\n"
 "删除后需要重启应用程序。"
 
-#: main_window.py:3439
+#: dialogs/project_settings_dialog.py:274
+#, python-brace-format
+msgid ""
+"Are you sure you want to remove '{file}' from the project?\n"
+"This action cannot be undone and will affect all translations."
+msgstr ""
+"确定要从项目中移除“{file}”吗？\n"
+"此操作无法撤销，并将影响所有翻译。"
+
+#: dialogs/management_tabs.py:561
+#, python-brace-format
+msgid ""
+"Are you sure you want to remove all TM entries from '{source}'?\n"
+"This action cannot be undone."
+msgstr ""
+"确定要从“{source}”中移除所有记忆库条目吗？\n"
+"此操作无法撤销。"
+
+#: dialogs/management_tabs.py:386
+#, python-brace-format
+msgid ""
+"Are you sure you want to remove all terms from '{source}'?\n"
+"This action cannot be undone."
+msgstr ""
+"确定要从“{source}”中移除所有术语吗？\n"
+"此操作无法撤销。"
+
+#: main_window.py:3707
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove the TM entry for:\n"
@@ -395,20 +457,28 @@ msgstr ""
 "'{text}...' \n"
 "的条目吗?"
 
+#: dialogs/project_settings_dialog.py:135
+#, python-brace-format
+msgid ""
+"Are you sure you want to remove the language '{lang}'?\n"
+"This will permanently delete its translation file."
+msgstr ""
+"确定要移除语言“{lang}”吗？\n"
+"此操作将永久删除其翻译文件。"
+
 #: dialogs/keybinding_dialog.py:137
 msgid "Are you sure you want to reset all keybindings to their default settings?"
 msgstr "确定要将所有快捷键重置为默认设置吗？"
 
 #: dialogs/extraction_pattern_dialog.py:153
 msgid ""
-"Are you sure you want to reset extraction rules to their default "
-"settings?\n"
+"Are you sure you want to reset extraction rules to their default settings?\n"
 "All current custom rules will be lost."
 msgstr ""
 "确定要将提取规则恢复为默认设置吗？\n"
 "当前所有自定义规则将丢失。"
 
-#: dialogs/prompt_manager_dialog.py:184
+#: dialogs/prompt_manager_dialog.py:186
 msgid ""
 "Are you sure you want to reset the prompt to its default settings?\n"
 "All current customizations will be lost."
@@ -416,7 +486,7 @@ msgstr ""
 "确定要将提示词恢复为默认设置吗？\n"
 "当前所有自定义内容将丢失。"
 
-#: main_window.py:3196
+#: main_window.py:3628
 #, python-brace-format
 msgid "Attempted to restore {count} old translations/statuses."
 msgstr "尝试恢复了 {count} 项的旧翻译/状态。"
@@ -445,19 +515,23 @@ msgstr "自动检测目标语言"
 msgid "Auto-save Interval:"
 msgstr "自动保存间隔:"
 
-#: main_window.py:795
+#: main_window.py:974
 msgid "Auto-saving..."
 msgstr "正在自动保存..."
 
-#: dialogs/prompt_manager_dialog.py:284
+#: dialogs/prompt_manager_dialog.py:286
 msgid "Available Placeholders (Click to Insert)"
 msgstr "可用占位符 (点击插入)"
 
-#: main_window.py:3313 services/code_file_service.py:160
+#: ui_components/file_explorer_panel.py:201 ui_components/file_explorer_panel.py:867
+msgid "Back"
+msgstr "返回"
+
+#: services/code_file_service.py:163
 msgid "Backup Failed"
 msgstr "备份失败"
 
-#: services/code_file_service.py:156
+#: services/code_file_service.py:159
 #, python-brace-format
 msgid "Backup created: {filename}"
 msgstr "已创建备份: {filename}"
@@ -466,19 +540,23 @@ msgstr "已创建备份: {filename}"
 msgid "Calculation finished."
 msgstr "计算完成。"
 
-#: dialogs/diff_dialog.py:153 dialogs/extraction_pattern_dialog.py:80
-#: dialogs/extraction_pattern_dialog.py:278 dialogs/font_settings_dialog.py:61
-#: dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342
-#: dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:100
-#: dialogs/prompt_manager_dialog.py:318 main_window.py:3961
+#: dialogs/diff_dialog.py:153 dialogs/extraction_pattern_dialog.py:80 dialogs/extraction_pattern_dialog.py:278 dialogs/font_settings_dialog.py:61 dialogs/keybinding_dialog.py:87 dialogs/language_pair_dialog.py:342 dialogs/management_tabs.py:90 dialogs/management_tabs.py:523 dialogs/pot_drop_dialog.py:32 dialogs/prompt_manager_dialog.py:100 dialogs/prompt_manager_dialog.py:320 main_window.py:4243
 msgid "Cancel"
 msgstr "取消"
 
-#: plugins/plugin_manager.py:450
+#: dialogs/management_tabs.py:99
+msgid "Cancelling..."
+msgstr "正在取消..."
+
+#: dialogs/project_settings_dialog.py:131 dialogs/project_settings_dialog.py:267
+msgid "Cannot Remove"
+msgstr "无法移除"
+
+#: plugins/plugin_manager.py:455
 msgid "Cannot delete a plugin that is a dependency for other enabled plugins."
 msgstr "无法删除插件，因为它是其他已启用插件的依赖项。"
 
-#: plugins/plugin_manager.py:519
+#: plugins/plugin_manager.py:524
 #, python-brace-format
 msgid ""
 "Cannot disable '{plugin_name}'.\n"
@@ -491,7 +569,7 @@ msgstr ""
 "\n"
 "- {deps}"
 
-#: plugins/plugin_manager.py:259
+#: plugins/plugin_manager.py:254
 #, python-brace-format
 msgid ""
 "Cannot enable '{plugin_name}'.\n"
@@ -504,7 +582,24 @@ msgstr ""
 "\n"
 "- {deps}"
 
-#: utils/enums.py:38
+#: main_window.py:2450
+msgid "Cannot import to a project glossary when no project is open."
+msgstr "无法导入到项目术语表，因为没有打开的项目。"
+
+#: main_window.py:822
+#, python-brace-format
+msgid "Cannot open '{path}'. It is not a valid file or project."
+msgstr "无法打开 '{path}'。这不是有效的文件或项目。"
+
+#: dialogs/management_tabs.py:381
+msgid "Cannot remove source while an import operation is in progress."
+msgstr "导入操作进行中时无法移除源文件。"
+
+#: services/project_service.py:139
+msgid "Cannot save, project configuration file is missing."
+msgstr "无法保存，项目配置文件缺失。"
+
+#: utils/enums.py:40
 msgid "Capitalization Mismatch"
 msgstr "大小写不匹配"
 
@@ -524,38 +619,37 @@ msgstr "检查占位符缺失/多余"
 msgid "Check for unusual translation length/expansion ratio"
 msgstr "检查翻译长度/膨胀率是否异常"
 
-#: plugins/plugin_manager.py:195
+#: plugins/plugin_manager.py:189
 #, python-brace-format
 msgid "Circular dependency detected in plugins: {nodes}. Cannot load."
 msgstr "检测到插件中存在循环依赖关系：{nodes}。无法加载。"
 
-#: main_window.py:1474
+#: main_window.py:1685
 msgid "Clear History"
 msgstr "清除历史记录"
 
-#: main_window.py:1949
+#: main_window.py:2265
 msgid "Clear Selected Translations"
 msgstr "清除选中项译文"
 
-#: main_window.py:3376
-msgid "Clear TM"
-msgstr "清空记忆库"
-
-#: ui_components/tm_panel.py:40 ui_components/tm_panel.py:125
+#: ui_components/tm_panel.py:40 ui_components/tm_panel.py:93
 msgid "Clear TM for Selected"
 msgstr "清除选中项记忆"
 
-#: main_window.py:4366
+#: main_window.py:4683
 #, python-brace-format
 msgid "Cleared {count} translations."
 msgstr "清除了 {count} 项译文。"
 
-#: main_window.py:3551
+#: ui_components/file_explorer_panel.py:788 ui_components/file_explorer_panel.py:791
+msgid "Clipboard Error"
+msgstr "剪贴板错误"
+
+#: main_window.py:3826
 msgid "Clipboard content pasted to translation."
 msgstr "剪贴板内容已粘贴到译文。"
 
-#: dialogs/marketplace_dialog.py:279 dialogs/search_dialog.py:86
-#: dialogs/statistics_dialog.py:395 plugins/plugin_dialog.py:190
+#: dialogs/marketplace_dialog.py:279 dialogs/search_dialog.py:86 dialogs/statistics_dialog.py:395 plugins/plugin_dialog.py:190
 msgid "Close"
 msgstr "关闭"
 
@@ -563,51 +657,49 @@ msgstr "关闭"
 msgid "Code Context"
 msgstr "代码上下文"
 
-#: main_window.py:1642
+#: main_window.py:2046
 msgid "Code file loading failed"
 msgstr "代码文件加载失败"
 
-#: main_window.py:2556
+#: main_window.py:2992
 #, python-brace-format
 msgid "Code file saved to: {filename}"
 msgstr "代码文件已保存到: {filename}"
 
-#: dialogs/search_dialog.py:58 main_window.py:618 main_window.py:2736
-#: main_window.py:2796 main_window.py:2804
+#: dialogs/search_dialog.py:58 main_window.py:723 main_window.py:3159 main_window.py:3219 main_window.py:3227
 msgid "Comment"
 msgstr "注释"
 
-#: main_window.py:645 main_window.py:1022
+#: main_window.py:750 main_window.py:1208
 msgid "Comment && Status"
 msgstr "注释与状态"
 
-#: main_window.py:593 main_window.py:1049
+#: main_window.py:698 main_window.py:1235
 msgid "Comment && Status Panel"
 msgstr "注释与状态面板"
 
-#: main_window.py:2414
+#: main_window.py:2850
 #, python-brace-format
 msgid "Comment updated for ID {id}..."
 msgstr "注释已更新 for ID {id}..."
 
-#: main_window.py:2391
+#: main_window.py:2827
 msgid "Comment updated."
 msgstr "注释已更新。"
 
-#: ui_components/comment_status_panel.py:30
-#: ui_components/comment_status_panel.py:75
+#: ui_components/comment_status_panel.py:30 ui_components/comment_status_panel.py:75
 msgid "Comment:"
 msgstr "注释:"
 
-#: main_window.py:312 main_window.py:556
+#: main_window.py:404 main_window.py:663
 msgid "Compare/Import New Version..."
 msgstr "版本对比/导入新版代码..."
 
-#: main_window.py:4472
+#: main_window.py:4789
 msgid "Comparing versions..."
 msgstr "正在比较版本..."
 
-#: main_window.py:4564
+#: main_window.py:4881
 msgid "Comparison Failed"
 msgstr "对比失败"
 
@@ -615,7 +707,7 @@ msgstr "对比失败"
 msgid "Comparison Results Summary"
 msgstr "版本对比结果摘要"
 
-#: main_window.py:4447 main_window.py:4537
+#: main_window.py:4764 main_window.py:4854
 msgid "Comparison complete. Found "
 msgstr "对比完成。发现 "
 
@@ -627,46 +719,65 @@ msgstr "兼容性警告"
 msgid "Compatible"
 msgstr "兼容"
 
-#: dialogs/extraction_pattern_dialog.py:153 dialogs/keybinding_dialog.py:137
-#: dialogs/prompt_manager_dialog.py:184
+#: dialogs/tm_import_dialog.py:13
+msgid "Configure TM Import"
+msgstr "配置翻译记忆库导入"
+
+#: ui_components/welcome_screen.py:70
+msgid "Configure the application"
+msgstr "配置应用程序"
+
+#: dialogs/extraction_pattern_dialog.py:153 dialogs/keybinding_dialog.py:137 dialogs/prompt_manager_dialog.py:186
 msgid "Confirm"
 msgstr "确认"
 
-#: main_window.py:3991
+#: main_window.py:4273
 msgid "Confirm Batch Translation"
 msgstr "确认批量翻译"
 
-#: main_window.py:3379 main_window.py:3438 main_window.py:4336
+#: main_window.py:3706 main_window.py:4653
 msgid "Confirm Clear"
 msgstr "确认清除"
 
-#: plugins/plugin_dialog.py:543 ui_components/file_explorer_panel.py:251
+#: plugins/plugin_dialog.py:543 ui_components/file_explorer_panel.py:808
 msgid "Confirm Deletion"
 msgstr "确认删除"
 
-#: main_window.py:3473
+#: main_window.py:3742
 msgid "Confirm Operation"
 msgstr "确认操作"
 
-#: main_window.py:2578
+#: main_window.py:3014
 msgid "Confirm Overwrite"
 msgstr "确认覆盖"
 
-#: main_window.py:3160
+#: main_window.py:3592
 msgid "Confirm Reload"
 msgstr "确认重新加载"
 
-#: main_window.py:3405
-msgid "Confirm Update TM"
-msgstr "确认更新记忆库"
+#: dialogs/management_tabs.py:385 dialogs/management_tabs.py:560 dialogs/project_settings_dialog.py:134 dialogs/project_settings_dialog.py:273
+msgid "Confirm Removal"
+msgstr "确认移除"
 
 #: dialogs/diff_dialog.py:146
 msgid "Confirm and Update Project"
 msgstr "确认并更新项目"
 
-#: dialogs/font_settings_dialog.py:118 main_window.py:1500
+#: dialogs/import_configuration_dialog.py:42
+msgid "Confirm the language mapping from the file to LexiSync's supported languages."
+msgstr "确认从文件到LexiSync支持语言的语言映射。"
+
+#: dialogs/font_settings_dialog.py:118 main_window.py:1731
 msgid "Confirmation"
 msgstr "确认"
+
+#: services/tm_service.py:144
+msgid "Connecting to database..."
+msgstr "正在连接到数据库..."
+
+#: ui_components/file_explorer_panel.py:160
+msgid "Connection Error"
+msgstr "连接错误"
 
 #: services/ai_translator.py:69
 msgid "Connection failed"
@@ -680,7 +791,7 @@ msgstr "连接成功。测试翻译"
 msgid "Content"
 msgstr "内容"
 
-#: dialogs/prompt_manager_dialog.py:274
+#: dialogs/prompt_manager_dialog.py:276
 msgid "Content:"
 msgstr "内容:"
 
@@ -688,61 +799,56 @@ msgstr "内容:"
 msgid "Context & Prompts"
 msgstr "上下文与提示词"
 
-#: main_window.py:641 main_window.py:1003
+#: main_window.py:746 main_window.py:1189
 msgid "Context Preview"
 msgstr "上下文预览"
 
-#: main_window.py:594 main_window.py:1041
+#: main_window.py:699 main_window.py:1227
 msgid "Context Preview Panel"
 msgstr "上下文预览面板"
 
-#: ui_components/file_explorer_panel.py:235
+#: ui_components/file_explorer_panel.py:761
 #, python-brace-format
 msgid "Copied {count} file name(s) to clipboard."
 msgstr "已复制 {count} 个文件名复制到剪贴板。"
 
-#: ui_components/file_explorer_panel.py:223
+#: ui_components/file_explorer_panel.py:753
 #, python-brace-format
 msgid "Copied {count} full path(s) to clipboard."
 msgstr "已复制 {count} 个完整路径到剪贴板。"
 
-#: main_window.py:3528
+#: main_window.py:3803
 #, python-brace-format
 msgid "Copied {count} original strings to clipboard."
 msgstr "复制了 {count} 项原文到剪贴板。"
 
-#: main_window.py:3535
+#: main_window.py:3810
 #, python-brace-format
 msgid "Copied {count} translations to clipboard."
 msgstr "复制了 {count} 项译文到剪贴板。"
 
-#: ui_components/file_explorer_panel.py:229
+#: ui_components/file_explorer_panel.py:757
 msgid "Copy File Name"
 msgstr "复制文件名"
 
-#: ui_components/file_explorer_panel.py:218
+#: ui_components/file_explorer_panel.py:749
 msgid "Copy Full Path"
 msgstr "复制完整路径"
 
-#: main_window.py:432 main_window.py:582 main_window.py:1913
+#: main_window.py:516 main_window.py:687 main_window.py:2229
 msgid "Copy Original"
 msgstr "复制原文"
 
-#: main_window.py:1914
+#: main_window.py:2230
 msgid "Copy Translation"
 msgstr "复制译文"
 
-#: main_window.py:2659
+#: main_window.py:3115
 #, python-brace-format
 msgid "Could not compile MO file: {error}"
 msgstr "无法编译MO文件：{error}"
 
-#: main_window.py:3314
-#, python-brace-format
-msgid "Could not create backup for TM: {error}"
-msgstr "无法为记忆库创建备份: {error}"
-
-#: services/code_file_service.py:161
+#: services/code_file_service.py:164
 #, python-brace-format
 msgid "Could not create code file backup '{filename}': {error}"
 msgstr "无法创建代码文件备份 '{filename}': {error}"
@@ -751,59 +857,54 @@ msgstr "无法创建代码文件备份 '{filename}': {error}"
 msgid "Could not decode API response. Response text"
 msgstr "无法解码 API 响应。响应文本"
 
-#: main_window.py:3261
-#, python-brace-format
-msgid ""
-"Could not determine original/translation columns from '{filename}' "
-"header. Will try to use the first two columns by default (A=Original, "
-"B=Translation)."
-msgstr "无法从 '{filename}' 的表头确定原文/译文列。将尝试默认使用前两列 (A=原文, B=译文)。"
+#: main_window.py:2460
+msgid "Could not detect any languages in the TBX file."
+msgstr "无法检测到TBX文件中的任何语言。"
 
-#: main_window.py:2768
+#: dialogs/management_tabs.py:250
+msgid "Could not detect any languages in the TBX file. Please check the file format."
+msgstr "无法检测到 TBX 文件中的任何语言。请检查文件格式。"
+
+#: main_window.py:3191
 #, python-brace-format
 msgid "Could not export project translations to Excel: {error}"
 msgstr "无法导出项目翻译到Excel: {error}"
 
-#: main_window.py:2930
+#: main_window.py:3360
 #, python-brace-format
 msgid "Could not export project translations to JSON: {error}"
 msgstr "无法导出项目翻译到JSON: {error}"
 
-#: main_window.py:2970
+#: main_window.py:3400
 #, python-brace-format
 msgid "Could not export project translations to YAML: {error}"
 msgstr "无法导出项目翻译到YAML: {error}"
 
-#: main_window.py:3400
-msgid "Could not find data for the selected item."
-msgstr "未找到选中的项目数据。"
-
-#: main_window.py:3148
+#: main_window.py:3580
 msgid "Could not get code content for re-extraction."
 msgstr "无法获取用于重新提取的代码内容。"
 
-#: main_window.py:2890
+#: main_window.py:3320
 #, python-brace-format
 msgid "Could not import project translations from Excel: {error}"
 msgstr "无法从Excel导入项目翻译: {error}"
 
-#: dialogs/extraction_pattern_dialog.py:182
-#: dialogs/prompt_manager_dialog.py:212
+#: dialogs/extraction_pattern_dialog.py:182 dialogs/prompt_manager_dialog.py:214
 #, python-brace-format
 msgid "Could not load preset file: {error}"
 msgstr "无法加载预设文件: {error}"
 
-#: main_window.py:1713
+#: main_window.py:1904
 #, python-brace-format
-msgid "Could not load project file '{filename}': {error}"
-msgstr "无法加载项目文件 '{filename}': {error}"
+msgid "Could not load project from '{path}': {error}"
+msgstr "无法从 '{path}' 加载项目: {error}"
 
-#: main_window.py:1639
+#: main_window.py:2043
 #, python-brace-format
 msgid "Could not open or parse code file '{filename}': {error}"
 msgstr "无法打开或解析代码文件 '{filename}': {error}"
 
-#: main_window.py:3144
+#: main_window.py:3576
 #, python-brace-format
 msgid ""
 "Could not re-read {filepath} from disk.\n"
@@ -814,16 +915,19 @@ msgstr ""
 "将使用内存中的版本。\n"
 "错误: {error}"
 
-#: main_window.py:2562
+#: main_window.py:2998
 #, python-brace-format
 msgid "Could not save code file: {error}"
 msgstr "无法保存代码文件: {error}"
 
-#: dialogs/extraction_pattern_dialog.py:197
-#: dialogs/prompt_manager_dialog.py:227
+#: dialogs/extraction_pattern_dialog.py:197 dialogs/prompt_manager_dialog.py:229
 #, python-brace-format
 msgid "Could not save preset file: {error}"
 msgstr "无法保存预设文件: {error}"
+
+#: ui_components/welcome_screen.py:55
+msgid "Create a structured project folder"
+msgstr "创建结构化项目文件夹"
 
 #: plugins/plugin_dialog.py:412
 msgid "Current"
@@ -833,17 +937,21 @@ msgstr "当前"
 msgid "Current Selection:"
 msgstr "当前选择："
 
-#: dialogs/extraction_pattern_dialog.py:92
-#: dialogs/extraction_pattern_dialog.py:114
-#: dialogs/extraction_pattern_dialog.py:174
-#: dialogs/extraction_pattern_dialog.py:243
-#: dialogs/extraction_pattern_dialog.py:292
+#: dialogs/extraction_pattern_dialog.py:92 dialogs/extraction_pattern_dialog.py:114 dialogs/extraction_pattern_dialog.py:174 dialogs/extraction_pattern_dialog.py:243 dialogs/extraction_pattern_dialog.py:292
 msgid "Custom"
 msgstr "自定义"
 
-#: ui_components/file_explorer_panel.py:212
+#: services/glossary_service.py:389
+msgid "Database update complete!"
+msgstr "数据库更新完成！"
+
+#: ui_components/file_explorer_panel.py:706
 msgid "Delete"
 msgstr "删除"
+
+#: ui_components/file_explorer_panel.py:805 ui_components/file_explorer_panel.py:857
+msgid "Delete Error"
+msgstr "删除错误"
 
 #: plugins/plugin_dialog.py:153 plugins/plugin_dialog.py:485
 msgid "Delete Plugin"
@@ -853,15 +961,30 @@ msgstr "删除插件"
 msgid "Delete Selected"
 msgstr "删除选中"
 
+#: ui_components/file_explorer_panel.py:849
+msgid "Deletion Results"
+msgstr "删除结果"
+
+#: ui_components/file_explorer_panel.py:848
+#, python-brace-format
+msgid ""
+"Deletion failed with errors:\n"
+"\n"
+"{errors}"
+msgstr ""
+"删除失败，错误：\n"
+"\n"
+"{errors}"
+
 #: plugins/plugin_dialog.py:582
 msgid "Dependency Check"
 msgstr "依赖检查"
 
-#: plugins/plugin_manager.py:263 plugins/plugin_manager.py:523
+#: plugins/plugin_manager.py:258 plugins/plugin_manager.py:528
 msgid "Dependency Error"
 msgstr "依赖错误"
 
-#: dialogs/prompt_manager_dialog.py:302
+#: dialogs/prompt_manager_dialog.py:304
 msgid "Description"
 msgstr "描述"
 
@@ -869,21 +992,25 @@ msgstr "描述"
 msgid "Disable"
 msgstr "禁用"
 
-#: main_window.py:1118
+#: ui_components/welcome_screen.py:65
+msgid "Discover and install plugins"
+msgstr "发现并安装插件"
+
+#: main_window.py:1316
 msgid "Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"
 msgstr "显示: 0/0 | 已译: 0 | 未译: 0 | 已忽略: 0"
 
-#: main_window.py:1140
+#: main_window.py:1338
 #, python-brace-format
-msgid ""
-"Displayed: {displayed_count}/{total_count} | Translated: "
-"{translated_visible} | Untranslated: {untranslated_visible} | Ignored: "
-"{ignored_visible}"
-msgstr ""
-"显示: {displayed_count}/{total_count} | 已译: {translated_visible} | 未译: "
-"{untranslated_visible} | 已忽略: {ignored_visible}"
+msgid "Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}"
+msgstr "显示: {displayed_count}/{total_count} | 已译: {translated_visible} | 未译: {untranslated_visible} | 已忽略: {ignored_visible}"
 
-#: main_window.py:3958
+#: main_window.py:1794
+#, python-brace-format
+msgid "Do you want to add '{filename}' as a new source file to the current project?"
+msgstr "您想将“{filename}”作为新源文件添加到当前项目中吗？"
+
+#: main_window.py:4240
 msgid "Do you want to overwrite them, skip them, or cancel the operation?"
 msgstr "您想覆盖它们、跳过它们还是取消操作？"
 
@@ -905,42 +1032,35 @@ msgstr "下载失败：{error}"
 msgid "Downloading {plugin_name}..."
 msgstr "正在下载 {plugin_name}..."
 
-#: main_window.py:1563
-#, python-brace-format
-msgid "Drag and drop failed: '{filename}' is not a file."
-msgstr "拖放失败: '{filename}' 不是一个文件。"
-
-#: main_window.py:1556
-#, python-brace-format
-msgid "Drag and drop failed: Invalid file type '{filename}'"
-msgstr "拖放失败: 无效的文件类型 '{filename}'"
-
-#: dialogs/prompt_manager_dialog.py:121 dialogs/prompt_manager_dialog.py:128
-#: dialogs/prompt_manager_dialog.py:261
+#: dialogs/prompt_manager_dialog.py:121 dialogs/prompt_manager_dialog.py:128 dialogs/prompt_manager_dialog.py:263
 msgid "Dynamic Instruction"
 msgstr "动态指令"
 
-#: main_window.py:735
+#: main_window.py:908
 msgid "Dynamic sorting enabled."
 msgstr "动态排序已启用。"
 
-#: main_window.py:639 main_window.py:994
+#: main_window.py:744 main_window.py:1180
 msgid "Edit && Details"
 msgstr "编辑与详情"
 
-#: main_window.py:592 main_window.py:1037
+#: main_window.py:697 main_window.py:1223
 msgid "Edit && Details Panel"
 msgstr "编辑与详情面板"
 
-#: main_window.py:1944 main_window.py:4279
+#: main_window.py:2260 main_window.py:4592
 msgid "Edit Comment..."
 msgstr "编辑注释..."
+
+#: ui_components/file_explorer_panel.py:726
+msgid "Edit Error"
+msgstr "编辑错误"
 
 #: dialogs/extraction_pattern_dialog.py:144
 msgid "Edit Extraction Rule"
 msgstr "编辑提取规则"
 
-#: dialogs/prompt_manager_dialog.py:175
+#: dialogs/prompt_manager_dialog.py:177
 msgid "Edit Prompt Fragment"
 msgstr "编辑提示词片段"
 
@@ -948,7 +1068,7 @@ msgstr "编辑提示词片段"
 msgid "Enable"
 msgstr "启用"
 
-#: dialogs/prompt_manager_dialog.py:267
+#: dialogs/prompt_manager_dialog.py:269
 msgid "Enable this fragment"
 msgstr "启用此片段"
 
@@ -964,57 +1084,53 @@ msgstr "启用"
 msgid "Enabled Validation Checks"
 msgstr "启用验证检查"
 
-#: utils/enums.py:48
+#: utils/enums.py:50
 msgid "Ending Punctuation Mismatch"
 msgstr "结束标点不匹配"
 
-#: services/validation_service.py:103
+#: services/validation_service.py:102
 #, python-brace-format
 msgid "Ending punctuation differs: '{c1}' vs '{c2}'."
 msgstr "结束标点不同: '{c1}' vs '{c2}'。"
 
-#: services/validation_service.py:99
+#: services/validation_service.py:98
 msgid "Ending punctuation presence differs."
 msgstr "结束标点存在性不同。"
 
-#: main_window.py:4275
+#: main_window.py:4588
 #, python-brace-format
 msgid "Enter comment for {count} selected items:"
 msgstr "为选中的 {count} 项输入注释:"
 
-#: dialogs/extraction_pattern_dialog.py:180
-#: dialogs/extraction_pattern_dialog.py:297
-#: dialogs/extraction_pattern_dialog.py:300
-#: dialogs/prompt_manager_dialog.py:210 main_window.py:1639 main_window.py:2282
-#: main_window.py:2286 main_window.py:2550 main_window.py:2567
-#: main_window.py:2571 main_window.py:3148 main_window.py:3291
-#: main_window.py:3338 main_window.py:3400 main_window.py:4569
-#: plugins/plugin_dialog.py:532 plugins/plugin_dialog.py:561
-#: ui_components/file_explorer_panel.py:265
+#: dialogs/management_tabs.py:153 dialogs/management_tabs.py:498
+msgid "Entry Count"
+msgstr "条目数"
+
+#: dialogs/extraction_pattern_dialog.py:180 dialogs/extraction_pattern_dialog.py:297 dialogs/extraction_pattern_dialog.py:300 dialogs/prompt_manager_dialog.py:212 main_window.py:1726 main_window.py:1805 main_window.py:2043 main_window.py:2450 main_window.py:2718 main_window.py:2722 main_window.py:2986 main_window.py:3003 main_window.py:3007 main_window.py:3026 main_window.py:3580 main_window.py:3722 main_window.py:4886 plugins/plugin_dialog.py:532 plugins/plugin_dialog.py:561
 msgid "Error"
 msgstr "错误"
 
-#: main_window.py:3013
+#: main_window.py:3443
 #, python-brace-format
 msgid "Error extracting POT file: {error}"
 msgstr "提取POT文件时出错: {error}"
 
-#: main_window.py:3068
+#: main_window.py:3500
 #, python-brace-format
 msgid "Error importing PO file '{filename}': {error}"
 msgstr "导入PO文件 '{filename}' 时出错: {error}"
 
-#: main_window.py:2886
+#: main_window.py:3316
 #, python-brace-format
 msgid "Error processing Excel file (possibly column names issue): {error}"
 msgstr "处理Excel文件时出错 (可能是列名问题): {error}"
 
-#: main_window.py:2871
+#: main_window.py:3301
 #, python-brace-format
 msgid "Error processing Excel row {row_num}: {error}. Skipping this row."
 msgstr "处理 Excel 行 {row_num} 时出错: {error}。跳过此行。"
 
-#: main_window.py:3215
+#: main_window.py:3647
 #, python-brace-format
 msgid "Error reloading translatable text: {error}"
 msgstr "重新加载翻译文本时出错: {error}"
@@ -1023,7 +1139,7 @@ msgstr "重新加载翻译文本时出错: {error}"
 msgid "Error:"
 msgstr "错误:"
 
-#: main_window.py:1722
+#: main_window.py:2052
 #, python-brace-format
 msgid "Error: '{filename}' is not a valid file."
 msgstr "错误：'{filename}' 不是有效的文件。"
@@ -1041,30 +1157,24 @@ msgstr "转为正则 (左)"
 msgid "Escape for Regex (Right)"
 msgstr "转为正则 (右)"
 
-#: main_window.py:2780
+#: main_window.py:3203
 msgid "Excel files (*.xlsx)"
 msgstr "Excel 文件 (*.xlsx)"
 
-#: main_window.py:3345 main_window.py:3369
-msgid "Excel files (*.xlsx);;All files (*.*)"
-msgstr "Excel 文件 (*.xlsx);;所有文件 (*.*)"
-
-#: main_window.py:2790
+#: main_window.py:3213
 msgid "Excel header format is incorrect or empty."
 msgstr "Excel表头格式不正确或为空。"
 
-#: main_window.py:2803
+#: main_window.py:3226
 #, python-brace-format
 msgid ""
 "Excel header must contain 'UUID' and '{translation_col}' columns.\n"
-"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', "
-"'{original_semantic_col}'."
+"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
 msgstr ""
 "Excel表头必须包含 'UUID' 和 '{translation_col}' 列。\n"
-"可选列: '{comment_col}', '{reviewed_col}', '{ignored_col}', "
-"'{original_semantic_col}'。"
+"可选列: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'。"
 
-#: main_window.py:411 main_window.py:576
+#: main_window.py:495 main_window.py:681
 msgid "Exit"
 msgstr "退出"
 
@@ -1072,16 +1182,11 @@ msgstr "退出"
 msgid "Expansion Ratio"
 msgstr "膨胀率"
 
-#: main_window.py:353 main_window.py:564
+#: main_window.py:441 main_window.py:671
 msgid "Export"
 msgstr "导出"
 
-#: main_window.py:376 main_window.py:574 main_window.py:3367
-msgid "Export Current TM (Excel)"
-msgstr "导出当前记忆库 (Excel)"
-
-#: main_window.py:2767 main_window.py:2929 main_window.py:2969
-#: main_window.py:3118
+#: main_window.py:3190 main_window.py:3359 main_window.py:3399 main_window.py:3550
 msgid "Export Error"
 msgstr "导出错误"
 
@@ -1089,8 +1194,7 @@ msgstr "导出错误"
 msgid "Export Extraction Rule Preset"
 msgstr "导出提取规则预设"
 
-#: dialogs/extraction_pattern_dialog.py:197
-#: dialogs/prompt_manager_dialog.py:227
+#: dialogs/extraction_pattern_dialog.py:197 dialogs/prompt_manager_dialog.py:229
 msgid "Export Failed"
 msgstr "导出失败"
 
@@ -1098,35 +1202,35 @@ msgstr "导出失败"
 msgid "Export Preset"
 msgstr "导出预设"
 
-#: main_window.py:2727
+#: main_window.py:3150
 msgid "Export Project Translations to Excel"
 msgstr "导出项目翻译到Excel"
 
-#: main_window.py:2910
+#: main_window.py:3340
 msgid "Export Project Translations to JSON"
 msgstr "导出项目翻译到JSON"
 
-#: main_window.py:2950
+#: main_window.py:3380
 msgid "Export Project Translations to YAML"
 msgstr "导出项目翻译到YAML"
 
-#: dialogs/prompt_manager_dialog.py:217
+#: dialogs/prompt_manager_dialog.py:219
 msgid "Export Prompt Preset"
 msgstr "导出提示词预设"
 
-#: main_window.py:356 main_window.py:567
+#: main_window.py:444 main_window.py:674
 msgid "Export to Excel"
 msgstr "导出到Excel"
 
-#: main_window.py:361 main_window.py:568
+#: main_window.py:449 main_window.py:675
 msgid "Export to JSON"
 msgstr "导出到JSON"
 
-#: main_window.py:371 main_window.py:572 main_window.py:3103
+#: main_window.py:459 main_window.py:679 main_window.py:3535
 msgid "Export to PO File..."
 msgstr "导出到PO文件..."
 
-#: main_window.py:366 main_window.py:569
+#: main_window.py:454 main_window.py:676
 msgid "Export to YAML"
 msgstr "导出到YAML"
 
@@ -1134,28 +1238,33 @@ msgstr "导出到YAML"
 msgid "External Libraries"
 msgstr "外部库"
 
-#: utils/enums.py:36
+#: utils/enums.py:38
 msgid "Extra Placeholder"
 msgstr "多余占位符"
 
-#: services/validation_service.py:49
+#: services/validation_service.py:48
 #, python-brace-format
 msgid "Extra placeholders: {placeholders}"
 msgstr "多余占位符: {placeholders}"
 
-#: main_window.py:400 main_window.py:570
+#: main_window.py:484 main_window.py:677
 msgid "Extract POT Template from Code..."
 msgstr "从代码文件提取POT模板..."
 
-#: main_window.py:1609
+#: main_window.py:2012
 msgid "Extracting strings..."
 msgstr "正在提取字符串..."
 
-#: main_window.py:3121
+#: dialogs/extraction_pattern_dialog.py:164 dialogs/extraction_pattern_dialog.py:189
+#, python-brace-format
+msgid "Extraction Pattern Files (*{ext});;All Files (*.*)"
+msgstr "提取模式文件 (*{ext});;所有文件 (*.*)"
+
+#: main_window.py:3553
 msgid "Extraction Rule Manager"
 msgstr "提取规则管理器"
 
-#: main_window.py:3124
+#: main_window.py:3556
 msgid "Extraction Rules Updated"
 msgstr "规则已更新"
 
@@ -1167,41 +1276,72 @@ msgstr "提取规则："
 msgid "Extraction rules updated. Consider reloading the text."
 msgstr "提取规则已更新。建议重新加载翻译文本。"
 
-#: main_window.py:3125
-msgid ""
-"Extraction rules updated. Do you want to reload the translatable text of "
-"the current code using the new rules immediately?"
+#: main_window.py:3557
+msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"
 msgstr "提取规则已更新。是否立即使用新规则重新加载当前代码的翻译文本？"
 
 #: plugins/plugin_dialog.py:620
 msgid "Failed"
 msgstr "失败"
 
-#: ui_components/file_explorer_panel.py:266
+#: ui_components/file_explorer_panel.py:788
+msgid "Failed to access system clipboard."
+msgstr "访问系统剪贴板失败。"
+
+#: dialogs/management_tabs.py:255 main_window.py:2464
+#, python-brace-format
+msgid "Failed to analyze the TBX file: {error}"
+msgstr "分析TBX文件失败：{error}"
+
+#: ui_components/file_explorer_panel.py:791
+msgid "Failed to copy to clipboard."
+msgstr "复制到剪贴板失败。"
+
+#: services/project_manager.py:80
+#, python-brace-format
+msgid "Failed to create initial translation data: {error}"
+msgstr "创建初始翻译数据失败：{error}"
+
+#: services/project_service.py:90
+#, python-brace-format
+msgid "Failed to create project: {error}"
+msgstr "创建项目失败：{error}"
+
+#: main_window.py:3722
+msgid "Failed to delete the TM entry from the database."
+msgstr "从数据库删除TM条目失败。"
+
+#: ui_components/file_explorer_panel.py:836
 #, python-brace-format
 msgid "Failed to delete {path}: {error}"
 msgstr "删除 {path} 失败：{error}"
 
-#: main_window.py:3118
+#: main_window.py:3550
 #, python-brace-format
 msgid "Failed to export to PO file: {error}"
 msgstr "无法导出到PO文件: {error}"
 
-#: plugins/plugin_manager.py:407
+#: plugins/plugin_manager.py:412
 #, python-brace-format
 msgid "Failed to extract the archive: {error}"
 msgstr "解压压缩包失败：{error}"
 
 #: dialogs/marketplace_dialog.py:40
 #, python-brace-format
-msgid ""
-"Failed to fetch data (HTTP {status_code}). The marketplace file might be "
-"missing or the server is down."
+msgid "Failed to fetch data (HTTP {status_code}). The marketplace file might be missing or the server is down."
 msgstr "获取数据失败 (HTTP {status_code})。市场文件可能丢失或服务器无响应。"
 
 #: dialogs/marketplace_dialog.py:294
 msgid "Failed to fetch plugin list from the server."
 msgstr "从服务器获取插件列表失败。"
+
+#: ui_components/file_explorer_panel.py:146
+msgid "Failed to initialize file system models."
+msgstr "初始化文件系统模型失败。"
+
+#: ui_components/file_explorer_panel.py:153
+msgid "Failed to initialize user interface."
+msgstr "初始化用户界面失败。"
 
 #: plugins/plugin_dialog.py:621
 #, python-brace-format
@@ -1212,40 +1352,94 @@ msgstr ""
 "未能安装库 '{lib}'。\n"
 "请检查日志获取详细信息。"
 
-#: main_window.py:3291 main_window.py:3292
-#, python-brace-format
-msgid "Failed to load Excel TM: {error}"
-msgstr "无法加载Excel翻译记忆库: {error}"
-
 #: plugins/plugin_dialog.py:249
 #, python-brace-format
 msgid "Failed to load: {reason}"
 msgstr "加载失败：{reason}"
 
-#: plugins/plugin_manager.py:446
+#: plugins/plugin_manager.py:451
 #, python-brace-format
 msgid "Failed to move plugin files to the destination: {error}"
 msgstr "移动插件文件到目标位置失败：{error}"
 
-#: main_window.py:1758
+#: ui_components/file_explorer_panel.py:451
+msgid "Failed to navigate back."
+msgstr "返回失败。"
+
+#: ui_components/file_explorer_panel.py:467
+msgid "Failed to navigate forward."
+msgstr "前进失败。"
+
+#: ui_components/file_explorer_panel.py:526
+msgid "Failed to navigate to home directory."
+msgstr "导航到主目录失败。"
+
+#: ui_components/file_explorer_panel.py:483
+msgid "Failed to navigate to parent directory."
+msgstr "导航到父目录失败。"
+
+#: ui_components/file_explorer_panel.py:416
+#, python-brace-format
+msgid "Failed to navigate to: {path}"
+msgstr "导航到“{path}”失败"
+
+#: main_window.py:2069
 #, python-brace-format
 msgid "Failed to open '{filename}': {error}"
 msgstr "无法打开 '{filename}'：{error}"
 
-#: plugins/plugin_manager.py:440
+#: main_window.py:1726
+#, python-brace-format
+msgid ""
+"Failed to open file '{filename}':\n"
+"{error}"
+msgstr ""
+"无法打开文件 '{filename}'：\n"
+"{error}"
+
+#: ui_components/file_explorer_panel.py:741
+msgid "Failed to open file explorer."
+msgstr "打开文件浏览器失败。"
+
+#: ui_components/file_explorer_panel.py:580
+msgid "Failed to open selected item."
+msgstr "打开所选项目失败。"
+
+#: ui_components/file_explorer_panel.py:509
+msgid "Failed to refresh directory."
+msgstr "刷新目录失败。"
+
+#: plugins/plugin_manager.py:445
 #, python-brace-format
 msgid "Failed to remove the existing plugin directory: {error}"
 msgstr "移除现有插件目录失败：{error}"
 
-#: main_window.py:2662
+#: ui_components/file_explorer_panel.py:745
+msgid "Failed to reveal item in file explorer."
+msgstr "在文件浏览器中显示项目失败。"
+
+#: main_window.py:3118
 #, python-brace-format
 msgid "Failed to save PO file: {error}"
 msgstr "保存PO文件失败: {error}"
 
-#: main_window.py:3338
+#: services/project_manager.py:86
 #, python-brace-format
-msgid "Failed to save TM: {error}"
-msgstr "无法保存翻译记忆库: {error}"
+msgid "Failed to save project configuration: {error}"
+msgstr "保存项目配置失败：{error}"
+
+#: ui_components/file_explorer_panel.py:160
+msgid "Failed to setup signal connections."
+msgstr "设置信号连接失败。"
+
+#: ui_components/file_explorer_panel.py:726
+msgid "Failed to start editing the item."
+msgstr "开始编辑项目失败。"
+
+#: dialogs/management_tabs.py:300
+#, python-brace-format
+msgid "Failed to start import: {error}"
+msgstr "启动导入失败：{error}"
 
 #: dialogs/language_pair_dialog.py:270 dialogs/language_pair_dialog.py:296
 msgid "Favorite Pairs"
@@ -1255,57 +1449,83 @@ msgstr "收藏夹"
 msgid "Fetching plugin index..."
 msgstr "正在获取插件索引..."
 
-#: main_window.py:2579
+#: services/project_manager.py:88
 #, python-brace-format
-msgid ""
-"File '{filename}' already exists. Overwrite? A backup file (.bak) will be"
-" created."
-msgstr ""
-"文件 '{filename}' 已存在。是否覆盖？\n"
-"将会创建一个备份文件 (.bak)。"
+msgid "File '{filename}' added to the project successfully."
+msgstr "文件“{filename}”已成功添加到项目。"
 
-#: main_window.py:1481
+#: main_window.py:3015
+#, python-brace-format
+msgid "File '{filename}' already exists. Overwrite? A backup file (.bak) will be created."
+msgstr "文件 '{filename}' 已存在。是否覆盖？将会创建一个备份文件 (.bak)。"
+
+#: main_window.py:1692
 #, python-brace-format
 msgid "File '{filepath}' does not exist."
 msgstr "文件 '{filepath}' 不存在。"
 
-#: main_window.py:637 main_window.py:969
+#: ui_components/file_explorer_panel.py:580
+msgid "File Access Error"
+msgstr "文件访问错误"
+
+#: ui_components/file_explorer_panel.py:731
+msgid "File Error"
+msgstr "文件错误"
+
+#: dialogs/project_settings_dialog.py:246
+msgid "File Exists"
+msgstr "文件已存在"
+
+#: main_window.py:742 main_window.py:1146
 msgid "File Explorer"
 msgstr "文件浏览器"
 
-#: main_window.py:591 main_window.py:1033
+#: main_window.py:696 main_window.py:1219
 msgid "File Explorer Panel"
 msgstr "文件资源管理器面板"
 
-#: main_window.py:1760
+#: dialogs/project_settings_dialog.py:204
+msgid "File Name"
+msgstr "文件名"
+
+#: main_window.py:2071
 msgid "File Open Error"
 msgstr "文件打开错误"
 
-#: main_window.py:3143
+#: main_window.py:3575
 msgid "File Read Error"
 msgstr "文件读取错误"
 
-#: main_window.py:1480
+#: ui_components/file_explorer_panel.py:500
+msgid "File explorer refreshed."
+msgstr "文件浏览器已刷新。"
+
+#: main_window.py:801 main_window.py:1691
 msgid "File not found"
 msgstr "文件未找到"
 
-#: main_window.py:1753
-#, python-brace-format
-msgid ""
-"File type for '{filename}' is not supported by the application or any "
-"active plugin."
-msgstr "应用程序或激活的插件不支持文件“{filename}”的类型。"
+#: ui_components/file_explorer_panel.py:731
+msgid "File or directory does not exist."
+msgstr "文件或目录不存在。"
 
-#: ui_components/file_explorer_panel.py:69
-#: ui_components/file_explorer_panel.py:269
+#: main_window.py:802
+#, python-brace-format
+msgid "File or project '{path}' does not exist."
+msgstr "文件或项目 '{path}' 不存在。"
+
+#: ui_components/file_explorer_panel.py:231 ui_components/file_explorer_panel.py:872
+msgid "Filter Settings"
+msgstr "筛选设置"
+
+#: ui_components/file_explorer_panel.py:248 ui_components/file_explorer_panel.py:862
 msgid "Filter files..."
 msgstr "筛选文件..."
 
-#: main_window.py:623 main_window.py:828
+#: main_window.py:728 main_window.py:1004
 msgid "Filter:"
 msgstr "筛选:"
 
-#: main_window.py:1861
+#: main_window.py:2177
 #, python-brace-format
 msgid "Filtered by '{search_term}'."
 msgstr "已按 '{search_term}' 筛选。"
@@ -1314,7 +1534,7 @@ msgstr "已按 '{search_term}' 筛选。"
 msgid "Finalizing..."
 msgstr "正在完成..."
 
-#: main_window.py:628 main_window.py:875
+#: main_window.py:733 main_window.py:1051
 msgid "Find"
 msgstr "查找"
 
@@ -1326,7 +1546,7 @@ msgstr "查找下一个"
 msgid "Find Previous"
 msgstr "查找上一个"
 
-#: main_window.py:3520
+#: main_window.py:3795
 msgid "Find and Replace"
 msgstr "查找与替换"
 
@@ -1334,7 +1554,7 @@ msgstr "查找与替换"
 msgid "Find what:"
 msgstr "查找内容:"
 
-#: main_window.py:426 main_window.py:581
+#: main_window.py:510 main_window.py:686
 msgid "Find/Replace..."
 msgstr "查找/替换..."
 
@@ -1346,7 +1566,7 @@ msgstr "标记为“Fuzzy”的条目"
 msgid "Font Family:"
 msgstr "字体族:"
 
-#: main_window.py:784
+#: main_window.py:963
 msgid "Font Settings"
 msgstr "字体设置"
 
@@ -1354,10 +1574,8 @@ msgstr "字体设置"
 msgid "Font Settings..."
 msgstr "字体设置..."
 
-#: main_window.py:787
-msgid ""
-"Font settings have been changed. Please restart the application for the "
-"changes to take effect."
+#: main_window.py:966
+msgid "Font settings have been changed. Please restart the application for the changes to take effect."
 msgstr "字体设置已更改。请重启应用程序以使更改生效。"
 
 #: dialogs/settings_pages.py:173
@@ -1369,66 +1587,103 @@ msgstr "字体："
 msgid "Force-enabled with missing libraries: {libs}"
 msgstr "在缺少库的情况下强制启用：{libs}"
 
+#: ui_components/file_explorer_panel.py:202 ui_components/file_explorer_panel.py:868
+msgid "Forward"
+msgstr "前进"
+
 #: dialogs/search_dialog.py:182
 #, python-brace-format
 msgid "Found {count} matches."
 msgstr "找到 {count} 个匹配项。"
 
-#: utils/enums.py:58
+#: utils/enums.py:62
 msgid "Fuzzy Translation"
 msgstr "模糊翻译"
 
-#: main_window.py:4517
+#: main_window.py:4834
 msgid "Fuzzy match, please review."
 msgstr "模糊匹配，请审阅。"
 
-#: dialogs/settings_dialog.py:105
+#: dialogs/project_settings_dialog.py:406 dialogs/settings_dialog.py:107
 msgid "General"
 msgstr "通用"
 
-#: main_window.py:1104
+#: dialogs/settings_dialog.py:119 main_window.py:1822 main_window.py:2523
+msgid "Global Resources"
+msgstr "全局资源"
+
+#: dialogs/project_settings_dialog.py:323 dialogs/resources_page.py:21 main_window.py:1152
+msgid "Glossary"
+msgstr "术语表"
+
+#: utils/enums.py:56
+msgid "Glossary Mismatch"
+msgstr "术语不匹配"
+
+#: services/validation_service.py:165
+#, python-brace-format
+msgid "Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'."
+msgstr "术语库不匹配：术语“{term}”应翻译为“{targets}”之一。"
+
+#: main_window.py:1239
+msgid "Glossary Panel"
+msgstr "术语表面板"
+
+#: main_window.py:1302
 msgid "Hint: "
 msgstr "提示: "
 
-#: main_window.py:1102
+#: main_window.py:1300
 msgid "Hint: requests not found, AI translation is disabled."
 msgstr "提示: requests 未找到, AI翻译功能不可用。"
+
+#: ui_components/file_explorer_panel.py:205 ui_components/file_explorer_panel.py:871
+msgid "Home"
+msgstr "主页"
+
+#: ui_components/file_explorer_panel.py:519
+msgid "Home directory no longer exists."
+msgstr "主目录已不存在。"
 
 #: dialogs/marketplace_dialog.py:439
 msgid "Homepage"
 msgstr "主页"
 
-#: main_window.py:1934
+#: dialogs/new_project_dialog.py:50
+msgid "If checked, the project will be able to read suggestions from the global TM (read-only)."
+msgstr "如果选中，项目将能从全局TM读取建议（只读）。"
+
+#: main_window.py:2250
 msgid "Ignore Warnings for Selected"
 msgstr "忽略选中项的警告"
 
-#: main_window.py:2504
+#: main_window.py:2940
 #, python-brace-format
 msgid "Ignore status for ID {id} -> {status}"
 msgstr "ID {id}... 忽略状态 -> {status}"
 
-#: main_window.py:2146 main_window.py:4250
-#: ui_components/comment_status_panel.py:57
+#: main_window.py:2580 main_window.py:4532 ui_components/comment_status_panel.py:57
 msgid "Ignore this string"
 msgstr "忽略此字符串"
 
-#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590
-#: main_window.py:624 main_window.py:831 main_window.py:2737
-#: main_window.py:2798 main_window.py:2806 main_window.py:3698
+#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590 main_window.py:729 main_window.py:1007 main_window.py:3160 main_window.py:3221 main_window.py:3229 main_window.py:3980
 msgid "Ignored"
 msgstr "已忽略"
 
-#: main_window.py:2201
+#: main_window.py:2635
 #, python-brace-format
 msgid "Ignored warnings for {count} item(s)."
 msgstr "已为 {count} 个项目忽略警告。"
 
-#: main_window.py:336 main_window.py:562
+#: dialogs/import_configuration_dialog.py:73 main_window.py:428 main_window.py:669
 msgid "Import"
 msgstr "导入"
 
-#: main_window.py:2790 main_window.py:2802 main_window.py:2885
-#: main_window.py:2889
+#: dialogs/management_tabs.py:154 dialogs/management_tabs.py:498
+msgid "Import Date"
+msgstr "导入日期"
+
+#: dialogs/management_tabs.py:299 main_window.py:3213 main_window.py:3225 main_window.py:3315 main_window.py:3319
 msgid "Import Error"
 msgstr "导入错误"
 
@@ -1436,28 +1691,35 @@ msgstr "导入错误"
 msgid "Import Extraction Rule Preset"
 msgstr "导入提取规则预设"
 
-#: dialogs/extraction_pattern_dialog.py:182
-#: dialogs/prompt_manager_dialog.py:212
+#: dialogs/extraction_pattern_dialog.py:182 dialogs/management_tabs.py:352 dialogs/management_tabs.py:548 dialogs/prompt_manager_dialog.py:214 main_window.py:2528
 msgid "Import Failed"
 msgstr "导入失败"
+
+#: dialogs/management_tabs.py:232
+msgid "Import In Progress"
+msgstr "正在导入"
 
 #: dialogs/extraction_pattern_dialog.py:49 dialogs/prompt_manager_dialog.py:69
 msgid "Import Preset"
 msgstr "导入预设"
 
-#: dialogs/prompt_manager_dialog.py:193
+#: dialogs/prompt_manager_dialog.py:195
 msgid "Import Prompt Preset"
 msgstr "导入提示词预设"
 
-#: main_window.py:348 main_window.py:573 main_window.py:3343
-msgid "Import TM (Excel)"
-msgstr "导入翻译记忆库 (Excel)"
+#: dialogs/import_configuration_dialog.py:55
+msgid "Import Settings"
+msgstr "导入设置"
 
-#: main_window.py:339 main_window.py:566 main_window.py:2778
+#: dialogs/management_tabs.py:345 dialogs/management_tabs.py:545 main_window.py:2504
+msgid "Import Successful"
+msgstr "导入成功"
+
+#: main_window.py:431 main_window.py:673 main_window.py:3201
 msgid "Import Translations from Excel"
 msgstr "导入Excel翻译"
 
-#: main_window.py:344 main_window.py:571
+#: main_window.py:436 main_window.py:678
 msgid "Import Translations from PO File..."
 msgstr "从PO文件导入翻译..."
 
@@ -1465,32 +1727,65 @@ msgstr "从PO文件导入翻译..."
 msgid "Import as New File"
 msgstr "作为新文件导入"
 
-#: main_window.py:2881
+#: dialogs/import_configuration_dialog.py:65
+msgid "Import as bidirectional (e.g., en->fr and fr->en)"
+msgstr "作为双向导入（例如 en->fr 和 fr->en）"
+
+#: main_window.py:2498
+msgid "Import cancelled."
+msgstr "导入已取消。"
+
+#: main_window.py:1767
+msgid "Import to Global Glossary"
+msgstr "导入到全局术语库"
+
+#: main_window.py:1771
+msgid "Import to Global TM"
+msgstr "导入到全局TM"
+
+#: main_window.py:1767
+msgid "Import to Project Glossary"
+msgstr "导入到项目术语库"
+
+#: main_window.py:1771
+msgid "Import to Project TM"
+msgstr "导入到项目TM"
+
+#: main_window.py:3311
 #, python-brace-format
 msgid "Imported/updated {field_count} fields for {item_count} items from Excel."
 msgstr "从Excel导入/更新了 {field_count} 个字段 ({item_count} 个项目受影响)。"
 
-#: main_window.py:3384
-msgid "In-memory TM has been cleared."
-msgstr "整个翻译记忆库已在内存中清空。"
+#: dialogs/management_tabs.py:87
+msgid "Importing TBX file..."
+msgstr "正在导入TBX文件..."
+
+#: dialogs/management_tabs.py:523
+msgid "Importing TM file..."
+msgstr "正在导入TM文件..."
+
+#: main_window.py:2482
+msgid "Importing to Global Glossary..."
+msgstr "正在导入到全局术语库..."
+
+#: main_window.py:2479
+msgid "Importing to Project Glossary..."
+msgstr "正在导入到项目术语库..."
+
+#: dialogs/management_tabs.py:80
+msgid "Importing..."
+msgstr "正在导入..."
 
 #: dialogs/marketplace_dialog.py:435 plugins/plugin_dialog.py:411
 msgid "Incompatible"
 msgstr "不兼容"
 
-#: plugins/plugin_manager.py:111
+#: plugins/plugin_manager.py:112
 #, python-brace-format
 msgid "Incompatible with app version (requires {req}, current is {curr})"
 msgstr "与应用版本不兼容 (需要 {req}，当前为 {curr})"
 
-#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291
-#: dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:745
-#: main_window.py:2612 main_window.py:2711 main_window.py:2772
-#: main_window.py:2894 main_window.py:2934 main_window.py:3088
-#: main_window.py:3132 main_window.py:3395 main_window.py:3432
-#: main_window.py:3449 main_window.py:3466 main_window.py:3469
-#: main_window.py:3518 main_window.py:4171 main_window.py:4304
-#: main_window.py:4328
+#: dialogs/search_dialog.py:264 dialogs/search_dialog.py:291 dialogs/search_dialog.py:300 dialogs/search_dialog.py:312 main_window.py:924 main_window.py:3061 main_window.py:3134 main_window.py:3195 main_window.py:3324 main_window.py:3364 main_window.py:3520 main_window.py:3564 main_window.py:3665 main_window.py:3693 main_window.py:3724 main_window.py:3738 main_window.py:3793 main_window.py:4453 main_window.py:4645
 msgid "Info"
 msgstr "信息"
 
@@ -1498,25 +1793,63 @@ msgstr "信息"
 msgid "Inherited from old version"
 msgstr "继承自旧版"
 
-#: services/validation_service.py:111
+#: dialogs/new_project_dialog.py:44
+msgid "Initial Target Language:"
+msgstr "初始目标语言："
+
+#: services/validation_service.py:110
 msgid "Initial capitalization mismatch."
 msgstr "首字母大小写不匹配。"
+
+#: ui_components/file_explorer_panel.py:146
+msgid "Initialization Error"
+msgstr "初始化错误"
+
+#: ui_components/welcome_screen.py:212
+msgid "Initialization Failed!"
+msgstr "初始化失败！"
 
 #: dialogs/statistics_dialog.py:37
 msgid "Initialization complete."
 msgstr "初始化完成。"
 
-#: main_window.py:261
+#: ui_components/welcome_screen.py:193
+msgid "Initializing main window and plugins..."
+msgstr "正在初始化主窗口和插件..."
+
+#: main_window.py:337
 msgid "Initializing services in the background..."
 msgstr "正在后台初始化服务..."
 
-#: dialogs/statistics_dialog.py:34
+#: ui_components/welcome_screen.py:223
+#, python-brace-format
+msgid "Initializing to open {filename}..."
+msgstr "正在初始化以打开 {filename}..."
+
+#: dialogs/statistics_dialog.py:34 ui_components/welcome_screen.py:114
 msgid "Initializing..."
 msgstr "正在初始化..."
+
+#: dialogs/prompt_manager_dialog.py:169
+msgid "Injects glossary terms found in the original text to enforce specific translations."
+msgstr "注入在原文中找到的术语库条目以强制执行特定翻译。"
 
 #: dialogs/diff_dialog.py:132
 msgid "Inline Differences"
 msgstr "内联差异"
+
+#: services/glossary_service.py:324
+msgid "Inserting new terms..."
+msgstr "正在插入新术语..."
+
+#: services/glossary_service.py:380
+msgid "Inserting translations..."
+msgstr "正在插入翻译..."
+
+#: services/tm_service.py:245
+#, python-brace-format
+msgid "Inserting {count} TM entries..."
+msgstr "正在插入 {count} 个TM条目..."
 
 #: dialogs/marketplace_dialog.py:166 plugins/plugin_dialog.py:586
 msgid "Install"
@@ -1542,7 +1875,7 @@ msgstr "安装失败"
 msgid "Installation Successful"
 msgstr "安装成功"
 
-#: plugins/plugin_manager.py:436
+#: plugins/plugin_manager.py:441
 msgid "Installation cancelled by user."
 msgstr "用户取消了安装。"
 
@@ -1551,8 +1884,7 @@ msgstr "用户取消了安装。"
 msgid "Installation failed: {error}"
 msgstr "安装失败：{error}"
 
-#: dialogs/marketplace_dialog.py:158 plugins/plugin_dialog.py:442
-#: plugins/plugin_dialog.py:457
+#: dialogs/marketplace_dialog.py:158 plugins/plugin_dialog.py:442 plugins/plugin_dialog.py:457
 msgid "Installed"
 msgstr "已安装"
 
@@ -1566,10 +1898,25 @@ msgstr "正在安装 {lib}..."
 msgid "Installing {plugin_name}..."
 msgstr "正在安装 {plugin_name}..."
 
-#: plugins/plugin_manager.py:424
-msgid ""
-"Invalid plugin archive structure. The archive must contain either a "
-"single plugin folder or the plugin's files (__init__.py, etc.) directly."
+#: main_window.py:1812 main_window.py:1818
+msgid "Invalid File"
+msgstr "无效文件"
+
+#: dialogs/import_configuration_dialog.py:130 dialogs/new_project_dialog.py:102 dialogs/tm_import_dialog.py:50
+msgid "Invalid Languages"
+msgstr "无效语言"
+
+#: main_window.py:1976
+msgid "Invalid Project"
+msgstr "无效项目"
+
+#: ui_components/file_explorer_panel.py:387
+#, python-brace-format
+msgid "Invalid path: {path}"
+msgstr "无效路径：{path}"
+
+#: plugins/plugin_manager.py:429
+msgid "Invalid plugin archive structure. The archive must contain either a single plugin folder or the plugin's files (__init__.py, etc.) directly."
 msgstr "无效的插件压缩包结构。压缩包必须直接包含单个插件文件夹或插件文件（如 __init__.py）。"
 
 #: dialogs/statistics_dialog.py:623
@@ -1584,11 +1931,11 @@ msgstr "问题与警告"
 msgid "Items with Warnings"
 msgstr "有警告项"
 
-#: main_window.py:2912
+#: main_window.py:3342
 msgid "JSON files (*.json);;All Files (*.*)"
 msgstr "JSON 文件 (*.json);;所有文件 (*.*)"
 
-#: main_window.py:779
+#: main_window.py:958
 msgid "Keybinding Settings"
 msgstr "快捷键设置"
 
@@ -1604,15 +1951,19 @@ msgstr "快捷键已更新。"
 msgid "Keybindings:"
 msgstr "快捷键："
 
-#: dialogs/settings_dialog.py:165
+#: dialogs/settings_dialog.py:170
 msgid "Language Changed"
 msgstr "语言已更改"
+
+#: dialogs/import_configuration_dialog.py:39
+msgid "Language Mapping"
+msgstr "语言映射"
 
 #: dialogs/language_pair_dialog.py:183
 msgid "Language Pair Settings"
 msgstr "语言对设置"
 
-#: main_window.py:519 main_window.py:609
+#: main_window.py:607 main_window.py:714
 msgid "Language Pair Settings..."
 msgstr "语言对设置..."
 
@@ -1620,16 +1971,20 @@ msgstr "语言对设置..."
 msgid "Language Selection"
 msgstr "语言选择"
 
-#: main_window.py:775
+#: dialogs/import_configuration_dialog.py:48
+msgid "Language in File"
+msgstr "文件中的语言"
+
+#: main_window.py:954
 #, python-brace-format
 msgid "Language pair set to {src} -> {tgt}."
 msgstr "语言对已设置为 {src} -> {tgt}。"
 
-#: main_window.py:768
+#: main_window.py:947
 msgid "Language pair updated. Re-validating all entries..."
 msgstr "语言对已更新。正在重新验证所有条目..."
 
-#: utils/enums.py:40
+#: utils/enums.py:42
 msgid "Leading Whitespace Mismatch"
 msgstr "前导空格不匹配"
 
@@ -1645,20 +2000,41 @@ msgstr "左定界符:"
 msgid "Left and right delimiters cannot be empty."
 msgstr "左、右定界符均不能为空。"
 
-#: utils/enums.py:52
+#: utils/enums.py:54
 msgid "Length Deviation (Major)"
 msgstr "长度偏差 (严重)"
 
-#: utils/enums.py:50
+#: utils/enums.py:52
 msgid "Length Deviation (Minor)"
 msgstr "长度偏差 (轻微)"
 
-#: services/validation_service.py:143 services/validation_service.py:151
+#: services/validation_service.py:142 services/validation_service.py:150
+#, python-brace-format
+msgid "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
+msgstr "长度警告：膨胀率异常 ({actual:.1f}x)，预期值 {expected:.1f}x。"
+
+#: main_window.py:1741
 #, python-brace-format
 msgid ""
-"Length warning: Unusual expansion ratio ({actual:.1f}x), expected around "
-"{expected:.1f}x."
-msgstr "长度警告：膨胀率异常 ({actual:.1f}x)，预期值 {expected:.1f}x。"
+"LexiSync\n"
+"\n"
+"Version: {version}\n"
+"Author: TheSkyC"
+msgstr ""
+"LexiSync\n"
+"\n"
+"版本: {version}\n"
+"作者: TheSkyC"
+
+#: main_window.py:206 main_window.py:648
+#, python-brace-format
+msgid "LexiSync - v{version}"
+msgstr "LexiSync - v{version}"
+
+#: dialogs/import_configuration_dialog.py:32
+#, python-brace-format
+msgid "LexiSync has analyzed <b>{filename}</b>. Please configure the import settings below."
+msgstr "LexiSync 已分析 <b>{filename}</b>。请配置以下导入设置。"
 
 #: plugins/plugin_dialog.py:615
 #, python-brace-format
@@ -1674,47 +2050,49 @@ msgstr ""
 msgid "Library '{lib}' is already installed and compatible."
 msgstr "库 '{lib}' 已安装且兼容。"
 
-#: main_window.py:620
+#: main_window.py:725
 msgid "Line"
 msgstr "行"
 
-#: utils/enums.py:44
+#: utils/enums.py:46
 msgid "Line Count Mismatch"
 msgstr "行数不匹配"
 
-#: services/validation_service.py:56
+#: services/validation_service.py:55
 msgid "Line count differs from original."
 msgstr "行数与原文不符。"
 
-#: main_window.py:3059
+#: main_window.py:3491
 #, python-brace-format
 msgid "Loaded {count} entries from PO file {filename}."
 msgstr "已从PO文件 {filename} 加载 {count} 个条目。"
 
-#: main_window.py:1633
+#: main_window.py:2037
 #, python-brace-format
 msgid "Loaded {count} translatable strings from {filename}"
 msgstr "已加载 {count} 个可翻译字符串从 {filename}"
-
-#: main_window.py:3284
-#, python-brace-format
-msgid "Loaded/merged {count} Excel TM records from '{filename}'."
-msgstr "从 '{filename}' 加载/合并了 {count} 条Excel记忆库记录。"
 
 #: plugins/plugin_dialog.py:387
 msgid "Loading Failed"
 msgstr "加载失败"
 
+#: ui_components/welcome_screen.py:176
+msgid "Loading core libraries..."
+msgstr "正在加载核心库..."
+
 #: dialogs/marketplace_dialog.py:278
 msgid "Loading marketplace..."
 msgstr "正在加载市场..."
 
-#: main_window.py:2659
+#: dialogs/new_project_dialog.py:42
+msgid "Location:"
+msgstr "位置："
+
+#: main_window.py:3115
 msgid "MO Compilation Failed"
 msgstr "MO文件编译失败"
 
-#: dialogs/prompt_manager_dialog.py:168 dialogs/prompt_manager_dialog.py:169
-#: dialogs/prompt_manager_dialog.py:170
+#: dialogs/prompt_manager_dialog.py:168 dialogs/prompt_manager_dialog.py:170 dialogs/prompt_manager_dialog.py:171 dialogs/prompt_manager_dialog.py:172
 msgid "Main App"
 msgstr "主程序"
 
@@ -1722,19 +2100,23 @@ msgstr "主程序"
 msgid "Manage Extraction Rules..."
 msgstr "管理提取规则..."
 
-#: plugins/plugin_manager.py:477
+#: plugins/plugin_manager.py:482
 msgid "Manage Plugins..."
 msgstr "管理插件..."
 
-#: main_window.py:1919
+#: dialogs/import_configuration_dialog.py:48
+msgid "Map to Language in LexiSync"
+msgstr "映射至LexiSync语言"
+
+#: main_window.py:2235
 msgid "Mark as Ignored"
 msgstr "标记为已忽略"
 
-#: main_window.py:1926
+#: main_window.py:2242
 msgid "Mark as Reviewed"
 msgstr "标记为已审阅"
 
-#: main_window.py:1927
+#: main_window.py:2243
 msgid "Mark as Unreviewed"
 msgstr "标记为未审阅"
 
@@ -1760,11 +2142,15 @@ msgstr "最大并发请求数:"
 msgid "Missing Dependencies"
 msgstr "缺失依赖"
 
+#: dialogs/new_project_dialog.py:99
+msgid "Missing Information"
+msgstr "信息缺失"
+
 #: plugins/plugin_dialog.py:419
 msgid "Missing Libraries"
 msgstr "缺失库"
 
-#: plugins/plugin_manager.py:81
+#: plugins/plugin_manager.py:82
 #, python-brace-format
 msgid "Missing dependencies: {deps}"
 msgstr "缺少依赖：{deps}"
@@ -1774,7 +2160,7 @@ msgstr "缺少依赖：{deps}"
 msgid "Missing external libraries: {libs}. Check to force-enable."
 msgstr "缺少外部库：{libs}。勾选以强制启用。"
 
-#: services/validation_service.py:45
+#: services/validation_service.py:44
 #, python-brace-format
 msgid "Missing placeholders: {placeholders}"
 msgstr "缺失占位符: {placeholders}"
@@ -1787,16 +2173,15 @@ msgstr "模型名称:"
 msgid "Modified/Inherited"
 msgstr "修改/继承"
 
-#: main_window.py:1535
-#, python-brace-format
-msgid "Multiple files dropped. Opening the first one: {filename}"
-msgstr "拖放多个文件。正在打开第一个：{filename}"
+#: ui_components/file_explorer_panel.py:416 ui_components/file_explorer_panel.py:434 ui_components/file_explorer_panel.py:451 ui_components/file_explorer_panel.py:467 ui_components/file_explorer_panel.py:483 ui_components/file_explorer_panel.py:519 ui_components/file_explorer_panel.py:526
+msgid "Navigation Error"
+msgstr "导航错误"
 
-#: dialogs/prompt_manager_dialog.py:170
+#: dialogs/prompt_manager_dialog.py:172
 msgid "Nearby translated text for context."
 msgstr "附近的已翻译文本，用于提供上下文。"
 
-#: dialogs/prompt_manager_dialog.py:169
+#: dialogs/prompt_manager_dialog.py:171
 msgid "Nearby untranslated original text."
 msgstr "附近的未翻译原文，用于提供上下文。"
 
@@ -1805,9 +2190,7 @@ msgid "Network Error"
 msgstr "网络错误"
 
 #: dialogs/marketplace_dialog.py:34
-msgid ""
-"Network connection failed. Please check your internet connection and "
-"firewall settings."
+msgid "Network connection failed. Please check your internet connection and firewall settings."
 msgstr "网络连接失败。请检查您的网络连接和防火墙设置。"
 
 #: services/ai_translator.py:57
@@ -1822,32 +2205,51 @@ msgstr "新增"
 msgid "New Instruction"
 msgstr "新指令"
 
+#: dialogs/new_project_dialog.py:17 ui_components/welcome_screen.py:54
+msgid "New Project"
+msgstr "新建项目"
+
+#: main_window.py:395
+msgid "New Project..."
+msgstr "新建项目..."
+
 #: dialogs/extraction_pattern_dialog.py:112
 msgid "New Rule"
 msgstr "新规则"
 
-#: main_window.py:2505 main_window.py:2541 main_window.py:2757
-#: main_window.py:2758
+#: main_window.py:2941 main_window.py:2977 main_window.py:3180 main_window.py:3181
 msgid "No"
 msgstr "否"
 
-#: main_window.py:4171
+#: main_window.py:4453
 msgid "No AI batch translation task is in progress."
 msgstr "没有正在进行的AI批量翻译任务。"
 
-#: main_window.py:1464
+#: main_window.py:1675
 msgid "No History"
 msgstr "无历史记录"
 
-#: main_window.py:3915
+#: dialogs/project_settings_dialog.py:59
+msgid "No Selection"
+msgstr "未选择"
+
+#: ui_components/tm_panel.py:87
+msgid "No TM matches found."
+msgstr "未找到TM匹配项。"
+
+#: main_window.py:4197
 msgid "No Translation Needed"
 msgstr "无需翻译"
 
-#: main_window.py:3512
+#: main_window.py:3702
+msgid "No active TM database found to clear the entry from."
+msgstr "未找到活动TM数据库以清除条目。"
+
+#: main_window.py:3787
 msgid "No applicable translations found in TM (or no changes needed)."
 msgstr "没有可自动应用的翻译 (或无需更改)。"
 
-#: main_window.py:3132
+#: main_window.py:3564
 msgid "No code content loaded to reload."
 msgstr "没有已加载的代码内容可供重新加载。"
 
@@ -1859,28 +2261,31 @@ msgstr "消息中无内容"
 msgid "No data to display."
 msgstr "无数据显示。"
 
-#: main_window.py:2711 main_window.py:2894 main_window.py:2934
-#: main_window.py:3088
+#: main_window.py:3134 main_window.py:3324 main_window.py:3364 main_window.py:3520
 msgid "No data to export."
 msgstr "无数据可导出。"
+
+#: ui_components/glossary_panel.py:41
+msgid "No glossary matches found."
+msgstr "未找到术语表匹配项。"
 
 #: dialogs/statistics_dialog.py:631
 msgid "No issues found"
 msgstr "未发现问题"
 
-#: main_window.py:4371
+#: main_window.py:4688
 msgid "No items selected for AI translation."
 msgstr "没有选中的项目可供AI翻译。"
 
-#: main_window.py:2179
+#: main_window.py:2613
 msgid "No items selected to modify warning status."
 msgstr "未选择任何项目以修改警告状态。"
 
-#: main_window.py:3976
+#: main_window.py:4258
 msgid "No items to process."
 msgstr "无项目可处理。"
 
-#: main_window.py:1863
+#: main_window.py:2179
 #, python-brace-format
 msgid "No matches found for '{search_term}' under current filters."
 msgstr "当前筛选条件下未找到 '{search_term}'。"
@@ -1897,54 +2302,75 @@ msgstr "未找到可替换的匹配项。"
 msgid "No matches found."
 msgstr "未找到匹配项。"
 
-#: main_window.py:4329
+#: main_window.py:4646
 msgid "No matching TM entries or no changes needed for selected items."
 msgstr "选中项无匹配记忆或无需更新。"
 
-#: main_window.py:1321
+#: main_window.py:1530
 msgid "No more actions to redo"
 msgstr "没有可恢复的操作"
 
-#: main_window.py:1247
+#: main_window.py:1456
 msgid "No more actions to undo"
 msgstr "没有可撤销的操作"
 
-#: main_window.py:3622
+#: main_window.py:3897
 msgid "No more untranslated items."
 msgstr "没有更多未翻译项。"
 
-#: main_window.py:2571
+#: main_window.py:3007
 msgid "No original code content to save."
 msgstr "无原始代码内容可保存。"
 
-#: main_window.py:2567
+#: main_window.py:3003
 msgid "No original code file path."
 msgstr "无原始代码文件路径。"
 
-#: main_window.py:3221
+#: main_window.py:3653
 msgid "No project data loaded to generate statistics."
 msgstr "未加载项目数据以生成统计。"
+
+#: services/project_manager.py:39
+msgid "No project is currently open."
+msgstr "当前没有打开的项目。"
+
+#: dialogs/management_tabs.py:120
+msgid "No project is open. This panel is disabled."
+msgstr "没有打开项目。此面板已禁用。"
+
+#: dialogs/management_tabs.py:469
+msgid "No project open."
+msgstr "没有打开项目。"
+
+#: ui_components/welcome_screen.py:271
+msgid "No recent files"
+msgstr "没有最近文件"
 
 #: services/ai_translator.py:60
 msgid "No response object"
 msgstr "无响应对象"
 
-#: main_window.py:3466
+#: main_window.py:3738
 msgid "No strings to apply TM to."
 msgstr "没有字符串可应用记忆库。"
 
-#: main_window.py:745
+#: main_window.py:924
 msgid "No text available to detect language from."
 msgstr "无可用文本进行检测。"
 
-#: main_window.py:3916
+#: main_window.py:4198
 msgid "No untranslated and non-ignored strings found."
 msgstr "没有找到未翻译且未忽略的字符串。"
 
-#: dialogs/extraction_pattern_dialog.py:76
-#: dialogs/extraction_pattern_dialog.py:274 dialogs/font_settings_dialog.py:57
-#: dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341
-#: dialogs/prompt_manager_dialog.py:96 dialogs/prompt_manager_dialog.py:314
+#: ui_components/file_explorer_panel.py:805
+msgid "No valid items to delete."
+msgstr "没有有效的项目可删除。"
+
+#: services/glossary_service.py:246
+msgid "No valid terms found in the TBX file."
+msgstr "在TBX文件中未找到有效术语。"
+
+#: dialogs/extraction_pattern_dialog.py:76 dialogs/extraction_pattern_dialog.py:274 dialogs/font_settings_dialog.py:57 dialogs/keybinding_dialog.py:83 dialogs/language_pair_dialog.py:341 dialogs/prompt_manager_dialog.py:96 dialogs/prompt_manager_dialog.py:316
 msgid "OK"
 msgstr "确定"
 
@@ -1952,13 +2378,25 @@ msgstr "确定"
 msgid "On File Save"
 msgstr "文件保存时"
 
-#: ui_components/file_explorer_panel.py:187
+#: main_window.py:1812
+msgid "Only .tbx files can be imported into the glossary."
+msgstr "只有 .tbx 文件可以导入到术语库。"
+
+#: main_window.py:1819
+msgid "Only .xlsx files can be imported into the TM."
+msgstr "只有 .xlsx 文件可以导入到TM。"
+
+#: ui_components/file_explorer_panel.py:686
 msgid "Open"
 msgstr "打开"
 
-#: main_window.py:1570
-msgid "Open File"
-msgstr "打开文件"
+#: main_window.py:1940
+msgid "Open File for Quick Edit"
+msgstr "打开文件进行快速编辑"
+
+#: main_window.py:391
+msgid "Open File..."
+msgstr "打开文件..."
 
 #: plugins/plugin_dialog.py:182
 msgid "Open Marketplace..."
@@ -1968,32 +2406,56 @@ msgstr "打开插件市场..."
 msgid "Open Plugin Directory"
 msgstr "打开插件目录"
 
-#: main_window.py:1712
+#: ui_components/welcome_screen.py:59
+msgid "Open Project"
+msgstr "打开项目"
+
+#: main_window.py:1903
 msgid "Open Project Error"
 msgstr "打开项目错误"
 
-#: main_window.py:1650
-msgid "Open Project File"
-msgstr "打开项目文件"
+#: main_window.py:1969
+msgid "Open Project Folder"
+msgstr "打开项目文件夹"
 
-#: main_window.py:307 main_window.py:555
+#: main_window.py:399 main_window.py:662
 msgid "Open Project..."
 msgstr "打开项目..."
 
-#: main_window.py:1730
+#: ui_components/welcome_screen.py:50
+msgid "Open a single file for fast translation"
+msgstr "打开单个文件进行快速翻译"
+
+#: ui_components/welcome_screen.py:60
+msgid "Open an existing project folder"
+msgstr "打开一个现有的项目文件夹"
+
+#: main_window.py:1763
+msgid "Open for Quick Edit"
+msgstr "打开以进行快速编辑"
+
+#: main_window.py:2060
 msgid "Open operation cancelled by user."
 msgstr "打开操作被用户取消。"
 
-#: main_window.py:303 main_window.py:554
+#: main_window.py:1775
+msgid "Open or Set as Root"
+msgstr "打开或设为根目录"
+
+#: main_window.py:661
 msgid "Open..."
 msgstr "打开..."
 
-#: main_window.py:1733
+#: main_window.py:2063
 #, python-brace-format
 msgid "Opening '{filename}'..."
 msgstr "正在打开“{filename}”..."
 
-#: main_window.py:1594 main_window.py:1659 main_window.py:3924
+#: dialogs/management_tabs.py:380
+msgid "Operation In Progress"
+msgstr "操作进行中"
+
+#: main_window.py:1868 main_window.py:1983 main_window.py:4206
 msgid "Operation Restricted"
 msgstr "操作受限"
 
@@ -2001,31 +2463,31 @@ msgstr "操作受限"
 msgid "Options"
 msgstr "选项"
 
-#: dialogs/diff_dialog.py:160 dialogs/search_dialog.py:56 main_window.py:616
+#: dialogs/diff_dialog.py:160 dialogs/search_dialog.py:56 main_window.py:721 main_window.py:3930
 msgid "Original"
 msgstr "原文"
 
-#: main_window.py:2738
+#: main_window.py:3161
 msgid "Original (Raw)"
 msgstr "原文 (Raw)"
 
-#: main_window.py:2736 main_window.py:2800 main_window.py:2806
+#: main_window.py:3159 main_window.py:3223 main_window.py:3229
 msgid "Original (Semantic)"
 msgstr "原文 (Semantic)"
 
-#: utils/enums.py:56
-msgid "Original Empty, Translation Not"
-msgstr "原文为空，译文不空"
+#: dialogs/project_settings_dialog.py:204
+msgid "Original Path"
+msgstr "原文路径"
 
-#: services/validation_service.py:68
+#: services/validation_service.py:67
 msgid "Original ends with space, translation does not."
 msgstr "原文以空格结尾，译文不是。"
 
-#: services/validation_service.py:61
+#: services/validation_service.py:60
 msgid "Original starts with space, translation does not."
 msgstr "原文以空格开头，译文不是。"
 
-#: main_window.py:2282
+#: main_window.py:2718
 msgid "Original text cannot be empty for a new entry."
 msgstr "新条目的原文不能为空。"
 
@@ -2033,7 +2495,7 @@ msgstr "新条目的原文不能为空。"
 msgid "Original:"
 msgstr "原文:"
 
-#: main_window.py:4276
+#: main_window.py:4589
 #, python-brace-format
 msgid ""
 "Original:\n"
@@ -2050,97 +2512,61 @@ msgstr ""
 msgid "Override default font settings"
 msgstr "覆盖默认字体设置"
 
-#: main_window.py:1510
-#, python-brace-format
-msgid ""
-"Overwatch Custom Code Translation Tool\n"
-"\n"
-"Version: {version}\n"
-"Author: TheSkyC\n"
-"China Server ID: 小鸟游六花#56683 / Asia Server: 小鳥游六花#31665"
-msgstr ""
-"守望先锋自定义代码翻译工具\n"
-"\n"
-"版本: {version}\n"
-"作者：骰子掷上帝\n"
-"国服ID：小鸟游六花#56683 / 亚服：小鳥游六花#31665"
-
-#: dialogs/extraction_pattern_dialog.py:164
-#: dialogs/extraction_pattern_dialog.py:189
-#, python-brace-format
-msgid "Overwatch Extraction Pattern Files (*{ext});;All Files (*.*)"
-msgstr "提取规则文件 (*{ext});;All Files (*.*)"
-
-#: main_window.py:140 main_window.py:541
-#, python-brace-format
-msgid "Overwatch Localizer - v{version}"
-msgstr "Overwatch Localizer - v{version}"
-
-#: main_window.py:1652 main_window.py:2634
-#, python-brace-format
-msgid "Overwatch Project Files (*{ext});;All Files (*.*)"
-msgstr "守望先锋项目文件 (*{ext});;All Files (*.*)"
-
-#: dialogs/prompt_manager_dialog.py:195 dialogs/prompt_manager_dialog.py:219
-#, python-brace-format
-msgid "Overwatch Prompt Files (*{ext});;All Files (*.*)"
-msgstr "提示词文件 (*{ext});;All Files (*.*)"
-
-#: main_window.py:1573
+#: main_window.py:1943
 msgid "Overwatch Workshop Files (*.ow *.txt);;"
-msgstr "守望先锋工坊文件 (.ow .txt);;"
+msgstr "守望先锋工坊文件 (*.ow *.txt);;"
 
-#: main_window.py:2977 main_window.py:4580
+#: main_window.py:3407 main_window.py:4897
 msgid "Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)"
 msgstr "守望先锋工坊文件 (*.ow *.txt);;All Files (*.*)"
 
-#: main_window.py:3959
+#: main_window.py:4241
 msgid "Overwrite All"
 msgstr "全部覆盖"
 
-#: main_window.py:3706 main_window.py:3945 main_window.py:3955
+#: main_window.py:3988 main_window.py:4227 main_window.py:4237
 msgid "Overwrite Confirmation"
 msgstr "覆盖确认"
 
-#: main_window.py:3068
+#: main_window.py:3500
 msgid "PO Import Error"
 msgstr "PO导入错误"
 
-#: main_window.py:4575
+#: main_window.py:4892
 msgid "PO Template Files (*.pot);;All Files (*.*)"
 msgstr "PO 模板文件 (*.pot);;所有文件 (*.*)"
 
-#: main_window.py:2985
+#: main_window.py:3415
 msgid "PO Template files (*.pot);;All files (*.*)"
 msgstr "PO 模板文件 (*.pot);;所有文件 (*.*)"
 
-#: main_window.py:1574
+#: main_window.py:1944
 msgid "PO Translation Files (*.po *.pot);;"
-msgstr "PO翻译文件 (.po .pot);;"
+msgstr "PO翻译文件 (*.po *.pot);;"
 
-#: main_window.py:3071
+#: main_window.py:3503
 msgid "PO file loading failed"
 msgstr "PO文件加载失败"
 
-#: main_window.py:2657
+#: main_window.py:3113
 #, python-brace-format
 msgid "PO file saved and MO file compiled: {filename}"
 msgstr "PO文件已保存，MO文件已编译：{filename}"
 
-#: main_window.py:2648
+#: main_window.py:3104
 #, python-brace-format
 msgid "PO file saved to: {filename}"
 msgstr "PO文件已保存至: {filename}"
 
-#: main_window.py:2670 main_window.py:3105
+#: main_window.py:3126 main_window.py:3537
 msgid "PO files (*.po);;All Files (*.*)"
 msgstr "PO 文件 (*.po);;所有文件 (*.*)"
 
-#: main_window.py:3081
+#: main_window.py:3513
 msgid "PO files (*.po);;POT files (*.pot);;All files (*.*)"
 msgstr "PO 文件 (*.po);;POT 文件 (*.pot);;所有文件 (*.*)"
 
-#: main_window.py:3012
+#: main_window.py:3442
 msgid "POT Extraction Error"
 msgstr "POT提取错误"
 
@@ -2148,32 +2574,74 @@ msgstr "POT提取错误"
 msgid "POT File Detected"
 msgstr "检测到POT文件"
 
-#: main_window.py:3008
+#: main_window.py:3438
 #, python-brace-format
 msgid "POT template saved to: {filename}"
 msgstr "POT模板已保存到: {filename}"
 
-#: main_window.py:4384
+#: dialogs/management_tabs.py:254 main_window.py:2463
+msgid "Parse Error"
+msgstr "解析错误"
+
+#: services/glossary_service.py:240
+msgid "Parsing TBX file..."
+msgstr "正在解析TBX文件..."
+
+#: services/tm_service.py:141
+msgid "Parsing TM file..."
+msgstr "正在解析TM文件..."
+
+#: main_window.py:4701
 msgid "Parsing new file..."
 msgstr "正在解析新文件..."
 
-#: main_window.py:3553
+#: ui_components/file_explorer_panel.py:844
+#, python-brace-format
+msgid ""
+"Partially completed deletion. {success} item(s) deleted, but encountered errors:\n"
+"\n"
+"{errors}"
+msgstr ""
+"部分删除完成。已删除 {success} 项，但遇到错误：\n"
+"\n"
+"{errors}"
+
+#: main_window.py:3828
 msgid "Paste failed: Clipboard content is not text."
 msgstr "粘贴失败：剪贴板内容非文本。"
 
-#: main_window.py:437 main_window.py:583
+#: main_window.py:521 main_window.py:688
 msgid "Paste to Translation"
 msgstr "粘贴到译文"
+
+#: ui_components/file_explorer_panel.py:378 ui_components/file_explorer_panel.py:382 ui_components/file_explorer_panel.py:387
+msgid "Path Error"
+msgstr "路径错误"
+
+#: ui_components/file_explorer_panel.py:378
+#, python-brace-format
+msgid "Path does not exist: {path}"
+msgstr "路径不存在: {path}"
+
+#: ui_components/file_explorer_panel.py:382
+#, python-brace-format
+msgid "Path is not a directory: {path}"
+msgstr "路径不是目录: {path}"
 
 #: dialogs/settings_pages.py:203
 msgid "Performance"
 msgstr "性能"
 
-#: main_window.py:4149 main_window.py:4155
+#: ui_components/file_explorer_panel.py:830
+#, python-brace-format
+msgid "Permission denied: {path}"
+msgstr "权限不足: {path}"
+
+#: main_window.py:4431 main_window.py:4437
 msgid "Placeholder Mismatch"
 msgstr "占位符不匹配"
 
-#: utils/enums.py:34
+#: utils/enums.py:36
 msgid "Placeholder Missing"
 msgstr "占位符缺失"
 
@@ -2181,27 +2649,35 @@ msgstr "占位符缺失"
 msgid "Please enter a search term."
 msgstr "请输入查找内容。"
 
-#: main_window.py:2773
+#: main_window.py:3196
 msgid "Please load a code file or project first to match imported translations."
 msgstr "请先加载代码文件或项目以匹配导入的翻译。"
 
-#: main_window.py:3518
+#: main_window.py:3793
 msgid "Please load a file or project first."
 msgstr "请先加载文件或项目。"
 
-#: main_window.py:4569
+#: main_window.py:4886
 msgid "Please open a project or file first."
 msgstr "请先打开一个项目或文件。"
 
-#: main_window.py:3395 main_window.py:3432
+#: dialogs/project_settings_dialog.py:59
+msgid "Please select a language."
+msgstr "请选择一种语言。"
+
+#: dialogs/management_tabs.py:373 dialogs/management_tabs.py:553
+msgid "Please select a source to remove."
+msgstr "请选择要移除的源。"
+
+#: main_window.py:3665 main_window.py:3693
 msgid "Please select an item first."
 msgstr "请先选择一个字符串。"
 
-#: main_window.py:3903
+#: main_window.py:4185
 msgid "Please select an item to AI translate."
 msgstr "请选择一个项目进行 AI 翻译。"
 
-#: main_window.py:3539
+#: main_window.py:3814
 msgid "Please select an item."
 msgstr "请选中一个项目。"
 
@@ -2216,7 +2692,7 @@ msgstr ""
 "\n"
 "请重启应用程序以启用它。"
 
-#: plugins/plugin_manager.py:167
+#: plugins/plugin_manager.py:166
 #, python-brace-format
 msgid "Plugin '{plugin_id}' has missing dependencies: {deps}"
 msgstr "插件 '{plugin_id}' 缺少依赖：{deps}"
@@ -2262,7 +2738,7 @@ msgstr "插件已删除"
 msgid "Plugin Dependencies"
 msgstr "插件依赖"
 
-#: plugins/plugin_manager.py:429
+#: plugins/plugin_manager.py:434
 msgid "Plugin Exists"
 msgstr "插件已存在"
 
@@ -2274,36 +2750,35 @@ msgstr "插件加载错误"
 msgid "Plugin Manager"
 msgstr "插件管理器"
 
-#: dialogs/marketplace_dialog.py:184
+#: dialogs/marketplace_dialog.py:184 ui_components/welcome_screen.py:64
 msgid "Plugin Marketplace"
 msgstr "插件市场"
 
-#: main_window.py:525
+#: main_window.py:613
 msgid "Plugin Marketplace..."
 msgstr "插件市场..."
 
-#: plugins/plugin_dialog.py:532 plugins/plugin_manager.py:453
+#: plugins/plugin_dialog.py:532 plugins/plugin_manager.py:458
 msgid "Plugin directory not found."
 msgstr "未找到插件目录。"
 
 #: dialogs/marketplace_dialog.py:497
-msgid ""
-"Plugin installed successfully. Please restart the application to take "
-"effect."
+msgid "Plugin installed successfully. Please restart the application to take effect."
 msgstr "插件安装成功。请重启应用程序以生效。"
 
-#: dialogs/extraction_pattern_dialog.py:195
-#: dialogs/prompt_manager_dialog.py:225
+#: services/glossary_service.py:290
+msgid "Preparing data for database..."
+msgstr "正在为数据库准备数据..."
+
+#: dialogs/extraction_pattern_dialog.py:195 dialogs/prompt_manager_dialog.py:227
 msgid "Preset exported successfully."
 msgstr "预设已成功导出。"
 
-#: dialogs/extraction_pattern_dialog.py:180
-#: dialogs/prompt_manager_dialog.py:210
+#: dialogs/extraction_pattern_dialog.py:180 dialogs/prompt_manager_dialog.py:212
 msgid "Preset file format is incorrect."
 msgstr "预设文件格式不正确。"
 
-#: dialogs/extraction_pattern_dialog.py:177
-#: dialogs/prompt_manager_dialog.py:208
+#: dialogs/extraction_pattern_dialog.py:177 dialogs/prompt_manager_dialog.py:210
 msgid "Preset imported successfully."
 msgstr "预设已成功导入。"
 
@@ -2316,137 +2791,204 @@ msgstr "按下组合键..."
 msgid "Processing item {i}/{total}..."
 msgstr "正在处理项 {i}/{total}..."
 
-#: main_window.py:1707
+#: main_window.py:371
+msgid "Project"
+msgstr "项目"
+
+#: main_window.py:1897
 #, python-brace-format
-msgid "Project '{filename}' loaded."
-msgstr "项目 '{filename}' 已加载。"
+msgid "Project '{name}' loaded."
+msgstr "项目 '{name}' 已加载。"
+
+#: main_window.py:1863 main_window.py:3093
+msgid "Project Creation Failed"
+msgstr "项目创建失败"
 
 #: dialogs/statistics_dialog.py:348
 msgid "Project Metrics"
 msgstr "项目指标"
 
-#: dialogs/statistics_dialog.py:136 dialogs/statistics_dialog.py:420
-#: dialogs/statistics_dialog.py:502
+#: dialogs/new_project_dialog.py:41 dialogs/project_settings_dialog.py:73
+msgid "Project Name:"
+msgstr "项目名称:"
+
+#: dialogs/project_settings_dialog.py:412
+msgid "Project Resources"
+msgstr "项目资源"
+
+#: dialogs/project_settings_dialog.py:336
+msgid "Project Settings"
+msgstr "项目设置"
+
+#: main_window.py:601
+msgid "Project Settings..."
+msgstr "项目设置..."
+
+#: dialogs/statistics_dialog.py:136 dialogs/statistics_dialog.py:420 dialogs/statistics_dialog.py:502
 msgid "Project Statistics"
 msgstr "项目统计"
 
-#: main_window.py:507 main_window.py:605
+#: main_window.py:591 main_window.py:710
 msgid "Project Statistics..."
 msgstr "项目统计..."
 
-#: main_window.py:1678
-msgid "Project Warning"
-msgstr "项目警告"
-
-#: main_window.py:802
+#: main_window.py:978
 msgid "Project auto-saved."
 msgstr "项目已自动保存。"
 
-#: main_window.py:1716
-msgid "Project file loading failed."
-msgstr "项目文件加载失败。"
+#: services/project_service.py:104
+msgid "Project has no target language selected."
+msgstr "项目未选择目标语言。"
 
-#: main_window.py:2700
-#, python-brace-format
-msgid "Project saved to: {filename}"
-msgstr "项目已保存到: {filename}"
+#: main_window.py:1907
+msgid "Project loading failed."
+msgstr "项目加载失败。"
 
-#: main_window.py:2765 main_window.py:2927 main_window.py:2967
+#: dialogs/new_project_dialog.py:99
+msgid "Project name, location, and at least one source file are required."
+msgstr "项目名称、位置和至少一个源文件是必需的。"
+
+#: main_window.py:3026
+msgid "Project path is missing. Cannot save."
+msgstr "项目路径缺失。无法保存。"
+
+#: main_window.py:3031
+msgid "Project saved."
+msgstr "项目已保存。"
+
+#: main_window.py:3188 main_window.py:3357 main_window.py:3397
 #, python-brace-format
 msgid "Project translations exported to: {filename}"
 msgstr "项目翻译已导出到: {filename}"
 
-#: main_window.py:4462 main_window.py:4558
+#: main_window.py:4779 main_window.py:4875
 msgid "Project updated to new version."
 msgstr "项目已更新至新版本。"
 
-#: main_window.py:1679
+#: dialogs/prompt_manager_dialog.py:197 dialogs/prompt_manager_dialog.py:221
 #, python-brace-format
-msgid "Project's associated TM file '{tm_path}' not found."
-msgstr "项目关联的翻译记忆库文件 '{tm_path}' 未找到。"
+msgid "Prompt Files (*{ext});;All Files (*.*)"
+msgstr "提示词文件 (*{ext});;所有文件 (*.*)"
 
 #: dialogs/settings_pages.py:262
 msgid "Prompt Manager..."
 msgstr "AI提示词管理器..."
 
-#: dialogs/prompt_manager_dialog.py:302
+#: dialogs/prompt_manager_dialog.py:304
 msgid "Provider"
 msgstr "提供者"
 
-#: main_window.py:3567
-msgid ""
-"Python 'requests' library not found. Please install it (pip install "
-"requests) to use AI translation features."
+#: main_window.py:3842
+msgid "Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."
 msgstr "Python 'requests' 库未找到。请安装它 (pip install requests) 以使用AI翻译功能。"
 
-#: main_window.py:632 main_window.py:867 main_window.py:952 main_window.py:957
-#: main_window.py:1429 main_window.py:1820 main_window.py:1845
-#: main_window.py:1862 main_window.py:1868 main_window.py:1869
-#: main_window.py:1886 main_window.py:1893 main_window.py:2446
-#: main_window.py:2689
+#: ui_components/welcome_screen.py:49
+msgid "Quick Edit File"
+msgstr "快速编辑文件"
+
+#: main_window.py:737 main_window.py:1043 main_window.py:1128 main_window.py:1133 main_window.py:1637 main_window.py:2136 main_window.py:2161 main_window.py:2178 main_window.py:2184 main_window.py:2185 main_window.py:2202 main_window.py:2209 main_window.py:2882 services/project_service.py:159
 msgid "Quick search..."
 msgstr "快速搜索..."
 
-#: main_window.py:3170
+#: main_window.py:3602
 msgid "Re-extracting strings with new rules..."
 msgstr "正在使用新规则重新提取字符串..."
 
-#: main_window.py:495 main_window.py:603
+#: dialogs/project_settings_dialog.py:284
+msgid "Re-scan"
+msgstr "重新扫描"
+
+#: dialogs/project_settings_dialog.py:213
+msgid "Re-scan Selected"
+msgstr "重新扫描选中项"
+
+#: dialogs/project_settings_dialog.py:284
+msgid "Re-scanning source files is not yet implemented."
+msgstr "重新扫描源文件功能尚未实现。"
+
+#: main_window.py:579 main_window.py:708
 msgid "Re-validate All Entries"
 msgstr "重新验证所有条目"
 
-#: main_window.py:269 main_window.py:660 main_window.py:1081
-#: main_window.py:1114
+#: main_window.py:345 main_window.py:765 main_window.py:1279 main_window.py:1312 ui_components/welcome_screen.py:202 ui_components/welcome_screen.py:250
 msgid "Ready"
 msgstr "准备就绪"
 
-#: main_window.py:406 main_window.py:575
+#: main_window.py:490 main_window.py:680 ui_components/welcome_screen.py:87
 msgid "Recent Files"
 msgstr "最近打开文件"
 
-#: main_window.py:420 main_window.py:580
+#: ui_components/glossary_panel.py:63
+msgid "Recommended Translation(s)"
+msgstr "推荐翻译"
+
+#: main_window.py:504 main_window.py:685
 msgid "Redo"
 msgstr "恢复"
 
-#: main_window.py:1353
+#: main_window.py:1562
 #, python-brace-format
 msgid "Redo error: Object ID {obj_id} not found"
 msgstr "恢复错误: 未找到对象ID {obj_id}"
 
-#: main_window.py:1371
+#: main_window.py:1580
 #, python-brace-format
 msgid "Redo: Bulk change ({count} items)"
 msgstr "恢复: 批量更改 ({count} 项)"
 
-#: main_window.py:1350
+#: main_window.py:1559
 #, python-brace-format
 msgid "Redo: {field} for ID {id} -> '{value}'"
 msgstr "恢复: ID {id}... '{field}' -> '{value}'"
+
+#: ui_components/file_explorer_panel.py:204 ui_components/file_explorer_panel.py:870
+msgid "Refresh"
+msgstr "刷新"
 
 #: dialogs/statistics_dialog.py:375
 msgid "Refresh Data"
 msgstr "刷新数据"
 
+#: ui_components/file_explorer_panel.py:509
+msgid "Refresh Error"
+msgstr "刷新错误"
+
 #: plugins/plugin_dialog.py:185
 msgid "Reload All Plugins"
 msgstr "重新加载所有插件"
 
-#: main_window.py:3214
+#: main_window.py:3646
 msgid "Reload Error"
 msgstr "重新加载错误"
 
-#: main_window.py:501 main_window.py:604
+#: main_window.py:585 main_window.py:709
 msgid "Reload Translatable Text"
 msgstr "重新加载翻译文本"
 
-#: main_window.py:3216
+#: main_window.py:3648
 msgid "Reload failed."
 msgstr "重新加载失败。"
 
-#: main_window.py:3208
+#: main_window.py:3640
 #, python-brace-format
 msgid "Reloaded {count} strings from {source} using new rules."
 msgstr "已使用新规则从 {source} 重新提取 {count} 个字符串。"
+
+#: dialogs/management_tabs.py:399 dialogs/management_tabs.py:574
+msgid "Removal Failed"
+msgstr "移除失败"
+
+#: dialogs/management_tabs.py:396 dialogs/management_tabs.py:571
+msgid "Removal Successful"
+msgstr "移除成功"
+
+#: dialogs/project_settings_dialog.py:92 dialogs/project_settings_dialog.py:212
+msgid "Remove"
+msgstr "移除"
+
+#: dialogs/management_tabs.py:143 dialogs/management_tabs.py:487
+msgid "Remove Selected"
+msgstr "移除所选"
 
 #: dialogs/language_pair_dialog.py:284
 msgid "Remove Selected Favorite"
@@ -2456,7 +2998,7 @@ msgstr "移除所选收藏"
 msgid "Removed"
 msgstr "移除"
 
-#: ui_components/file_explorer_panel.py:194
+#: ui_components/file_explorer_panel.py:691
 msgid "Rename"
 msgstr "重命名"
 
@@ -2506,8 +3048,7 @@ msgstr "重置"
 msgid "Reset all font settings to default?"
 msgstr "要将所有字体设置重置为默认值吗？"
 
-#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52
-#: dialogs/keybinding_dialog.py:78 dialogs/prompt_manager_dialog.py:63
+#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52 dialogs/keybinding_dialog.py:78 dialogs/prompt_manager_dialog.py:63
 msgid "Reset to Defaults"
 msgstr "恢复默认"
 
@@ -2515,26 +3056,24 @@ msgstr "恢复默认"
 msgid "Response"
 msgstr "响应"
 
-#: main_window.py:786
+#: main_window.py:965
 msgid "Restart Required"
 msgstr "需要重启"
 
-#: main_window.py:468 main_window.py:596
+#: main_window.py:552 main_window.py:701
 msgid "Restore Default Layout"
 msgstr "恢复默认布局"
 
-#: ui_components/file_explorer_panel.py:205
+#: ui_components/file_explorer_panel.py:702
 msgid "Reveal in File Explorer"
 msgstr "在文件资源管理器中显示"
 
-#: main_window.py:2540
+#: main_window.py:2976
 #, python-brace-format
 msgid "Review status for ID {id} -> {status}"
 msgstr "ID {id}... 审阅状态 -> {status}"
 
-#: main_window.py:2736 main_window.py:2797 main_window.py:2805
-#: ui_components/comment_status_panel.py:62
-#: ui_components/comment_status_panel.py:82
+#: main_window.py:3159 main_window.py:3220 main_window.py:3228 ui_components/comment_status_panel.py:62 ui_components/comment_status_panel.py:82
 msgid "Reviewed"
 msgstr "已审阅"
 
@@ -2566,39 +3105,39 @@ msgstr "规则名称:"
 msgid "Rule name cannot be empty."
 msgstr "规则名称不能为空。"
 
-#: main_window.py:318 main_window.py:557
+#: main_window.py:410 main_window.py:664
 msgid "Save"
 msgstr "保存"
 
-#: main_window.py:323 main_window.py:558
+#: main_window.py:3056
+msgid "Save As"
+msgstr "另存为"
+
+#: main_window.py:415 main_window.py:665
 msgid "Save As..."
 msgstr "另存为..."
 
-#: main_window.py:2562
+#: main_window.py:2998 main_window.py:3034
 msgid "Save Error"
 msgstr "保存错误"
 
-#: main_window.py:2662
+#: main_window.py:3118
 msgid "Save PO Error"
 msgstr "保存PO错误"
 
-#: main_window.py:2668
+#: main_window.py:3124
 msgid "Save PO File As"
 msgstr "PO文件另存为"
 
-#: main_window.py:2983
+#: main_window.py:3413
 msgid "Save POT Template File"
 msgstr "保存POT模板文件"
 
-#: main_window.py:2632
-msgid "Save Project As"
-msgstr "项目另存为"
-
-#: main_window.py:329 main_window.py:559
+#: main_window.py:421 main_window.py:666
 msgid "Save Translation to New Code File"
 msgstr "保存翻译到新代码文件"
 
-#: main_window.py:1866
+#: main_window.py:2182
 msgid "Search cleared."
 msgstr "搜索已清除。"
 
@@ -2614,11 +3153,11 @@ msgstr "搜索语言..."
 msgid "Search plugins..."
 msgstr "搜索插件..."
 
-#: main_window.py:2975
+#: main_window.py:3405
 msgid "Select Code File to Extract POT From"
 msgstr "选择要提取POT的代码文件"
 
-#: main_window.py:3079
+#: main_window.py:3511
 msgid "Select PO File to Import"
 msgstr "选择PO文件导入"
 
@@ -2626,66 +3165,88 @@ msgstr "选择PO文件导入"
 msgid "Select Plugin Archive"
 msgstr "选择插件压缩包"
 
+#: dialogs/new_project_dialog.py:72
+msgid "Select Project Location"
+msgstr "选择项目位置"
+
+#: dialogs/new_project_dialog.py:78 dialogs/project_settings_dialog.py:239
+msgid "Select Source File"
+msgstr "选择源文件"
+
+#: dialogs/management_tabs.py:239
+msgid "Select TBX File to Import"
+msgstr "选择要导入的TBX文件"
+
+#: dialogs/management_tabs.py:509
+msgid "Select TM File to Import"
+msgstr "选择要导入的TM文件"
+
+#: dialogs/project_settings_dialog.py:45
+msgid "Select a new target language to add to the project:"
+msgstr "选择要添加到项目的新目标语言："
+
 #: dialogs/marketplace_dialog.py:253 dialogs/marketplace_dialog.py:415
 msgid "Select a plugin"
 msgstr "选择一个插件"
 
-#: main_window.py:4574
+#: main_window.py:4891
 msgid "Select new POT template for comparison"
 msgstr "选择新的POT模板文件进行比较"
 
-#: main_window.py:4579
+#: main_window.py:4896
 msgid "Select new version code file for comparison"
 msgstr "选择新版本的代码文件进行对比"
 
-#: main_window.py:2206
+#: main_window.py:2640
 msgid "Selected item(s) already have the desired warning status."
 msgstr "所选项目已处于期望的警告状态。"
 
-#: main_window.py:2022
+#: main_window.py:2336
 #, python-brace-format
 msgid "Selected: \"{text}...\" (Line: {line_num})"
 msgstr "选中: \"{text}...\" (行: {line_num})"
 
-#: ui_components/file_explorer_panel.py:200
+#: ui_components/file_explorer_panel.py:697
 msgid "Set as Root"
 msgstr "设为根目录"
 
-#: main_window.py:1561
-#, python-brace-format
-msgid "Set file explorer root to: {directory}"
-msgstr "设置文件浏览器根目录为：{directory}"
+#: ui_components/welcome_screen.py:185
+msgid "Setting up plugin environment..."
+msgstr "正在设置插件环境..."
 
-#: dialogs/settings_dialog.py:15
+#: dialogs/settings_dialog.py:17 ui_components/welcome_screen.py:69
 msgid "Settings"
 msgstr "设置"
 
-#: dialogs/settings_dialog.py:154
+#: dialogs/settings_dialog.py:159
 msgid "Settings applied."
 msgstr "设置已应用。"
 
-#: main_window.py:513 main_window.py:608 plugins/plugin_dialog.py:161
+#: main_window.py:597 main_window.py:713 plugins/plugin_dialog.py:161
 msgid "Settings..."
 msgstr "设置..."
 
-#: ui_components/file_explorer_panel.py:70
-#: ui_components/file_explorer_panel.py:270
+#: main_window.py:156
+msgid "Should be Translated As"
+msgstr "应翻译为"
+
+#: ui_components/file_explorer_panel.py:263 ui_components/file_explorer_panel.py:864
 msgid "Show All Files"
 msgstr "显示所有文件"
 
-#: main_window.py:443 main_window.py:587
+#: main_window.py:527 main_window.py:692
 msgid "Show Ignored"
 msgstr "显示已忽略项"
 
-#: main_window.py:455 main_window.py:589
+#: main_window.py:539 main_window.py:694
 msgid "Show Translated"
 msgstr "显示已翻译项"
 
-#: main_window.py:461 main_window.py:590
+#: main_window.py:545 main_window.py:695
 msgid "Show Unreviewed"
 msgstr "显示未审阅项"
 
-#: main_window.py:449 main_window.py:588
+#: main_window.py:533 main_window.py:693
 msgid "Show Untranslated"
 msgstr "显示未翻译项"
 
@@ -2697,7 +3258,7 @@ msgstr "相似度"
 msgid "Size:"
 msgstr "大小:"
 
-#: main_window.py:3960
+#: main_window.py:4242
 msgid "Skip Translated"
 msgstr "跳过已翻译"
 
@@ -2709,53 +3270,82 @@ msgstr "排序模式:"
 msgid "Source Chars (Translated only)"
 msgstr "原文字符 (仅已翻译)"
 
+#: dialogs/management_tabs.py:153 dialogs/management_tabs.py:498
+msgid "Source File"
+msgstr "源文件"
+
+#: dialogs/project_settings_dialog.py:409
+msgid "Source Files"
+msgstr "源文件"
+
+#: dialogs/new_project_dialog.py:45
+msgid "Source Files:"
+msgstr "源文件:"
+
+#: dialogs/management_tabs.py:153 dialogs/management_tabs.py:498
+msgid "Source Lang"
+msgstr "源语言"
+
 #: dialogs/language_pair_dialog.py:237
 msgid "Source Language"
 msgstr "源语言"
 
-#: main_window.py:2737
+#: dialogs/import_configuration_dialog.py:61 dialogs/new_project_dialog.py:43 dialogs/project_settings_dialog.py:81 dialogs/tm_import_dialog.py:23
+msgid "Source Language:"
+msgstr "源语言："
+
+#: main_window.py:3160
 msgid "Source Line"
 msgstr "源文件行号"
 
-#: dialogs/language_pair_dialog.py:470
+#: main_window.py:156 ui_components/glossary_panel.py:62
+msgid "Source Term"
+msgstr "源术语"
+
+#: dialogs/import_configuration_dialog.py:130 dialogs/language_pair_dialog.py:470 dialogs/new_project_dialog.py:102 dialogs/tm_import_dialog.py:50
 msgid "Source and target languages cannot be the same."
 msgstr "源语言和目标语言不能相同。"
 
-#: utils/enums.py:46
+#: services/project_manager.py:43
+msgid "Source file does not exist."
+msgstr "源文件不存在。"
+
+#: dialogs/project_settings_dialog.py:80
+msgid "Source language cannot be changed after project creation."
+msgstr "项目创建后无法更改源语言。"
+
+#: utils/enums.py:48
 msgid "Starting Punctuation Mismatch"
 msgstr "起始标点不匹配"
 
-#: services/validation_service.py:91
+#: services/validation_service.py:90
 #, python-brace-format
 msgid "Starting punctuation differs: '{c1}' vs '{c2}'."
 msgstr "起始标点不同: '{c1}' vs '{c2}'。"
 
-#: services/validation_service.py:87
+#: services/validation_service.py:86
 msgid "Starting punctuation presence differs."
 msgstr "起始标点存在性不同。"
 
-#: dialogs/prompt_manager_dialog.py:120 dialogs/prompt_manager_dialog.py:127
-#: dialogs/prompt_manager_dialog.py:260
+#: dialogs/prompt_manager_dialog.py:120 dialogs/prompt_manager_dialog.py:127 dialogs/prompt_manager_dialog.py:262
 msgid "Static Instruction"
 msgstr "静态指令"
 
-#: main_window.py:733
+#: main_window.py:906
 msgid "Static sorting enabled. Press F5 to refresh."
 msgstr "静态排序已启用。按 F5 刷新。"
 
-#: main_window.py:3221
+#: main_window.py:3653
 msgid "Statistics"
 msgstr "统计"
 
-#: main_window.py:488 main_window.py:602
+#: main_window.py:572 main_window.py:707
 msgid "Stop AI Batch Translation"
 msgstr "停止AI批量翻译"
 
-#: main_window.py:3707 main_window.py:3946
+#: main_window.py:3989 main_window.py:4228
 #, python-brace-format
-msgid ""
-"String \"{text}...\" already has a translation. Overwrite with AI "
-"translation?"
+msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
 msgstr ""
 "字符串 \"{text}...\" 已有翻译。\n"
 "是否使用AI翻译覆盖现有译文？"
@@ -2768,8 +3358,7 @@ msgstr "字符串类型"
 msgid "String Type:"
 msgstr "字符串类型:"
 
-#: dialogs/prompt_manager_dialog.py:119 dialogs/prompt_manager_dialog.py:126
-#: dialogs/prompt_manager_dialog.py:259
+#: dialogs/prompt_manager_dialog.py:119 dialogs/prompt_manager_dialog.py:126 dialogs/prompt_manager_dialog.py:261
 msgid "Structural Content"
 msgstr "结构化内容"
 
@@ -2777,85 +3366,90 @@ msgstr "结构化内容"
 msgid "Style:"
 msgstr "样式:"
 
-#: dialogs/extraction_pattern_dialog.py:177
-#: dialogs/extraction_pattern_dialog.py:195 dialogs/marketplace_dialog.py:496
-#: dialogs/prompt_manager_dialog.py:208 dialogs/prompt_manager_dialog.py:225
-#: plugins/plugin_dialog.py:614
+#: dialogs/extraction_pattern_dialog.py:177 dialogs/extraction_pattern_dialog.py:195 dialogs/marketplace_dialog.py:496 dialogs/prompt_manager_dialog.py:210 dialogs/prompt_manager_dialog.py:227 plugins/plugin_dialog.py:614
 msgid "Success"
 msgstr "成功"
+
+#: ui_components/file_explorer_panel.py:852
+#, python-brace-format
+msgid "Successfully deleted {count} item(s)."
+msgstr "成功删除 {count} 项。"
+
+#: services/glossary_service.py:266
+#, python-brace-format
+msgid "Successfully imported relationships for {count} entries."
+msgstr "成功为 {count} 个条目导入关联关系。"
+
+#: services/tm_service.py:154
+#, python-brace-format
+msgid "Successfully imported {count} TM entries."
+msgstr "成功导入 {count} 条记忆库条目。"
 
 #: dialogs/marketplace_dialog.py:495
 #, python-brace-format
 msgid "Successfully installed {plugin_name}."
 msgstr "成功安装 {plugin_name}。"
 
-#: main_window.py:3283 main_window.py:3297 main_window.py:3331
-#: main_window.py:3360 main_window.py:3509 main_window.py:3512
+#: services/tm_service.py:277
+#, python-brace-format
+msgid "Successfully removed {count} TM entries from source '{source}'."
+msgstr "已从来源 '{source}' 成功移除 {count} 条记忆库条目。"
+
+#: services/glossary_service.py:443
+#, python-brace-format
+msgid "Successfully removed {count} translations from source '{source}'."
+msgstr "已从源 '{source}' 成功移除 {count} 条翻译。"
+
+#: ui_components/file_explorer_panel.py:741 ui_components/file_explorer_panel.py:745
+msgid "System Error"
+msgstr "系统错误"
+
+#: main_window.py:3784 main_window.py:3787
 msgid "TM"
 msgstr "记忆库"
 
-#: main_window.py:3260
-msgid "TM Load Warning"
-msgstr "TM加载警告"
+#: dialogs/management_tabs.py:510
+msgid "TM Files (*.xlsx);;All Files (*.*)"
+msgstr "记忆库文件 (*.xlsx);;所有文件 (*.*)"
 
-#: main_window.py:3444
+#: main_window.py:3719
 msgid "TM entry cleared for selected item."
 msgstr "已为选中项清除记忆库条目。"
 
-#: main_window.py:3353
-msgid ""
-"TM imported. Do you want to apply it to untranslated strings in the "
-"current project immediately?"
-msgstr "记忆库已导入。是否立即将其应用于当前项目中未翻译的字符串？"
-
-#: main_window.py:3376
-msgid "TM is already empty."
-msgstr "翻译记忆库已经为空。"
-
-#: main_window.py:3297 main_window.py:3360
-msgid "TM is empty, nothing to export."
-msgstr "记忆库为空，无需保存。"
-
-#: main_window.py:3469 main_window.py:4304
-msgid "TM is empty."
-msgstr "翻译记忆库为空。"
-
-#: main_window.py:3287
-#, python-brace-format
-msgid "TM loaded from '{filename}' (Excel)."
-msgstr "翻译记忆库已从 '{filename}' (Excel) 加载。"
-
-#: main_window.py:3332 main_window.py:3335
-#, python-brace-format
-msgid "TM saved to '{filename}'."
-msgstr "记忆库已保存到 '{filename}'."
-
-#: main_window.py:3462
+#: main_window.py:3734
 msgid "TM suggestion applied."
 msgstr "已应用翻译记忆库建议。"
 
-#: main_window.py:3410
-msgid "TM update cancelled."
-msgstr "更新记忆库已取消。"
-
-#: main_window.py:3419
+#: main_window.py:3686
 #, python-brace-format
 msgid "TM updated for original: '{text}...'"
 msgstr "记忆库已为原文 '{text}...' 更新"
+
+#: dialogs/management_tabs.py:498
+msgid "Target Lang"
+msgstr "目标语言"
+
+#: dialogs/management_tabs.py:154
+msgid "Target Lang(s)"
+msgstr "目标语言"
 
 #: dialogs/language_pair_dialog.py:249
 msgid "Target Language"
 msgstr "目标语言"
 
-#: dialogs/settings_pages.py:219
+#: dialogs/import_configuration_dialog.py:62 dialogs/settings_pages.py:219 dialogs/tm_import_dialog.py:24 main_window.py:373
 msgid "Target Language:"
+msgstr "目标语言:"
+
+#: dialogs/project_settings_dialog.py:102
+msgid "Target Languages:"
 msgstr "目标语言:"
 
 #: dialogs/settings_pages.py:224
 msgid "Target language is set in 'Settings > Language Pair Settings...'"
 msgstr "目标语言在“设置 > 语言对设置...”中设定。"
 
-#: dialogs/settings_dialog.py:166
+#: dialogs/settings_dialog.py:171
 msgid ""
 "The UI language has been changed.\n"
 "Some changes may require a restart of the application to take full effect."
@@ -2863,32 +3457,24 @@ msgstr ""
 "界面语言已更改。\n"
 "部分更改可能需要重启应用程序才能完全生效。"
 
-#: plugins/plugin_manager.py:410
+#: plugins/plugin_manager.py:415
 msgid "The archive is empty."
 msgstr "压缩包是空的。"
 
-#: plugins/plugin_manager.py:418
-msgid ""
-"The archive seems to contain a single folder, but it's not a valid plugin"
-" (missing __init__.py)."
+#: plugins/plugin_manager.py:423
+msgid "The archive seems to contain a single folder, but it's not a valid plugin (missing __init__.py)."
 msgstr "压缩包似乎只包含一个文件夹，但它不是一个有效的插件（缺少 __init__.py）。"
 
-#: main_window.py:1798
+#: main_window.py:2114
 msgid "The current project has unsaved changes. Do you want to save?"
 msgstr "当前项目有未保存的更改。是否保存？"
 
-#: main_window.py:3406
+#: main_window.py:1721
 #, python-brace-format
-msgid ""
-"The current translation is empty. Do you want to update the TM entry for:"
-"\n"
-"'{text}...' with an empty translation?"
-msgstr ""
-"当前译文为空。是否要用空译文更新/覆盖记忆库中对于:\n"
-"'{text}...'\n"
-"的条目？"
+msgid "The file type of '{filename}' is not supported."
+msgstr "不支持“{filename}”的文件类型。"
 
-#: main_window.py:1075
+#: main_window.py:1272
 msgid "The layout has been restored to its default state."
 msgstr "布局已恢复为默认状态。"
 
@@ -2899,8 +3485,7 @@ msgid ""
 "\n"
 "- {libs}\n"
 "\n"
-"The plugin will likely fail to run correctly. You can try to install them"
-" from the details panel.\n"
+"The plugin will likely fail to run correctly. You can try to install them from the details panel.\n"
 "\n"
 "Are you sure you want to force enable it anyway?"
 msgstr ""
@@ -2915,8 +3500,7 @@ msgstr ""
 #: plugins/plugin_dialog.py:274
 #, python-brace-format
 msgid ""
-"The plugin '{plugin_name}' is not marked as compatible with this "
-"application version.\n"
+"The plugin '{plugin_name}' is not marked as compatible with this application version.\n"
 "\n"
 "Forcing it to enable may cause instability or crashes.\n"
 "\n"
@@ -2940,20 +3524,22 @@ msgstr ""
 "您想现在尝试{action}它吗？"
 
 #: dialogs/marketplace_dialog.py:37
-msgid ""
-"The request timed out. The server might be busy or your connection is "
-"slow."
+msgid "The request timed out. The server might be busy or your connection is slow."
 msgstr "请求超时。服务器可能正忙或您的网络连接缓慢。"
 
-#: plugins/plugin_manager.py:400
+#: plugins/plugin_manager.py:405
 msgid "The selected file is not a valid .zip archive."
 msgstr "所选文件不是一个有效的 .zip 压缩包。"
 
-#: main_window.py:3449
-msgid "The selected item has no entry in the TM."
-msgstr "当前选中项在翻译记忆库中没有条目。"
+#: main_window.py:1976
+msgid "The selected folder is not a valid LexiSync project."
+msgstr "所选文件夹不是一个有效的 LexiSync 项目。"
 
-#: main_window.py:3699
+#: main_window.py:3724
+msgid "The selected item has no entry in the current TM."
+msgstr "所选项目在当前TM中没有条目。"
+
+#: main_window.py:3981
 msgid "The selected string is marked as ignored and will not be AI translated."
 msgstr "选中的字符串已被标记为忽略，不会进行AI翻译。"
 
@@ -2961,13 +3547,11 @@ msgstr "选中的字符串已被标记为忽略，不会进行AI翻译。"
 msgid "The target language for translation."
 msgstr "翻译的目标语言。"
 
-#: main_window.py:2613
-msgid ""
-"There is no content to save as a project. Please open a code file or PO "
-"file first."
-msgstr "没有内容可保存为项目。请先打开代码文件或 PO 文件。"
+#: main_window.py:3061
+msgid "There is no content to save as a project."
+msgstr "没有内容可以另存为项目。"
 
-#: main_window.py:2551
+#: main_window.py:2987
 msgid ""
 "There is no original code file content to save.\n"
 "Please ensure the code file associated with the project is loaded."
@@ -2975,7 +3559,19 @@ msgstr ""
 "没有原始代码文件内容可用于保存。\n"
 "请确保项目关联的代码文件已加载。"
 
-#: main_window.py:2286
+#: services/tm_service.py:139
+msgid "This TM file has already been imported and has not changed."
+msgstr "此TM文件已导入且未更改。"
+
+#: services/glossary_service.py:236
+msgid "This file has already been imported and has not changed."
+msgstr "此文件已导入且未更改。"
+
+#: services/project_service.py:97
+msgid "This is not a valid LexiSync project folder (missing project.json)."
+msgstr "这不是一个有效的LexiSync项目文件夹（缺少project.json）。"
+
+#: main_window.py:2722
 msgid "This original text already exists."
 msgstr "此原文已存在。"
 
@@ -2987,25 +3583,24 @@ msgstr "此插件已被强制启用，尽管存在兼容性问题。"
 msgid "This plugin is incompatible. Check to force-enable."
 msgstr "此插件不兼容。勾选以强制启用。"
 
-#: main_window.py:3474
-msgid ""
-"This will apply TM to all matching strings, overwriting existing "
-"translations. Continue?"
-msgstr ""
-"这将使用记忆库中的翻译覆盖所有匹配的现有翻译。\n"
-"确定要继续吗？"
+#: main_window.py:3743
+msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
+msgstr "这将使用记忆库中的翻译覆盖所有匹配的现有翻译。确定要继续吗？"
 
-#: main_window.py:3161
+#: main_window.py:3593
 #, python-brace-format
 msgid ""
 "This will re-extract strings from {source} using the new rules.\n"
-"Existing translations will be preserved where the original text matches, "
-"but unmatched translations and statuses may be lost.\n"
+"Existing translations will be preserved where the original text matches, but unmatched translations and statuses may be lost.\n"
 "This action will clear the undo history. Continue?"
 msgstr ""
 "将使用新规则从 {source} 重新提取字符串。\n"
 "现有翻译将尝试根据原文匹配保留，但未匹配项的翻译和状态可能会丢失。\n"
 "此操作会清空撤销历史。确定要继续吗？"
+
+#: main_window.py:3057
+msgid "To save a copy of the project, please create a new project and import the source files."
+msgstr "要保存项目副本，请创建一个新项目并导入源文件。"
 
 #: dialogs/keybinding_dialog.py:29
 msgid "Toggle Ignored Status"
@@ -3019,17 +3614,19 @@ msgstr "切换审阅状态"
 msgid "Total Items"
 msgstr "总项数"
 
-#: utils/enums.py:42
+#: utils/enums.py:44
 msgid "Trailing Whitespace Mismatch"
 msgstr "尾随空格不匹配"
 
-#: dialogs/statistics_dialog.py:523 dialogs/statistics_dialog.py:580
-#: main_window.py:626 main_window.py:843
+#: dialogs/statistics_dialog.py:523 dialogs/statistics_dialog.py:580 main_window.py:731 main_window.py:1019
 msgid "Translated"
 msgstr "已翻译"
 
-#: dialogs/search_dialog.py:57 main_window.py:617 main_window.py:2736
-#: main_window.py:2795 main_window.py:2804
+#: utils/enums.py:60
+msgid "Translated an Empty Original"
+msgstr "翻译了空的原文"
+
+#: dialogs/search_dialog.py:57 main_window.py:722 main_window.py:3159 main_window.py:3218 main_window.py:3227 main_window.py:3930
 msgid "Translation"
 msgstr "译文"
 
@@ -3037,15 +3634,19 @@ msgstr "译文"
 msgid "Translation Chars (Translated only)"
 msgstr "译文字符 (仅已翻译)"
 
-#: utils/enums.py:54
+#: utils/enums.py:58
 msgid "Translation Empty"
 msgstr "译文为空"
 
-#: main_window.py:643 main_window.py:1012
+#: dialogs/project_settings_dialog.py:325 dialogs/resources_page.py:24
+msgid "Translation Memory"
+msgstr "翻译记忆库"
+
+#: main_window.py:748 main_window.py:1198
 msgid "Translation Memory Matches"
 msgstr "翻译记忆库匹配"
 
-#: main_window.py:595 main_window.py:1045
+#: main_window.py:700 main_window.py:1231
 msgid "Translation Memory Panel"
 msgstr "翻译记忆库面板"
 
@@ -3053,20 +3654,25 @@ msgstr "翻译记忆库面板"
 msgid "Translation Progress"
 msgstr "翻译进度"
 
-#: main_window.py:2266
+#: main_window.py:2708
 #, python-brace-format
 msgid "Translation applied: \"{original_semantic}...\""
 msgstr "翻译已应用: \"{original_semantic}...\""
 
-#: services/validation_service.py:71
+#: services/project_service.py:108
+#, python-brace-format
+msgid "Translation data for language '{lang}' not found."
+msgstr "未找到语言 '{lang}' 的翻译数据。"
+
+#: services/validation_service.py:70
 msgid "Translation ends with space, original does not."
 msgstr "译文以空格结尾，原文不是。"
 
-#: models/translatable_string.py:154 services/validation_service.py:34
+#: models/translatable_string.py:156 services/validation_service.py:33
 msgid "Translation is marked as fuzzy and needs review."
 msgstr "此翻译被标记为模糊匹配，需要审阅。"
 
-#: services/validation_service.py:64
+#: services/validation_service.py:63
 msgid "Translation starts with space, original does not."
 msgstr "译文以空格开头，原文不是。"
 
@@ -3074,20 +3680,20 @@ msgstr "译文以空格开头，原文不是。"
 msgid "Translation:"
 msgstr "译文:"
 
-#: main_window.py:3115
+#: main_window.py:3547
 #, python-brace-format
 msgid "Translations exported to PO file: {filename}"
 msgstr "翻译已导出到PO文件: {filename}"
 
-#: main_window.py:4358
+#: main_window.py:4675
 msgid "Translations for selected items are already empty, no clearing needed."
 msgstr "选中的项目译文已为空，无需清除。"
 
-#: dialogs/prompt_manager_dialog.py:80
+#: dialogs/project_settings_dialog.py:204 dialogs/prompt_manager_dialog.py:80
 msgid "Type"
 msgstr "类型"
 
-#: dialogs/prompt_manager_dialog.py:256
+#: dialogs/prompt_manager_dialog.py:258
 msgid "Type:"
 msgstr "类型:"
 
@@ -3095,11 +3701,15 @@ msgstr "类型:"
 msgid "UI Language:"
 msgstr "UI 语言:"
 
-#: main_window.py:1936
+#: ui_components/file_explorer_panel.py:153
+msgid "UI Setup Error"
+msgstr "UI 设置错误"
+
+#: main_window.py:2252
 msgid "Un-ignore Warnings for Selected"
 msgstr "取消忽略选中项的警告"
 
-#: main_window.py:2203
+#: main_window.py:2637
 #, python-brace-format
 msgid "Un-ignored warnings for {count} item(s)."
 msgstr "已为 {count} 个项目取消忽略警告。"
@@ -3108,26 +3718,30 @@ msgstr "已为 {count} 个项目取消忽略警告。"
 msgid "Unchanged"
 msgstr "未变动"
 
-#: main_window.py:415 main_window.py:579
+#: main_window.py:499 main_window.py:684
 msgid "Undo"
 msgstr "撤销"
 
-#: main_window.py:1279
+#: main_window.py:1488
 #, python-brace-format
 msgid "Undo error: Object ID {obj_id} not found"
 msgstr "撤销错误: 未找到对象ID {obj_id}"
 
-#: main_window.py:1297
+#: main_window.py:1506
 #, python-brace-format
 msgid "Undo: Bulk change ({count} items)"
 msgstr "撤销: 批量更改 ({count} 项)"
 
-#: main_window.py:1276
+#: main_window.py:1485
 #, python-brace-format
 msgid "Undo: {field} for ID {id} -> '{value}'"
 msgstr "撤销: ID {id}... '{field}' -> '{value}'"
 
-#: dialogs/prompt_manager_dialog.py:301
+#: ui_components/file_explorer_panel.py:434
+msgid "Unexpected error occurred while navigating."
+msgstr "导航时发生意外错误。"
+
+#: dialogs/prompt_manager_dialog.py:303
 msgid "Unknown"
 msgstr "未知"
 
@@ -3139,7 +3753,7 @@ msgstr "未知 API 错误结构"
 msgid "Unknown error occurred during translation"
 msgstr "翻译时发生未知错误"
 
-#: main_window.py:1920
+#: main_window.py:2236
 msgid "Unmark as Ignored"
 msgstr "取消标记已忽略"
 
@@ -3147,24 +3761,44 @@ msgstr "取消标记已忽略"
 msgid "Unnamed Rule"
 msgstr "未命名规则"
 
-#: main_window.py:627 main_window.py:849
+#: main_window.py:732 main_window.py:1025
 msgid "Unreviewed"
 msgstr "未审阅"
 
-#: main_window.py:1797
+#: main_window.py:2113
 msgid "Unsaved Changes"
 msgstr "未保存的更改"
 
-#: dialogs/statistics_dialog.py:528 dialogs/statistics_dialog.py:585
-#: main_window.py:625 main_window.py:837
+#: main_window.py:1778
+msgid "Unsupported Area"
+msgstr "不支持的区域"
+
+#: main_window.py:1720
+msgid "Unsupported File"
+msgstr "不支持的文件"
+
+#: services/tm_service.py:211
+#, python-brace-format
+msgid "Unsupported TM file format: {ext}"
+msgstr "不支持的TM文件格式：{ext}"
+
+#: main_window.py:821
+msgid "Unsupported Type"
+msgstr "不支持的类型"
+
+#: dialogs/statistics_dialog.py:528 dialogs/statistics_dialog.py:585 main_window.py:730 main_window.py:1013
 msgid "Untranslated"
 msgstr "未翻译"
+
+#: ui_components/file_explorer_panel.py:203 ui_components/file_explorer_panel.py:869
+msgid "Up"
+msgstr "向上"
 
 #: dialogs/marketplace_dialog.py:162 plugins/plugin_dialog.py:586
 msgid "Update"
 msgstr "更新"
 
-#: ui_components/tm_panel.py:34 ui_components/tm_panel.py:124
+#: ui_components/tm_panel.py:34 ui_components/tm_panel.py:92
 msgid "Update TM for Selected"
 msgstr "更新选中项记忆"
 
@@ -3172,14 +3806,18 @@ msgstr "更新选中项记忆"
 msgid "Update from POT"
 msgstr "从POT更新"
 
-#: main_window.py:4297
+#: main_window.py:4610
 #, python-brace-format
 msgid "Updated comments for {count} items."
 msgstr "为 {count} 项更新了注释。"
 
-#: main_window.py:1952
+#: main_window.py:2268
 msgid "Use AI to Translate Selected Items"
 msgstr "使用AI翻译选中项"
+
+#: dialogs/new_project_dialog.py:47
+msgid "Use Global Translation Memory"
+msgstr "使用全局翻译记忆库"
 
 #: dialogs/settings_pages.py:234 dialogs/settings_pages.py:248
 msgid "Use nearby"
@@ -3197,41 +3835,40 @@ msgstr "引用临近译文作为上下文"
 msgid "Use static sorting (Press F5 to manual refresh)"
 msgstr "使用静态排序（按F5手动刷新）"
 
-#: main_window.py:2162
+#: main_window.py:2596
 msgid "Validating all entries..."
 msgstr "正在验证所有条目..."
 
-#: dialogs/settings_dialog.py:114
+#: dialogs/settings_dialog.py:116
 msgid "Validation"
 msgstr "验证"
 
-#: main_window.py:2174
+#: main_window.py:2608
 msgid "Validation complete."
 msgstr "验证完成。"
 
-#: main_window.py:772
+#: main_window.py:951
 #, python-brace-format
 msgid "Validation complete. Language pair set to {src} -> {tgt}."
 msgstr "验证完成。语言对已设置为 {src} -> {tgt}。"
 
-#: dialogs/marketplace_dialog.py:429 plugins/plugin_dialog.py:383
-#: plugins/plugin_dialog.py:398
+#: dialogs/marketplace_dialog.py:429 plugins/plugin_dialog.py:383 plugins/plugin_dialog.py:398
 msgid "Version"
 msgstr "版本"
 
-#: main_window.py:4453 main_window.py:4543
+#: main_window.py:4770 main_window.py:4860
 msgid "Version Comparison Results"
 msgstr "版本对比结果"
 
-#: main_window.py:4565
+#: main_window.py:4882
 msgid "Version comparison failed."
 msgstr "版本对比失败。"
 
-#: main_window.py:4464 main_window.py:4560
+#: main_window.py:4781 main_window.py:4877
 msgid "Version update cancelled."
 msgstr "版本更新已取消。"
 
-#: main_window.py:741
+#: main_window.py:920
 msgid "View refreshed."
 msgstr "视图已刷新。"
 
@@ -3239,27 +3876,28 @@ msgstr "视图已刷新。"
 msgid "Visit Plugin Homepage"
 msgstr "访问插件主页"
 
-#: dialogs/language_pair_dialog.py:470
+#: ui_components/welcome_screen.py:226 ui_components/welcome_screen.py:231
+msgid "Waiting for initialization to complete..."
+msgstr "正在等待初始化完成..."
+
+#: dialogs/language_pair_dialog.py:470 dialogs/management_tabs.py:373 dialogs/management_tabs.py:553 main_window.py:1407 main_window.py:3702
 msgid "Warning"
 msgstr "警告"
 
-#: main_window.py:2824
+#: main_window.py:3247
 #, python-brace-format
-msgid ""
-"Warning: Excel row {row_num}, UUID {uuid} - Original text does not match "
-"the one in Excel. Data will still be imported."
+msgid "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported."
 msgstr "警告: Excel行 {row_num}, UUID {uuid} - 原文与Excel中的不匹配。仍将导入数据。"
 
-#: main_window.py:2952
+#: main_window.py:3382
 msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
 msgstr "YAML 文件 (*.yaml *.yml);;所有文件 (*.*)"
 
-#: main_window.py:2505 main_window.py:2541 main_window.py:2757
-#: main_window.py:2758 main_window.py:2850 main_window.py:2860
+#: main_window.py:2941 main_window.py:2977 main_window.py:3180 main_window.py:3181 main_window.py:3280 main_window.py:3290
 msgid "Yes"
 msgstr "是"
 
-#: main_window.py:3992
+#: main_window.py:4274
 #, python-brace-format
 msgid ""
 "You are about to AI translate {count} unique strings.\n"
@@ -3272,7 +3910,7 @@ msgstr ""
 "预计时间: ~{time_s:.1f} 秒。\n"
 "继续？"
 
-#: main_window.py:4449 main_window.py:4539
+#: main_window.py:4766 main_window.py:4856
 #, python-brace-format
 msgid "and {modified} modified/inherited items."
 msgstr "以及 {modified} 个修改/继承项。"
@@ -3281,26 +3919,18 @@ msgstr "以及 {modified} 个修改/继承项。"
 msgid "by"
 msgstr "作者："
 
-#: main_window.py:3136
+#: main_window.py:3568
 msgid "current in-memory code"
 msgstr "当前内存中的代码"
 
-#: main_window.py:3141
+#: main_window.py:3573
 #, python-brace-format
 msgid "file '{filename}'"
 msgstr "文件 '{filename}'"
 
-#: main_window.py:3253
-msgid "original"
-msgstr "原文"
-
 #: dialogs/settings_pages.py:240
 msgid "original strings (0 for all)"
 msgstr "条原文 (0为所有)"
-
-#: main_window.py:3255
-msgid "translation"
-msgstr "译文"
 
 #: dialogs/settings_pages.py:254
 msgid "translations (0 for all)"
@@ -3310,28 +3940,32 @@ msgstr "条翻译 (0为所有)"
 msgid "with your app version."
 msgstr "与当前版本。"
 
-#: main_window.py:4447 main_window.py:4537
+#: main_window.py:4764 main_window.py:4854
 #, python-brace-format
 msgid "{added} new items, "
 msgstr "{added} 个新增项, "
 
-#: main_window.py:3957
+#: main_window.py:4239
 #, python-brace-format
 msgid "{count} item(s) already have translations."
 msgstr "{count} 项已有译文。"
 
-#: main_window.py:3792 main_window.py:3847
+#: main_window.py:4074 main_window.py:4129
 #, python-brace-format
 msgid "{count} items' ignore status updated."
 msgstr "{count} 项忽略状态已更新。"
 
-#: main_window.py:3819 main_window.py:3875
+#: main_window.py:4101 main_window.py:4157
 #, python-brace-format
 msgid "{count} items' review status updated."
 msgstr "{count} 项审阅状态已更新。"
 
-#: main_window.py:4448 main_window.py:4538
+#: main_window.py:4765 main_window.py:4855
 #, python-brace-format
 msgid "{removed} removed items, "
 msgstr "{removed} 个移除项, "
 
+#: dialogs/import_configuration_dialog.py:21
+#, python-brace-format
+msgid "{resource_type} Import Configuration"
+msgstr "{resource_type} 导入配置"
