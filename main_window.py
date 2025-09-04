@@ -659,6 +659,7 @@ class LexiSyncApp(QMainWindow):
 
         #File Menu
         self.action_open_code_file.setText(_("Open..."))
+        self.action_new_project.setText(_("New Project..."))
         self.action_open_project.setText(_("Open Project..."))
         self.action_compare_new_version.setText(_("Compare/Import New Version..."))
         self.action_save_current_file.setText(_("Save"))
@@ -694,6 +695,7 @@ class LexiSyncApp(QMainWindow):
         self.action_show_translated.setText(_("Show Translated"))
         self.action_show_unreviewed.setText(_("Show Unreviewed"))
         self.action_toggle_file_explorer.setText(_("File Explorer Panel"))
+        self.action_toggle_glossary_panel.setText(_("Glossary Panel"))
         self.action_toggle_details_panel.setText(_("Edit && Details Panel"))
         self.action_toggle_comment_status_panel.setText(_("Comment && Status Panel"))
         self.action_toggle_context_panel.setText(_("Context Preview Panel"))
@@ -711,10 +713,15 @@ class LexiSyncApp(QMainWindow):
 
         #Settings Menu
         self.action_show_settings.setText(_("Settings..."))
+        self.action_show_project_settings.setText(_("Project Settings..."))
         self.action_language_pair_settings.setText(_("Language Pair Settings..."))
 
         #Help Menu
         self.action_about.setText(_("About"))
+
+        #Toolbars
+        self.project_toolbar.setWindowTitle(_("Project"))
+        self.target_lang_label.setText(_("Target Language:"))
 
         self.sheet_model.setHeaderData(0, Qt.Horizontal, "#")
         self.sheet_model.setHeaderData(1, Qt.Horizontal, "S")
@@ -738,8 +745,11 @@ class LexiSyncApp(QMainWindow):
         self.on_search_focus_out()
         self.on_search_focus_out()
 
+        # Update Child Panels
         if hasattr(self, 'file_explorer_dock'):
             self.file_explorer_dock.setWindowTitle(_("File Explorer"))
+        if hasattr(self, 'glossary_dock'):
+            self.glossary_dock.setWindowTitle(_("Glossary"))
         if hasattr(self, 'details_dock'):
             self.details_dock.setWindowTitle(_("Edit && Details"))
         if hasattr(self, 'context_dock'):
@@ -759,6 +769,7 @@ class LexiSyncApp(QMainWindow):
             self.context_panel.update_ui_texts()
         if hasattr(self, 'comment_status_dock'):
             self.tm_panel.update_ui_texts()
+
         if hasattr(self, 'plugin_manager'):
             self.plugin_manager.setup_plugin_ui()
 
