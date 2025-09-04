@@ -507,7 +507,7 @@ class TMManagementTab(QWidget):
         if not filepath:
             filepath, __ = QFileDialog.getOpenFileName(
                 self, _("Select TM File to Import"), "",
-                _("TM Files (*.xlsx;;All Files (*.*)")
+                _("TM Files (*.xlsx);;All Files (*.*)")
             )
         if not filepath:
             return
