@@ -34,6 +34,7 @@ class WrappingTextBrowser(QTextBrowser):
         super().resizeEvent(event)
         self.updateGeometry()
 
+
 class PromptManagerDialog(QDialog):
     def __init__(self, parent, title, app_instance):
         super().__init__(parent)
@@ -86,6 +87,7 @@ class PromptManagerDialog(QDialog):
         self.tree.setDefaultDropAction(Qt.MoveAction)
 
         self.tree.itemDoubleClicked.connect(self.edit_item)
+        self.tree.model().rowsMoved.connect(self.sync_data_from_tree)
         main_layout.addWidget(self.tree)
 
         self.populate_tree()
@@ -105,7 +107,7 @@ class PromptManagerDialog(QDialog):
     def populate_tree(self):
         self.tree.clear()
         for part in self.prompt_structure:
-            enabled_char = "✔" if part.get("enabled", True) else "✖"
+            enabled_char = "✓" if part.get("enabled", True) else "✗"
             display_type = self.get_display_type(part["type"])
             item = QTreeWidgetItem(self.tree, [
                 enabled_char,
@@ -116,20 +118,7 @@ class PromptManagerDialog(QDialog):
             item.setFlags(item.flags() & ~Qt.ItemIsDropEnabled)
             self.tree.addTopLevelItem(item)
 
-    def get_display_type(self, internal_type):
-        if internal_type == STRUCTURAL: return _("Structural Content")
-        if internal_type == STATIC: return _("Static Instruction")
-        if internal_type == DYNAMIC: return _("Dynamic Instruction")
-        return internal_type
-
-    def get_internal_type(self, display_type):
-
-        if display_type == _("Structural Content"): return STRUCTURAL
-        if display_type == _("Static Instruction"): return STATIC
-        if display_type == _("Dynamic Instruction"): return DYNAMIC
-        return display_type
-
-    def get_current_order_from_tree(self):
+    def sync_data_from_tree(self):
         new_order = []
         for i in range(self.tree.topLevelItemCount()):
             item = self.tree.topLevelItem(i)
@@ -138,6 +127,29 @@ class PromptManagerDialog(QDialog):
             if original_part:
                 new_order.append(original_part)
         self.prompt_structure = new_order
+
+    def update_tree_item(self, item_id, updated_data):
+        for i in range(self.tree.topLevelItemCount()):
+            item = self.tree.topLevelItem(i)
+            if item.data(0, Qt.UserRole) == item_id:
+                enabled_char = "✓" if updated_data.get("enabled", True) else "✗"
+                display_type = self.get_display_type(updated_data["type"])
+                item.setText(0, enabled_char)
+                item.setText(1, display_type)
+                item.setText(2, updated_data["content"])
+                break
+
+    def get_display_type(self, internal_type):
+        if internal_type == STRUCTURAL: return _("Structural Content")
+        if internal_type == STATIC: return _("Static Instruction")
+        if internal_type == DYNAMIC: return _("Dynamic Instruction")
+        return internal_type
+
+    def get_internal_type(self, display_type):
+        if display_type == _("Structural Content"): return STRUCTURAL
+        if display_type == _("Static Instruction"): return STATIC
+        if display_type == _("Dynamic Instruction"): return DYNAMIC
+        return display_type
 
     def add_item(self):
         new_part = {"id": str(uuid.uuid4()), "type": STATIC, "enabled": True, "content": _("New Instruction")}
@@ -161,31 +173,40 @@ class PromptManagerDialog(QDialog):
         self.populate_tree()
 
     def edit_item(self, item, column):
+        self.sync_data_from_tree()
+
         item_id = item.data(0, Qt.UserRole)
         part_to_edit = next((p for p in self.prompt_structure if p["id"] == item_id), None)
         if not part_to_edit:
             return
+
         placeholders_data = [
-            {'placeholder': '[Target Language]', 'description': _('The target language for translation.'), 'provider': _('Main App')},
-            {'placeholder': '[Glossary]', 'description': _('Injects glossary terms found in the original text to enforce specific translations.'),
+            {'placeholder': '[Target Language]', 'description': _('The target language for translation.'),
              'provider': _('Main App')},
-            {'placeholder': '[Untranslated Context]', 'description': _('Nearby untranslated original text.'), 'provider': _('Main App')},
-            {'placeholder': '[Translated Context]', 'description': _('Nearby translated text for context.'), 'provider': _('Main App')},
+            {'placeholder': '[Glossary]',
+             'description': _('Injects glossary terms found in the original text to enforce specific translations.'),
+             'provider': _('Main App')},
+            {'placeholder': '[Untranslated Context]', 'description': _('Nearby untranslated original text.'),
+             'provider': _('Main App')},
+            {'placeholder': '[Translated Context]', 'description': _('Nearby translated text for context.'),
+             'provider': _('Main App')},
         ]
         plugin_placeholders = self.app.plugin_manager.run_hook('register_ai_placeholders')
         if plugin_placeholders:
             placeholders_data.extend(plugin_placeholders)
+
         dialog = PromptItemEditor(self, _("Edit Prompt Fragment"), part_to_edit, placeholders_data)
         if dialog.exec():
             for i, p_item in enumerate(self.prompt_structure):
                 if p_item["id"] == item_id:
                     self.prompt_structure[i] = dialog.result
                     break
-            self.populate_tree()
+            self.update_tree_item(item_id, dialog.result)
 
     def reset_to_defaults(self):
-        reply = QMessageBox.question(self, _("Confirm"), _("Are you sure you want to reset the prompt to its default settings?\nAll current customizations will be lost."),
-                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(self, _("Confirm"),
+                                     _("Are you sure you want to reset the prompt to its default settings?\nAll current customizations will be lost."),
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.prompt_structure = deepcopy(DEFAULT_PROMPT_STRUCTURE)
             self.populate_tree()
@@ -229,8 +250,11 @@ class PromptManagerDialog(QDialog):
         except Exception as e:
             QMessageBox.critical(self, _("Export Failed"), _("Could not save preset file: {error}").format(error=e))
 
+    def on_rows_moved(self, parent, start, end, destination, row):
+        self.sync_data_from_tree()
+
     def accept(self):
-        self.get_current_order_from_tree()
+        self.sync_data_from_tree()
         self.app.config["ai_prompt_structure"] = self.prompt_structure
         self.app.save_config()
         self.app.update_statusbar(_("AI prompt structure updated."))
@@ -238,7 +262,6 @@ class PromptManagerDialog(QDialog):
 
     def reject(self):
         super().reject()
-
 
 class PromptItemEditor(QDialog):
     def __init__(self, parent, title, initial_data, placeholders_data=None):
