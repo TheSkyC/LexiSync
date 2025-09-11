@@ -113,6 +113,7 @@ class PromptManagerDialog(QDialog):
                 part["content"]
             ])
             item.setData(0, Qt.UserRole, part["id"])
+            item.setFlags(item.flags() & ~Qt.ItemIsDropEnabled)
             self.tree.addTopLevelItem(item)
 
     def get_display_type(self, internal_type):
