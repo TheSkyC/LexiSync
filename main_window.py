@@ -9,6 +9,7 @@ from openpyxl import Workbook, load_workbook
 import polib
 import weakref
 import traceback
+import json
 import re
 import logging
 logger = logging.getLogger(__name__)
@@ -58,10 +59,11 @@ from dialogs.project_settings_dialog import ProjectSettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
 
 from services import language_service
+from services import project_service
 from services import export_service, po_file_service
 from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
-from services.project_service import create_project, load_project, save_project
+from services.project_service import create_project, load_project_data, save_project
 from services.project_manager import ProjectManager
 from services.prompt_service import generate_prompt_from_structure
 from services.validation_service import run_validation_on_all, placeholder_regex
@@ -215,6 +217,9 @@ class LexiSyncApp(QMainWindow):
         self.current_po_file_path = None
         self.is_project_mode = False
         self.project_config = {}
+        self.all_project_strings = []
+        self.loaded_file_ids = set()
+        self.current_active_source_file_id = None
         self.source_language = self.config.get("default_source_language", "en")
         self.target_languages = []
         self.current_target_language = self.config.get("default_target_language", "zh")
@@ -1355,26 +1360,6 @@ class LexiSyncApp(QMainWindow):
             )
         )
 
-    def update_title(self):
-        base_title = f"LexiSync - v{APP_VERSION}"
-        name_part = ""
-        modified_indicator = "*" if self.current_project_modified else ""
-
-        if self.is_project_mode:
-            project_name = self.project_config.get('name', os.path.basename(self.current_project_path or ""))
-            lang_name = self.target_lang_combo.currentText()
-            name_part = f"{project_name} ({lang_name})"
-        else:
-            if self.current_po_file_path:
-                name_part = os.path.basename(self.current_po_file_path)
-            elif self.current_code_file_path:
-                name_part = os.path.basename(self.current_code_file_path)
-
-        if name_part:
-            self.setWindowTitle(f"{base_title} - {name_part}{modified_indicator}")
-        else:
-            self.setWindowTitle(base_title)
-
     def update_ui_state_after_file_load(self, file_or_project_loaded=False):
         has_content = bool(self.translatable_objects) and file_or_project_loaded
 
@@ -1878,15 +1863,25 @@ class LexiSyncApp(QMainWindow):
         if self.is_ai_translating_batch:
             QMessageBox.warning(self, _("Operation Restricted"), _("AI batch translation is in progress."))
             return
-        try:
-            loaded_data = self.project_manager.load_project(project_path)
-            self.current_project_path = self.project_manager.current_project_path
-            self.project_config = self.project_manager.project_config
-            self.is_project_mode = True
-            self.project_config = loaded_data["project_config"]
-            self.translatable_objects = loaded_data["translatable_objects"]
-            self.original_raw_code_content = loaded_data["original_raw_code_content"]
 
+        if not self.prompt_save_if_modified():
+            return
+
+        try:
+            self._reset_app_state()
+            # Step 1: Load only the project configuration
+            config_path = os.path.join(project_path, "project.json")
+            with open(config_path, 'r', encoding='utf-8') as f:
+                temp_config = json.load(f)
+            target_language = temp_config.get("current_target_language")
+            if not target_language:
+                raise ValueError(_("Project configuration is missing a target language."))
+
+            project_config, __ = load_project_data(project_path, target_language)
+            self.project_config = project_config
+
+            self.is_project_mode = True
+            self.current_project_path = project_path
             self.source_language = self.project_config.get("source_language", "en")
             self.target_languages = self.project_config.get("target_languages", [])
             self.current_target_language = self.project_config.get("current_target_language")
@@ -1894,15 +1889,33 @@ class LexiSyncApp(QMainWindow):
             self.setup_tm_service()
             self.setup_glossary_service()
 
-            self.plugin_manager.run_hook('on_project_loaded', self.translatable_objects)
+            # Step 2: Determine which files to load
+            load_all_on_start = self.config.get("load_all_files_on_project_open", False)
+            source_files = self.project_config.get("source_files", [])
+            if not source_files:
+                raise ValueError(_("Project contains no source files."))
 
+            if load_all_on_start:
+                self.update_statusbar(_("Loading all source files..."), persistent=True)
+                QApplication.processEvents()
+                __, self.all_project_strings = load_project_data(project_path, self.current_target_language,
+                                                                all_files=True)
+                self.loaded_file_ids = {f['id'] for f in source_files}
+
+            # Step 3: Activate the first file
+            first_file_id = source_files[0]['id']
+            self._switch_active_file(first_file_id)
+
+            self.plugin_manager.run_hook('on_project_loaded', self.translatable_objects)
             self.add_to_recent_files(project_path)
             self.config["last_dir"] = os.path.dirname(project_path)
             self.save_config()
 
             self.file_explorer_panel.set_root_path(project_path)
+            self.file_explorer_panel.tree_view.expand(
+                self.file_explorer_panel.source_model.index(os.path.join(project_path, "source")))
+
             self._update_language_switcher()
-            self._run_and_refresh_with_validation()
             self.mark_project_modified(False)
 
             self.update_statusbar(_("Project '{name}' loaded.").format(name=self.project_config.get('name')),
@@ -1911,12 +1924,72 @@ class LexiSyncApp(QMainWindow):
             self.project_toolbar.setVisible(True)
 
         except Exception as e:
+            logger.error(f"Error opening project from '{project_path}': {e}", exc_info=True)
             QMessageBox.critical(self, _("Open Project Error"),
                                  _("Could not load project from '{path}': {error}").format(
                                      path=os.path.basename(project_path), error=e))
             self._reset_app_state()
             self.update_statusbar(_("Project loading failed."), persistent=True)
         self.update_counts_display()
+
+    def _switch_active_file(self, file_id: str):
+        if not self.is_project_mode:
+            return
+
+        if file_id not in self.loaded_file_ids:
+            self.update_statusbar(_("Loading file..."), persistent=True)
+            QApplication.processEvents()
+
+            __, newly_loaded_strings = load_project_data(self.current_project_path, self.current_target_language,
+                                                        file_id_to_load=file_id)
+
+            self.all_project_strings.extend(newly_loaded_strings)
+            self.loaded_file_ids.add(file_id)
+
+        self.current_active_source_file_id = file_id
+
+        active_file_info = next((f for f in self.project_config['source_files'] if f['id'] == file_id), None)
+
+        if active_file_info:
+            active_file_project_path = active_file_info['project_path']
+            self.translatable_objects = [
+                ts for ts in self.all_project_strings
+                if ts.source_file_path.replace('\\', '/') == active_file_project_path.replace('\\', '/')
+            ]
+        else:
+            self.translatable_objects = []
+
+        self._run_and_refresh_with_validation()
+        self.update_title()
+        self.update_statusbar(_("Switched to file: {filename}").format(filename=self.get_current_active_filename()))
+
+    def get_current_active_filename(self):
+        if self.is_project_mode and self.current_active_source_file_id:
+            file_info = next((f for f in self.project_config['source_files'] if f['id'] == self.current_active_source_file_id), None)
+            if file_info:
+                return os.path.basename(file_info['project_path'])
+        return ""
+
+    def update_title(self):
+        base_title = f"LexiSync - v{APP_VERSION}"
+        name_part = ""
+        modified_indicator = "*" if self.current_project_modified else ""
+
+        if self.is_project_mode:
+            project_name = self.project_config.get('name', os.path.basename(self.current_project_path or ""))
+            lang_name = self.target_lang_combo.currentText()
+            active_file = self.get_current_active_filename()
+            name_part = f"{project_name} ({active_file}) - {lang_name}" if active_file else f"{project_name} - {lang_name}"
+        else:
+            if self.current_po_file_path:
+                name_part = os.path.basename(self.current_po_file_path)
+            elif self.current_code_file_path:
+                name_part = os.path.basename(self.current_code_file_path)
+
+        if name_part:
+            self.setWindowTitle(f"{base_title} - {name_part}{modified_indicator}")
+        else:
+            self.setWindowTitle(base_title)
 
     def _update_language_switcher(self):
         self.target_lang_combo.blockSignals(True)
@@ -2064,22 +2137,45 @@ class LexiSyncApp(QMainWindow):
                 persistent=True)
             return
 
-        lower_path = file_path.lower()
-        filename = os.path.basename(file_path)
+        if self.is_project_mode:
+            relative_path = os.path.relpath(file_path, self.current_project_path).replace('\\', '/')
+            source_file_info = next(
+                (f for f in self.project_config.get('source_files', []) if f['project_path'] == relative_path), None)
+
+            if source_file_info:
+                if not self.prompt_save_if_modified():
+                    return
+                self._save_current_view_changes()
+                self._switch_active_file(source_file_info['id'])
+                return
 
         if not self.prompt_save_if_modified():
             self.update_statusbar(_("Open operation cancelled by user."), persistent=False)
             return
 
-        self.update_statusbar(_("Opening '{filename}'...").format(filename=filename), persistent=True)
+        self.update_statusbar(_("Opening '{filename}'...").format(filename=os.path.basename(file_path)),
+                              persistent=True)
         QApplication.processEvents()
 
         try:
             self.open_file_by_path(file_path)
         except Exception as e:
-            error_message = _("Failed to open '{filename}': {error}").format(filename=filename, error=str(e))
+            error_message = _("Failed to open '{filename}': {error}").format(filename=os.path.basename(file_path),
+                                                                             error=str(e))
             self.update_statusbar(error_message, persistent=True)
             QMessageBox.critical(self, _("File Open Error"), error_message)
+
+    def _save_current_view_changes(self):
+        if not self.is_project_mode or not self.current_project_modified:
+            return
+
+        full_data_map = {ts.id: ts for ts in self.all_project_strings}
+
+        for ts_in_view in self.translatable_objects:
+            if ts_in_view.id in full_data_map:
+                full_data_map[ts_in_view.id] = ts_in_view
+
+        self.all_project_strings = list(full_data_map.values())
 
     def _reset_app_state(self):
         self.current_code_file_path = None
@@ -2093,6 +2189,9 @@ class LexiSyncApp(QMainWindow):
         self.current_po_metadata = None
         self.original_raw_code_content = ""
         self.translatable_objects = []
+        self.all_project_strings = []
+        self.loaded_file_ids = set()
+        self.current_active_source_file_id = None
         self.undo_history.clear()
         self.redo_history.clear()
         self.current_selected_ts_id = None

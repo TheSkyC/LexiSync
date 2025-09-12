@@ -5,9 +5,8 @@ import json
 import shutil
 import uuid
 from pathlib import Path
-from models.translatable_string import TranslatableString
 from services.code_file_service import extract_translatable_strings
-from utils.constants import APP_VERSION
+from utils.constants import APP_VERSION, DEFAULT_EXTRACTION_PATTERNS
 from utils.localization import _
 import logging
 logger = logging.getLogger(__package__)
@@ -22,7 +21,8 @@ TARGET_DIR = "target"
 METADATA_DIR = "metadata"
 
 
-def create_project(project_path: str, project_name: str, source_lang: str, target_langs: list, source_files: list, use_global_tm: bool):
+def create_project(project_path: str, project_name: str, source_lang: str, target_langs: list, source_files: list,
+                   use_global_tm: bool):
     proj_path = Path(project_path)
     if proj_path.exists():
         raise FileExistsError(_("A file or directory with this name already exists."))
@@ -45,20 +45,23 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
             shutil.copy2(original_path, destination_path)
 
             relative_path_obj = destination_path.relative_to(proj_path)
-            processed_source_files.append({
+            relative_path_posix = relative_path_obj.as_posix()
+
+            processed_file_info = {
                 "id": str(uuid.uuid4()),
                 "original_path": str(original_path),
-                "project_path": str(relative_path_obj),
+                "project_path": relative_path_posix,
                 "type": file_info['type'],
                 "linked": False
-            })
+            }
+            processed_source_files.append(processed_file_info)
 
-            if not all_translatable_objects:
-                with open(destination_path, 'r', encoding='utf-8') as f:
-                    content = f.read().replace('\r\n', '\n').replace('\r', '\n')
+            with open(destination_path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
 
-                extraction_patterns = file_info['patterns']
-                all_translatable_objects = extract_translatable_strings(content, extraction_patterns)
+            extraction_patterns = file_info.get('patterns', DEFAULT_EXTRACTION_PATTERNS)
+            extracted_strings = extract_translatable_strings(content, extraction_patterns, relative_path_posix)
+            all_translatable_objects.extend(extracted_strings)
 
         project_config = {
             "lexisync_version": APP_VERSION,
@@ -76,9 +79,9 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
         with open(proj_path / PROJECT_CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(project_config, f, indent=4, ensure_ascii=False)
 
+        initial_data = [ts.to_dict() for ts in all_translatable_objects]
         for lang in target_langs:
             translation_path = proj_path / TRANSLATION_DIR / f"{lang}.json"
-            initial_data = [ts.to_dict() for ts in all_translatable_objects]
             with open(translation_path, 'w', encoding='utf-8') as f:
                 json.dump(initial_data, f, indent=4, ensure_ascii=False)
 
@@ -90,7 +93,7 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
         raise IOError(_("Failed to create project: {error}").format(error=str(e)))
 
 
-def load_project(project_path: str):
+def load_project_data(project_path: str, target_language: str, file_id_to_load: str = None, all_files: bool = False):
     proj_path = Path(project_path)
     config_path = proj_path / PROJECT_CONFIG_FILE
     if not config_path.is_file():
@@ -99,37 +102,47 @@ def load_project(project_path: str):
     with open(config_path, 'r', encoding='utf-8') as f:
         project_config = json.load(f)
 
-    current_lang = project_config.get("current_target_language")
-    if not current_lang:
-        raise ValueError(_("Project has no target language selected."))
+    translation_file = proj_path / TRANSLATION_DIR / f"{target_language}.json"
+    translation_map = {}
+    if translation_file.is_file():
+        with open(translation_file, 'r', encoding='utf-8') as f:
+            translation_data = json.load(f)
+        translation_map = {item['id']: item for item in translation_data}
 
-    translation_file = proj_path / TRANSLATION_DIR / f"{current_lang}.json"
-    if not translation_file.is_file():
-        raise FileNotFoundError(_("Translation data for language '{lang}' not found.").format(lang=current_lang))
-    logger.debug(f"Loading project from: {project_path}")
-    logger.debug(f"  - Reading config: {config_path}")
-    logger.debug(f"  - Current language: {current_lang}")
-    logger.debug(f"  - Loading translation data from: {translation_file}")
-    with open(translation_file, 'r', encoding='utf-8') as f:
-        translation_data = json.load(f)
+    loaded_strings = []
 
-    source_code_content = ""
-    full_code_lines = []
-    if project_config["source_files"]:
-        source_file_path = proj_path / project_config["source_files"][0]["project_path"]
-        if source_file_path.is_file():
-            with open(source_file_path, 'r', encoding='utf-8') as f:
-                source_code_content = f.read()
-                full_code_lines = source_code_content.splitlines()
+    files_to_process = []
+    if all_files:
+        files_to_process = project_config.get("source_files", [])
+    elif file_id_to_load:
+        file_info = next((f for f in project_config.get("source_files", []) if f['id'] == file_id_to_load), None)
+        if file_info:
+            files_to_process.append(file_info)
 
-    translatable_objects = [TranslatableString.from_dict(data, full_code_lines) for data in translation_data]
+    for file_info in files_to_process:
+        source_file_path_abs = proj_path / file_info["project_path"]
+        if source_file_path_abs.is_file():
+            with open(source_file_path_abs, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
 
-    return {
-        "project_config": project_config,
-        "translatable_objects": translatable_objects,
-        "original_raw_code_content": source_code_content
-    }
+            extraction_patterns = file_info.get("patterns", DEFAULT_EXTRACTION_PATTERNS)
+            relative_path = file_info["project_path"]
 
+            extracted_strings = extract_translatable_strings(content, extraction_patterns, relative_path)
+
+            for ts_obj in extracted_strings:
+                if ts_obj.id in translation_map:
+                    ts_data = translation_map[ts_obj.id]
+                    ts_obj.translation = ts_data.get('translation', "").replace("\\n", "\n")
+                    ts_obj.comment = ts_data.get('comment', "")
+                    ts_obj.is_reviewed = ts_data.get('is_reviewed', False)
+                    ts_obj.is_ignored = ts_data.get('is_ignored', False)
+                    ts_obj.is_fuzzy = ts_data.get('is_fuzzy', False)
+                    ts_obj.po_comment = ts_data.get('po_comment', "")
+                    ts_obj.is_warning_ignored = ts_data.get('is_warning_ignored', False)
+                loaded_strings.append(ts_obj)
+
+    return project_config, loaded_strings
 
 def save_project(project_path: str, app_instance):
     proj_path = Path(project_path)
@@ -140,19 +153,15 @@ def save_project(project_path: str, app_instance):
 
     current_lang = app_instance.current_target_language
     translation_file = proj_path / TRANSLATION_DIR / f"{current_lang}.json"
-    translation_data = [ts.to_dict() for ts in app_instance.translatable_objects]
+
+    translation_data = [ts.to_dict() for ts in app_instance.all_project_strings]
 
     temp_file = translation_file.with_suffix(".json.tmp")
-
-    logger.debug(f"[SAVE_PROJECT] Starting save for project at: {project_path}")
-    logger.debug(f"[SAVE_PROJECT] Current target language: {current_lang}")
-
     with open(temp_file, 'w', encoding='utf-8') as f:
         json.dump(translation_data, f, indent=4, ensure_ascii=False)
     shutil.move(temp_file, translation_file)
 
     project_config_to_save = app_instance.project_config
-
     project_config_to_save["current_target_language"] = app_instance.current_target_language
     project_config_to_save["ui_state"] = {
         "search_term": app_instance.search_entry.text() if app_instance.search_entry.text() != _(
@@ -165,5 +174,4 @@ def save_project(project_path: str, app_instance):
         json.dump(project_config_to_save, f, indent=4, ensure_ascii=False)
     shutil.move(temp_config_file, config_path)
 
-    logger.debug(f"[SAVE_PROJECT] Save operation finished.")
     return True

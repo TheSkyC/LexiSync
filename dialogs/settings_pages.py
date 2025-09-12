@@ -116,6 +116,16 @@ class GeneralSettingsPage(BaseSettingsPage):
         auto_save_layout.addStretch()
         form_layout.addRow(_("Auto-save Interval:"), auto_save_layout)
 
+        # Project Settings
+        project_group = QGroupBox(("Project Settings"))
+        project_layout = QFormLayout(project_group)
+        self.load_all_files_checkbox = QCheckBox(("Load all source files when opening a project"))
+        self.load_all_files_checkbox.setToolTip(
+            _("Improves performance for cross-file operations, but may increase initial loading time for large projects."))
+        self.load_all_files_checkbox.setChecked(self.app.config.get('load_all_files_on_project_open', False))
+        project_layout.addRow(self.load_all_files_checkbox)
+        self.page_layout.addWidget(project_group)
+
         # Extraction Rules
         self.extraction_button = QPushButton(_("Manage Extraction Rules..."))
         self.extraction_button.clicked.connect(self.app.show_extraction_pattern_dialog)
@@ -145,7 +155,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         self.app.auto_save_interval_sec = self.auto_save_spinbox.value()
         self.app.config['auto_save_interval_sec'] = self.app.auto_save_interval_sec
         self.app.setup_auto_save_timer()
-
+        self.app.config['load_all_files_on_project_open'] = self.load_all_files_checkbox.isChecked()
         self.app.auto_backup_tm_on_save_var = self.backup_tm_checkbox.isChecked()
         self.app.config['auto_backup_tm_on_save'] = self.app.auto_backup_tm_on_save_var
 

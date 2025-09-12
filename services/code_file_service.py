@@ -39,7 +39,7 @@ def unescape_overwatch_string(s):
     return "".join(res)
 
 
-def extract_translatable_strings(code_content, extraction_patterns):
+def extract_translatable_strings(code_content, extraction_patterns, source_file_rel_path=""):
     strings = []
     full_code_lines = code_content.splitlines()
 
@@ -91,7 +91,9 @@ def extract_translatable_strings(code_content, extraction_patterns):
                 char_pos_start_in_file=content_start_pos,
                 char_pos_end_in_file=content_end_pos,
                 full_code_lines=full_code_lines,
-                string_type=string_type_from_pattern
+                string_type=string_type_from_pattern,
+                source_file_path=source_file_rel_path,
+                occurrences=[(source_file_rel_path, str(line_num))]
             )
 
             if string_type_from_pattern and string_type_from_pattern not in ["Custom String", "Custom", ""]:
