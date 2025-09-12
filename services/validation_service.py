@@ -54,18 +54,23 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
         if original.count('\n') != translation.count('\n'):
             ts_obj.warnings.append((WarningType.LINE_COUNT_MISMATCH, _("Line count differs from original.")))
 
-        # 首位空格
-        if original.startswith(' ') and not translation.startswith(' '):
+        # 首位空白字符
+        original_starts_with_space = not original.lstrip() == original
+        translation_starts_with_space = not translation.lstrip() == translation
+        if original_starts_with_space and not translation_starts_with_space:
             ts_obj.warnings.append(
                 (WarningType.LEADING_WHITESPACE_MISMATCH, _("Original starts with space, translation does not.")))
-        elif not original.startswith(' ') and translation.startswith(' '):
+        elif not original_starts_with_space and translation_starts_with_space:
             ts_obj.warnings.append(
                 (WarningType.LEADING_WHITESPACE_MISMATCH, _("Translation starts with space, original does not.")))
 
-        if original.endswith(' ') and not translation.endswith(' '):
+        # 末尾空白字符
+        original_ends_with_space = not original.rstrip() == original
+        translation_ends_with_space = not translation.rstrip() == translation
+        if original_ends_with_space and not translation_ends_with_space:
             ts_obj.warnings.append(
                 (WarningType.TRAILING_WHITESPACE_MISMATCH, _("Original ends with space, translation does not.")))
-        elif not original.endswith(' ') and translation.endswith(' '):
+        elif not original_ends_with_space and translation_ends_with_space:
             ts_obj.warnings.append(
                 (WarningType.TRAILING_WHITESPACE_MISMATCH, _("Translation ends with space, original does not.")))
 
