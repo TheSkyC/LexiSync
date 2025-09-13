@@ -928,6 +928,8 @@ class FileExplorerPanel(QWidget):
         try:
             if hasattr(self, 'filter_edit'):
                 self.filter_edit.setPlaceholderText(_("Filter files..."))
+            if hasattr(self, 'project_mode_checkbox'):
+                self.project_mode_checkbox.setText(_("Project Mode"))
             if hasattr(self, 'show_all_checkbox'):
                 self.show_all_checkbox.setText(_("Show All Files"))
 
