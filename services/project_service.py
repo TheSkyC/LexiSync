@@ -5,6 +5,7 @@ import json
 import shutil
 import uuid
 from pathlib import Path
+from services import po_file_service
 from services.code_file_service import extract_translatable_strings
 from utils.constants import APP_VERSION, DEFAULT_EXTRACTION_PATTERNS
 from utils.localization import _
@@ -130,27 +131,40 @@ def load_project_data(project_path: str, target_language: str, file_id_to_load: 
 
     for file_info in files_to_process:
         source_file_path_abs = proj_path / file_info["project_path"]
-        if source_file_path_abs.is_file():
+        if not source_file_path_abs.is_file():
+            logger.warning(f"Source file not found, skipping: {source_file_path_abs}")
+            continue
+
+        extracted_strings = []
+        file_type = file_info.get("type", "code")
+        relative_path = file_info["project_path"]
+        logger.debug(f"[load_project_data] Processing file: {relative_path}, type: {file_type}")
+        if file_type == 'po':
+            try:
+                extracted_strings, __, ___ = po_file_service.load_from_po(str(source_file_path_abs))
+                logger.debug(f"[load_project_data] Loaded {len(extracted_strings)} strings from PO file.")
+            except Exception as e:
+                logger.error(f"Failed to parse PO file {source_file_path_abs}: {e}", exc_info=True)
+        else:
             with open(source_file_path_abs, 'r', encoding='utf-8', errors='replace') as f:
                 content = f.read()
 
             extraction_patterns = file_info.get("patterns", DEFAULT_EXTRACTION_PATTERNS)
-            relative_path = file_info["project_path"]
-
             extracted_strings = extract_translatable_strings(content, extraction_patterns, relative_path)
+            logger.debug(f"[load_project_data] Extracted {len(extracted_strings)} strings from code file.")
 
-            for ts_obj in extracted_strings:
-                if ts_obj.id in translation_map:
-                    ts_data = translation_map[ts_obj.id]
-                    ts_obj.translation = ts_data.get('translation', "").replace("\\n", "\n")
-                    ts_obj.comment = ts_data.get('comment', "")
-                    ts_obj.is_reviewed = ts_data.get('is_reviewed', False)
-                    ts_obj.is_ignored = ts_data.get('is_ignored', False)
-                    ts_obj.is_fuzzy = ts_data.get('is_fuzzy', False)
-                    ts_obj.po_comment = ts_data.get('po_comment', "")
-                    ts_obj.is_warning_ignored = ts_data.get('is_warning_ignored', False)
-                loaded_strings.append(ts_obj)
-
+        for ts_obj in extracted_strings:
+            if ts_obj.id in translation_map:
+                ts_data = translation_map[ts_obj.id]
+                ts_obj.translation = ts_data.get('translation', "").replace("\\n", "\n")
+                ts_obj.comment = ts_data.get('comment', "")
+                ts_obj.is_reviewed = ts_data.get('is_reviewed', False)
+                ts_obj.is_ignored = ts_data.get('is_ignored', False)
+                ts_obj.is_fuzzy = ts_data.get('is_fuzzy', False)
+                ts_obj.po_comment = ts_data.get('po_comment', "")
+                ts_obj.is_warning_ignored = ts_data.get('is_warning_ignored', False)
+            loaded_strings.append(ts_obj)
+    logger.debug(f"[load_project_data] Total strings loaded in this call: {len(loaded_strings)}")
     return project_config, loaded_strings
 
 def save_project(project_path: str, app_instance):

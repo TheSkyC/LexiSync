@@ -1,9 +1,9 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
-
 import polib
 import os
 import datetime
+from pathlib import Path
 from models.translatable_string import TranslatableString
 from services.code_file_service import extract_translatable_strings
 from utils.constants import APP_VERSION
@@ -11,9 +11,9 @@ from utils.localization import _
 import logging
 logger = logging.getLogger(__name__)
 
-def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_path=None):
-    line_num = 0
-    source_path = ""
+def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None):
+    line_num = entry.linenum
+    occurrences = [(po_file_rel_path, str(line_num))]
     try:
         if hasattr(entry, 'occurrences') and entry.occurrences:
             first_occurrence = entry.occurrences[0]
@@ -33,10 +33,11 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
         original_semantic=entry.msgid,
         line_num=line_num,
         char_pos_start_in_file=0,
-        char_pos_end_in_file=len(entry.msgid),
+        char_pos_end_in_file=0,
         full_code_lines=full_code_lines if full_code_lines else [],
         string_type="PO Import",
-        occurrences=entry.occurrences if hasattr(entry, 'occurrences') else []
+        source_file_path=po_file_rel_path,
+        occurrences=occurrences
     )
     ts.translation = entry.msgstr or ""
 
@@ -89,15 +90,14 @@ def _po_entry_to_translatable_string(entry, full_code_lines=None, original_file_
 
 
 def _find_project_root(po_filepath: str) -> str | None:
-    current_path = os.path.dirname(po_filepath)
+    current_path = Path(po_filepath).parent
     while True:
-        if "locales" in os.listdir(current_path):
-            return current_path
+        if (current_path / "project.json").is_file():
+            return str(current_path)
 
-        parent_path = os.path.dirname(current_path)
-        if parent_path == current_path:  # 到达文件系统根目录
+        if current_path.parent == current_path:
             return None
-        current_path = parent_path
+        current_path = current_path.parent
 
 def extract_to_pot(code_content, extraction_patterns, project_name="Untitled Project", app_version_from_app=APP_VERSION,
                    original_file_name="source_code"):
@@ -124,10 +124,23 @@ def extract_to_pot(code_content, extraction_patterns, project_name="Untitled Pro
 
 
 def load_from_po(filepath):
+    logger.debug(f"[load_from_po] Starting to load PO file: {filepath}")
     po_file = polib.pofile(filepath, encoding='utf-8', wrapwidth=0)
     translatable_objects = []
     project_root = _find_project_root(filepath)
     file_content_cache = {}
+
+    po_file_rel_path = ""
+    if project_root:
+        try:
+            # Use Path objects for more robust relative path calculation
+            po_file_rel_path = Path(filepath).relative_to(project_root).as_posix()
+        except ValueError:
+            po_file_rel_path = os.path.basename(filepath)
+    else:
+        po_file_rel_path = os.path.basename(filepath)
+    logger.debug(f"[load_from_po] Determined relative path for this PO file: {po_file_rel_path}")
+
     for entry in po_file:
         if entry.obsolete or (entry.msgid == "" and not translatable_objects):
             continue
@@ -149,12 +162,13 @@ def load_from_po(filepath):
             except Exception as e:
                 logger.warning(f"Warning: Could not load context file for entry '{entry.msgid[:20]}...': {e}")
 
-        ts = _po_entry_to_translatable_string(entry, full_code_lines)
+        ts = _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines)
+
         translatable_objects.append(ts)
 
     po_lang = po_file.metadata.get('Language', None)
+    logger.debug(f"[load_from_po] Finished loading. Found {len(translatable_objects)} entries.")
     return translatable_objects, po_file.metadata, po_lang
-
 
 def save_to_po(filepath, translatable_objects, metadata=None, original_file_name="source_code", app_instance=None):
     po_file = polib.POFile(wrapwidth=0)
