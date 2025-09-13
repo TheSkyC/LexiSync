@@ -19,15 +19,14 @@ from PySide6.QtWidgets import (
     QPushButton, QLineEdit, QTextEdit, QCheckBox, QFileDialog,
     QMessageBox, QInputDialog, QStatusBar, QProgressBar,
     QMenu, QTableView, QHeaderView, QDockWidget, QLabel,
-    QAbstractItemView, QFrame, QComboBox, QListWidgetItem,
-    QProgressDialog
+    QAbstractItemView, QFrame, QComboBox, QListWidgetItem
 )
 from PySide6.QtCore import (
     Qt, QModelIndex, Signal, QObject, QTimer, QByteArray, QEvent,
     QRunnable, QThreadPool, QItemSelectionModel, QSize, QDir,
-    QThread
+    QThread, QUrl
 )
-from PySide6.QtGui import QAction, QKeySequence, QFont, QPalette, QColor, QSyntaxHighlighter, QTextCharFormat, QDropEvent, QDragMoveEvent, QDragEnterEvent
+from PySide6.QtGui import QAction, QKeySequence, QFont, QPalette, QColor, QSyntaxHighlighter, QTextCharFormat, QDropEvent, QDragMoveEvent, QDragEnterEvent, QDesktopServices
 
 from models.translatable_string import TranslatableString
 from models.translatable_strings_model import TranslatableStringsModel, TranslatableStringsProxyModel
@@ -54,12 +53,11 @@ from dialogs.prompt_manager_dialog import PromptManagerDialog
 from dialogs.diff_dialog import DiffDialog
 from dialogs.statistics_dialog import StatisticsDialog
 from dialogs.settings_dialog import SettingsDialog
-from dialogs.management_tabs import TbxImportWorker, SimpleProgressDialog
 from dialogs.project_settings_dialog import ProjectSettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
 
 from services import language_service
-from services import project_service
+from services.build_service import BuildWorker
 from services import export_service, po_file_service
 from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
@@ -263,6 +261,9 @@ class LexiSyncApp(QMainWindow):
         self.glossary_analysis_cache = {}
         self.original_highlighter = None
 
+        self.build_thread = None
+        self.build_worker = None
+
         self.undo_history = []
         self.redo_history = []
         self.current_selected_ts_id = None
@@ -404,6 +405,11 @@ class LexiSyncApp(QMainWindow):
         self.action_open_project = QAction(_("Open Project..."), self)
         self.action_open_project.triggered.connect(self.open_project_dialog)
         self.file_menu.addAction(self.action_open_project)
+
+        self.action_build_project = QAction(_("Build Project..."), self)
+        self.action_build_project.triggered.connect(self.build_project)
+        self.action_build_project.setEnabled(False)
+        self.file_menu.addAction(self.action_build_project)
         self.file_menu.addSeparator()
 
         self.action_compare_new_version = QAction(_("Compare/Import New Version..."), self)
@@ -1395,6 +1401,8 @@ class LexiSyncApp(QMainWindow):
         self.action_run_validation_on_all.setEnabled(has_content)
         if hasattr(self, 'action_show_project_settings'):
             self.action_show_project_settings.setEnabled(self.is_project_mode)
+        if hasattr(self, 'action_build_project'):
+            self.action_build_project.setEnabled(self.is_project_mode)
         self.update_ai_related_ui_state()
         self.update_title()
 
@@ -2172,6 +2180,58 @@ class LexiSyncApp(QMainWindow):
                                                                              error=str(e))
             self.update_statusbar(error_message, persistent=True)
             QMessageBox.critical(self, _("File Open Error"), error_message)
+
+    def build_project(self):
+        if not self.is_project_mode:
+            QMessageBox.warning(self, _("Warning"), _("A project must be open to build."))
+            return
+
+        if self.build_thread and self.build_thread.isRunning():
+            QMessageBox.information(self, _("In Progress"), _("A build is already in progress."))
+            return
+
+        if self.current_project_modified:
+            self._save_current_view_changes()
+            save_project(self.current_project_path, self)
+            self.mark_project_modified(False)
+
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(True)
+        self.update_statusbar(_("Starting project build..."), persistent=True)
+
+        self.build_thread = QThread(self)
+        self.build_worker = BuildWorker(self.current_project_path, self)
+        self.build_worker.moveToThread(self.build_thread)
+
+        self.build_thread.started.connect(self.build_worker.run)
+        self.build_worker.progress_updated.connect(self.on_build_progress)
+        self.build_worker.finished.connect(self.on_build_finished)
+
+        self.build_thread.finished.connect(self.build_worker.deleteLater)
+        self.build_thread.finished.connect(self.build_thread.deleteLater)
+
+        self.build_thread.start()
+
+    def on_build_progress(self, current, total, message):
+        self.update_statusbar(message, persistent=True)
+        if total > 0:
+            progress_percent = int((current / total) * 100)
+            self.progress_bar.setValue(progress_percent)
+
+    def on_build_finished(self, success, message):
+        self.progress_bar.setVisible(False)
+        self.update_statusbar(_("Ready"))
+        if success:
+            reply = QMessageBox.information(self, _("Build Complete"),
+                                          message + "\n\n" + _("Do you want to open the target folder?"),
+                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                target_dir = os.path.join(self.current_project_path, "target")
+                QDesktopServices.openUrl(QUrl.fromLocalFile(target_dir))
+        else:
+            QMessageBox.critical(self, _("Build Failed"), message)
+        self.build_thread = None
+        self.build_worker = None
 
     def _save_current_view_changes(self):
         if not self.is_project_mode or not self.current_project_modified:
