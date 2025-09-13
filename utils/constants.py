@@ -117,6 +117,7 @@ DEFAULT_KEYBINDINGS = {
     'open_code_file': 'Ctrl+O',
     'new_project': 'Ctrl+Shift+N',
     'open_project': 'Ctrl+Shift+O',
+    'build_project': 'Ctrl+B',
     'save_current_file': 'Ctrl+S',
     'save_code_file': 'Ctrl+Shift+S',
     'undo': 'Ctrl+Z',

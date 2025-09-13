@@ -876,6 +876,7 @@ class LexiSyncApp(QMainWindow):
         self.action_open_code_file.setShortcut(QKeySequence(bindings.get('open_code_file', '')))
         self.action_new_project.setShortcut(QKeySequence(bindings.get('new_project', '')))
         self.action_open_project.setShortcut(QKeySequence(bindings.get('open_project', '')))
+        self.action_build_project.setShortcut(QKeySequence(bindings.get('build_project', '')))
         self.action_save_current_file.setShortcut(QKeySequence(bindings.get('save_current_file', '')))
         self.action_save_code_file.setShortcut(QKeySequence(bindings.get('save_code_file', '')))
         self.action_undo.setShortcut(QKeySequence(bindings.get('undo', '')))
@@ -888,6 +889,7 @@ class LexiSyncApp(QMainWindow):
             'open_code_file': self.action_open_code_file,
             'new_project': self.action_new_project,
             'open_project': self.action_open_project,
+            'build_project': self.action_build_project,
             'save_current_file': self.action_save_current_file,
             'save_code_file': self.action_save_code_file,
             'undo': self.action_undo,
