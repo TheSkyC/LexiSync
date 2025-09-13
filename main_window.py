@@ -4006,9 +4006,9 @@ class LexiSyncApp(QMainWindow):
         clipboard_content = QApplication.clipboard().text()
 
         if isinstance(clipboard_content, str):
-            self.details_panel.translation_edit_text.setPlainText(clipboard_content)
-            cleaned_content = clipboard_content
-            self._apply_translation_to_model(ts_obj, cleaned_content, source="manual_paste")
+            formatted_content = self._format_pasted_text(clipboard_content, ts_obj.original_semantic)
+            self.details_panel.translation_edit_text.setPlainText(formatted_content)
+            self._apply_translation_to_model(ts_obj, formatted_content, source="manual_paste")
             self.update_statusbar(_("Clipboard content pasted to translation."))
         else:
             self.update_statusbar(_("Paste failed: Clipboard content is not text."))
@@ -4020,6 +4020,26 @@ class LexiSyncApp(QMainWindow):
     def show_settings_dialog(self):
         dialog = SettingsDialog(self)
         dialog.exec()
+
+    def _format_pasted_text(self, text_to_paste: str, original_text: str) -> str:
+        if not self.config.get('smart_paste_enabled', True):
+            return text_to_paste
+
+        processed_text = text_to_paste
+
+        if self.config.get('smart_paste_normalize_newlines', True):
+            processed_text = processed_text.replace('\r\n', '\n').replace('\r', '\n')
+
+        if self.config.get('smart_paste_sync_whitespace', True):
+            # Leading whitespace
+            if original_text.lstrip() == original_text:
+                processed_text = processed_text.lstrip()
+
+            # Trailing whitespace
+            if original_text.rstrip() == original_text:
+                processed_text = processed_text.rstrip()
+
+        return processed_text
 
     def _check_ai_prerequisites(self, show_error=True):
         if not requests:

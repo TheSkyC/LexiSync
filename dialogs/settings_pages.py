@@ -84,10 +84,9 @@ class GeneralSettingsPage(BaseSettingsPage):
     def __init__(self, app_instance):
         super().__init__()
         self.app = app_instance
-
-        form_layout = QFormLayout()
-        form_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
-        form_layout.setLabelAlignment(Qt.AlignLeft)
+        main_form_layout = QFormLayout()
+        main_form_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
+        main_form_layout.setLabelAlignment(Qt.AlignLeft)
 
         # UI Language
         self.lang_combo = QComboBox()
@@ -99,7 +98,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         index = self.lang_combo.findData(self.current_lang_on_open)
         if index != -1:
             self.lang_combo.setCurrentIndex(index)
-        form_layout.addRow(_("UI Language:"), self.lang_combo)
+        main_form_layout.addRow(_("UI Language:"), self.lang_combo)
 
         # Auto-save
         auto_save_layout = QHBoxLayout()
@@ -114,11 +113,11 @@ class GeneralSettingsPage(BaseSettingsPage):
         auto_save_layout.addWidget(self.auto_save_spinbox)
         auto_save_layout.addWidget(self.auto_save_hint_label)
         auto_save_layout.addStretch()
-        form_layout.addRow(_("Auto-save Interval:"), auto_save_layout)
+        main_form_layout.addRow(_("Auto-save Interval:"), auto_save_layout)
 
-        self.page_layout.addLayout(form_layout)
+        self.page_layout.addLayout(main_form_layout)
 
-        # Project Settings
+        # Project Settings Group
         project_group = QGroupBox(_("Project Settings"))
         project_layout = QFormLayout(project_group)
         self.load_all_files_checkbox = QCheckBox(_("Load all source files when opening a project"))
@@ -128,19 +127,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         project_layout.addRow(self.load_all_files_checkbox)
         self.page_layout.addWidget(project_group)
 
-
-        form_layout_2 = QFormLayout()
-        form_layout_2.setRowWrapPolicy(QFormLayout.WrapAllRows)
-        form_layout_2.setLabelAlignment(Qt.AlignLeft)
-
-        # Extraction Rules
-        self.extraction_button = QPushButton(_("Manage Extraction Rules..."))
-        self.extraction_button.clicked.connect(self.app.show_extraction_pattern_dialog)
-        form_layout_2.addRow(_("Extraction Rules:"), self.extraction_button)
-
-        self.page_layout.addLayout(form_layout_2)
-
-        # On Save Options
+        # On Save Options Group
         on_save_group = QGroupBox(_("On File Save"))
         on_save_layout = QVBoxLayout(on_save_group)
         self.backup_tm_checkbox = QCheckBox(_("Auto-backup Translation Memory"))
@@ -150,6 +137,42 @@ class GeneralSettingsPage(BaseSettingsPage):
         on_save_layout.addWidget(self.backup_tm_checkbox)
         on_save_layout.addWidget(self.compile_mo_checkbox)
         self.page_layout.addWidget(on_save_group)
+
+        # Smart Paste Group
+        paste_group = QGroupBox(_("Smart Paste"))
+        paste_layout = QVBoxLayout(paste_group)
+        self.smart_paste_checkbox = QCheckBox(_("Enable Smart Paste"))
+        self.smart_paste_checkbox.setToolTip(_("Automatically format text when pasting into the translation editor."))
+        self.smart_paste_checkbox.setChecked(self.app.config.get('smart_paste_enabled', True))
+        self.sync_whitespace_checkbox = QCheckBox(_("Sync leading/trailing whitespace"))
+        self.sync_whitespace_checkbox.setChecked(self.app.config.get('smart_paste_sync_whitespace', True))
+        self.normalize_newlines_checkbox = QCheckBox(_("Normalize newlines"))
+        self.normalize_newlines_checkbox.setChecked(self.app.config.get('smart_paste_normalize_newlines', True))
+        self.smart_paste_checkbox.stateChanged.connect(self.sync_whitespace_checkbox.setEnabled)
+        self.smart_paste_checkbox.stateChanged.connect(self.normalize_newlines_checkbox.setEnabled)
+        self.sync_whitespace_checkbox.setEnabled(self.smart_paste_checkbox.isChecked())
+        self.normalize_newlines_checkbox.setEnabled(self.smart_paste_checkbox.isChecked())
+        paste_layout.addWidget(self.smart_paste_checkbox)
+        sub_options_layout = QHBoxLayout()
+        sub_options_layout.addSpacing(20)
+        sub_options_widget = QWidget()
+        sub_options_v_layout = QVBoxLayout(sub_options_widget)
+        sub_options_v_layout.setContentsMargins(0, 0, 0, 0)
+        sub_options_v_layout.addWidget(self.sync_whitespace_checkbox)
+        sub_options_v_layout.addWidget(self.normalize_newlines_checkbox)
+        sub_options_layout.addWidget(sub_options_widget)
+        paste_layout.addLayout(sub_options_layout)
+        self.page_layout.addWidget(paste_group)
+
+        # Extraction Rules
+        extraction_group = QGroupBox(_("Extraction"))
+        extraction_layout = QFormLayout(extraction_group)
+        self.extraction_button = QPushButton(_("Manage Extraction Rules..."))
+        self.extraction_button.clicked.connect(self.app.show_extraction_pattern_dialog)
+        extraction_layout.addRow(self.extraction_button)
+        self.page_layout.addWidget(extraction_group)
+
+        self.page_layout.addStretch(1)
 
     def save_settings(self):
         lang_changed = False
@@ -168,6 +191,10 @@ class GeneralSettingsPage(BaseSettingsPage):
 
         self.app.auto_compile_mo_var = self.compile_mo_checkbox.isChecked()
         self.app.config['auto_compile_mo_on_save'] = self.app.auto_compile_mo_var
+
+        self.app.config['smart_paste_enabled'] = self.smart_paste_checkbox.isChecked()
+        self.app.config['smart_paste_sync_whitespace'] = self.sync_whitespace_checkbox.isChecked()
+        self.app.config['smart_paste_normalize_newlines'] = self.normalize_newlines_checkbox.isChecked()
 
         return lang_changed
 
