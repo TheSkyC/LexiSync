@@ -46,12 +46,9 @@ class TMPanel(QWidget):
         layout.addWidget(tm_actions_frame)
 
     def _on_tm_suggestion_double_click(self, item):
-        full_text = item.text()
-        try:
-            translation_text_ui = full_text.split("): ", 1)[1].strip()
-        except IndexError:
-            translation_text_ui = full_text.strip()
-        self.apply_tm_suggestion_signal.emit(translation_text_ui)
+        translation_text_ui = item.data(Qt.UserRole)
+        if translation_text_ui is not None:
+            self.apply_tm_suggestion_signal.emit(translation_text_ui)
 
     def update_tm_suggestions(self, exact_match: Optional[str], fuzzy_matches: List[Dict]):
         self.tm_suggestions_listbox.clear()
@@ -62,6 +59,7 @@ class TMPanel(QWidget):
             suggestion_for_ui = exact_match.replace("\\n", "\n")
             item = QListWidgetItem(f"(100%): {suggestion_for_ui}")
             item.setForeground(QColor("darkgreen"))
+            item.setData(Qt.UserRole, suggestion_for_ui)
             self.tm_suggestions_listbox.addItem(item)
 
         if fuzzy_matches:
@@ -80,7 +78,7 @@ class TMPanel(QWidget):
                     item.setForeground(QColor("purple"))
                 else:
                     item.setForeground(QColor("darkblue"))
-
+                item.setData(Qt.UserRole, suggestion_for_ui)
                 self.tm_suggestions_listbox.addItem(item)
 
         if not has_results:
