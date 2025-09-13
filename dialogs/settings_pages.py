@@ -116,22 +116,29 @@ class GeneralSettingsPage(BaseSettingsPage):
         auto_save_layout.addStretch()
         form_layout.addRow(_("Auto-save Interval:"), auto_save_layout)
 
+        self.page_layout.addLayout(form_layout)
+
         # Project Settings
-        project_group = QGroupBox(("Project Settings"))
+        project_group = QGroupBox(_("Project Settings"))
         project_layout = QFormLayout(project_group)
-        self.load_all_files_checkbox = QCheckBox(("Load all source files when opening a project"))
+        self.load_all_files_checkbox = QCheckBox(_("Load all source files when opening a project"))
         self.load_all_files_checkbox.setToolTip(
             _("Improves performance for cross-file operations, but may increase initial loading time for large projects."))
         self.load_all_files_checkbox.setChecked(self.app.config.get('load_all_files_on_project_open', False))
         project_layout.addRow(self.load_all_files_checkbox)
         self.page_layout.addWidget(project_group)
 
+
+        form_layout_2 = QFormLayout()
+        form_layout_2.setRowWrapPolicy(QFormLayout.WrapAllRows)
+        form_layout_2.setLabelAlignment(Qt.AlignLeft)
+
         # Extraction Rules
         self.extraction_button = QPushButton(_("Manage Extraction Rules..."))
         self.extraction_button.clicked.connect(self.app.show_extraction_pattern_dialog)
-        form_layout.addRow(_("Extraction Rules:"), self.extraction_button)
+        form_layout_2.addRow(_("Extraction Rules:"), self.extraction_button)
 
-        self.page_layout.addLayout(form_layout)
+        self.page_layout.addLayout(form_layout_2)
 
         # On Save Options
         on_save_group = QGroupBox(_("On File Save"))
