@@ -4,6 +4,7 @@
 import json
 import shutil
 import uuid
+import polib
 from pathlib import Path
 from services import po_file_service
 from services.code_file_service import extract_translatable_strings
@@ -64,7 +65,6 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
             extracted_strings = extract_translatable_strings(content, extraction_patterns, relative_path_posix)
             all_translatable_objects.extend(extracted_strings)
 
-        # Copy glossary and TM files
         if glossary_files:
             for g_file in glossary_files:
                 shutil.copy2(g_file, proj_path / GLOSSARY_DIR)
@@ -237,35 +237,57 @@ def build_project_target_files(project_path: str, app_instance, progress_callbac
             if not source_path_abs.is_file():
                 logger.warning(f"Source file not found, skipping: {source_path_abs}")
                 continue
+            file_type = file_info.get("type", "code")
+            if file_type == 'po':
+                try:
+                    po_file = polib.pofile(str(source_path_abs), encoding='utf-8', wrapwidth=0)
+                    temp_ts_objects, __, ___ = po_file_service.load_from_po(str(source_path_abs))
+                    id_to_msgid_map = {ts.id: ts.original_semantic for ts in temp_ts_objects}
+                    for entry in po_file:
+                        entry_id = next((ts_id for ts_id, msgid in id_to_msgid_map.items() if msgid == entry.msgid),
+                                        None)
+                        if entry_id and entry_id in translation_map:
+                            translated_data = translation_map[entry_id]
+                            translation_text = translated_data.get('translation', "").replace("\\n", "\n")
+                            if not translated_data.get('is_ignored', False):
+                                entry.msgstr = translation_text
 
-            with open(source_path_abs, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
+                    po_file.save(str(target_path_abs))
 
-            extraction_patterns = file_info.get('patterns', DEFAULT_EXTRACTION_PATTERNS)
-            extracted_strings = extract_translatable_strings(content, extraction_patterns, file_info['project_path'])
+                except Exception as e:
+                    logger.error(f"Failed to build PO file {source_path_abs}: {e}", exc_info=True)
 
-            for ts_obj in sorted(extracted_strings, key=lambda x: x.char_pos_start_in_file, reverse=True):
-                if ts_obj.id in translation_map:
-                    translated_data = translation_map[ts_obj.id]
-                    translation_text = translated_data.get('translation', "").replace("\\n", "\n")
-                    if translation_text.strip() and not translated_data.get('is_ignored', False):
-                        start = ts_obj.char_pos_start_in_file
-                        end = ts_obj.char_pos_end_in_file
-                        ts_obj.translation = translation_text
-                        replacement = ts_obj.get_raw_translated_for_code()
+            else:
+                with open(source_path_abs, 'r', encoding='utf-8', errors='replace') as f:
+                    content = f.read()
 
-                        content = content[:start] + replacement + content[end:]
+                extraction_patterns = file_info.get("patterns", DEFAULT_EXTRACTION_PATTERNS)
+                extracted_strings = extract_translatable_strings(content, extraction_patterns,
+                                                                 file_info['project_path'])
 
-            with open(target_path_abs, 'w', encoding='utf-8') as f:
-                f.write(content)
+                for ts_obj in sorted(extracted_strings, key=lambda x: x.char_pos_start_in_file, reverse=True):
+                    if ts_obj.id in translation_map:
+                        translated_data = translation_map[ts_obj.id]
+                        translation_text = translated_data.get('translation', "").replace("\\n", "\n")
+                        if translation_text.strip() and not translated_data.get('is_ignored', False):
+                            start = ts_obj.char_pos_start_in_file
+                            end = ts_obj.char_pos_end_in_file
+
+                            ts_obj.translation = translation_text
+                            replacement = ts_obj.get_raw_translated_for_code()
+
+                            content = content[:start] + replacement + content[end:]
+
+                with open(target_path_abs, 'w', encoding='utf-8') as f:
+                    f.write(content)
 
     total_files_built = len(target_langs) * len(source_files)
     success_message = _("Project build completed successfully.\n\n"
                         "Languages: {num_langs}\n"
                         "Source Files per Language: {num_files}\n"
                         "Total Files Created: {total_files}").format(
-                            num_langs=len(target_langs),
-                            num_files=len(source_files),
-                            total_files=total_files_built
-                        )
+        num_langs=len(target_langs),
+        num_files=len(source_files),
+        total_files=total_files_built
+    )
     return True, success_message
