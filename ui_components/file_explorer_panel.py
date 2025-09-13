@@ -9,6 +9,7 @@ from PySide6.QtCore import (Qt, QDir, QModelIndex, Signal, QUrl, QSortFilterProx
                             QSize, QTimer)
 from PySide6.QtGui import QAction, QDesktopServices, QIcon
 import os
+from pathlib import Path
 from collections import deque
 from utils.localization import _
 from utils.path_utils import get_resource_path
@@ -49,6 +50,9 @@ class FileFilterProxyModel(QSortFilterProxyModel):
         super().__init__(parent)
         self._show_all_types = False
         self.project_file_patterns = []
+        self._project_mode_enabled = False
+        self._project_source_paths = set()
+        self._project_source_parent_dirs = set()
 
     def setProjectFilePatterns(self, patterns):
         try:
@@ -72,6 +76,16 @@ class FileFilterProxyModel(QSortFilterProxyModel):
         except Exception as e:
             logger.error(f"Error setting show all types: {e}")
 
+    def setProjectMode(self, enabled: bool, source_paths: list = None):
+        self._project_mode_enabled = enabled
+        if enabled and source_paths:
+            self._project_source_paths = {os.path.normpath(p) for p in source_paths}
+            self._project_source_parent_dirs = {str(Path(p).parent) for p in self._project_source_paths}
+        else:
+            self._project_source_paths = set()
+            self._project_source_parent_dirs = set()
+        self.invalidateFilter()
+
     def filterAcceptsRow(self, source_row, source_parent):
         try:
             source_index = self.sourceModel().index(source_row, 0, source_parent)
@@ -79,6 +93,23 @@ class FileFilterProxyModel(QSortFilterProxyModel):
                 return False
 
             file_info = self.sourceModel().fileInfo(source_index)
+
+            if self._project_mode_enabled:
+                current_path = os.path.normpath(file_info.absoluteFilePath())
+
+                if current_path in self._project_source_paths:
+                    return True
+
+                if file_info.isDir():
+                    current_drive = os.path.splitdrive(current_path)[0]
+                    for parent_dir in self._project_source_parent_dirs:
+                        parent_drive = os.path.splitdrive(parent_dir)[0]
+                        if current_drive.lower() == parent_drive.lower():
+                            if os.path.commonpath([current_path, parent_dir]) == current_path:
+                                return True
+
+                return False
+
             if file_info.isDir():
                 return True
 
@@ -88,17 +119,12 @@ class FileFilterProxyModel(QSortFilterProxyModel):
             if not self.project_file_patterns:
                 return True
 
-            try:
-                from fnmatch import fnmatch
-                file_name = file_info.fileName()
-                for pattern in self.project_file_patterns:
-                    if fnmatch(file_name, pattern):
-                        return True
-                return False
-            except Exception as e:
-                logger.warning(f"Error matching pattern for file {file_info.fileName()}: {e}")
-                return True
-
+            from fnmatch import fnmatch
+            file_name = file_info.fileName()
+            for pattern in self.project_file_patterns:
+                if fnmatch(file_name, pattern):
+                    return True
+            return False
         except Exception as e:
             logger.error(f"Error in filterAcceptsRow: {e}")
             return True
@@ -257,15 +283,20 @@ class FileExplorerPanel(QWidget):
 
     def _create_show_all_widget(self):
         try:
-            show_all_widget = QWidget()
-            show_all_layout = QHBoxLayout(show_all_widget)
-            show_all_layout.setContentsMargins(10, 5, 10, 5)
-            self.show_all_checkbox = QCheckBox(_("Show All Files"))
-            show_all_layout.addWidget(self.show_all_checkbox)
+            filter_options_widget = QWidget()
+            filter_options_layout = QVBoxLayout(filter_options_widget)
+            filter_options_layout.setContentsMargins(10, 5, 10, 5)
 
-            show_all_action = QWidgetAction(self.filter_menu)
-            show_all_action.setDefaultWidget(show_all_widget)
-            self.filter_menu.addAction(show_all_action)
+            self.project_mode_checkbox = QCheckBox(_("Project Mode"))
+            self.project_mode_checkbox.setEnabled(False)
+            filter_options_layout.addWidget(self.project_mode_checkbox)
+
+            self.show_all_checkbox = QCheckBox(_("Show All Files"))
+            filter_options_layout.addWidget(self.show_all_checkbox)
+
+            filter_action = QWidgetAction(self.filter_menu)
+            filter_action.setDefaultWidget(filter_options_widget)
+            self.filter_menu.addAction(filter_action)
         except Exception as e:
             logger.error(f"Error creating show all widget: {e}")
 
@@ -343,6 +374,8 @@ class FileExplorerPanel(QWidget):
         try:
             if hasattr(self, 'filter_edit'):
                 self.filter_edit.textChanged.connect(self.filter_changed)
+            if hasattr(self, 'project_mode_checkbox'):
+                self.project_mode_checkbox.stateChanged.connect(self.toggle_project_mode)
             if hasattr(self, 'show_all_checkbox'):
                 self.show_all_checkbox.stateChanged.connect(self.toggle_show_all)
         except Exception as e:
@@ -623,6 +656,41 @@ class FileExplorerPanel(QWidget):
 
         except Exception as e:
             logger.error(f"Error showing filter menu: {e}")
+
+    def enter_project_mode(self, source_files_info):
+        self.project_mode_checkbox.setEnabled(True)
+        self.project_mode_checkbox.setChecked(True)
+
+        project_root = self.app.current_project_path
+        abs_source_paths = [os.path.join(project_root, f['project_path']) for f in source_files_info]
+
+        self.proxy_model.setProjectMode(True, abs_source_paths)
+
+        source_dir_path = os.path.join(project_root, "source")
+        if os.path.isdir(source_dir_path):
+            self.set_root_path(source_dir_path)
+            QTimer.singleShot(100, lambda: self.tree_view.expandAll())
+        else:
+            self.set_root_path(project_root)
+
+    def exit_project_mode(self):
+        self.project_mode_checkbox.setChecked(False)
+        self.project_mode_checkbox.setEnabled(False)
+        self.proxy_model.setProjectMode(False)
+        last_path = self.app.config.get('last_file_explorer_path', QDir.homePath())
+        if self.app.current_project_path and last_path.startswith(self.app.current_project_path):
+             last_path = QDir.homePath()
+        self.set_root_path(last_path)
+
+    def toggle_project_mode(self, state):
+        is_checked = (state == Qt.CheckState.Checked.value)
+        if is_checked:
+            source_files_info = self.app.project_config.get('source_files', [])
+            project_root = self.app.current_project_path
+            abs_source_paths = [os.path.join(project_root, f['project_path']) for f in source_files_info]
+            self.proxy_model.setProjectMode(True, abs_source_paths)
+        else:
+            self.proxy_model.setProjectMode(False)
 
     def toggle_show_all(self, state):
         try:

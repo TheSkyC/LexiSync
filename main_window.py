@@ -1894,7 +1894,7 @@ class LexiSyncApp(QMainWindow):
             source_files = self.project_config.get("source_files", [])
             if not source_files:
                 raise ValueError(_("Project contains no source files."))
-
+            self.file_explorer_panel.enter_project_mode(source_files)
             if load_all_on_start:
                 self.update_statusbar(_("Loading all source files..."), persistent=True)
                 QApplication.processEvents()
@@ -1910,10 +1910,6 @@ class LexiSyncApp(QMainWindow):
             self.add_to_recent_files(project_path)
             self.config["last_dir"] = os.path.dirname(project_path)
             self.save_config()
-
-            self.file_explorer_panel.set_root_path(project_path)
-            self.file_explorer_panel.tree_view.expand(
-                self.file_explorer_panel.source_model.index(os.path.join(project_path, "source")))
 
             self._update_language_switcher()
             self.mark_project_modified(False)
@@ -2085,6 +2081,7 @@ class LexiSyncApp(QMainWindow):
             content = content.replace('\r\n', '\n')
             self.original_raw_code_content = content
 
+            self.file_explorer_panel.exit_project_mode()
             self._update_file_explorer(filepath)
             self.current_code_file_path = filepath
             self.current_project_path = None
@@ -2178,6 +2175,8 @@ class LexiSyncApp(QMainWindow):
         self.all_project_strings = list(full_data_map.values())
 
     def _reset_app_state(self):
+        if self.is_project_mode:
+            self.file_explorer_panel.exit_project_mode()
         self.current_code_file_path = None
         self.project_manager.close_project()
         self.current_project_path = None
