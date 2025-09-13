@@ -22,7 +22,7 @@ METADATA_DIR = "metadata"
 
 
 def create_project(project_path: str, project_name: str, source_lang: str, target_langs: list, source_files: list,
-                   use_global_tm: bool):
+                   use_global_tm: bool, glossary_files: list = None, tm_files: list = None):
     proj_path = Path(project_path)
     if proj_path.exists():
         raise FileExistsError(_("A file or directory with this name already exists."))
@@ -62,6 +62,15 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
             extraction_patterns = file_info.get('patterns', DEFAULT_EXTRACTION_PATTERNS)
             extracted_strings = extract_translatable_strings(content, extraction_patterns, relative_path_posix)
             all_translatable_objects.extend(extracted_strings)
+
+        # Copy glossary and TM files
+        if glossary_files:
+            for g_file in glossary_files:
+                shutil.copy2(g_file, proj_path / GLOSSARY_DIR)
+
+        if tm_files:
+            for t_file in tm_files:
+                shutil.copy2(t_file, proj_path / TM_DIR)
 
         project_config = {
             "lexisync_version": APP_VERSION,

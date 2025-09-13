@@ -1861,7 +1861,9 @@ class LexiSyncApp(QMainWindow):
                     data['source_lang'],
                     data['target_langs'],
                     data['source_files'],
-                    data['use_global_tm']
+                    data['use_global_tm'],
+                    glossary_files=data['glossary_files'],
+                    tm_files=data['tm_files']
                 )
                 self.open_project(new_project_path)
                 return True
