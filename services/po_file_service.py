@@ -54,7 +54,7 @@ def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=No
         stripped_line = line.strip()
         if stripped_line.startswith('#.'):
             content = stripped_line[2:].strip()
-            if content.startswith('OWLocalizer:'):
+            if content.startswith('LexiSync:'):
                 if 'reviewed' in content:
                     ts.is_reviewed = True
                 if 'ignored' in content:
@@ -203,9 +203,9 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
             entry_occurrences = [(original_file_name, str(ts_obj.line_num_in_file))]
         user_comment_lines = ts_obj.comment.splitlines()
         if ts_obj.is_reviewed:
-            user_comment_lines.append("#OWLocalizer:reviewed")
+            user_comment_lines.append("#LexiSync:reviewed")
         if ts_obj.is_ignored:
-            user_comment_lines.append("#OWLocalizer:ignored")
+            user_comment_lines.append("#LexiSync:ignored")
         translator_comment = "\n".join(user_comment_lines)
         po_comment_lines = ts_obj.po_comment.splitlines()
         developer_comment_lines = [
