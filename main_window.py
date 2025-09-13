@@ -1932,6 +1932,21 @@ class LexiSyncApp(QMainWindow):
         if not self.is_project_mode:
             return
 
+        active_file_info = next((f for f in self.project_config['source_files'] if f['id'] == file_id), None)
+        if not active_file_info:
+            self.translatable_objects = []
+            self.current_active_source_file_content = ""
+            self._run_and_refresh_with_validation()
+            return
+
+        active_file_abs_path = os.path.join(self.current_project_path, active_file_info['project_path'])
+        try:
+            with open(active_file_abs_path, 'r', encoding='utf-8', errors='replace') as f:
+                self.current_active_source_file_content = f.read()
+        except Exception as e:
+            logger.error(f"Failed to read active source file content from {active_file_abs_path}: {e}")
+            self.current_active_source_file_content = ""
+
         if file_id not in self.loaded_file_ids:
             self.update_statusbar(_("Loading file..."), persistent=True)
             QApplication.processEvents()
@@ -1944,16 +1959,12 @@ class LexiSyncApp(QMainWindow):
 
         self.current_active_source_file_id = file_id
 
-        active_file_info = next((f for f in self.project_config['source_files'] if f['id'] == file_id), None)
+        active_file_project_path = active_file_info['project_path']
 
-        if active_file_info:
-            active_file_project_path = active_file_info['project_path']
-            self.translatable_objects = [
-                ts for ts in self.all_project_strings
-                if ts.source_file_path.replace('\\', '/') == active_file_project_path.replace('\\', '/')
-            ]
-        else:
-            self.translatable_objects = []
+        self.translatable_objects = [
+            ts for ts in self.all_project_strings
+            if ts.source_file_path.replace('\\', '/') == active_file_project_path.replace('\\', '/')
+        ]
 
         self._run_and_refresh_with_validation()
         self.update_title()
@@ -2187,10 +2198,12 @@ class LexiSyncApp(QMainWindow):
         self.current_po_file_path = None
         self.current_po_metadata = None
         self.original_raw_code_content = ""
+        self.current_active_source_file_content = ""
         self.translatable_objects = []
         self.all_project_strings = []
         self.loaded_file_ids = set()
         self.current_active_source_file_id = None
+        self.current_active_source_file_content = ""
         self.undo_history.clear()
         self.redo_history.clear()
         self.current_selected_ts_id = None

@@ -58,26 +58,26 @@ class ContextPanel(QWidget):
             cursor = QTextCursor(current_block)
             cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
             cursor.setCharFormat(self.line_highlight_format)
-            line_start_char_pos_in_file = self.app_instance.original_raw_code_content.rfind(
-                '\n', 0, ts_obj.char_pos_start_in_file
-            ) + 1
-            keyword_start_in_line = ts_obj.char_pos_start_in_file - line_start_char_pos_in_file
+            if self.app_instance.is_project_mode:
+                file_content_for_context = self.app_instance.current_active_source_file_content
+            else:
+                file_content_for_context = self.app_instance.original_raw_code_content
+
             keyword_cursor = None
-            if keyword_start_in_line >= 0:
-                keyword_cursor = QTextCursor(current_block)
-                keyword_cursor.setPosition(current_block.position() + keyword_start_in_line)
-                keyword_cursor.setPosition(
-                    current_block.position() + keyword_start_in_line + len(keyword_to_highlight),
-                    QTextCursor.KeepAnchor
-                )
-                if keyword_cursor.selectedText() == keyword_to_highlight:
-                    keyword_cursor.setCharFormat(self.keyword_highlight_format)
-                else:
-                    found_pos = current_block.text().find(keyword_to_highlight, keyword_start_in_line)
-                    if found_pos != -1:
-                        keyword_cursor.setPosition(current_block.position() + found_pos)
-                        keyword_cursor.setPosition(current_block.position() + found_pos + len(keyword_to_highlight),
-                                                   QTextCursor.KeepAnchor)
+            if file_content_for_context:
+                line_start_char_pos_in_file = file_content_for_context.rfind(
+                    '\n', 0, ts_obj.char_pos_start_in_file
+                ) + 1
+                keyword_start_in_line = ts_obj.char_pos_start_in_file - line_start_char_pos_in_file
+
+                if keyword_start_in_line >= 0:
+                    keyword_cursor = QTextCursor(current_block)
+                    keyword_cursor.setPosition(current_block.position() + keyword_start_in_line)
+                    keyword_cursor.setPosition(
+                        current_block.position() + keyword_start_in_line + len(keyword_to_highlight),
+                        QTextCursor.KeepAnchor
+                    )
+                    if keyword_cursor.selectedText() == keyword_to_highlight:
                         keyword_cursor.setCharFormat(self.keyword_highlight_format)
                     else:
                         keyword_cursor = None
