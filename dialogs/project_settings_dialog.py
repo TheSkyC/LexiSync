@@ -68,10 +68,12 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
 
         form_layout = QFormLayout()
 
+        # 项目名称
         self.project_name_edit = QLineEdit(self.project_config.get('name', ''))
         self.project_name_edit.textChanged.connect(self._mark_changed)
         form_layout.addRow(_("Project Name:"), self.project_name_edit)
 
+        # 源语言
         source_lang_code = self.project_config.get('source_language', '')
         source_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == source_lang_code),
                                 source_lang_code)
@@ -80,18 +82,72 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
         self.source_lang_display.setToolTip(_("Source language cannot be changed after project creation."))
         form_layout.addRow(_("Source Language:"), self.source_lang_display)
 
+        # 目标语言
         lang_widget = QWidget()
         lang_layout = QVBoxLayout(lang_widget)
         lang_layout.setContentsMargins(0, 0, 0, 0)
+        lang_layout.setSpacing(8)  # 增加一些间距
+
+        # 目标语言列表
         self.target_langs_list = QListWidget()
-        self.target_langs_list.setFixedHeight(100)
+        self.target_langs_list.setMinimumHeight(120)
+        self.target_langs_list.setMaximumHeight(200)
+
+        self.target_langs_list.setStyleSheet("""
+            QListWidget {
+                border: 1px solid #DCDFE6;
+                border-radius: 4px;
+                background-color: #FFFFFF;
+                padding: 4px;
+            }
+            QListWidget::item {
+                padding: 6px 8px;
+                border-radius: 3px;
+                margin: 1px;
+            }
+            QListWidget::item:selected {
+                background-color: #409EFF;
+                color: white;
+            }
+            QListWidget::item:hover:!selected {
+                background-color: #F5F7FA;
+            }
+        """)
+
         self._populate_target_langs()
 
+        # 按钮布局
         lang_buttons_layout = QHBoxLayout()
+        lang_buttons_layout.setSpacing(8)
+
         self.add_lang_button = QPushButton(_("Add..."))
         self.remove_lang_button = QPushButton(_("Remove"))
+
+        # 设置按钮样式和大小
+        for btn in [self.add_lang_button, self.remove_lang_button]:
+            btn.setMinimumWidth(80)
+            btn.setStyleSheet("""
+                QPushButton {
+                    padding: 6px 12px;
+                    border-radius: 4px;
+                    border: 1px solid #DCDFE6;
+                    background-color: #FFFFFF;
+                    font-weight: 500;
+                }
+                QPushButton:hover {
+                    background-color: #ECF5FF;
+                    color: #409EFF;
+                    border-color: #C6E2FF;
+                }
+                QPushButton:pressed {
+                    background-color: #409EFF;
+                    color: white;
+                }
+            """)
+
         self.add_lang_button.clicked.connect(self._add_language)
         self.remove_lang_button.clicked.connect(self._remove_language)
+
         lang_buttons_layout.addStretch()
         lang_buttons_layout.addWidget(self.add_lang_button)
         lang_buttons_layout.addWidget(self.remove_lang_button)
@@ -101,7 +157,10 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
 
         form_layout.addRow(_("Target Languages:"), lang_widget)
 
+        form_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+
         self.page_layout.addLayout(form_layout)
+        self.page_layout.addStretch()
 
     def _populate_target_langs(self):
         self.target_langs_list.clear()
@@ -122,6 +181,7 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
     def _remove_language(self):
         current_item = self.target_langs_list.currentItem()
         if not current_item:
+            QMessageBox.information(self, _("No Selection"), _("Please select a language to remove."))
             return
 
         lang_text = current_item.text()
@@ -190,7 +250,6 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
 
         self.changes_made = False
         return True
-
 
 class ProjectSourceFilesPage(BaseSettingsPage):
     def __init__(self, app_instance):
@@ -384,12 +443,20 @@ class ProjectSettingsDialog(QDialog):
         """)
 
         main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 10)
+        main_layout.setSpacing(0)
+
         content_layout = QHBoxLayout()
+        content_layout.setSpacing(0)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+
         self.nav_list = QListWidget()
         self.nav_list.setFixedWidth(180)
-        self.stack = QStackedWidget()
         content_layout.addWidget(self.nav_list)
+
+        self.stack = QStackedWidget()
         content_layout.addWidget(self.stack)
+
         main_layout.addLayout(content_layout, 1)
 
         self.pages = {}
@@ -399,7 +466,12 @@ class ProjectSettingsDialog(QDialog):
         self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
-        main_layout.addWidget(self.button_box)
+
+        button_container_layout = QHBoxLayout()
+        button_container_layout.setContentsMargins(10, 10, 10, 0)
+        button_container_layout.addStretch()
+        button_container_layout.addWidget(self.button_box)
+        main_layout.addLayout(button_container_layout)
 
     def setup_pages(self):
         general_page = ProjectGeneralSettingsPage(self.app)
@@ -431,14 +503,18 @@ class ProjectSettingsDialog(QDialog):
         project_service.save_project(self.app.current_project_path, self.app)
 
         if needs_ui_update:
-            # We need to reload data, but not the entire project config which is already in memory
-            loaded_data = project_service.load_project(self.app.current_project_path)
-            self.app.translatable_objects = loaded_data["translatable_objects"]
-            self.app.original_raw_code_content = loaded_data["original_raw_code_content"]
+            __, all_strings = project_service.load_project_data(
+                project_path=self.app.current_project_path,
+                target_language=self.app.current_target_language,
+                all_files=True
+            )
+            self.app.all_project_strings = all_strings
+            self.app.loaded_file_ids = {f['id'] for f in self.app.project_config.get('source_files', [])}
 
+            if self.app.current_active_source_file_id:
+                self.app._switch_active_file(self.app.current_active_source_file_id)
+            else:
+                self.app._run_and_refresh_with_validation()
             self.app._update_language_switcher()
-            self.app._run_and_refresh_with_validation()
-
         self.app.update_title()
-
         super().accept()
