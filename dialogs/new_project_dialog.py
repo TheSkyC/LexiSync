@@ -3,12 +3,13 @@
 
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QLineEdit,
                                QPushButton, QDialogButtonBox, QFileDialog,
-                               QListWidget, QListWidgetItem, QHBoxLayout,
+                               QListWidgetItem, QHBoxLayout,
                                QComboBox, QMessageBox, QCheckBox, QTabWidget, QWidget,
-                               QLabel, QGroupBox)
+                               QLabel, QGroupBox, QTreeWidget, QTreeWidgetItem, QHeaderView)
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDragMoveEvent, QDragLeaveEvent
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDragMoveEvent
 import os
+from datetime import datetime
 from utils.localization import _
 from utils.constants import SUPPORTED_LANGUAGES
 import logging
@@ -16,38 +17,99 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class DropListWidget(QListWidget):
-    """A QListWidget that provides visual feedback for drag-and-drop."""
-    files_dropped = Signal(list, str)  # files, widget_type
+def format_file_size(size_bytes: int) -> str:
+    if size_bytes == 0:
+        return "0 B"
+    size_names = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    import math
+    i = math.floor(math.log(size_bytes, 1024))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return f"{s} {size_names[i]}"
+
+
+class DropTreeWidget(QTreeWidget):
+    files_dropped = Signal(list, str)
 
     def __init__(self, widget_type, parent=None):
         super().__init__(parent)
-        self.widget_type = widget_type  # 'source', 'glossary', 'tm'
+        self.widget_type = widget_type
         self.setAcceptDrops(True)
-        self.setStyleSheet("QListWidget { border: 1px solid #ccc; border-radius: 4px; }")
+        self.setRootIsDecorated(False)
+        self.setAlternatingRowColors(True)
+        self.setSortingEnabled(True)
+        self.setSelectionBehavior(QTreeWidget.SelectRows)
+        self.setStyleSheet("QTreeWidget { border: 1px solid #ccc; border-radius: 4px; }")
+
+        header = self.header()
+        if widget_type == 'source':
+            self.setHeaderLabels([_("File Name"), _("Type"), _("Size"), _("Path")])
+            header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(3, QHeaderView.Stretch)
+            self.setColumnWidth(1, 70)
+            self.setColumnWidth(2, 70)
+        else:
+            self.setHeaderLabels([_("File Name"), _("Size"), _("Modified"), _("Path")])
+            header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+            header.setSectionResizeMode(3, QHeaderView.Stretch)
+            self.setColumnWidth(1, 70)
+            self.setColumnWidth(2, 70)
+
+    def add_file_item(self, filepath, file_info=None):
+        try:
+            stat = os.stat(filepath)
+            filename = os.path.basename(filepath)
+            size_str = format_file_size(stat.st_size)
+
+            item = QTreeWidgetItem()
+            item.setText(0, filename)
+
+            if self.widget_type == 'source':
+                ext = os.path.splitext(filepath)[1].lower()
+                type_map = {'.po': 'PO', '.pot': 'POT', '.ow': 'Code', '.txt': 'Code'}
+                type_display = type_map.get(ext, 'Code')
+                item.setText(1, type_display)
+                item.setText(2, size_str)
+                item.setText(3, filepath)
+            else:
+                modified_time = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M")
+                item.setText(1, size_str)
+                item.setText(2, modified_time)
+                item.setText(3, filepath)
+
+            item.setToolTip(0, filepath)
+            self.addTopLevelItem(item)
+            return item
+        except OSError:
+            return None
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
             urls = event.mimeData().urls()
-            valid_files = []
-
+            can_accept = False
             for url in urls:
                 if url.isLocalFile():
                     filepath = url.toLocalFile()
                     ext = os.path.splitext(filepath)[1].lower()
-
                     if self.widget_type == 'source' and ext in ['.ow', '.txt', '.po', '.pot']:
-                        valid_files.append(filepath)
+                        can_accept = True
+                        break
                     elif self.widget_type == 'glossary' and ext == '.tbx':
-                        valid_files.append(filepath)
+                        can_accept = True
+                        break
                     elif self.widget_type == 'tm' and ext == '.xlsx':
-                        valid_files.append(filepath)
+                        can_accept = True
+                        break
 
-            if valid_files:
-                self.setStyleSheet("QListWidget { border: 2px dashed #409EFF; background-color: #f0f9ff; }")
+            if can_accept:
+                self.setStyleSheet("QTreeWidget { border: 2px dashed #409EFF; background-color: #f0f9ff; }")
                 event.acceptProposedAction()
             else:
-                self.setStyleSheet("QListWidget { border: 2px dashed #ff6b6b; background-color: #fff0f0; }")
+                self.setStyleSheet("QTreeWidget { border: 2px dashed #F56C6C; background-color: #fef0f0; }")
                 event.ignore()
         else:
             event.ignore()
@@ -57,20 +119,17 @@ class DropListWidget(QListWidget):
             event.acceptProposedAction()
 
     def dragLeaveEvent(self, event):
-        self.setStyleSheet("QListWidget { border: 1px solid #ccc; border-radius: 4px; }")
+        self.setStyleSheet("QTreeWidget { border: 1px solid #ccc; border-radius: 4px; }")
 
     def dropEvent(self, event: QDropEvent):
-        self.setStyleSheet("QListWidget { border: 1px solid #ccc; border-radius: 4px; }")
-
+        self.setStyleSheet("QTreeWidget { border: 1px solid #ccc; border-radius: 4px; }")
         if event.mimeData().hasUrls():
             urls = event.mimeData().urls()
             valid_files = []
-
             for url in urls:
                 if url.isLocalFile():
                     filepath = url.toLocalFile()
                     ext = os.path.splitext(filepath)[1].lower()
-
                     if self.widget_type == 'source' and ext in ['.ow', '.txt', '.po', '.pot']:
                         valid_files.append(filepath)
                     elif self.widget_type == 'glossary' and ext == '.tbx':
@@ -81,10 +140,6 @@ class DropListWidget(QListWidget):
             if valid_files:
                 self.files_dropped.emit(valid_files, self.widget_type)
                 event.acceptProposedAction()
-            else:
-                event.ignore()
-        else:
-            event.ignore()
 
 
 class NewProjectDialog(QDialog):
@@ -98,10 +153,12 @@ class NewProjectDialog(QDialog):
         self.setWindowTitle(_("New Project"))
         self.setModal(True)
         self.setMinimumWidth(600)
+        self.setMinimumHeight(600)
+
         main_layout = QVBoxLayout(self)
         self.tab_widget = QTabWidget()
 
-        # --- Tab 1: Basic Settings ---
+        # Tab 1: Basic Settings
         basic_tab = QWidget()
         basic_layout = QFormLayout(basic_tab)
 
@@ -121,11 +178,10 @@ class NewProjectDialog(QDialog):
         source_files_layout = QVBoxLayout(source_files_widget)
         source_files_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.source_files_list = DropListWidget('source')
-        self.source_files_list.setToolTip(
-            _("Drag and drop .ow, .txt, .po, or .pot files here or use the buttons below."))
-        self.source_files_list.setFixedHeight(120)
-        self.source_files_list.files_dropped.connect(self.handle_files_dropped)
+        self.source_files_tree = DropTreeWidget('source')
+        self.source_files_tree.setToolTip(_("Drag and drop .ow, .txt, .po, or .pot files here"))
+        self.source_files_tree.setMinimumHeight(150)
+        self.source_files_tree.files_dropped.connect(self.handle_files_dropped)
 
         source_buttons_layout = QHBoxLayout()
         add_file_button = QPushButton(_("Add..."))
@@ -134,7 +190,7 @@ class NewProjectDialog(QDialog):
         source_buttons_layout.addWidget(add_file_button)
         source_buttons_layout.addWidget(remove_file_button)
 
-        source_files_layout.addWidget(self.source_files_list)
+        source_files_layout.addWidget(self.source_files_tree)
         source_files_layout.addLayout(source_buttons_layout)
 
         basic_layout.addRow(_("Project Name:"), self.project_name_edit)
@@ -145,50 +201,52 @@ class NewProjectDialog(QDialog):
 
         self.tab_widget.addTab(basic_tab, _("Basic Settings"))
 
-        # --- Tab 2: Resources ---
+        # Tab 2: Resources
         resources_tab = QWidget()
         resources_layout = QVBoxLayout(resources_tab)
 
         glossary_group = QGroupBox(_("Project Glossary"))
         glossary_layout = QVBoxLayout(glossary_group)
+        self.glossary_files_tree = DropTreeWidget('glossary')
+        self.glossary_files_tree.setToolTip(_("Drag and drop .tbx files here"))
+        self.glossary_files_tree.setMaximumHeight(120)
+        self.glossary_files_tree.files_dropped.connect(self.handle_files_dropped)
 
-        self.glossary_files_list = DropListWidget('glossary')
-        self.glossary_files_list.setToolTip(_("Drag and drop .tbx files here or use the buttons below."))
-        self.glossary_files_list.setFixedHeight(80)
-        self.glossary_files_list.files_dropped.connect(self.handle_files_dropped)
-
-        add_glossary_button = QPushButton(_("Add..."))
-        remove_glossary_button = QPushButton(_("Remove"))
-        glossary_buttons_layout = QHBoxLayout()
-        glossary_buttons_layout.addStretch()
-        glossary_buttons_layout.addWidget(add_glossary_button)
-        glossary_buttons_layout.addWidget(remove_glossary_button)
-        glossary_layout.addWidget(self.glossary_files_list)
-        glossary_layout.addLayout(glossary_buttons_layout)
+        glossary_bottom_layout = QHBoxLayout()
         self.use_global_glossary_checkbox = QCheckBox(_("Use Global Glossary"))
         self.use_global_glossary_checkbox.setChecked(True)
-        glossary_layout.addWidget(self.use_global_glossary_checkbox)
+        add_glossary_button = QPushButton(_("Add..."))
+        remove_glossary_button = QPushButton(_("Remove"))
+
+        glossary_bottom_layout.addWidget(self.use_global_glossary_checkbox)
+        glossary_bottom_layout.addStretch()
+        glossary_bottom_layout.addWidget(add_glossary_button)
+        glossary_bottom_layout.addWidget(remove_glossary_button)
+
+        glossary_layout.addWidget(self.glossary_files_tree)
+        glossary_layout.addLayout(glossary_bottom_layout)
         resources_layout.addWidget(glossary_group)
 
         tm_group = QGroupBox(_("Project Translation Memory"))
         tm_layout = QVBoxLayout(tm_group)
+        self.tm_files_tree = DropTreeWidget('tm')
+        self.tm_files_tree.setToolTip(_("Drag and drop .xlsx files here"))
+        self.tm_files_tree.setMaximumHeight(120)
+        self.tm_files_tree.files_dropped.connect(self.handle_files_dropped)
 
-        self.tm_files_list = DropListWidget('tm')
-        self.tm_files_list.setToolTip(_("Drag and drop .xlsx files here or use the buttons below."))
-        self.tm_files_list.setFixedHeight(80)
-        self.tm_files_list.files_dropped.connect(self.handle_files_dropped)
-
-        add_tm_button = QPushButton(_("Add..."))
-        remove_tm_button = QPushButton(_("Remove"))
-        tm_buttons_layout = QHBoxLayout()
-        tm_buttons_layout.addStretch()
-        tm_buttons_layout.addWidget(add_tm_button)
-        tm_buttons_layout.addWidget(remove_tm_button)
-        tm_layout.addWidget(self.tm_files_list)
-        tm_layout.addLayout(tm_buttons_layout)
+        tm_bottom_layout = QHBoxLayout()
         self.use_global_tm_checkbox = QCheckBox(_("Use Global Translation Memory"))
         self.use_global_tm_checkbox.setChecked(True)
-        tm_layout.addWidget(self.use_global_tm_checkbox)
+        add_tm_button = QPushButton(_("Add..."))
+        remove_tm_button = QPushButton(_("Remove"))
+
+        tm_bottom_layout.addWidget(self.use_global_tm_checkbox)
+        tm_bottom_layout.addStretch()
+        tm_bottom_layout.addWidget(add_tm_button)
+        tm_bottom_layout.addWidget(remove_tm_button)
+
+        tm_layout.addWidget(self.tm_files_tree)
+        tm_layout.addLayout(tm_bottom_layout)
         resources_layout.addWidget(tm_group)
 
         resources_layout.addStretch()
@@ -199,34 +257,27 @@ class NewProjectDialog(QDialog):
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         main_layout.addWidget(button_box)
 
-        # --- Connections ---
+        # Connections
         self.browse_button.clicked.connect(self.browse_location)
         add_file_button.clicked.connect(self.add_source_files)
-        remove_file_button.clicked.connect(lambda: self._remove_item(self.source_files_list, self.source_files))
+        remove_file_button.clicked.connect(lambda: self._remove_item(self.source_files_tree, self.source_files))
         add_glossary_button.clicked.connect(self.add_glossary_files)
-        remove_glossary_button.clicked.connect(lambda: self._remove_item(self.glossary_files_list, self.glossary_files))
+        remove_glossary_button.clicked.connect(lambda: self._remove_item(self.glossary_files_tree, self.glossary_files))
         add_tm_button.clicked.connect(self.add_tm_files)
-        remove_tm_button.clicked.connect(lambda: self._remove_item(self.tm_files_list, self.tm_files))
+        remove_tm_button.clicked.connect(lambda: self._remove_item(self.tm_files_tree, self.tm_files))
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
 
+    def dragMoveEvent(self, event: QDragMoveEvent):
+        pass
+
     def handle_files_dropped(self, files, widget_type):
-        """处理从DropListWidget发射的文件拖放信号"""
-        try:
-            if widget_type == 'source':
-                self._process_source_files(files)
-                logger.info(f"Added {len(files)} source files via drag-drop")
-            elif widget_type == 'glossary':
-                self._process_generic_files(files, self.glossary_files, self.glossary_files_list)
-                logger.info(f"Added {len(files)} glossary files via drag-drop")
-            elif widget_type == 'tm':
-                self._process_generic_files(files, self.tm_files, self.tm_files_list)
-                logger.info(f"Added {len(files)} TM files via drag-drop")
-            else:
-                logger.warning(f"Unknown widget type: {widget_type}")
-        except Exception as e:
-            logger.error(f"Error processing dropped files: {e}")
-            QMessageBox.warning(self, _("Error"), _("Failed to process dropped files: {}").format(str(e)))
+        if widget_type == 'source':
+            self._process_source_files(files)
+        elif widget_type == 'glossary':
+            self._process_generic_files(files, self.glossary_files, self.glossary_files_tree)
+        elif widget_type == 'tm':
+            self._process_generic_files(files, self.tm_files, self.tm_files_tree)
 
     def _populate_lang_combos(self):
         for name, code in sorted(SUPPORTED_LANGUAGES.items()):
@@ -253,53 +304,43 @@ class NewProjectDialog(QDialog):
             self, _("Select Glossary Files"), "", f"{_('TBX Files')} (*.tbx)"
         )
         if filepaths:
-            self._process_generic_files(filepaths, self.glossary_files, self.glossary_files_list)
+            self._process_generic_files(filepaths, self.glossary_files, self.glossary_files_tree)
 
     def add_tm_files(self):
         filepaths, __ = QFileDialog.getOpenFileNames(
             self, _("Select TM Files"), "", f"{_('Excel Files')} (*.xlsx)"
         )
         if filepaths:
-            self._process_generic_files(filepaths, self.tm_files, self.tm_files_list)
+            self._process_generic_files(filepaths, self.tm_files, self.tm_files_tree)
 
     def _process_source_files(self, filepaths):
-        added_count = 0
         for path in filepaths:
             if not any(f['path'] == path for f in self.source_files):
                 file_type = 'po' if path.lower().endswith(('.po', '.pot')) else 'code'
                 file_info = {'path': path, 'type': file_type}
-                self.source_files.append(file_info)
-                self.source_files_list.addItem(QListWidgetItem(os.path.basename(path)))
-                added_count += 1
+                if self.source_files_tree.add_file_item(path, file_info):
+                    self.source_files.append(file_info)
 
-        if added_count > 0:
-            logger.info(f"Added {added_count} source files")
-
-    def _process_generic_files(self, filepaths, data_list, list_widget):
-        added_count = 0
+    def _process_generic_files(self, filepaths, data_list, tree_widget):
         for path in filepaths:
             if path not in data_list:
-                data_list.append(path)
-                list_widget.addItem(QListWidgetItem(os.path.basename(path)))
-                added_count += 1
+                if tree_widget.add_file_item(path):
+                    data_list.append(path)
 
-        if added_count > 0:
-            list_name = "glossary" if data_list is self.glossary_files else "TM"
-            logger.info(f"Added {added_count} {list_name} files")
-
-    def _remove_item(self, list_widget, data_list):
-        current_item = list_widget.currentItem()
+    def _remove_item(self, tree_widget, data_list):
+        current_item = tree_widget.currentItem()
         if not current_item:
             return
 
-        item_text = current_item.text()
-        row = list_widget.row(current_item)
+        filepath = current_item.text(tree_widget.columnCount() - 1)
 
         if data_list is self.source_files:
-            data_list[:] = [f for f in data_list if os.path.basename(f['path']) != item_text]
+            data_list[:] = [f for f in data_list if f['path'] != filepath]
         else:
-            data_list[:] = [p for p in data_list if os.path.basename(p) != item_text]
-        list_widget.takeItem(row)
+            data_list[:] = [p for p in data_list if p != filepath]
+
+        root = tree_widget.invisibleRootItem()
+        root.removeChild(current_item)
 
     def get_data(self):
         return {
