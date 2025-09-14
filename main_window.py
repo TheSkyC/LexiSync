@@ -672,6 +672,7 @@ class LexiSyncApp(QMainWindow):
         self.action_open_code_file.setText(_("Open..."))
         self.action_new_project.setText(_("New Project..."))
         self.action_open_project.setText(_("Open Project..."))
+        self.action_build_project.setText(_("Build Project..."))
         self.action_compare_new_version.setText(_("Compare/Import New Version..."))
         self.action_save_current_file.setText(_("Save"))
         self.action_save_current_file_as.setText(_("Save As..."))
