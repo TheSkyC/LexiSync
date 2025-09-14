@@ -1871,6 +1871,9 @@ class LexiSyncApp(QMainWindow):
                 QMessageBox.critical(self, _("Project Creation Failed"), str(e))
         return False
 
+    def _rebuild_string_cache_indexes(self):
+        self._id_to_index_map = {ts.id: i for i, ts in enumerate(self.all_project_strings)}
+
     def open_project(self, project_path):
         if self.is_ai_translating_batch:
             QMessageBox.warning(self, _("Operation Restricted"), _("AI batch translation is in progress."))
@@ -1913,6 +1916,7 @@ class LexiSyncApp(QMainWindow):
                 __, self.all_project_strings = load_project_data(project_path, self.current_target_language,
                                                                 all_files=True)
                 self.loaded_file_ids = {f['id'] for f in source_files}
+                self._rebuild_string_cache_indexes()
 
             # Step 3: Activate the first file
             first_file_id = source_files[0]['id']
@@ -1965,9 +1969,10 @@ class LexiSyncApp(QMainWindow):
 
             __, newly_loaded_strings = load_project_data(self.current_project_path, self.current_target_language,
                                                         file_id_to_load=file_id)
-
+            start_index = len(self.all_project_strings)
             self.all_project_strings.extend(newly_loaded_strings)
-            self.loaded_file_ids.add(file_id)
+            for i in range(start_index, len(self.all_project_strings)):
+                self._id_to_index_map[self.all_project_strings[i].id] = i
 
         self.current_active_source_file_id = file_id
 
@@ -2165,7 +2170,6 @@ class LexiSyncApp(QMainWindow):
             if source_file_info:
                 if not self.prompt_save_if_modified():
                     return
-                self._save_current_view_changes()
                 self._switch_active_file(source_file_info['id'])
                 return
 
@@ -2240,14 +2244,15 @@ class LexiSyncApp(QMainWindow):
     def _save_current_view_changes(self):
         if not self.is_project_mode or not self.current_project_modified:
             return
-
-        full_data_map = {ts.id: ts for ts in self.all_project_strings}
-
         for ts_in_view in self.translatable_objects:
-            if ts_in_view.id in full_data_map:
-                full_data_map[ts_in_view.id] = ts_in_view
+            cache_index = self._id_to_index_map.get(ts_in_view.id)
 
-        self.all_project_strings = list(full_data_map.values())
+            if cache_index is not None and cache_index < len(self.all_project_strings):
+                self.all_project_strings[cache_index] = ts_in_view
+            else:
+                self.all_project_strings.append(ts_in_view)
+                self._id_to_index_map[ts_in_view.id] = len(self.all_project_strings) - 1
+                logger.warning(f"Object with ID {ts_in_view.id} from view was not in cache index. Appended as new.")
 
     def _reset_app_state(self):
         if self.is_project_mode:
@@ -2262,12 +2267,12 @@ class LexiSyncApp(QMainWindow):
         self.current_po_file_path = None
         self.current_po_metadata = None
         self.original_raw_code_content = ""
-        self.current_active_source_file_content = ""
         self.translatable_objects = []
         self.all_project_strings = []
         self.loaded_file_ids = set()
         self.current_active_source_file_id = None
         self.current_active_source_file_content = ""
+        self._id_to_index_map = {}
         self.undo_history.clear()
         self.redo_history.clear()
         self.current_selected_ts_id = None
@@ -2297,7 +2302,7 @@ class LexiSyncApp(QMainWindow):
     def prompt_save_if_modified(self):
         if self.current_project_modified:
             reply = QMessageBox.question(self, _("Unsaved Changes"),
-                                         _("The current project has unsaved changes. Do you want to save?"),
+                                         _("The current file or project has unsaved changes. Do you want to save them?"),
                                          QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
             if reply == QMessageBox.Yes:
                 return self.save_current_file()
@@ -3212,6 +3217,7 @@ class LexiSyncApp(QMainWindow):
                 QMessageBox.critical(self, _("Error"), _("Project path is missing. Cannot save."))
                 return False
             try:
+                self._save_current_view_changes()
                 if save_project(self.current_project_path, self):
                     self.mark_project_modified(False)
                     self.update_statusbar(_("Project saved."), persistent=True)

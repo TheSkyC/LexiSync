@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class TranslatableString:
     def __init__(self, original_raw, original_semantic, line_num, char_pos_start_in_file, char_pos_end_in_file,
                  full_code_lines, string_type="Custom String", source_file_path="", occurrences=None):
-        name_string_for_uuid = f"{original_semantic}::{string_type}::L{line_num}::C{char_pos_start_in_file}"
+        name_string_for_uuid = f"{source_file_path}::{original_semantic}::{string_type}::L{line_num}::C{char_pos_start_in_file}"
         self.id = str(uuid.uuid5(APP_NAMESPACE_UUID, name_string_for_uuid))
         self.original_raw = original_raw
         self.original_semantic = original_semantic
