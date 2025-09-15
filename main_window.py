@@ -4211,7 +4211,8 @@ class LexiSyncApp(QMainWindow):
 
         context_dict = self._generate_ai_context_strings(ts_obj.id)
         plugin_placeholders = self.plugin_manager.run_hook('get_ai_translation_context') or {}
-        target_language_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == self.target_language), self.target_language)
+        target_lang_code = self.current_target_language if self.is_project_mode else self.target_language
+        target_language_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code), target_lang_code)
         worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language_name,
                                      context_dict, plugin_placeholders, False)
         self.ai_thread_pool.start(worker)
@@ -4247,9 +4248,10 @@ class LexiSyncApp(QMainWindow):
                 context_dict = self._generate_ai_context_strings(ts_obj.id)
                 plugin_context = self.plugin_manager.run_hook('get_ai_translation_context') or {}
                 plugin_placeholders = self.plugin_manager.run_hook('get_ai_translation_context') or {}
+                target_lang_code = self.current_target_language if self.is_project_mode else self.target_language
                 target_language_name = next(
-                    (name for name, code in SUPPORTED_LANGUAGES.items() if code == self.target_language),
-                    self.target_language)
+                    (name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
+                    target_lang_code)
                 worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language_name,
                                              context_dict, plugin_placeholders , True)
                 self.ai_thread_pool.start(worker)
