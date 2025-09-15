@@ -2377,6 +2377,82 @@ class LexiSyncApp(QMainWindow):
             self.search_entry.setPlaceholderText(_("Quick search..."))
             self.search_entry.setStyleSheet("color: grey;")
 
+    def rescan_source_file(self, file_info_to_rescan: dict):
+        if not self.is_project_mode:
+            return
+
+        try:
+            self.update_statusbar(_("Re-scanning file: {filename}...").format(
+                filename=os.path.basename(file_info_to_rescan['project_path'])), persistent=True)
+            QApplication.processEvents()
+
+            # 1. Get the current strings for the file to be rescanned
+            file_rel_path = file_info_to_rescan['project_path'].replace('\\', '/')
+            old_strings_for_file = [ts for ts in self.all_project_strings if
+                                    ts.source_file_path.replace('\\', '/') == file_rel_path]
+
+            # 2. Re-read the file from disk and extract new strings
+            file_abs_path = os.path.join(self.current_project_path, file_rel_path)
+            with open(file_abs_path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+
+            patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+            newly_extracted_strings = extract_translatable_strings(content, patterns, file_rel_path)
+
+            # 3. Perform a diff and merge
+            old_map = {s.original_semantic: s for s in old_strings_for_file}
+            new_map = {s.original_semantic: s for s in newly_extracted_strings}
+
+            diff_results = {'added': [], 'removed': [], 'unchanged': []}
+
+            for new_obj in newly_extracted_strings:
+                if new_obj.original_semantic in old_map:
+                    old_obj = old_map[new_obj.original_semantic]
+                    new_obj.translation = old_obj.translation
+                    new_obj.comment = old_obj.comment
+                    new_obj.is_reviewed = old_obj.is_reviewed
+                    new_obj.is_ignored = old_obj.is_ignored
+                    diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': new_obj})
+                else:
+                    diff_results['added'].append({'new_obj': new_obj})
+
+            for old_obj in old_strings_for_file:
+                if old_obj.original_semantic not in new_map:
+                    diff_results['removed'].append({'old_obj': old_obj})
+
+            # 4. Show the DiffDialog to the user
+            summary = _(
+                "Re-scan complete for '{filename}'.\nFound {added} new, {removed} removed, and {unchanged} unchanged strings.").format(
+                filename=os.path.basename(file_rel_path),
+                added=len(diff_results['added']),
+                removed=len(diff_results['removed']),
+                unchanged=len(diff_results['unchanged'])
+            )
+            diff_results['summary'] = summary
+
+            dialog = DiffDialog(self, _("Re-scan Results"), diff_results)
+            if dialog.exec():
+                # 5. Apply changes if user confirms
+                self.all_project_strings = [ts for ts in self.all_project_strings if
+                                            ts.source_file_path.replace('\\', '/') != file_rel_path]
+                final_strings_for_file = [res['new_obj'] for res in diff_results['unchanged']] + [res['new_obj'] for res
+                                                                                                  in
+                                                                                                  diff_results['added']]
+                self.all_project_strings.extend(final_strings_for_file)
+
+                self._rebuild_string_cache_indexes()
+                self._switch_active_file(self.current_active_source_file_id)
+                self.mark_project_modified()
+                self.update_statusbar(_("Source file re-scanned and updated successfully."), persistent=True)
+            else:
+                self.update_statusbar(_("Re-scan operation cancelled."))
+
+        except Exception as e:
+            logger.error(f"Failed to re-scan source file: {e}", exc_info=True)
+            QMessageBox.critical(self, _("Error"),
+                                 _("An error occurred during the re-scan operation: {error}").format(error=str(e)))
+            self.update_statusbar(_("Re-scan failed."))
+
     def _on_validation_complete(self, ts_id, slow_warnings, slow_minor_warnings):
         ts_obj = self._find_ts_obj_by_id(ts_id)
         if not ts_obj:

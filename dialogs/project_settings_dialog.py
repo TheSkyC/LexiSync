@@ -340,7 +340,23 @@ class ProjectSourceFilesPage(BaseSettingsPage):
             self._mark_changed()
 
     def _rescan_file(self):
-        QMessageBox.information(self, _("Re-scan"), _("Re-scanning source files is not yet implemented."))
+        current_item = self.table.currentItem()
+        if not current_item:
+            QMessageBox.information(self, _("No Selection"), _("Please select a source file to re-scan."))
+            return
+
+        file_id = current_item.data(Qt.UserRole)
+        file_info = next((f for f in self.project_config['source_files'] if f['id'] == file_id), None)
+        if not file_info:
+            return
+
+        self.app.rescan_source_file(file_info)
+
+        parent_dialog = self.parent()
+        while parent_dialog and not isinstance(parent_dialog, QDialog):
+            parent_dialog = parent_dialog.parent()
+        if parent_dialog:
+            parent_dialog.accept()
 
     def _mark_changed(self):
         self.changes_made = True
