@@ -6,6 +6,7 @@ import threading
 from copy import deepcopy
 from rapidfuzz import fuzz
 from openpyxl import Workbook, load_workbook
+import shutil
 import polib
 import weakref
 import traceback
@@ -2382,62 +2383,144 @@ class LexiSyncApp(QMainWindow):
             return
 
         try:
-            self.update_statusbar(_("Re-scanning file: {filename}...").format(
-                filename=os.path.basename(file_info_to_rescan['project_path'])), persistent=True)
+            file_rel_path = file_info_to_rescan['project_path'].replace('\\', '/')
+            file_abs_path = os.path.join(self.current_project_path, file_rel_path)
+            original_disk_path = file_info_to_rescan.get('original_path')
+
+            # 1. File Existence and Source Selection Logic
+            source_to_scan = None
+            scan_source_name = ""
+
+            project_file_exists = os.path.isfile(file_abs_path)
+            original_file_exists = original_disk_path and os.path.isfile(original_disk_path)
+
+            if not project_file_exists:
+                QMessageBox.critical(self, _("Error"),
+                                     _("Project source file not found:\n{path}").format(path=file_abs_path))
+                return
+
+            if original_file_exists:
+                project_file_mtime = os.path.getmtime(file_abs_path)
+                original_file_mtime = os.path.getmtime(original_disk_path)
+
+                if original_file_mtime > project_file_mtime + 1:
+                    reply = QMessageBox.question(self, _("Source File Conflict"),
+                                                 _("The original linked file appears to be newer than the one in the project's source folder.\n\n"
+                                                   "• Press 'Yes' to scan the newer external file and update the project.\n"
+                                                   "• Press 'No' to scan the existing file inside the project."),
+                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                    if reply == QMessageBox.Yes:
+                        source_to_scan = original_disk_path
+                        scan_source_name = _("external file")
+                        shutil.copy2(original_disk_path, file_abs_path)
+                    else:
+                        source_to_scan = file_abs_path
+                        scan_source_name = _("internal project file")
+                else:
+                    source_to_scan = file_abs_path
+                    scan_source_name = _("internal project file")
+            else:
+                source_to_scan = file_abs_path
+                scan_source_name = _("internal project file")
+
+            self.update_statusbar(_("Re-scanning file from {source}...").format(source=scan_source_name),
+                                  persistent=True)
             QApplication.processEvents()
 
-            # 1. Get the current strings for the file to be rescanned
-            file_rel_path = file_info_to_rescan['project_path'].replace('\\', '/')
+            # 2. Get the current strings for the file to be rescanned
             old_strings_for_file = [ts for ts in self.all_project_strings if
                                     ts.source_file_path.replace('\\', '/') == file_rel_path]
 
-            # 2. Re-read the file from disk and extract new strings
-            file_abs_path = os.path.join(self.current_project_path, file_rel_path)
-            with open(file_abs_path, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
+            # 3. Re-read and extract new strings BASED ON FILE TYPE
+            newly_extracted_strings = []
+            file_type = file_info_to_rescan.get("type", "code")
 
-            patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
-            newly_extracted_strings = extract_translatable_strings(content, patterns, file_rel_path)
+            if file_type == 'po':
+                try:
+                    newly_extracted_strings, __, ___ = po_file_service.load_from_po(source_to_scan)
+                except Exception as e:
+                    logger.error(f"Failed to parse PO file during re-scan {source_to_scan}: {e}", exc_info=True)
+            else:  # Default to 'code'
+                with open(source_to_scan, 'r', encoding='utf-8', errors='replace') as f:
+                    content = f.read()
+                patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
+                newly_extracted_strings = extract_translatable_strings(content, patterns, file_rel_path)
 
-            # 3. Perform a diff and merge
-            old_map = {s.original_semantic: s for s in old_strings_for_file}
-            new_map = {s.original_semantic: s for s in newly_extracted_strings}
+            # 4. Perform a diff and merge using object IDs
+            old_map_by_id = {s.id: s for s in old_strings_for_file}
+            new_map_by_id = {s.id: s for s in newly_extracted_strings}
 
-            diff_results = {'added': [], 'removed': [], 'unchanged': []}
+            diff_results = {'added': [], 'removed': [], 'modified': [], 'unchanged': []}
 
-            for new_obj in newly_extracted_strings:
-                if new_obj.original_semantic in old_map:
-                    old_obj = old_map[new_obj.original_semantic]
+            truly_new_strings = []
+
+            # First pass: find exact matches (unchanged)
+            for new_id, new_obj in new_map_by_id.items():
+                if new_id in old_map_by_id:
+                    old_obj = old_map_by_id[new_id]
                     new_obj.translation = old_obj.translation
                     new_obj.comment = old_obj.comment
                     new_obj.is_reviewed = old_obj.is_reviewed
                     new_obj.is_ignored = old_obj.is_ignored
+                    new_obj.is_fuzzy = old_obj.is_fuzzy
+                    new_obj.po_comment = old_obj.po_comment
+                    new_obj.is_warning_ignored = old_obj.is_warning_ignored
                     diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': new_obj})
                 else:
-                    diff_results['added'].append({'new_obj': new_obj})
+                    truly_new_strings.append(new_obj)
 
-            for old_obj in old_strings_for_file:
-                if old_obj.original_semantic not in new_map:
+            old_strings_not_in_new = []
+            for old_id, old_obj in old_map_by_id.items():
+                if old_id not in new_map_by_id:
+                    old_strings_not_in_new.append(old_obj)
+
+            # Second pass: try to fuzzy match new strings against removed strings
+            used_removed_strings = set()
+            for new_obj in truly_new_strings:
+                best_match_old_s = None
+                best_score = 0.0
+                for old_s in old_strings_not_in_new:
+                    if old_s not in used_removed_strings:
+                        score = fuzz.ratio(new_obj.original_semantic, old_s.original_semantic) / 100.0
+                        if score > best_score:
+                            best_score = score
+                            best_match_old_s = old_s
+
+                if best_score >= 0.85:
+                    new_obj.translation = best_match_old_s.translation
+                    new_obj.comment = best_match_old_s.comment
+                    new_obj.is_reviewed = False
+                    new_obj.is_ignored = best_match_old_s.is_ignored
+                    new_obj.is_fuzzy = True
+                    diff_results['modified'].append(
+                        {'old_obj': best_match_old_s, 'new_obj': new_obj, 'similarity': best_score})
+                    used_removed_strings.add(best_match_old_s)
+                else:
+                    diff_results['added'].append({'new_obj': new_obj})
+            for old_obj in old_strings_not_in_new:
+                if old_obj not in used_removed_strings:
                     diff_results['removed'].append({'old_obj': old_obj})
 
-            # 4. Show the DiffDialog to the user
+            # 5. Show the DiffDialog to the user
             summary = _(
-                "Re-scan complete for '{filename}'.\nFound {added} new, {removed} removed, and {unchanged} unchanged strings.").format(
+                "Re-scan complete for '{filename}'.\nFound {added} new, {removed} removed, {modified} modified (fuzzy matched), and {unchanged} unchanged strings.").format(
                 filename=os.path.basename(file_rel_path),
                 added=len(diff_results['added']),
                 removed=len(diff_results['removed']),
+                modified=len(diff_results['modified']),
                 unchanged=len(diff_results['unchanged'])
             )
             diff_results['summary'] = summary
 
             dialog = DiffDialog(self, _("Re-scan Results"), diff_results)
             if dialog.exec():
-                # 5. Apply changes if user confirms
+                # 6. Apply changes if user confirms
                 self.all_project_strings = [ts for ts in self.all_project_strings if
                                             ts.source_file_path.replace('\\', '/') != file_rel_path]
-                final_strings_for_file = [res['new_obj'] for res in diff_results['unchanged']] + [res['new_obj'] for res
-                                                                                                  in
-                                                                                                  diff_results['added']]
+
+                final_strings_for_file = ([res['new_obj'] for res in diff_results['unchanged']] +
+                                          [res['new_obj'] for res in diff_results['added']] +
+                                          [res['new_obj'] for res in diff_results['modified']])
                 self.all_project_strings.extend(final_strings_for_file)
 
                 self._rebuild_string_cache_indexes()
@@ -2621,8 +2704,8 @@ class LexiSyncApp(QMainWindow):
         if not file_path: return
         normalized_file_path = os.path.normpath(file_path)
         current_root = os.path.normpath(self.file_explorer_panel.source_model.rootPath())
-        drive_file, _ = os.path.splitdrive(normalized_file_path)
-        drive_root, _ = os.path.splitdrive(current_root)
+        drive_file, __ = os.path.splitdrive(normalized_file_path)
+        drive_root, __ = os.path.splitdrive(current_root)
         is_outside_current_root = False
         if drive_file.lower() != drive_root.lower():
             is_outside_current_root = True

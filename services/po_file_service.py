@@ -4,9 +4,10 @@ import polib
 import os
 import datetime
 from pathlib import Path
+import uuid
 from models.translatable_string import TranslatableString
 from services.code_file_service import extract_translatable_strings
-from utils.constants import APP_VERSION
+from utils.constants import APP_VERSION, APP_NAMESPACE_UUID
 from utils.localization import _
 import logging
 logger = logging.getLogger(__name__)
@@ -14,6 +15,8 @@ logger = logging.getLogger(__name__)
 def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None):
     line_num = entry.linenum
     occurrences = [(po_file_rel_path, str(line_num))]
+    msgctxt = entry.msgctxt if entry.msgctxt else ""
+    stable_name_for_uuid = f"{po_file_rel_path}::{msgctxt}::{entry.msgid}"
     try:
         if hasattr(entry, 'occurrences') and entry.occurrences:
             first_occurrence = entry.occurrences[0]
@@ -39,6 +42,7 @@ def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=No
         source_file_path=po_file_rel_path,
         occurrences=occurrences
     )
+    ts.id = str(uuid.uuid5(APP_NAMESPACE_UUID, stable_name_for_uuid))
     ts.translation = entry.msgstr or ""
 
     all_comment_lines = []
@@ -133,7 +137,6 @@ def load_from_po(filepath):
     po_file_rel_path = ""
     if project_root:
         try:
-            # Use Path objects for more robust relative path calculation
             po_file_rel_path = Path(filepath).relative_to(project_root).as_posix()
         except ValueError:
             po_file_rel_path = os.path.basename(filepath)
