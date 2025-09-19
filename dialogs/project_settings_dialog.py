@@ -346,17 +346,12 @@ class ProjectSourceFilesPage(BaseSettingsPage):
             return
 
         file_id = current_item.data(Qt.UserRole)
-        file_info = next((f for f in self.project_config['source_files'] if f['id'] == file_id), None)
+        file_info = next((f for f in self.app.project_config['source_files'] if f['id'] == file_id), None)
         if not file_info:
             return
 
         self.app.rescan_source_file(file_info)
 
-        parent_dialog = self.parent()
-        while parent_dialog and not isinstance(parent_dialog, QDialog):
-            parent_dialog = parent_dialog.parent()
-        if parent_dialog:
-            parent_dialog.accept()
 
     def _mark_changed(self):
         self.changes_made = True
