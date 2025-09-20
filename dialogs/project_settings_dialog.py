@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 import shutil
 import copy
-
+from utils.text_utils import format_file_size
 from utils.localization import _
 from .settings_pages import BaseSettingsPage
 from .management_tabs import GlossaryManagementTab, TMManagementTab
@@ -259,9 +259,15 @@ class ProjectSourceFilesPage(BaseSettingsPage):
         self.changes_made = False
 
         self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels([_("File Name"), _("Type"), _("Original Path")])
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels([_("File Name"), _("Type"), _("Size"), _("Path")])
+
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
+
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self._populate_files_table()
@@ -286,11 +292,29 @@ class ProjectSourceFilesPage(BaseSettingsPage):
         for file_info in self.project_config.get('source_files', []):
             row_position = self.table.rowCount()
             self.table.insertRow(row_position)
-            self.table.setItem(row_position, 0, QTableWidgetItem(
-                Path(file_info['project_path']).name if file_info['project_path'] else Path(
-                    file_info['original_path']).name))
+
+            filename = Path(file_info['project_path']).name if file_info['project_path'] else Path(
+                file_info['original_path']).name
+            self.table.setItem(row_position, 0, QTableWidgetItem(filename))
             self.table.setItem(row_position, 1, QTableWidgetItem(file_info['type']))
-            self.table.setItem(row_position, 2, QTableWidgetItem(file_info['original_path']))
+
+            size_str = "N/A"
+            path_to_check = ""
+            if file_info['project_path']:
+                path_to_check = os.path.join(self.app.current_project_path, file_info['project_path'])
+            else:
+                path_to_check = file_info['original_path']
+
+            try:
+                if os.path.isfile(path_to_check):
+                    size_str = format_file_size(os.path.getsize(path_to_check))
+                else:
+                    size_str = _("File not found")
+            except Exception as e:
+                logger.warning(f"Could not get size for {path_to_check}: {e}")
+                size_str = _("Error")
+            self.table.setItem(row_position, 2, QTableWidgetItem(size_str))
+            self.table.setItem(row_position, 3, QTableWidgetItem(file_info['original_path']))
             self.table.item(row_position, 0).setData(Qt.UserRole, file_info['id'])
 
     def _add_file(self):

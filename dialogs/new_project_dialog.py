@@ -11,21 +11,11 @@ from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDragMoveEvent
 import os
 from datetime import datetime
 from utils.localization import _
+from utils.text_utils import format_file_size
 from utils.constants import SUPPORTED_LANGUAGES
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-def format_file_size(size_bytes: int) -> str:
-    if size_bytes == 0:
-        return "0 B"
-    size_names = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-    import math
-    i = math.floor(math.log(size_bytes, 1024))
-    p = math.pow(1024, i)
-    s = round(size_bytes / p, 2)
-    return f"{s} {size_names[i]}"
 
 
 class DropTreeWidget(QTreeWidget):

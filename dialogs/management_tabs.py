@@ -148,15 +148,18 @@ class GlossaryManagementTab(QWidget):
         self.main_layout.addLayout(toolbar_layout)
 
         self.sources_table = QTableWidget()
-        self.sources_table.setColumnCount(5)
+        self.sources_table.setColumnCount(6)
         self.sources_table.setHorizontalHeaderLabels([
-            _("Source File"), _("Entry Count"), _("Source Lang"),
-            _("Target Lang(s)"), _("Import Date")
+            _("File Name"), _("Entry Count"), _("Source Lang"),
+            _("Target Lang(s)"), _("Import Date"), _("Path")
         ])
-        self.sources_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.sources_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        self.sources_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        self.sources_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
+        header = self.sources_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.Stretch)
         self.sources_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.sources_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.main_layout.addWidget(self.sources_table)
@@ -430,6 +433,10 @@ class GlossaryManagementTab(QWidget):
                     except (ValueError, TypeError):
                         import_date_str = data["import_date"]
                 self.sources_table.setItem(row_idx, 4, QTableWidgetItem(import_date_str))
+                path_str = data.get("filepath", _("N/A"))
+                path_item = QTableWidgetItem(path_str)
+                path_item.setToolTip(path_str)
+                self.sources_table.setItem(row_idx, 5, path_item)
 
         except Exception as e:
             logger.exception("Error in load_sources_into_table")
@@ -493,11 +500,17 @@ class TMManagementTab(QWidget):
         self.main_layout.addLayout(toolbar_layout)
 
         self.sources_table = QTableWidget()
-        self.sources_table.setColumnCount(5)
+        self.sources_table.setColumnCount(6)
         self.sources_table.setHorizontalHeaderLabels([
-            _("Source File"), _("Entry Count"), _("Source Lang"), _("Target Lang"), _("Import Date")
+            _("File Name"), _("Entry Count"), _("Source Lang"), _("Target Lang"), _("Import Date"), _("Path")
         ])
-        self.sources_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        header = self.sources_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.Stretch)
         self.sources_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.sources_table.setSelectionBehavior(QAbstractItemView.SelectRows)
 
@@ -594,6 +607,10 @@ class TMManagementTab(QWidget):
                 except (ValueError, TypeError):
                     import_date_str = data["import_date"]
             self.sources_table.setItem(row_idx, 4, QTableWidgetItem(import_date_str))
+            path_str = data.get("filepath", _("N/A"))
+            path_item = QTableWidgetItem(path_str)
+            path_item.setToolTip(path_str)
+            self.sources_table.setItem(row_idx, 5, path_item)
 
     def save_settings(self):
         pass
