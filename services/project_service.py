@@ -51,7 +51,7 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
 
             processed_file_info = {
                 "id": str(uuid.uuid4()),
-                "original_path": str(original_path),
+                "original_path": str(original_path).replace('\\', '/'),
                 "project_path": relative_path_posix,
                 "type": file_info['type'],
                 "linked": False

@@ -293,8 +293,9 @@ class TMService:
 
     def _get_file_stats(self, filepath: str) -> Dict:
         stat = os.stat(filepath)
+        normalized_filepath = filepath.replace('\\', '/')
         return {
-            "filepath": filepath,
+            "filepath": normalized_filepath,
             "filesize": stat.st_size,
             "last_modified": datetime.fromtimestamp(stat.st_mtime).isoformat() + "Z",
             "checksum": self._calculate_checksum(filepath)

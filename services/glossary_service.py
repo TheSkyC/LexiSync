@@ -593,8 +593,9 @@ class GlossaryService:
         """获取文件统计信息"""
         try:
             stat = os.stat(filepath)
+            normalized_filepath = filepath.replace('\\', '/')
             return {
-                "filepath": filepath,
+                "filepath": normalized_filepath,
                 "filesize": stat.st_size,
                 "last_modified": datetime.fromtimestamp(stat.st_mtime).isoformat() + "Z",
                 "checksum": self._calculate_checksum(filepath)

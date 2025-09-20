@@ -306,16 +306,18 @@ class NewProjectDialog(QDialog):
     def _process_source_files(self, filepaths):
         for path in filepaths:
             if not any(f['path'] == path for f in self.source_files):
-                file_type = 'po' if path.lower().endswith(('.po', '.pot')) else 'code'
-                file_info = {'path': path, 'type': file_type}
+                normalized_path = path.replace('\\', '/')
+                file_type = 'po' if normalized_path.lower().endswith(('.po', '.pot')) else 'code'
+                file_info = {'path': normalized_path, 'type': file_type}
                 if self.source_files_tree.add_file_item(path, file_info):
                     self.source_files.append(file_info)
 
     def _process_generic_files(self, filepaths, data_list, tree_widget):
         for path in filepaths:
-            if path not in data_list:
-                if tree_widget.add_file_item(path):
-                    data_list.append(path)
+            normalized_path = path.replace('\\', '/')
+            if normalized_path not in data_list:
+                if tree_widget.add_file_item(normalized_path):
+                    data_list.append(normalized_path)
 
     def _remove_item(self, tree_widget, data_list):
         current_item = tree_widget.currentItem()
