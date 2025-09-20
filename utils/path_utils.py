@@ -4,6 +4,7 @@
 import sys
 import os
 import platform
+from functools import lru_cache
 
 
 def get_resource_path(relative_path: str) -> str:
@@ -15,6 +16,7 @@ def get_resource_path(relative_path: str) -> str:
     return os.path.join(base_path, relative_path)
 
 
+@lru_cache(maxsize=None)
 def get_app_data_path() -> str:
     """
     Returns the root directory for application data (configs, plugins, TM).
@@ -28,12 +30,19 @@ def get_app_data_path() -> str:
             base_path = os.environ.get('APPDATA')
     elif platform.system() == "Darwin":  # macOS
         base_path = os.path.expanduser('~/Library/Application Support')
-    else:  # Linux and other Unix
+    else:  # Linux
         base_path = os.path.expanduser('~/.local/share')
 
     app_data_path = os.path.join(base_path, "LexiSync")
     os.makedirs(app_data_path, exist_ok=True)
     return app_data_path
+
+@lru_cache(maxsize=None)
+def get_plugin_libs_path() -> str:
+    app_data_path = get_app_data_path()
+    libs_path = os.path.join(app_data_path, "plugin_libs")
+    os.makedirs(libs_path, exist_ok=True)
+    return libs_path
 
 def get_plugin_libs_path() -> str:
     app_data_path = get_app_data_path()

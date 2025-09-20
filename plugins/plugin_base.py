@@ -184,19 +184,6 @@ class PluginBase(ABC):
         """
         pass
 
-    def on_table_cell_paint(self, painter: 'QPainter', option: 'QStyleOptionViewItem', index: 'QModelIndex',
-                            ts_object: 'TranslatableString'):
-        """
-        (Notification Hook) Called after a cell in the main table has been painted.
-        Allows plugins to draw custom overlays, icons, or indicators on top of the cell.
-
-        :param painter: The QPainter object used for drawing. It's already in the correct state.
-        :param option: The style options for the item, contains geometry via option.rect.
-        :param index: The QModelIndex of the cell being painted.
-        :param ts_object: The TranslatableString object associated with the row.
-        """
-        pass
-
     def register_settings_pages(self) -> dict:
         """
         (Collecting Hook) Called by the main settings dialog to gather custom settings pages from plugins.
@@ -274,17 +261,6 @@ class PluginBase(ABC):
         :param column: The column being processed, e.g., 'translation', 'comment'.
         :param source: A string indicating the origin of the action, e.g., 'manual_button', 'ai_translation'.
         :return: The processed string.
-        """
-        return text
-
-    def process_string_for_display(self, text: str, ts_object, column: str) -> str:
-        """
-        Hook to process a string right before it's displayed in the main table.
-        This is a chained hook.
-        :param text: The string to be displayed.
-        :param ts_object: The full TranslatableString object for context.
-        :param column: The column being displayed, e.g., 'original', 'translation'.
-        :return: The processed string for display.
         """
         return text
 

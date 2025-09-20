@@ -4,7 +4,6 @@
 from PySide6.QtWidgets import QStyledItemDelegate, QStyleOptionViewItem
 from PySide6.QtGui import QPainter, QColor, QPen, QFont
 from PySide6.QtCore import Qt, QModelIndex
-from models.translatable_strings_model import NewlineColorRole
 
 
 class CustomCellDelegate(QStyledItemDelegate):
@@ -89,14 +88,3 @@ class CustomCellDelegate(QStyledItemDelegate):
                 painter.drawText(x, y, self.newline_symbol)
 
         painter.restore()
-
-        if self.app and hasattr(self.app, 'plugin_manager') and ts_obj:
-            painter.save()
-            self.app.plugin_manager.run_hook(
-                'on_table_cell_paint',
-                painter=painter,
-                option=display_option,
-                index=index,
-                ts_object=ts_obj
-            )
-            painter.restore()

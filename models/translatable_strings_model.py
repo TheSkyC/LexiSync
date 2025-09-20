@@ -27,38 +27,12 @@ class TranslatableStringsModel(QAbstractTableModel):
         return len(self.headers)
 
     def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid(): return None
-        row, col = index.row(), index.column()
-        if row >= len(self._data): return None
-        ts_obj = self._data[row]
-        original_display_text = None
-        if role == Qt.DisplayRole:
-            if col == 2:
-                original_display_text = ts_obj.original_semantic
-            elif col == 3:
-                original_display_text = ts_obj.get_translation_for_ui()
-
-            if original_display_text is not None:
-                column_name = 'original' if col == 2 else 'translation'
-                display_text = self.app_instance.plugin_manager.run_hook(
-                    'process_string_for_display',
-                    original_display_text,
-                    ts_object=ts_obj,
-                    column=column_name
-                )
-        if role == Qt.BackgroundRole:
-            return ts_obj.ui_style_cache.get('background')
-
-        if role == Qt.ForegroundRole:
-            return ts_obj.ui_style_cache.get('foreground')
-
-        if role == Qt.FontRole:
-            return ts_obj.ui_style_cache.get('font')
-
-        if role == NewlineColorRole:
-            if col in [2, 3]:
-                return ts_obj.ui_style_cache.get('newline_color')
+        if not index.isValid():
             return None
+        row, col = index.row(), index.column()
+        if row >= len(self._data):
+            return None
+        ts_obj = self._data[row]
 
         if role == Qt.DisplayRole:
             if col == 0:
@@ -75,9 +49,9 @@ class TranslatableStringsModel(QAbstractTableModel):
                 else:
                     return "U"
             elif col == 2:
-                return display_text
+                return ts_obj.original_semantic
             elif col == 3:
-                return display_text
+                return ts_obj.get_translation_for_ui()
             elif col == 4:
                 return ts_obj.comment
             elif col == 5:
@@ -85,7 +59,22 @@ class TranslatableStringsModel(QAbstractTableModel):
             elif col == 6:
                 return ts_obj.line_num_in_file
 
-        if role == Qt.UserRole:
+        elif role == Qt.BackgroundRole:
+            return ts_obj.ui_style_cache.get('background')
+
+        elif role == Qt.ForegroundRole:
+            return ts_obj.ui_style_cache.get('foreground')
+
+        elif role == Qt.FontRole:
+            return ts_obj.ui_style_cache.get('font')
+
+        elif role == NewlineColorRole:
+            if col in [2, 3]:
+                if ts_obj.ui_style_cache.get('original_newline_color') or ts_obj.ui_style_cache.get('translation_newline_color'):
+                     return ts_obj.ui_style_cache.get('original_newline_color') if col == 2 else ts_obj.ui_style_cache.get('translation_newline_color')
+            return None
+
+        elif role == Qt.UserRole:
             return ts_obj
 
         return None
