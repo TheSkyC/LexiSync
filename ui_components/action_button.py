@@ -1,10 +1,9 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel
 from PySide6.QtCore import Qt, Signal, QEvent, QSize
-from PySide6.QtGui import QIcon
-
+from PySide6.QtGui import QIcon, QMouseEvent, QColor
 
 class ActionButton(QWidget):
     clicked = Signal()
@@ -13,6 +12,9 @@ class ActionButton(QWidget):
         super().__init__(parent)
         self.setCursor(Qt.PointingHandCursor)
         self.setMinimumHeight(80)
+
+        self._is_pressed = False
+        self._is_hovered = False
 
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(15, 10, 15, 10)
@@ -27,10 +29,10 @@ class ActionButton(QWidget):
         text_layout.setSpacing(2)
 
         self.title_label = QLabel(f"<b>{title}</b>")
-        self.title_label.setStyleSheet("font-size: 16px;")
+        self.title_label.setStyleSheet("font-size: 16px; background-color: transparent;")
 
         self.subtitle_label = QLabel(subtitle)
-        self.subtitle_label.setStyleSheet("color: #555;")
+        self.subtitle_label.setStyleSheet("color: #555; background-color: transparent;")
         self.subtitle_label.setWordWrap(True)
 
         text_layout.addWidget(self.title_label)
@@ -40,36 +42,41 @@ class ActionButton(QWidget):
         main_layout.addLayout(text_layout, 1)
 
         self.setProperty("class", "action-button")
-        self.setStyleSheet("""
-            QWidget[class="action-button"] {
-                background-color: #F5F7FA;
-                border-radius: 8px;
-            }
-            QWidget[class="action-button"]:hover {
-                background-color: #ECF5FF;
-            }
-        """)
+        self.setAutoFillBackground(True) # Important for palette to work
+        self._update_style()
 
-    def event(self, event):
-        if event.type() == QEvent.Enter:
-            self.setStyleSheet("""
-                QWidget[class="action-button"] {
-                    background-color: #ECF5FF;
-                    border: 1px solid #D3E8FF;
-                    border-radius: 8px;
-                }
-            """)
-        elif event.type() == QEvent.Leave:
-            self.setStyleSheet("""
-                QWidget[class="action-button"] {
-                    background-color: #F5F7FA;
-                    border: none;
-                    border-radius: 8px;
-                }
-            """)
-        return super().event(event)
+    def _update_style(self):
+        palette = self.palette()
+        if self._is_pressed:
+            palette.setColor(self.backgroundRole(), QColor("#E0E0E0")) # Darker grey for pressed
+        elif self._is_hovered:
+            palette.setColor(self.backgroundRole(), QColor("#F0F0F0")) # Lighter grey for hover
+        else:
+            palette.setColor(self.backgroundRole(), QColor("#F5F7FA")) # Default background
+        self.setPalette(palette)
 
-    def mouseReleaseEvent(self, event):
+    def enterEvent(self, event: QEvent):
+        self._is_hovered = True
+        self._update_style()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event: QEvent):
+        self._is_hovered = False
+        self._is_pressed = False
+        self._update_style()
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.LeftButton:
-            self.clicked.emit()
+            self._is_pressed = True
+            self._update_style()
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if event.button() == Qt.LeftButton:
+            was_pressed = self._is_pressed
+            self._is_pressed = False
+            self._update_style()
+            if was_pressed and self.rect().contains(event.pos()):
+                self.clicked.emit()
         super().mouseReleaseEvent(event)

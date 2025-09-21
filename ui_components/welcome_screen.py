@@ -4,11 +4,159 @@
 import os
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, \
     QApplication, QMessageBox, QLabel
-from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtGui import QDragEnterEvent, QDropEvent
+from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QColor
 from utils.path_utils import get_resource_path
 from utils.localization import _
-from .action_button import ActionButton
+
+
+class RecentFileWidget(QWidget):
+    def __init__(self, filename, dirpath, parent=None):
+        super().__init__(parent)
+        self.setCursor(Qt.PointingHandCursor)
+        self._is_hovered = False
+        self._is_pressed = False
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(2)
+
+        self.filename_label = QLabel(filename)
+        self.filename_label.setStyleSheet("font-weight: bold; background-color: transparent;")
+
+        self.path_label = QLabel(dirpath)
+        self.path_label.setStyleSheet("color: #777; background-color: transparent;")
+
+        layout.addWidget(self.filename_label)
+        layout.addWidget(self.path_label)
+
+        self.setAutoFillBackground(True)
+        self._update_style()
+
+    def _update_style(self):
+        palette = self.palette()
+        if self._is_pressed:
+            palette.setColor(self.backgroundRole(), QColor("#E0E0E0"))  # Darker grey
+        elif self._is_hovered:
+            palette.setColor(self.backgroundRole(), QColor("#F5F5F5"))  # Lighter grey
+        else:
+            palette.setColor(self.backgroundRole(), Qt.transparent)  # Default transparent
+        self.setPalette(palette)
+
+    def enterEvent(self, event):
+        self._is_hovered = True
+        self._update_style()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._is_hovered = False
+        self._is_pressed = False
+        self._update_style()
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._is_pressed = True
+            self._update_style()
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._is_pressed = False
+            self._update_style()
+        super().mouseReleaseEvent(event)
+
+class ActionButton(QWidget):
+    clicked = Signal()
+
+    def __init__(self, icon_path: str, title: str, subtitle: str, parent=None):
+        super().__init__(parent)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setMinimumHeight(80)
+
+        # 状态追踪
+        self._is_pressed = False
+        self._is_hovered = False
+
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(15, 10, 15, 10)
+        main_layout.setSpacing(15)
+
+        self.icon_label = QLabel()
+        if icon_path:
+            self.icon_label.setPixmap(QIcon(icon_path).pixmap(QSize(32, 32)))
+        main_layout.addWidget(self.icon_label)
+
+        text_layout = QVBoxLayout()
+        text_layout.setSpacing(2)
+
+        self.title_label = QLabel(f"<b>{title}</b>")
+        self.title_label.setStyleSheet("font-size: 16px;")
+
+        self.subtitle_label = QLabel(subtitle)
+        self.subtitle_label.setStyleSheet("color: #555;")
+        self.subtitle_label.setWordWrap(True)
+
+        text_layout.addWidget(self.title_label)
+        text_layout.addWidget(self.subtitle_label)
+        text_layout.addStretch()
+
+        main_layout.addLayout(text_layout, 1)
+
+        self.setProperty("class", "action-button")
+        self._update_style()
+
+    def _update_style(self):
+        if self._is_pressed:
+            # 按下状态 - 深灰色
+            self.setStyleSheet("""
+                QWidget[class="action-button"] {
+                    background-color: #D0D0D0;
+                    border-radius: 8px;
+                }
+            """)
+        elif self._is_hovered:
+            # 悬停状态 - 浅灰色
+            self.setStyleSheet("""
+                QWidget[class="action-button"] {
+                    background-color: #E5E5E5;
+                    border-radius: 8px;
+                }
+            """)
+        else:
+            # 默认状态
+            self.setStyleSheet("""
+                QWidget[class="action-button"] {
+                    background-color: #F5F7FA;
+                    border-radius: 8px;
+                }
+            """)
+
+    def event(self, event):
+        if event.type() == QEvent.Enter:
+            self._is_hovered = True
+            self._update_style()
+        elif event.type() == QEvent.Leave:
+            self._is_hovered = False
+            self._is_pressed = False
+            self._update_style()
+        return super().event(event)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._is_pressed = True
+            self._update_style()
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            was_pressed = self._is_pressed
+            self._is_pressed = False
+            self._update_style()
+            if was_pressed and self.rect().contains(event.pos()):
+                self.clicked.emit()
+        super().mouseReleaseEvent(event)
+
 
 class WelcomeScreen(QWidget):
     request_main_window = Signal(str, str)
@@ -88,7 +236,13 @@ class WelcomeScreen(QWidget):
         recent_title.setStyleSheet("font-size: 18px; margin-bottom: 10px;")
 
         self.recent_files_list = QListWidget()
-        self.recent_files_list.setStyleSheet("border: none;")
+        self.recent_files_list.setStyleSheet("""
+            QListWidget {
+                border: none;
+                background-color: transparent;
+                outline: none;
+            }
+        """)
         self.recent_files_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.recent_files_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.populate_recent_files()
@@ -281,19 +435,9 @@ class WelcomeScreen(QWidget):
             item = QListWidgetItem()
             item.setData(Qt.UserRole, path)
 
-            widget = QWidget()
-            layout = QVBoxLayout(widget)
-            layout.setContentsMargins(5, 5, 5, 5)
+            widget = RecentFileWidget(filename, dirpath)
 
-            filename_label = QLabel(filename)
-            filename_label.setStyleSheet("font-weight: bold;")
-            path_label = QLabel(dirpath)
-            path_label.setStyleSheet("color: #777;")
-
-            layout.addWidget(filename_label)
-            layout.addWidget(path_label)
-
-            item.setSizeHint(widget.sizeHint())
+            item.setSizeHint(QSize(self.recent_files_list.viewport().width(), widget.sizeHint().height()))
             self.recent_files_list.addItem(item)
             self.recent_files_list.setItemWidget(item, widget)
 
