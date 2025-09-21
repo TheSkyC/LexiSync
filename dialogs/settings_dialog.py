@@ -89,8 +89,9 @@ class SettingsDialog(QDialog):
         self.button_box = QDialogButtonBox()
         self.apply_button = self.button_box.addButton(_("Apply"), QDialogButtonBox.ApplyRole)
         ok_btn = self.button_box.addButton(QDialogButtonBox.Ok)
-        ok_btn.setObjectName("okButton")
-        self.button_box.addButton(QDialogButtonBox.Cancel)
+        ok_btn.setText(_("OK"))
+        cancel_btn = self.button_box.addButton(QDialogButtonBox.Cancel)
+        cancel_btn.setText(_("Cancel"))
 
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)

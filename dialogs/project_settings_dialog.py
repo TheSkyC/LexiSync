@@ -498,9 +498,11 @@ class ProjectSettingsDialog(QDialog):
         self.setup_pages()
         self.nav_list.currentRowChanged.connect(self.stack.setCurrentIndex)
 
-        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
+        self.button_box = QDialogButtonBox()
+        ok_btn = self.button_box.addButton(QDialogButtonBox.Ok)
+        ok_btn.setText(_("OK"))
+        cancel_btn = self.button_box.addButton(QDialogButtonBox.Cancel)
+        cancel_btn.setText(_("Cancel"))
 
         button_container_layout = QHBoxLayout()
         button_container_layout.setContentsMargins(10, 10, 10, 0)
