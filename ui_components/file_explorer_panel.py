@@ -187,7 +187,6 @@ class FileExplorerPanel(QWidget):
 
     def _apply_initial_settings(self):
         try:
-            self._update_file_patterns()
             if hasattr(self, 'show_all_checkbox'):
                 self.toggle_show_all(self.show_all_checkbox.checkState())
             self._update_nav_buttons_state()
