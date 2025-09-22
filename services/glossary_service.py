@@ -459,28 +459,30 @@ class GlossaryService:
         with self._lock:
             all_matches = {}
 
-            # 查询项目数据库
-            if self.project_db_path:
-                try:
-                    with self._get_db_connection(self.project_db_path) as conn:
-                        matches = self._query_translations_batch_in_db(conn, words, source_lang, target_lang,
-                                                                       include_reverse)
-                        all_matches.update(matches)
-                except Exception as e:
-                    logger.warning(f"Project database batch query failed: {e}")
+            # 分块查询项目数据库
+            chunk_size = 5000
+            word_chunks = [words[i:i + chunk_size] for i in range(0, len(words), chunk_size)]
 
-            # 查询全局数据库
-            if self.global_db_path:
-                remaining_words = [w for w in words if w not in all_matches]
-                if remaining_words:
+            for chunk in word_chunks:
+                if self.project_db_path:
                     try:
-                        with self._get_db_connection(self.global_db_path) as conn:
-                            matches = self._query_translations_batch_in_db(conn, remaining_words, source_lang,
-                                                                           target_lang, include_reverse)
+                        with self._get_db_connection(self.project_db_path) as conn:
+                            matches = self._query_translations_batch_in_db(conn, chunk, source_lang, target_lang,
+                                                                           include_reverse)
                             all_matches.update(matches)
                     except Exception as e:
-                        logger.warning(f"Global database batch query failed: {e}")
+                        logger.warning(f"Project database batch query failed for a chunk: {e}")
 
+                if self.global_db_path:
+                    remaining_words_in_chunk = [w for w in chunk if w not in all_matches]
+                    if remaining_words_in_chunk:
+                        try:
+                            with self._get_db_connection(self.global_db_path) as conn:
+                                matches = self._query_translations_batch_in_db(conn, remaining_words_in_chunk, source_lang,
+                                                                               target_lang, include_reverse)
+                                all_matches.update(matches)
+                        except Exception as e:
+                            logger.warning(f"Global database batch query failed for a chunk: {e}")
             return all_matches
 
     def _query_translations_batch_in_db(self, conn: sqlite3.Connection, words: List[str],
