@@ -59,12 +59,14 @@ class MarkerBar(QWidget):
         self._invalidate_cache()
 
     def _find_closest_marker(self, y_pos: int, tolerance: int = 5):
+        """Finds the closest marker to a given Y position within a tolerance."""
         if not self._cached_markers:
             return None
 
         closest_marker = None
         min_distance = float('inf')
 
+        # Since _cached_markers is now sparse, linear search is very fast.
         for marker in self._cached_markers:
             distance = abs(marker['y'] - y_pos)
             if distance < min_distance:
@@ -115,55 +117,67 @@ class MarkerBar(QWidget):
         return int((y / self.height()) * total_rows)
 
     def _build_cache(self):
+        """
+        Builds a cache mapping pixel rows to the highest-priority marker at that position.
+        This is highly optimized for large datasets.
+        """
         if self._cache_valid:
             return
 
-        all_markers = []
-        for marker_type, rows in self._markers.items():
-            if not rows:
-                continue
-            config = self._marker_configs[marker_type]
-            for row in rows:
-                y = self._row_to_y(row)
-                all_markers.append({
-                    'y': y, 'source_row': row,
-                    'color': config['color'], 'priority': config['priority']
-                })
-
-        if not all_markers:
+        height = self.height()
+        if height == 0:
             self._cached_markers = []
             self._cache_valid = True
             return
 
-        all_markers.sort(key=lambda m: (m['y'], m['priority']))
+        # --- START OF NEW CACHING LOGIC ---
+        # Create a map where each key is a Y-pixel coordinate.
+        # The value will be the highest-priority marker at that pixel.
+        pixel_map = {}
 
-        merged = []
-        current_group = [all_markers[0]]
+        # Iterate through markers, sorted by priority (most important first)
+        sorted_marker_types = sorted(self._marker_configs.keys(), key=lambda k: self._marker_configs[k]['priority'])
 
-        for marker in all_markers[1:]:
-            if marker['y'] - current_group[-1]['y'] <= 2:  # Merge if markers are within 2 pixels
-                current_group.append(marker)
-            else:
-                merged.append(min(current_group, key=lambda m: m['priority']))
-                current_group = [marker]
+        for marker_type in sorted_marker_types:
+            if marker_type in self._markers:
+                config = self._marker_configs[marker_type]
+                for row in self._markers[marker_type]:
+                    y = self._row_to_y(row)
 
-        if current_group:
-            merged.append(min(current_group, key=lambda m: m['priority']))
+                    # If this pixel is not yet taken, or the current marker is of higher priority
+                    # (which it is, due to our sorted iteration), we set it.
+                    if y not in pixel_map:
+                        pixel_map[y] = {
+                            'source_row': row,
+                            'color': config['color']
+                        }
 
-        self._cached_markers = merged
+        # Convert the map to a simple list for fast iteration during painting
+        self._cached_markers = [{'y': y, **data} for y, data in pixel_map.items()]
+        # --- END OF NEW CACHING LOGIC ---
+
         self._cache_valid = True
 
     def paintEvent(self, event):
+        """Draws the markers."""
         painter = QPainter(self)
         painter.fillRect(self.rect(), self.palette().window())
 
         self._build_cache()
 
-        marker_height = 2
+        marker_height = 2  # Use a thin line for markers
         marker_width = self.width() - 4
 
+        # --- START OF NEW PAINTING LOGIC ---
         for marker in self._cached_markers:
-            painter.fillRect(2, marker['y'] - marker_height // 2, marker_width, marker_height, marker['color'])
+            painter.fillRect(
+                2,
+                marker['y'],
+                marker_width,
+                marker_height,
+                marker['color']
+            )
+        # --- END OF NEW PAINTING LOGIC ---
 
         self._draw_viewport_indicator(painter)
 
