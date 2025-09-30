@@ -18,6 +18,7 @@ class AdvancedSearchDialog(QDialog):
         self.setModal(False)
 
         self.search_results = []
+        self.search_results_source_rows = []
         self.current_result_index = -1
         self.last_search_options = {}
 
@@ -96,6 +97,10 @@ class AdvancedSearchDialog(QDialog):
 
     def closeEvent(self, event):
         self.app.clear_search_markers()
+        self.app.find_highlight_indices.clear()
+        self.app.current_find_highlight_index = None
+        self.app.table_view.viewport().update()
+        self.save_current_search_settings()
         super().closeEvent(event)
 
     def load_last_search_settings(self):
@@ -155,7 +160,6 @@ class AdvancedSearchDialog(QDialog):
 
         self.search_results.clear()
         self.search_results_source_rows.clear()
-        self.current_result_index = -1
         self.app.find_highlight_indices.clear()
         self.app.current_find_highlight_index = None
 
@@ -164,37 +168,43 @@ class AdvancedSearchDialog(QDialog):
 
         proxy = self.app.proxy_model
         source_model = proxy.sourceModel()
+
+        found_source_rows = set()
+
         for row in range(proxy.rowCount()):
             proxy_index = proxy.index(row, 0)
             source_index = proxy.mapToSource(proxy_index)
-            ts_obj = source_model.data(source_index, Qt.ItemDataRole.UserRole)
-            found = False
-            if options["in_orig"] and pattern.search(ts_obj.original_semantic):
-                found = True
-            if options["in_trans"] and pattern.search(ts_obj.get_translation_for_ui()):
-                found = True
-            if options["in_comment"] and pattern.search(ts_obj.comment):
-                found = True
+            ts_obj = source_model.data(source_index, Qt.UserRole)
+            if not ts_obj: continue
 
-            if found:
-                self.search_results.append({"proxy_row": row, "obj": ts_obj})
-                self.search_results_source_rows.append(source_index.row())
+            if ((options["in_orig"] and pattern.search(ts_obj.original_semantic)) or
+                    (options["in_trans"] and pattern.search(ts_obj.get_translation_for_ui())) or
+                    (options["in_comment"] and pattern.search(ts_obj.comment))):
 
-        self.search_results_source_rows = sorted(list(set(self.search_results_source_rows)))
+                found_source_rows.add(source_index.row())
+
+                if options["in_orig"] and pattern.search(ts_obj.original_semantic):
+                    self.search_results.append({"proxy_row": row, "col": 2, "obj": ts_obj})
+                if options["in_trans"] and pattern.search(ts_obj.get_translation_for_ui()):
+                    self.search_results.append({"proxy_row": row, "col": 3, "obj": ts_obj})
+                if options["in_comment"] and pattern.search(ts_obj.comment):
+                    self.search_results.append({"proxy_row": row, "col": 4, "obj": ts_obj})
+
+        self.search_results_source_rows = sorted(list(found_source_rows))
 
         self.last_search_options = options
 
         if self.search_results:
             self.results_label.setText(_("Found {count} matches.").format(count=len(self.search_results)))
+            self.app.find_highlight_indices.clear()
             for res in self.search_results:
                 self.app.find_highlight_indices.add((res["proxy_row"], res["col"]))
-            self.app.table_view.viewport().update()
             self.app.update_search_markers(self.search_results_source_rows)
         else:
             self.results_label.setText(_("No matches found."))
-            self.app.table_view.viewport().update()
             self.app.clear_search_markers()
 
+        self.app.table_view.viewport().update()
         return bool(self.search_results)
 
     def _navigate_to_result(self):

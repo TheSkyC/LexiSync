@@ -280,6 +280,7 @@ class LexiSyncApp(QMainWindow):
         }
         self.find_highlight_indices = set()
         self.current_find_highlight_index = None
+        self.search_dialog_instance = None
         self.ai_translator = AITranslator(
             api_key=self.config.get("ai_api_key"),
             model_name=self.config.get("ai_model_name", "deepseek-chat"),
@@ -4221,8 +4222,15 @@ class LexiSyncApp(QMainWindow):
         if not self.translatable_objects:
             QMessageBox.information(self, _("Info"), _("Please load a file or project first."))
             return
-        dialog = AdvancedSearchDialog(self, _("Find and Replace"), self)
-        dialog.exec()
+        if self.search_dialog_instance is None:
+            self.search_dialog_instance = AdvancedSearchDialog(self, _("Find and Replace"), self)
+            self.search_dialog_instance.finished.connect(self.on_search_dialog_closed)
+        self.search_dialog_instance.show()
+        self.search_dialog_instance.activateWindow()
+        self.search_dialog_instance.raise_()
+
+    def on_search_dialog_closed(self):
+        self.search_dialog_instance = None
 
     def cm_copy_original(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()
