@@ -84,14 +84,12 @@ class MarkerBar(QWidget):
         super().mouseMoveEvent(event)
 
     def mousePressEvent(self, event):
-        if event.button() != Qt.LeftButton:
-            return
+        if event.button() == Qt.LeftButton:
+            closest_marker = self._find_closest_marker(event.pos().y())
 
-        closest_marker = self._find_closest_marker(event.pos().y())
-
-        if closest_marker:
-            source_row = closest_marker['source_row']
-            self.marker_clicked.emit(source_row)
+            if closest_marker:
+                source_row = closest_marker['source_row']
+                self.marker_clicked.emit(source_row)
 
         super().mousePressEvent(event)
 
@@ -156,7 +154,6 @@ class MarkerBar(QWidget):
         self._cache_valid = True
 
     def paintEvent(self, event):
-        logger.debug(f"[MarkerBar] paintEvent triggered. Cache valid: {self._cache_valid}")
         painter = QPainter(self)
         painter.fillRect(self.rect(), self.palette().window())
 
@@ -195,8 +192,3 @@ class MarkerBar(QWidget):
             y2 = self._row_to_y(last_source_index.row())
 
             painter.fillRect(0, y1, self.width(), max(3, y2 - y1 + 1), QColor(128, 128, 128, 70))
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            source_row = self._y_to_row(event.pos().y())
-            self.marker_clicked.emit(source_row)
