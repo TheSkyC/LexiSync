@@ -112,6 +112,10 @@ class DetailsPanel(QWidget):
 
         self.whitespace_format = QTextCharFormat()
         self.whitespace_format.setBackground(QColor("#DDEEFF"))
+
+        self.multi_space_format = QTextCharFormat()
+        self.multi_space_format.setBackground(QColor("#FFCCFF"))
+
         self.newline_format = QTextCharFormat()
         self.newline_format.setForeground(QColor("#007ACC"))
         self.newline_format.setFontItalic(True)
@@ -162,15 +166,28 @@ class DetailsPanel(QWidget):
                 break
 
     def _apply_whitespace_highlights(self, document):
+        cursor = QTextCursor(document)
+        multi_space_regex = re.compile(r'\s{2,}')
+
         for i in range(document.blockCount()):
             block = document.findBlockByNumber(i)
             text = block.text()
-            cursor = QTextCursor(block)
+
+            # Highlight multiple spaces in the middle of the text
+            for match in multi_space_regex.finditer(text):
+                start, end = match.span()
+                cursor.setPosition(block.position() + start)
+                cursor.setPosition(block.position() + end, QTextCursor.KeepAnchor)
+                cursor.mergeCharFormat(self.multi_space_format)
+
+            # Highlight leading whitespace
             leading_ws_match = re.match(r'^\s+', text)
             if leading_ws_match:
                 cursor.setPosition(block.position())
                 cursor.setPosition(block.position() + leading_ws_match.end(), QTextCursor.KeepAnchor)
                 cursor.mergeCharFormat(self.whitespace_format)
+
+            # Highlight trailing whitespace
             trailing_ws_match = re.search(r'\s+$', text)
             if trailing_ws_match:
                 cursor.setPosition(block.position() + trailing_ws_match.start())
