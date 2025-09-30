@@ -95,10 +95,7 @@ class AdvancedSearchDialog(QDialog):
         self.search_in_comment_checkbox.setChecked(True)
 
     def closeEvent(self, event):
-        self.app.find_highlight_indices.clear()
-        self.app.current_find_highlight_index = None
-        self.app.table_view.viewport().update()
-        self.save_current_search_settings()
+        self.app.clear_search_markers()
         super().closeEvent(event)
 
     def load_last_search_settings(self):
@@ -157,6 +154,7 @@ class AdvancedSearchDialog(QDialog):
             return bool(self.search_results)
 
         self.search_results.clear()
+        self.search_results_source_rows.clear()
         self.current_result_index = -1
         self.app.find_highlight_indices.clear()
         self.app.current_find_highlight_index = None
@@ -165,16 +163,24 @@ class AdvancedSearchDialog(QDialog):
         pattern = re.compile(re.escape(term), flags)
 
         proxy = self.app.proxy_model
+        source_model = proxy.sourceModel()
         for row in range(proxy.rowCount()):
-            ts_obj = proxy.data(proxy.index(row, 0), Qt.ItemDataRole.UserRole)
-            if not ts_obj: continue
-
+            proxy_index = proxy.index(row, 0)
+            source_index = proxy.mapToSource(proxy_index)
+            ts_obj = source_model.data(source_index, Qt.ItemDataRole.UserRole)
+            found = False
             if options["in_orig"] and pattern.search(ts_obj.original_semantic):
-                self.search_results.append({"proxy_row": row, "col": 2, "obj": ts_obj})
+                found = True
             if options["in_trans"] and pattern.search(ts_obj.get_translation_for_ui()):
-                self.search_results.append({"proxy_row": row, "col": 3, "obj": ts_obj})
+                found = True
             if options["in_comment"] and pattern.search(ts_obj.comment):
-                self.search_results.append({"proxy_row": row, "col": 4, "obj": ts_obj})
+                found = True
+
+            if found:
+                self.search_results.append({"proxy_row": row, "obj": ts_obj})
+                self.search_results_source_rows.append(source_index.row())
+
+        self.search_results_source_rows = sorted(list(set(self.search_results_source_rows)))
 
         self.last_search_options = options
 
@@ -183,9 +189,11 @@ class AdvancedSearchDialog(QDialog):
             for res in self.search_results:
                 self.app.find_highlight_indices.add((res["proxy_row"], res["col"]))
             self.app.table_view.viewport().update()
+            self.app.update_search_markers(self.search_results_source_rows)
         else:
             self.results_label.setText(_("No matches found."))
             self.app.table_view.viewport().update()
+            self.app.clear_search_markers()
 
         return bool(self.search_results)
 

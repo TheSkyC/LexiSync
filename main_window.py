@@ -42,6 +42,7 @@ from ui_components.file_explorer_panel import FileExplorerPanel
 from ui_components.tm_panel import TMPanel
 from ui_components.glossary_panel import GlossaryPanel
 from ui_components.drop_overlay import DropOverlay
+from ui_components.marker_bar import MarkerBar
 
 
 from dialogs.font_settings_dialog import FontSettingsDialog
@@ -1080,6 +1081,11 @@ class LexiSyncApp(QMainWindow):
         main_layout.addWidget(toolbar_frame)
 
         # Table View
+        table_container = QWidget()
+        table_layout = QHBoxLayout(table_container)
+        table_layout.setContentsMargins(0, 0, 0, 0)
+        table_layout.setSpacing(0)
+
         self.table_view = CustomTableView(self, self)
         self.table_view.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
         self.table_view.setIconSize(QSize(32, 32))
@@ -1146,7 +1152,71 @@ class LexiSyncApp(QMainWindow):
         self.table_view.customContextMenuRequested.connect(self.show_sheet_context_menu)
         self.table_view.setItemDelegate(CustomCellDelegate(self.table_view, self))
         self.table_view.selectionModel().selectionChanged.connect(self._on_selection_model_changed)
-        main_layout.addWidget(self.table_view)
+
+        table_layout.addWidget(self.table_view)
+
+        # Marker Bar
+        self.marker_bar = MarkerBar(self.table_view, self)
+        self.marker_bar.set_proxy_model(self.proxy_model)
+        self.marker_bar.marker_clicked.connect(self.on_marker_clicked)
+        table_layout.addWidget(self.marker_bar)
+        table_layout.setStretchFactor(self.table_view, 1)
+        table_layout.setStretchFactor(self.marker_bar, 0)
+        main_layout.addWidget(table_container)
+
+    def on_marker_clicked(self, source_row: int):
+        source_index = self.sheet_model.index(source_row, 0)
+        if not source_index.isValid():
+            return
+
+        proxy_index = self.proxy_model.mapFromSource(source_index)
+
+        if proxy_index.isValid():
+            self.table_view.scrollTo(proxy_index, QTableView.PositionAtCenter)
+            self.table_view.clearSelection()
+            self.table_view.selectRow(proxy_index.row())
+            self.table_view.setCurrentIndex(proxy_index)
+
+    def update_warning_markers(self):
+        if not self.marker_bar:
+            return
+
+        errors = []
+        warnings = []
+
+        source_model = self.proxy_model.sourceModel()
+        if not source_model:
+            return
+
+        # --- START OF CRITICAL FIX ---
+        # The data source for markers must be the full, unsorted list of objects.
+        data_source = self.all_project_strings if self.is_project_mode else self.translatable_objects
+
+        # We need a fast way to get the source index of an object.
+        # Let's use the model's internal map.
+        id_to_index_map = source_model._id_to_index_map
+
+        for ts_obj in data_source:
+            if ts_obj.warnings and not ts_obj.is_warning_ignored:
+                source_row = id_to_index_map.get(ts_obj.id)
+                if source_row is not None:
+                    errors.append(source_row)
+            elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
+                source_row = id_to_index_map.get(ts_obj.id)
+                if source_row is not None:
+                    warnings.append(source_row)
+        # --- END OF CRITICAL FIX ---
+
+        self.marker_bar.add_markers('error', errors)
+        self.marker_bar.add_markers('warning', warnings)
+
+    def update_search_markers(self, source_rows: list):
+        if self.marker_bar:
+            self.marker_bar.add_markers('search', source_rows)
+
+    def clear_search_markers(self):
+        if self.marker_bar:
+            self.marker_bar.clear_markers('search')
 
     def eventFilter(self, obj, event):
         if obj is self.search_entry:
@@ -2356,6 +2426,8 @@ class LexiSyncApp(QMainWindow):
         )
 
         self.update_counts_display()
+        if self.marker_bar:
+            QTimer.singleShot(0, self.marker_bar.update)
 
     def find_string_from_toolbar(self):
         if self.quick_search_timer.isActive():
@@ -2566,6 +2638,8 @@ class LexiSyncApp(QMainWindow):
         current_order = self.table_view.horizontalHeader().sortIndicatorOrder()
         self.table_view.sortByColumn(logical_index, current_order)
         self.update_counts_display()
+        if self.marker_bar:
+            QTimer.singleShot(0, self.marker_bar.update)
 
     def show_sheet_context_menu(self, pos):
         index = self.table_view.indexAt(pos)
@@ -2943,6 +3017,8 @@ class LexiSyncApp(QMainWindow):
         if not self.translatable_objects:
             self.sheet_model.set_translatable_objects([])
             self.proxy_model.invalidate()
+            if self.marker_bar:
+                self.marker_bar.clear_markers()
             return
         self.update_statusbar(_("Validating all entries..."), persistent=True)
         QApplication.processEvents()
@@ -2957,6 +3033,7 @@ class LexiSyncApp(QMainWindow):
             self.refresh_sheet_preserve_selection()
         self.force_refresh_ui_for_current_selection()
         self.update_statusbar(_("Validation complete."), persistent=False)
+        self.update_warning_markers()
 
     def cm_set_warning_ignored_status(self, ignore_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()
