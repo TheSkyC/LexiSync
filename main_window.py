@@ -3315,7 +3315,6 @@ class LexiSyncApp(QMainWindow):
         for ts_id in changed_ids:
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if ts_obj:
-                # --- START OF CHANGE ---
                 # Store previous warning state
                 had_error = bool(ts_obj.warnings and not ts_obj.is_warning_ignored)
                 had_warning = bool(ts_obj.minor_warnings and not ts_obj.is_warning_ignored)
@@ -3351,7 +3350,6 @@ class LexiSyncApp(QMainWindow):
                     first_col_index = source_index.siblingAtColumn(0)
                     last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
                     self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
-                # --- END OF CHANGE ---
 
         if self.current_selected_ts_id in changed_ids:
             self.force_refresh_ui_for_current_selection()

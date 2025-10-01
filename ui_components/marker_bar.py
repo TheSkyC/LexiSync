@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QWidget, QTableView
 from PySide6.QtCore import Qt, Signal, QEvent
 from PySide6.QtGui import QPainter, QColor, QMouseEvent
 from .tooltip import Tooltip
+import bisect
 from collections import defaultdict
 from utils.localization import _
 import logging
@@ -59,6 +60,28 @@ class MarkerBar(QWidget):
         unique_rows = sorted(list(set(source_rows)))
         if self._point_markers.get(marker_type) != unique_rows:
             self._point_markers[marker_type] = unique_rows
+            self._invalidate_cache()
+
+    def add_marker(self, marker_type: str, source_row: int):
+        """Adds a single point marker efficiently."""
+        if marker_type not in self._marker_configs:
+            return
+
+        marker_list = self._point_markers[marker_type]
+        insertion_point = bisect.bisect_left(marker_list, source_row)
+        if insertion_point == len(marker_list) or marker_list[insertion_point] != source_row:
+            marker_list.insert(insertion_point, source_row)
+            self._invalidate_cache()
+
+    def remove_marker(self, marker_type: str, source_row: int):
+        """Removes a single point marker efficiently."""
+        if marker_type not in self._point_markers:
+            return
+
+        marker_list = self._point_markers[marker_type]
+        index = bisect.bisect_left(marker_list, source_row)
+        if index != len(marker_list) and marker_list[index] == source_row:
+            marker_list.pop(index)
             self._invalidate_cache()
 
     def set_ranges(self, range_type: str, ranges: list):
