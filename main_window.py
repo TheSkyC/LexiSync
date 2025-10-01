@@ -43,7 +43,7 @@ from ui_components.tm_panel import TMPanel
 from ui_components.glossary_panel import GlossaryPanel
 from ui_components.drop_overlay import DropOverlay
 from ui_components.marker_bar import MarkerBar
-
+from ui_components.range_marker_bar import RangeMarkerBar
 
 from dialogs.font_settings_dialog import FontSettingsDialog
 from dialogs.keybinding_dialog import KeybindingDialog
@@ -1161,22 +1161,22 @@ class LexiSyncApp(QMainWindow):
         self.marker_bar.set_proxy_model(self.proxy_model)
         self.marker_bar.marker_clicked.connect(self.on_marker_clicked)
         table_layout.addWidget(self.marker_bar)
-        table_layout.setStretchFactor(self.table_view, 1)
-        table_layout.setStretchFactor(self.marker_bar, 0)
+
+        # Range Marker Bar
+        self.range_marker_bar = RangeMarkerBar(self.table_view, self)
+        self.range_marker_bar.set_proxy_model(self.proxy_model)
+        self.range_marker_bar.range_clicked.connect(self.on_marker_clicked)
+        table_layout.addWidget(self.range_marker_bar)
+
         main_layout.addWidget(table_container)
 
     def on_marker_clicked(self, source_row: int):
         source_index = self.sheet_model.index(source_row, 0)
         if not source_index.isValid():
             return
-
         proxy_index = self.proxy_model.mapFromSource(source_index)
-
         if proxy_index.isValid():
             self.table_view.scrollTo(proxy_index, QTableView.PositionAtCenter)
-            self.table_view.clearSelection()
-            self.table_view.selectRow(proxy_index.row())
-            self.table_view.setCurrentIndex(proxy_index)
 
     def update_warning_markers(self):
         if not self.marker_bar:
@@ -2710,6 +2710,46 @@ class LexiSyncApp(QMainWindow):
         if hasattr(self, 'plugin_manager'):
             selected_objects = self._get_selected_ts_objects_from_sheet()
             self.plugin_manager.run_hook('on_selection_changed', selected_ts_objects=selected_objects)
+
+        if self.range_marker_bar:
+            selected_proxy_rows = self.table_view.selectionModel().selectedRows()
+            if not selected_proxy_rows:
+                self.range_marker_bar.clear_ranges('selection')
+                return
+
+            source_rows = []
+            for proxy_index in selected_proxy_rows:
+                source_index = self.proxy_model.mapToSource(proxy_index)
+                if source_index.isValid():
+                    source_rows.append(source_index.row())
+
+            if source_rows:
+                merged_ranges = self._merge_selection_ranges(sorted(source_rows))
+                self.range_marker_bar.set_ranges('selection', merged_ranges)
+            else:
+                self.range_marker_bar.clear_ranges('selection')
+
+    def _merge_selection_ranges(self, sorted_source_rows: list) -> list:
+        if not sorted_source_rows:
+            return []
+        Y_THRESHOLD = 3
+        ranges = []
+        current_range_start = sorted_source_rows[0]
+        current_range_end = sorted_source_rows[0]
+        row_to_y = self.range_marker_bar._row_to_y
+        for i in range(1, len(sorted_source_rows)):
+            prev_row = sorted_source_rows[i - 1]
+            current_row = sorted_source_rows[i]
+            y_prev = row_to_y(prev_row)
+            y_current = row_to_y(current_row)
+            if (y_current - y_prev) <= Y_THRESHOLD:
+                current_range_end = current_row
+            else:
+                ranges.append((current_range_start, current_range_end))
+                current_range_start = current_row
+                current_range_end = current_row
+        ranges.append((current_range_start, current_range_end))
+        return ranges
 
     def on_sheet_select(self, current_index, previous_index):
         if self.neighbor_select_timer.isActive():
