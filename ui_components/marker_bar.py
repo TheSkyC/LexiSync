@@ -4,6 +4,10 @@
 from PySide6.QtWidgets import QWidget, QTableView
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor
+
+from .tooltip import Tooltip
+from utils.localization import _
+
 from collections import defaultdict
 from logging import getLogger
 logger = getLogger(__name__)
@@ -19,9 +23,9 @@ class MarkerBar(QWidget):
         self._markers = defaultdict(list)
 
         self._marker_configs = {
-            'error': {'color': QColor(237, 28, 36, 200), 'priority': 1},
-            'warning': {'color': QColor(255, 193, 7, 200), 'priority': 2},
-            'search': {'color': QColor(33, 150, 243, 180), 'priority': 3},
+            'error': {'color': QColor(237, 28, 36, 200), 'priority': 1, 'label': _("Error")},
+            'warning': {'color': QColor(255, 193, 7, 200), 'priority': 2, 'label': _("Warning")},
+            'search': {'color': QColor(33, 150, 243, 180), 'priority': 3, 'label': _("Search Match")},
         }
 
         self._cached_markers = []
@@ -29,6 +33,9 @@ class MarkerBar(QWidget):
 
         self.setFixedWidth(14)
         self.setMouseTracking(True)
+
+        self.tooltip = Tooltip()
+        self._last_hovered_row = -1
 
         if self.table_view and self.table_view.verticalScrollBar():
             self.table_view.verticalScrollBar().valueChanged.connect(self.update)
@@ -66,7 +73,6 @@ class MarkerBar(QWidget):
         closest_marker = None
         min_distance = float('inf')
 
-        # Since _cached_markers is now sparse, linear search is very fast.
         for marker in self._cached_markers:
             distance = abs(marker['y'] - y_pos)
             if distance < min_distance:
@@ -78,12 +84,55 @@ class MarkerBar(QWidget):
         return None
 
     def mouseMoveEvent(self, event):
+        """Dynamically change cursor and show tooltip based on proximity to a marker."""
         closest_marker = self._find_closest_marker(event.pos().y())
+
         if closest_marker:
             self.setCursor(Qt.PointingHandCursor)
+
+            source_row = closest_marker['source_row']
+            if source_row != self._last_hovered_row:
+                self._last_hovered_row = source_row
+
+                if not self.proxy_model or not self.proxy_model.sourceModel():
+                    return
+
+                source_index = self.proxy_model.sourceModel().index(source_row, 0)
+                ts_obj = self.proxy_model.sourceModel().data(source_index, Qt.UserRole)
+
+                if ts_obj:
+                    marker_label = closest_marker.get('label', 'Info')
+
+                    warnings_html = ""
+                    if closest_marker.get('type') == 'error' and ts_obj.warnings:
+                        warnings_html = "<br>".join([f"• {msg}" for __, msg in ts_obj.warnings])
+                    elif closest_marker.get('type') == 'warning' and ts_obj.minor_warnings:
+                        warnings_html = "<br>".join([f"• {msg}" for __, msg in ts_obj.minor_warnings])
+
+                    tooltip_text = (
+                        f"<b style='color:{closest_marker['color'].name()};'>{marker_label}</b> ({_('Row')} {source_row + 1})<br>"
+                        f"<hr style='border-color: #555; margin: 4px 0;'>"
+                        f"<b>{_('Original')}:</b> {ts_obj.original_semantic[:100].replace('<', '&lt;')}...<br>"
+                        f"<b>{_('Translation')}:</b> {ts_obj.translation[:100].replace('<', '&lt;')}..."
+                    )
+                    if warnings_html:
+                        tooltip_text += f"<hr style='border-color: #555; margin: 4px 0;'>{warnings_html}"
+
+                    self.tooltip.show_tooltip(event.globalPosition().toPoint(), tooltip_text)
+                else:
+                    self.tooltip.hide()
         else:
             self.unsetCursor()
+            self.tooltip.hide()
+            self._last_hovered_row = -1
+
         super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event):
+        self.unsetCursor()
+        self.tooltip.hide()
+        self._last_hovered_row = -1
+        super().leaveEvent(event)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -130,12 +179,7 @@ class MarkerBar(QWidget):
             self._cache_valid = True
             return
 
-        # --- START OF NEW CACHING LOGIC ---
-        # Create a map where each key is a Y-pixel coordinate.
-        # The value will be the highest-priority marker at that pixel.
         pixel_map = {}
-
-        # Iterate through markers, sorted by priority (most important first)
         sorted_marker_types = sorted(self._marker_configs.keys(), key=lambda k: self._marker_configs[k]['priority'])
 
         for marker_type in sorted_marker_types:
@@ -143,18 +187,14 @@ class MarkerBar(QWidget):
                 config = self._marker_configs[marker_type]
                 for row in self._markers[marker_type]:
                     y = self._row_to_y(row)
-
-                    # If this pixel is not yet taken, or the current marker is of higher priority
-                    # (which it is, due to our sorted iteration), we set it.
                     if y not in pixel_map:
                         pixel_map[y] = {
                             'source_row': row,
-                            'color': config['color']
+                            'color': config['color'],
+                            'type': marker_type,
+                            'label': config.get('label', marker_type.capitalize())
                         }
-
-        # Convert the map to a simple list for fast iteration during painting
         self._cached_markers = [{'y': y, **data} for y, data in pixel_map.items()]
-        # --- END OF NEW CACHING LOGIC ---
 
         self._cache_valid = True
 
@@ -165,10 +205,9 @@ class MarkerBar(QWidget):
 
         self._build_cache()
 
-        marker_height = 2  # Use a thin line for markers
+        marker_height = 2
         marker_width = self.width() - 4
 
-        # --- START OF NEW PAINTING LOGIC ---
         for marker in self._cached_markers:
             painter.fillRect(
                 2,
@@ -177,7 +216,6 @@ class MarkerBar(QWidget):
                 marker_height,
                 marker['color']
             )
-        # --- END OF NEW PAINTING LOGIC ---
 
         self._draw_viewport_indicator(painter)
 
