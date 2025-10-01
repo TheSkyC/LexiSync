@@ -4412,16 +4412,28 @@ class LexiSyncApp(QMainWindow):
 
         processed_text = text_to_paste
 
+        # 1. Normalize all kinds of newlines to the standard '\n'
         if self.config.get('smart_paste_normalize_newlines', True):
             processed_text = processed_text.replace('\r\n', '\n').replace('\r', '\n')
 
+        # 2. Intelligently convert literal '\n' text to actual newlines
+        if self.config.get('smart_paste_normalize_newlines', True):
+            original_line_count = original_text.count('\n') + 1
+            pasted_line_count = processed_text.count('\n') + 1
+            if original_line_count > pasted_line_count and '\\n' in processed_text:
+                text_with_literal_newlines = processed_text.replace('\\n', '\n')
+                new_line_count = text_with_literal_newlines.count('\n') + 1
+                if new_line_count == original_line_count:
+                    processed_text = text_with_literal_newlines
+
+        # 3. Sync leading/trailing whitespace
         if self.config.get('smart_paste_sync_whitespace', True):
             # Leading whitespace
-            if original_text.lstrip() == original_text:
+            if not original_text.startswith((' ', '\t')):
                 processed_text = processed_text.lstrip()
 
             # Trailing whitespace
-            if original_text.rstrip() == original_text:
+            if not original_text.endswith((' ', '\t')):
                 processed_text = processed_text.rstrip()
 
         return processed_text
