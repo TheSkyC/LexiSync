@@ -27,7 +27,10 @@ from PySide6.QtCore import (
     QRunnable, QThreadPool, QItemSelectionModel, QSize, QDir,
     QThread, QUrl
 )
-from PySide6.QtGui import QAction, QKeySequence, QFont, QPalette, QColor, QSyntaxHighlighter, QTextCharFormat, QDropEvent, QDragMoveEvent, QDragEnterEvent, QDesktopServices
+from PySide6.QtGui import (
+    QAction, QKeySequence, QFont, QPalette, QColor,
+    QSyntaxHighlighter, QTextCharFormat, QDropEvent,
+    QDragMoveEvent, QDragEnterEvent, QDesktopServices)
 
 from models.translatable_string import TranslatableString
 from models.translatable_strings_model import TranslatableStringsModel, TranslatableStringsProxyModel
@@ -56,6 +59,7 @@ from dialogs.statistics_dialog import StatisticsDialog
 from dialogs.settings_dialog import SettingsDialog
 from dialogs.project_settings_dialog import ProjectSettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
+from dialogs.add_glossary_entry_dialog import AddGlossaryEntryDialog
 
 from services import language_service
 from services.build_service import BuildWorker
@@ -1224,6 +1228,8 @@ class LexiSyncApp(QMainWindow):
         self.tm_panel = TMPanel(self, app_instance=self)
         self.comment_status_panel = CommentStatusPanel(self)
         self.glossary_panel = GlossaryPanel(self)
+        self.glossary_panel.add_entry_requested.connect(self.add_glossary_entry)
+        self.glossary_panel.settings_requested.connect(self.show_glossary_settings)
 
         #FileExplorerPanel
         self.file_explorer_panel = FileExplorerPanel(self, self)
@@ -1491,6 +1497,64 @@ class LexiSyncApp(QMainWindow):
             self.progress_bar.setVisible(True)
         else:
             self.progress_bar.setVisible(False)
+
+    def add_glossary_entry(self):
+        # Determine default languages
+        source_lang = self.source_language
+        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+
+        dialog = AddGlossaryEntryDialog(self, default_source_lang=source_lang, default_target_lang=target_lang)
+        if dialog.exec():
+            data = dialog.get_data()
+
+            # Determine which database to write to
+            db_path_to_use = None
+            if self.is_project_mode and self.glossary_service.project_db_path:
+                db_path_to_use = self.glossary_service.project_db_path
+                source_key = "manual_project"
+            elif self.glossary_service.global_db_path:
+                db_path_to_use = self.glossary_service.global_db_path
+                source_key = "manual_global"
+
+            if not db_path_to_use:
+                QMessageBox.critical(self, _("Error"), _("No active glossary database found."))
+                return
+
+            success, message = self.glossary_service.add_entry(
+                db_path=db_path_to_use,
+                source_term=data['source_term'],
+                target_term=data['target_term'],
+                source_lang=data['source_lang'],
+                target_lang=data['target_lang'],
+                comment=data['comment'],
+                source_key=source_key
+            )
+
+            if success:
+                self.update_statusbar(message)
+                # If a string is selected, re-run glossary analysis on it
+                if self.current_selected_ts_id:
+                    ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+                    if ts_obj:
+                        self.glossary_analysis_cache.pop(ts_obj.id, None)  # Clear cache for this item
+                        self.trigger_glossary_analysis(ts_obj)
+            else:
+                QMessageBox.critical(self, _("Error"), _("Failed to add glossary entry: {error}").format(error=message))
+
+    def show_glossary_settings(self):
+        settings_dialog = SettingsDialog(self)
+        resources_page_title = _("Global Resources")
+        if self.is_project_mode:
+            self.show_project_settings_dialog()
+            return
+        if resources_page_title in settings_dialog.pages:
+            page_index = list(settings_dialog.pages.keys()).index(resources_page_title)
+            settings_dialog.nav_list.setCurrentRow(page_index)
+            resources_page_widget = settings_dialog.pages[resources_page_title]
+            if hasattr(resources_page_widget, 'tab_widget'):
+                resources_page_widget.tab_widget.setCurrentIndex(0)
+
+        settings_dialog.exec()
 
     def mark_project_modified(self, modified=True):
         if self.current_project_modified != modified:

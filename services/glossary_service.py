@@ -617,3 +617,50 @@ class GlossaryService:
         except Exception as e:
             logger.error(f"Failed to calculate checksum for {filepath}: {e}")
             raise
+
+    def add_entry(self, db_path: str, source_term: str, target_term: str, source_lang: str, target_lang: str, comment: str = "", source_key: str = "manual"):
+        if not db_path:
+            raise ValueError("Database path must be specified.")
+
+        with self._lock, self._get_db_connection(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("BEGIN")
+            try:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO terms (term_text, term_text_lower, language_code) VALUES (?, ?, ?)",
+                    (source_term, source_term.lower(), source_lang)
+                )
+                cursor.execute(
+                    "SELECT id FROM terms WHERE term_text = ? AND language_code = ?",
+                    (source_term, source_lang)
+                )
+                source_id_row = cursor.fetchone()
+                if not source_id_row: raise Exception("Failed to retrieve source term ID.")
+                source_id = source_id_row['id']
+
+                cursor.execute(
+                    "INSERT OR IGNORE INTO terms (term_text, term_text_lower, language_code) VALUES (?, ?, ?)",
+                    (target_term, target_term.lower(), target_lang)
+                )
+                cursor.execute(
+                    "SELECT id FROM terms WHERE term_text = ? AND language_code = ?",
+                    (target_term, target_lang)
+                )
+                target_id_row = cursor.fetchone()
+                if not target_id_row: raise Exception("Failed to retrieve target term ID.")
+                target_id = target_id_row['id']
+
+                cursor.execute(
+                    """
+                    INSERT OR REPLACE INTO term_translations 
+                    (source_term_id, target_term_id, is_bidirectional, comment, source_manifest_key)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (source_id, target_id, 1, comment, source_key)
+                )
+                conn.commit()
+                return True, _("Glossary entry added successfully.")
+            except Exception as e:
+                conn.rollback()
+                logger.error(f"Failed to add glossary entry: {e}", exc_info=True)
+                return False, str(e)
