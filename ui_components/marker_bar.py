@@ -100,26 +100,30 @@ class MarkerBar(QWidget):
         return int((y / self.height()) * total_rows)
 
     def _build_cache(self):
-        if self._cache_valid: return
-
+        if self._cache_valid:
+            return
         height = self.height()
         if height == 0:
             self._cached_points = []
             self._cache_valid = True
             return
-
         pixel_map = {}
-        sorted_marker_types = sorted(self._marker_configs.keys(), key=lambda k: self._marker_configs[k]['priority'])
-
+        sorted_marker_types = sorted(
+            [mt for mt in self._marker_configs if mt in self._point_markers],
+            key=lambda k: self._marker_configs[k]['priority'],
+            reverse=True
+        )
         for marker_type in sorted_marker_types:
-            if marker_type in self._point_markers:
-                config = self._marker_configs[marker_type]
-                for row in self._point_markers[marker_type]:
-                    y = self._row_to_y(row)
-                    if y not in pixel_map:
-                        pixel_map[y] = {'source_row': row, 'color': config['color'], 'type': marker_type,
-                                        'label': config['label']}
-
+            config = self._marker_configs[marker_type]
+            for row in self._point_markers[marker_type]:
+                y = self._row_to_y(row)
+                if y not in pixel_map:
+                    pixel_map[y] = {
+                        'source_row': row,
+                        'color': config['color'],
+                        'type': marker_type,
+                        'label': config.get('label', marker_type.capitalize())
+                    }
         self._cached_points = [{'y': y, **data} for y, data in pixel_map.items()]
         self._cache_valid = True
 
