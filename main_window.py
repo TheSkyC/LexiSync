@@ -1189,12 +1189,7 @@ class LexiSyncApp(QMainWindow):
         if not source_model:
             return
 
-        # --- START OF CRITICAL FIX ---
-        # The data source for markers must be the full, unsorted list of objects.
         data_source = self.all_project_strings if self.is_project_mode else self.translatable_objects
-
-        # We need a fast way to get the source index of an object.
-        # Let's use the model's internal map.
         id_to_index_map = source_model._id_to_index_map
 
         for ts_obj in data_source:
@@ -1206,7 +1201,6 @@ class LexiSyncApp(QMainWindow):
                 source_row = id_to_index_map.get(ts_obj.id)
                 if source_row is not None:
                     warnings.append(source_row)
-        # --- END OF CRITICAL FIX ---
 
         self.marker_bar.add_markers('error', errors)
         self.marker_bar.add_markers('warning', warnings)
@@ -3288,13 +3282,43 @@ class LexiSyncApp(QMainWindow):
         for ts_id in changed_ids:
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if ts_obj:
+                # --- START OF CHANGE ---
+                # Store previous warning state
+                had_error = bool(ts_obj.warnings and not ts_obj.is_warning_ignored)
+                had_warning = bool(ts_obj.minor_warnings and not ts_obj.is_warning_ignored)
+
+                # Re-validate the string
                 validate_string(ts_obj, self.config, self)
                 ts_obj.update_style_cache()
+
+                # Get new warning state
+                has_error = bool(ts_obj.warnings and not ts_obj.is_warning_ignored)
+                has_warning = bool(ts_obj.minor_warnings and not ts_obj.is_warning_ignored)
+
+                # Update marker bar in real-time
+                if self.marker_bar:
+                    source_index = self.sheet_model.index_from_id(ts_obj.id)
+                    if source_index.isValid():
+                        source_row = source_index.row()
+                        # Handle errors
+                        if has_error and not had_error:
+                            self.marker_bar.add_marker('error', source_row)
+                        elif not has_error and had_error:
+                            self.marker_bar.remove_marker('error', source_row)
+
+                        # Handle warnings (only if there's no error)
+                        if has_warning and not had_warning and not has_error:
+                            self.marker_bar.add_marker('warning', source_row)
+                        elif (not has_warning or has_error) and had_warning:
+                            self.marker_bar.remove_marker('warning', source_row)
+
+                # Update the view for this specific row
                 source_index = self.sheet_model.index_from_id(ts_obj.id)
                 if source_index.isValid():
                     first_col_index = source_index.siblingAtColumn(0)
                     last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
                     self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
+                # --- END OF CHANGE ---
 
         if self.current_selected_ts_id in changed_ids:
             self.force_refresh_ui_for_current_selection()

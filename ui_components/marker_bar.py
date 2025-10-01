@@ -8,6 +8,7 @@ from PySide6.QtGui import QPainter, QColor
 from .tooltip import Tooltip
 from utils.localization import _
 
+import bisect
 from collections import defaultdict
 from logging import getLogger
 logger = getLogger(__name__)
@@ -57,6 +58,26 @@ class MarkerBar(QWidget):
         if self._markers.get(marker_type) != unique_rows:
             self._markers[marker_type] = unique_rows
             self._invalidate_cache()
+
+    def add_marker(self, marker_type: str, source_row: int):
+        if marker_type not in self._marker_configs:
+            return
+        marker_list = self._markers[marker_type]
+        insertion_point = bisect.bisect_left(marker_list, source_row)
+        if insertion_point == len(marker_list) or marker_list[insertion_point] != source_row:
+            marker_list.insert(insertion_point, source_row)
+            self._invalidate_cache()
+
+    def remove_marker(self, marker_type: str, source_row: int):
+        if marker_type not in self._markers:
+            return
+
+        marker_list = self._markers[marker_type]
+        index = bisect.bisect_left(marker_list, source_row)
+        if index != len(marker_list) and marker_list[index] == source_row:
+            marker_list.pop(index)
+            self._invalidate_cache()
+
 
     def clear_markers(self, marker_type: str = None):
         if marker_type:
