@@ -1542,19 +1542,34 @@ class LexiSyncApp(QMainWindow):
                 QMessageBox.critical(self, _("Error"), _("Failed to add glossary entry: {error}").format(error=message))
 
     def show_glossary_settings(self):
-        settings_dialog = SettingsDialog(self)
-        resources_page_title = _("Global Resources")
         if self.is_project_mode:
-            self.show_project_settings_dialog()
-            return
-        if resources_page_title in settings_dialog.pages:
-            page_index = list(settings_dialog.pages.keys()).index(resources_page_title)
-            settings_dialog.nav_list.setCurrentRow(page_index)
-            resources_page_widget = settings_dialog.pages[resources_page_title]
-            if hasattr(resources_page_widget, 'tab_widget'):
-                resources_page_widget.tab_widget.setCurrentIndex(0)
+            dialog = ProjectSettingsDialog(self)
+            for i in range(dialog.nav_list.count()):
+                item = dialog.nav_list.item(i)
+                if item.text() == _("Project Resources"):
+                    dialog.nav_list.setCurrentRow(i)
+                    resources_page_widget = dialog.stack.widget(i)
+                    if hasattr(resources_page_widget, 'tab_widget'):
+                        for j in range(resources_page_widget.tab_widget.count()):
+                            if resources_page_widget.tab_widget.tabText(j) == _("Glossary"):
+                                resources_page_widget.tab_widget.setCurrentIndex(j)
+                                break
+                    break
+            dialog.exec()
+        else:
+            dialog = SettingsDialog(self)
+            resources_page_title = _("Global Resources")
+            if resources_page_title in dialog.pages:
+                page_index = list(dialog.pages.keys()).index(resources_page_title)
+                dialog.nav_list.setCurrentRow(page_index)
 
-        settings_dialog.exec()
+                resources_page_widget = dialog.pages[resources_page_title]
+                if hasattr(resources_page_widget, 'tab_widget'):
+                    for j in range(resources_page_widget.tab_widget.count()):
+                        if resources_page_widget.tab_widget.tabText(j) == _("Glossary"):
+                            resources_page_widget.tab_widget.setCurrentIndex(j)
+                            break
+            dialog.exec()
 
     def mark_project_modified(self, modified=True):
         if self.current_project_modified != modified:
