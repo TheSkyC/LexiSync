@@ -7,10 +7,11 @@ from PySide6.QtWidgets import (
     QFileDialog, QWidget, QTextEdit, QComboBox, QGroupBox, QTextBrowser,
     QAbstractItemView, QSizePolicy
 )
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import Qt, QEvent, QSize
 import json
 import uuid
 from copy import deepcopy
+from ui_components.tooltip import Tooltip
 from utils.constants import PROMPT_PRESET_EXTENSION, DEFAULT_PROMPT_STRUCTURE, STRUCTURAL, STATIC, DYNAMIC
 from utils.localization import _
 
@@ -270,9 +271,12 @@ class PromptItemEditor(QDialog):
         self.placeholders_data = placeholders_data or []
         self.result = None
 
+        self.tooltip = Tooltip(self)
+        self._last_hovered_anchor = ""
+
         self.setWindowTitle(title)
         self.setModal(True)
-        self.resize(600, 350)
+        self.resize(600, 400)
 
         self.setup_ui()
 
@@ -313,6 +317,9 @@ class PromptItemEditor(QDialog):
             self.placeholders_browser.setOpenExternalLinks(False)
             self.placeholders_browser.setReadOnly(True)
             self.placeholders_browser.anchorClicked.connect(self.insert_placeholder_from_url)
+            self.placeholders_browser.setMouseTracking(True)
+            self.placeholders_browser.viewport().setMouseTracking(True)
+            self.placeholders_browser.viewport().installEventFilter(self)
             self.placeholders_browser.setStyleSheet("""
                 QTextBrowser { 
                     border: none; 
@@ -323,12 +330,8 @@ class PromptItemEditor(QDialog):
             html_parts = []
             for data in self.placeholders_data:
                 placeholder = data['placeholder']
-                description = data['description']
-                provider = data.get('provider', _('Unknown'))
-                tooltip_text = f"{_('Provider')}: {provider}\n{_('Description')}: {description}"
-
                 html_parts.append(
-                    f'<a href="{placeholder}" title="{tooltip_text}" style="color: #007BFF; text-decoration: none; background-color: #EAF2F8; padding: 2px 5px; border-radius: 3px; margin: 2px;">{placeholder}</a>'
+                    f'<a href="{placeholder}" style="color: #007BFF; text-decoration: none; background-color: #EAF2F8; padding: 2px 5px; border-radius: 3px; margin: 2px;">{placeholder}</a>'
                 )
             self.placeholders_browser.setHtml(" ".join(html_parts))
             placeholders_layout.addWidget(self.placeholders_browser)
@@ -348,6 +351,33 @@ class PromptItemEditor(QDialog):
 
     def insert_placeholder_from_url(self, url):
         self.content_text_edit.insertPlainText(url.toDisplayString())
+
+    def eventFilter(self, obj, event):
+        if obj is self.placeholders_browser.viewport():
+            if event.type() == QEvent.MouseMove:
+                anchor = self.placeholders_browser.anchorAt(event.pos())
+                if anchor:
+                    if anchor != self._last_hovered_anchor:
+                        self._last_hovered_anchor = anchor
+                        placeholder_data = next((p for p in self.placeholders_data if p['placeholder'] == anchor), None)
+                        if placeholder_data:
+                            tooltip_text = (
+                                f"<b>{placeholder_data['placeholder']}</b><br>"
+                                f"<hr style='border-color: #555; margin: 4px 0;'>"
+                                f"<b>{_('Provider')}:</b> {placeholder_data.get('provider', 'N/A')}<br>"
+                                f"<b>{_('Description')}:</b> {placeholder_data['description']}"
+                            )
+                            self.tooltip.show_tooltip(event.globalPos(), tooltip_text)
+                        else:
+                            self.tooltip.hide()
+                else:
+                    self._last_hovered_anchor = ""
+                    self.tooltip.hide()
+            elif event.type() == QEvent.Leave:
+                self._last_hovered_anchor = ""
+                self.tooltip.hide()
+
+        return super().eventFilter(obj, event)
 
     def accept(self):
         selected_display_value = self.type_combo.currentText()
