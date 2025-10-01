@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QFileDialog, QWidget, QTextEdit, QComboBox, QGroupBox, QTextBrowser,
     QAbstractItemView, QSizePolicy
 )
-from PySide6.QtCore import Qt, QEvent, QSize
+from PySide6.QtCore import Qt, Signal, QEvent, QSize
 import json
 import uuid
 from copy import deepcopy
@@ -17,10 +17,30 @@ from utils.localization import _
 
 
 class WrappingTextBrowser(QTextBrowser):
+    placeholder_clicked = Signal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.document().contentsChanged.connect(self.updateGeometry)
+        self._original_html = ""
+
+    def setHtml(self, html):
+        self._original_html = html
+        super().setHtml(html)
+
+    def setSource(self, name):
+        if name.toString():
+            self.placeholder_clicked.emit(name.toString())
+
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            anchor = self.anchorAt(event.pos())
+            if anchor:
+                self.placeholder_clicked.emit(anchor)
+                return
+        super().mousePressEvent(event)
 
     def sizeHint(self) -> QSize:
         self.document().setTextWidth(self.viewport().width())
@@ -28,7 +48,6 @@ class WrappingTextBrowser(QTextBrowser):
         margins = self.contentsMargins()
         frame_width = self.frameWidth() * 2
         required_height = doc_height + margins.top() + margins.bottom() + frame_width
-
         return QSize(super().sizeHint().width(), int(required_height))
 
     def resizeEvent(self, event: QSize) -> None:
@@ -264,6 +283,7 @@ class PromptManagerDialog(QDialog):
     def reject(self):
         super().reject()
 
+
 class PromptItemEditor(QDialog):
     def __init__(self, parent, title, initial_data, placeholders_data=None):
         super().__init__(parent)
@@ -313,27 +333,35 @@ class PromptItemEditor(QDialog):
         if self.placeholders_data:
             placeholders_group = QGroupBox(_("Available Placeholders (Click to Insert)"))
             placeholders_layout = QVBoxLayout(placeholders_group)
-            self.placeholders_browser = WrappingTextBrowser(self)
+
+            self.placeholders_browser = QLabel(self)
+            self.placeholders_browser.setWordWrap(True)
+            self.placeholders_browser.setTextFormat(Qt.RichText)
             self.placeholders_browser.setOpenExternalLinks(False)
-            self.placeholders_browser.setReadOnly(True)
-            self.placeholders_browser.anchorClicked.connect(self.insert_placeholder_from_url)
+            self.placeholders_browser.setTextInteractionFlags(Qt.TextBrowserInteraction)
             self.placeholders_browser.setMouseTracking(True)
-            self.placeholders_browser.viewport().setMouseTracking(True)
-            self.placeholders_browser.viewport().installEventFilter(self)
+            self.placeholders_browser.installEventFilter(self)
+
+            self.placeholders_browser.linkActivated.connect(self.insert_placeholder_text)
+
             self.placeholders_browser.setStyleSheet("""
-                QTextBrowser { 
-                    border: none; 
-                    background-color: transparent; 
+                QLabel { 
+                    border: 1px solid #ccc;
+                    background-color: #f9f9f9; 
                     font-size: 13px;
+                    padding: 8px;
+                    border-radius: 4px;
                 }
             """)
+
             html_parts = []
             for data in self.placeholders_data:
                 placeholder = data['placeholder']
                 html_parts.append(
-                    f'<a href="{placeholder}" style="color: #007BFF; text-decoration: none; background-color: #EAF2F8; padding: 2px 5px; border-radius: 3px; margin: 2px;">{placeholder}</a>'
+                    f'<a href="{placeholder}" style="color: #007BFF; text-decoration: none; background-color: #EAF2F8; padding: 2px 5px; border-radius: 3px; margin: 2px; display: inline-block;">{placeholder}</a>'
                 )
-            self.placeholders_browser.setHtml(" ".join(html_parts))
+            self.placeholders_browser.setText(" ".join(html_parts))
+
             placeholders_layout.addWidget(self.placeholders_browser)
             main_layout.addWidget(placeholders_group)
 
@@ -349,13 +377,34 @@ class PromptItemEditor(QDialog):
         dialog_buttons.addWidget(cancel_btn)
         main_layout.addLayout(dialog_buttons)
 
-    def insert_placeholder_from_url(self, url):
-        self.content_text_edit.insertPlainText(url.toDisplayString())
+    def insert_placeholder_text(self, placeholder_text: str):
+        self.content_text_edit.insertPlainText(placeholder_text)
+        self.content_text_edit.setFocus()
 
     def eventFilter(self, obj, event):
-        if obj is self.placeholders_browser.viewport():
+        if obj is self.placeholders_browser:
             if event.type() == QEvent.MouseMove:
-                anchor = self.placeholders_browser.anchorAt(event.pos())
+                from PySide6.QtGui import QTextDocument, QTextCursor
+                from PySide6.QtCore import QPoint
+                local_pos = event.pos()
+                doc = QTextDocument()
+                doc.setDefaultFont(self.placeholders_browser.font())
+                doc.setHtml(self.placeholders_browser.text())
+                doc.setTextWidth(self.placeholders_browser.width())
+                margins = self.placeholders_browser.contentsMargins()
+                adjusted_pos = QPoint(local_pos.x() - margins.left(),
+                                      local_pos.y() - margins.top())
+                cursor_pos = doc.documentLayout().hitTest(adjusted_pos, Qt.FuzzyHit)
+
+                anchor = ""
+                if cursor_pos >= 0:
+                    cursor = QTextCursor(doc)
+                    cursor.setPosition(cursor_pos)
+                    fmt = cursor.charFormat()
+
+                    if fmt.isAnchor():
+                        anchor = fmt.anchorHref()
+
                 if anchor:
                     if anchor != self._last_hovered_anchor:
                         self._last_hovered_anchor = anchor
@@ -371,8 +420,10 @@ class PromptItemEditor(QDialog):
                         else:
                             self.tooltip.hide()
                 else:
-                    self._last_hovered_anchor = ""
-                    self.tooltip.hide()
+                    if self._last_hovered_anchor:
+                        self._last_hovered_anchor = ""
+                        self.tooltip.hide()
+
             elif event.type() == QEvent.Leave:
                 self._last_hovered_anchor = ""
                 self.tooltip.hide()
