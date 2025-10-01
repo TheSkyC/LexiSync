@@ -43,7 +43,6 @@ from ui_components.tm_panel import TMPanel
 from ui_components.glossary_panel import GlossaryPanel
 from ui_components.drop_overlay import DropOverlay
 from ui_components.marker_bar import MarkerBar
-from ui_components.range_marker_bar import RangeMarkerBar
 
 from dialogs.font_settings_dialog import FontSettingsDialog
 from dialogs.keybinding_dialog import KeybindingDialog
@@ -1161,12 +1160,6 @@ class LexiSyncApp(QMainWindow):
         self.marker_bar.set_proxy_model(self.proxy_model)
         self.marker_bar.marker_clicked.connect(self.on_marker_clicked)
         table_layout.addWidget(self.marker_bar)
-
-        # Range Marker Bar
-        self.range_marker_bar = RangeMarkerBar(self.table_view, self)
-        self.range_marker_bar.set_proxy_model(self.proxy_model)
-        self.range_marker_bar.range_clicked.connect(self.on_marker_clicked)
-        table_layout.addWidget(self.range_marker_bar)
 
         main_layout.addWidget(table_container)
 
@@ -2711,10 +2704,10 @@ class LexiSyncApp(QMainWindow):
             selected_objects = self._get_selected_ts_objects_from_sheet()
             self.plugin_manager.run_hook('on_selection_changed', selected_ts_objects=selected_objects)
 
-        if self.range_marker_bar:
+        if self.marker_bar:
             selected_proxy_rows = self.table_view.selectionModel().selectedRows()
             if not selected_proxy_rows:
-                self.range_marker_bar.clear_ranges('selection')
+                self.marker_bar.clear_ranges('selection')
                 return
 
             source_rows = []
@@ -2725,9 +2718,9 @@ class LexiSyncApp(QMainWindow):
 
             if source_rows:
                 merged_ranges = self._merge_selection_ranges(sorted(source_rows))
-                self.range_marker_bar.set_ranges('selection', merged_ranges)
+                self.marker_bar.set_ranges('selection', merged_ranges)
             else:
-                self.range_marker_bar.clear_ranges('selection')
+                self.marker_bar.clear_ranges('selection')
 
     def _merge_selection_ranges(self, sorted_source_rows: list) -> list:
         if not sorted_source_rows:
@@ -2736,7 +2729,7 @@ class LexiSyncApp(QMainWindow):
         ranges = []
         current_range_start = sorted_source_rows[0]
         current_range_end = sorted_source_rows[0]
-        row_to_y = self.range_marker_bar._row_to_y
+        row_to_y = self.marker_bar._row_to_y
         for i in range(1, len(sorted_source_rows)):
             prev_row = sorted_source_rows[i - 1]
             current_row = sorted_source_rows[i]
