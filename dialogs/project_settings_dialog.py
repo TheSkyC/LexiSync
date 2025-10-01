@@ -503,7 +503,8 @@ class ProjectSettingsDialog(QDialog):
         ok_btn.setText(_("OK"))
         cancel_btn = self.button_box.addButton(QDialogButtonBox.Cancel)
         cancel_btn.setText(_("Cancel"))
-
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
         button_container_layout = QHBoxLayout()
         button_container_layout.setContentsMargins(10, 10, 10, 0)
         button_container_layout.addStretch()
