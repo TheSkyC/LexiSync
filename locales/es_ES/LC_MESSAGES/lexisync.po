@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.0.4\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
-"POT-Creation-Date: 2025-09-14 15:18+0000\n"
-"PO-Revision-Date: 2025-09-14 15:48+0000\n"
+"POT-Creation-Date: 2025-10-01 16:13+0000\n"
+"PO-Revision-Date: 2025-10-02 05:47+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: es\n"
@@ -54,107 +54,107 @@ msgstr "&Ver"
 msgid "'requests' library not found. AI translation feature is unavailable."
 msgstr "No se encontró la biblioteca 'requests'. La función de traducción automática no está disponible."
 
-#: lexisync.po:59
+#: lexisync.po:57
 msgid "(0 to disable)"
 msgstr "(0 para deshabilitar)"
 
-#: lexisync.po:63
+#: lexisync.po:61
 msgid "A POT file was dropped. What would you like to do?"
 msgstr "Se ha soltado un archivo POT. ¿Qué deseas hacer?"
 
-#: lexisync.po:67
+#: lexisync.po:65
 msgid "A build is already in progress."
 msgstr "Ya hay una compilación en curso."
 
-#: lexisync.po:71
+#: lexisync.po:69
 msgid "A file or directory with this name already exists."
 msgstr "Ya existe un archivo o directorio con este nombre."
 
-#: lexisync.po:75
+#: lexisync.po:73
 msgid "A file with this name already exists in the project."
 msgstr "Ya existe un archivo con este nombre en el proyecto."
 
-#: lexisync.po:79
+#: lexisync.po:77
 #, python-brace-format
 msgid "A plugin with the ID '{plugin_id}' already exists. Do you want to overwrite it?"
 msgstr "Ya existe un complemento con el ID '{plugin_id}'. ¿Deseas sobrescribirlo?"
 
-#: lexisync.po:86
+#: lexisync.po:82
 msgid "A project must be open to access project settings."
 msgstr "Se necesita un proyecto abierto para acceder a la configuración del proyecto."
 
-#: lexisync.po:92
+#: lexisync.po:86
 msgid "A project must be open to build."
 msgstr "Se debe abrir un proyecto para compilar."
 
-#: lexisync.po:96
+#: lexisync.po:90
 msgid "A project must have at least one source file."
 msgstr "Un proyecto debe tener al menos un archivo fuente."
 
-#: lexisync.po:100
+#: lexisync.po:94
 msgid "A project must have at least one target language."
 msgstr "Un proyecto debe tener al menos un idioma de destino."
 
-#: lexisync.po:104
+#: lexisync.po:98
 msgid "AI Batch Translation"
 msgstr "Traducción por IA en Lotes"
 
-#: lexisync.po:108
+#: lexisync.po:102
 #, python-brace-format
 msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
 msgstr "IA en Lotes: Procesando {current}/{total} (Concurrencia: {threads})..."
 
-#: lexisync.po:113
+#: lexisync.po:107
 #, python-brace-format
 msgid "AI Batch: {current}/{total} completed ({progress_percent:.0f}%)."
 msgstr "IA en Lotes: {current}/{total} completado ({progress_percent:.0f}%)."
 
-#: lexisync.po:118
+#: lexisync.po:112
 msgid "AI Feature Unavailable"
 msgstr "Función de IA no Disponible"
 
-#: lexisync.po:122
+#: lexisync.po:116
 msgid "AI Prompt Manager"
 msgstr "Gestor de Prompts de IA"
 
-#: lexisync.po:126
+#: lexisync.po:120
 msgid "AI Translate All Untranslated"
 msgstr "Traducir todo lo no Traducido por IA"
 
-#: lexisync.po:130
+#: lexisync.po:124
 msgid "AI Translate Selected"
 msgstr "Traducir Selección por IA"
 
-#: lexisync.po:135
+#: lexisync.po:128
 msgid "AI Translation"
 msgstr "Traducción por IA"
 
-#: lexisync.po:139
+#: lexisync.po:132
 msgid "AI Translation Error"
 msgstr "Error de Traducción por IA"
 
-#: lexisync.po:143
+#: lexisync.po:136
 msgid "AI Translation in Progress"
 msgstr "Traducción por IA en Curso"
 
-#: lexisync.po:147
+#: lexisync.po:140
 #, python-brace-format
 msgid "AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned)."
 msgstr "Traducción por IA en lotes completada. Se tradujeron {success_count}/{processed_count} elementos con éxito (total {total_items} planificados)."
 
-#: lexisync.po:157
+#: lexisync.po:145
 msgid "AI batch translation is already in progress."
 msgstr "La traducción por IA en lotes ya está en curso."
 
-#: lexisync.po:161
+#: lexisync.po:149
 msgid "AI batch translation is in progress."
 msgstr "La traducción por IA en lotes está en curso."
 
-#: lexisync.po:165
+#: lexisync.po:153
 msgid "AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."
 msgstr "La traducción por IA en lotes está en curso. Espere a que finalice o deténgala antes de abrir un nuevo archivo."
 
-#: lexisync.po:173
+#: lexisync.po:157
 msgid ""
 "AI batch translation is still in progress. Are you sure you want to exit?\n"
 "Unfinished translations will be lost."
@@ -162,12 +162,12 @@ msgstr ""
 "La traducción por IA en lotes aún está en curso. ¿Está seguro de que desea salir?\n"
 "Las traducciones incompletas se perderán."
 
-#: lexisync.po:183
+#: lexisync.po:165
 #, python-brace-format
 msgid "AI batch translation started for {count} unique strings..."
 msgstr "Traducción automática por lotes iniciada para {count} cadenas únicas..."
 
-#: lexisync.po:188
+#: lexisync.po:170
 msgid ""
 "AI batch translation stop requested.\n"
 "Dispatched tasks will continue to complete, please wait."
@@ -175,20 +175,20 @@ msgstr ""
 "Solicitud de detención de traducción por IA en lotes.\n"
 "Las tareas enviadas continuarán hasta completarse, espere por favor."
 
-#: lexisync.po:196
+#: lexisync.po:178
 msgid "AI batch translation stop requested. Finishing dispatched tasks..."
 msgstr "Se ha solicitado la detención de la traducción por IA en lotes. Finalizando tareas enviadas..."
 
-#: lexisync.po:202
+#: lexisync.po:182
 #, python-brace-format
 msgid "AI is translating: \"{text}...\""
 msgstr "La IA está traduciendo: \"{text}...\""
 
-#: lexisync.po:207
+#: lexisync.po:187
 msgid "AI prompt structure updated."
 msgstr "Estructura del prompt de IA actualizada."
 
-#: lexisync.po:211
+#: lexisync.po:191
 #, python-brace-format
 msgid ""
 "AI translation failed for \"{text}...\":\n"
@@ -197,115 +197,123 @@ msgstr ""
 "La traducción por IA falló para \"{text}...\":\n"
 "{error}"
 
-#: lexisync.po:220
+#: lexisync.po:200
 #, python-brace-format
 msgid "AI translation failed for \"{text}...\": {error}"
 msgstr "La traducción por IA falló para \"{text}...\": {error}"
 
-#: lexisync.po:225
+#: lexisync.po:205
 #, python-brace-format
 msgid "AI translation for '{text}...' was skipped by a plugin."
 msgstr "La traducción por IA para '{text}...' fue omitida por un complemento."
 
-#: lexisync.po:230
+#: lexisync.po:210
 #, python-brace-format
 msgid "AI translation successful: \"{text}...\""
 msgstr "Traducción por IA exitosa: \"{text}...\""
 
-#: lexisync.po:235
+#: lexisync.po:215
 msgid "API Base URL:"
 msgstr "URL Base de la API:"
 
-#: lexisync.po:239
+#: lexisync.po:219
 msgid "API Call Interval:"
 msgstr "Intervalo de Llamada a la API:"
 
-#: lexisync.po:243
+#: lexisync.po:223
 msgid "API Error"
 msgstr "Error de API"
 
-#: lexisync.po:247
+#: lexisync.po:227
 msgid "API Key Missing"
 msgstr "Clave de API Faltante"
 
-#: lexisync.po:251
+#: lexisync.po:231
 msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
 msgstr "La Clave de API no está configurada. Por favor, configúrela en 'Herramientas > Configuración de IA'."
 
-#: lexisync.po:257
+#: lexisync.po:235
 msgid "API Key not set."
 msgstr "Clave API no configurada."
 
-#: lexisync.po:261
+#: lexisync.po:239
 msgid "API Key:"
 msgstr "Clave de API:"
 
-#: lexisync.po:265
+#: lexisync.po:243
 msgid "API Settings"
 msgstr "Configuración de API"
 
-#: lexisync.po:269
+#: lexisync.po:247
 msgid "API request timed out."
 msgstr "La solicitud de la API ha superado el tiempo de espera."
 
-#: lexisync.po:273
+#: lexisync.po:251
 msgid "About"
 msgstr "Acerca de"
 
-#: lexisync.po:277
+#: lexisync.po:255
 msgid "Actions"
 msgstr "Acciones"
 
-#: lexisync.po:281
+#: lexisync.po:259
 msgid "Add"
 msgstr "Añadir"
 
-#: lexisync.po:285
+#: lexisync.po:263
 msgid "Add Current Pair to Favorites"
 msgstr "Añadir par actual a favoritos"
 
-#: lexisync.po:289
+#: lexisync.po:267
 msgid "Add Extraction Rule"
 msgstr "Añadir Regla de Extracción"
 
-#: lexisync.po:293
+#: lexisync.po:271
+msgid "Add Glossary Entry"
+msgstr "Añadir entrada al glosario"
+
+#: lexisync.po:275
+msgid "Add New Entry"
+msgstr "Añadir nueva entrada"
+
+#: lexisync.po:279
 msgid "Add Prompt Fragment"
 msgstr "Agregar Fragmento de Prompt"
 
-#: lexisync.po:297
+#: lexisync.po:283
 msgid "Add Source File"
 msgstr "Añadir archivo de origen"
 
-#: lexisync.po:301
+#: lexisync.po:287
 msgid "Add Target Language"
 msgstr "Añadir Idioma de Destino"
 
-#: lexisync.po:305
+#: lexisync.po:291
 msgid "Add as Source File"
 msgstr "Añadir como archivo de origen"
 
-#: lexisync.po:309
+#: lexisync.po:295
 msgid "Add from File..."
 msgstr "Añadir desde archivo..."
 
-#: lexisync.po:313
+#: lexisync.po:299
 msgid "Add from TBX..."
 msgstr "Añadir desde TBX..."
 
-#: lexisync.po:317
+#: lexisync.po:303
 msgid "Add..."
 msgstr "Añadir..."
 
-#: lexisync.po:323
+#: lexisync.po:307
 msgid "Added"
 msgstr "Añadido"
 
-#: lexisync.po:327
+#: lexisync.po:311
 #, python-brace-format
 msgid "Added comments to {count} placeholder mismatched items."
 msgstr "Comentarios añadidos a {count} elementos con marcadores de posición no coincidentes."
 
-#: lexisync.po:334
+#: lexisync.po:316
 #, python-brace-format
 msgid ""
 "After AI batch translation, {count} items were found with placeholder mismatches.\n"
@@ -314,95 +322,100 @@ msgstr ""
 "Después de la traducción por IA en lotes, se encontraron {count} elementos con marcadores de posición no coincidentes.\n"
 "¿Desea añadir el comentario \"Marcador de Posición no Coincidente\" a estos elementos de forma masiva?"
 
-#: lexisync.po:347
+#: lexisync.po:325
 msgid "All"
 msgstr "Todo"
 
-#: lexisync.po:351
+#: lexisync.po:329
 msgid "All Files (*.*)"
 msgstr "Todos los archivos (*.*)"
 
-#: lexisync.po:355
+#: lexisync.po:333
 msgid "All Supported Files (*.ow *.txt *.po *.pot);;"
 msgstr "Todos los archivos admitidos (*.ow *.txt *.po *.pot);;"
 
-#: lexisync.po:359
+#: lexisync.po:337
 msgid "All Supported Files (*.ow *.txt *.po *.pot);;All Files (*.*)"
 msgstr "Todos los archivos admitidos (*.ow *.txt *.po *.pot);;Todos los archivos (*.*)"
 
-#: lexisync.po:365
+#: lexisync.po:341
+#, python-brace-format
+msgid "An error occurred during the re-scan operation: {error}"
+msgstr "Ocurrió un error durante la operación de re-escaneo: {error}"
+
+#: lexisync.po:346
 #, python-brace-format
 msgid "An error occurred: {error}"
 msgstr "Se ha producido un error: {error}"
 
-#: lexisync.po:370
+#: lexisync.po:351
 msgid "An import operation is already in progress. Please wait for it to complete."
 msgstr "Ya hay una operación de importación en curso. Por favor, espere a que se complete."
 
-#: lexisync.po:378
+#: lexisync.po:355
 msgid "An unexpected error occurred during deletion."
 msgstr "Se ha producido un error inesperado durante la eliminación."
 
-#: lexisync.po:382
+#: lexisync.po:359
 msgid "Analysis Failed"
 msgstr "Análisis fallido"
 
-#: lexisync.po:386
+#: lexisync.po:363
 msgid "Appearance"
 msgstr "Apariencia"
 
-#: lexisync.po:390
+#: lexisync.po:367
 #, python-brace-format
 msgid "Applied TM to {count} selected items."
 msgstr "MT aplicada a {count} elementos seleccionados."
 
-#: lexisync.po:395
+#: lexisync.po:372
 #, python-brace-format
 msgid "Applied TM to {count} strings."
 msgstr "MT aplicada a {count} cadenas."
 
-#: lexisync.po:400
+#: lexisync.po:377
 msgid "Apply"
 msgstr "Aplicar"
 
-#: lexisync.po:404
+#: lexisync.po:381
 msgid "Apply Comment"
 msgstr "Aplicar Comentario"
 
-#: lexisync.po:409
+#: lexisync.po:385
 msgid "Apply Favorite"
 msgstr "Aplicar favorito"
 
-#: lexisync.po:413
+#: lexisync.po:389
 msgid "Apply Memory to Selected Items"
 msgstr "Aplicar Memoria a Elementos Seleccionados"
 
-#: lexisync.po:417
+#: lexisync.po:393
 msgid "Apply TM to Untranslated"
 msgstr "Aplicar MT a no Traducidos"
 
-#: lexisync.po:421
+#: lexisync.po:397
 msgid "Apply Translation"
 msgstr "Aplicar Traducción"
 
-#: lexisync.po:425
+#: lexisync.po:401
 msgid "Apply and Go to Next Untranslated"
 msgstr "Aplicar e Ir al Siguiente no Traducido"
 
-#: lexisync.po:429
+#: lexisync.po:405
 msgid "Applying updates..."
 msgstr "Aplicando actualizaciones..."
 
-#: lexisync.po:433
+#: lexisync.po:409
 msgid "Are you sure you want to clear all recent file history?"
 msgstr "¿Está seguro de que desea borrar todo el historial de archivos recientes?"
 
-#: lexisync.po:437
+#: lexisync.po:413
 #, python-brace-format
 msgid "Are you sure you want to clear the translations for the {count} selected items?"
 msgstr "¿Está seguro de que desea borrar las traducciones de los {count} elementos seleccionados?"
 
-#: lexisync.po:446
+#: lexisync.po:418
 #, python-brace-format
 msgid ""
 "Are you sure you want to permanently delete the following item(s)?\n"
@@ -413,7 +426,7 @@ msgstr ""
 "\n"
 "- {items}"
 
-#: lexisync.po:458
+#: lexisync.po:429
 #, python-brace-format
 msgid ""
 "Are you sure you want to permanently delete the plugin '{plugin_name}'?\n"
@@ -424,7 +437,7 @@ msgstr ""
 "\n"
 "La aplicación deberá reiniciarse después de la eliminación."
 
-#: lexisync.po:470
+#: lexisync.po:440
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove '{file}' from the project?\n"
@@ -433,7 +446,7 @@ msgstr ""
 "¿Está seguro de que desea eliminar '{file}' del proyecto?\n"
 "Esta acción no se puede deshacer y afectará a todas las traducciones."
 
-#: lexisync.po:479
+#: lexisync.po:449
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove all TM entries from '{source}'?\n"
@@ -442,7 +455,7 @@ msgstr ""
 "¿Está seguro de que desea eliminar todas las entradas de MT de '{source}'?\n"
 "Esta acción no se puede deshacer."
 
-#: lexisync.po:489
+#: lexisync.po:458
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove all terms from '{source}'?\n"
@@ -451,7 +464,7 @@ msgstr ""
 "¿Está seguro de que desea eliminar todos los términos de '{source}'?\n"
 "Esta acción no se puede deshacer."
 
-#: lexisync.po:498
+#: lexisync.po:467
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove the TM entry for:\n"
@@ -460,7 +473,7 @@ msgstr ""
 "¿Está seguro de que desea eliminar la entrada de MT para:\n"
 "'{text}...'?"
 
-#: lexisync.po:507
+#: lexisync.po:476
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove the language '{lang}'?\n"
@@ -469,11 +482,11 @@ msgstr ""
 "¿Está seguro de que desea eliminar el idioma '{lang}'?\n"
 "Esto eliminará permanentemente su archivo de traducción."
 
-#: lexisync.po:516
+#: lexisync.po:485
 msgid "Are you sure you want to reset all keybindings to their default settings?"
 msgstr "¿Está seguro de que desea restablecer todas las combinaciones de teclas a su configuración predeterminada?"
 
-#: lexisync.po:522
+#: lexisync.po:489
 msgid ""
 "Are you sure you want to reset extraction rules to their default settings?\n"
 "All current custom rules will be lost."
@@ -481,7 +494,7 @@ msgstr ""
 "¿Está seguro de que desea restablecer las reglas de extracción a su configuración predeterminada?\n"
 "Todas las reglas personalizadas actuales se perderán."
 
-#: lexisync.po:532
+#: lexisync.po:497
 msgid ""
 "Are you sure you want to reset the prompt to its default settings?\n"
 "All current customizations will be lost."
@@ -489,102 +502,102 @@ msgstr ""
 "¿Está seguro de que desea restablecer el prompt a su configuración predeterminada?\n"
 "Todas las personalizaciones actuales se perderán."
 
-#: lexisync.po:541
+#: lexisync.po:505
 #, python-brace-format
 msgid "Attempted to restore {count} old translations/statuses."
 msgstr "Se intentó restaurar {count} traducciones/estados antiguos."
 
-#: lexisync.po:546
+#: lexisync.po:510
 msgid "Author"
 msgstr "Autor"
 
-#: lexisync.po:550
+#: lexisync.po:514
 msgid "Auto-backup Translation Memory"
 msgstr "Copia de seguridad automática de la memoria de traducción"
 
-#: lexisync.po:554
+#: lexisync.po:518
 msgid "Auto-compile .mo file when save .po file"
 msgstr "Compilar automáticamente el archivo .mo al guardar el archivo .po"
 
-#: lexisync.po:558
+#: lexisync.po:522
 msgid "Auto-detect Source"
 msgstr "Detección automática de origen"
 
-#: lexisync.po:562
+#: lexisync.po:526
 msgid "Auto-detect Target"
 msgstr "Detección automática de destino"
 
-#: lexisync.po:566
+#: lexisync.po:530
 msgid "Auto-save Interval:"
 msgstr "Intervalo de autoguardado:"
 
-#: lexisync.po:570
+#: lexisync.po:534
 msgid "Auto-saving..."
 msgstr "Autoguardando..."
 
-#: lexisync.po:574
+#: lexisync.po:538
 msgid "Automatically format text when pasting into the translation editor."
 msgstr "Formatear texto automáticamente al pegar en el editor."
 
-#: lexisync.po:578
+#: lexisync.po:542
 msgid "Available Placeholders (Click to Insert)"
 msgstr "Marcadores de posición disponibles (Haz clic para insertar)"
 
-#: lexisync.po:582
+#: lexisync.po:546
 msgid "Back"
 msgstr "Atrás"
 
-#: lexisync.po:587
+#: lexisync.po:550
 msgid "Backup Failed"
 msgstr "Copia de Seguridad Fallida"
 
-#: lexisync.po:591
+#: lexisync.po:554
 #, python-brace-format
 msgid "Backup created: {filename}"
 msgstr "Copia de seguridad creada: {filename}"
 
-#: lexisync.po:596
+#: lexisync.po:559
 msgid "Basic Settings"
 msgstr "Configuración básica"
 
-#: lexisync.po:600
+#: lexisync.po:563
 msgid "Build Complete"
 msgstr "Compilación completada"
 
-#: lexisync.po:604
+#: lexisync.po:567
 msgid "Build Failed"
 msgstr "Compilación fallida"
 
-#: lexisync.po:608
+#: lexisync.po:571
 msgid "Build Project..."
 msgstr "Compilar proyecto..."
 
-#: lexisync.po:612
+#: lexisync.po:575
 #, python-brace-format
 msgid "Building '{file}' for language '{lang}'..."
 msgstr "Compilando '{file}' para el idioma '{lang}'..."
 
-#: lexisync.po:617
+#: lexisync.po:580
 msgid "Calculation finished."
 msgstr "Cálculo finalizado."
 
-#: lexisync.po:621
+#: lexisync.po:584
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: lexisync.po:630
+#: lexisync.po:588
 msgid "Cancelling..."
 msgstr "Cancelando..."
 
-#: lexisync.po:634
+#: lexisync.po:592
 msgid "Cannot Remove"
 msgstr "No se puede eliminar"
 
-#: lexisync.po:639
+#: lexisync.po:596
 msgid "Cannot delete a plugin that is a dependency for other enabled plugins."
 msgstr "No se puede eliminar un complemento que es una dependencia para otros complementos activos."
 
-#: lexisync.po:645
+#: lexisync.po:600
 #, python-brace-format
 msgid ""
 "Cannot disable '{plugin_name}'.\n"
@@ -597,7 +610,7 @@ msgstr ""
 "\n"
 "- {deps}"
 
-#: lexisync.po:658
+#: lexisync.po:613
 #, python-brace-format
 msgid ""
 "Cannot enable '{plugin_name}'.\n"
@@ -610,333 +623,333 @@ msgstr ""
 "\n"
 "- {deps}"
 
-#: lexisync.po:671
+#: lexisync.po:626
 msgid "Cannot import to a project glossary when no project is open."
 msgstr "No se puede importar al glosario del proyecto cuando no hay ningún proyecto abierto."
 
-#: lexisync.po:677
+#: lexisync.po:630
 #, python-brace-format
 msgid "Cannot open '{path}'. It is not a valid file or project."
 msgstr "No se puede abrir '{path}'. No es un archivo o proyecto válido."
 
-#: lexisync.po:682
+#: lexisync.po:635
 msgid "Cannot remove source while an import operation is in progress."
 msgstr "No se puede eliminar el origen mientras una operación de importación está en curso."
 
-#: lexisync.po:688
+#: lexisync.po:639
 msgid "Cannot save, project configuration file is missing."
 msgstr "No se puede guardar: falta el archivo de configuración del proyecto."
 
-#: lexisync.po:692
+#: lexisync.po:643
 msgid "Capitalization Mismatch"
 msgstr "Inconsistencia en mayúsculas"
 
-#: lexisync.po:696
+#: lexisync.po:647
 msgid "Case sensitive"
 msgstr "Distinguir mayúsculas y minúsculas"
 
-#: lexisync.po:700
+#: lexisync.po:651
 msgid "Check for formatting differences (whitespace, punctuation, etc.)"
 msgstr "Verificar diferencias de formato (espacios, puntuación, etc.)"
 
-#: lexisync.po:704
+#: lexisync.po:655
 msgid "Check for missing/extra placeholders"
 msgstr "Verificar marcadores de posición faltantes/adicionales"
 
-#: lexisync.po:708
+#: lexisync.po:659
 msgid "Check for unusual translation length/expansion ratio"
 msgstr "Verificar longitud/relación de expansión inusual de la traducción"
 
-#: lexisync.po:712
+#: lexisync.po:663
 #, python-brace-format
 msgid "Circular dependency detected in plugins: {nodes}. Cannot load."
 msgstr "Se detectó una dependencia circular en los complementos: {nodes}. No se puede cargar."
 
-#: lexisync.po:719
+#: lexisync.po:668
 msgid "Clear History"
 msgstr "Borrar Historial"
 
-#: lexisync.po:723
+#: lexisync.po:672
 msgid "Clear Selected Translations"
 msgstr "Borrar Traducciones Seleccionadas"
 
-#: lexisync.po:727
+#: lexisync.po:676
 msgid "Clear TM for Selected"
 msgstr "Borrar MT para Selección"
 
-#: lexisync.po:731
+#: lexisync.po:680
 #, python-brace-format
 msgid "Cleared {count} translations."
 msgstr "Se borraron {count} traducciones."
 
-#: lexisync.po:736
+#: lexisync.po:685
 msgid "Click to set keybinding..."
 msgstr "Haz clic para configurar el atajo de teclado..."
 
-#: lexisync.po:740
+#: lexisync.po:689
 msgid "Clipboard Error"
 msgstr "Error del Portapapeles"
 
-#: lexisync.po:745
+#: lexisync.po:693
 msgid "Clipboard content pasted to translation."
 msgstr "Contenido del portapapeles pegado a la traducción."
 
-#: lexisync.po:749
+#: lexisync.po:697
 msgid "Close"
 msgstr "Cerrar"
 
-#: lexisync.po:754
+#: lexisync.po:701
 msgid "Code Context"
 msgstr "Contexto del Código"
 
-#: lexisync.po:758
+#: lexisync.po:705
 msgid "Code file loading failed"
 msgstr "Fallo al cargar archivo de código"
 
-#: lexisync.po:762
+#: lexisync.po:709
 #, python-brace-format
 msgid "Code file saved to: {filename}"
 msgstr "Archivo de código guardado en: {filename}"
 
-#: lexisync.po:767
+#: lexisync.po:714
 msgid "Comment"
 msgstr "Comentario"
 
-#: lexisync.po:772
+#: lexisync.po:718
 msgid "Comment && Status"
 msgstr "Comentario && Estado"
 
-#: lexisync.po:776
+#: lexisync.po:722
 msgid "Comment && Status Panel"
 msgstr "Comentario && Panel de Estado"
 
-#: lexisync.po:780
+#: lexisync.po:726
 #, python-brace-format
 msgid "Comment updated for ID {id}..."
 msgstr "Comentario actualizado para ID {id}..."
 
-#: lexisync.po:785
+#: lexisync.po:731
 msgid "Comment updated."
 msgstr "Comentario actualizado."
 
-#: lexisync.po:789
+#: lexisync.po:735
 msgid "Comment:"
 msgstr "Comentario:"
 
-#: lexisync.po:794
+#: lexisync.po:739
 msgid "Compare/Import New Version..."
 msgstr "Comparar/Importar Nueva Versión..."
 
-#: lexisync.po:798
+#: lexisync.po:743
 msgid "Comparing versions..."
 msgstr "Comparando versiones..."
 
-#: lexisync.po:802
+#: lexisync.po:747
 msgid "Comparison Failed"
 msgstr "Comparación Fallida"
 
-#: lexisync.po:806
+#: lexisync.po:751
 msgid "Comparison Results Summary"
 msgstr "Resumen de Resultados de Comparación"
 
-#: lexisync.po:810
+#: lexisync.po:755
 msgid "Comparison complete. Found "
 msgstr "Comparación completa. Encontrados "
 
-#: lexisync.po:814
+#: lexisync.po:759
 msgid "Compatibility Warning"
 msgstr "Advertencia de Compatibilidad"
 
-#: lexisync.po:818
+#: lexisync.po:763
 msgid "Compatible"
 msgstr "Compatible"
 
-#: lexisync.po:822
+#: lexisync.po:767
 msgid "Configure TM Import"
 msgstr "Configurar importación de MT"
 
-#: lexisync.po:826
+#: lexisync.po:771
 msgid "Configure the application"
 msgstr "Configurar la aplicación"
 
-#: lexisync.po:830
+#: lexisync.po:775
 msgid "Confirm"
 msgstr "Confirmar"
 
-#: lexisync.po:835
+#: lexisync.po:779
 msgid "Confirm Batch Translation"
 msgstr "Confirmar Traducción en Lotes"
 
-#: lexisync.po:839
+#: lexisync.po:783
 msgid "Confirm Clear"
 msgstr "Confirmar Borrado"
 
-#: lexisync.po:843
+#: lexisync.po:787
 msgid "Confirm Deletion"
 msgstr "Confirmar Eliminación"
 
-#: lexisync.po:847
+#: lexisync.po:791
 msgid "Confirm Operation"
 msgstr "Confirmar Operación"
 
-#: lexisync.po:851
+#: lexisync.po:795
 msgid "Confirm Overwrite"
 msgstr "Confirmación de Sobreescritura"
 
-#: lexisync.po:855
+#: lexisync.po:799
 msgid "Confirm Reload"
 msgstr "Confirmar Recarga"
 
-#: lexisync.po:859
+#: lexisync.po:803
 msgid "Confirm Removal"
 msgstr "Confirmar Eliminación"
 
-#: lexisync.po:865
+#: lexisync.po:807
 msgid "Confirm and Update Project"
 msgstr "Confirmar y Actualizar Proyecto"
 
-#: lexisync.po:869
+#: lexisync.po:811
 msgid "Confirm the language mapping from the file to LexiSync's supported languages."
 msgstr "Confirme el mapeo de idiomas del archivo a los idiomas admitidos por LexiSync."
 
-#: lexisync.po:877
+#: lexisync.po:815
 msgid "Confirmation"
 msgstr "Confirmación"
 
-#: lexisync.po:881
+#: lexisync.po:819
 msgid "Connecting to database..."
 msgstr "Conectando a la base de datos..."
 
-#: lexisync.po:885
+#: lexisync.po:823
 msgid "Connection Error"
 msgstr "Error de conexión"
 
-#: lexisync.po:889
+#: lexisync.po:827
 msgid "Connection failed"
 msgstr "Conexión fallida"
 
-#: lexisync.po:893
+#: lexisync.po:831
 msgid "Connection successful. Test translation"
 msgstr "Conexión exitosa. Prueba de traducción"
 
-#: lexisync.po:897
+#: lexisync.po:835
 msgid "Content"
 msgstr "Contenido"
 
-#: lexisync.po:901
+#: lexisync.po:839
 msgid "Content:"
 msgstr "Contenido:"
 
-#: lexisync.po:905
+#: lexisync.po:843
 msgid "Context & Prompts"
 msgstr "Contexto y Mensajes"
 
-#: lexisync.po:909
+#: lexisync.po:847
 msgid "Context Preview"
 msgstr "Vista previa del contexto"
 
-#: lexisync.po:913
+#: lexisync.po:851
 msgid "Context Preview Panel"
 msgstr "Panel de vista previa del contexto"
 
-#: lexisync.po:917
+#: lexisync.po:855
 #, python-brace-format
 msgid "Copied {count} file name(s) to clipboard."
 msgstr "Se copiaron {count} nombre(s) de archivo al portapapeles."
 
-#: lexisync.po:922
+#: lexisync.po:860
 #, python-brace-format
 msgid "Copied {count} full path(s) to clipboard."
 msgstr "Se copiaron {count} rutas completas al portapapeles."
 
-#: lexisync.po:927
+#: lexisync.po:865
 #, python-brace-format
 msgid "Copied {count} original strings to clipboard."
 msgstr "Se copiaron {count} cadenas originales al portapapeles."
 
-#: lexisync.po:932
+#: lexisync.po:870
 #, python-brace-format
 msgid "Copied {count} translations to clipboard."
 msgstr "Se copiaron {count} traducciones al portapapeles."
 
-#: lexisync.po:937
+#: lexisync.po:875
 msgid "Copy File Name"
 msgstr "Copiar Nombre del Archivo"
 
-#: lexisync.po:941
+#: lexisync.po:879
 msgid "Copy Full Path"
 msgstr "Copiar Ruta Completa"
 
-#: lexisync.po:945
+#: lexisync.po:883
 msgid "Copy Original"
 msgstr "Copiar Original"
 
-#: lexisync.po:949
+#: lexisync.po:887
 msgid "Copy Translation"
 msgstr "Copiar Traducción"
 
-#: lexisync.po:953
+#: lexisync.po:891
 #, python-brace-format
 msgid "Could not compile MO file: {error}"
 msgstr "No se pudo compilar el archivo MO: {error}"
 
-#: lexisync.po:958
+#: lexisync.po:896
 #, python-brace-format
 msgid "Could not create code file backup '{filename}': {error}"
 msgstr "No se pudo crear la copia de seguridad del archivo de código '{filename}': {error}"
 
-#: lexisync.po:965
+#: lexisync.po:901
 msgid "Could not decode API response. Response text"
 msgstr "No se pudo decodificar la respuesta de la API. Texto de respuesta"
 
-#: lexisync.po:969
+#: lexisync.po:905
 msgid "Could not detect any languages in the TBX file."
 msgstr "No se pudo detectar ningún idioma en el archivo TBX."
 
-#: lexisync.po:973
+#: lexisync.po:909
 msgid "Could not detect any languages in the TBX file. Please check the file format."
 msgstr "No se pudo detectar ningún idioma en el archivo TBX. Por favor, verifique el formato del archivo."
 
-#: lexisync.po:981
+#: lexisync.po:913
 #, python-brace-format
 msgid "Could not export project translations to Excel: {error}"
 msgstr "No se pudieron exportar las traducciones del proyecto a Excel: {error}"
 
-#: lexisync.po:986
+#: lexisync.po:918
 #, python-brace-format
 msgid "Could not export project translations to JSON: {error}"
 msgstr "No se pudieron exportar las traducciones del proyecto a JSON: {error}"
 
-#: lexisync.po:991
+#: lexisync.po:923
 #, python-brace-format
 msgid "Could not export project translations to YAML: {error}"
 msgstr "No se pudieron exportar las traducciones del proyecto a YAML: {error}"
 
-#: lexisync.po:996
+#: lexisync.po:928
 msgid "Could not get code content for re-extraction."
 msgstr "No se pudo obtener el contenido del código para la re-extracción."
 
-#: lexisync.po:1000
+#: lexisync.po:932
 #, python-brace-format
 msgid "Could not import project translations from Excel: {error}"
 msgstr "No se pudieron importar las traducciones del proyecto desde Excel: {error}"
 
-#: lexisync.po:1005
+#: lexisync.po:937
 #, python-brace-format
 msgid "Could not load preset file: {error}"
 msgstr "No se pudo cargar el archivo de preajuste: {error}"
 
-#: lexisync.po:1011
+#: lexisync.po:942
 #, python-brace-format
 msgid "Could not load project from '{path}': {error}"
 msgstr "No se pudo cargar el proyecto desde '{path}': {error}"
 
-#: lexisync.po:1016
+#: lexisync.po:947
 #, python-brace-format
 msgid "Could not open or parse code file '{filename}': {error}"
 msgstr "No se pudo abrir o analizar el archivo de código '{filename}': {error}"
 
-#: lexisync.po:1021
+#: lexisync.po:952
 #, python-brace-format
 msgid ""
 "Could not re-read {filepath} from disk.\n"
@@ -947,57 +960,57 @@ msgstr ""
 "Usando la versión en memoria.\n"
 "Error: {error}"
 
-#: lexisync.po:1032
+#: lexisync.po:963
 #, python-brace-format
 msgid "Could not save code file: {error}"
 msgstr "No se pudo guardar el archivo de código: {error}"
 
-#: lexisync.po:1037
+#: lexisync.po:968
 #, python-brace-format
 msgid "Could not save preset file: {error}"
 msgstr "No se pudo guardar el archivo de preajuste: {error}"
 
-#: lexisync.po:1043
+#: lexisync.po:973
 msgid "Create a structured project folder"
 msgstr "Crear una estructura de carpetas del proyecto"
 
-#: lexisync.po:1047
+#: lexisync.po:977
 msgid "Current"
 msgstr "Actual"
 
-#: lexisync.po:1051
+#: lexisync.po:981
 msgid "Current Selection:"
 msgstr "Selección actual:"
 
-#: lexisync.po:1055
+#: lexisync.po:985
 msgid "Custom"
 msgstr "Personalizado"
 
-#: lexisync.po:1063
+#: lexisync.po:989
 msgid "Database update complete!"
 msgstr "¡Actualización de la base de datos completada!"
 
-#: lexisync.po:1067
+#: lexisync.po:993
 msgid "Delete"
 msgstr "Eliminar"
 
-#: lexisync.po:1071
+#: lexisync.po:997
 msgid "Delete Error"
 msgstr "Error al eliminar"
 
-#: lexisync.po:1076
+#: lexisync.po:1001
 msgid "Delete Plugin"
 msgstr "Eliminar complemento"
 
-#: lexisync.po:1080
+#: lexisync.po:1005
 msgid "Delete Selected"
 msgstr "Eliminar Seleccionados"
 
-#: lexisync.po:1084
+#: lexisync.po:1009
 msgid "Deletion Results"
 msgstr "Resultados de eliminación"
 
-#: lexisync.po:1088
+#: lexisync.po:1013
 #, python-brace-format
 msgid ""
 "Deletion failed with errors:\n"
@@ -1008,220 +1021,220 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: lexisync.po:1099
+#: lexisync.po:1024
 msgid "Dependency Check"
 msgstr "Comprobación de dependencia"
 
-#: lexisync.po:1103
+#: lexisync.po:1028
 msgid "Dependency Error"
 msgstr "Error de dependencia"
 
-#: lexisync.po:1107
+#: lexisync.po:1032
 msgid "Description"
 msgstr "Descripción"
 
-#: lexisync.po:1111
+#: lexisync.po:1036
 msgid "Disable"
 msgstr "Deshabilitar"
 
-#: lexisync.po:1115
+#: lexisync.po:1040
 msgid "Discover and install plugins"
 msgstr "Descubrir e instalar complementos"
 
-#: lexisync.po:1119
+#: lexisync.po:1044
 msgid "Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"
 msgstr "Mostrados: 0/0 | Traducidos: 0 | No traducidos: 0 | Ignorados: 0"
 
-#: lexisync.po:1123
+#: lexisync.po:1048
 #, python-brace-format
 msgid "Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}"
 msgstr "Mostrados: {displayed_count}/{total_count} | Traducidos: {translated_visible} | No traducidos: {untranslated_visible} | Ignorados: {ignored_visible}"
 
-#: lexisync.po:1134
+#: lexisync.po:1053
 #, python-brace-format
 msgid "Do you want to add '{filename}' as a new source file to the current project?"
 msgstr "¿Deseas agregar '{filename}' como un nuevo archivo fuente al proyecto actual?"
 
-#: lexisync.po:1143
+#: lexisync.po:1058
 msgid "Do you want to open the target folder?"
 msgstr "¿Deseas abrir la carpeta de destino?"
 
-#: lexisync.po:1147
+#: lexisync.po:1062
 msgid "Do you want to overwrite them, skip them, or cancel the operation?"
 msgstr "¿Deseas sobrescribirlos, omitirlos o cancelar la operación?"
 
-#: lexisync.po:1151
+#: lexisync.po:1066
 msgid "Double-click to locate."
 msgstr "Haz doble clic para localizar."
 
-#: lexisync.po:1155
+#: lexisync.po:1070
 msgid "Download Error"
 msgstr "Error de descarga"
 
-#: lexisync.po:1159
+#: lexisync.po:1074
 #, python-brace-format
 msgid "Download failed: {error}"
 msgstr "Descarga fallida: {error}"
 
-#: lexisync.po:1164
+#: lexisync.po:1079
 #, python-brace-format
 msgid "Downloading {plugin_name}..."
 msgstr "Descargando {plugin_name}..."
 
-#: lexisync.po:1169
+#: lexisync.po:1084
 msgid "Drag and drop .ow, .txt, .po, or .pot files here"
 msgstr "Arrastra y suelta aquí los archivos .ow, .txt, .po o .pot"
 
-#: lexisync.po:1173
+#: lexisync.po:1088
 msgid "Drag and drop .tbx files here"
 msgstr "Arrastra y suelta aquí los archivos .tbx"
 
-#: lexisync.po:1177
+#: lexisync.po:1092
 msgid "Drag and drop .xlsx files here"
 msgstr "Arrastra y suelta aquí los archivos .xlsx"
 
-#: lexisync.po:1181
+#: lexisync.po:1096
 msgid "Dynamic Instruction"
 msgstr "Instrucción dinámica"
 
-#: lexisync.po:1186
+#: lexisync.po:1100
 msgid "Dynamic sorting enabled."
 msgstr "Ordenación dinámica habilitada."
 
-#: lexisync.po:1190
+#: lexisync.po:1104
 msgid "Edit && Details"
 msgstr "Editar && Detalles"
 
-#: lexisync.po:1194
+#: lexisync.po:1108
 msgid "Edit && Details Panel"
 msgstr "Panel de Edición y Detalles"
 
-#: lexisync.po:1198
+#: lexisync.po:1112
 msgid "Edit Comment..."
 msgstr "Editar Comentario..."
 
-#: lexisync.po:1202
+#: lexisync.po:1116
 msgid "Edit Error"
 msgstr "Error de edición"
 
-#: lexisync.po:1206
+#: lexisync.po:1120
 msgid "Edit Extraction Rule"
 msgstr "Editar Regla de Extracción"
 
-#: lexisync.po:1210
+#: lexisync.po:1124
 msgid "Edit Prompt Fragment"
 msgstr "Editar Fragmento de Prompt"
 
-#: lexisync.po:1214
+#: lexisync.po:1128
 msgid "Enable"
 msgstr "Habilitar"
 
-#: lexisync.po:1218
+#: lexisync.po:1132
 msgid "Enable Smart Paste"
 msgstr "Habilitar Pegado Inteligente"
 
-#: lexisync.po:1222
+#: lexisync.po:1136
 msgid "Enable this fragment"
 msgstr "Habilitar este fragmento"
 
-#: lexisync.po:1226
+#: lexisync.po:1140
 msgid "Enable this rule"
 msgstr "Habilitar esta regla"
 
-#: lexisync.po:1230
+#: lexisync.po:1144
 msgid "Enabled"
 msgstr "Habilitado"
 
-#: lexisync.po:1234
+#: lexisync.po:1148
 msgid "Enabled Validation Checks"
 msgstr "Validaciones Habilitadas"
 
-#: lexisync.po:1238
+#: lexisync.po:1152
 msgid "Ending Punctuation Mismatch"
 msgstr "Falta de coincidencia en la puntuación final"
 
-#: lexisync.po:1242
+#: lexisync.po:1156
 #, python-brace-format
 msgid "Ending punctuation differs: '{c1}' vs '{c2}'."
 msgstr "La puntuación final difiere: '{c1}' frente a '{c2}'."
 
-#: lexisync.po:1247
+#: lexisync.po:1161
 msgid "Ending punctuation presence differs."
 msgstr "La presencia de puntuación final difiere."
 
-#: lexisync.po:1251
+#: lexisync.po:1165
 #, python-brace-format
 msgid "Enter comment for {count} selected items:"
 msgstr "Introducir comentario para {count} elementos seleccionados:"
 
-#: lexisync.po:1256
+#: lexisync.po:1170
 msgid "Entry Count"
 msgstr "Número de entradas"
 
-#: lexisync.po:1260
+#: lexisync.po:1174
 msgid "Error"
 msgstr "Error"
 
-#: lexisync.po:1272
+#: lexisync.po:1178
 #, python-brace-format
 msgid "Error extracting POT file: {error}"
 msgstr "Error al extraer el archivo POT: {error}"
 
-#: lexisync.po:1277
+#: lexisync.po:1183
 #, python-brace-format
 msgid "Error importing PO file '{filename}': {error}"
 msgstr "Error al importar el archivo PO '{filename}': {error}"
 
-#: lexisync.po:1282
+#: lexisync.po:1188
 #, python-brace-format
 msgid "Error processing Excel file (possibly column names issue): {error}"
 msgstr "Error al procesar el archivo Excel (posiblemente problema de nombres de columna): {error}"
 
-#: lexisync.po:1289
+#: lexisync.po:1193
 #, python-brace-format
 msgid "Error processing Excel row {row_num}: {error}. Skipping this row."
 msgstr "Error al procesar la fila {row_num} de Excel: {error}. Saltando esta fila."
 
-#: lexisync.po:1294
+#: lexisync.po:1198
 #, python-brace-format
 msgid "Error reloading translatable text: {error}"
 msgstr "Error al recargar el texto traducible: {error}"
 
-#: lexisync.po:1299
+#: lexisync.po:1203
 msgid "Error:"
 msgstr "Error:"
 
-#: lexisync.po:1303
+#: lexisync.po:1207
 #, python-brace-format
 msgid "Error: '{filename}' is not a valid file."
 msgstr "Error: '{filename}' no es un archivo válido."
 
-#: lexisync.po:1308
+#: lexisync.po:1212
 #, python-brace-format
 msgid "Error: Could not load marketplace index. {error}"
 msgstr "Error: No se pudo cargar el índice del mercado. {error}"
 
-#: lexisync.po:1313
+#: lexisync.po:1217
 msgid "Escape for Regex (Left)"
 msgstr "Escapar para Regex (Izquierda)"
 
-#: lexisync.po:1317
+#: lexisync.po:1221
 msgid "Escape for Regex (Right)"
 msgstr "Escapar para Regex (Derecha)"
 
-#: lexisync.po:1321
+#: lexisync.po:1225
 msgid "Excel Files"
 msgstr "Archivos de Excel"
 
-#: lexisync.po:1325
+#: lexisync.po:1229
 msgid "Excel files (*.xlsx)"
 msgstr "Archivos de Excel (*.xlsx)"
 
-#: lexisync.po:1329
+#: lexisync.po:1233
 msgid "Excel header format is incorrect or empty."
 msgstr "El formato del encabezado de Excel es incorrecto o está vacío."
 
-#: lexisync.po:1333
+#: lexisync.po:1237
 #, python-brace-format
 msgid ""
 "Excel header must contain 'UUID' and '{translation_col}' columns.\n"
@@ -1230,176 +1243,181 @@ msgstr ""
 "El encabezado de Excel debe contener las columnas 'UUID' y '{translation_col}'.\n"
 "Columnas opcionales: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
 
-#: lexisync.po:1345
+#: lexisync.po:1246
 msgid "Exit"
 msgstr "Salir"
 
-#: lexisync.po:1349
+#: lexisync.po:1250
 msgid "Expansion Ratio"
 msgstr "Ratio de Expansión"
 
-#: lexisync.po:1353
+#: lexisync.po:1254
 msgid "Export"
 msgstr "Exportar"
 
-#: lexisync.po:1357
+#: lexisync.po:1258
 msgid "Export Error"
 msgstr "Error de Exportación"
 
-#: lexisync.po:1362
+#: lexisync.po:1262
 msgid "Export Extraction Rule Preset"
 msgstr "Exportar Preajuste de Reglas de Extracción"
 
-#: lexisync.po:1366
+#: lexisync.po:1266
 msgid "Export Failed"
 msgstr "Exportación Fallida"
 
-#: lexisync.po:1371
+#: lexisync.po:1270
 msgid "Export Preset"
 msgstr "Exportar Preajuste"
 
-#: lexisync.po:1375
+#: lexisync.po:1274
 msgid "Export Project Translations to Excel"
 msgstr "Exportar Traducciones del Proyecto a Excel"
 
-#: lexisync.po:1379
+#: lexisync.po:1278
 msgid "Export Project Translations to JSON"
 msgstr "Exportar Traducciones del Proyecto a JSON"
 
-#: lexisync.po:1383
+#: lexisync.po:1282
 msgid "Export Project Translations to YAML"
 msgstr "Exportar Traducciones del Proyecto a YAML"
 
-#: lexisync.po:1387
+#: lexisync.po:1286
 msgid "Export Prompt Preset"
 msgstr "Exportar Preajuste de Prompt"
 
-#: lexisync.po:1391
+#: lexisync.po:1290
 msgid "Export to Excel"
 msgstr "Exportar a Excel"
 
-#: lexisync.po:1395
+#: lexisync.po:1294
 msgid "Export to JSON"
 msgstr "Exportar a JSON"
 
-#: lexisync.po:1399
+#: lexisync.po:1298
 msgid "Export to PO File..."
 msgstr "Exportar a Archivo PO..."
 
-#: lexisync.po:1403
+#: lexisync.po:1302
 msgid "Export to YAML"
 msgstr "Exportar a YAML"
 
-#: lexisync.po:1407
+#: lexisync.po:1306
 msgid "External Libraries"
 msgstr "Bibliotecas Externas"
 
-#: lexisync.po:1411
+#: lexisync.po:1310
 msgid "Extra Placeholder"
 msgstr "Marcador de posición adicional"
 
-#: lexisync.po:1415
+#: lexisync.po:1314
 #, python-brace-format
 msgid "Extra placeholders: {placeholders}"
 msgstr "Marcadores de posición adicionales: {placeholders}"
 
-#: lexisync.po:1420
+#: lexisync.po:1319
 msgid "Extract POT Template from Code..."
 msgstr "Extraer Plantilla POT del Código..."
 
-#: lexisync.po:1424
+#: lexisync.po:1323
 msgid "Extracting strings..."
 msgstr "Extrayendo cadenas..."
 
-#: lexisync.po:1428
+#: lexisync.po:1327
 msgid "Extraction"
 msgstr "Extracción"
 
-#: lexisync.po:1432
+#: lexisync.po:1331
 #, python-brace-format
 msgid "Extraction Pattern Files (*{ext});;All Files (*.*)"
 msgstr "Archivos de Patrón de Extracción (*{ext});;Todos los Archivos (*.*)"
 
-#: lexisync.po:1438
+#: lexisync.po:1336
 msgid "Extraction Rule Manager"
 msgstr "Gestor de Reglas de Extracción"
 
-#: lexisync.po:1442
+#: lexisync.po:1340
 msgid "Extraction Rules Updated"
 msgstr "Reglas de Extracción Actualizadas"
 
-#: lexisync.po:1446
+#: lexisync.po:1344
 msgid "Extraction rules updated. Consider reloading the text."
 msgstr "Reglas de extracción actualizadas. Considere recargar el texto."
 
-#: lexisync.po:1450
+#: lexisync.po:1348
 msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"
 msgstr "Reglas de extracción actualizadas. ¿Desea recargar el texto traducible del código actual usando las nuevas reglas inmediatamente?"
 
-#: lexisync.po:1458
+#: lexisync.po:1352
 msgid "Failed"
 msgstr "Falló"
 
-#: lexisync.po:1462
+#: lexisync.po:1356
 msgid "Failed to access system clipboard."
 msgstr "Error al acceder al portapapeles del sistema."
 
-#: lexisync.po:1466
+#: lexisync.po:1360
+#, python-brace-format
+msgid "Failed to add glossary entry: {error}"
+msgstr "No se pudo añadir la entrada al glosario: {error}"
+
+#: lexisync.po:1365
 #, python-brace-format
 msgid "Failed to analyze the TBX file: {error}"
 msgstr "Error al analizar el archivo TBX: {error}"
 
-#: lexisync.po:1471
+#: lexisync.po:1370
 msgid "Failed to copy to clipboard."
 msgstr "Error al copiar al portapapeles."
 
-#: lexisync.po:1475
+#: lexisync.po:1374
 #, python-brace-format
 msgid "Failed to create initial translation data: {error}"
 msgstr "Error al crear los datos de traducción iniciales: {error}"
 
-#: lexisync.po:1480
+#: lexisync.po:1379
 #, python-brace-format
 msgid "Failed to create project: {error}"
 msgstr "Error al crear el proyecto: {error}"
 
-#: lexisync.po:1485
+#: lexisync.po:1384
 msgid "Failed to delete the TM entry from the database."
 msgstr "Error al eliminar la entrada de TM de la base de datos."
 
-#: lexisync.po:1489
+#: lexisync.po:1388
 #, python-brace-format
 msgid "Failed to delete {path}: {error}"
 msgstr "Error al eliminar {path}: {error}"
 
-#: lexisync.po:1494
+#: lexisync.po:1393
 #, python-brace-format
 msgid "Failed to export to PO file: {error}"
 msgstr "Fallo al exportar a archivo PO: {error}"
 
-#: lexisync.po:1499
+#: lexisync.po:1398
 #, python-brace-format
 msgid "Failed to extract the archive: {error}"
 msgstr "Error al extraer el archivo: {error}"
 
-#: lexisync.po:1504
+#: lexisync.po:1403
 #, python-brace-format
 msgid "Failed to fetch data (HTTP {status_code}). The marketplace file might be missing or the server is down."
 msgstr "Error al obtener datos (HTTP {status_code}). Es posible que falte el archivo del mercado o el servidor esté caído."
 
-#: lexisync.po:1513
+#: lexisync.po:1408
 msgid "Failed to fetch plugin list from the server."
 msgstr "Error al obtener la lista de complementos del servidor."
 
-#: lexisync.po:1517
+#: lexisync.po:1412
 msgid "Failed to initialize file system models."
 msgstr "Error al inicializar los modelos del sistema de archivos."
 
-#: lexisync.po:1521
+#: lexisync.po:1416
 msgid "Failed to initialize user interface."
 msgstr "Error al inicializar la interfaz de usuario."
 
-#: lexisync.po:1525
+#: lexisync.po:1420
 #, python-brace-format
 msgid ""
 "Failed to install library '{lib}'.\n"
@@ -1408,43 +1426,43 @@ msgstr ""
 "Error al instalar la biblioteca '{lib}'.\n"
 "Por favor, compruebe el registro para más detalles."
 
-#: lexisync.po:1534
+#: lexisync.po:1429
 #, python-brace-format
 msgid "Failed to load: {reason}"
 msgstr "Error al cargar: {reason}"
 
-#: lexisync.po:1539
+#: lexisync.po:1434
 #, python-brace-format
 msgid "Failed to move plugin files to the destination: {error}"
 msgstr "Error al mover los archivos del plugin al destino: {error}"
 
-#: lexisync.po:1544
+#: lexisync.po:1439
 msgid "Failed to navigate back."
 msgstr "Error al navegar hacia atrás."
 
-#: lexisync.po:1548
+#: lexisync.po:1443
 msgid "Failed to navigate forward."
 msgstr "Error al navegar hacia adelante."
 
-#: lexisync.po:1552
+#: lexisync.po:1447
 msgid "Failed to navigate to home directory."
 msgstr "Error al navegar al directorio principal."
 
-#: lexisync.po:1556
+#: lexisync.po:1451
 msgid "Failed to navigate to parent directory."
 msgstr "Error al navegar al directorio superior."
 
-#: lexisync.po:1560
+#: lexisync.po:1455
 #, python-brace-format
 msgid "Failed to navigate to: {path}"
 msgstr "Error al navegar a: {path}"
 
-#: lexisync.po:1565
+#: lexisync.po:1460
 #, python-brace-format
 msgid "Failed to open '{filename}': {error}"
 msgstr "Error al abrir '{filename}': {error}"
 
-#: lexisync.po:1570
+#: lexisync.po:1465
 #, python-brace-format
 msgid ""
 "Failed to open file '{filename}':\n"
@@ -1453,627 +1471,643 @@ msgstr ""
 "Error al abrir el archivo '{filename}':\n"
 "{error}"
 
-#: lexisync.po:1579
+#: lexisync.po:1474
 msgid "Failed to open file explorer."
 msgstr "Error al abrir el explorador de archivos."
 
-#: lexisync.po:1583
+#: lexisync.po:1478
 msgid "Failed to open selected item."
 msgstr "Error al abrir el elemento seleccionado."
 
-#: lexisync.po:1587
+#: lexisync.po:1482
 msgid "Failed to refresh directory."
 msgstr "Error al actualizar el directorio."
 
-#: lexisync.po:1591
+#: lexisync.po:1486
 #, python-brace-format
 msgid "Failed to remove the existing plugin directory: {error}"
 msgstr "Error al eliminar el directorio del plugin existente: {error}"
 
-#: lexisync.po:1596
+#: lexisync.po:1491
 msgid "Failed to reveal item in file explorer."
 msgstr "Error al mostrar el elemento en el explorador de archivos."
 
-#: lexisync.po:1600
+#: lexisync.po:1495
 #, python-brace-format
 msgid "Failed to save PO file: {error}"
 msgstr "No se pudo guardar el archivo PO: {error}"
 
-#: lexisync.po:1605
+#: lexisync.po:1500
 #, python-brace-format
 msgid "Failed to save project configuration: {error}"
 msgstr "Error al guardar la configuración del proyecto: {error}"
 
-#: lexisync.po:1610
+#: lexisync.po:1505
 msgid "Failed to setup signal connections."
 msgstr "Error al configurar las conexiones de señal."
 
-#: lexisync.po:1614
+#: lexisync.po:1509
 msgid "Failed to start editing the item."
 msgstr "Error al comenzar a editar el elemento."
 
-#: lexisync.po:1618
+#: lexisync.po:1513
 #, python-brace-format
 msgid "Failed to start import: {error}"
 msgstr "Error al iniciar la importación: {error}"
 
-#: lexisync.po:1623
+#: lexisync.po:1518
 msgid "Favorite Pairs"
 msgstr "Pares favoritos"
 
-#: lexisync.po:1627
+#: lexisync.po:1522
 msgid "Fetching plugin index..."
 msgstr "Obteniendo índice de complementos..."
 
-#: lexisync.po:1631
+#: lexisync.po:1526
 #, python-brace-format
 msgid "File '{filename}' added to the project successfully."
 msgstr "El archivo '{filename}' se agregó al proyecto correctamente."
 
-#: lexisync.po:1636
+#: lexisync.po:1531
 #, python-brace-format
 msgid "File '{filename}' already exists. Overwrite? A backup file (.bak) will be created."
 msgstr "El archivo '{filename}' ya existe. ¿Sobrescribir? Se creará un archivo de copia de seguridad (.bak)."
 
-#: lexisync.po:1645
+#: lexisync.po:1536
 #, python-brace-format
 msgid "File '{filepath}' does not exist."
 msgstr "El archivo '{filepath}' no existe."
 
-#: lexisync.po:1650
+#: lexisync.po:1541
 msgid "File Access Error"
 msgstr "Error de Acceso a Archivo"
 
-#: lexisync.po:1654
+#: lexisync.po:1545
 msgid "File Error"
 msgstr "Error de Archivo"
 
-#: lexisync.po:1658
+#: lexisync.po:1549
 msgid "File Exists"
 msgstr "El archivo ya existe"
 
-#: lexisync.po:1662
+#: lexisync.po:1553
 msgid "File Explorer"
 msgstr "Explorador de archivos"
 
-#: lexisync.po:1666
+#: lexisync.po:1557
 msgid "File Explorer Panel"
 msgstr "Panel del Explorador de Archivos"
 
-#: lexisync.po:1670
+#: lexisync.po:1561
 msgid "File Name"
 msgstr "Nombre del archivo"
 
-#: lexisync.po:1675
+#: lexisync.po:1565
 msgid "File Open Error"
 msgstr "Error al Abrir Archivo"
 
-#: lexisync.po:1679
+#: lexisync.po:1569
 msgid "File Read Error"
 msgstr "Error de Lectura de Archivo"
 
-#: lexisync.po:1683
+#: lexisync.po:1573
 msgid "File explorer refreshed."
 msgstr "Explorador de archivos actualizado."
 
-#: lexisync.po:1687
+#: lexisync.po:1577
 msgid "File not found"
 msgstr "Archivo no encontrado"
 
-#: lexisync.po:1691
+#: lexisync.po:1581
 msgid "File or directory does not exist."
 msgstr "El archivo o directorio no existe."
 
-#: lexisync.po:1695
+#: lexisync.po:1585
 #, python-brace-format
 msgid "File or project '{path}' does not exist."
 msgstr "El archivo o proyecto '{path}' no existe."
 
-#: lexisync.po:1700
+#: lexisync.po:1590
 msgid "Filter Settings"
 msgstr "Configuración de filtro"
 
-#: lexisync.po:1705
+#: lexisync.po:1594
 msgid "Filter files..."
 msgstr "Filtrar archivos..."
 
-#: lexisync.po:1710
+#: lexisync.po:1598
 msgid "Filter:"
 msgstr "Filtrar:"
 
-#: lexisync.po:1714
+#: lexisync.po:1602
 #, python-brace-format
 msgid "Filtered by '{search_term}'."
 msgstr "Filtrado por '{search_term}'."
 
-#: lexisync.po:1719
+#: lexisync.po:1607
 msgid "Finalizing..."
 msgstr "Finalizando..."
 
-#: lexisync.po:1723
+#: lexisync.po:1611
 msgid "Find"
 msgstr "Buscar"
 
-#: lexisync.po:1727
+#: lexisync.po:1615
 msgid "Find Next"
 msgstr "Buscar Siguiente"
 
-#: lexisync.po:1731
+#: lexisync.po:1619
 msgid "Find Previous"
 msgstr "Buscar anterior"
 
-#: lexisync.po:1735
+#: lexisync.po:1623
 msgid "Find and Replace"
 msgstr "Buscar y Reemplazar"
 
-#: lexisync.po:1739
+#: lexisync.po:1627
 msgid "Find what:"
 msgstr "Buscar qué:"
 
-#: lexisync.po:1743
+#: lexisync.po:1631
 msgid "Find/Replace..."
 msgstr "Buscar/Reemplazar..."
 
-#: lexisync.po:1747
+#: lexisync.po:1635
 msgid "Flag entries marked as 'Fuzzy'"
 msgstr "Marcar entradas como 'Difusas'"
 
-#: lexisync.po:1751
+#: lexisync.po:1639
 msgid "Font Family:"
 msgstr "Familia de fuentes:"
 
-#: lexisync.po:1755
+#: lexisync.po:1643
 msgid "Font Settings"
 msgstr "Configuración de fuente"
 
-#: lexisync.po:1759
+#: lexisync.po:1647
 msgid "Font Settings..."
 msgstr "Configuración de fuente..."
 
-#: lexisync.po:1763
+#: lexisync.po:1651
 msgid "Font settings have been changed. Please restart the application for the changes to take effect."
 msgstr "Se han modificado los ajustes de fuente. Por favor, reinicie la aplicación para que los cambios surtan efecto."
 
-#: lexisync.po:1771
+#: lexisync.po:1655
 msgid "Fonts:"
 msgstr "Fuentes:"
 
-#: lexisync.po:1775
+#: lexisync.po:1659
 #, python-brace-format
 msgid "Force-enabled with missing libraries: {libs}"
 msgstr "Activado forzosamente con bibliotecas faltantes: {libs}"
 
-#: lexisync.po:1780
+#: lexisync.po:1664
 msgid "Forward"
 msgstr "Adelante"
 
-#: lexisync.po:1785
+#: lexisync.po:1668
 #, python-brace-format
 msgid "Found {count} matches."
 msgstr "Se encontraron {count} coincidencias."
 
-#: lexisync.po:1790
+#: lexisync.po:1673
 msgid "Fuzzy Translation"
 msgstr "Traducción Difusa"
 
-#: lexisync.po:1794
+#: lexisync.po:1677
 msgid "Fuzzy match, please review."
 msgstr "Coincidencia aproximada, por favor revisa."
 
-#: lexisync.po:1798
+#: lexisync.po:1681
 msgid "General"
 msgstr "General"
 
-#: lexisync.po:1802
+#: lexisync.po:1685
+msgid "Git Added"
+msgstr "Git Añadido"
+
+#: lexisync.po:1689
+msgid "Git Modified"
+msgstr "Git Modificado"
+
+#: lexisync.po:1693
 msgid "Global Resources"
 msgstr "Recursos Globales"
 
-#: lexisync.po:1806
+#: lexisync.po:1697
 msgid "Glossary"
 msgstr "Glosario"
 
-#: lexisync.po:1811
+#: lexisync.po:1701
 msgid "Glossary Mismatch"
 msgstr "Desajuste de glosario"
 
-#: lexisync.po:1815
+#: lexisync.po:1705
 #, python-brace-format
 msgid "Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'."
 msgstr "Desajuste de glosario: El término '{term}' debe traducirse como uno de '{targets}'."
 
-#: lexisync.po:1824
+#: lexisync.po:1710
 msgid "Glossary Panel"
 msgstr "Panel de Glosario"
 
-#: lexisync.po:1828
+#: lexisync.po:1714
+msgid "Glossary Settings"
+msgstr "Configuración del glosario"
+
+#: lexisync.po:1718
+msgid "Glossary entry added successfully."
+msgstr "Entrada de glosario añadida correctamente."
+
+#: lexisync.po:1722
 msgid "Hint: "
 msgstr "Sugerencia: "
 
-#: lexisync.po:1832
+#: lexisync.po:1726
 msgid "Hint: requests not found, AI translation is disabled."
 msgstr "Sugerencia: 'requests' no encontrado, la traducción por IA está deshabilitada."
 
-#: lexisync.po:1838
+#: lexisync.po:1730
 msgid "Home"
 msgstr "Inicio"
 
-#: lexisync.po:1843
+#: lexisync.po:1734
 msgid "Home directory no longer exists."
 msgstr "El directorio de inicio ya no existe."
 
-#: lexisync.po:1847
+#: lexisync.po:1738
 msgid "Homepage"
 msgstr "Página de inicio"
 
-#: lexisync.po:1851
+#: lexisync.po:1742
 msgid "Ignore Warnings for Selected"
 msgstr "Ignorar advertencias para los seleccionados"
 
-#: lexisync.po:1855
+#: lexisync.po:1746
 #, python-brace-format
 msgid "Ignore status for ID {id} -> {status}"
 msgstr "Estado de ignorado para ID {id} -> {status}"
 
-#: lexisync.po:1860
+#: lexisync.po:1751
 msgid "Ignore this string"
 msgstr "Ignorar esta cadena"
 
-#: lexisync.po:1865
+#: lexisync.po:1755
 msgid "Ignored"
 msgstr "Ignorado"
 
-#: lexisync.po:1871
+#: lexisync.po:1759
 #, python-brace-format
 msgid "Ignored warnings for {count} item(s)."
 msgstr "Advertencias ignoradas para {count} elemento(s)."
 
-#: lexisync.po:1876
+#: lexisync.po:1764
 msgid "Import"
 msgstr "Importar"
 
-#: lexisync.po:1881
+#: lexisync.po:1768
 msgid "Import Date"
 msgstr "Fecha de Importación"
 
-#: lexisync.po:1885
+#: lexisync.po:1772
 msgid "Import Error"
 msgstr "Error de Importación"
 
-#: lexisync.po:1890
+#: lexisync.po:1776
 msgid "Import Extraction Rule Preset"
 msgstr "Importar Preajuste de Reglas de Extracción"
 
-#: lexisync.po:1894
+#: lexisync.po:1780
 msgid "Import Failed"
 msgstr "Importación Fallida"
 
-#: lexisync.po:1900
+#: lexisync.po:1784
 msgid "Import In Progress"
 msgstr "Importación en Progreso"
 
-#: lexisync.po:1904
+#: lexisync.po:1788
 msgid "Import Preset"
 msgstr "Importar Preajuste"
 
-#: lexisync.po:1908
+#: lexisync.po:1792
 msgid "Import Prompt Preset"
 msgstr "Importar Preajuste de Prompt"
 
-#: lexisync.po:1912
+#: lexisync.po:1796
 msgid "Import Settings"
 msgstr "Configuración de Importación"
 
-#: lexisync.po:1916
+#: lexisync.po:1800
 msgid "Import Successful"
 msgstr "Importación exitosa"
 
-#: lexisync.po:1921
+#: lexisync.po:1804
 msgid "Import Translations from Excel"
 msgstr "Importar Traducciones desde Excel"
 
-#: lexisync.po:1925
+#: lexisync.po:1808
 msgid "Import Translations from PO File..."
 msgstr "Importar Traducciones desde Archivo PO..."
 
-#: lexisync.po:1929
+#: lexisync.po:1812
 msgid "Import as New File"
 msgstr "Importar como archivo nuevo"
 
-#: lexisync.po:1933
+#: lexisync.po:1816
 msgid "Import as bidirectional (e.g., en->fr and fr->en)"
 msgstr "Importar como bidireccional (ej., en->fr y fr->en)"
 
-#: lexisync.po:1937
+#: lexisync.po:1820
 msgid "Import cancelled."
 msgstr "Importación cancelada."
 
-#: lexisync.po:1941
+#: lexisync.po:1824
 msgid "Import to Global Glossary"
 msgstr "Importar al Glosario Global"
 
-#: lexisync.po:1945
+#: lexisync.po:1828
 msgid "Import to Global TM"
 msgstr "Importar a MT global"
 
-#: lexisync.po:1949
+#: lexisync.po:1832
 msgid "Import to Project Glossary"
 msgstr "Importar al Glosario del Proyecto"
 
-#: lexisync.po:1953
+#: lexisync.po:1836
 msgid "Import to Project TM"
 msgstr "Importar a MT de proyecto"
 
-#: lexisync.po:1957
+#: lexisync.po:1840
 #, python-brace-format
 msgid "Imported/updated {field_count} fields for {item_count} items from Excel."
 msgstr "Se importaron/actualizaron {field_count} campos para {item_count} elementos desde Excel."
 
-#: lexisync.po:1964
+#: lexisync.po:1845
 msgid "Importing TBX file..."
 msgstr "Importando archivo TBX..."
 
-#: lexisync.po:1968
+#: lexisync.po:1849
 msgid "Importing TM file..."
 msgstr "Importando archivo de MT..."
 
-#: lexisync.po:1972
+#: lexisync.po:1853
 msgid "Importing to Global Glossary..."
 msgstr "Importando a Glosario Global..."
 
-#: lexisync.po:1976
+#: lexisync.po:1857
 msgid "Importing to Project Glossary..."
 msgstr "Importando al Glosario del Proyecto..."
 
-#: lexisync.po:1980
+#: lexisync.po:1861
 msgid "Importing..."
 msgstr "Importando..."
 
-#: lexisync.po:1984
+#: lexisync.po:1865
 msgid "Improves performance for cross-file operations, but may increase initial loading time for large projects."
 msgstr "Mejora el rendimiento para operaciones entre archivos, pero puede aumentar el tiempo de carga inicial para proyectos grandes."
 
-#: lexisync.po:1990
+#: lexisync.po:1869
 msgid "In Progress"
 msgstr "En progreso"
 
-#: lexisync.po:1994
+#: lexisync.po:1873
 msgid "Incompatible"
 msgstr "Incompatible"
 
-#: lexisync.po:1998
+#: lexisync.po:1877
 #, python-brace-format
 msgid "Incompatible with app version (requires {req}, current is {curr})"
 msgstr "Incompatible con la versión de la aplicación (requiere {req}, la actual es {curr})"
 
-#: lexisync.po:2005
+#: lexisync.po:1882
 msgid "Info"
 msgstr "Información"
 
-#: lexisync.po:2015
+#: lexisync.po:1886
 msgid "Inherited from old version"
 msgstr "Heredado de la versión antigua"
 
-#: lexisync.po:2019
+#: lexisync.po:1890
 msgid "Initial Target Language:"
 msgstr "Idioma de destino inicial:"
 
-#: lexisync.po:2023
+#: lexisync.po:1894
 msgid "Initial capitalization mismatch."
 msgstr "Mayúscula inicial no coincide."
 
-#: lexisync.po:2027
+#: lexisync.po:1898
 msgid "Initialization Error"
 msgstr "Error de inicialización"
 
-#: lexisync.po:2031
+#: lexisync.po:1902
 msgid "Initialization Failed!"
 msgstr "¡Inicialización fallida!"
 
-#: lexisync.po:2035
+#: lexisync.po:1906
 msgid "Initialization complete."
 msgstr "Inicialización completada."
 
-#: lexisync.po:2039
+#: lexisync.po:1910
 msgid "Initializing main window and plugins..."
 msgstr "Inicializando ventana principal y complementos..."
 
-#: lexisync.po:2043
+#: lexisync.po:1914
 msgid "Initializing services in the background..."
 msgstr "Inicializando servicios en segundo plano..."
 
-#: lexisync.po:2047
+#: lexisync.po:1918
 #, python-brace-format
 msgid "Initializing to open {filename}..."
 msgstr "Inicializando para abrir {filename}..."
 
-#: lexisync.po:2052
+#: lexisync.po:1923
 msgid "Initializing..."
 msgstr "Inicializando..."
 
-#: lexisync.po:2056
+#: lexisync.po:1927
 msgid "Injects glossary terms found in the original text to enforce specific translations."
 msgstr "Inyecta términos del glosario encontrados en el texto original para imponer traducciones específicas."
 
-#: lexisync.po:2064
+#: lexisync.po:1931
 msgid "Inline Differences"
 msgstr "Diferencias en línea"
 
-#: lexisync.po:2068
+#: lexisync.po:1935
 msgid "Inserting new terms..."
 msgstr "Insertando nuevos términos..."
 
-#: lexisync.po:2072
+#: lexisync.po:1939
 msgid "Inserting translations..."
 msgstr "Insertando traducciones..."
 
-#: lexisync.po:2076
+#: lexisync.po:1943
 #, python-brace-format
 msgid "Inserting {count} TM entries..."
 msgstr "Insertando {count} entradas de TM..."
 
-#: lexisync.po:2081
+#: lexisync.po:1948
 msgid "Install"
 msgstr "Instalar"
 
-#: lexisync.po:2085
+#: lexisync.po:1952
 msgid "Install Dependency"
 msgstr "Instalar Dependencia"
 
-#: lexisync.po:2089
+#: lexisync.po:1956
 msgid "Install from File..."
 msgstr "Instalar desde archivo..."
 
-#: lexisync.po:2093
+#: lexisync.po:1960
 msgid "Installation Error"
 msgstr "Error de instalación"
 
-#: lexisync.po:2097
+#: lexisync.po:1964
 msgid "Installation Failed"
 msgstr "Instalación fallida"
 
-#: lexisync.po:2101
+#: lexisync.po:1968
 msgid "Installation Successful"
 msgstr "Instalación exitosa"
 
-#: lexisync.po:2105
+#: lexisync.po:1972
 msgid "Installation cancelled by user."
 msgstr "Instalación cancelada por el usuario."
 
-#: lexisync.po:2109
+#: lexisync.po:1976
 #, python-brace-format
 msgid "Installation failed: {error}"
 msgstr "Instalación fallida: {error}"
 
-#: lexisync.po:2114
+#: lexisync.po:1981
 msgid "Installed"
 msgstr "Instalado"
 
-#: lexisync.po:2119
+#: lexisync.po:1985
 #, python-brace-format
 msgid "Installing {lib}..."
 msgstr "Instalando {lib}..."
 
-#: lexisync.po:2124
+#: lexisync.po:1990
 #, python-brace-format
 msgid "Installing {plugin_name}..."
 msgstr "Instalando {plugin_name}..."
 
-#: lexisync.po:2129
+#: lexisync.po:1995
 msgid "Invalid File"
 msgstr "Archivo no válido"
 
-#: lexisync.po:2133
+#: lexisync.po:1999
 msgid "Invalid Languages"
 msgstr "Idiomas no válidos"
 
-#: lexisync.po:2138
+#: lexisync.po:2003
 msgid "Invalid Project"
 msgstr "Proyecto no válido"
 
-#: lexisync.po:2142
+#: lexisync.po:2007
 #, python-brace-format
 msgid "Invalid path: {path}"
 msgstr "Ruta no válida: {path}"
 
-#: lexisync.po:2147
+#: lexisync.po:2012
 msgid "Invalid plugin archive structure. The archive must contain either a single plugin folder or the plugin's files (__init__.py, etc.) directly."
 msgstr "Estructura de archivo de plugin no válida. El archivo debe contener una única carpeta de plugin o los archivos del plugin (__init__.py, etc.) directamente."
 
-#: lexisync.po:2156
+#: lexisync.po:2016
 msgid "Issue Description"
 msgstr "Descripción del problema"
 
-#: lexisync.po:2160
+#: lexisync.po:2020
 msgid "Issues & Warnings"
 msgstr "Problemas y advertencias"
 
-#: lexisync.po:2164
+#: lexisync.po:2024
 msgid "Items with Warnings"
 msgstr "Elementos con advertencias"
 
-#: lexisync.po:2168
+#: lexisync.po:2028
 msgid "JSON files (*.json);;All Files (*.*)"
 msgstr "Archivos JSON (*.json);;Todos los archivos (*.*)"
 
-#: lexisync.po:2172
+#: lexisync.po:2032
 msgid "Keybinding Settings"
 msgstr "Configuración de Atajos de Teclado"
 
-#: lexisync.po:2176
+#: lexisync.po:2036
 msgid "Keybinding Settings..."
 msgstr "Configuración de Atajos de Teclado..."
 
-#: lexisync.po:2180
+#: lexisync.po:2040
 msgid "Keybindings have been updated."
 msgstr "Los atajos de teclado han sido actualizados."
 
-#: lexisync.po:2184
+#: lexisync.po:2044
 msgid "Keybindings:"
 msgstr "Atajos de teclado:"
 
-#: lexisync.po:2188
+#: lexisync.po:2048
 msgid "Language Changed"
 msgstr "Idioma cambiado"
 
-#: lexisync.po:2192
+#: lexisync.po:2052
 msgid "Language Mapping"
 msgstr "Mapeo de Idiomas"
 
-#: lexisync.po:2196
+#: lexisync.po:2056
 msgid "Language Pair Settings"
 msgstr "Configuración de par de idiomas"
 
-#: lexisync.po:2200
+#: lexisync.po:2060
 msgid "Language Pair Settings..."
 msgstr "Configuración de par de idiomas..."
 
-#: lexisync.po:2204
+#: lexisync.po:2064
 msgid "Language Selection"
 msgstr "Selección de idioma"
 
-#: lexisync.po:2208
+#: lexisync.po:2068
 msgid "Language in File"
 msgstr "Idioma en Archivo"
 
-#: lexisync.po:2212
+#: lexisync.po:2072
 #, python-brace-format
 msgid "Language pair set to {src} -> {tgt}."
 msgstr "Par de idiomas establecido en {src} -> {tgt}."
 
-#: lexisync.po:2217
+#: lexisync.po:2077
 msgid "Language pair updated. Re-validating all entries..."
 msgstr "Par de idiomas actualizado. Revalidando todas las entradas..."
 
-#: lexisync.po:2221
+#: lexisync.po:2081
 msgid "Leading Whitespace Mismatch"
 msgstr "Espacio en Blanco Inicial no Coincide"
 
-#: lexisync.po:2225
+#: lexisync.po:2085
 msgid "Left Delimiter (Regex)"
 msgstr "Delimitador Izquierdo (Regex)"
 
-#: lexisync.po:2229
+#: lexisync.po:2089
 msgid "Left Delimiter:"
 msgstr "Delimitador Izquierdo:"
 
-#: lexisync.po:2233
+#: lexisync.po:2093
 msgid "Left and right delimiters cannot be empty."
 msgstr "Los delimitadores izquierdo y derecho no pueden estar vacíos."
 
-#: lexisync.po:2237
+#: lexisync.po:2097
 msgid "Length Deviation (Major)"
 msgstr "Desviación de longitud (grave)"
 
-#: lexisync.po:2241
+#: lexisync.po:2101
 msgid "Length Deviation (Minor)"
 msgstr "Desviación de longitud (menor)"
 
-#: lexisync.po:2245
+#: lexisync.po:2105
 #, python-brace-format
 msgid "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
 msgstr "Advertencia de longitud: Ratio de expansión inusual ({actual:.1f}x), esperado alrededor de {expected:.1f}x."
 
-#: lexisync.po:2254
+#: lexisync.po:2110
 #, python-brace-format
 msgid ""
 "LexiSync\n"
@@ -2086,17 +2120,17 @@ msgstr ""
 "Versión: {version}\n"
 "Autor: TheSkyC"
 
-#: lexisync.po:2267
+#: lexisync.po:2123
 #, python-brace-format
 msgid "LexiSync - v{version}"
 msgstr "LexiSync - v{version}"
 
-#: lexisync.po:2272
+#: lexisync.po:2128
 #, python-brace-format
 msgid "LexiSync has analyzed <b>{filename}</b>. Please configure the import settings below."
 msgstr "LexiSync ha analizado <b>{filename}</b>. Por favor, configure los ajustes de importación a continuación."
 
-#: lexisync.po:2281
+#: lexisync.po:2133
 #, python-brace-format
 msgid ""
 "Library '{lib}' installed successfully.\n"
@@ -2105,477 +2139,481 @@ msgstr ""
 "Biblioteca '{lib}' instalada correctamente.\n"
 "Por favor, reinicie la aplicación para usar el complemento."
 
-#: lexisync.po:2290
+#: lexisync.po:2142
 #, python-brace-format
 msgid "Library '{lib}' is already installed and compatible."
 msgstr "La biblioteca '{lib}' ya está instalada y es compatible."
 
-#: lexisync.po:2295
+#: lexisync.po:2147
 msgid "Line"
 msgstr "Línea"
 
-#: lexisync.po:2299
+#: lexisync.po:2151
 msgid "Line Count Mismatch"
 msgstr "Recuento de líneas no coincide"
 
-#: lexisync.po:2303
+#: lexisync.po:2155
 msgid "Line count differs from original."
 msgstr "El recuento de líneas difiere del original."
 
-#: lexisync.po:2307
+#: lexisync.po:2159
 msgid "Load all source files when opening a project"
 msgstr "Cargar todos los archivos fuente al abrir un proyecto"
 
-#: lexisync.po:2311
+#: lexisync.po:2163
 #, python-brace-format
 msgid "Loaded {count} entries from PO file {filename}."
 msgstr "Se cargaron {count} entradas del archivo PO {filename}."
 
-#: lexisync.po:2316
+#: lexisync.po:2168
 #, python-brace-format
 msgid "Loaded {count} translatable strings from {filename}"
 msgstr "Se cargaron {count} cadenas traducibles de {filename}"
 
-#: lexisync.po:2321
+#: lexisync.po:2173
 msgid "Loading Failed"
 msgstr "Error de carga"
 
-#: lexisync.po:2325
+#: lexisync.po:2177
 msgid "Loading all source files..."
 msgstr "Cargando todos los archivos fuente..."
 
-#: lexisync.po:2329
+#: lexisync.po:2181
 msgid "Loading core libraries..."
 msgstr "Cargando bibliotecas principales..."
 
-#: lexisync.po:2333
+#: lexisync.po:2185
 msgid "Loading file..."
 msgstr "Cargando archivo..."
 
-#: lexisync.po:2337
+#: lexisync.po:2189
 msgid "Loading marketplace..."
 msgstr "Cargando marketplace..."
 
-#: lexisync.po:2341
+#: lexisync.po:2193
 msgid "Location:"
 msgstr "Ubicación:"
 
-#: lexisync.po:2345
+#: lexisync.po:2197
 msgid "MO Compilation Failed"
 msgstr "Falló la compilación del MO"
 
-#: lexisync.po:2349
+#: lexisync.po:2201
 msgid "Main App"
 msgstr "Aplicación Principal"
 
-#: lexisync.po:2354
+#: lexisync.po:2205
 msgid "Manage Extraction Rules..."
 msgstr "Administrar Reglas de Extracción..."
 
-#: lexisync.po:2358
+#: lexisync.po:2209
 msgid "Manage Plugins..."
 msgstr "Administrar Complementos..."
 
-#: lexisync.po:2362
+#: lexisync.po:2213
 msgid "Map to Language in LexiSync"
 msgstr "Mapear a Idioma en LexiSync"
 
-#: lexisync.po:2366
+#: lexisync.po:2217
 msgid "Mark as Ignored"
 msgstr "Marcar como Ignorado"
 
-#: lexisync.po:2370
+#: lexisync.po:2221
 msgid "Mark as Reviewed"
 msgstr "Marcar como Revisado"
 
-#: lexisync.po:2374
+#: lexisync.po:2225
 msgid "Mark as Unreviewed"
 msgstr "Marcar como No Revisado"
 
-#: lexisync.po:2378
+#: lexisync.po:2229
 #, python-brace-format
 msgid "Marketplace loaded. Found {count} plugins."
 msgstr "Mercado cargado. Se encontraron {count} complementos."
 
-#: lexisync.po:2383
+#: lexisync.po:2234
 msgid "Match is not in a replaceable column (Translation or Comment)."
 msgstr "La coincidencia no está en una columna reemplazable (Traducción o Comentario)."
 
-#: lexisync.po:2389
+#: lexisync.po:2238
 #, python-brace-format
 msgid "Match {current}/{total}"
 msgstr "Coincidencia {current}/{total}"
 
-#: lexisync.po:2394
+#: lexisync.po:2243
 msgid "Max Concurrent Requests:"
 msgstr "Máx. Solicitudes Concurrentes:"
 
-#: lexisync.po:2398
+#: lexisync.po:2247
 msgid "Missing Dependencies"
 msgstr "Dependencias Faltantes"
 
-#: lexisync.po:2402
+#: lexisync.po:2251
 msgid "Missing Information"
 msgstr "Información Faltante"
 
-#: lexisync.po:2406
+#: lexisync.po:2255
 msgid "Missing Libraries"
 msgstr "Bibliotecas Faltantes"
 
-#: lexisync.po:2410
+#: lexisync.po:2259
 #, python-brace-format
 msgid "Missing dependencies: {deps}"
 msgstr "Dependencias faltantes: {deps}"
 
-#: lexisync.po:2415
+#: lexisync.po:2264
 #, python-brace-format
 msgid "Missing external libraries: {libs}. Check to force-enable."
 msgstr "Bibliotecas externas faltantes: {libs}. Marque para habilitar forzosamente."
 
-#: lexisync.po:2422
+#: lexisync.po:2269
 #, python-brace-format
 msgid "Missing placeholders: {placeholders}"
 msgstr "Marcadores de posición faltantes: {placeholders}"
 
-#: lexisync.po:2427
+#: lexisync.po:2274
 msgid "Model Name:"
 msgstr "Nombre del Modelo:"
 
-#: lexisync.po:2431
+#: lexisync.po:2278
 msgid "Modified"
 msgstr "Modificado"
 
-#: lexisync.po:2435
+#: lexisync.po:2282
 msgid "Modified/Inherited"
 msgstr "Modificado/Heredado"
 
-#: lexisync.po:2439
+#: lexisync.po:2286
+msgid "N/A"
+msgstr "N/D"
+
+#: lexisync.po:2290
 msgid "Navigation Error"
 msgstr "Error de Navegación"
 
-#: lexisync.po:2449
+#: lexisync.po:2294
 msgid "Nearby translated text for context."
 msgstr "Texto traducido cercano para contexto."
 
-#: lexisync.po:2453
+#: lexisync.po:2298
 msgid "Nearby untranslated original text."
 msgstr "Texto original no traducido cercano."
 
-#: lexisync.po:2457
+#: lexisync.po:2302
 msgid "Network Error"
 msgstr "Error de Red"
 
-#: lexisync.po:2461
+#: lexisync.po:2306
 msgid "Network connection failed. Please check your internet connection and firewall settings."
 msgstr "Error de conexión de red. Por favor, verifique su conexión a internet y la configuración del firewall."
 
-#: lexisync.po:2469
+#: lexisync.po:2310
 msgid "Network error or API request failed"
 msgstr "Error de red o fallo en la solicitud de la API"
 
-#: lexisync.po:2473
+#: lexisync.po:2314
 msgid "New"
 msgstr "Nuevo"
 
-#: lexisync.po:2477
+#: lexisync.po:2318
 msgid "New Instruction"
 msgstr "Nueva Instrucción"
 
-#: lexisync.po:2481
+#: lexisync.po:2322
 msgid "New Project"
 msgstr "Nuevo proyecto"
 
-#: lexisync.po:2485
+#: lexisync.po:2326
 msgid "New Project..."
 msgstr "Nuevo proyecto..."
 
-#: lexisync.po:2489
+#: lexisync.po:2330
 msgid "New Rule"
 msgstr "Nueva Regla"
 
-#: lexisync.po:2493
+#: lexisync.po:2334
 msgid "No"
 msgstr "No"
 
-#: lexisync.po:2498
+#: lexisync.po:2338
 msgid "No AI batch translation task is in progress."
 msgstr "No hay ninguna tarea de traducción por IA en lotes en curso."
 
-#: lexisync.po:2502
+#: lexisync.po:2342
 msgid "No History"
 msgstr "Sin Historial Reciente"
 
-#: lexisync.po:2506
+#: lexisync.po:2346
 msgid "No Selection"
 msgstr "Sin Selección"
 
-#: lexisync.po:2510
+#: lexisync.po:2350
 msgid "No TM matches found."
 msgstr "No se encontraron coincidencias en la MT."
 
-#: lexisync.po:2514
+#: lexisync.po:2354
 msgid "No Translation Needed"
 msgstr "No se Necesita Traducción"
 
-#: lexisync.po:2518
+#: lexisync.po:2358
 msgid "No active TM database found to clear the entry from."
 msgstr "No se encontró ninguna base de datos de TM activa para eliminar la entrada."
 
-#: lexisync.po:2524
+#: lexisync.po:2362
+msgid "No active glossary database found."
+msgstr "No se encontró una base de datos de glosario activa."
+
+#: lexisync.po:2366
 msgid "No applicable translations found in TM (or no changes needed)."
 msgstr "No se encontraron traducciones aplicables en la MT (o no se necesitan cambios)."
 
-#: lexisync.po:2530
+#: lexisync.po:2370
 msgid "No code content loaded to reload."
 msgstr "No se cargó contenido de código para recargar."
 
-#: lexisync.po:2534
+#: lexisync.po:2374
 msgid "No content in message"
 msgstr "Sin contenido en el mensaje"
 
-#: lexisync.po:2538
+#: lexisync.po:2378
 msgid "No data to display."
 msgstr "No hay datos para mostrar."
 
-#: lexisync.po:2542
+#: lexisync.po:2382
 msgid "No data to export."
 msgstr "No hay datos para exportar."
 
-#: lexisync.po:2547
+#: lexisync.po:2386
 msgid "No glossary matches found."
 msgstr "No se encontraron coincidencias en el glosario."
 
-#: lexisync.po:2551
+#: lexisync.po:2390
 msgid "No issues found"
 msgstr "No se encontraron problemas"
 
-#: lexisync.po:2555
+#: lexisync.po:2394
 msgid "No items selected for AI translation."
 msgstr "No hay elementos seleccionados para la traducción por IA."
 
-#: lexisync.po:2559
+#: lexisync.po:2398
 msgid "No items selected to modify warning status."
 msgstr "No hay elementos seleccionados para modificar el estado de advertencia."
 
-#: lexisync.po:2563
+#: lexisync.po:2402
 msgid "No items to process."
 msgstr "No hay elementos para procesar."
 
-#: lexisync.po:2567
+#: lexisync.po:2406
 #, python-brace-format
 msgid "No matches found for '{search_term}' under current filters."
 msgstr "No se encontraron coincidencias para '{search_term}' bajo los filtros actuales."
 
-#: lexisync.po:2574
+#: lexisync.po:2411
 msgid "No matches found in Translation or Comment columns."
 msgstr "No se encontraron coincidencias en las columnas de Traducción o Comentario."
 
-#: lexisync.po:2580
+#: lexisync.po:2415
 msgid "No matches found to replace."
 msgstr "No se encontraron coincidencias para reemplazar."
 
-#: lexisync.po:2584
+#: lexisync.po:2419
 msgid "No matches found."
 msgstr "No se encontraron coincidencias."
 
-#: lexisync.po:2588
+#: lexisync.po:2423
 msgid "No matching TM entries or no changes needed for selected items."
 msgstr "No hay entradas de MT coincidentes o no se necesitan cambios para los elementos seleccionados."
 
-#: lexisync.po:2594
+#: lexisync.po:2427
 msgid "No more actions to redo"
 msgstr "No hay más acciones para rehacer"
 
-#: lexisync.po:2598
+#: lexisync.po:2431
 msgid "No more actions to undo"
 msgstr "No hay más acciones para deshacer"
 
-#: lexisync.po:2602
+#: lexisync.po:2435
 msgid "No more untranslated items."
 msgstr "No hay más elementos sin traducir."
 
-#: lexisync.po:2606
+#: lexisync.po:2439
 msgid "No original code content to save."
 msgstr "No hay contenido de código original para guardar."
 
-#: lexisync.po:2610
+#: lexisync.po:2443
 msgid "No original code file path."
 msgstr "No hay ruta de archivo de código original."
 
-#: lexisync.po:2614
+#: lexisync.po:2447
 msgid "No project data loaded to generate statistics."
 msgstr "No hay datos de proyecto cargados para generar estadísticas."
 
-#: lexisync.po:2618
+#: lexisync.po:2451
 msgid "No project is currently open."
 msgstr "No hay ningún proyecto abierto actualmente."
 
-#: lexisync.po:2622
+#: lexisync.po:2455
 msgid "No project is open. This panel is disabled."
 msgstr "No hay ningún proyecto abierto. Este panel está desactivado."
 
-#: lexisync.po:2626
+#: lexisync.po:2459
 msgid "No project open."
 msgstr "No hay proyecto abierto."
 
-#: lexisync.po:2630
+#: lexisync.po:2463
 msgid "No recent files"
 msgstr "No hay archivos recientes."
 
-#: lexisync.po:2634
+#: lexisync.po:2467
 msgid "No response object"
 msgstr "No hay objeto de respuesta"
 
-#: lexisync.po:2638
+#: lexisync.po:2471
 msgid "No strings to apply TM to."
 msgstr "No hay cadenas a las que aplicar MT."
 
-#: lexisync.po:2642
+#: lexisync.po:2475
 msgid "No text available to detect language from."
 msgstr "No hay texto disponible para detectar el idioma."
 
-#: lexisync.po:2646
+#: lexisync.po:2479
 msgid "No untranslated and non-ignored strings found."
 msgstr "No se encontraron cadenas sin traducir y no ignoradas."
 
-#: lexisync.po:2650
+#: lexisync.po:2483
 msgid "No valid items to delete."
 msgstr "No hay elementos válidos para eliminar."
 
-#: lexisync.po:2654
+#: lexisync.po:2487
 msgid "No valid terms found in the TBX file."
 msgstr "No se encontraron términos válidos en el archivo TBX."
 
-#: lexisync.po:2658
+#: lexisync.po:2491
 msgid "Normalize newlines"
 msgstr "Normalizar saltos de línea"
 
-#: lexisync.po:2662
+#: lexisync.po:2495
 msgid "OK"
 msgstr "OK"
 
-#: lexisync.po:2669
+#: lexisync.po:2499
 msgid "On File Save"
 msgstr "Al Guardar Archivo"
 
-#: lexisync.po:2673
+#: lexisync.po:2503
 msgid "Only .tbx files can be imported into the glossary."
 msgstr "Solo se pueden importar archivos .tbx al glosario."
 
-#: lexisync.po:2677
+#: lexisync.po:2507
 msgid "Only .xlsx files can be imported into the TM."
 msgstr "Solo se pueden importar archivos .xlsx a la MT."
 
-#: lexisync.po:2681
+#: lexisync.po:2511
 msgid "Open"
 msgstr "Abrir"
 
-#: lexisync.po:2685
+#: lexisync.po:2515
 msgid "Open File for Quick Edit"
 msgstr "Abrir archivo para edición rápida"
 
-#: lexisync.po:2689
+#: lexisync.po:2519
 msgid "Open File..."
 msgstr "Abrir Archivo..."
 
-#: lexisync.po:2693
+#: lexisync.po:2523
 msgid "Open Marketplace..."
 msgstr "Abrir mercado..."
 
-#: lexisync.po:2697
+#: lexisync.po:2527
 msgid "Open Plugin Directory"
 msgstr "Abrir directorio del complemento"
 
-#: lexisync.po:2701
+#: lexisync.po:2531
 msgid "Open Project"
 msgstr "Abrir proyecto"
 
-#: lexisync.po:2705
+#: lexisync.po:2535
 msgid "Open Project Error"
 msgstr "Error al Abrir proyecto"
 
-#: lexisync.po:2709
+#: lexisync.po:2539
 msgid "Open Project Folder"
 msgstr "Abrir carpeta de proyecto"
 
-#: lexisync.po:2713
+#: lexisync.po:2543
 msgid "Open Project..."
 msgstr "Abrir proyecto..."
 
-#: lexisync.po:2717
+#: lexisync.po:2547
 msgid "Open a single file for fast translation"
 msgstr "Abrir un solo archivo para traducción rápida"
 
-#: lexisync.po:2721
+#: lexisync.po:2551
 msgid "Open an existing project folder"
 msgstr "Abrir una carpeta de proyecto existente"
 
-#: lexisync.po:2725
+#: lexisync.po:2555
 msgid "Open for Quick Edit"
 msgstr "Abrir para edición rápida"
 
-#: lexisync.po:2729
+#: lexisync.po:2559
 msgid "Open operation cancelled by user."
 msgstr "Operación de apertura cancelada por el usuario."
 
-#: lexisync.po:2733
+#: lexisync.po:2563
 msgid "Open or Set as Root"
 msgstr "Abrir o Establecer como Raíz"
 
-#: lexisync.po:2737
+#: lexisync.po:2567
 msgid "Open..."
 msgstr "Abrir..."
 
-#: lexisync.po:2741
+#: lexisync.po:2571
 #, python-brace-format
 msgid "Opening '{filename}'..."
 msgstr "Abriendo '{filename}'..."
 
-#: lexisync.po:2746
+#: lexisync.po:2576
 msgid "Operation In Progress"
 msgstr "Operación en Progreso"
 
-#: lexisync.po:2750
+#: lexisync.po:2580
 msgid "Operation Restricted"
 msgstr "Operación Restringida"
 
-#: lexisync.po:2754
+#: lexisync.po:2584
 msgid "Options"
 msgstr "Opciones"
 
-#: lexisync.po:2758
+#: lexisync.po:2588
 msgid "Original"
 msgstr "Original"
 
-#: lexisync.po:2763
+#: lexisync.po:2592
 msgid "Original (Raw)"
 msgstr "Original (Crudo)"
 
-#: lexisync.po:2767
+#: lexisync.po:2596
 msgid "Original (Semantic)"
 msgstr "Original (Semántico)"
 
-#: lexisync.po:2771
-msgid "Original Path"
-msgstr "Ruta original"
-
-#: lexisync.po:2775
+#: lexisync.po:2600
 msgid "Original ends with space, translation does not."
 msgstr "El original termina con espacio, la traducción no."
 
-#: lexisync.po:2779
+#: lexisync.po:2604
 msgid "Original starts with space, translation does not."
 msgstr "Original comienza con espacio, la traducción no."
 
-#: lexisync.po:2783
+#: lexisync.po:2608
 msgid "Original text cannot be empty for a new entry."
 msgstr "El texto original no puede estar vacío para una nueva entrada."
 
-#: lexisync.po:2787
+#: lexisync.po:2612
 msgid "Original:"
 msgstr "Original:"
 
-#: lexisync.po:2791
+#: lexisync.po:2616
 #, python-brace-format
 msgid ""
 "Original:\n"
@@ -2588,94 +2626,94 @@ msgstr ""
 "\n"
 "Introducir comentario:"
 
-#: lexisync.po:2804
+#: lexisync.po:2629
 msgid "Override default font settings"
 msgstr "Anular la configuración de fuente predeterminada"
 
-#: lexisync.po:2808
+#: lexisync.po:2633
 msgid "Overwatch Workshop Files (*.ow *.txt);;"
 msgstr "Archivos de Taller de Overwatch (*.ow *.txt);;"
 
-#: lexisync.po:2812
+#: lexisync.po:2637
 msgid "Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)"
 msgstr "Archivos de Taller de Overwatch (*.ow *.txt);;Todos los archivos (*.*)"
 
-#: lexisync.po:2816
+#: lexisync.po:2641
 msgid "Overwrite All"
 msgstr "Sobrescribir todo"
 
-#: lexisync.po:2820
+#: lexisync.po:2645
 msgid "Overwrite Confirmation"
 msgstr "Confirmación de Sobreescritura"
 
-#: lexisync.po:2824
+#: lexisync.po:2649
 msgid "PO Import Error"
 msgstr "Error de Importación de PO"
 
-#: lexisync.po:2828
+#: lexisync.po:2653
 msgid "PO Template Files (*.pot);;All Files (*.*)"
 msgstr "Archivos de plantilla PO (*.pot);;Todos los archivos (*.*)"
 
-#: lexisync.po:2832
+#: lexisync.po:2657
 msgid "PO Template files (*.pot);;All files (*.*)"
 msgstr "Archivos de plantilla PO (*.pot);;Todos los archivos (*.*)"
 
-#: lexisync.po:2836
+#: lexisync.po:2661
 msgid "PO Translation Files (*.po *.pot);;"
 msgstr "Archivos de traducción PO (*.po *.pot);;"
 
-#: lexisync.po:2840
+#: lexisync.po:2665
 msgid "PO file loading failed"
 msgstr "Fallo al cargar archivo PO"
 
-#: lexisync.po:2844
+#: lexisync.po:2669
 #, python-brace-format
 msgid "PO file saved and MO file compiled: {filename}"
 msgstr "Archivo PO guardado y archivo MO compilado: {filename}"
 
-#: lexisync.po:2849
+#: lexisync.po:2674
 #, python-brace-format
 msgid "PO file saved to: {filename}"
 msgstr "Archivo PO guardado en: {filename}"
 
-#: lexisync.po:2854
+#: lexisync.po:2679
 msgid "PO files (*.po);;All Files (*.*)"
 msgstr "Archivos PO (*.po);;Todos los archivos (*.*)"
 
-#: lexisync.po:2858
+#: lexisync.po:2683
 msgid "PO files (*.po);;POT files (*.pot);;All files (*.*)"
 msgstr "Archivos PO (*.po);;Archivos POT (*.pot);;Todos los archivos (*.*)"
 
-#: lexisync.po:2862
+#: lexisync.po:2687
 msgid "POT Extraction Error"
 msgstr "Error de Extracción de POT"
 
-#: lexisync.po:2866
+#: lexisync.po:2691
 msgid "POT File Detected"
 msgstr "Se ha detectado un archivo POT"
 
-#: lexisync.po:2870
+#: lexisync.po:2695
 #, python-brace-format
 msgid "POT template saved to: {filename}"
 msgstr "Plantilla POT guardada en: {filename}"
 
-#: lexisync.po:2875
+#: lexisync.po:2700
 msgid "Parse Error"
 msgstr "Error de Análisis"
 
-#: lexisync.po:2879
+#: lexisync.po:2704
 msgid "Parsing TBX file..."
 msgstr "Analizando archivo TBX..."
 
-#: lexisync.po:2883
+#: lexisync.po:2708
 msgid "Parsing TM file..."
 msgstr "Analizando archivo TM..."
 
-#: lexisync.po:2887
+#: lexisync.po:2712
 msgid "Parsing new file..."
 msgstr "Analizando nuevo archivo..."
 
-#: lexisync.po:2891
+#: lexisync.po:2716
 #, python-brace-format
 msgid ""
 "Partially completed deletion. {success} item(s) deleted, but encountered errors:\n"
@@ -2686,90 +2724,94 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: lexisync.po:2904
+#: lexisync.po:2727
 msgid "Paste failed: Clipboard content is not text."
 msgstr "Fallo al pegar: El contenido del portapapeles no es texto."
 
-#: lexisync.po:2908
+#: lexisync.po:2731
 msgid "Paste to Translation"
 msgstr "Pegar en Traducción"
 
-#: lexisync.po:2912
+#: lexisync.po:2735
 msgid "Path"
 msgstr "Ruta"
 
-#: lexisync.po:2916
+#: lexisync.po:2739
 msgid "Path Error"
 msgstr "Error de Ruta"
 
-#: lexisync.po:2922
+#: lexisync.po:2743
 #, python-brace-format
 msgid "Path does not exist: {path}"
 msgstr "La ruta no existe: {path}"
 
-#: lexisync.po:2927
+#: lexisync.po:2748
 #, python-brace-format
 msgid "Path is not a directory: {path}"
 msgstr "La ruta no es un directorio: {path}"
 
-#: lexisync.po:2932
+#: lexisync.po:2753
 msgid "Performance"
 msgstr "Rendimiento"
 
-#: lexisync.po:2936
+#: lexisync.po:2757
 #, python-brace-format
 msgid "Permission denied: {path}"
 msgstr "Permiso denegado: {path}"
 
-#: lexisync.po:2941
+#: lexisync.po:2762
 msgid "Placeholder Mismatch"
 msgstr "Marcador de Posición no Coincidente"
 
-#: lexisync.po:2945
+#: lexisync.po:2766
 msgid "Placeholder Missing"
 msgstr "Falta marcador de posición"
 
-#: lexisync.po:2949
+#: lexisync.po:2770
 msgid "Please enter a search term."
 msgstr "Por favor, introduzca un término de búsqueda."
 
-#: lexisync.po:2953
+#: lexisync.po:2774
 msgid "Please load a code file or project first to match imported translations."
 msgstr "Por favor, cargue un archivo de código o proyecto primero para que coincida con las traducciones importadas."
 
-#: lexisync.po:2959
+#: lexisync.po:2778
 msgid "Please load a file or project first."
 msgstr "Por favor, cargue un archivo o proyecto primero."
 
-#: lexisync.po:2963
+#: lexisync.po:2782
 msgid "Please open a project or file first."
 msgstr "Por favor, abre un proyecto o archivo primero."
 
-#: lexisync.po:2967
+#: lexisync.po:2786
 msgid "Please select a language to remove."
 msgstr "Por favor, seleccione un idioma para eliminar."
 
-#: lexisync.po:2971
+#: lexisync.po:2790
 msgid "Please select a language."
 msgstr "Por favor, seleccione un idioma."
 
-#: lexisync.po:2975
+#: lexisync.po:2794
+msgid "Please select a source file to re-scan."
+msgstr "Por favor, seleccione un archivo de origen para re-escanear."
+
+#: lexisync.po:2798
 msgid "Please select a source to remove."
 msgstr "Por favor, seleccione una fuente para eliminar."
 
-#: lexisync.po:2979
+#: lexisync.po:2802
 msgid "Please select an item first."
 msgstr "Por favor, seleccione un elemento primero."
 
-#: lexisync.po:2983
+#: lexisync.po:2806
 msgid "Please select an item to AI translate."
 msgstr "Por favor, selecciona un elemento para traducir con IA."
 
-#: lexisync.po:2987
+#: lexisync.po:2810
 msgid "Please select an item."
 msgstr "Por favor, seleccione un elemento."
 
-#: lexisync.po:2991
+#: lexisync.po:2814
 #, python-brace-format
 msgid ""
 "Plugin '{plugin_id}' has been installed.\n"
@@ -2780,32 +2822,32 @@ msgstr ""
 "\n"
 "Por favor, reinicie la aplicación para habilitarlo."
 
-#: lexisync.po:3002
+#: lexisync.po:2825
 #, python-brace-format
 msgid "Plugin '{plugin_id}' has missing dependencies: {deps}"
 msgstr "El complemento '{plugin_id}' tiene dependencias faltantes: {deps}"
 
-#: lexisync.po:3007
+#: lexisync.po:2830
 #, python-brace-format
 msgid "Plugin '{plugin_name}' disabled."
 msgstr "Complemento '{plugin_name}' desactivado."
 
-#: lexisync.po:3012
+#: lexisync.po:2835
 #, python-brace-format
 msgid "Plugin '{plugin_name}' enabled."
 msgstr "Complemento '{plugin_name}' habilitado."
 
-#: lexisync.po:3017
+#: lexisync.po:2840
 #, python-brace-format
 msgid "Plugin '{plugin_name}' force-enabled with missing libraries."
 msgstr "El complemento '{plugin_name}' habilitado forzosamente con bibliotecas faltantes."
 
-#: lexisync.po:3024
+#: lexisync.po:2845
 #, python-brace-format
 msgid "Plugin '{plugin_name}' force-enabled."
 msgstr "El complemento '{plugin_name}' habilitado forzosamente."
 
-#: lexisync.po:3029
+#: lexisync.po:2850
 #, python-brace-format
 msgid ""
 "Plugin '{plugin_name}' has been deleted.\n"
@@ -2814,129 +2856,129 @@ msgstr ""
 "El complemento '{plugin_name}' ha sido eliminado.\n"
 "Por favor, reinicie la aplicación."
 
-#: lexisync.po:3038
+#: lexisync.po:2859
 msgid "Plugin Archives"
 msgstr "Archivos de complemento"
 
-#: lexisync.po:3042
+#: lexisync.po:2863
 msgid "Plugin Deleted"
 msgstr "Complemento eliminado"
 
-#: lexisync.po:3046
+#: lexisync.po:2867
 msgid "Plugin Dependencies"
 msgstr "Dependencias del complemento"
 
-#: lexisync.po:3050
+#: lexisync.po:2871
 msgid "Plugin Exists"
 msgstr "El complemento ya existe"
 
-#: lexisync.po:3054
+#: lexisync.po:2875
 msgid "Plugin Loading Error"
 msgstr "Error al cargar el complemento"
 
-#: lexisync.po:3058
+#: lexisync.po:2879
 msgid "Plugin Manager"
 msgstr "Gestor de complementos"
 
-#: lexisync.po:3062
+#: lexisync.po:2883
 msgid "Plugin Marketplace"
 msgstr "Mercado de complementos"
 
-#: lexisync.po:3066
+#: lexisync.po:2887
 msgid "Plugin Marketplace..."
 msgstr "Mercado de complementos..."
 
-#: lexisync.po:3070
+#: lexisync.po:2891
 msgid "Plugin directory not found."
 msgstr "Directorio de complementos no encontrado."
 
-#: lexisync.po:3074
+#: lexisync.po:2895
 msgid "Plugin installed successfully. Please restart the application to take effect."
 msgstr "Complemento instalado con éxito. Por favor, reinicie la aplicación para que surta efecto."
 
-#: lexisync.po:3082
+#: lexisync.po:2899
 msgid "Preparing data for database..."
 msgstr "Preparando datos para la base de datos..."
 
-#: lexisync.po:3086
+#: lexisync.po:2903
 msgid "Preset exported successfully."
 msgstr "Preajuste exportado con éxito."
 
-#: lexisync.po:3091
+#: lexisync.po:2907
 msgid "Preset file format is incorrect."
 msgstr "El formato del archivo de preajuste es incorrecto."
 
-#: lexisync.po:3096
+#: lexisync.po:2911
 msgid "Preset imported successfully."
 msgstr "Preajuste importado con éxito."
 
-#: lexisync.po:3101
+#: lexisync.po:2915
 msgid "Press a key combination..."
 msgstr "Pulsa una combinación de teclas..."
 
-#: lexisync.po:3105
+#: lexisync.po:2919
 #, python-brace-format
 msgid "Processing item {i}/{total}..."
 msgstr "Procesando elemento {i}/{total}..."
 
-#: lexisync.po:3110
+#: lexisync.po:2924
 msgid "Project"
 msgstr "Proyecto"
 
-#: lexisync.po:3114
+#: lexisync.po:2928
 #, python-brace-format
 msgid "Project '{name}' loaded."
 msgstr "Proyecto '{name}' cargado."
 
-#: lexisync.po:3119
+#: lexisync.po:2933
 msgid "Project Creation Failed"
 msgstr "Error en la creación del proyecto"
 
-#: lexisync.po:3123
+#: lexisync.po:2937
 msgid "Project Glossary"
 msgstr "Glosario del Proyecto"
 
-#: lexisync.po:3127
+#: lexisync.po:2941
 msgid "Project Metrics"
 msgstr "Métricas del Proyecto"
 
-#: lexisync.po:3131
+#: lexisync.po:2945
 msgid "Project Mode"
 msgstr "Modo Proyecto"
 
-#: lexisync.po:3136
+#: lexisync.po:2949
 msgid "Project Name:"
 msgstr "Nombre del proyecto:"
 
-#: lexisync.po:3140
+#: lexisync.po:2953
 msgid "Project Resources"
 msgstr "Recursos del proyecto"
 
-#: lexisync.po:3144
+#: lexisync.po:2957
 msgid "Project Settings"
 msgstr "Configuración del proyecto"
 
-#: lexisync.po:3148
+#: lexisync.po:2961
 msgid "Project Settings..."
 msgstr "Configuración del proyecto..."
 
-#: lexisync.po:3152
+#: lexisync.po:2965
 msgid "Project Statistics"
 msgstr "Estadísticas del Proyecto"
 
-#: lexisync.po:3157
+#: lexisync.po:2969
 msgid "Project Statistics..."
 msgstr "Estadísticas del proyecto..."
 
-#: lexisync.po:3161
+#: lexisync.po:2973
 msgid "Project Translation Memory"
 msgstr "Memoria de Traducción del Proyecto"
 
-#: lexisync.po:3165
+#: lexisync.po:2977
 msgid "Project auto-saved."
 msgstr "Proyecto autoguardado."
 
-#: lexisync.po:3169
+#: lexisync.po:2981
 #, python-brace-format
 msgid ""
 "Project build completed successfully.\n"
@@ -2951,663 +2993,722 @@ msgstr ""
 "Archivos fuente por idioma: {num_files}\n"
 "Total de archivos creados: {total_files}"
 
-#: lexisync.po:3179
+#: lexisync.po:2996
 msgid "Project configuration is missing a target language."
 msgstr "La configuración del proyecto no tiene un idioma de destino especificado."
 
-#: lexisync.po:3183
+#: lexisync.po:3000
 msgid "Project contains no source files."
 msgstr "El proyecto no contiene archivos fuente."
 
-#: lexisync.po:3187
+#: lexisync.po:3004
 msgid "Project loading failed."
 msgstr "Error al cargar el proyecto."
 
-#: lexisync.po:3191
+#: lexisync.po:3008
 msgid "Project name, location, and at least one source file are required."
 msgstr "Se requieren el nombre del proyecto, la ubicación y al menos un archivo fuente."
 
-#: lexisync.po:3197
+#: lexisync.po:3012
 msgid "Project path is missing. Cannot save."
 msgstr "La ruta del proyecto no está especificada. No se puede guardar."
 
-#: lexisync.po:3201
+#: lexisync.po:3016
 msgid "Project saved."
 msgstr "Proyecto guardado."
 
-#: lexisync.po:3205
+#: lexisync.po:3020
+#, python-brace-format
+msgid ""
+"Project source file not found:\n"
+"{path}"
+msgstr ""
+"Archivo de origen del proyecto no encontrado:\n"
+"{path}"
+
+#: lexisync.po:3029
 #, python-brace-format
 msgid "Project translations exported to: {filename}"
 msgstr "Traducciones del proyecto exportadas a: {filename}"
 
-#: lexisync.po:3210
+#: lexisync.po:3034
 msgid "Project updated to new version."
 msgstr "Proyecto actualizado a la nueva versión."
 
-#: lexisync.po:3214
+#: lexisync.po:3038
 #, python-brace-format
 msgid "Prompt Files (*{ext});;All Files (*.*)"
 msgstr "Archivos de Prompt (*{ext});;Todos los Archivos (*.*)"
 
-#: lexisync.po:3219
+#: lexisync.po:3043
 msgid "Prompt Manager..."
 msgstr "Gestor de Prompts..."
 
-#: lexisync.po:3223
+#: lexisync.po:3047
 msgid "Provider"
 msgstr "Proveedor"
 
-#: lexisync.po:3227
+#: lexisync.po:3051
 msgid "Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."
 msgstr "La librería 'requests' de Python no se encontró. Por favor, instálela (pip install requests) para usar las funciones de traducción por IA."
 
-#: lexisync.po:3235
+#: lexisync.po:3055
 msgid "Quick Edit File"
 msgstr "Archivo de Edición Rápida"
 
-#: lexisync.po:3239
+#: lexisync.po:3059
 msgid "Quick search..."
 msgstr "Búsqueda rápida..."
 
-#: lexisync.po:3247
+#: lexisync.po:3063
+msgid "Range"
+msgstr "Rango"
+
+#: lexisync.po:3067
 msgid "Re-extracting strings with new rules..."
 msgstr "Re-extrayendo cadenas con nuevas reglas..."
 
-#: lexisync.po:3251
-msgid "Re-scan"
-msgstr "Volver a escanear"
+#: lexisync.po:3071
+msgid "Re-scan Results"
+msgstr "Resultados del re-escaneo"
 
-#: lexisync.po:3255
+#: lexisync.po:3075
 msgid "Re-scan Selected"
 msgstr "Volver a escanear seleccionados"
 
-#: lexisync.po:3259
-msgid "Re-scanning source files is not yet implemented."
-msgstr "Reescaneo de archivos fuente aún no implementado."
+#: lexisync.po:3079
+#, python-brace-format
+msgid ""
+"Re-scan complete for '{filename}'.\n"
+"Found {added} new, {removed} removed, {modified} modified (fuzzy matched), and {unchanged} unchanged strings."
+msgstr ""
+"Re-escaneo de '{filename}' completado.\n"
+"Se encontraron {added} cadenas nuevas, {removed} eliminadas, {modified} modificadas (coincidencia aproximada) y {unchanged} sin cambios."
 
-#: lexisync.po:3263
+#: lexisync.po:3088
+msgid "Re-scan failed."
+msgstr "El re-escaneo ha fallado."
+
+#: lexisync.po:3092
+msgid "Re-scan operation cancelled."
+msgstr "Operación de re-escaneo cancelada."
+
+#: lexisync.po:3096
+#, python-brace-format
+msgid "Re-scanning file from {source}..."
+msgstr "Re-escaneando archivo desde {source}..."
+
+#: lexisync.po:3101
 msgid "Re-validate All Entries"
 msgstr "Revalidar Todas las Entradas"
 
-#: lexisync.po:3267
+#: lexisync.po:3105
 msgid "Ready"
 msgstr "Listo"
 
-#: lexisync.po:3273
+#: lexisync.po:3109
 msgid "Recent Files"
 msgstr "Archivos Recientes"
 
-#: lexisync.po:3277
+#: lexisync.po:3113
 msgid "Recommended Translation(s)"
 msgstr "Traducción(es) Recomendada(s)"
 
-#: lexisync.po:3281
+#: lexisync.po:3117
 msgid "Redo"
 msgstr "Rehacer"
 
-#: lexisync.po:3285
+#: lexisync.po:3121
 #, python-brace-format
 msgid "Redo error: Object ID {obj_id} not found"
 msgstr "Error al rehacer: ID de objeto {obj_id} no encontrado"
 
-#: lexisync.po:3290
+#: lexisync.po:3126
 #, python-brace-format
 msgid "Redo: Bulk change ({count} items)"
 msgstr "Rehacer: Cambio masivo ({count} elementos)"
 
-#: lexisync.po:3295
+#: lexisync.po:3131
 #, python-brace-format
 msgid "Redo: {field} for ID {id} -> '{value}'"
 msgstr "Rehacer: {field} para ID {id} -> '{value}'"
 
-#: lexisync.po:3300
+#: lexisync.po:3136
 msgid "Refresh"
 msgstr "Actualizar"
 
-#: lexisync.po:3305
+#: lexisync.po:3140
 msgid "Refresh Data"
 msgstr "Actualizar Datos"
 
-#: lexisync.po:3309
+#: lexisync.po:3144
 msgid "Refresh Error"
 msgstr "Error de Actualización"
 
-#: lexisync.po:3313
+#: lexisync.po:3148
 msgid "Reload All Plugins"
 msgstr "Recargar Todos los Complementos"
 
-#: lexisync.po:3317
+#: lexisync.po:3152
 msgid "Reload Error"
 msgstr "Error de Recarga"
 
-#: lexisync.po:3321
+#: lexisync.po:3156
 msgid "Reload Translatable Text"
 msgstr "Recargar Texto Traducible"
 
-#: lexisync.po:3325
+#: lexisync.po:3160
 msgid "Reload failed."
 msgstr "Recarga fallida."
 
-#: lexisync.po:3329
+#: lexisync.po:3164
 #, python-brace-format
 msgid "Reloaded {count} strings from {source} using new rules."
 msgstr "Se recargaron {count} cadenas de {source} usando nuevas reglas."
 
-#: lexisync.po:3334
+#: lexisync.po:3169
 msgid "Removal Failed"
 msgstr "Error de eliminación"
 
-#: lexisync.po:3338
+#: lexisync.po:3173
 msgid "Removal Successful"
 msgstr "Eliminación exitosa"
 
-#: lexisync.po:3342
+#: lexisync.po:3177
 msgid "Remove"
 msgstr "Eliminar"
 
-#: lexisync.po:3348
+#: lexisync.po:3181
 msgid "Remove Selected"
 msgstr "Eliminar seleccionados"
 
-#: lexisync.po:3352
+#: lexisync.po:3185
 msgid "Remove Selected Favorite"
 msgstr "Eliminar favorito seleccionados"
 
-#: lexisync.po:3356
+#: lexisync.po:3189
 msgid "Removed"
 msgstr "Eliminado"
 
-#: lexisync.po:3360
+#: lexisync.po:3193
 msgid "Rename"
 msgstr "Renombrar"
 
-#: lexisync.po:3364
+#: lexisync.po:3197
 msgid "Replace"
 msgstr "Reemplazar"
 
-#: lexisync.po:3368
+#: lexisync.po:3201
 msgid "Replace All"
 msgstr "Reemplazar Todo"
 
-#: lexisync.po:3372
+#: lexisync.po:3205
 msgid "Replace All Complete"
 msgstr "Reemplazar Todo Completado"
 
-#: lexisync.po:3376
+#: lexisync.po:3209
 msgid "Replace with:"
 msgstr "Reemplazar con:"
 
-#: lexisync.po:3380
+#: lexisync.po:3213
 #, python-brace-format
 msgid "Replaced occurrences in {count} item(s)."
 msgstr "Ocurrencias reemplazadas en {count} elemento(s)."
 
-#: lexisync.po:3385
+#: lexisync.po:3218
 msgid "Report Issue"
 msgstr "Reportar Problema"
 
-#: lexisync.po:3389
+#: lexisync.po:3222
 msgid "Required"
 msgstr "Requerido"
 
-#: lexisync.po:3393
+#: lexisync.po:3226
 msgid "Requires App Version"
 msgstr "Requiere Versión de la Aplicación"
 
-#: lexisync.po:3397
+#: lexisync.po:3230
 #, python-brace-format
 msgid "Requires v{req}"
 msgstr "Requiere v{req}"
 
-#: lexisync.po:3402
+#: lexisync.po:3235
 msgid "Reset"
 msgstr "Restablecer"
 
-#: lexisync.po:3406
+#: lexisync.po:3239
 msgid "Reset all font settings to default?"
 msgstr "¿Restablecer todas las configuraciones de fuente a los valores predeterminados?"
 
-#: lexisync.po:3412
+#: lexisync.po:3243
 msgid "Reset to Defaults"
 msgstr "Restablecer a Valores Predeterminados"
 
-#: lexisync.po:3417
+#: lexisync.po:3247
 msgid "Resources"
 msgstr "Recursos"
 
-#: lexisync.po:3421
+#: lexisync.po:3251
 msgid "Response"
 msgstr "Respuesta"
 
-#: lexisync.po:3425
+#: lexisync.po:3255
 msgid "Restart Required"
 msgstr "Reinicio Requerido"
 
-#: lexisync.po:3429
+#: lexisync.po:3259
 msgid "Restore Default Layout"
 msgstr "Restaurar diseño predeterminado"
 
-#: lexisync.po:3433
+#: lexisync.po:3263
 msgid "Reveal in File Explorer"
 msgstr "Mostrar en el Explorador de Archivos"
 
-#: lexisync.po:3437
+#: lexisync.po:3267
 #, python-brace-format
 msgid "Review status for ID {id} -> {status}"
 msgstr "Estado de revisión para ID {id} -> {status}"
 
-#: lexisync.po:3442
+#: lexisync.po:3272
 msgid "Reviewed"
 msgstr "Revisado"
 
-#: lexisync.po:3448
+#: lexisync.po:3276
 msgid "Reviewed (of total)"
 msgstr "Revisados (del total)"
 
-#: lexisync.po:3452
+#: lexisync.po:3280
 msgid "Reviewed (of translated)"
 msgstr "Revisado (de traducidos)"
 
-#: lexisync.po:3456
+#: lexisync.po:3284
 msgid "Right Delimiter (Regex)"
 msgstr "Delimitador Derecho (Regex)"
 
-#: lexisync.po:3460
+#: lexisync.po:3288
 msgid "Right Delimiter:"
 msgstr "Delimitador Derecho:"
 
-#: lexisync.po:3464
+#: lexisync.po:3292
+msgid "Row"
+msgstr "Fila"
+
+#: lexisync.po:3296
 msgid "Rule Name"
 msgstr "Nombre de la Regla"
 
-#: lexisync.po:3468
+#: lexisync.po:3300
 msgid "Rule Name:"
 msgstr "Nombre de la Regla:"
 
-#: lexisync.po:3472
+#: lexisync.po:3304
 msgid "Rule name cannot be empty."
 msgstr "El nombre de la regla no puede estar vacío."
 
-#: lexisync.po:3476
+#: lexisync.po:3308
 msgid "Save"
 msgstr "Guardar"
 
-#: lexisync.po:3480
+#: lexisync.po:3312
 msgid "Save As"
 msgstr "Guardar como"
 
-#: lexisync.po:3484
+#: lexisync.po:3316
 msgid "Save As..."
 msgstr "Guardar como..."
 
-#: lexisync.po:3488
+#: lexisync.po:3320
 msgid "Save Error"
 msgstr "Error al Guardar"
 
-#: lexisync.po:3492
+#: lexisync.po:3324
 msgid "Save PO Error"
 msgstr "Error al guardar el archivo PO"
 
-#: lexisync.po:3496
+#: lexisync.po:3328
 msgid "Save PO File As"
 msgstr "Guardar archivo PO como"
 
-#: lexisync.po:3500
+#: lexisync.po:3332
 msgid "Save POT Template File"
 msgstr "Guardar Archivo de Plantilla POT"
 
-#: lexisync.po:3504
+#: lexisync.po:3336
 msgid "Save Translation to New Code File"
 msgstr "Guardar traducción en nuevo archivo de código"
 
-#: lexisync.po:3508
+#: lexisync.po:3340
+msgid "Search Match"
+msgstr "Coincidencia de búsqueda"
+
+#: lexisync.po:3344
 msgid "Search cleared."
 msgstr "Búsqueda borrada."
 
-#: lexisync.po:3512
+#: lexisync.po:3348
 msgid "Search in:"
 msgstr "Buscar en:"
 
-#: lexisync.po:3516
+#: lexisync.po:3352
 msgid "Search languages..."
 msgstr "Buscar idiomas..."
 
-#: lexisync.po:3520
+#: lexisync.po:3356
 msgid "Search plugins..."
 msgstr "Buscar complementos..."
 
-#: lexisync.po:3524
+#: lexisync.po:3360
 msgid "Select Code File to Extract POT From"
 msgstr "Seleccionar Archivo de Código para Extraer POT"
 
-#: lexisync.po:3528
+#: lexisync.po:3364
 msgid "Select Glossary Files"
 msgstr "Seleccionar archivos de glosario"
 
-#: lexisync.po:3532
+#: lexisync.po:3368
 msgid "Select PO File to Import"
 msgstr "Seleccionar Archivo PO para Importar"
 
-#: lexisync.po:3536
+#: lexisync.po:3372
 msgid "Select Plugin Archive"
 msgstr "Seleccionar archivo de complemento"
 
-#: lexisync.po:3540
+#: lexisync.po:3376
 msgid "Select Project Location"
 msgstr "Seleccionar ubicación del proyecto"
 
-#: lexisync.po:3544
+#: lexisync.po:3380
 msgid "Select Source File"
 msgstr "Seleccionar archivo de origen"
 
-#: lexisync.po:3548
+#: lexisync.po:3384
 msgid "Select Source Files"
 msgstr "Seleccionar archivos de origen"
 
-#: lexisync.po:3552
+#: lexisync.po:3388
 msgid "Select TBX File to Import"
 msgstr "Seleccionar Archivo TBX para Importar"
 
-#: lexisync.po:3556
+#: lexisync.po:3392
 msgid "Select TM File to Import"
 msgstr "Seleccionar Archivo TM para Importar"
 
-#: lexisync.po:3560
+#: lexisync.po:3396
 msgid "Select TM Files"
 msgstr "Seleccionar archivos de TM"
 
-#: lexisync.po:3564
+#: lexisync.po:3400
 msgid "Select a new target language to add to the project:"
 msgstr "Seleccionar un nuevo idioma de destino para agregar al proyecto:"
 
-#: lexisync.po:3568
+#: lexisync.po:3404
 msgid "Select a plugin"
 msgstr "Seleccionar un complemento"
 
-#: lexisync.po:3572
+#: lexisync.po:3408
 msgid "Select new POT template for comparison"
 msgstr "Seleccionar nueva plantilla POT para comparar"
 
-#: lexisync.po:3576
+#: lexisync.po:3412
 msgid "Select new version code file for comparison"
 msgstr "Seleccionar nuevo archivo de código de versión para comparar"
 
-#: lexisync.po:3580
+#: lexisync.po:3416
 msgid "Selected item(s) already have the desired warning status."
 msgstr "Los elementos seleccionados ya tienen el estado de advertencia deseado."
 
-#: lexisync.po:3584
+#: lexisync.po:3420
 #, python-brace-format
 msgid "Selected: \"{text}...\" (Line: {line_num})"
 msgstr "Seleccionado: \"{text}...\" (Línea: {line_num})"
 
-#: lexisync.po:3589
+#: lexisync.po:3425
+msgid "Selection"
+msgstr "Selección"
+
+#: lexisync.po:3429
 msgid "Set as Root"
 msgstr "Establecer como Raíz"
 
-#: lexisync.po:3593
+#: lexisync.po:3433
 msgid "Setting up plugin environment..."
 msgstr "Configurando el entorno del complemento..."
 
-#: lexisync.po:3597
+#: lexisync.po:3437
 msgid "Settings"
 msgstr "Configuración"
 
-#: lexisync.po:3601
+#: lexisync.po:3441
 msgid "Settings applied."
 msgstr "Configuración aplicada."
 
-#: lexisync.po:3605
+#: lexisync.po:3445
 msgid "Settings..."
 msgstr "Configuración..."
 
-#: lexisync.po:3609
+#: lexisync.po:3449
 msgid "Should be Translated As"
 msgstr "Debe traducirse como"
 
-#: lexisync.po:3613
+#: lexisync.po:3453
 msgid "Show All Files"
 msgstr "Mostrar Todos los Archivos"
 
-#: lexisync.po:3618
+#: lexisync.po:3457
 msgid "Show Ignored"
 msgstr "Mostrar Ignorados"
 
-#: lexisync.po:3622
+#: lexisync.po:3461
 msgid "Show Translated"
 msgstr "Mostrar Traducidos"
 
-#: lexisync.po:3626
+#: lexisync.po:3465
 msgid "Show Unreviewed"
 msgstr "Mostrar sin revisar"
 
-#: lexisync.po:3630
+#: lexisync.po:3469
 msgid "Show Untranslated"
 msgstr "Mostrar No Traducidos"
 
-#: lexisync.po:3634
+#: lexisync.po:3473
 msgid "Similarity"
 msgstr "Similitud"
 
-#: lexisync.po:3638
+#: lexisync.po:3477
 msgid "Size"
 msgstr "Tamaño"
 
-#: lexisync.po:3642
+#: lexisync.po:3481
 msgid "Size:"
 msgstr "Tamaño:"
 
-#: lexisync.po:3646
+#: lexisync.po:3485
 msgid "Skip Translated"
 msgstr "Omitir traducciones"
 
-#: lexisync.po:3650
+#: lexisync.po:3489
 msgid "Smart Paste"
 msgstr "Pegado inteligente"
 
-#: lexisync.po:3654
+#: lexisync.po:3493
 msgid "Sorting Mode:"
 msgstr "Modo de ordenación:"
 
-#: lexisync.po:3658
+#: lexisync.po:3497
 msgid "Source Chars (Translated only)"
 msgstr "Caracteres de origen (solo traducidos)"
 
-#: lexisync.po:3662
-msgid "Source File"
-msgstr "Archivo de origen"
+#: lexisync.po:3501
+msgid "Source File Conflict"
+msgstr "Conflicto de archivo de origen"
 
-#: lexisync.po:3666
+#: lexisync.po:3505
 msgid "Source Files"
 msgstr "Archivos de origen"
 
-#: lexisync.po:3670
+#: lexisync.po:3509
 msgid "Source Files:"
 msgstr "Archivos de origen:"
 
-#: lexisync.po:3674
+#: lexisync.po:3513
 msgid "Source Lang"
 msgstr "Idioma de origen"
 
-#: lexisync.po:3678
+#: lexisync.po:3517
 msgid "Source Language"
 msgstr "Idioma de origen"
 
-#: lexisync.po:3682
+#: lexisync.po:3521
 msgid "Source Language:"
 msgstr "Idioma de origen:"
 
-#: lexisync.po:3687
+#: lexisync.po:3525
 msgid "Source Line"
 msgstr "Línea de origen"
 
-#: lexisync.po:3691
+#: lexisync.po:3529
 msgid "Source Term"
 msgstr "Término de origen"
 
-#: lexisync.po:3695
+#: lexisync.po:3533
+msgid "Source Term:"
+msgstr "Término de origen:"
+
+#: lexisync.po:3537
 msgid "Source and target languages cannot be the same."
 msgstr "El idioma de origen y el de destino no pueden ser el mismo."
 
-#: lexisync.po:3701
+#: lexisync.po:3541
 msgid "Source file does not exist."
 msgstr "El archivo de origen no existe."
 
-#: lexisync.po:3705
+#: lexisync.po:3545
+msgid "Source file re-scanned and updated successfully."
+msgstr "Archivo de origen re-escaneado y actualizado correctamente."
+
+#: lexisync.po:3549
 msgid "Source language cannot be changed after project creation."
 msgstr "El idioma de origen no puede cambiarse después de la creación del proyecto."
 
-#: lexisync.po:3711
+#: lexisync.po:3553
+msgid "Source term and target term cannot be empty."
+msgstr "El término de origen y el término de destino no pueden estar vacíos."
+
+#: lexisync.po:3557
 msgid "Starting Punctuation Mismatch"
 msgstr "Inicio de signos de puntuación no coincidentes"
 
-#: lexisync.po:3715
+#: lexisync.po:3561
 msgid "Starting project build..."
 msgstr "Iniciando la compilación del proyecto..."
 
-#: lexisync.po:3719
+#: lexisync.po:3565
 #, python-brace-format
 msgid "Starting punctuation differs: '{c1}' vs '{c2}'."
 msgstr "Signo de puntuación inicial difiere: '{c1}' vs '{c2}'."
 
-#: lexisync.po:3724
+#: lexisync.po:3570
 msgid "Starting punctuation presence differs."
 msgstr "La presencia de puntuación inicial difiere."
 
-#: lexisync.po:3728
+#: lexisync.po:3574
 msgid "Static Instruction"
 msgstr "Instrucción estática"
 
-#: lexisync.po:3733
+#: lexisync.po:3578
 msgid "Static sorting enabled. Press F5 to refresh."
 msgstr "Ordenación estática habilitada. Pulse F5 para actualizar."
 
-#: lexisync.po:3737
+#: lexisync.po:3582
 msgid "Statistics"
 msgstr "Estadísticas"
 
-#: lexisync.po:3741
+#: lexisync.po:3586
 msgid "Stop AI Batch Translation"
 msgstr "Detener traducción automática por lotes"
 
-#: lexisync.po:3745
+#: lexisync.po:3590
 #, python-brace-format
 msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
 msgstr "La cadena \"{text}...\" ya tiene una traducción. ¿Sobrescribir con la traducción de IA?"
 
-#: lexisync.po:3754
+#: lexisync.po:3595
 msgid "String Type"
 msgstr "Tipo de cadena"
 
-#: lexisync.po:3758
+#: lexisync.po:3599
 msgid "String Type:"
 msgstr "Tipo de cadena:"
 
-#: lexisync.po:3762
+#: lexisync.po:3603
 msgid "Structural Content"
 msgstr "Contenido Estructural"
 
-#: lexisync.po:3767
+#: lexisync.po:3607
 msgid "Style:"
 msgstr "Estilo:"
 
-#: lexisync.po:3771
+#: lexisync.po:3611
 msgid "Success"
 msgstr "Éxito"
 
-#: lexisync.po:3778
+#: lexisync.po:3615
 #, python-brace-format
 msgid "Successfully deleted {count} item(s)."
 msgstr "Se eliminaron correctamente {count} elemento(s)."
 
-#: lexisync.po:3783
+#: lexisync.po:3620
 #, python-brace-format
 msgid "Successfully imported relationships for {count} entries."
 msgstr "Relaciones importadas correctamente para {count} entradas."
 
-#: lexisync.po:3788
+#: lexisync.po:3625
 #, python-brace-format
 msgid "Successfully imported {count} TM entries."
 msgstr "{count} entradas de TM importadas correctamente."
 
-#: lexisync.po:3793
+#: lexisync.po:3630
 #, python-brace-format
 msgid "Successfully installed {plugin_name}."
 msgstr "{plugin_name} instalado correctamente."
 
-#: lexisync.po:3798
+#: lexisync.po:3635
 #, python-brace-format
 msgid "Successfully removed {count} TM entries from source '{source}'."
 msgstr "Se eliminaron correctamente {count} entradas de TM de la fuente '{source}'."
 
-#: lexisync.po:3805
+#: lexisync.po:3640
 #, python-brace-format
 msgid "Successfully removed {count} translations from source '{source}'."
 msgstr "Se eliminaron correctamente {count} traducciones de la fuente '{source}'."
 
-#: lexisync.po:3810
+#: lexisync.po:3645
 #, python-brace-format
 msgid "Switched to file: {filename}"
 msgstr "Cambiado al archivo: {filename}"
 
-#: lexisync.po:3815
+#: lexisync.po:3650
 msgid "Sync leading/trailing whitespace"
 msgstr "Sincronizar espacios iniciales y finales"
 
-#: lexisync.po:3819
+#: lexisync.po:3654
 msgid "System Error"
 msgstr "Error del sistema"
 
-#: lexisync.po:3824
+#: lexisync.po:3658
 msgid "TBX Files"
 msgstr "Archivos TBX"
 
-#: lexisync.po:3828
+#: lexisync.po:3662
 msgid "TM"
 msgstr "TM"
 
-#: lexisync.po:3832
+#: lexisync.po:3666
 msgid "TM Files (*.xlsx);;All Files (*.*)"
 msgstr "Archivos de MT (*.xlsx);;Todos los archivos (*.*)"
 
-#: lexisync.po:3836
+#: lexisync.po:3670
 msgid "TM entry cleared for selected item."
 msgstr "Entrada de TM eliminada para el elemento seleccionado."
 
-#: lexisync.po:3840
+#: lexisync.po:3674
 msgid "TM suggestion applied."
 msgstr "Sugerencia de TM aplicada."
 
-#: lexisync.po:3844
+#: lexisync.po:3678
 #, python-brace-format
 msgid "TM updated for original: '{text}...'"
 msgstr "TM actualizado para el original: '{text}...'"
 
-#: lexisync.po:3849
+#: lexisync.po:3683
 msgid "Target Lang"
 msgstr "Idioma de destino"
 
-#: lexisync.po:3853
+#: lexisync.po:3687
 msgid "Target Lang(s)"
 msgstr "Idioma(s) de destino"
 
-#: lexisync.po:3857
+#: lexisync.po:3691
 msgid "Target Language"
 msgstr "Idioma de destino"
 
-#: lexisync.po:3861
+#: lexisync.po:3695
 msgid "Target Language:"
 msgstr "Idioma objetivo:"
 
-#: lexisync.po:3866
+#: lexisync.po:3699
 msgid "Target Languages:"
 msgstr "Idiomas de destino:"
 
-#: lexisync.po:3870
+#: lexisync.po:3703
+msgid "Target Term:"
+msgstr "Término de destino:"
+
+#: lexisync.po:3707
 msgid "Target language is set in 'Settings > Language Pair Settings...'"
 msgstr "El idioma de destino se configura en 'Ajustes > Configuración de par de idiomas...'"
 
-#: lexisync.po:3876
+#: lexisync.po:3711
 msgid ""
 "The UI language has been changed.\n"
 "Some changes may require a restart of the application to take full effect."
@@ -3615,28 +3716,40 @@ msgstr ""
 "El idioma de la interfaz ha sido cambiado.\n"
 "Algunos cambios pueden requerir reiniciar la aplicación para que surtan efecto completo."
 
-#: lexisync.po:3885
+#: lexisync.po:3719
 msgid "The archive is empty."
 msgstr "El archivo está vacío."
 
-#: lexisync.po:3889
+#: lexisync.po:3723
 msgid "The archive seems to contain a single folder, but it's not a valid plugin (missing __init__.py)."
 msgstr "El archivo parece contener una sola carpeta, pero no es un complemento válido (falta __init__.py)."
 
-#: lexisync.po:3897
+#: lexisync.po:3727
 msgid "The current file or project has unsaved changes. Do you want to save them?"
 msgstr "El archivo o proyecto actual tiene cambios sin guardar. ¿Deseas guardarlos?"
 
-#: lexisync.po:3901
+#: lexisync.po:3731
 #, python-brace-format
 msgid "The file type of '{filename}' is not supported."
 msgstr "El tipo de archivo de '{filename}' no es compatible."
 
-#: lexisync.po:3906
+#: lexisync.po:3736
 msgid "The layout has been restored to its default state."
 msgstr "El diseño se ha restaurado a su estado predeterminado."
 
-#: lexisync.po:3910
+#: lexisync.po:3740
+msgid ""
+"The original linked file appears to be newer than the one in the project's source folder.\n"
+"\n"
+"• Press 'Yes' to scan the newer external file and update the project.\n"
+"• Press 'No' to scan the existing file inside the project."
+msgstr ""
+"El archivo vinculado original parece ser más reciente que el que se encuentra en la carpeta de origen del proyecto.\n"
+"\n"
+"• Pulse 'Sí' para escanear el archivo externo más reciente y actualizar el proyecto.\n"
+"• Pulse 'No' para escanear el archivo existente dentro del proyecto."
+
+#: lexisync.po:3752
 #, python-brace-format
 msgid ""
 "The plugin '{plugin_name}' is missing required external libraries:\n"
@@ -3655,7 +3768,7 @@ msgstr ""
 "\n"
 "¿Estás seguro de que deseas forzar su habilitación de todos modos?"
 
-#: lexisync.po:3932
+#: lexisync.po:3771
 #, python-brace-format
 msgid ""
 "The plugin '{plugin_name}' is not marked as compatible with this application version.\n"
@@ -3670,7 +3783,7 @@ msgstr ""
 "\n"
 "¿Estás seguro de que deseas forzar su habilitación?"
 
-#: lexisync.po:3949
+#: lexisync.po:3786
 #, python-brace-format
 msgid ""
 "The plugin requires the library '{lib}' (version: {spec}).\n"
@@ -3681,35 +3794,35 @@ msgstr ""
 "\n"
 "¿Desea intentar {action} ahora?"
 
-#: lexisync.po:3960
+#: lexisync.po:3797
 msgid "The request timed out. The server might be busy or your connection is slow."
 msgstr "La solicitud ha caducado. Es posible que el servidor esté ocupado o que tu conexión sea lenta."
 
-#: lexisync.po:3968
+#: lexisync.po:3801
 msgid "The selected file is not a valid .zip archive."
 msgstr "El archivo seleccionado no es un archivo .zip válido."
 
-#: lexisync.po:3972
+#: lexisync.po:3805
 msgid "The selected folder is not a valid LexiSync project."
 msgstr "La carpeta seleccionada no es un proyecto LexiSync válido."
 
-#: lexisync.po:3976
+#: lexisync.po:3809
 msgid "The selected item has no entry in the current TM."
 msgstr "El elemento seleccionado no tiene entrada en la TM actual."
 
-#: lexisync.po:3980
+#: lexisync.po:3813
 msgid "The selected string is marked as ignored and will not be AI translated."
 msgstr "La cadena seleccionada está marcada como ignorada y no será traducida por IA."
 
-#: lexisync.po:3986
+#: lexisync.po:3817
 msgid "The target language for translation."
 msgstr "El idioma de destino para la traducción."
 
-#: lexisync.po:3990
+#: lexisync.po:3821
 msgid "There is no content to save as a project."
 msgstr "No hay contenido para guardar como proyecto."
 
-#: lexisync.po:3994
+#: lexisync.po:3825
 msgid ""
 "There is no original code file content to save.\n"
 "Please ensure the code file associated with the project is loaded."
@@ -3717,35 +3830,35 @@ msgstr ""
 "No hay contenido original del archivo de código para guardar.\n"
 "Asegúrese de que el archivo de código asociado al proyecto esté cargado."
 
-#: lexisync.po:4002
+#: lexisync.po:3833
 msgid "This TM file has already been imported and has not changed."
 msgstr "Este archivo de TM ya ha sido importado y no ha cambiado."
 
-#: lexisync.po:4006
+#: lexisync.po:3837
 msgid "This file has already been imported and has not changed."
 msgstr "Este archivo ya ha sido importado y no ha cambiado."
 
-#: lexisync.po:4010
+#: lexisync.po:3841
 msgid "This is not a valid LexiSync project folder (missing project.json)."
 msgstr "Esta no es una carpeta de proyecto LexiSync válida (falta project.json)."
 
-#: lexisync.po:4014
+#: lexisync.po:3845
 msgid "This original text already exists."
 msgstr "Este texto original ya existe."
 
-#: lexisync.po:4018
+#: lexisync.po:3849
 msgid "This plugin is force-enabled despite being incompatible."
 msgstr "Este complemento está habilitado forzosamente a pesar de ser incompatible."
 
-#: lexisync.po:4022
+#: lexisync.po:3853
 msgid "This plugin is incompatible. Check to force-enable."
 msgstr "Este complemento es incompatible. Marque para forzar la habilitación."
 
-#: lexisync.po:4026
+#: lexisync.po:3857
 msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
 msgstr "Esto aplicará la TM a todas las cadenas coincidentes, sobrescribiendo las traducciones existentes. ¿Continuar?"
 
-#: lexisync.po:4034
+#: lexisync.po:3861
 #, python-brace-format
 msgid ""
 "This will re-extract strings from {source} using the new rules.\n"
@@ -3756,305 +3869,301 @@ msgstr ""
 "Las traducciones existentes se conservarán cuando el texto original coincida, pero las traducciones y estados no coincidentes pueden perderse.  \n"
 "Esta acción borrará el historial de deshacer. ¿Continuar?"
 
-#: lexisync.po:4049
+#: lexisync.po:3872
 msgid "To save a copy of the project, please create a new project and import the source files."
 msgstr "Para guardar una copia del proyecto, por favor cree un nuevo proyecto e importe los archivos fuente."
 
-#: lexisync.po:4057
+#: lexisync.po:3876
 msgid "Toggle Ignored Status"
 msgstr "Alternar estado de ignorado"
 
-#: lexisync.po:4061
+#: lexisync.po:3880
 msgid "Toggle Reviewed Status"
 msgstr "Alternar estado de revisado"
 
-#: lexisync.po:4065
+#: lexisync.po:3884
 msgid "Total Items"
 msgstr "Elementos totales"
 
-#: lexisync.po:4069
+#: lexisync.po:3888
 msgid "Trailing Whitespace Mismatch"
 msgstr "Espacio en Blanco Final no Coincide"
 
-#: lexisync.po:4073
+#: lexisync.po:3892
 msgid "Translated"
 msgstr "Traducido"
 
-#: lexisync.po:4078
+#: lexisync.po:3896
 msgid "Translated an Empty Original"
 msgstr "Original vacío traducido"
 
-#: lexisync.po:4082
+#: lexisync.po:3900
 msgid "Translation"
 msgstr "Traducción"
 
-#: lexisync.po:4087
+#: lexisync.po:3904
 msgid "Translation Chars (Translated only)"
 msgstr "Caracteres de traducción (solo traducidos)"
 
-#: lexisync.po:4091
+#: lexisync.po:3908
 msgid "Translation Empty"
 msgstr "Traducción vacía"
 
-#: lexisync.po:4095
+#: lexisync.po:3912
 msgid "Translation Memory"
 msgstr "Memoria de traducción"
 
-#: lexisync.po:4099
+#: lexisync.po:3916
 msgid "Translation Memory Matches"
 msgstr "Coincidencias de memoria de traducción"
 
-#: lexisync.po:4103
+#: lexisync.po:3920
 msgid "Translation Memory Panel"
 msgstr "Panel de Memoria de Traducción"
 
-#: lexisync.po:4107
+#: lexisync.po:3924
 msgid "Translation Progress"
 msgstr "Progreso de traducción"
 
-#: lexisync.po:4111
+#: lexisync.po:3928
 #, python-brace-format
 msgid "Translation applied: \"{original_semantic}...\""
 msgstr "Traducción aplicada: \"{original_semantic}...\""
 
-#: lexisync.po:4116
+#: lexisync.po:3933
 msgid "Translation ends with space, original does not."
 msgstr "La traducción termina con espacio, el original no."
 
-#: lexisync.po:4120
+#: lexisync.po:3937
 msgid "Translation is marked as fuzzy and needs review."
 msgstr "La traducción está marcada como difusa y necesita revisión."
 
-#: lexisync.po:4124
+#: lexisync.po:3941
 msgid "Translation starts with space, original does not."
 msgstr "La traducción comienza con un espacio, el original no."
 
-#: lexisync.po:4128
+#: lexisync.po:3945
 msgid "Translation:"
 msgstr "Traducción:"
 
-#: lexisync.po:4132
+#: lexisync.po:3949
 #, python-brace-format
 msgid "Translations exported to PO file: {filename}"
 msgstr "Traducciones exportadas al archivo PO: {filename}"
 
-#: lexisync.po:4137
+#: lexisync.po:3954
 msgid "Translations for selected items are already empty, no clearing needed."
 msgstr "Las traducciones de los elementos seleccionados ya están vacías, no es necesario borrarlas."
 
-#: lexisync.po:4143
+#: lexisync.po:3958
 msgid "Type"
 msgstr "Tipo"
 
-#: lexisync.po:4148
+#: lexisync.po:3962
 msgid "Type:"
 msgstr "Tipo:"
 
-#: lexisync.po:4152
+#: lexisync.po:3966
 msgid "UI Language:"
 msgstr "Idioma de la interfaz:"
 
-#: lexisync.po:4156
+#: lexisync.po:3970
 msgid "UI Setup Error"
 msgstr "Error de configuración de la interfaz de usuario"
 
-#: lexisync.po:4160
+#: lexisync.po:3974
 msgid "Un-ignore Warnings for Selected"
 msgstr "Dejar de ignorar advertencias para los seleccionados"
 
-#: lexisync.po:4164
+#: lexisync.po:3978
 #, python-brace-format
 msgid "Un-ignored warnings for {count} item(s)."
 msgstr "Advertencias no ignoradas para {count} elemento(s)."
 
-#: lexisync.po:4169
+#: lexisync.po:3983
 msgid "Unchanged"
 msgstr "Sin cambios"
 
-#: lexisync.po:4173
+#: lexisync.po:3987
 msgid "Undo"
 msgstr "Deshacer"
 
-#: lexisync.po:4177
+#: lexisync.po:3991
 #, python-brace-format
 msgid "Undo error: Object ID {obj_id} not found"
 msgstr "Error al deshacer: No se encontró el ID de objeto {obj_id}"
 
-#: lexisync.po:4182
+#: lexisync.po:3996
 #, python-brace-format
 msgid "Undo: Bulk change ({count} items)"
 msgstr "Deshacer: Cambio masivo ({count} elementos)"
 
-#: lexisync.po:4187
+#: lexisync.po:4001
 #, python-brace-format
 msgid "Undo: {field} for ID {id} -> '{value}'"
 msgstr "Deshacer: {field} para ID {id} -> '{value}'"
 
-#: lexisync.po:4192
+#: lexisync.po:4006
 msgid "Unexpected error occurred while navigating."
 msgstr "Error inesperado al navegar."
 
-#: lexisync.po:4196
-msgid "Unknown"
-msgstr "Desconocido"
-
-#: lexisync.po:4200
+#: lexisync.po:4010
 msgid "Unknown API error structure"
 msgstr "Estructura de error de API desconocida"
 
-#: lexisync.po:4204
+#: lexisync.po:4014
 msgid "Unknown error occurred during translation"
 msgstr "Se produjo un error desconocido durante la traducción"
 
-#: lexisync.po:4208
+#: lexisync.po:4018
 msgid "Unmark as Ignored"
 msgstr "Desmarcar como ignorado"
 
-#: lexisync.po:4212
+#: lexisync.po:4022
 msgid "Unnamed Rule"
 msgstr "Regla sin nombre"
 
-#: lexisync.po:4216
+#: lexisync.po:4026
 msgid "Unreviewed"
 msgstr "Sin revisar"
 
-#: lexisync.po:4220
+#: lexisync.po:4030
 msgid "Unsaved Changes"
 msgstr "Cambios no guardados"
 
-#: lexisync.po:4224
+#: lexisync.po:4034
 msgid "Unsupported Area"
 msgstr "Área no compatible"
 
-#: lexisync.po:4228
+#: lexisync.po:4038
 msgid "Unsupported File"
 msgstr "Archivo no compatible"
 
-#: lexisync.po:4232
+#: lexisync.po:4042
 #, python-brace-format
 msgid "Unsupported TM file format: {ext}"
 msgstr "Formato de archivo TM no compatible: {ext}"
 
-#: lexisync.po:4237
+#: lexisync.po:4047
 msgid "Unsupported Type"
 msgstr "Tipo no compatible"
 
-#: lexisync.po:4241
+#: lexisync.po:4051
 msgid "Untranslated"
 msgstr "Sin traducir"
 
-#: lexisync.po:4246
+#: lexisync.po:4055
 msgid "Up"
 msgstr "Arriba"
 
-#: lexisync.po:4251
+#: lexisync.po:4059
 msgid "Update"
 msgstr "Actualizar"
 
-#: lexisync.po:4255
+#: lexisync.po:4063
 msgid "Update TM for Selected"
 msgstr "Actualizar TM para los seleccionados"
 
-#: lexisync.po:4259
+#: lexisync.po:4067
 msgid "Update from POT"
 msgstr "Actualizar desde POT"
 
-#: lexisync.po:4263
+#: lexisync.po:4071
 #, python-brace-format
 msgid "Updated comments for {count} items."
 msgstr "Comentarios actualizados para {count} elementos."
 
-#: lexisync.po:4268
+#: lexisync.po:4076
 msgid "Use AI to Translate Selected Items"
 msgstr "Usar IA para traducir los elementos seleccionados"
 
-#: lexisync.po:4272
+#: lexisync.po:4080
 msgid "Use Global Glossary"
 msgstr "Usar glosario global"
 
-#: lexisync.po:4276
+#: lexisync.po:4084
 msgid "Use Global Translation Memory"
 msgstr "Usar memoria de traducción global"
 
-#: lexisync.po:4280
+#: lexisync.po:4088
 msgid "Use nearby"
 msgstr "Usar cercano"
 
-#: lexisync.po:4284
+#: lexisync.po:4092
 msgid "Use nearby original text as context"
 msgstr "Usar texto original cercano como contexto"
 
-#: lexisync.po:4288
+#: lexisync.po:4096
 msgid "Use nearby translated text as context"
 msgstr "Usar el texto traducido cercano como contexto"
 
-#: lexisync.po:4292
+#: lexisync.po:4100
 msgid "Use static sorting (Press F5 to manual refresh)"
 msgstr "Usar orden estático (Presiona F5 para actualizar manualmente)"
 
-#: lexisync.po:4296
+#: lexisync.po:4104
 msgid "Validating all entries..."
 msgstr "Validando todas las entradas..."
 
-#: lexisync.po:4300
+#: lexisync.po:4108
 msgid "Validation"
 msgstr "Validación"
 
-#: lexisync.po:4304
+#: lexisync.po:4112
 msgid "Validation complete."
 msgstr "Validación completada."
 
-#: lexisync.po:4308
+#: lexisync.po:4116
 #, python-brace-format
 msgid "Validation complete. Language pair set to {src} -> {tgt}."
 msgstr "Validación completada. Par de idiomas establecido en {src} -> {tgt}."
 
-#: lexisync.po:4313
+#: lexisync.po:4121
 msgid "Version"
 msgstr "Versión"
 
-#: lexisync.po:4318
+#: lexisync.po:4125
 msgid "Version Comparison Results"
 msgstr "Resultados de comparación de versiones"
 
-#: lexisync.po:4322
+#: lexisync.po:4129
 msgid "Version comparison failed."
 msgstr "Error en la comparación de versiones."
 
-#: lexisync.po:4326
+#: lexisync.po:4133
 msgid "Version update cancelled."
 msgstr "Actualización de versión cancelada."
 
-#: lexisync.po:4330
+#: lexisync.po:4137
 msgid "View refreshed."
 msgstr "Vista actualizada."
 
-#: lexisync.po:4334
+#: lexisync.po:4141
 msgid "Visit Plugin Homepage"
 msgstr "Visitar la página de inicio del complemento"
 
-#: lexisync.po:4338
+#: lexisync.po:4145
 msgid "Waiting for initialization to complete..."
 msgstr "Esperando a que se complete la inicialización..."
 
-#: lexisync.po:4342
+#: lexisync.po:4149
 msgid "Warning"
 msgstr "Advertencia"
 
-#: lexisync.po:4348
+#: lexisync.po:4153
 #, python-brace-format
 msgid "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported."
 msgstr "Advertencia: Fila de Excel {row_num}, UUID {uuid} - El texto original no coincide con el de Excel. Los datos se importarán de todos modos."
 
-#: lexisync.po:4357
+#: lexisync.po:4158
 msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
 msgstr "Archivos YAML (*.yaml *.yml);;Todos los archivos (*.*)"
 
-#: lexisync.po:4361
+#: lexisync.po:4162
 msgid "Yes"
 msgstr "Sí"
 
-#: lexisync.po:4366
+#: lexisync.po:4166
 #, python-brace-format
 msgid ""
 "You are about to AI translate {count} unique strings.\n"
@@ -4067,62 +4176,70 @@ msgstr ""
 "Tiempo estimado: ~{time_s:.1f} segundos.\n"
 "¿Continuar?"
 
-#: lexisync.po:4379
+#: lexisync.po:4179
 #, python-brace-format
 msgid "and {modified} modified/inherited items."
 msgstr "y {modified} elementos modificados/heredados."
 
-#: lexisync.po:4384
+#: lexisync.po:4184
 msgid "by"
 msgstr "de"
 
-#: lexisync.po:4388
+#: lexisync.po:4188
 msgid "current in-memory code"
 msgstr "código actual en memoria"
 
-#: lexisync.po:4392
+#: lexisync.po:4192
+msgid "external file"
+msgstr "archivo externo"
+
+#: lexisync.po:4196
 #, python-brace-format
 msgid "file '{filename}'"
 msgstr "archivo '{filename}'"
 
-#: lexisync.po:4397
+#: lexisync.po:4201
+msgid "internal project file"
+msgstr "archivo interno del proyecto"
+
+#: lexisync.po:4205
 msgid "original strings (0 for all)"
 msgstr "cadenas originales (0 para todas)"
 
-#: lexisync.po:4401
+#: lexisync.po:4209
 msgid "translations (0 for all)"
 msgstr "traducciones (0 para todas)"
 
-#: lexisync.po:4405
+#: lexisync.po:4213
 msgid "with your app version."
 msgstr "con la versión de su aplicación."
 
-#: lexisync.po:4409
+#: lexisync.po:4217
 #, python-brace-format
 msgid "{added} new items, "
 msgstr "{added} elementos nuevos, "
 
-#: lexisync.po:4414
+#: lexisync.po:4222
 #, python-brace-format
 msgid "{count} item(s) already have translations."
 msgstr "{count} elemento(s) ya tienen traducciones."
 
-#: lexisync.po:4419
+#: lexisync.po:4227
 #, python-brace-format
 msgid "{count} items' ignore status updated."
 msgstr "El estado de ignorar de {count} elementos ha sido actualizado."
 
-#: lexisync.po:4424
+#: lexisync.po:4232
 #, python-brace-format
 msgid "{count} items' review status updated."
 msgstr "El estado de revisión de {count} elementos ha sido actualizado."
 
-#: lexisync.po:4429
+#: lexisync.po:4237
 #, python-brace-format
 msgid "{removed} removed items, "
 msgstr "{removed} elementos eliminados, "
 
-#: lexisync.po:4434
+#: lexisync.po:4242
 #, python-brace-format
 msgid "{resource_type} Import Configuration"
 msgstr "Configuración de importación de {resource_type}"
