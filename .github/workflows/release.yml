@@ -101,10 +101,10 @@ jobs:
           --windowed `
           --noupx `
           --noconfirm `
-          --add-data "dist_locales;locales" `
-          --add-data "dist_expansion_data;expansion_data" `
-          --add-data "dist_plugins;plugins" `
-          --add-data "dist_icons;icons" `
+          --add-data "locales;locales" `
+          --add-data "expansion_data;expansion_data" `
+          --add-data "plugins;plugins" `
+          --add-data "icons;icons" `
           --exclude-module "Qt6Sql" `
           --exclude-module "Qt6Test" `
           --exclude-module "Qt6Xml" `
@@ -146,9 +146,10 @@ jobs:
           --windowed \
           --noupx \
           --noconfirm \
-          --add-data "dist_locales:locales" \
-          --add-data "dist_expansion_data:expansion_data" \
-          --add-data "dist_plugins:plugins" \
+          --add-data "locales:locales" \
+          --add-data "expansion_data:expansion_data" \
+          --add-data "plugins:plugins" \
+          --add-data "icons:icons" \
           --exclude-module "Qt6Sql" \
           --exclude-module "Qt6Test" \
           --exclude-module "Qt6Xml" \
