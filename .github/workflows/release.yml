@@ -94,37 +94,6 @@ jobs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        Write-Host "Preparing data directories for packaging..."
-        
-        $pythonExe = $env:PYTHON_EXECUTABLE
-        & $pythonExe -c @"
-        import os, shutil
-        
-        def prepare_dir(source_dir, target_dir, extension=None):
-            if os.path.exists(target_dir):
-                shutil.rmtree(target_dir)
-            if not os.path.exists(source_dir):
-                print(f'Source directory {source_dir} not found, skipping.')
-                return
-        
-            if extension:
-                for root, dirs, files in os.walk(source_dir):
-                    for file in files:
-                        if file.endswith(extension):
-                            source_path = os.path.join(root, file)
-                            relative_path = os.path.relpath(source_path, source_dir)
-                            target_path = os.path.join(target_dir, relative_path)
-                            os.makedirs(os.path.dirname(target_path), exist_ok=True)
-                            shutil.copy2(source_path, target_path)
-            else:
-                shutil.copytree(source_dir, target_dir)
-        
-        prepare_dir('locales', 'dist_locales', '.mo')
-        prepare_dir('expansion_data', 'dist_expansion_data')
-        prepare_dir('plugins', 'dist_plugins')
-        prepare_dir('icons', 'dist_icons')
-        "@
-        
         Write-Host "Building for Windows..."
         
         pyinstaller `
@@ -170,33 +139,6 @@ jobs:
       if: runner.os != 'Windows'
       shell: bash
       run: |
-        echo "Preparing data directories for packaging..."
-        ${{ env.PYTHON_EXECUTABLE }} -c "
-        import os, shutil
-        
-        def prepare_dir(source_dir, target_dir, extension=None):
-            if os.path.exists(target_dir):
-                shutil.rmtree(target_dir)
-            if not os.path.exists(source_dir):
-                print(f'Source directory {source_dir} not found, skipping.')
-                return
-        
-            if extension:
-                for root, dirs, files in os.walk(source_dir):
-                    for file in files:
-                        if file.endswith(extension):
-                            source_path = os.path.join(root, file)
-                            relative_path = os.path.relpath(source_path, source_dir)
-                            target_path = os.path.join(target_dir, relative_path)
-                            os.makedirs(os.path.dirname(target_path), exist_ok=True)
-                            shutil.copy2(source_path, target_path)
-            else:
-                shutil.copytree(source_dir, target_dir)
-
-        prepare_dir('locales', 'dist_locales', '.mo')
-        prepare_dir('expansion_data', 'dist_expansion_data')
-        prepare_dir('plugins', 'dist_plugins')
-        "
         echo "Building for ${{ matrix.os_name }}..."
 
         pyinstaller \
