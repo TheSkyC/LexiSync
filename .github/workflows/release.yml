@@ -101,6 +101,7 @@ jobs:
           --windowed `
           --noupx `
           --noconfirm `
+          --hidden-import "rapidfuzz" `
           --add-data "locales;locales" `
           --add-data "expansion_data;expansion_data" `
           --add-data "plugins;plugins" `
@@ -127,7 +128,6 @@ jobs:
           --exclude-module "turtle" `
           --exclude-module "test" `
           --exclude-module "lib2to3" `
-          --exclude-module "distutils" `
           --exclude-module "scipy" `
           --exclude-module "matplotlib" `
           --exclude-module "IPython" `
@@ -146,6 +146,7 @@ jobs:
           --windowed \
           --noupx \
           --noconfirm \
+          --hidden-import "rapidfuzz" \
           --add-data "locales:locales" \
           --add-data "expansion_data:expansion_data" \
           --add-data "plugins:plugins" \
@@ -172,7 +173,6 @@ jobs:
           --exclude-module "turtle" \
           --exclude-module "test" \
           --exclude-module "lib2to3" \
-          --exclude-module "distutils" \
           --exclude-module "scipy" \
           --exclude-module "matplotlib" \
           --exclude-module "IPython" \
