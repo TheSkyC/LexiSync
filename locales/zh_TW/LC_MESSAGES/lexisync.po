@@ -3,171 +3,181 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Overwatch Localizer Project 1.1.2\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
-"POT-Creation-Date: 2025-10-01 16:13+0000\n"
+"POT-Creation-Date: 2025-12-04 14:21+0000\n"
 "PO-Revision-Date: 2025-10-02 05:48+0000\n"
 "Last-Translator: TheSkyC & Gemini Pro\n"
-"Language-Team: Chinese (Traditional) <zh_TW@li.org>\n"
 "Language: zh_TW\n"
+"Language-Team: Chinese (Traditional) <zh_TW@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: lexisync.po:17
+#: main_window.py:5139 ui_components/comment_status_panel.py:79
 msgid " (Auto)"
 msgstr " (自動)"
 
-#: lexisync.po:21
+#: dialogs/settings_pages.py:109
 msgid " s"
 msgstr " s"
 
-#: lexisync.po:25
+#: main_window.py:395 main_window.py:669
 msgid "&Edit"
 msgstr "編輯(&E)"
 
-#: lexisync.po:29
+#: main_window.py:394 main_window.py:668
 msgid "&File"
 msgstr "檔案(&F)"
 
-#: lexisync.po:33
+#: main_window.py:400 main_window.py:675
 msgid "&Help"
 msgstr "說明(&H)"
 
-#: lexisync.po:37
+#: main_window.py:399 main_window.py:674
 msgid "&Plugins"
 msgstr "外掛(&P)"
 
-#: lexisync.po:41
+#: main_window.py:398 main_window.py:672
 msgid "&Settings"
 msgstr "設定(&S)"
 
-#: lexisync.po:45
+#: main_window.py:397 main_window.py:671
 msgid "&Tools"
 msgstr "工具(&T)"
 
-#: lexisync.po:49
+#: main_window.py:396 main_window.py:670
 msgid "&View"
 msgstr "檢視(&V)"
 
-#: lexisync.po:53
+#: services/ai_translator.py:23
 msgid "'requests' library not found. AI translation feature is unavailable."
 msgstr "未找到 'requests' 函式庫，AI 翻譯功能無法使用。"
 
-#: lexisync.po:57
+#: dialogs/settings_pages.py:111
 msgid "(0 to disable)"
 msgstr "(0 表示停用)"
 
-#: lexisync.po:61
+#: dialogs/pot_drop_dialog.py:20
 msgid "A POT file was dropped. What would you like to do?"
 msgstr "偵測到 POT 檔案，您希望執行什麼操作？"
 
-#: lexisync.po:65
+#: main_window.py:2337
 msgid "A build is already in progress."
 msgstr "正在建置中。"
 
-#: lexisync.po:69
+#: services/project_service.py:30
 msgid "A file or directory with this name already exists."
 msgstr "已存在同名的檔案或目錄。"
 
-#: lexisync.po:73
+#: dialogs/project_settings_dialog.py:329 services/project_manager.py:48
 msgid "A file with this name already exists in the project."
 msgstr "專案中已存在同名的檔案。"
 
-#: lexisync.po:77
+#: plugins/plugin_manager.py:435
 #, python-brace-format
-msgid "A plugin with the ID '{plugin_id}' already exists. Do you want to overwrite it?"
+msgid ""
+"A plugin with the ID '{plugin_id}' already exists. Do you want to "
+"overwrite it?"
 msgstr "已存在 ID 為 '{plugin_id}' 的外掛，您要覆寫它嗎？"
 
-#: lexisync.po:82
+#: main_window.py:1479
 msgid "A project must be open to access project settings."
 msgstr "必須先開啟一個專案才能存取專案設定。"
 
-#: lexisync.po:86
+#: main_window.py:2333
 msgid "A project must be open to build."
 msgstr "必須先開啟一個專案才能進行建置。"
 
-#: lexisync.po:90
+#: dialogs/project_settings_dialog.py:350
 msgid "A project must have at least one source file."
 msgstr "專案必須至少有一個來源檔案。"
 
-#: lexisync.po:94
+#: dialogs/project_settings_dialog.py:191
 msgid "A project must have at least one target language."
 msgstr "專案必須至少有一個目標語言。"
 
-#: lexisync.po:98
+#: main_window.py:5065
 msgid "AI Batch Translation"
 msgstr "AI 批次翻譯"
 
-#: lexisync.po:102
+#: main_window.py:4632
 #, python-brace-format
 msgid "AI Batch: Processing {current}/{total} (Concurrency: {threads})..."
 msgstr "AI 批次：正在處理 {current}/{total} (並行數：{threads})..."
 
-#: lexisync.po:107
+#: main_window.py:5011
 #, python-brace-format
 msgid "AI Batch: {current}/{total} completed ({progress_percent:.0f}%)."
 msgstr "AI 批次：已完成 {current}/{total} ({progress_percent:.0f}%)。"
 
-#: lexisync.po:112
+#: main_window.py:4444
 msgid "AI Feature Unavailable"
 msgstr "AI 功能無法使用"
 
-#: lexisync.po:116
+#: main_window.py:4402
 msgid "AI Prompt Manager"
 msgstr "AI 提示詞管理員"
 
-#: lexisync.po:120
+#: main_window.py:584 main_window.py:726
 msgid "AI Translate All Untranslated"
 msgstr "AI 翻譯所有未翻譯項"
 
-#: lexisync.po:124
+#: main_window.py:579 main_window.py:725 ui_components/details_panel.py:91
+#: ui_components/details_panel.py:214
 msgid "AI Translate Selected"
 msgstr "AI 翻譯選定項"
 
-#: lexisync.po:128
+#: dialogs/settings_dialog.py:114 main_window.py:4863
 msgid "AI Translation"
 msgstr "AI 翻譯"
 
-#: lexisync.po:132
+#: main_window.py:4948
 msgid "AI Translation Error"
 msgstr "AI 翻譯錯誤"
 
-#: lexisync.po:136
+#: main_window.py:1755
 msgid "AI Translation in Progress"
 msgstr "AI 翻譯正在進行中"
 
-#: lexisync.po:140
+#: main_window.py:4920
 #, python-brace-format
-msgid "AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned)."
-msgstr "AI 批次翻譯完成。成功翻譯 {success_count}/{processed_count} 個項目 (總計畫 {total_items} 項)。"
+msgid ""
+"AI batch translation complete. Successfully translated "
+"{success_count}/{processed_count} items (total {total_items} planned)."
+msgstr ""
+"AI 批次翻譯完成。成功翻譯 {success_count}/{processed_count} 個項目 (總計畫 {total_items} "
+"項)。"
 
-#: lexisync.po:145
+#: main_window.py:4811
 msgid "AI batch translation is already in progress."
 msgstr "AI 批次翻譯已在進行中。"
 
-#: lexisync.po:149
+#: main_window.py:2018
 msgid "AI batch translation is in progress."
 msgstr "AI 批次翻譯正在進行中。"
 
-#: lexisync.po:153
-msgid "AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."
+#: main_window.py:2231
+msgid ""
+"AI batch translation is in progress. Please wait for it to complete or "
+"stop it before opening a new file."
 msgstr "AI 批次翻譯正在進行中。請等待其完成或停止後再開啟新檔案。"
 
-#: lexisync.po:157
+#: main_window.py:1756
 msgid ""
-"AI batch translation is still in progress. Are you sure you want to exit?\n"
+"AI batch translation is still in progress. Are you sure you want to exit?"
+"\n"
 "Unfinished translations will be lost."
 msgstr ""
 "AI 批次翻譯仍在進行中。您確定要結束程式嗎？\n"
 "未完成的翻譯將會遺失。"
 
-#: lexisync.po:165
+#: main_window.py:4897
 #, python-brace-format
 msgid "AI batch translation started for {count} unique strings..."
 msgstr "已開始為 {count} 個不重複字串進行 AI 批次翻譯..."
 
-#: lexisync.po:170
+#: main_window.py:5066
 msgid ""
 "AI batch translation stop requested.\n"
 "Dispatched tasks will continue to complete, please wait."
@@ -175,20 +185,20 @@ msgstr ""
 "已請求停止 AI 批次翻譯。\n"
 "已分派的任務將繼續完成，請稍候。"
 
-#: lexisync.po:178
+#: main_window.py:5068
 msgid "AI batch translation stop requested. Finishing dispatched tasks..."
 msgstr "已請求停止 AI 批次翻譯。正在完成已分派的任務..."
 
-#: lexisync.po:182
+#: main_window.py:4600
 #, python-brace-format
 msgid "AI is translating: \"{text}...\""
 msgstr "AI 正在翻譯：「{text}...」"
 
-#: lexisync.po:187
+#: dialogs/prompt_manager_dialog.py:280
 msgid "AI prompt structure updated."
 msgstr "AI 提示詞結構已更新。"
 
-#: lexisync.po:191
+#: main_window.py:4949
 #, python-brace-format
 msgid ""
 "AI translation failed for \"{text}...\":\n"
@@ -197,225 +207,234 @@ msgstr ""
 "AI 翻譯「{text}...」失敗：\n"
 "{error}"
 
-#: lexisync.po:200
+#: main_window.py:4944
 #, python-brace-format
 msgid "AI translation failed for \"{text}...\": {error}"
 msgstr "AI 翻譯「{text}...」失敗：{error}"
 
-#: lexisync.po:205
+#: main_window.py:4574
 #, python-brace-format
 msgid "AI translation for '{text}...' was skipped by a plugin."
 msgstr "AI 翻譯 '{text}...' 已被外掛略過。"
 
-#: lexisync.po:210
+#: main_window.py:5001
 #, python-brace-format
 msgid "AI translation successful: \"{text}...\""
 msgstr "AI 翻譯成功：「{text}...」"
 
-#: lexisync.po:215
+#: dialogs/settings_pages.py:243
 msgid "API Base URL:"
 msgstr "API 基底 URL："
 
-#: lexisync.po:219
+#: dialogs/settings_pages.py:256
 msgid "API Call Interval:"
 msgstr "API 呼叫間隔："
 
-#: lexisync.po:223
+#: services/ai_translator.py:53
 msgid "API Error"
 msgstr "API 錯誤"
 
-#: lexisync.po:227
+#: main_window.py:4449
 msgid "API Key Missing"
 msgstr "缺少 API 金鑰"
 
-#: lexisync.po:231
+#: main_window.py:4450
 msgid "API Key is not set. Please configure it in 'Tools > AI Settings'."
 msgstr "尚未設定 API 金鑰。請在「工具 > AI 設定」中進行設定。"
 
-#: lexisync.po:235
+#: services/ai_translator.py:21
 msgid "API Key not set."
 msgstr "尚未設定 API 金鑰。"
 
-#: lexisync.po:239
+#: dialogs/settings_pages.py:242
 msgid "API Key:"
 msgstr "API 金鑰："
 
-#: lexisync.po:243
+#: dialogs/settings_pages.py:236
 msgid "API Settings"
 msgstr "API 設定"
 
-#: lexisync.po:247
+#: services/ai_translator.py:55
 msgid "API request timed out."
 msgstr "API 請求逾時。"
 
-#: lexisync.po:251
+#: main_window.py:635 main_window.py:738 main_window.py:1885
 msgid "About"
 msgstr "關於"
 
-#: lexisync.po:255
+#: dialogs/language_pair_dialog.py:278
 msgid "Actions"
 msgstr "操作"
 
-#: lexisync.po:259
+#: dialogs/extraction_pattern_dialog.py:35 dialogs/prompt_manager_dialog.py:76
 msgid "Add"
 msgstr "新增"
 
-#: lexisync.po:263
+#: dialogs/language_pair_dialog.py:282
 msgid "Add Current Pair to Favorites"
 msgstr "將目前組合新增至我的最愛"
 
-#: lexisync.po:267
+#: dialogs/extraction_pattern_dialog.py:119
 msgid "Add Extraction Rule"
 msgstr "新增擷取規則"
 
-#: lexisync.po:271
+#: dialogs/add_glossary_entry_dialog.py:14
 msgid "Add Glossary Entry"
 msgstr "新增術語庫條目"
 
-#: lexisync.po:275
+#: ui_components/glossary_panel.py:32
 msgid "Add New Entry"
 msgstr "新增條目"
 
-#: lexisync.po:279
+#: dialogs/prompt_manager_dialog.py:176
 msgid "Add Prompt Fragment"
 msgstr "新增提示詞片段"
 
-#: lexisync.po:283
+#: main_window.py:1938
 msgid "Add Source File"
 msgstr "新增來源檔案"
 
-#: lexisync.po:287
+#: dialogs/project_settings_dialog.py:31
 msgid "Add Target Language"
 msgstr "新增目標語言"
 
-#: lexisync.po:291
+#: main_window.py:1908
 msgid "Add as Source File"
 msgstr "新增為來源檔案"
 
-#: lexisync.po:295
+#: dialogs/management_tabs.py:492
 msgid "Add from File..."
 msgstr "從檔案新增..."
 
-#: lexisync.po:299
+#: dialogs/management_tabs.py:141
 msgid "Add from TBX..."
 msgstr "從 TBX 新增..."
 
-#: lexisync.po:303
+#: dialogs/new_project_dialog.py:177 dialogs/new_project_dialog.py:208
+#: dialogs/new_project_dialog.py:230 dialogs/project_settings_dialog.py:123
+#: dialogs/project_settings_dialog.py:276
 msgid "Add..."
 msgstr "新增..."
 
-#: lexisync.po:307
+#: dialogs/diff_dialog.py:165
 msgid "Added"
 msgstr "已新增"
 
-#: lexisync.po:311
+#: main_window.py:5052
 #, python-brace-format
 msgid "Added comments to {count} placeholder mismatched items."
 msgstr "已為 {count} 個預留位置不符的項目新增註解。"
 
-#: lexisync.po:316
+#: main_window.py:5034
 #, python-brace-format
 msgid ""
-"After AI batch translation, {count} items were found with placeholder mismatches.\n"
-"Do you want to add the comment \"Placeholder Mismatch\" to these items in bulk?"
+"After AI batch translation, {count} items were found with placeholder "
+"mismatches.\n"
+"Do you want to add the comment \"Placeholder Mismatch\" to these items in"
+" bulk?"
 msgstr ""
 "AI 批次翻譯後，發現 {count} 個項目的預留位置不符。\n"
 "您是否要為這些項目批次新增「預留位置不符」的註解？"
 
-#: lexisync.po:325
+#: dialogs/marketplace_dialog.py:322
 msgid "All"
 msgstr "全部"
 
-#: lexisync.po:329
+#: main_window.py:2192
 msgid "All Files (*.*)"
 msgstr "所有文件 (*.*)"
 
-#: lexisync.po:333
+#: main_window.py:2189
 msgid "All Supported Files (*.ow *.txt *.po *.pot);;"
 msgstr "所有支援的檔案 (*.ow *.txt *.po *.pot);;"
 
-#: lexisync.po:337
+#: dialogs/new_project_dialog.py:287 dialogs/project_settings_dialog.py:323
 msgid "All Supported Files (*.ow *.txt *.po *.pot);;All Files (*.*)"
 msgstr "所有支援的檔案 (*.ow *.txt *.po *.pot);;所有檔案 (*.*)"
 
-#: lexisync.po:341
+#: main_window.py:2675
 #, python-brace-format
 msgid "An error occurred during the re-scan operation: {error}"
 msgstr "在重新掃描操作期間發生錯誤：{error}"
 
-#: lexisync.po:346
+#: main_window.py:5486
 #, python-brace-format
 msgid "An error occurred: {error}"
 msgstr "發生錯誤：{error}"
 
-#: lexisync.po:351
-msgid "An import operation is already in progress. Please wait for it to complete."
+#: dialogs/management_tabs.py:236
+msgid ""
+"An import operation is already in progress. Please wait for it to "
+"complete."
 msgstr "已有匯入作業正在進行中。請等待其完成。"
 
-#: lexisync.po:355
+#: ui_components/file_explorer_panel.py:924
 msgid "An unexpected error occurred during deletion."
 msgstr "刪除過程中發生意外錯誤。"
 
-#: lexisync.po:359
+#: dialogs/management_tabs.py:252 main_window.py:2992
 msgid "Analysis Failed"
 msgstr "分析失敗"
 
-#: lexisync.po:363
+#: dialogs/settings_dialog.py:111
 msgid "Appearance"
 msgstr "外观"
 
-#: lexisync.po:367
+#: main_window.py:5247
 #, python-brace-format
 msgid "Applied TM to {count} selected items."
 msgstr "已將翻譯記憶庫套用至 {count} 個選定項目。"
 
-#: lexisync.po:372
+#: main_window.py:4348 main_window.py:4349
 #, python-brace-format
 msgid "Applied TM to {count} strings."
 msgstr "已將翻譯記憶庫套用至 {count} 個字串。"
 
-#: lexisync.po:377
+#: dialogs/settings_dialog.py:90
 msgid "Apply"
 msgstr "套用"
 
-#: lexisync.po:381
+#: ui_components/comment_status_panel.py:46
+#: ui_components/comment_status_panel.py:76
 msgid "Apply Comment"
 msgstr "套用註解"
 
-#: lexisync.po:385
+#: dialogs/language_pair_dialog.py:280
 msgid "Apply Favorite"
 msgstr "套用我的最愛"
 
-#: lexisync.po:389
+#: main_window.py:2755
 msgid "Apply Memory to Selected Items"
 msgstr "將記憶庫套用至選定項目"
 
-#: lexisync.po:393
+#: main_window.py:574 main_window.py:724
 msgid "Apply TM to Untranslated"
 msgstr "將翻譯記憶庫套用至未翻譯項"
 
-#: lexisync.po:397
+#: ui_components/details_panel.py:85 ui_components/details_panel.py:213
 msgid "Apply Translation"
 msgstr "套用翻譯"
 
-#: lexisync.po:401
+#: dialogs/keybinding_dialog.py:34
 msgid "Apply and Go to Next Untranslated"
 msgstr "套用並跳至下一個未翻譯項"
 
-#: lexisync.po:405
+#: main_window.py:5379 main_window.py:5469
 msgid "Applying updates..."
 msgstr "正在套用更新..."
 
-#: lexisync.po:409
+#: main_window.py:1877
 msgid "Are you sure you want to clear all recent file history?"
 msgstr "您確定要清除所有最近的檔案歷史紀錄嗎？"
 
-#: lexisync.po:413
+#: main_window.py:5259
 #, python-brace-format
-msgid "Are you sure you want to clear the translations for the {count} selected items?"
+msgid ""
+"Are you sure you want to clear the translations for the {count} selected "
+"items?"
 msgstr "您確定要清除 {count} 個選定項目的翻譯嗎？"
 
-#: lexisync.po:418
+#: ui_components/file_explorer_panel.py:876
 #, python-brace-format
 msgid ""
 "Are you sure you want to permanently delete the following item(s)?\n"
@@ -426,7 +445,7 @@ msgstr ""
 "\n"
 "- {items}"
 
-#: lexisync.po:429
+#: plugins/plugin_dialog.py:544
 #, python-brace-format
 msgid ""
 "Are you sure you want to permanently delete the plugin '{plugin_name}'?\n"
@@ -437,7 +456,7 @@ msgstr ""
 "\n"
 "刪除後需要重新啟動應用程式。"
 
-#: lexisync.po:440
+#: dialogs/project_settings_dialog.py:357
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove '{file}' from the project?\n"
@@ -446,7 +465,7 @@ msgstr ""
 "您確定要從專案中移除「{file}」嗎？\n"
 "此操作無法復原，且會影響所有翻譯。"
 
-#: lexisync.po:449
+#: dialogs/management_tabs.py:574
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove all TM entries from '{source}'?\n"
@@ -455,7 +474,7 @@ msgstr ""
 "您確定要從「{source}」移除所有翻譯記憶庫條目嗎？\n"
 "此操作無法復原。"
 
-#: lexisync.po:458
+#: dialogs/management_tabs.py:389
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove all terms from '{source}'?\n"
@@ -464,7 +483,7 @@ msgstr ""
 "您確定要從「{source}」移除所有詞條嗎？\n"
 "此操作無法復原。"
 
-#: lexisync.po:467
+#: main_window.py:4271
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove the TM entry for:\n"
@@ -473,7 +492,7 @@ msgstr ""
 "您確定要移除以下翻譯記憶庫條目嗎：\n"
 "「{text}...」？"
 
-#: lexisync.po:476
+#: dialogs/project_settings_dialog.py:195
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove the language '{lang}'?\n"
@@ -482,19 +501,20 @@ msgstr ""
 "您確定要移除語言「{lang}」嗎？\n"
 "這將永久刪除其翻譯檔案。"
 
-#: lexisync.po:485
+#: dialogs/keybinding_dialog.py:196
 msgid "Are you sure you want to reset all keybindings to their default settings?"
 msgstr "您確定要將所有按鍵綁定重設為預設值嗎？"
 
-#: lexisync.po:489
+#: dialogs/extraction_pattern_dialog.py:153
 msgid ""
-"Are you sure you want to reset extraction rules to their default settings?\n"
+"Are you sure you want to reset extraction rules to their default "
+"settings?\n"
 "All current custom rules will be lost."
 msgstr ""
 "您確定要將擷取規則重設為預設值嗎？\n"
 "所有目前的自訂規則都將遺失。"
 
-#: lexisync.po:497
+#: dialogs/prompt_manager_dialog.py:228
 msgid ""
 "Are you sure you want to reset the prompt to its default settings?\n"
 "All current customizations will be lost."
@@ -502,102 +522,110 @@ msgstr ""
 "您確定要將提示詞重設為預設值嗎？\n"
 "所有目前的自訂內容都將遺失。"
 
-#: lexisync.po:505
+#: main_window.py:4192
 #, python-brace-format
 msgid "Attempted to restore {count} old translations/statuses."
 msgstr "已嘗試還原 {count} 個舊的翻譯/狀態。"
 
-#: lexisync.po:510
+#: plugins/plugin_dialog.py:383 plugins/plugin_dialog.py:398
 msgid "Author"
 msgstr "作者"
 
-#: lexisync.po:514
+#: dialogs/settings_pages.py:133
 msgid "Auto-backup Translation Memory"
 msgstr "自動備份翻譯記憶庫"
 
-#: lexisync.po:518
+#: dialogs/settings_pages.py:135
 msgid "Auto-compile .mo file when save .po file"
 msgstr "儲存 .po 檔案時自動編譯 .mo 檔案"
 
-#: lexisync.po:522
+#: dialogs/language_pair_dialog.py:243
 msgid "Auto-detect Source"
 msgstr "自動偵測來源"
 
-#: lexisync.po:526
+#: dialogs/language_pair_dialog.py:255
 msgid "Auto-detect Target"
 msgstr "自動偵測目標"
 
-#: lexisync.po:530
+#: dialogs/settings_pages.py:116
 msgid "Auto-save Interval:"
 msgstr "自動儲存間隔："
 
-#: lexisync.po:534
+#: main_window.py:1005
 msgid "Auto-saving..."
 msgstr "自動儲存中..."
 
-#: lexisync.po:538
+#: dialogs/settings_pages.py:145
 msgid "Automatically format text when pasting into the translation editor."
 msgstr "貼上至翻譯編輯器時自動格式化文字。"
 
-#: lexisync.po:542
+#: dialogs/prompt_manager_dialog.py:334
 msgid "Available Placeholders (Click to Insert)"
 msgstr "可用預留位置 (點擊以插入)"
 
-#: lexisync.po:546
+#: ui_components/file_explorer_panel.py:226
+#: ui_components/file_explorer_panel.py:936
 msgid "Back"
 msgstr "返回"
 
-#: lexisync.po:550
+#: services/code_file_service.py:165
 msgid "Backup Failed"
 msgstr "備份失敗"
 
-#: lexisync.po:554
+#: services/code_file_service.py:161
 #, python-brace-format
 msgid "Backup created: {filename}"
 msgstr "已建立備份：{filename}"
 
-#: lexisync.po:559
+#: dialogs/new_project_dialog.py:192
 msgid "Basic Settings"
 msgstr "基本設定"
 
-#: lexisync.po:563
+#: main_window.py:2372
 msgid "Build Complete"
 msgstr "建置完成"
 
-#: lexisync.po:567
+#: main_window.py:2379
 msgid "Build Failed"
 msgstr "建置失敗"
 
-#: lexisync.po:571
+#: main_window.py:415 main_window.py:681
 msgid "Build Project..."
 msgstr "建置專案..."
 
-#: lexisync.po:575
+#: services/project_service.py:230
 #, python-brace-format
 msgid "Building '{file}' for language '{lang}'..."
 msgstr "正在為語言 '{lang}' 建置 '{file}'..."
 
-#: lexisync.po:580
+#: dialogs/statistics_dialog.py:46
 msgid "Calculation finished."
 msgstr "計算完成。"
 
-#: lexisync.po:584
+#: dialogs/diff_dialog.py:153 dialogs/extraction_pattern_dialog.py:80
+#: dialogs/extraction_pattern_dialog.py:278 dialogs/font_settings_dialog.py:61
+#: dialogs/keybinding_dialog.py:93 dialogs/language_pair_dialog.py:342
+#: dialogs/management_tabs.py:90 dialogs/management_tabs.py:536
+#: dialogs/pot_drop_dialog.py:32 dialogs/project_settings_dialog.py:505
+#: dialogs/prompt_manager_dialog.py:122 dialogs/prompt_manager_dialog.py:375
+#: dialogs/settings_dialog.py:94 main_window.py:4848
 msgid "Cancel"
 msgstr "取消"
 
-#: lexisync.po:588
+#: dialogs/management_tabs.py:99
 msgid "Cancelling..."
 msgstr "取消中..."
 
-#: lexisync.po:592
+#: dialogs/project_settings_dialog.py:191
+#: dialogs/project_settings_dialog.py:350
 msgid "Cannot Remove"
 msgstr "無法移除"
 
-#: lexisync.po:596
+#: plugins/plugin_manager.py:455
 msgid "Cannot delete a plugin that is a dependency for other enabled plugins."
 msgstr "無法刪除外掛，因為它是其他已啟用外掛的依賴項。"
 
-#: lexisync.po:600
+#: plugins/plugin_manager.py:524
 #, python-brace-format
 msgid ""
 "Cannot disable '{plugin_name}'.\n"
@@ -610,7 +638,7 @@ msgstr ""
 "\n"
 "- {deps}"
 
-#: lexisync.po:613
+#: plugins/plugin_manager.py:254
 #, python-brace-format
 msgid ""
 "Cannot enable '{plugin_name}'.\n"
@@ -623,333 +651,346 @@ msgstr ""
 "\n"
 "- {deps}"
 
-#: lexisync.po:626
+#: main_window.py:2982
 msgid "Cannot import to a project glossary when no project is open."
 msgstr "無法在未開啟專案時匯入至專案術語庫。"
 
-#: lexisync.po:630
+#: main_window.py:851
 #, python-brace-format
 msgid "Cannot open '{path}'. It is not a valid file or project."
 msgstr "無法開啟 '{path}'。它不是有效的檔案或專案。"
 
-#: lexisync.po:635
+#: dialogs/management_tabs.py:384
 msgid "Cannot remove source while an import operation is in progress."
 msgstr "無法在匯入操作進行中移除來源。"
 
-#: lexisync.po:639
+#: services/project_service.py:175
 msgid "Cannot save, project configuration file is missing."
 msgstr "無法儲存，專案設定檔遺失。"
 
-#: lexisync.po:643
+#: utils/enums.py:40
 msgid "Capitalization Mismatch"
 msgstr "大小寫不符"
 
-#: lexisync.po:647
+#: dialogs/search_dialog.py:50
 msgid "Case sensitive"
 msgstr "區分大小寫"
 
-#: lexisync.po:651
+#: dialogs/settings_pages.py:338
 msgid "Check for formatting differences (whitespace, punctuation, etc.)"
 msgstr "檢查格式差異（空白、標點符號等）"
 
-#: lexisync.po:655
+#: dialogs/settings_pages.py:334
 msgid "Check for missing/extra placeholders"
 msgstr "檢查是否有缺少/多餘的佔位符"
 
-#: lexisync.po:659
+#: dialogs/settings_pages.py:346
 msgid "Check for unusual translation length/expansion ratio"
 msgstr "檢查翻譯長度/擴展比例是否異常"
 
-#: lexisync.po:663
+#: plugins/plugin_manager.py:189
 #, python-brace-format
 msgid "Circular dependency detected in plugins: {nodes}. Cannot load."
 msgstr "在外掛中偵測到循環相依性：{nodes}。無法載入。"
 
-#: lexisync.po:668
+#: main_window.py:1830
 msgid "Clear History"
 msgstr "清除歷史紀錄"
 
-#: lexisync.po:672
+#: main_window.py:2757
 msgid "Clear Selected Translations"
 msgstr "清除選定項的翻譯"
 
-#: lexisync.po:676
+#: ui_components/tm_panel.py:40 ui_components/tm_panel.py:91
 msgid "Clear TM for Selected"
 msgstr "清除選定項的翻譯記憶庫"
 
-#: lexisync.po:680
+#: main_window.py:5288
 #, python-brace-format
 msgid "Cleared {count} translations."
 msgstr "已清除 {count} 筆翻譯。"
 
-#: lexisync.po:685
+#: dialogs/keybinding_dialog.py:71
 msgid "Click to set keybinding..."
 msgstr "點擊以設定快捷鍵..."
 
-#: lexisync.po:689
+#: ui_components/file_explorer_panel.py:855
+#: ui_components/file_explorer_panel.py:858
 msgid "Clipboard Error"
 msgstr "剪貼簿錯誤"
 
-#: lexisync.po:693
+#: main_window.py:4397
 msgid "Clipboard content pasted to translation."
 msgstr "已將剪貼簿內容貼上至翻譯。"
 
-#: lexisync.po:697
+#: dialogs/marketplace_dialog.py:279 dialogs/search_dialog.py:87
+#: dialogs/statistics_dialog.py:395 plugins/plugin_dialog.py:190
 msgid "Close"
 msgstr "關閉"
 
-#: lexisync.po:701
+#: dialogs/font_settings_dialog.py:48
 msgid "Code Context"
 msgstr "程式碼上下文"
 
-#: lexisync.po:705
+#: main_window.py:2294
 msgid "Code file loading failed"
 msgstr "程式碼檔案載入失敗"
 
-#: lexisync.po:709
+#: main_window.py:3555
 #, python-brace-format
 msgid "Code file saved to: {filename}"
 msgstr "程式碼檔案已儲存至：{filename}"
 
-#: lexisync.po:714
+#: dialogs/search_dialog.py:59 main_window.py:748 main_window.py:3723
+#: main_window.py:3783 main_window.py:3791
 msgid "Comment"
 msgstr "註解"
 
-#: lexisync.po:718
+#: main_window.py:778 main_window.py:1298
 msgid "Comment && Status"
 msgstr "註解與狀態"
 
-#: lexisync.po:722
+#: main_window.py:718 main_window.py:1325
 msgid "Comment && Status Panel"
 msgstr "註解與狀態面板"
 
-#: lexisync.po:726
+#: main_window.py:3385
 #, python-brace-format
 msgid "Comment updated for ID {id}..."
 msgstr "ID {id} 的註解已更新..."
 
-#: lexisync.po:731
+#: main_window.py:3362
 msgid "Comment updated."
 msgstr "註解已更新。"
 
-#: lexisync.po:735
+#: dialogs/add_glossary_entry_dialog.py:42
+#: ui_components/comment_status_panel.py:30
+#: ui_components/comment_status_panel.py:75
 msgid "Comment:"
 msgstr "註解："
 
-#: lexisync.po:739
+#: main_window.py:421 main_window.py:682
 msgid "Compare/Import New Version..."
 msgstr "比較/匯入新版本..."
 
-#: lexisync.po:743
+#: main_window.py:5394
 msgid "Comparing versions..."
 msgstr "正在比較版本..."
 
-#: lexisync.po:747
+#: main_window.py:5486
 msgid "Comparison Failed"
 msgstr "比較失敗"
 
-#: lexisync.po:751
+#: dialogs/diff_dialog.py:103
 msgid "Comparison Results Summary"
 msgstr "比較結果摘要"
 
-#: lexisync.po:755
+#: main_window.py:5369 main_window.py:5459
 msgid "Comparison complete. Found "
 msgstr "比較完成。發現 "
 
-#: lexisync.po:759
+#: plugins/plugin_dialog.py:273
 msgid "Compatibility Warning"
 msgstr "兼容性警告"
 
-#: lexisync.po:763
+#: dialogs/marketplace_dialog.py:432 plugins/plugin_dialog.py:426
 msgid "Compatible"
 msgstr "兼容"
 
-#: lexisync.po:767
+#: dialogs/tm_import_dialog.py:13
 msgid "Configure TM Import"
 msgstr "設定 TM 匯入"
 
-#: lexisync.po:771
+#: ui_components/welcome_screen.py:218
 msgid "Configure the application"
 msgstr "設定應用程式"
 
-#: lexisync.po:775
+#: dialogs/extraction_pattern_dialog.py:153 dialogs/keybinding_dialog.py:195
+#: dialogs/prompt_manager_dialog.py:227
 msgid "Confirm"
 msgstr "確認"
 
-#: lexisync.po:779
+#: main_window.py:4878
 msgid "Confirm Batch Translation"
 msgstr "確認批次翻譯"
 
-#: lexisync.po:783
+#: main_window.py:4270 main_window.py:5258
 msgid "Confirm Clear"
 msgstr "確認清除"
 
-#: lexisync.po:787
+#: plugins/plugin_dialog.py:543 ui_components/file_explorer_panel.py:875
 msgid "Confirm Deletion"
 msgstr "確認刪除"
 
-#: lexisync.po:791
+#: main_window.py:4306
 msgid "Confirm Operation"
 msgstr "確認操作"
 
-#: lexisync.po:795
+#: main_window.py:3577
 msgid "Confirm Overwrite"
 msgstr "確認覆寫"
 
-#: lexisync.po:799
+#: main_window.py:4156
 msgid "Confirm Reload"
 msgstr "確認重新載入"
 
-#: lexisync.po:803
+#: dialogs/management_tabs.py:388 dialogs/management_tabs.py:573
+#: dialogs/project_settings_dialog.py:194
+#: dialogs/project_settings_dialog.py:356
 msgid "Confirm Removal"
 msgstr "確認移除"
 
-#: lexisync.po:807
+#: dialogs/diff_dialog.py:146
 msgid "Confirm and Update Project"
 msgstr "確認並更新專案"
 
-#: lexisync.po:811
-msgid "Confirm the language mapping from the file to LexiSync's supported languages."
+#: dialogs/import_configuration_dialog.py:42
+msgid ""
+"Confirm the language mapping from the file to LexiSync's supported "
+"languages."
 msgstr "確認檔案語言對應至 LexiSync 支援的語言。"
 
-#: lexisync.po:815
+#: dialogs/font_settings_dialog.py:118 main_window.py:1876
 msgid "Confirmation"
 msgstr "確認"
 
-#: lexisync.po:819
+#: services/tm_service.py:144
 msgid "Connecting to database..."
 msgstr "正在連線至資料庫..."
 
-#: lexisync.po:823
+#: ui_components/file_explorer_panel.py:186
 msgid "Connection Error"
 msgstr "連線錯誤"
 
-#: lexisync.po:827
+#: services/ai_translator.py:69
 msgid "Connection failed"
 msgstr "連線失敗"
 
-#: lexisync.po:831
+#: services/ai_translator.py:67
 msgid "Connection successful. Test translation"
 msgstr "連線成功。測試翻譯"
 
-#: lexisync.po:835
+#: dialogs/prompt_manager_dialog.py:101
 msgid "Content"
 msgstr "內容"
 
-#: lexisync.po:839
+#: dialogs/prompt_manager_dialog.py:324
 msgid "Content:"
 msgstr "內容："
 
-#: lexisync.po:843
+#: dialogs/settings_pages.py:260
 msgid "Context & Prompts"
 msgstr "上下文與提示"
 
-#: lexisync.po:847
+#: main_window.py:774 main_window.py:1279
 msgid "Context Preview"
 msgstr "上下文預覽"
 
-#: lexisync.po:851
+#: main_window.py:719 main_window.py:1317
 msgid "Context Preview Panel"
 msgstr "上下文預覽面板"
 
-#: lexisync.po:855
+#: ui_components/file_explorer_panel.py:828
 #, python-brace-format
 msgid "Copied {count} file name(s) to clipboard."
 msgstr "已複製 {count} 個檔案名稱至剪貼簿。"
 
-#: lexisync.po:860
+#: ui_components/file_explorer_panel.py:820
 #, python-brace-format
 msgid "Copied {count} full path(s) to clipboard."
 msgstr "已複製 {count} 個完整路徑至剪貼簿。"
 
-#: lexisync.po:865
+#: main_window.py:4374
 #, python-brace-format
 msgid "Copied {count} original strings to clipboard."
 msgstr "已複製 {count} 個原始字串至剪貼簿。"
 
-#: lexisync.po:870
+#: main_window.py:4381
 #, python-brace-format
 msgid "Copied {count} translations to clipboard."
 msgstr "已複製 {count} 筆翻譯至剪貼簿。"
 
-#: lexisync.po:875
+#: ui_components/file_explorer_panel.py:824
 msgid "Copy File Name"
 msgstr "複製檔案名稱"
 
-#: lexisync.po:879
+#: ui_components/file_explorer_panel.py:816
 msgid "Copy Full Path"
 msgstr "複製完整路徑"
 
-#: lexisync.po:883
+#: main_window.py:533 main_window.py:706 main_window.py:2721
 msgid "Copy Original"
 msgstr "複製原文"
 
-#: lexisync.po:887
+#: main_window.py:2722
 msgid "Copy Translation"
 msgstr "複製譯文"
 
-#: lexisync.po:891
+#: main_window.py:3679
 #, python-brace-format
 msgid "Could not compile MO file: {error}"
 msgstr "無法編譯 MO 檔案：{error}"
 
-#: lexisync.po:896
+#: services/code_file_service.py:166
 #, python-brace-format
 msgid "Could not create code file backup '{filename}': {error}"
 msgstr "無法建立程式碼檔案 '{filename}' 的備份：{error}"
 
-#: lexisync.po:901
+#: services/ai_translator.py:60
 msgid "Could not decode API response. Response text"
 msgstr "無法解碼 API 回應。回應文本"
 
-#: lexisync.po:905
+#: main_window.py:2992
 msgid "Could not detect any languages in the TBX file."
 msgstr "無法偵測到 TBX 檔案中的任何語言。"
 
-#: lexisync.po:909
-msgid "Could not detect any languages in the TBX file. Please check the file format."
+#: dialogs/management_tabs.py:253
+msgid ""
+"Could not detect any languages in the TBX file. Please check the file "
+"format."
 msgstr "無法偵測到 TBX 檔案中的任何語言。請檢查檔案格式。"
 
-#: lexisync.po:913
+#: main_window.py:3755
 #, python-brace-format
 msgid "Could not export project translations to Excel: {error}"
 msgstr "無法將專案翻譯匯出至 Excel：{error}"
 
-#: lexisync.po:918
+#: main_window.py:3924
 #, python-brace-format
 msgid "Could not export project translations to JSON: {error}"
 msgstr "無法將專案翻譯匯出至 JSON：{error}"
 
-#: lexisync.po:923
+#: main_window.py:3964
 #, python-brace-format
 msgid "Could not export project translations to YAML: {error}"
 msgstr "無法將專案翻譯匯出至 YAML：{error}"
 
-#: lexisync.po:928
+#: main_window.py:4144
 msgid "Could not get code content for re-extraction."
 msgstr "無法取得用於重新擷取的程式碼內容。"
 
-#: lexisync.po:932
+#: main_window.py:3884
 #, python-brace-format
 msgid "Could not import project translations from Excel: {error}"
 msgstr "無法從 Excel 匯入專案翻譯：{error}"
 
-#: lexisync.po:937
+#: dialogs/extraction_pattern_dialog.py:182
+#: dialogs/prompt_manager_dialog.py:256
 #, python-brace-format
 msgid "Could not load preset file: {error}"
 msgstr "無法載入預設集檔案：{error}"
 
-#: lexisync.po:942
+#: main_window.py:2080
 #, python-brace-format
 msgid "Could not load project from '{path}': {error}"
 msgstr "無法從 '{path}' 載入專案：{error}"
 
-#: lexisync.po:947
+#: main_window.py:2291
 #, python-brace-format
 msgid "Could not open or parse code file '{filename}': {error}"
 msgstr "無法開啟或解析程式碼檔案 '{filename}'：{error}"
 
-#: lexisync.po:952
+#: main_window.py:4140
 #, python-brace-format
 msgid ""
 "Could not re-read {filepath} from disk.\n"
@@ -960,57 +1001,63 @@ msgstr ""
 "將使用記憶體中的版本。\n"
 "錯誤：{error}"
 
-#: lexisync.po:963
+#: main_window.py:3561
 #, python-brace-format
 msgid "Could not save code file: {error}"
 msgstr "無法儲存程式碼檔案：{error}"
 
-#: lexisync.po:968
+#: dialogs/extraction_pattern_dialog.py:197
+#: dialogs/prompt_manager_dialog.py:271
 #, python-brace-format
 msgid "Could not save preset file: {error}"
 msgstr "無法儲存預設集檔案：{error}"
 
-#: lexisync.po:973
+#: ui_components/welcome_screen.py:203
 msgid "Create a structured project folder"
 msgstr "建立一個結構化的專案資料夾"
 
-#: lexisync.po:977
+#: plugins/plugin_dialog.py:412
 msgid "Current"
 msgstr "当前"
 
-#: lexisync.po:981
+#: dialogs/language_pair_dialog.py:308
 msgid "Current Selection:"
 msgstr "目前選取："
 
-#: lexisync.po:985
+#: dialogs/extraction_pattern_dialog.py:92
+#: dialogs/extraction_pattern_dialog.py:114
+#: dialogs/extraction_pattern_dialog.py:174
+#: dialogs/extraction_pattern_dialog.py:243
+#: dialogs/extraction_pattern_dialog.py:292
 msgid "Custom"
 msgstr "自訂"
 
-#: lexisync.po:989
+#: services/glossary_service.py:389
 msgid "Database update complete!"
 msgstr "資料庫更新完成！"
 
-#: lexisync.po:993
+#: ui_components/file_explorer_panel.py:773
 msgid "Delete"
 msgstr "刪除"
 
-#: lexisync.po:997
+#: ui_components/file_explorer_panel.py:872
+#: ui_components/file_explorer_panel.py:924
 msgid "Delete Error"
 msgstr "刪除錯誤"
 
-#: lexisync.po:1001
+#: plugins/plugin_dialog.py:153 plugins/plugin_dialog.py:485
 msgid "Delete Plugin"
 msgstr "刪除外掛"
 
-#: lexisync.po:1005
+#: dialogs/extraction_pattern_dialog.py:39 dialogs/prompt_manager_dialog.py:80
 msgid "Delete Selected"
 msgstr "刪除選定項"
 
-#: lexisync.po:1009
+#: ui_components/file_explorer_panel.py:916
 msgid "Deletion Results"
 msgstr "刪除結果"
 
-#: lexisync.po:1013
+#: ui_components/file_explorer_panel.py:915
 #, python-brace-format
 msgid ""
 "Deletion failed with errors:\n"
@@ -1021,403 +1068,430 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: lexisync.po:1024
+#: plugins/plugin_dialog.py:582
 msgid "Dependency Check"
 msgstr "相依性檢查"
 
-#: lexisync.po:1028
+#: plugins/plugin_manager.py:258 plugins/plugin_manager.py:528
 msgid "Dependency Error"
 msgstr "依赖项错误"
 
-#: lexisync.po:1032
+#: dialogs/prompt_manager_dialog.py:417
 msgid "Description"
 msgstr "描述"
 
-#: lexisync.po:1036
+#: plugins/plugin_dialog.py:478
 msgid "Disable"
 msgstr "停用"
 
-#: lexisync.po:1040
+#: ui_components/welcome_screen.py:213
 msgid "Discover and install plugins"
 msgstr "探索並安裝外掛"
 
-#: lexisync.po:1044
+#: main_window.py:1406
 msgid "Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"
 msgstr "顯示：0/0 | 已翻譯：0 | 未翻譯：0 | 已忽略：0"
 
-#: lexisync.po:1048
+#: main_window.py:1428
 #, python-brace-format
-msgid "Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}"
-msgstr "顯示：{displayed_count}/{total_count} | 已翻譯：{translated_visible} | 未翻譯：{untranslated_visible} | 已忽略：{ignored_visible}"
+msgid ""
+"Displayed: {displayed_count}/{total_count} | Translated: "
+"{translated_visible} | Untranslated: {untranslated_visible} | Ignored: "
+"{ignored_visible}"
+msgstr ""
+"顯示：{displayed_count}/{total_count} | 已翻譯：{translated_visible} | "
+"未翻譯：{untranslated_visible} | 已忽略：{ignored_visible}"
 
-#: lexisync.po:1053
+#: main_window.py:1939
 #, python-brace-format
-msgid "Do you want to add '{filename}' as a new source file to the current project?"
+msgid ""
+"Do you want to add '{filename}' as a new source file to the current "
+"project?"
 msgstr "您要將 '{filename}' 新增為目前專案的新來源檔案嗎？"
 
-#: lexisync.po:1058
+#: main_window.py:2373
 msgid "Do you want to open the target folder?"
 msgstr "您想要開啟目標資料夾嗎？"
 
-#: lexisync.po:1062
+#: main_window.py:4845
 msgid "Do you want to overwrite them, skip them, or cancel the operation?"
 msgstr "您想要覆寫它們、跳過它們，還是取消操作？"
 
-#: lexisync.po:1066
+#: dialogs/statistics_dialog.py:671
 msgid "Double-click to locate."
 msgstr "按兩下以定位。"
 
-#: lexisync.po:1070
+#: dialogs/marketplace_dialog.py:478
 msgid "Download Error"
 msgstr "下載錯誤"
 
-#: lexisync.po:1074
+#: dialogs/marketplace_dialog.py:477
 #, python-brace-format
 msgid "Download failed: {error}"
 msgstr "下載失敗：{error}"
 
-#: lexisync.po:1079
+#: dialogs/marketplace_dialog.py:467
 #, python-brace-format
 msgid "Downloading {plugin_name}..."
 msgstr "正在下載 {plugin_name}..."
 
-#: lexisync.po:1084
+#: dialogs/new_project_dialog.py:172
 msgid "Drag and drop .ow, .txt, .po, or .pot files here"
 msgstr "在此處拖放 .ow, .txt, .po 或 .pot 檔案"
 
-#: lexisync.po:1088
+#: dialogs/new_project_dialog.py:201
 msgid "Drag and drop .tbx files here"
 msgstr "在此處拖放 .tbx 檔案"
 
-#: lexisync.po:1092
+#: dialogs/new_project_dialog.py:223
 msgid "Drag and drop .xlsx files here"
 msgstr "在此處拖放 .xlsx 檔案"
 
-#: lexisync.po:1096
+#: dialogs/prompt_manager_dialog.py:165 dialogs/prompt_manager_dialog.py:171
+#: dialogs/prompt_manager_dialog.py:311
 msgid "Dynamic Instruction"
 msgstr "動態指令"
 
-#: lexisync.po:1100
+#: main_window.py:939
 msgid "Dynamic sorting enabled."
 msgstr "動態排序已啟用。"
 
-#: lexisync.po:1104
+#: main_window.py:772 main_window.py:1270
 msgid "Edit && Details"
 msgstr "編輯與詳細資訊"
 
-#: lexisync.po:1108
+#: main_window.py:717 main_window.py:1313
 msgid "Edit && Details Panel"
 msgstr "編輯與詳細資訊面板"
 
-#: lexisync.po:1112
+#: main_window.py:2752 main_window.py:5197
 msgid "Edit Comment..."
 msgstr "編輯註解..."
 
-#: lexisync.po:1116
+#: ui_components/file_explorer_panel.py:793
 msgid "Edit Error"
 msgstr "編輯錯誤"
 
-#: lexisync.po:1120
+#: dialogs/extraction_pattern_dialog.py:144
 msgid "Edit Extraction Rule"
 msgstr "編輯擷取規則"
 
-#: lexisync.po:1124
+#: dialogs/prompt_manager_dialog.py:218
 msgid "Edit Prompt Fragment"
 msgstr "編輯提示詞片段"
 
-#: lexisync.po:1128
+#: plugins/plugin_dialog.py:478
 msgid "Enable"
 msgstr "啟用"
 
-#: lexisync.po:1132
+#: dialogs/settings_pages.py:144
 msgid "Enable Smart Paste"
 msgstr "啟用智慧貼上"
 
-#: lexisync.po:1136
+#: dialogs/prompt_manager_dialog.py:317
 msgid "Enable this fragment"
 msgstr "啟用此片段"
 
-#: lexisync.po:1140
+#: dialogs/extraction_pattern_dialog.py:235
 msgid "Enable this rule"
 msgstr "啟用此規則"
 
-#: lexisync.po:1144
+#: dialogs/extraction_pattern_dialog.py:60 dialogs/prompt_manager_dialog.py:101
 msgid "Enabled"
 msgstr "已啟用"
 
-#: lexisync.po:1148
+#: dialogs/settings_pages.py:331
 msgid "Enabled Validation Checks"
 msgstr "已啟用的驗證檢查"
 
-#: lexisync.po:1152
+#: utils/enums.py:50
 msgid "Ending Punctuation Mismatch"
 msgstr "結尾標點不符"
 
-#: lexisync.po:1156
+#: services/validation_service.py:107
 #, python-brace-format
 msgid "Ending punctuation differs: '{c1}' vs '{c2}'."
 msgstr "結尾標點不同：'{c1}' vs '{c2}'。"
 
-#: lexisync.po:1161
+#: services/validation_service.py:103
 msgid "Ending punctuation presence differs."
 msgstr "結尾標點存在與否不同。"
 
-#: lexisync.po:1165
+#: main_window.py:5193
 #, python-brace-format
 msgid "Enter comment for {count} selected items:"
 msgstr "為 {count} 個選定項目輸入註解："
 
-#: lexisync.po:1170
+#: dialogs/management_tabs.py:153 dialogs/management_tabs.py:505
 msgid "Entry Count"
 msgstr "項目計數"
 
-#: lexisync.po:1174
+#: dialogs/extraction_pattern_dialog.py:180
+#: dialogs/extraction_pattern_dialog.py:297
+#: dialogs/extraction_pattern_dialog.py:300
+#: dialogs/project_settings_dialog.py:315 dialogs/prompt_manager_dialog.py:254
+#: main_window.py:1520 main_window.py:1542 main_window.py:1871
+#: main_window.py:1950 main_window.py:2291 main_window.py:2537
+#: main_window.py:2674 main_window.py:2982 main_window.py:3253
+#: main_window.py:3257 main_window.py:3549 main_window.py:3566
+#: main_window.py:3570 main_window.py:3589 main_window.py:4144
+#: main_window.py:4286 main_window.py:5491 plugins/plugin_dialog.py:532
+#: plugins/plugin_dialog.py:561 ui_components/marker_bar.py:29
 msgid "Error"
 msgstr "錯誤"
 
-#: lexisync.po:1178
+#: main_window.py:4007
 #, python-brace-format
 msgid "Error extracting POT file: {error}"
 msgstr "擷取 POT 檔案時發生錯誤：{error}"
 
-#: lexisync.po:1183
+#: main_window.py:4064
 #, python-brace-format
 msgid "Error importing PO file '{filename}': {error}"
 msgstr "匯入 PO 檔案 '{filename}' 時發生錯誤：{error}"
 
-#: lexisync.po:1188
+#: main_window.py:3880
 #, python-brace-format
 msgid "Error processing Excel file (possibly column names issue): {error}"
 msgstr "處理 Excel 檔案時發生錯誤（可能為欄位名稱問題）：{error}"
 
-#: lexisync.po:1193
+#: main_window.py:3865
 #, python-brace-format
 msgid "Error processing Excel row {row_num}: {error}. Skipping this row."
 msgstr "處理 Excel 第 {row_num} 列時發生錯誤：{error}。正在跳過此列。"
 
-#: lexisync.po:1198
+#: main_window.py:4211
 #, python-brace-format
 msgid "Error reloading translatable text: {error}"
 msgstr "重新載入可翻譯文本時發生錯誤：{error}"
 
-#: lexisync.po:1203
+#: dialogs/statistics_dialog.py:505
 msgid "Error:"
 msgstr "錯誤："
 
-#: lexisync.po:1207
+#: main_window.py:2300
 #, python-brace-format
 msgid "Error: '{filename}' is not a valid file."
 msgstr "錯誤：'{filename}' 不是有效的檔案。"
 
-#: lexisync.po:1212
+#: dialogs/marketplace_dialog.py:293
 #, python-brace-format
 msgid "Error: Could not load marketplace index. {error}"
 msgstr "錯誤：無法載入外掛市集索引。{error}"
 
-#: lexisync.po:1217
+#: dialogs/extraction_pattern_dialog.py:261
 msgid "Escape for Regex (Left)"
 msgstr "正規表示式轉義 (左)"
 
-#: lexisync.po:1221
+#: dialogs/extraction_pattern_dialog.py:265
 msgid "Escape for Regex (Right)"
 msgstr "正規表示式轉義 (右)"
 
-#: lexisync.po:1225
+#: dialogs/new_project_dialog.py:301
 msgid "Excel Files"
 msgstr "Excel 檔案"
 
-#: lexisync.po:1229
+#: main_window.py:3767
 msgid "Excel files (*.xlsx)"
 msgstr "Excel 檔案 (*.xlsx)"
 
-#: lexisync.po:1233
+#: main_window.py:3777
 msgid "Excel header format is incorrect or empty."
 msgstr "Excel 標頭格式不正確或為空。"
 
-#: lexisync.po:1237
+#: main_window.py:3790
 #, python-brace-format
 msgid ""
 "Excel header must contain 'UUID' and '{translation_col}' columns.\n"
-"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'."
+"Optional columns: '{comment_col}', '{reviewed_col}', '{ignored_col}', "
+"'{original_semantic_col}'."
 msgstr ""
 "Excel 標頭必須包含 'UUID' 和 '{translation_col}' 欄位。\n"
-"可選欄位：'{comment_col}', '{reviewed_col}', '{ignored_col}', '{original_semantic_col}'。"
+"可選欄位：'{comment_col}', '{reviewed_col}', '{ignored_col}', "
+"'{original_semantic_col}'。"
 
-#: lexisync.po:1246
+#: main_window.py:512 main_window.py:700
 msgid "Exit"
 msgstr "結束"
 
-#: lexisync.po:1250
+#: dialogs/statistics_dialog.py:565
 msgid "Expansion Ratio"
 msgstr "膨脹率"
 
-#: lexisync.po:1254
+#: main_window.py:458 main_window.py:690
 msgid "Export"
 msgstr "匯出"
 
-#: lexisync.po:1258
+#: main_window.py:3754 main_window.py:3923 main_window.py:3963
+#: main_window.py:4114
 msgid "Export Error"
 msgstr "匯出錯誤"
 
-#: lexisync.po:1262
+#: dialogs/extraction_pattern_dialog.py:187
 msgid "Export Extraction Rule Preset"
 msgstr "匯出擷取規則預設集"
 
-#: lexisync.po:1266
+#: dialogs/extraction_pattern_dialog.py:197
+#: dialogs/prompt_manager_dialog.py:271
 msgid "Export Failed"
 msgstr "匯出失敗"
 
-#: lexisync.po:1270
+#: dialogs/extraction_pattern_dialog.py:53 dialogs/prompt_manager_dialog.py:94
 msgid "Export Preset"
 msgstr "匯出預設集"
 
-#: lexisync.po:1274
+#: main_window.py:3714
 msgid "Export Project Translations to Excel"
 msgstr "將專案翻譯匯出至 Excel"
 
-#: lexisync.po:1278
+#: main_window.py:3904
 msgid "Export Project Translations to JSON"
 msgstr "將專案翻譯匯出至 JSON"
 
-#: lexisync.po:1282
+#: main_window.py:3944
 msgid "Export Project Translations to YAML"
 msgstr "將專案翻譯匯出至 YAML"
 
-#: lexisync.po:1286
+#: dialogs/prompt_manager_dialog.py:261
 msgid "Export Prompt Preset"
 msgstr "匯出提示詞預設集"
 
-#: lexisync.po:1290
+#: main_window.py:461 main_window.py:693
 msgid "Export to Excel"
 msgstr "匯出至 Excel"
 
-#: lexisync.po:1294
+#: main_window.py:466 main_window.py:694
 msgid "Export to JSON"
 msgstr "匯出至 JSON"
 
-#: lexisync.po:1298
+#: main_window.py:476 main_window.py:698 main_window.py:4099
 msgid "Export to PO File..."
 msgstr "匯出至 PO 檔案..."
 
-#: lexisync.po:1302
+#: main_window.py:471 main_window.py:695
 msgid "Export to YAML"
 msgstr "匯出至 YAML"
 
-#: lexisync.po:1306
+#: plugins/plugin_dialog.py:452
 msgid "External Libraries"
 msgstr "外部函式庫"
 
-#: lexisync.po:1310
+#: utils/enums.py:38
 msgid "Extra Placeholder"
 msgstr "多餘的預留位置"
 
-#: lexisync.po:1314
+#: services/validation_service.py:48
 #, python-brace-format
 msgid "Extra placeholders: {placeholders}"
 msgstr "多餘的預留位置：{placeholders}"
 
-#: lexisync.po:1319
+#: main_window.py:501 main_window.py:696
 msgid "Extract POT Template from Code..."
 msgstr "從程式碼擷取 POT 範本..."
 
-#: lexisync.po:1323
+#: main_window.py:2260
 msgid "Extracting strings..."
 msgstr "正在擷取字串..."
 
-#: lexisync.po:1327
+#: dialogs/settings_pages.py:168
 msgid "Extraction"
 msgstr "擷取"
 
-#: lexisync.po:1331
+#: dialogs/extraction_pattern_dialog.py:164
+#: dialogs/extraction_pattern_dialog.py:189
 #, python-brace-format
 msgid "Extraction Pattern Files (*{ext});;All Files (*.*)"
 msgstr "擷取模式檔案 (*{ext});;所有檔案 (*.*)"
 
-#: lexisync.po:1336
+#: main_window.py:4117
 msgid "Extraction Rule Manager"
 msgstr "擷取規則管理員"
 
-#: lexisync.po:1340
+#: main_window.py:4120
 msgid "Extraction Rules Updated"
 msgstr "擷取規則已更新"
 
-#: lexisync.po:1344
+#: dialogs/extraction_pattern_dialog.py:204
 msgid "Extraction rules updated. Consider reloading the text."
 msgstr "擷取規則已更新。建議重新載入文本。"
 
-#: lexisync.po:1348
-msgid "Extraction rules updated. Do you want to reload the translatable text of the current code using the new rules immediately?"
+#: main_window.py:4121
+msgid ""
+"Extraction rules updated. Do you want to reload the translatable text of "
+"the current code using the new rules immediately?"
 msgstr "擷取規則已更新。您要立即使用新規則重新載入目前程式碼的可翻譯文本嗎？"
 
-#: lexisync.po:1352
+#: plugins/plugin_dialog.py:620
 msgid "Failed"
 msgstr "失敗"
 
-#: lexisync.po:1356
+#: ui_components/file_explorer_panel.py:855
 msgid "Failed to access system clipboard."
 msgstr "無法存取系統剪貼簿。"
 
-#: lexisync.po:1360
+#: main_window.py:1542
 #, python-brace-format
 msgid "Failed to add glossary entry: {error}"
 msgstr "新增術語項目失敗：{error}"
 
-#: lexisync.po:1365
+#: dialogs/management_tabs.py:258 main_window.py:2996
 #, python-brace-format
 msgid "Failed to analyze the TBX file: {error}"
 msgstr "分析 TBX 檔案失敗：{error}"
 
-#: lexisync.po:1370
+#: ui_components/file_explorer_panel.py:858
 msgid "Failed to copy to clipboard."
 msgstr "複製到剪貼簿失敗。"
 
-#: lexisync.po:1374
+#: services/project_manager.py:80
 #, python-brace-format
 msgid "Failed to create initial translation data: {error}"
 msgstr "無法建立初始翻譯資料：{error}"
 
-#: lexisync.po:1379
+#: services/project_service.py:103
 #, python-brace-format
 msgid "Failed to create project: {error}"
 msgstr "建立專案失敗：{error}"
 
-#: lexisync.po:1384
+#: main_window.py:4286
 msgid "Failed to delete the TM entry from the database."
 msgstr "無法從資料庫中刪除 TM 項目。"
 
-#: lexisync.po:1388
+#: ui_components/file_explorer_panel.py:903
 #, python-brace-format
 msgid "Failed to delete {path}: {error}"
 msgstr "刪除 {path} 失敗：{error}"
 
-#: lexisync.po:1393
+#: main_window.py:4114
 #, python-brace-format
 msgid "Failed to export to PO file: {error}"
 msgstr "匯出至 PO 檔案失敗：{error}"
 
-#: lexisync.po:1398
+#: plugins/plugin_manager.py:412
 #, python-brace-format
 msgid "Failed to extract the archive: {error}"
 msgstr "解壓縮檔案失敗：{error}"
 
-#: lexisync.po:1403
+#: dialogs/marketplace_dialog.py:40
 #, python-brace-format
-msgid "Failed to fetch data (HTTP {status_code}). The marketplace file might be missing or the server is down."
+msgid ""
+"Failed to fetch data (HTTP {status_code}). The marketplace file might be "
+"missing or the server is down."
 msgstr "獲取資料失敗 (HTTP {status_code})。市集檔案可能遺失或伺服器無回應。"
 
-#: lexisync.po:1408
+#: dialogs/marketplace_dialog.py:294
 msgid "Failed to fetch plugin list from the server."
 msgstr "從伺服器獲取外掛清單失敗。"
 
-#: lexisync.po:1412
+#: ui_components/file_explorer_panel.py:172
 msgid "Failed to initialize file system models."
 msgstr "初始化檔案系統模型失敗。"
 
-#: lexisync.po:1416
+#: ui_components/file_explorer_panel.py:179
 msgid "Failed to initialize user interface."
 msgstr "初始化使用者介面失敗。"
 
-#: lexisync.po:1420
+#: plugins/plugin_dialog.py:621
 #, python-brace-format
 msgid ""
 "Failed to install library '{lib}'.\n"
@@ -1426,43 +1500,43 @@ msgstr ""
 "無法安裝程式庫 '{lib}'。\n"
 "請查看日誌以取得詳細資訊。"
 
-#: lexisync.po:1429
+#: plugins/plugin_dialog.py:249
 #, python-brace-format
 msgid "Failed to load: {reason}"
 msgstr "載入失敗：{reason}"
 
-#: lexisync.po:1434
+#: plugins/plugin_manager.py:451
 #, python-brace-format
 msgid "Failed to move plugin files to the destination: {error}"
 msgstr "移動外掛檔案至目標位置失敗：{error}"
 
-#: lexisync.po:1439
+#: ui_components/file_explorer_panel.py:483
 msgid "Failed to navigate back."
 msgstr "返回上一頁失敗。"
 
-#: lexisync.po:1443
+#: ui_components/file_explorer_panel.py:499
 msgid "Failed to navigate forward."
 msgstr "向前瀏覽失敗。"
 
-#: lexisync.po:1447
+#: ui_components/file_explorer_panel.py:558
 msgid "Failed to navigate to home directory."
 msgstr "導航至主目錄失敗。"
 
-#: lexisync.po:1451
+#: ui_components/file_explorer_panel.py:515
 msgid "Failed to navigate to parent directory."
 msgstr "無法導覽至父目錄。"
 
-#: lexisync.po:1455
+#: ui_components/file_explorer_panel.py:448
 #, python-brace-format
 msgid "Failed to navigate to: {path}"
 msgstr "導航至 {path} 失敗"
 
-#: lexisync.po:1460
+#: main_window.py:2326
 #, python-brace-format
 msgid "Failed to open '{filename}': {error}"
 msgstr "開啟 '{filename}' 失敗：{error}"
 
-#: lexisync.po:1465
+#: main_window.py:1871
 #, python-brace-format
 msgid ""
 "Failed to open file '{filename}':\n"
@@ -1471,643 +1545,684 @@ msgstr ""
 "開啟檔案 '{filename}' 失敗：\n"
 "{error}"
 
-#: lexisync.po:1474
+#: ui_components/file_explorer_panel.py:808
 msgid "Failed to open file explorer."
 msgstr "無法開啟檔案總管。"
 
-#: lexisync.po:1478
+#: ui_components/file_explorer_panel.py:612
 msgid "Failed to open selected item."
 msgstr "無法開啟選取的項目。"
 
-#: lexisync.po:1482
+#: ui_components/file_explorer_panel.py:541
 msgid "Failed to refresh directory."
 msgstr "重新整理目錄失敗。"
 
-#: lexisync.po:1486
+#: plugins/plugin_manager.py:445
 #, python-brace-format
 msgid "Failed to remove the existing plugin directory: {error}"
 msgstr "移除現有外掛目錄失敗：{error}"
 
-#: lexisync.po:1491
+#: ui_components/file_explorer_panel.py:812
 msgid "Failed to reveal item in file explorer."
 msgstr "無法在檔案總管中顯示項目。"
 
-#: lexisync.po:1495
+#: main_window.py:3682
 #, python-brace-format
 msgid "Failed to save PO file: {error}"
 msgstr "儲存 PO 檔案失敗：{error}"
 
-#: lexisync.po:1500
+#: services/project_manager.py:86
 #, python-brace-format
 msgid "Failed to save project configuration: {error}"
 msgstr "儲存專案設定失敗：{error}"
 
-#: lexisync.po:1505
+#: ui_components/file_explorer_panel.py:186
 msgid "Failed to setup signal connections."
 msgstr "無法設定訊號連線。"
 
-#: lexisync.po:1509
+#: ui_components/file_explorer_panel.py:793
 msgid "Failed to start editing the item."
 msgstr "無法開始編輯項目。"
 
-#: lexisync.po:1513
+#: dialogs/management_tabs.py:303
 #, python-brace-format
 msgid "Failed to start import: {error}"
 msgstr "開始匯入失敗：{error}"
 
-#: lexisync.po:1518
+#: dialogs/language_pair_dialog.py:270 dialogs/language_pair_dialog.py:296
 msgid "Favorite Pairs"
 msgstr "我的最愛組合"
 
-#: lexisync.po:1522
+#: dialogs/marketplace_dialog.py:286
 msgid "Fetching plugin index..."
 msgstr "正在獲取外掛索引..."
 
-#: lexisync.po:1526
+#: services/project_manager.py:88
 #, python-brace-format
 msgid "File '{filename}' added to the project successfully."
 msgstr "檔案 '{filename}' 已成功加入專案。"
 
-#: lexisync.po:1531
+#: main_window.py:3578
 #, python-brace-format
-msgid "File '{filename}' already exists. Overwrite? A backup file (.bak) will be created."
+msgid ""
+"File '{filename}' already exists. Overwrite? A backup file (.bak) will be"
+" created."
 msgstr "檔案 '{filename}' 已存在。要覆寫嗎？將會建立一個備份檔案 (.bak)。"
 
-#: lexisync.po:1536
+#: main_window.py:1837
 #, python-brace-format
 msgid "File '{filepath}' does not exist."
 msgstr "檔案 '{filepath}' 不存在。"
 
-#: lexisync.po:1541
+#: ui_components/file_explorer_panel.py:612
 msgid "File Access Error"
 msgstr "檔案存取錯誤"
 
-#: lexisync.po:1545
+#: ui_components/file_explorer_panel.py:798
 msgid "File Error"
 msgstr "檔案錯誤"
 
-#: lexisync.po:1549
+#: dialogs/project_settings_dialog.py:329
 msgid "File Exists"
 msgstr "檔案已存在"
 
-#: lexisync.po:1553
+#: main_window.py:768 main_window.py:1236
 msgid "File Explorer"
 msgstr "檔案總管"
 
-#: lexisync.po:1557
+#: main_window.py:715 main_window.py:1309
 msgid "File Explorer Panel"
 msgstr "檔案總管面板"
 
-#: lexisync.po:1561
+#: dialogs/management_tabs.py:153 dialogs/management_tabs.py:505
+#: dialogs/new_project_dialog.py:36 dialogs/new_project_dialog.py:44
+#: dialogs/project_settings_dialog.py:263
 msgid "File Name"
 msgstr "檔案名稱"
 
-#: lexisync.po:1565
+#: main_window.py:2329
 msgid "File Open Error"
 msgstr "檔案開啟錯誤"
 
-#: lexisync.po:1569
+#: main_window.py:4139
 msgid "File Read Error"
 msgstr "檔案讀取錯誤"
 
-#: lexisync.po:1573
+#: ui_components/file_explorer_panel.py:532
 msgid "File explorer refreshed."
 msgstr "檔案總管已重新整理。"
 
-#: lexisync.po:1577
+#: dialogs/project_settings_dialog.py:312 main_window.py:830
+#: main_window.py:1836
 msgid "File not found"
 msgstr "找不到檔案"
 
-#: lexisync.po:1581
+#: ui_components/file_explorer_panel.py:798
 msgid "File or directory does not exist."
 msgstr "檔案或目錄不存在。"
 
-#: lexisync.po:1585
+#: main_window.py:831
 #, python-brace-format
 msgid "File or project '{path}' does not exist."
 msgstr "檔案或專案 '{path}' 不存在。"
 
-#: lexisync.po:1590
+#: ui_components/file_explorer_panel.py:256
+#: ui_components/file_explorer_panel.py:941
 msgid "Filter Settings"
 msgstr "篩選設定"
 
-#: lexisync.po:1594
+#: ui_components/file_explorer_panel.py:273
+#: ui_components/file_explorer_panel.py:929
 msgid "Filter files..."
 msgstr "篩選檔案..."
 
-#: lexisync.po:1598
+#: main_window.py:753 main_window.py:1035
 msgid "Filter:"
 msgstr "篩選："
 
-#: lexisync.po:1602
+#: main_window.py:2509
 #, python-brace-format
 msgid "Filtered by '{search_term}'."
 msgstr "已依 '{search_term}' 篩選。"
 
-#: lexisync.po:1607
+#: dialogs/statistics_dialog.py:44
 msgid "Finalizing..."
 msgstr "正在完成..."
 
-#: lexisync.po:1611
+#: main_window.py:758 main_window.py:1082
 msgid "Find"
 msgstr "尋找"
 
-#: lexisync.po:1615
+#: dialogs/search_dialog.py:74
 msgid "Find Next"
 msgstr "尋找下一個"
 
-#: lexisync.po:1619
+#: dialogs/search_dialog.py:77
 msgid "Find Previous"
 msgstr "尋找上一個"
 
-#: lexisync.po:1623
+#: main_window.py:4360
 msgid "Find and Replace"
 msgstr "尋找與取代"
 
-#: lexisync.po:1627
+#: dialogs/search_dialog.py:34
 msgid "Find what:"
 msgstr "尋找目標："
 
-#: lexisync.po:1631
+#: main_window.py:527 main_window.py:705
 msgid "Find/Replace..."
 msgstr "尋找/取代..."
 
-#: lexisync.po:1635
+#: dialogs/settings_pages.py:342
 msgid "Flag entries marked as 'Fuzzy'"
 msgstr "標記為「模糊」的條目"
 
-#: lexisync.po:1639
+#: dialogs/font_settings_dialog.py:74
 msgid "Font Family:"
 msgstr "字型系列："
 
-#: lexisync.po:1643
+#: main_window.py:994
 msgid "Font Settings"
 msgstr "字型設定"
 
-#: lexisync.po:1647
+#: dialogs/settings_pages.py:215
 msgid "Font Settings..."
 msgstr "字型設定..."
 
-#: lexisync.po:1651
-msgid "Font settings have been changed. Please restart the application for the changes to take effect."
+#: main_window.py:997
+msgid ""
+"Font settings have been changed. Please restart the application for the "
+"changes to take effect."
 msgstr "字型設定已變更。請重新啟動應用程式以使變更生效。"
 
-#: lexisync.po:1655
+#: dialogs/settings_pages.py:217
 msgid "Fonts:"
 msgstr "字型："
 
-#: lexisync.po:1659
+#: plugins/plugin_dialog.py:225
 #, python-brace-format
 msgid "Force-enabled with missing libraries: {libs}"
 msgstr "強制啟用但缺少函式庫：{libs}"
 
-#: lexisync.po:1664
+#: ui_components/file_explorer_panel.py:227
+#: ui_components/file_explorer_panel.py:937
 msgid "Forward"
 msgstr "前進"
 
-#: lexisync.po:1668
+#: dialogs/search_dialog.py:198
 #, python-brace-format
 msgid "Found {count} matches."
 msgstr "找到 {count} 個相符項目。"
 
-#: lexisync.po:1673
+#: utils/enums.py:62
 msgid "Fuzzy Translation"
 msgstr "模糊翻譯"
 
-#: lexisync.po:1677
+#: main_window.py:5439
 msgid "Fuzzy match, please review."
 msgstr "模糊比對，請審閱。"
 
-#: lexisync.po:1681
+#: dialogs/project_settings_dialog.py:516 dialogs/settings_dialog.py:108
 msgid "General"
 msgstr "常规"
 
-#: lexisync.po:1685
+#: ui_components/marker_bar.py:36
 msgid "Git Added"
 msgstr "Git 新增"
 
-#: lexisync.po:1689
+#: ui_components/marker_bar.py:35
 msgid "Git Modified"
 msgstr "Git 修改"
 
-#: lexisync.po:1693
+#: dialogs/settings_dialog.py:120 main_window.py:1561 main_window.py:1967
+#: main_window.py:3055
 msgid "Global Resources"
 msgstr "全球資源"
 
-#: lexisync.po:1697
+#: dialogs/project_settings_dialog.py:417 dialogs/resources_page.py:21
+#: main_window.py:770 main_window.py:1242 main_window.py:1554
+#: main_window.py:1569
 msgid "Glossary"
 msgstr "術語庫"
 
-#: lexisync.po:1701
+#: utils/enums.py:56
 msgid "Glossary Mismatch"
 msgstr "術語不符"
 
-#: lexisync.po:1705
+#: services/validation_service.py:170
 #, python-brace-format
-msgid "Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'."
+msgid ""
+"Glossary Mismatch: Term '{term}' should be translated as one of "
+"'{targets}'."
 msgstr "術語表不符：術語「{term}」應翻譯為「{targets}」其中之一。"
 
-#: lexisync.po:1710
+#: main_window.py:716 main_window.py:1329
 msgid "Glossary Panel"
 msgstr "術語庫面板"
 
-#: lexisync.po:1714
+#: ui_components/glossary_panel.py:43
 msgid "Glossary Settings"
 msgstr "術語庫設定"
 
-#: lexisync.po:1718
+#: services/glossary_service.py:662
 msgid "Glossary entry added successfully."
 msgstr "術語庫條目已成功新增。"
 
-#: lexisync.po:1722
+#: main_window.py:1392
 msgid "Hint: "
 msgstr "提示："
 
-#: lexisync.po:1726
+#: main_window.py:1390
 msgid "Hint: requests not found, AI translation is disabled."
 msgstr "提示：未找到 requests，AI 翻譯功能已停用。"
 
-#: lexisync.po:1730
+#: ui_components/file_explorer_panel.py:230
+#: ui_components/file_explorer_panel.py:940
 msgid "Home"
 msgstr "首頁"
 
-#: lexisync.po:1734
+#: ui_components/file_explorer_panel.py:551
 msgid "Home directory no longer exists."
 msgstr "首頁目錄已不存在。"
 
-#: lexisync.po:1738
+#: dialogs/marketplace_dialog.py:439
 msgid "Homepage"
 msgstr "首頁"
 
-#: lexisync.po:1742
+#: main_window.py:2742
 msgid "Ignore Warnings for Selected"
 msgstr "忽略選定項的警告"
 
-#: lexisync.po:1746
+#: main_window.py:3503
 #, python-brace-format
 msgid "Ignore status for ID {id} -> {status}"
 msgstr "ID {id} 的忽略狀態 -> {status}"
 
-#: lexisync.po:1751
+#: main_window.py:3112 main_window.py:5137
+#: ui_components/comment_status_panel.py:57
 msgid "Ignore this string"
 msgstr "忽略此字串"
 
-#: lexisync.po:1755
+#: dialogs/statistics_dialog.py:533 dialogs/statistics_dialog.py:590
+#: main_window.py:754 main_window.py:1038 main_window.py:3724
+#: main_window.py:3785 main_window.py:3793 main_window.py:4583
 msgid "Ignored"
 msgstr "已忽略"
 
-#: lexisync.po:1759
+#: main_window.py:3170
 #, python-brace-format
 msgid "Ignored warnings for {count} item(s)."
 msgstr "已忽略 {count} 個項目的警告。"
 
-#: lexisync.po:1764
+#: dialogs/import_configuration_dialog.py:73 main_window.py:445
+#: main_window.py:688
 msgid "Import"
 msgstr "匯入"
 
-#: lexisync.po:1768
+#: dialogs/management_tabs.py:154 dialogs/management_tabs.py:505
 msgid "Import Date"
 msgstr "匯入日期"
 
-#: lexisync.po:1772
+#: dialogs/management_tabs.py:302 main_window.py:3777 main_window.py:3789
+#: main_window.py:3879 main_window.py:3883
 msgid "Import Error"
 msgstr "匯入錯誤"
 
-#: lexisync.po:1776
+#: dialogs/extraction_pattern_dialog.py:162
 msgid "Import Extraction Rule Preset"
 msgstr "匯入擷取規則預設集"
 
-#: lexisync.po:1780
+#: dialogs/extraction_pattern_dialog.py:182 dialogs/management_tabs.py:355
+#: dialogs/management_tabs.py:561 dialogs/prompt_manager_dialog.py:256
+#: main_window.py:3060
 msgid "Import Failed"
 msgstr "匯入失敗"
 
-#: lexisync.po:1784
+#: dialogs/management_tabs.py:235
 msgid "Import In Progress"
 msgstr "匯入中"
 
-#: lexisync.po:1788
+#: dialogs/extraction_pattern_dialog.py:49 dialogs/prompt_manager_dialog.py:90
 msgid "Import Preset"
 msgstr "匯入預設集"
 
-#: lexisync.po:1792
+#: dialogs/prompt_manager_dialog.py:237
 msgid "Import Prompt Preset"
 msgstr "匯入提示詞預設集"
 
-#: lexisync.po:1796
+#: dialogs/import_configuration_dialog.py:55
 msgid "Import Settings"
 msgstr "匯入設定"
 
-#: lexisync.po:1800
+#: dialogs/management_tabs.py:348 dialogs/management_tabs.py:558
+#: main_window.py:3036
 msgid "Import Successful"
 msgstr "匯入成功"
 
-#: lexisync.po:1804
+#: main_window.py:448 main_window.py:692 main_window.py:3765
 msgid "Import Translations from Excel"
 msgstr "從 Excel 匯入翻譯"
 
-#: lexisync.po:1808
+#: main_window.py:453 main_window.py:697
 msgid "Import Translations from PO File..."
 msgstr "從 PO 檔案匯入翻譯..."
 
-#: lexisync.po:1812
+#: dialogs/pot_drop_dialog.py:28
 msgid "Import as New File"
 msgstr "作為新檔案匯入"
 
-#: lexisync.po:1816
+#: dialogs/import_configuration_dialog.py:65
 msgid "Import as bidirectional (e.g., en->fr and fr->en)"
 msgstr "匯入為雙向（例如：en->fr 和 fr->en）"
 
-#: lexisync.po:1820
+#: main_window.py:3030
 msgid "Import cancelled."
 msgstr "匯入已取消。"
 
-#: lexisync.po:1824
+#: main_window.py:1912
 msgid "Import to Global Glossary"
 msgstr "匯入至全域術語庫"
 
-#: lexisync.po:1828
+#: main_window.py:1916
 msgid "Import to Global TM"
 msgstr "匯入至全域 TM"
 
-#: lexisync.po:1832
+#: main_window.py:1912
 msgid "Import to Project Glossary"
 msgstr "匯入至專案術語庫"
 
-#: lexisync.po:1836
+#: main_window.py:1916
 msgid "Import to Project TM"
 msgstr "匯入至專案 TM"
 
-#: lexisync.po:1840
+#: main_window.py:3875
 #, python-brace-format
 msgid "Imported/updated {field_count} fields for {item_count} items from Excel."
 msgstr "已從 Excel 匯入/更新 {item_count} 個項目的 {field_count} 個欄位。"
 
-#: lexisync.po:1845
+#: dialogs/management_tabs.py:87
 msgid "Importing TBX file..."
 msgstr "正在匯入 TBX 檔案..."
 
-#: lexisync.po:1849
+#: dialogs/management_tabs.py:536
 msgid "Importing TM file..."
 msgstr "正在匯入 TM 檔案..."
 
-#: lexisync.po:1853
+#: main_window.py:3014
 msgid "Importing to Global Glossary..."
 msgstr "正在匯入至全域術語庫..."
 
-#: lexisync.po:1857
+#: main_window.py:3011
 msgid "Importing to Project Glossary..."
 msgstr "正在匯入至專案術語庫..."
 
-#: lexisync.po:1861
+#: dialogs/management_tabs.py:80
 msgid "Importing..."
 msgstr "正在匯入..."
 
-#: lexisync.po:1865
-msgid "Improves performance for cross-file operations, but may increase initial loading time for large projects."
+#: dialogs/settings_pages.py:125
+msgid ""
+"Improves performance for cross-file operations, but may increase initial "
+"loading time for large projects."
 msgstr "提高跨檔案操作的效能，但可能會增加大型專案的初始載入時間。"
 
-#: lexisync.po:1869
+#: main_window.py:2337
 msgid "In Progress"
 msgstr "進行中"
 
-#: lexisync.po:1873
+#: dialogs/marketplace_dialog.py:435 plugins/plugin_dialog.py:411
 msgid "Incompatible"
 msgstr "不相容"
 
-#: lexisync.po:1877
+#: plugins/plugin_manager.py:112
 #, python-brace-format
 msgid "Incompatible with app version (requires {req}, current is {curr})"
 msgstr "與應用程式版本不相容 (需要 {req}，目前為 {curr})"
 
-#: lexisync.po:1882
+#: dialogs/search_dialog.py:282 dialogs/search_dialog.py:309
+#: dialogs/search_dialog.py:318 dialogs/search_dialog.py:330 main_window.py:955
+#: main_window.py:3625 main_window.py:3698 main_window.py:3759
+#: main_window.py:3888 main_window.py:3928 main_window.py:4084
+#: main_window.py:4128 main_window.py:4229 main_window.py:4257
+#: main_window.py:4288 main_window.py:4302 main_window.py:4357
+#: main_window.py:5058 main_window.py:5250
 msgid "Info"
 msgstr "資訊"
 
-#: lexisync.po:1886
+#: services/diff_service.py:35
 msgid "Inherited from old version"
 msgstr "繼承自舊版本"
 
-#: lexisync.po:1890
+#: dialogs/new_project_dialog.py:189
 msgid "Initial Target Language:"
 msgstr "初始目標語言："
 
-#: lexisync.po:1894
+#: services/validation_service.py:115
 msgid "Initial capitalization mismatch."
 msgstr "開頭字母大小寫不符。"
 
-#: lexisync.po:1898
+#: ui_components/file_explorer_panel.py:172
 msgid "Initialization Error"
 msgstr "初始化錯誤"
 
-#: lexisync.po:1902
+#: ui_components/welcome_screen.py:366
 msgid "Initialization Failed!"
 msgstr "初始化失敗！"
 
-#: lexisync.po:1906
+#: dialogs/statistics_dialog.py:37
 msgid "Initialization complete."
 msgstr "初始化完成。"
 
-#: lexisync.po:1910
+#: ui_components/welcome_screen.py:347
 msgid "Initializing main window and plugins..."
 msgstr "正在初始化主視窗與外掛程式..."
 
-#: lexisync.po:1914
+#: main_window.py:349
 msgid "Initializing services in the background..."
 msgstr "正在背景中初始化服務..."
 
-#: lexisync.po:1918
+#: ui_components/welcome_screen.py:377
 #, python-brace-format
 msgid "Initializing to open {filename}..."
 msgstr "正在初始化以開啟 {filename}..."
 
-#: lexisync.po:1923
+#: dialogs/statistics_dialog.py:34 ui_components/welcome_screen.py:268
 msgid "Initializing..."
 msgstr "正在初始化..."
 
-#: lexisync.po:1927
-msgid "Injects glossary terms found in the original text to enforce specific translations."
+#: dialogs/prompt_manager_dialog.py:207
+msgid ""
+"Injects glossary terms found in the original text to enforce specific "
+"translations."
 msgstr "將在原始文字中找到的術語注入，以強制使用特定翻譯。"
 
-#: lexisync.po:1931
+#: dialogs/diff_dialog.py:132
 msgid "Inline Differences"
 msgstr "內嵌差異"
 
-#: lexisync.po:1935
+#: services/glossary_service.py:324
 msgid "Inserting new terms..."
 msgstr "正在插入新術語..."
 
-#: lexisync.po:1939
+#: services/glossary_service.py:380
 msgid "Inserting translations..."
 msgstr "正在插入翻譯..."
 
-#: lexisync.po:1943
+#: services/tm_service.py:245
 #, python-brace-format
 msgid "Inserting {count} TM entries..."
 msgstr "正在插入 {count} 個翻譯記憶條目..."
 
-#: lexisync.po:1948
+#: dialogs/marketplace_dialog.py:166 plugins/plugin_dialog.py:586
 msgid "Install"
 msgstr "安裝"
 
-#: lexisync.po:1952
+#: plugins/plugin_dialog.py:589
 msgid "Install Dependency"
 msgstr "安裝相依性"
 
-#: lexisync.po:1956
+#: plugins/plugin_dialog.py:179
 msgid "Install from File..."
 msgstr "從檔案安裝..."
 
-#: lexisync.po:1960
+#: dialogs/marketplace_dialog.py:492 plugins/plugin_dialog.py:517
 msgid "Installation Error"
 msgstr "安裝錯誤"
 
-#: lexisync.po:1964
+#: plugins/plugin_dialog.py:515
 msgid "Installation Failed"
 msgstr "安裝失敗"
 
-#: lexisync.po:1968
+#: plugins/plugin_dialog.py:504
 msgid "Installation Successful"
 msgstr "安裝成功"
 
-#: lexisync.po:1972
+#: plugins/plugin_manager.py:441
 msgid "Installation cancelled by user."
 msgstr "使用者取消了安裝。"
 
-#: lexisync.po:1976
+#: dialogs/marketplace_dialog.py:491
 #, python-brace-format
 msgid "Installation failed: {error}"
 msgstr "安裝失敗：{error}"
 
-#: lexisync.po:1981
+#: dialogs/marketplace_dialog.py:158 plugins/plugin_dialog.py:442
+#: plugins/plugin_dialog.py:457
 msgid "Installed"
 msgstr "已安裝"
 
-#: lexisync.po:1985
+#: plugins/plugin_dialog.py:598
 #, python-brace-format
 msgid "Installing {lib}..."
 msgstr "正在安裝 {lib}..."
 
-#: lexisync.po:1990
+#: dialogs/marketplace_dialog.py:483
 #, python-brace-format
 msgid "Installing {plugin_name}..."
 msgstr "正在安裝 {plugin_name}..."
 
-#: lexisync.po:1995
+#: main_window.py:1957 main_window.py:1963
 msgid "Invalid File"
 msgstr "無效檔案"
 
-#: lexisync.po:1999
+#: dialogs/add_glossary_entry_dialog.py:71
+#: dialogs/import_configuration_dialog.py:130 dialogs/new_project_dialog.py:358
+#: dialogs/tm_import_dialog.py:50
 msgid "Invalid Languages"
 msgstr "無效的語言"
 
-#: lexisync.po:2003
+#: main_window.py:2223
 msgid "Invalid Project"
 msgstr "無效的專案"
 
-#: lexisync.po:2007
+#: ui_components/file_explorer_panel.py:419
 #, python-brace-format
 msgid "Invalid path: {path}"
 msgstr "無效的路徑：{path}"
 
-#: lexisync.po:2012
-msgid "Invalid plugin archive structure. The archive must contain either a single plugin folder or the plugin's files (__init__.py, etc.) directly."
+#: plugins/plugin_manager.py:429
+msgid ""
+"Invalid plugin archive structure. The archive must contain either a "
+"single plugin folder or the plugin's files (__init__.py, etc.) directly."
 msgstr "無效的外掛壓縮檔結構。壓縮檔必須直接包含單一外掛資料夾或外掛檔案（如 __init__.py）。"
 
-#: lexisync.po:2016
+#: dialogs/statistics_dialog.py:623
 msgid "Issue Description"
 msgstr "問題描述"
 
-#: lexisync.po:2020
+#: dialogs/statistics_dialog.py:290
 msgid "Issues & Warnings"
 msgstr "問題與警告"
 
-#: lexisync.po:2024
+#: dialogs/statistics_dialog.py:551
 msgid "Items with Warnings"
 msgstr "有警告的項目"
 
-#: lexisync.po:2028
+#: main_window.py:3906
 msgid "JSON files (*.json);;All Files (*.*)"
 msgstr "JSON 檔案 (*.json);;所有檔案 (*.*)"
 
-#: lexisync.po:2032
+#: main_window.py:989
 msgid "Keybinding Settings"
 msgstr "按鍵綁定設定"
 
-#: lexisync.po:2036
+#: dialogs/settings_pages.py:219
 msgid "Keybinding Settings..."
 msgstr "按鍵綁定設定..."
 
-#: lexisync.po:2040
+#: dialogs/keybinding_dialog.py:213
 msgid "Keybindings have been updated."
 msgstr "按鍵綁定已更新。"
 
-#: lexisync.po:2044
+#: dialogs/settings_pages.py:221
 msgid "Keybindings:"
 msgstr "按鍵綁定："
 
-#: lexisync.po:2048
+#: dialogs/settings_dialog.py:171
 msgid "Language Changed"
 msgstr "语言已更改"
 
-#: lexisync.po:2052
+#: dialogs/import_configuration_dialog.py:39
 msgid "Language Mapping"
 msgstr "語言映射"
 
-#: lexisync.po:2056
+#: dialogs/language_pair_dialog.py:183
 msgid "Language Pair Settings"
 msgstr "語言配對設定"
 
-#: lexisync.po:2060
+#: main_window.py:624 main_window.py:735
 msgid "Language Pair Settings..."
 msgstr "語言配對設定..."
 
-#: lexisync.po:2064
+#: dialogs/language_pair_dialog.py:263
 msgid "Language Selection"
 msgstr "語言選擇"
 
-#: lexisync.po:2068
+#: dialogs/import_configuration_dialog.py:48
 msgid "Language in File"
 msgstr "檔案中的語言"
 
-#: lexisync.po:2072
+#: main_window.py:985
 #, python-brace-format
 msgid "Language pair set to {src} -> {tgt}."
 msgstr "语言对已设为 {src} -> {tgt}。"
 
-#: lexisync.po:2077
+#: main_window.py:978
 msgid "Language pair updated. Re-validating all entries..."
 msgstr "语言对已更新。正在重新验证所有条目..."
 
-#: lexisync.po:2081
+#: utils/enums.py:42
 msgid "Leading Whitespace Mismatch"
 msgstr "開頭空白不符"
 
-#: lexisync.po:2085
+#: dialogs/extraction_pattern_dialog.py:60
 msgid "Left Delimiter (Regex)"
 msgstr "左分隔符 (正規表示式)"
 
-#: lexisync.po:2089
+#: dialogs/extraction_pattern_dialog.py:248
 msgid "Left Delimiter:"
 msgstr "左分隔符："
 
-#: lexisync.po:2093
+#: dialogs/extraction_pattern_dialog.py:300
 msgid "Left and right delimiters cannot be empty."
 msgstr "左、右分隔符不可為空。"
 
-#: lexisync.po:2097
+#: utils/enums.py:54
 msgid "Length Deviation (Major)"
 msgstr "長度偏差 (嚴重)"
 
-#: lexisync.po:2101
+#: utils/enums.py:52
 msgid "Length Deviation (Minor)"
 msgstr "長度偏差 (輕微)"
 
-#: lexisync.po:2105
+#: services/validation_service.py:147 services/validation_service.py:155
 #, python-brace-format
-msgid "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
+msgid ""
+"Length warning: Unusual expansion ratio ({actual:.1f}x), expected around "
+"{expected:.1f}x."
 msgstr "長度警告：膨脹率異常 ({actual:.1f}x)，預期約為 {expected:.1f}x。"
 
-#: lexisync.po:2110
+#: main_window.py:1886
 #, python-brace-format
 msgid ""
 "LexiSync\n"
@@ -2120,17 +2235,19 @@ msgstr ""
 "版本：{version}\n"
 "作者：TheSkyC"
 
-#: lexisync.po:2123
+#: main_window.py:211 main_window.py:665
 #, python-brace-format
 msgid "LexiSync - v{version}"
 msgstr "LexiSync - v{version}"
 
-#: lexisync.po:2128
+#: dialogs/import_configuration_dialog.py:32
 #, python-brace-format
-msgid "LexiSync has analyzed <b>{filename}</b>. Please configure the import settings below."
+msgid ""
+"LexiSync has analyzed <b>{filename}</b>. Please configure the import "
+"settings below."
 msgstr "LexiSync 已分析 <b>{filename}</b>。請在下方設定匯入選項。"
 
-#: lexisync.po:2133
+#: plugins/plugin_dialog.py:615
 #, python-brace-format
 msgid ""
 "Library '{lib}' installed successfully.\n"
@@ -2139,481 +2256,498 @@ msgstr ""
 "函式庫 '{lib}' 已成功安裝。\n"
 "請重新啟動應用程式以使用外掛。"
 
-#: lexisync.po:2142
+#: plugins/plugin_dialog.py:583
 #, python-brace-format
 msgid "Library '{lib}' is already installed and compatible."
 msgstr "函式庫 '{lib}' 已安裝且相容。"
 
-#: lexisync.po:2147
+#: main_window.py:750
 msgid "Line"
 msgstr "行"
 
-#: lexisync.po:2151
+#: utils/enums.py:46
 msgid "Line Count Mismatch"
 msgstr "行數不符"
 
-#: lexisync.po:2155
+#: services/validation_service.py:55
 msgid "Line count differs from original."
 msgstr "行數與原文不同。"
 
-#: lexisync.po:2159
+#: dialogs/settings_pages.py:123
 msgid "Load all source files when opening a project"
 msgstr "開啟專案時載入所有原始檔"
 
-#: lexisync.po:2163
+#: main_window.py:4055
 #, python-brace-format
 msgid "Loaded {count} entries from PO file {filename}."
 msgstr "已從 PO 檔案 {filename} 載入 {count} 個條目。"
 
-#: lexisync.po:2168
+#: main_window.py:2285
 #, python-brace-format
 msgid "Loaded {count} translatable strings from {filename}"
 msgstr "已從 {filename} 載入 {count} 個可翻譯字串"
 
-#: lexisync.po:2173
+#: plugins/plugin_dialog.py:387
 msgid "Loading Failed"
 msgstr "載入失敗"
 
-#: lexisync.po:2177
+#: main_window.py:2053
 msgid "Loading all source files..."
 msgstr "正在載入所有來源檔案..."
 
-#: lexisync.po:2181
+#: ui_components/welcome_screen.py:330
 msgid "Loading core libraries..."
 msgstr "正在載入核心函式庫..."
 
-#: lexisync.po:2185
+#: main_window.py:2106
 msgid "Loading file..."
 msgstr "正在載入檔案..."
 
-#: lexisync.po:2189
+#: dialogs/marketplace_dialog.py:278
 msgid "Loading marketplace..."
 msgstr "正在載入市集..."
 
-#: lexisync.po:2193
+#: dialogs/new_project_dialog.py:187
 msgid "Location:"
 msgstr "位置："
 
-#: lexisync.po:2197
+#: main_window.py:3679
 msgid "MO Compilation Failed"
 msgstr "MO 編譯失敗"
 
-#: lexisync.po:2201
+#: dialogs/prompt_manager_dialog.py:205 dialogs/prompt_manager_dialog.py:208
+#: dialogs/prompt_manager_dialog.py:210 dialogs/prompt_manager_dialog.py:212
 msgid "Main App"
 msgstr "主程式"
 
-#: lexisync.po:2205
+#: dialogs/settings_pages.py:170
 msgid "Manage Extraction Rules..."
 msgstr "管理提取規則..."
 
-#: lexisync.po:2209
+#: plugins/plugin_manager.py:482
 msgid "Manage Plugins..."
 msgstr "管理外掛..."
 
-#: lexisync.po:2213
+#: dialogs/import_configuration_dialog.py:48
 msgid "Map to Language in LexiSync"
 msgstr "對應至 LexiSync 中的語言"
 
-#: lexisync.po:2217
+#: main_window.py:2727
 msgid "Mark as Ignored"
 msgstr "標記為忽略"
 
-#: lexisync.po:2221
+#: main_window.py:2734
 msgid "Mark as Reviewed"
 msgstr "標記為已審閱"
 
-#: lexisync.po:2225
+#: main_window.py:2735
 msgid "Mark as Unreviewed"
 msgstr "標記為未審閱"
 
-#: lexisync.po:2229
+#: dialogs/marketplace_dialog.py:302
 #, python-brace-format
 msgid "Marketplace loaded. Found {count} plugins."
 msgstr "市集載入完畢。共找到 {count} 個外掛。"
 
-#: lexisync.po:2234
+#: dialogs/search_dialog.py:310
 msgid "Match is not in a replaceable column (Translation or Comment)."
 msgstr "相符項目不在可取代的欄位（翻譯或註解）中。"
 
-#: lexisync.po:2238
+#: dialogs/search_dialog.py:230
 #, python-brace-format
 msgid "Match {current}/{total}"
 msgstr "相符 {current}/{total}"
 
-#: lexisync.po:2243
+#: dialogs/settings_pages.py:257
 msgid "Max Concurrent Requests:"
 msgstr "最大並行請求數："
 
-#: lexisync.po:2247
+#: plugins/plugin_dialog.py:294
 msgid "Missing Dependencies"
 msgstr "缺少相依性"
 
-#: lexisync.po:2251
+#: dialogs/add_glossary_entry_dialog.py:68 dialogs/new_project_dialog.py:353
 msgid "Missing Information"
 msgstr "缺少資訊"
 
-#: lexisync.po:2255
+#: plugins/plugin_dialog.py:419
 msgid "Missing Libraries"
 msgstr "缺少函式庫"
 
-#: lexisync.po:2259
+#: plugins/plugin_manager.py:82
 #, python-brace-format
 msgid "Missing dependencies: {deps}"
 msgstr "缺少相依性：{deps}"
 
-#: lexisync.po:2264
+#: plugins/plugin_dialog.py:230
 #, python-brace-format
 msgid "Missing external libraries: {libs}. Check to force-enable."
 msgstr "缺少外部函式庫：{libs}。勾選以強制啟用。"
 
-#: lexisync.po:2269
+#: services/validation_service.py:44
 #, python-brace-format
 msgid "Missing placeholders: {placeholders}"
 msgstr "缺少預留位置：{placeholders}"
 
-#: lexisync.po:2274
+#: dialogs/settings_pages.py:244
 msgid "Model Name:"
 msgstr "模型名稱："
 
-#: lexisync.po:2278
+#: dialogs/new_project_dialog.py:44
 msgid "Modified"
 msgstr "修改日期"
 
-#: lexisync.po:2282
+#: dialogs/diff_dialog.py:177
 msgid "Modified/Inherited"
 msgstr "已修改/已繼承"
 
-#: lexisync.po:2286
+#: dialogs/management_tabs.py:436 dialogs/management_tabs.py:610
 msgid "N/A"
 msgstr "N/A"
 
-#: lexisync.po:2290
+#: ui_components/file_explorer_panel.py:448
+#: ui_components/file_explorer_panel.py:466
+#: ui_components/file_explorer_panel.py:483
+#: ui_components/file_explorer_panel.py:499
+#: ui_components/file_explorer_panel.py:515
+#: ui_components/file_explorer_panel.py:551
+#: ui_components/file_explorer_panel.py:558
 msgid "Navigation Error"
 msgstr "導航錯誤"
 
-#: lexisync.po:2294
+#: dialogs/prompt_manager_dialog.py:211
 msgid "Nearby translated text for context."
 msgstr "附近的已翻譯文字，用於提供上下文。"
 
-#: lexisync.po:2298
+#: dialogs/prompt_manager_dialog.py:209
 msgid "Nearby untranslated original text."
 msgstr "附近的未翻譯原文，用於提供上下文。"
 
-#: lexisync.po:2302
+#: dialogs/marketplace_dialog.py:294
 msgid "Network Error"
 msgstr "網路錯誤"
 
-#: lexisync.po:2306
-msgid "Network connection failed. Please check your internet connection and firewall settings."
+#: dialogs/marketplace_dialog.py:34
+msgid ""
+"Network connection failed. Please check your internet connection and "
+"firewall settings."
 msgstr "網路連線失敗。請檢查您的網路連線和防火牆設定。"
 
-#: lexisync.po:2310
+#: services/ai_translator.py:57
 msgid "Network error or API request failed"
 msgstr "網路錯誤或 API 請求失敗"
 
-#: lexisync.po:2314
+#: dialogs/diff_dialog.py:237
 msgid "New"
 msgstr "新增"
 
-#: lexisync.po:2318
+#: dialogs/prompt_manager_dialog.py:175
 msgid "New Instruction"
 msgstr "新指令"
 
-#: lexisync.po:2322
+#: dialogs/new_project_dialog.py:143 ui_components/welcome_screen.py:202
 msgid "New Project"
 msgstr "新增專案"
 
-#: lexisync.po:2326
+#: main_window.py:407 main_window.py:679
 msgid "New Project..."
 msgstr "新增專案..."
 
-#: lexisync.po:2330
+#: dialogs/extraction_pattern_dialog.py:112
 msgid "New Rule"
 msgstr "新規則"
 
-#: lexisync.po:2334
+#: main_window.py:3504 main_window.py:3540 main_window.py:3744
+#: main_window.py:3745
 msgid "No"
 msgstr "否"
 
-#: lexisync.po:2338
+#: main_window.py:5058
 msgid "No AI batch translation task is in progress."
 msgstr "沒有正在進行的 AI 批次翻譯任務。"
 
-#: lexisync.po:2342
+#: main_window.py:1820
 msgid "No History"
 msgstr "無歷史紀錄"
 
-#: lexisync.po:2346
+#: dialogs/project_settings_dialog.py:59 dialogs/project_settings_dialog.py:184
+#: dialogs/project_settings_dialog.py:369
 msgid "No Selection"
 msgstr "無選取項目"
 
-#: lexisync.po:2350
+#: ui_components/tm_panel.py:85
 msgid "No TM matches found."
 msgstr "在翻譯記憶庫中找不到相符項目。"
 
-#: lexisync.po:2354
+#: main_window.py:4802
 msgid "No Translation Needed"
 msgstr "無需翻譯"
 
-#: lexisync.po:2358
+#: main_window.py:4266
 msgid "No active TM database found to clear the entry from."
 msgstr "找不到可清除項目的作用中翻譯記憶庫資料庫。"
 
-#: lexisync.po:2362
+#: main_window.py:1520
 msgid "No active glossary database found."
 msgstr "未找到有效的術語庫資料庫。"
 
-#: lexisync.po:2366
+#: main_window.py:4351
 msgid "No applicable translations found in TM (or no changes needed)."
 msgstr "在翻譯記憶庫中找不到適用的翻譯（或無需變更）。"
 
-#: lexisync.po:2370
+#: main_window.py:4128
 msgid "No code content loaded to reload."
 msgstr "沒有載入可重新載入的程式碼內容。"
 
-#: lexisync.po:2374
+#: services/ai_translator.py:52
 msgid "No content in message"
 msgstr "訊息中無內容"
 
-#: lexisync.po:2378
+#: dialogs/statistics_dialog.py:505
 msgid "No data to display."
 msgstr "無資料可顯示。"
 
-#: lexisync.po:2382
+#: main_window.py:3698 main_window.py:3888 main_window.py:3928
+#: main_window.py:4084
 msgid "No data to export."
 msgstr "無資料可匯出。"
 
-#: lexisync.po:2386
+#: ui_components/glossary_panel.py:70
 msgid "No glossary matches found."
 msgstr "找不到術語庫相符項目。"
 
-#: lexisync.po:2390
+#: dialogs/statistics_dialog.py:631
 msgid "No issues found"
 msgstr "未發現問題"
 
-#: lexisync.po:2394
+#: main_window.py:5293
 msgid "No items selected for AI translation."
 msgstr "未選取任何項目進行 AI 翻譯。"
 
-#: lexisync.po:2398
+#: main_window.py:3148
 msgid "No items selected to modify warning status."
 msgstr "未選取任何項目以修改警告狀態。"
 
-#: lexisync.po:2402
+#: main_window.py:4863
 msgid "No items to process."
 msgstr "沒有要處理的項目。"
 
-#: lexisync.po:2406
+#: main_window.py:2511
 #, python-brace-format
 msgid "No matches found for '{search_term}' under current filters."
 msgstr "在目前篩選條件下，找不到 '{search_term}' 的相符項目。"
 
-#: lexisync.po:2411
+#: dialogs/search_dialog.py:330
 msgid "No matches found in Translation or Comment columns."
 msgstr "在「翻譯」或「註解」欄位中找不到相符項目。"
 
-#: lexisync.po:2415
+#: dialogs/search_dialog.py:282 dialogs/search_dialog.py:318
 msgid "No matches found to replace."
 msgstr "找不到可取代的相符項目。"
 
-#: lexisync.po:2419
+#: dialogs/search_dialog.py:204
 msgid "No matches found."
 msgstr "找不到相符項目。"
 
-#: lexisync.po:2423
+#: main_window.py:5251
 msgid "No matching TM entries or no changes needed for selected items."
 msgstr "找不到相符的翻譯記憶庫條目，或選定項目無需變更。"
 
-#: lexisync.po:2427
+#: main_window.py:1675
 msgid "No more actions to redo"
 msgstr "沒有更多可重做的動作"
 
-#: lexisync.po:2431
+#: main_window.py:1601
 msgid "No more actions to undo"
 msgstr "沒有更多可復原的動作"
 
-#: lexisync.po:2435
+#: main_window.py:4500
 msgid "No more untranslated items."
 msgstr "沒有更多未翻譯的項目。"
 
-#: lexisync.po:2439
+#: main_window.py:3570
 msgid "No original code content to save."
 msgstr "沒有原始程式碼內容可儲存。"
 
-#: lexisync.po:2443
+#: main_window.py:3566
 msgid "No original code file path."
 msgstr "沒有原始程式碼檔案路徑。"
 
-#: lexisync.po:2447
+#: main_window.py:4217
 msgid "No project data loaded to generate statistics."
 msgstr "未載入專案資料以產生統計數據。"
 
-#: lexisync.po:2451
+#: services/project_manager.py:39
 msgid "No project is currently open."
 msgstr "目前沒有開啟的專案。"
 
-#: lexisync.po:2455
+#: dialogs/management_tabs.py:120
 msgid "No project is open. This panel is disabled."
 msgstr "目前沒有開啟的專案。此面板已停用。"
 
-#: lexisync.po:2459
+#: dialogs/management_tabs.py:476
 msgid "No project open."
 msgstr "沒有開啟的專案。"
 
-#: lexisync.po:2463
+#: ui_components/welcome_screen.py:425
 msgid "No recent files"
 msgstr "沒有最近的文件"
 
-#: lexisync.po:2467
+#: services/ai_translator.py:60
 msgid "No response object"
 msgstr "無回應物件"
 
-#: lexisync.po:2471
+#: main_window.py:4302
 msgid "No strings to apply TM to."
 msgstr "沒有可套用翻譯記憶庫的字串。"
 
-#: lexisync.po:2475
+#: main_window.py:955
 msgid "No text available to detect language from."
 msgstr "沒有可用於偵測語言的文本。"
 
-#: lexisync.po:2479
+#: main_window.py:4803
 msgid "No untranslated and non-ignored strings found."
 msgstr "找不到未翻譯且未忽略的字串。"
 
-#: lexisync.po:2483
+#: ui_components/file_explorer_panel.py:872
 msgid "No valid items to delete."
 msgstr "沒有有效的項目可刪除。"
 
-#: lexisync.po:2487
+#: services/glossary_service.py:246
 msgid "No valid terms found in the TBX file."
 msgstr "在 TBX 檔案中找不到有效的術語。"
 
-#: lexisync.po:2491
+#: dialogs/settings_pages.py:149
 msgid "Normalize newlines"
 msgstr "標準化換行符"
 
-#: lexisync.po:2495
+#: dialogs/extraction_pattern_dialog.py:76
+#: dialogs/extraction_pattern_dialog.py:274 dialogs/font_settings_dialog.py:57
+#: dialogs/keybinding_dialog.py:89 dialogs/language_pair_dialog.py:341
+#: dialogs/project_settings_dialog.py:503 dialogs/prompt_manager_dialog.py:118
+#: dialogs/prompt_manager_dialog.py:371 dialogs/settings_dialog.py:92
 msgid "OK"
 msgstr "確定"
 
-#: lexisync.po:2499
+#: dialogs/settings_pages.py:131
 msgid "On File Save"
 msgstr "儲存檔案"
 
-#: lexisync.po:2503
+#: main_window.py:1957
 msgid "Only .tbx files can be imported into the glossary."
 msgstr "只有 .tbx 檔案可以匯入至術語庫。"
 
-#: lexisync.po:2507
+#: main_window.py:1964
 msgid "Only .xlsx files can be imported into the TM."
 msgstr "只有 .xlsx 檔案可以匯入至翻譯記憶庫。"
 
-#: lexisync.po:2511
+#: ui_components/file_explorer_panel.py:753
 msgid "Open"
 msgstr "開啟"
 
-#: lexisync.po:2515
+#: main_window.py:2187
 msgid "Open File for Quick Edit"
 msgstr "開啟檔案以快速編輯"
 
-#: lexisync.po:2519
+#: main_window.py:403
 msgid "Open File..."
 msgstr "開啟檔案..."
 
-#: lexisync.po:2523
+#: plugins/plugin_dialog.py:182
 msgid "Open Marketplace..."
 msgstr "開啟外掛市集..."
 
-#: lexisync.po:2527
+#: plugins/plugin_dialog.py:148 plugins/plugin_dialog.py:482
 msgid "Open Plugin Directory"
 msgstr "開啟外掛目錄"
 
-#: lexisync.po:2531
+#: ui_components/welcome_screen.py:207
 msgid "Open Project"
 msgstr "開啟專案"
 
-#: lexisync.po:2535
+#: main_window.py:2079
 msgid "Open Project Error"
 msgstr "開啟專案錯誤"
 
-#: lexisync.po:2539
+#: main_window.py:2216
 msgid "Open Project Folder"
 msgstr "開啟專案資料夾"
 
-#: lexisync.po:2543
+#: main_window.py:411 main_window.py:680
 msgid "Open Project..."
 msgstr "開啟專案..."
 
-#: lexisync.po:2547
+#: ui_components/welcome_screen.py:198
 msgid "Open a single file for fast translation"
 msgstr "開啟單一檔案以快速翻譯"
 
-#: lexisync.po:2551
+#: ui_components/welcome_screen.py:208
 msgid "Open an existing project folder"
 msgstr "開啟現有專案資料夾"
 
-#: lexisync.po:2555
+#: main_window.py:1908
 msgid "Open for Quick Edit"
 msgstr "開啟以快速編輯"
 
-#: lexisync.po:2559
+#: main_window.py:2316
 msgid "Open operation cancelled by user."
 msgstr "開啟操作已由使用者取消。"
 
-#: lexisync.po:2563
+#: main_window.py:1920
 msgid "Open or Set as Root"
 msgstr "開啟或設為根目錄"
 
-#: lexisync.po:2567
+#: main_window.py:678
 msgid "Open..."
 msgstr "開啟..."
 
-#: lexisync.po:2571
+#: main_window.py:2319
 #, python-brace-format
 msgid "Opening '{filename}'..."
 msgstr "正在開啟 '{filename}'..."
 
-#: lexisync.po:2576
+#: dialogs/management_tabs.py:383
 msgid "Operation In Progress"
 msgstr "操作進行中"
 
-#: lexisync.po:2580
+#: main_window.py:2018 main_window.py:2230 main_window.py:4811
 msgid "Operation Restricted"
 msgstr "操作受限"
 
-#: lexisync.po:2584
+#: dialogs/search_dialog.py:48
 msgid "Options"
 msgstr "選項"
 
-#: lexisync.po:2588
+#: dialogs/diff_dialog.py:160 dialogs/search_dialog.py:57 main_window.py:746
+#: main_window.py:4533
 msgid "Original"
 msgstr "原文"
 
-#: lexisync.po:2592
+#: main_window.py:3725
 msgid "Original (Raw)"
 msgstr "原文 (原始)"
 
-#: lexisync.po:2596
+#: main_window.py:3723 main_window.py:3787 main_window.py:3793
 msgid "Original (Semantic)"
 msgstr "原文 (語意)"
 
-#: lexisync.po:2600
+#: services/validation_service.py:72
 msgid "Original ends with space, translation does not."
 msgstr "原文以空白結尾，譯文則無。"
 
-#: lexisync.po:2604
+#: services/validation_service.py:62
 msgid "Original starts with space, translation does not."
 msgstr "原文以空白開頭，譯文則無。"
 
-#: lexisync.po:2608
+#: main_window.py:3253
 msgid "Original text cannot be empty for a new entry."
 msgstr "新條目的原文不可為空。"
 
-#: lexisync.po:2612
+#: ui_components/details_panel.py:43 ui_components/details_panel.py:211
 msgid "Original:"
 msgstr "原文："
 
-#: lexisync.po:2616
+#: main_window.py:5194
 #, python-brace-format
 msgid ""
 "Original:\n"
@@ -2626,97 +2760,98 @@ msgstr ""
 "\n"
 "輸入註解："
 
-#: lexisync.po:2629
+#: dialogs/font_settings_dialog.py:32
 msgid "Override default font settings"
 msgstr "覆寫預設字型設定"
 
-#: lexisync.po:2633
+#: main_window.py:2190
 msgid "Overwatch Workshop Files (*.ow *.txt);;"
 msgstr "鬥陣特攻工作坊檔案 (*.ow *.txt);;"
 
-#: lexisync.po:2637
+#: main_window.py:3971 main_window.py:5502
 msgid "Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)"
 msgstr "鬥陣特攻工作坊檔案 (*.ow *.txt);;所有檔案 (*.*)"
 
-#: lexisync.po:2641
+#: main_window.py:4846
 msgid "Overwrite All"
 msgstr "全部覆寫"
 
-#: lexisync.po:2645
+#: main_window.py:4591 main_window.py:4832 main_window.py:4842
 msgid "Overwrite Confirmation"
 msgstr "確認覆寫"
 
-#: lexisync.po:2649
+#: main_window.py:4064
 msgid "PO Import Error"
 msgstr "PO 匯入錯誤"
 
-#: lexisync.po:2653
+#: main_window.py:5497
 msgid "PO Template Files (*.pot);;All Files (*.*)"
 msgstr "PO 範本檔案 (*.pot);;所有檔案 (*.*)"
 
-#: lexisync.po:2657
+#: main_window.py:3979
 msgid "PO Template files (*.pot);;All files (*.*)"
 msgstr "PO 範本檔案 (*.pot);;所有檔案 (*.*)"
 
-#: lexisync.po:2661
+#: main_window.py:2191
 msgid "PO Translation Files (*.po *.pot);;"
 msgstr "PO 翻譯檔案 (*.po *.pot);;"
 
-#: lexisync.po:2665
+#: main_window.py:4067
 msgid "PO file loading failed"
 msgstr "PO 檔案載入失敗"
 
-#: lexisync.po:2669
+#: main_window.py:3677
 #, python-brace-format
 msgid "PO file saved and MO file compiled: {filename}"
 msgstr "PO 檔案已儲存且 MO 檔案已編譯：{filename}"
 
-#: lexisync.po:2674
+#: main_window.py:3668
 #, python-brace-format
 msgid "PO file saved to: {filename}"
 msgstr "PO 檔案已儲存至：{filename}"
 
-#: lexisync.po:2679
+#: main_window.py:3690 main_window.py:4101
 msgid "PO files (*.po);;All Files (*.*)"
 msgstr "PO 檔案 (*.po);;所有檔案 (*.*)"
 
-#: lexisync.po:2683
+#: main_window.py:4077
 msgid "PO files (*.po);;POT files (*.pot);;All files (*.*)"
 msgstr "PO 檔案 (*.po);;POT 檔案 (*.pot);;所有檔案 (*.*)"
 
-#: lexisync.po:2687
+#: main_window.py:4006
 msgid "POT Extraction Error"
 msgstr "POT 擷取錯誤"
 
-#: lexisync.po:2691
+#: dialogs/pot_drop_dialog.py:13
 msgid "POT File Detected"
 msgstr "偵測到 POT 檔案"
 
-#: lexisync.po:2695
+#: main_window.py:4002
 #, python-brace-format
 msgid "POT template saved to: {filename}"
 msgstr "POT 範本已儲存至：{filename}"
 
-#: lexisync.po:2700
+#: dialogs/management_tabs.py:257 main_window.py:2995
 msgid "Parse Error"
 msgstr "解析錯誤"
 
-#: lexisync.po:2704
+#: services/glossary_service.py:240
 msgid "Parsing TBX file..."
 msgstr "正在解析 TBX 檔案..."
 
-#: lexisync.po:2708
+#: services/tm_service.py:141
 msgid "Parsing TM file..."
 msgstr "正在解析 TM 檔案..."
 
-#: lexisync.po:2712
+#: main_window.py:5306
 msgid "Parsing new file..."
 msgstr "正在解析新檔案..."
 
-#: lexisync.po:2716
+#: ui_components/file_explorer_panel.py:911
 #, python-brace-format
 msgid ""
-"Partially completed deletion. {success} item(s) deleted, but encountered errors:\n"
+"Partially completed deletion. {success} item(s) deleted, but encountered "
+"errors:\n"
 "\n"
 "{errors}"
 msgstr ""
@@ -2724,94 +2859,98 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: lexisync.po:2727
+#: main_window.py:4399
 msgid "Paste failed: Clipboard content is not text."
 msgstr "貼上失敗：剪貼簿內容不是文字。"
 
-#: lexisync.po:2731
+#: main_window.py:538 main_window.py:707
 msgid "Paste to Translation"
 msgstr "貼上至翻譯"
 
-#: lexisync.po:2735
+#: dialogs/management_tabs.py:154 dialogs/management_tabs.py:505
+#: dialogs/new_project_dialog.py:36 dialogs/new_project_dialog.py:44
+#: dialogs/project_settings_dialog.py:263
 msgid "Path"
 msgstr "路徑"
 
-#: lexisync.po:2739
+#: ui_components/file_explorer_panel.py:410
+#: ui_components/file_explorer_panel.py:414
+#: ui_components/file_explorer_panel.py:419
 msgid "Path Error"
 msgstr "路徑錯誤"
 
-#: lexisync.po:2743
+#: ui_components/file_explorer_panel.py:410
 #, python-brace-format
 msgid "Path does not exist: {path}"
 msgstr "路徑不存在：{path}"
 
-#: lexisync.po:2748
+#: ui_components/file_explorer_panel.py:414
 #, python-brace-format
 msgid "Path is not a directory: {path}"
 msgstr "路徑不是目錄：{path}"
 
-#: lexisync.po:2753
+#: dialogs/settings_pages.py:247
 msgid "Performance"
 msgstr "效能"
 
-#: lexisync.po:2757
+#: ui_components/file_explorer_panel.py:897
 #, python-brace-format
 msgid "Permission denied: {path}"
 msgstr "權限不足：{path}"
 
-#: lexisync.po:2762
+#: main_window.py:5036 main_window.py:5042
 msgid "Placeholder Mismatch"
 msgstr "預留位置不符"
 
-#: lexisync.po:2766
+#: utils/enums.py:36
 msgid "Placeholder Missing"
 msgstr "缺少預留位置"
 
-#: lexisync.po:2770
+#: dialogs/search_dialog.py:155
 msgid "Please enter a search term."
 msgstr "請輸入搜尋字詞。"
 
-#: lexisync.po:2774
+#: main_window.py:3760
 msgid "Please load a code file or project first to match imported translations."
 msgstr "請先載入程式碼檔案或專案以比對匯入的翻譯。"
 
-#: lexisync.po:2778
+#: main_window.py:4357
 msgid "Please load a file or project first."
 msgstr "請先載入檔案或專案。"
 
-#: lexisync.po:2782
+#: main_window.py:5491
 msgid "Please open a project or file first."
 msgstr "請先開啟專案或檔案。"
 
-#: lexisync.po:2786
+#: dialogs/project_settings_dialog.py:184
 msgid "Please select a language to remove."
 msgstr "請選擇要移除的語言。"
 
-#: lexisync.po:2790
+#: dialogs/project_settings_dialog.py:59
 msgid "Please select a language."
 msgstr "請選擇語言。"
 
-#: lexisync.po:2794
+#: dialogs/project_settings_dialog.py:369
 msgid "Please select a source file to re-scan."
 msgstr "請選取一個來源檔案以重新掃描。"
 
-#: lexisync.po:2798
+#: dialogs/management_tabs.py:376 dialogs/management_tabs.py:566
 msgid "Please select a source to remove."
 msgstr "請選擇要移除的來源。"
 
-#: lexisync.po:2802
+#: main_window.py:4229 main_window.py:4257
 msgid "Please select an item first."
 msgstr "請先選取一個項目。"
 
-#: lexisync.po:2806
+#: main_window.py:4790
 msgid "Please select an item to AI translate."
 msgstr "請選取要進行 AI 翻譯的項目。"
 
-#: lexisync.po:2810
+#: main_window.py:4385
 msgid "Please select an item."
 msgstr "請選取一個項目。"
 
-#: lexisync.po:2814
+#: plugins/plugin_dialog.py:505
 #, python-brace-format
 msgid ""
 "Plugin '{plugin_id}' has been installed.\n"
@@ -2822,32 +2961,32 @@ msgstr ""
 "\n"
 "請重啟應用程式以啟用它。"
 
-#: lexisync.po:2825
+#: plugins/plugin_manager.py:166
 #, python-brace-format
 msgid "Plugin '{plugin_id}' has missing dependencies: {deps}"
 msgstr "外掛 '{plugin_id}' 缺少相依性：{deps}"
 
-#: lexisync.po:2830
+#: plugins/plugin_dialog.py:341
 #, python-brace-format
 msgid "Plugin '{plugin_name}' disabled."
 msgstr "外掛 '{plugin_name}' 已停用。"
 
-#: lexisync.po:2835
+#: plugins/plugin_dialog.py:319
 #, python-brace-format
 msgid "Plugin '{plugin_name}' enabled."
 msgstr "外掛 '{plugin_name}' 已啟用。"
 
-#: lexisync.po:2840
+#: plugins/plugin_dialog.py:304
 #, python-brace-format
 msgid "Plugin '{plugin_name}' force-enabled with missing libraries."
 msgstr "外掛 '{plugin_name}' 在缺少函式庫的情況下被強制啟用。"
 
-#: lexisync.po:2845
+#: plugins/plugin_dialog.py:283
 #, python-brace-format
 msgid "Plugin '{plugin_name}' force-enabled."
 msgstr "外掛 '{plugin_name}' 已強制啟用。"
 
-#: lexisync.po:2850
+#: plugins/plugin_dialog.py:556
 #, python-brace-format
 msgid ""
 "Plugin '{plugin_name}' has been deleted.\n"
@@ -2856,129 +2995,136 @@ msgstr ""
 "外掛「{plugin_name}」已被刪除。\n"
 "請重啟應用程式。"
 
-#: lexisync.po:2859
+#: plugins/plugin_dialog.py:495
 msgid "Plugin Archives"
 msgstr "外掛壓縮檔"
 
-#: lexisync.po:2863
+#: plugins/plugin_dialog.py:555
 msgid "Plugin Deleted"
 msgstr "外掛已刪除"
 
-#: lexisync.po:2867
+#: plugins/plugin_dialog.py:436
 msgid "Plugin Dependencies"
 msgstr "外掛相依性"
 
-#: lexisync.po:2871
+#: plugins/plugin_manager.py:434
 msgid "Plugin Exists"
 msgstr "外掛已存在"
 
-#: lexisync.po:2875
+#: plugins/plugin_manager.py:142
 msgid "Plugin Loading Error"
 msgstr "外掛載入錯誤"
 
-#: lexisync.po:2879
+#: plugins/plugin_dialog.py:59
 msgid "Plugin Manager"
 msgstr "外掛管理器"
 
-#: lexisync.po:2883
+#: dialogs/marketplace_dialog.py:184 ui_components/welcome_screen.py:212
 msgid "Plugin Marketplace"
 msgstr "外掛市集"
 
-#: lexisync.po:2887
+#: main_window.py:630
 msgid "Plugin Marketplace..."
 msgstr "外掛市集..."
 
-#: lexisync.po:2891
+#: plugins/plugin_dialog.py:532 plugins/plugin_manager.py:458
 msgid "Plugin directory not found."
 msgstr "未找到外掛目錄。"
 
-#: lexisync.po:2895
-msgid "Plugin installed successfully. Please restart the application to take effect."
+#: dialogs/marketplace_dialog.py:497
+msgid ""
+"Plugin installed successfully. Please restart the application to take "
+"effect."
 msgstr "外掛安裝成功。請重啟應用程式以生效。"
 
-#: lexisync.po:2899
+#: services/glossary_service.py:290
 msgid "Preparing data for database..."
 msgstr "正在為資料庫準備資料..."
 
-#: lexisync.po:2903
+#: dialogs/extraction_pattern_dialog.py:195
+#: dialogs/prompt_manager_dialog.py:269
 msgid "Preset exported successfully."
 msgstr "預設集匯出成功。"
 
-#: lexisync.po:2907
+#: dialogs/extraction_pattern_dialog.py:180
+#: dialogs/prompt_manager_dialog.py:254
 msgid "Preset file format is incorrect."
 msgstr "預設集檔案格式不正確。"
 
-#: lexisync.po:2911
+#: dialogs/extraction_pattern_dialog.py:177
+#: dialogs/prompt_manager_dialog.py:252
 msgid "Preset imported successfully."
 msgstr "預設集匯入成功。"
 
-#: lexisync.po:2915
+#: dialogs/keybinding_dialog.py:120
 msgid "Press a key combination..."
 msgstr "請按下按鍵組合..."
 
-#: lexisync.po:2919
+#: dialogs/statistics_dialog.py:72
 #, python-brace-format
 msgid "Processing item {i}/{total}..."
 msgstr "正在處理項目 {i}/{total}..."
 
-#: lexisync.po:2924
+#: main_window.py:383 main_window.py:741
 msgid "Project"
 msgstr "專案"
 
-#: lexisync.po:2928
+#: main_window.py:2072
 #, python-brace-format
 msgid "Project '{name}' loaded."
 msgstr "專案 '{name}' 已載入。"
 
-#: lexisync.po:2933
+#: main_window.py:2010 main_window.py:3657
 msgid "Project Creation Failed"
 msgstr "專案建立失敗"
 
-#: lexisync.po:2937
+#: dialogs/new_project_dialog.py:198
 msgid "Project Glossary"
 msgstr "專案術語庫"
 
-#: lexisync.po:2941
+#: dialogs/statistics_dialog.py:348
 msgid "Project Metrics"
 msgstr "專案指標"
 
-#: lexisync.po:2945
+#: ui_components/file_explorer_panel.py:289
+#: ui_components/file_explorer_panel.py:931
 msgid "Project Mode"
 msgstr "專案模式"
 
-#: lexisync.po:2949
+#: dialogs/new_project_dialog.py:186 dialogs/project_settings_dialog.py:74
 msgid "Project Name:"
 msgstr "專案名稱："
 
-#: lexisync.po:2953
+#: dialogs/project_settings_dialog.py:522 main_window.py:1549
 msgid "Project Resources"
 msgstr "專案資源"
 
-#: lexisync.po:2957
+#: dialogs/project_settings_dialog.py:430 dialogs/settings_pages.py:121
 msgid "Project Settings"
 msgstr "專案設定"
 
-#: lexisync.po:2961
+#: main_window.py:618 main_window.py:734
 msgid "Project Settings..."
 msgstr "專案設定..."
 
-#: lexisync.po:2965
+#: dialogs/statistics_dialog.py:136 dialogs/statistics_dialog.py:420
+#: dialogs/statistics_dialog.py:502
 msgid "Project Statistics"
 msgstr "專案統計"
 
-#: lexisync.po:2969
+#: main_window.py:608 main_window.py:730
 msgid "Project Statistics..."
 msgstr "專案統計..."
 
-#: lexisync.po:2973
+#: dialogs/new_project_dialog.py:220
 msgid "Project Translation Memory"
 msgstr "專案翻譯記憶庫"
 
-#: lexisync.po:2977
+#: main_window.py:1009
 msgid "Project auto-saved."
 msgstr "專案已自動儲存。"
 
-#: lexisync.po:2981
+#: services/project_service.py:285
 #, python-brace-format
 msgid ""
 "Project build completed successfully.\n"
@@ -2993,31 +3139,31 @@ msgstr ""
 "每個語言的來源檔案：{num_files}\n"
 "建立的檔案總數：{total_files}"
 
-#: lexisync.po:2996
+#: main_window.py:2032
 msgid "Project configuration is missing a target language."
 msgstr "專案配置缺少目標語言。"
 
-#: lexisync.po:3000
+#: main_window.py:2050
 msgid "Project contains no source files."
 msgstr "專案不包含任何來源檔案。"
 
-#: lexisync.po:3004
+#: main_window.py:2083
 msgid "Project loading failed."
 msgstr "專案載入失敗。"
 
-#: lexisync.po:3008
+#: dialogs/new_project_dialog.py:354
 msgid "Project name, location, and at least one source file are required."
 msgstr "專案名稱、位置以及至少一個來源檔案是必需的。"
 
-#: lexisync.po:3012
+#: main_window.py:3589
 msgid "Project path is missing. Cannot save."
 msgstr "專案路徑缺失。無法儲存。"
 
-#: lexisync.po:3016
+#: main_window.py:3595
 msgid "Project saved."
 msgstr "專案已儲存。"
 
-#: lexisync.po:3020
+#: main_window.py:2538
 #, python-brace-format
 msgid ""
 "Project source file not found:\n"
@@ -3026,689 +3172,721 @@ msgstr ""
 "專案來源檔案未找到：\n"
 "{path}"
 
-#: lexisync.po:3027
+#: main_window.py:3752 main_window.py:3921 main_window.py:3961
 #, python-brace-format
 msgid "Project translations exported to: {filename}"
 msgstr "專案翻譯已匯出至：{filename}"
 
-#: lexisync.po:3032
+#: main_window.py:5384 main_window.py:5480
 msgid "Project updated to new version."
 msgstr "專案已更新至新版本。"
 
-#: lexisync.po:3036
+#: dialogs/prompt_manager_dialog.py:239 dialogs/prompt_manager_dialog.py:263
 #, python-brace-format
 msgid "Prompt Files (*{ext});;All Files (*.*)"
 msgstr "提示詞檔案 (*{ext});;所有檔案 (*.*)"
 
-#: lexisync.po:3041
+#: dialogs/settings_pages.py:306
 msgid "Prompt Manager..."
 msgstr "提示詞管理員..."
 
-#: lexisync.po:3045
+#: dialogs/prompt_manager_dialog.py:416
 msgid "Provider"
 msgstr "提供者"
 
-#: lexisync.po:3049
-msgid "Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."
+#: main_window.py:4445
+msgid ""
+"Python 'requests' library not found. Please install it (pip install "
+"requests) to use AI translation features."
 msgstr "未找到 Python 'requests' 函式庫。請安裝它 (pip install requests) 以使用 AI 翻譯功能。"
 
-#: lexisync.po:3053
+#: ui_components/welcome_screen.py:197
 msgid "Quick Edit File"
 msgstr "快速編輯檔案"
 
-#: lexisync.po:3057
+#: main_window.py:762 main_window.py:1074 main_window.py:1216
+#: main_window.py:1221 main_window.py:1782 main_window.py:2466
+#: main_window.py:2491 main_window.py:2510 main_window.py:2516
+#: main_window.py:2517 main_window.py:2692 main_window.py:2699
+#: main_window.py:3445 services/project_service.py:191
 msgid "Quick search..."
 msgstr "快速搜尋..."
 
-#: lexisync.po:3061
+#: ui_components/marker_bar.py:295
 msgid "Range"
 msgstr "範圍"
 
-#: lexisync.po:3065
+#: main_window.py:4166
 msgid "Re-extracting strings with new rules..."
 msgstr "正在使用新規則重新擷取字串..."
 
-#: lexisync.po:3069
+#: main_window.py:2654
 msgid "Re-scan Results"
 msgstr "重新掃描結果"
 
-#: lexisync.po:3073
+#: dialogs/project_settings_dialog.py:278
 msgid "Re-scan Selected"
 msgstr "重新掃描選取項目"
 
-#: lexisync.po:3077
+#: main_window.py:2645
 #, python-brace-format
 msgid ""
 "Re-scan complete for '{filename}'.\n"
-"Found {added} new, {removed} removed, {modified} modified (fuzzy matched), and {unchanged} unchanged strings."
+"Found {added} new, {removed} removed, {modified} modified (fuzzy "
+"matched), and {unchanged} unchanged strings."
 msgstr ""
 "'{filename}' 重新掃描完成。\n"
 "發現 {added} 個新增、{removed} 個移除、{modified} 個修改（模糊比對）及 {unchanged} 個未變動的字串。"
 
-#: lexisync.po:3086
+#: main_window.py:2676
 msgid "Re-scan failed."
 msgstr "重新掃描失敗。"
 
-#: lexisync.po:3090
+#: main_window.py:2670
 msgid "Re-scan operation cancelled."
 msgstr "重新掃描操作已取消。"
 
-#: lexisync.po:3094
+#: main_window.py:2565
 #, python-brace-format
 msgid "Re-scanning file from {source}..."
 msgstr "正在從 {source} 重新掃描檔案..."
 
-#: lexisync.po:3099
+#: main_window.py:596 main_window.py:728
 msgid "Re-validate All Entries"
 msgstr "重新驗證所有條目"
 
-#: lexisync.po:3103
+#: main_window.py:357 main_window.py:794 main_window.py:1369
+#: main_window.py:1402 main_window.py:2370 ui_components/welcome_screen.py:356
+#: ui_components/welcome_screen.py:404
 msgid "Ready"
 msgstr "就緒"
 
-#: lexisync.po:3107
+#: main_window.py:507 main_window.py:699 ui_components/welcome_screen.py:235
 msgid "Recent Files"
 msgstr "最近的檔案"
 
-#: lexisync.po:3111
+#: ui_components/glossary_panel.py:92
 msgid "Recommended Translation(s)"
 msgstr "推薦翻譯"
 
-#: lexisync.po:3115
+#: main_window.py:521 main_window.py:704
 msgid "Redo"
 msgstr "重做"
 
-#: lexisync.po:3119
+#: main_window.py:1707
 #, python-brace-format
 msgid "Redo error: Object ID {obj_id} not found"
 msgstr "重做錯誤：找不到物件 ID {obj_id}"
 
-#: lexisync.po:3124
+#: main_window.py:1725
 #, python-brace-format
 msgid "Redo: Bulk change ({count} items)"
 msgstr "重做：批次變更 ({count} 個項目)"
 
-#: lexisync.po:3129
+#: main_window.py:1704
 #, python-brace-format
 msgid "Redo: {field} for ID {id} -> '{value}'"
 msgstr "重做：ID {id} 的 {field} -> '{value}'"
 
-#: lexisync.po:3134
+#: ui_components/file_explorer_panel.py:229
+#: ui_components/file_explorer_panel.py:939
 msgid "Refresh"
 msgstr "重新整理"
 
-#: lexisync.po:3138
+#: dialogs/statistics_dialog.py:375
 msgid "Refresh Data"
 msgstr "重新整理資料"
 
-#: lexisync.po:3142
+#: ui_components/file_explorer_panel.py:541
 msgid "Refresh Error"
 msgstr "重新整理錯誤"
 
-#: lexisync.po:3146
+#: plugins/plugin_dialog.py:185
 msgid "Reload All Plugins"
 msgstr "重新载入所有外掛"
 
-#: lexisync.po:3150
+#: main_window.py:4210
 msgid "Reload Error"
 msgstr "重新載入錯誤"
 
-#: lexisync.po:3154
+#: main_window.py:602 main_window.py:729
 msgid "Reload Translatable Text"
 msgstr "重新載入可翻譯文本"
 
-#: lexisync.po:3158
+#: main_window.py:4212
 msgid "Reload failed."
 msgstr "重新載入失敗。"
 
-#: lexisync.po:3162
+#: main_window.py:4204
 #, python-brace-format
 msgid "Reloaded {count} strings from {source} using new rules."
 msgstr "已使用新規則從 {source} 重新載入 {count} 個字串。"
 
-#: lexisync.po:3167
+#: dialogs/management_tabs.py:402 dialogs/management_tabs.py:587
 msgid "Removal Failed"
 msgstr "移除失敗"
 
-#: lexisync.po:3171
+#: dialogs/management_tabs.py:399 dialogs/management_tabs.py:584
 msgid "Removal Successful"
 msgstr "已移除"
 
-#: lexisync.po:3175
+#: dialogs/new_project_dialog.py:178 dialogs/new_project_dialog.py:209
+#: dialogs/new_project_dialog.py:231 dialogs/project_settings_dialog.py:124
+#: dialogs/project_settings_dialog.py:277
 msgid "Remove"
 msgstr "移除"
 
-#: lexisync.po:3179
+#: dialogs/management_tabs.py:143 dialogs/management_tabs.py:494
 msgid "Remove Selected"
 msgstr "移除選定的項目"
 
-#: lexisync.po:3183
+#: dialogs/language_pair_dialog.py:284
 msgid "Remove Selected Favorite"
 msgstr "移除選定的我的最愛"
 
-#: lexisync.po:3187
+#: dialogs/diff_dialog.py:190 dialogs/diff_dialog.py:240
 msgid "Removed"
 msgstr "已移除"
 
-#: lexisync.po:3191
+#: ui_components/file_explorer_panel.py:758
 msgid "Rename"
 msgstr "重新命名"
 
-#: lexisync.po:3195
+#: dialogs/search_dialog.py:80
 msgid "Replace"
 msgstr "取代"
 
-#: lexisync.po:3199
+#: dialogs/search_dialog.py:83
 msgid "Replace All"
 msgstr "全部取代"
 
-#: lexisync.po:3203
+#: dialogs/search_dialog.py:364
 msgid "Replace All Complete"
 msgstr "全部取代完成"
 
-#: lexisync.po:3207
+#: dialogs/search_dialog.py:42
 msgid "Replace with:"
 msgstr "取代為："
 
-#: lexisync.po:3211
+#: dialogs/search_dialog.py:365
 #, python-brace-format
 msgid "Replaced occurrences in {count} item(s)."
 msgstr "已取代 {count} 個項目中的出現次數。"
 
-#: lexisync.po:3216
+#: dialogs/marketplace_dialog.py:441
 msgid "Report Issue"
 msgstr "回報問題"
 
-#: lexisync.po:3220
+#: plugins/plugin_dialog.py:442 plugins/plugin_dialog.py:457
 msgid "Required"
 msgstr "需要"
 
-#: lexisync.po:3224
+#: plugins/plugin_dialog.py:412 plugins/plugin_dialog.py:427
 msgid "Requires App Version"
 msgstr "需要應用程式版本"
 
-#: lexisync.po:3228
+#: dialogs/marketplace_dialog.py:435
 #, python-brace-format
 msgid "Requires v{req}"
 msgstr "需要 v{req}"
 
-#: lexisync.po:3233
+#: dialogs/language_pair_dialog.py:327
 msgid "Reset"
 msgstr "重設"
 
-#: lexisync.po:3237
+#: dialogs/font_settings_dialog.py:118
 msgid "Reset all font settings to default?"
 msgstr "要將所有字型設定重設為預設值嗎？"
 
-#: lexisync.po:3241
+#: dialogs/extraction_pattern_dialog.py:43 dialogs/font_settings_dialog.py:52
+#: dialogs/keybinding_dialog.py:84 dialogs/prompt_manager_dialog.py:84
 msgid "Reset to Defaults"
 msgstr "重設為預設值"
 
-#: lexisync.po:3245
+#: dialogs/new_project_dialog.py:243
 msgid "Resources"
 msgstr "資源"
 
-#: lexisync.po:3249
+#: services/ai_translator.py:53
 msgid "Response"
 msgstr "回應"
 
-#: lexisync.po:3253
+#: main_window.py:996
 msgid "Restart Required"
 msgstr "需要重新啟動"
 
-#: lexisync.po:3257
+#: main_window.py:569 main_window.py:721
 msgid "Restore Default Layout"
 msgstr "還原預設版面配置"
 
-#: lexisync.po:3261
+#: ui_components/file_explorer_panel.py:769
 msgid "Reveal in File Explorer"
 msgstr "在檔案總管中顯示"
 
-#: lexisync.po:3265
+#: main_window.py:3539
 #, python-brace-format
 msgid "Review status for ID {id} -> {status}"
 msgstr "ID {id} 的審閱狀態 -> {status}"
 
-#: lexisync.po:3270
+#: main_window.py:3723 main_window.py:3784 main_window.py:3792
+#: ui_components/comment_status_panel.py:62
+#: ui_components/comment_status_panel.py:82
 msgid "Reviewed"
 msgstr "已審閱"
 
-#: lexisync.po:3274
+#: dialogs/statistics_dialog.py:541
 msgid "Reviewed (of total)"
 msgstr "已審閱 (佔全部)"
 
-#: lexisync.po:3278
+#: dialogs/statistics_dialog.py:545
 msgid "Reviewed (of translated)"
 msgstr "已審閱 (佔已翻譯)"
 
-#: lexisync.po:3282
+#: dialogs/extraction_pattern_dialog.py:60
 msgid "Right Delimiter (Regex)"
 msgstr "右分隔符 (正規表示式)"
 
-#: lexisync.po:3286
+#: dialogs/extraction_pattern_dialog.py:254
 msgid "Right Delimiter:"
 msgstr "右分隔符："
 
-#: lexisync.po:3290
+#: ui_components/marker_bar.py:292
 msgid "Row"
 msgstr "行"
 
-#: lexisync.po:3294
+#: dialogs/extraction_pattern_dialog.py:60
 msgid "Rule Name"
 msgstr "規則名稱"
 
-#: lexisync.po:3298
+#: dialogs/extraction_pattern_dialog.py:232
 msgid "Rule Name:"
 msgstr "規則名稱："
 
-#: lexisync.po:3302
+#: dialogs/extraction_pattern_dialog.py:297
 msgid "Rule name cannot be empty."
 msgstr "規則名稱不可為空。"
 
-#: lexisync.po:3306
+#: main_window.py:427 main_window.py:683
 msgid "Save"
 msgstr "儲存"
 
-#: lexisync.po:3310
+#: main_window.py:3620
 msgid "Save As"
 msgstr "另存新檔"
 
-#: lexisync.po:3314
+#: main_window.py:432 main_window.py:684
 msgid "Save As..."
 msgstr "另存新檔..."
 
-#: lexisync.po:3318
+#: main_window.py:3561 main_window.py:3598
 msgid "Save Error"
 msgstr "儲存錯誤"
 
-#: lexisync.po:3322
+#: main_window.py:3682
 msgid "Save PO Error"
 msgstr "儲存 PO 錯誤"
 
-#: lexisync.po:3326
+#: main_window.py:3688
 msgid "Save PO File As"
 msgstr "另存 PO 檔案"
 
-#: lexisync.po:3330
+#: main_window.py:3977
 msgid "Save POT Template File"
 msgstr "儲存 POT 範本檔案"
 
-#: lexisync.po:3334
+#: main_window.py:438 main_window.py:685
 msgid "Save Translation to New Code File"
 msgstr "將翻譯儲存至新的程式碼檔案"
 
-#: lexisync.po:3338
+#: ui_components/marker_bar.py:31
 msgid "Search Match"
 msgstr "搜尋比對"
 
-#: lexisync.po:3342
+#: main_window.py:2514
 msgid "Search cleared."
 msgstr "搜尋已清除。"
 
-#: lexisync.po:3346
+#: dialogs/search_dialog.py:56
 msgid "Search in:"
 msgstr "搜尋範圍："
 
-#: lexisync.po:3350
+#: dialogs/language_pair_dialog.py:240 dialogs/language_pair_dialog.py:252
 msgid "Search languages..."
 msgstr "搜尋語言..."
 
-#: lexisync.po:3354
+#: dialogs/marketplace_dialog.py:229
 msgid "Search plugins..."
 msgstr "搜尋外掛..."
 
-#: lexisync.po:3358
+#: main_window.py:3969
 msgid "Select Code File to Extract POT From"
 msgstr "選取要從中擷取 POT 的程式碼檔案"
 
-#: lexisync.po:3362
+#: dialogs/new_project_dialog.py:294
 msgid "Select Glossary Files"
 msgstr "選擇術語庫檔案"
 
-#: lexisync.po:3366
+#: main_window.py:4075
 msgid "Select PO File to Import"
 msgstr "選取要匯入的 PO 檔案"
 
-#: lexisync.po:3370
+#: plugins/plugin_dialog.py:493
 msgid "Select Plugin Archive"
 msgstr "選取外掛壓縮檔"
 
-#: lexisync.po:3374
+#: dialogs/new_project_dialog.py:280
 msgid "Select Project Location"
 msgstr "選擇專案位置"
 
-#: lexisync.po:3378
+#: dialogs/project_settings_dialog.py:322
 msgid "Select Source File"
 msgstr "選取來源檔案"
 
-#: lexisync.po:3382
+#: dialogs/new_project_dialog.py:286
 msgid "Select Source Files"
 msgstr "選擇來源檔案"
 
-#: lexisync.po:3386
+#: dialogs/management_tabs.py:242
 msgid "Select TBX File to Import"
 msgstr "選取要匯入的 TBX 檔案"
 
-#: lexisync.po:3390
+#: dialogs/management_tabs.py:522
 msgid "Select TM File to Import"
 msgstr "選取要匯入的 TM 檔案"
 
-#: lexisync.po:3394
+#: dialogs/new_project_dialog.py:301
 msgid "Select TM Files"
 msgstr "選擇TM檔案"
 
-#: lexisync.po:3398
+#: dialogs/project_settings_dialog.py:45
 msgid "Select a new target language to add to the project:"
 msgstr "選擇要新增至專案的新目標語言："
 
-#: lexisync.po:3402
+#: dialogs/marketplace_dialog.py:253 dialogs/marketplace_dialog.py:415
 msgid "Select a plugin"
 msgstr "選取一個外掛"
 
-#: lexisync.po:3406
+#: main_window.py:5496
 msgid "Select new POT template for comparison"
 msgstr "選取新的 POT 範本進行比較"
 
-#: lexisync.po:3410
+#: main_window.py:5501
 msgid "Select new version code file for comparison"
 msgstr "選取新版程式碼檔案進行比較"
 
-#: lexisync.po:3414
+#: main_window.py:3175
 msgid "Selected item(s) already have the desired warning status."
 msgstr "選定項目已具有所需的警告狀態。"
 
-#: lexisync.po:3418
+#: main_window.py:2868
 #, python-brace-format
 msgid "Selected: \"{text}...\" (Line: {line_num})"
 msgstr "已選取：「{text}...」(行：{line_num})"
 
-#: lexisync.po:3423
+#: ui_components/marker_bar.py:34
 msgid "Selection"
 msgstr "選取項"
 
-#: lexisync.po:3427
+#: ui_components/file_explorer_panel.py:764
 msgid "Set as Root"
 msgstr "設為根目錄"
 
-#: lexisync.po:3431
+#: ui_components/welcome_screen.py:339
 msgid "Setting up plugin environment..."
 msgstr "正在設定外掛環境..."
 
-#: lexisync.po:3435
+#: dialogs/settings_dialog.py:17 ui_components/welcome_screen.py:217
 msgid "Settings"
 msgstr "設定"
 
-#: lexisync.po:3439
+#: dialogs/settings_dialog.py:160
 msgid "Settings applied."
 msgstr "设置已应用。"
 
-#: lexisync.po:3443
+#: main_window.py:614 main_window.py:733 plugins/plugin_dialog.py:161
 msgid "Settings..."
 msgstr "設定..."
 
-#: lexisync.po:3447
+#: main_window.py:161
 msgid "Should be Translated As"
 msgstr "應翻譯為"
 
-#: lexisync.po:3451
+#: ui_components/file_explorer_panel.py:293
+#: ui_components/file_explorer_panel.py:933
 msgid "Show All Files"
 msgstr "顯示所有檔案"
 
-#: lexisync.po:3455
+#: main_window.py:544 main_window.py:711
 msgid "Show Ignored"
 msgstr "顯示已忽略"
 
-#: lexisync.po:3459
+#: main_window.py:556 main_window.py:713
 msgid "Show Translated"
 msgstr "顯示已翻譯"
 
-#: lexisync.po:3463
+#: main_window.py:562 main_window.py:714
 msgid "Show Unreviewed"
 msgstr "顯示未審閱"
 
-#: lexisync.po:3467
+#: main_window.py:550 main_window.py:712
 msgid "Show Untranslated"
 msgstr "顯示未翻譯"
 
-#: lexisync.po:3471
+#: dialogs/diff_dialog.py:160
 msgid "Similarity"
 msgstr "相似度"
 
-#: lexisync.po:3475
+#: dialogs/new_project_dialog.py:36 dialogs/new_project_dialog.py:44
+#: dialogs/project_settings_dialog.py:263
 msgid "Size"
 msgstr "大小"
 
-#: lexisync.po:3479
+#: dialogs/font_settings_dialog.py:83
 msgid "Size:"
 msgstr "大小："
 
-#: lexisync.po:3483
+#: main_window.py:4847
 msgid "Skip Translated"
 msgstr "跳過已翻譯"
 
-#: lexisync.po:3487
+#: dialogs/settings_pages.py:142
 msgid "Smart Paste"
 msgstr "智慧貼上"
 
-#: lexisync.po:3491
+#: dialogs/settings_pages.py:213
 msgid "Sorting Mode:"
 msgstr "排序模式："
 
-#: lexisync.po:3495
+#: dialogs/statistics_dialog.py:560
 msgid "Source Chars (Translated only)"
 msgstr "來源字元數 (僅已翻譯)"
 
-#: lexisync.po:3499
+#: main_window.py:2546
 msgid "Source File Conflict"
 msgstr "來源檔案衝突"
 
-#: lexisync.po:3503
+#: dialogs/project_settings_dialog.py:519
 msgid "Source Files"
 msgstr "來源檔案"
 
-#: lexisync.po:3507
+#: dialogs/new_project_dialog.py:190
 msgid "Source Files:"
 msgstr "來源檔案："
 
-#: lexisync.po:3511
+#: dialogs/management_tabs.py:153 dialogs/management_tabs.py:505
 msgid "Source Lang"
 msgstr "來源語言"
 
-#: lexisync.po:3515
+#: dialogs/language_pair_dialog.py:237
 msgid "Source Language"
 msgstr "來源語言"
 
-#: lexisync.po:3519
+#: dialogs/add_glossary_entry_dialog.py:39
+#: dialogs/import_configuration_dialog.py:61 dialogs/new_project_dialog.py:188
+#: dialogs/project_settings_dialog.py:83 dialogs/tm_import_dialog.py:23
 msgid "Source Language:"
 msgstr "來源語言："
 
-#: lexisync.po:3523
+#: main_window.py:3724
 msgid "Source Line"
 msgstr "來源行"
 
-#: lexisync.po:3527
+#: main_window.py:161 ui_components/glossary_panel.py:91
 msgid "Source Term"
 msgstr "來源術語"
 
-#: lexisync.po:3531
+#: dialogs/add_glossary_entry_dialog.py:38
 msgid "Source Term:"
 msgstr "來源詞語："
 
-#: lexisync.po:3535
+#: dialogs/add_glossary_entry_dialog.py:71
+#: dialogs/import_configuration_dialog.py:130
+#: dialogs/language_pair_dialog.py:470 dialogs/new_project_dialog.py:358
+#: dialogs/tm_import_dialog.py:50
 msgid "Source and target languages cannot be the same."
 msgstr "來源語言和目標語言不可相同。"
 
-#: lexisync.po:3539
+#: services/project_manager.py:43
 msgid "Source file does not exist."
 msgstr "來源檔案不存在。"
 
-#: lexisync.po:3543
+#: main_window.py:2668
 msgid "Source file re-scanned and updated successfully."
 msgstr "來源檔案已成功重新掃描並更新。"
 
-#: lexisync.po:3547
+#: dialogs/project_settings_dialog.py:82
 msgid "Source language cannot be changed after project creation."
 msgstr "來源語言在專案建立後無法變更。"
 
-#: lexisync.po:3551
+#: dialogs/add_glossary_entry_dialog.py:68
 msgid "Source term and target term cannot be empty."
 msgstr "來源詞語和目標詞語不能為空。"
 
-#: lexisync.po:3555
+#: utils/enums.py:48
 msgid "Starting Punctuation Mismatch"
 msgstr "開頭標點不符"
 
-#: lexisync.po:3559
+#: main_window.py:2347
 msgid "Starting project build..."
 msgstr "正在開始專案建置..."
 
-#: lexisync.po:3563
+#: services/validation_service.py:95
 #, python-brace-format
 msgid "Starting punctuation differs: '{c1}' vs '{c2}'."
 msgstr "開頭標點不同：'{c1}' vs '{c2}'。"
 
-#: lexisync.po:3568
+#: services/validation_service.py:91
 msgid "Starting punctuation presence differs."
 msgstr "開頭標點存在與否不同。"
 
-#: lexisync.po:3572
+#: dialogs/prompt_manager_dialog.py:164 dialogs/prompt_manager_dialog.py:170
+#: dialogs/prompt_manager_dialog.py:310
 msgid "Static Instruction"
 msgstr "靜態指令"
 
-#: lexisync.po:3576
+#: main_window.py:937
 msgid "Static sorting enabled. Press F5 to refresh."
 msgstr "靜態排序已啟用。按 F5 重新整理。"
 
-#: lexisync.po:3580
+#: main_window.py:4217
 msgid "Statistics"
 msgstr "統計"
 
-#: lexisync.po:3584
+#: main_window.py:589 main_window.py:727
 msgid "Stop AI Batch Translation"
 msgstr "停止 AI 批次翻譯"
 
-#: lexisync.po:3588
+#: main_window.py:4592 main_window.py:4833
 #, python-brace-format
-msgid "String \"{text}...\" already has a translation. Overwrite with AI translation?"
+msgid ""
+"String \"{text}...\" already has a translation. Overwrite with AI "
+"translation?"
 msgstr "字串「{text}...」已有翻譯。要用 AI 翻譯覆寫嗎？"
 
-#: lexisync.po:3593
+#: dialogs/extraction_pattern_dialog.py:60
 msgid "String Type"
 msgstr "字串類型"
 
-#: lexisync.po:3597
+#: dialogs/extraction_pattern_dialog.py:242
 msgid "String Type:"
 msgstr "字串類型："
 
-#: lexisync.po:3601
+#: dialogs/prompt_manager_dialog.py:163 dialogs/prompt_manager_dialog.py:169
+#: dialogs/prompt_manager_dialog.py:309
 msgid "Structural Content"
 msgstr "結構性內容"
 
-#: lexisync.po:3605
+#: dialogs/font_settings_dialog.py:93
 msgid "Style:"
 msgstr "樣式："
 
-#: lexisync.po:3609
+#: dialogs/extraction_pattern_dialog.py:177
+#: dialogs/extraction_pattern_dialog.py:195 dialogs/marketplace_dialog.py:496
+#: dialogs/prompt_manager_dialog.py:252 dialogs/prompt_manager_dialog.py:269
+#: plugins/plugin_dialog.py:614
 msgid "Success"
 msgstr "成功"
 
-#: lexisync.po:3613
+#: ui_components/file_explorer_panel.py:919
 #, python-brace-format
 msgid "Successfully deleted {count} item(s)."
 msgstr "已成功刪除 {count} 個項目。"
 
-#: lexisync.po:3618
+#: services/glossary_service.py:266
 #, python-brace-format
 msgid "Successfully imported relationships for {count} entries."
 msgstr "已成功為 {count} 個條目匯入關聯。"
 
-#: lexisync.po:3623
+#: services/tm_service.py:154
 #, python-brace-format
 msgid "Successfully imported {count} TM entries."
 msgstr "已成功匯入 {count} 個翻譯記憶庫條目。"
 
-#: lexisync.po:3628
+#: dialogs/marketplace_dialog.py:495
 #, python-brace-format
 msgid "Successfully installed {plugin_name}."
 msgstr "成功安裝 {plugin_name}。"
 
-#: lexisync.po:3633
+#: services/tm_service.py:277
 #, python-brace-format
 msgid "Successfully removed {count} TM entries from source '{source}'."
 msgstr "已成功從來源「{source}」移除 {count} 個翻譯記憶庫條目。"
 
-#: lexisync.po:3638
+#: services/glossary_service.py:443
 #, python-brace-format
 msgid "Successfully removed {count} translations from source '{source}'."
 msgstr "已成功從來源「{source}」移除 {count} 個翻譯。"
 
-#: lexisync.po:3643
+#: main_window.py:2127
 #, python-brace-format
 msgid "Switched to file: {filename}"
 msgstr "已切換至檔案：{filename}"
 
-#: lexisync.po:3648
+#: dialogs/settings_pages.py:147
 msgid "Sync leading/trailing whitespace"
 msgstr "同步前導/尾隨空白"
 
-#: lexisync.po:3652
+#: ui_components/file_explorer_panel.py:808
+#: ui_components/file_explorer_panel.py:812
 msgid "System Error"
 msgstr "系統錯誤"
 
-#: lexisync.po:3656
+#: dialogs/new_project_dialog.py:294
 msgid "TBX Files"
 msgstr "TBX 檔案"
 
-#: lexisync.po:3660
+#: main_window.py:4348 main_window.py:4351
 msgid "TM"
 msgstr "翻譯記憶庫"
 
-#: lexisync.po:3664
+#: dialogs/management_tabs.py:523
 msgid "TM Files (*.xlsx);;All Files (*.*)"
 msgstr "翻譯記憶庫檔案 (*.xlsx);;所有檔案 (*.*))"
 
-#: lexisync.po:3668
+#: main_window.py:4283
 msgid "TM entry cleared for selected item."
 msgstr "已清除選定項目的翻譯記憶庫條目。"
 
-#: lexisync.po:3672
+#: main_window.py:4298
 msgid "TM suggestion applied."
 msgstr "已套用翻譯記憶庫建議。"
 
-#: lexisync.po:3676
+#: main_window.py:4250
 #, python-brace-format
 msgid "TM updated for original: '{text}...'"
 msgstr "已更新原文的翻譯記憶庫：'{text}...'"
 
-#: lexisync.po:3681
+#: dialogs/management_tabs.py:505
 msgid "Target Lang"
 msgstr "目標語言"
 
-#: lexisync.po:3685
+#: dialogs/management_tabs.py:154
 msgid "Target Lang(s)"
 msgstr "目標語言"
 
-#: lexisync.po:3689
+#: dialogs/language_pair_dialog.py:249
 msgid "Target Language"
 msgstr "目標語言"
 
-#: lexisync.po:3693
+#: dialogs/add_glossary_entry_dialog.py:41
+#: dialogs/import_configuration_dialog.py:62 dialogs/settings_pages.py:263
+#: dialogs/tm_import_dialog.py:24 main_window.py:385 main_window.py:742
 msgid "Target Language:"
 msgstr "目標語言："
 
-#: lexisync.po:3697
+#: dialogs/project_settings_dialog.py:158
 msgid "Target Languages:"
 msgstr "目標語言："
 
-#: lexisync.po:3701
+#: dialogs/add_glossary_entry_dialog.py:40
 msgid "Target Term:"
 msgstr "目標詞語："
 
-#: lexisync.po:3705
+#: dialogs/settings_pages.py:268
 msgid "Target language is set in 'Settings > Language Pair Settings...'"
 msgstr "目標語言在「設定 > 語言配對設定...」中設定"
 
-#: lexisync.po:3709
+#: dialogs/settings_dialog.py:172
 msgid ""
 "The UI language has been changed.\n"
 "Some changes may require a restart of the application to take full effect."
@@ -3716,30 +3894,33 @@ msgstr ""
 "使用者介面語言已變更。\n"
 "部分變更可能需要重新啟動應用程式才能完全生效。"
 
-#: lexisync.po:3717
+#: plugins/plugin_manager.py:415
 msgid "The archive is empty."
 msgstr "壓縮檔是空的。"
 
-#: lexisync.po:3721
-msgid "The archive seems to contain a single folder, but it's not a valid plugin (missing __init__.py)."
+#: plugins/plugin_manager.py:423
+msgid ""
+"The archive seems to contain a single folder, but it's not a valid plugin"
+" (missing __init__.py)."
 msgstr "壓縮檔似乎只包含一個資料夾，但它不是一個有效的外掛（缺少 __init__.py）。"
 
-#: lexisync.po:3725
+#: main_window.py:2444
 msgid "The current file or project has unsaved changes. Do you want to save them?"
 msgstr "目前檔案或專案有未儲存的變更。您想要儲存它們嗎？"
 
-#: lexisync.po:3729
+#: main_window.py:1866
 #, python-brace-format
 msgid "The file type of '{filename}' is not supported."
 msgstr "檔案「{filename}」的類型不受支援。"
 
-#: lexisync.po:3734
+#: main_window.py:1362
 msgid "The layout has been restored to its default state."
 msgstr "版面配置已還原為預設狀態。"
 
-#: lexisync.po:3738
+#: main_window.py:2547
 msgid ""
-"The original linked file appears to be newer than the one in the project's source folder.\n"
+"The original linked file appears to be newer than the one in the "
+"project's source folder.\n"
 "\n"
 "• Press 'Yes' to scan the newer external file and update the project.\n"
 "• Press 'No' to scan the existing file inside the project."
@@ -3749,14 +3930,15 @@ msgstr ""
 "• 按「是」掃描更新的外部檔案並更新專案。\n"
 "• 按「否」掃描專案內部的現有檔案。"
 
-#: lexisync.po:3750
+#: plugins/plugin_dialog.py:295
 #, python-brace-format
 msgid ""
 "The plugin '{plugin_name}' is missing required external libraries:\n"
 "\n"
 "- {libs}\n"
 "\n"
-"The plugin will likely fail to run correctly. You can try to install them from the details panel.\n"
+"The plugin will likely fail to run correctly. You can try to install them"
+" from the details panel.\n"
 "\n"
 "Are you sure you want to force enable it anyway?"
 msgstr ""
@@ -3768,10 +3950,11 @@ msgstr ""
 "\n"
 "您確定仍要強制啟用它嗎？"
 
-#: lexisync.po:3769
+#: plugins/plugin_dialog.py:274
 #, python-brace-format
 msgid ""
-"The plugin '{plugin_name}' is not marked as compatible with this application version.\n"
+"The plugin '{plugin_name}' is not marked as compatible with this "
+"application version.\n"
 "\n"
 "Forcing it to enable may cause instability or crashes.\n"
 "\n"
@@ -3783,7 +3966,7 @@ msgstr ""
 "\n"
 "您確定要強制啟用它嗎？"
 
-#: lexisync.po:3784
+#: plugins/plugin_dialog.py:590
 #, python-brace-format
 msgid ""
 "The plugin requires the library '{lib}' (version: {spec}).\n"
@@ -3794,35 +3977,37 @@ msgstr ""
 "\n"
 "您想現在嘗試{action}它嗎？"
 
-#: lexisync.po:3795
-msgid "The request timed out. The server might be busy or your connection is slow."
+#: dialogs/marketplace_dialog.py:37
+msgid ""
+"The request timed out. The server might be busy or your connection is "
+"slow."
 msgstr "請求超時。伺服器可能正忙或您的網路連線緩慢。"
 
-#: lexisync.po:3799
+#: plugins/plugin_manager.py:405
 msgid "The selected file is not a valid .zip archive."
 msgstr "所選檔案不是一個有效的 .zip 壓縮檔。"
 
-#: lexisync.po:3803
+#: main_window.py:2223
 msgid "The selected folder is not a valid LexiSync project."
 msgstr "所選資料夾不是有效的 LexiSync 專案。"
 
-#: lexisync.po:3807
+#: main_window.py:4288
 msgid "The selected item has no entry in the current TM."
 msgstr "所選項目在目前的翻譯記憶庫中沒有條目。"
 
-#: lexisync.po:3811
+#: main_window.py:4584
 msgid "The selected string is marked as ignored and will not be AI translated."
 msgstr "選定的字串被標記為忽略，將不會進行 AI 翻譯。"
 
-#: lexisync.po:3815
+#: dialogs/prompt_manager_dialog.py:204
 msgid "The target language for translation."
 msgstr "翻譯的目標語言。"
 
-#: lexisync.po:3819
+#: main_window.py:3625
 msgid "There is no content to save as a project."
 msgstr "沒有內容可儲存為專案。"
 
-#: lexisync.po:3823
+#: main_window.py:3550
 msgid ""
 "There is no original code file content to save.\n"
 "Please ensure the code file associated with the project is loaded."
@@ -3830,340 +4015,356 @@ msgstr ""
 "沒有原始程式碼內容可儲存。\n"
 "請確保已載入與專案關聯的程式碼檔案。"
 
-#: lexisync.po:3831
+#: services/tm_service.py:139
 msgid "This TM file has already been imported and has not changed."
 msgstr "此翻譯記憶庫檔案已匯入且未變更。"
 
-#: lexisync.po:3835
+#: services/glossary_service.py:236
 msgid "This file has already been imported and has not changed."
 msgstr "此檔案已經匯入且未變更。"
 
-#: lexisync.po:3839
+#: services/project_service.py:110
 msgid "This is not a valid LexiSync project folder (missing project.json)."
 msgstr "這不是有效的 LexiSync 專案資料夾（缺少 project.json）。"
 
-#: lexisync.po:3843
+#: main_window.py:3257
 msgid "This original text already exists."
 msgstr "此原文已存在。"
 
-#: lexisync.po:3847
+#: plugins/plugin_dialog.py:214
 msgid "This plugin is force-enabled despite being incompatible."
 msgstr "此外掛已強制啟用，儘管不相容。"
 
-#: lexisync.po:3851
+#: plugins/plugin_dialog.py:219
 msgid "This plugin is incompatible. Check to force-enable."
 msgstr "此外掛不相容。勾選以強制啟用。"
 
-#: lexisync.po:3855
-msgid "This will apply TM to all matching strings, overwriting existing translations. Continue?"
+#: main_window.py:4307
+msgid ""
+"This will apply TM to all matching strings, overwriting existing "
+"translations. Continue?"
 msgstr "這將把翻譯記憶庫套用至所有相符的字串，並覆寫現有翻譯。要繼續嗎？"
 
-#: lexisync.po:3859
+#: main_window.py:4157
 #, python-brace-format
 msgid ""
 "This will re-extract strings from {source} using the new rules.\n"
-"Existing translations will be preserved where the original text matches, but unmatched translations and statuses may be lost.\n"
+"Existing translations will be preserved where the original text matches, "
+"but unmatched translations and statuses may be lost.\n"
 "This action will clear the undo history. Continue?"
 msgstr ""
 "這將使用新規則從 {source} 重新擷取字串。\n"
 "原文相符的現有翻譯將被保留，但不符的翻譯和狀態可能會遺失。\n"
 "此操作將清除復原歷史紀錄。要繼續嗎？"
 
-#: lexisync.po:3870
-msgid "To save a copy of the project, please create a new project and import the source files."
+#: main_window.py:3621
+msgid ""
+"To save a copy of the project, please create a new project and import the"
+" source files."
 msgstr "要儲存專案的副本，請建立新專案並匯入原始檔案。"
 
-#: lexisync.po:3874
+#: dialogs/keybinding_dialog.py:33
 msgid "Toggle Ignored Status"
 msgstr "切換忽略狀態"
 
-#: lexisync.po:3878
+#: dialogs/keybinding_dialog.py:32
 msgid "Toggle Reviewed Status"
 msgstr "切換審閱狀態"
 
-#: lexisync.po:3882
+#: dialogs/statistics_dialog.py:517
 msgid "Total Items"
 msgstr "項目總數"
 
-#: lexisync.po:3886
+#: utils/enums.py:44
 msgid "Trailing Whitespace Mismatch"
 msgstr "結尾空白不符"
 
-#: lexisync.po:3890
+#: dialogs/statistics_dialog.py:523 dialogs/statistics_dialog.py:580
+#: main_window.py:756 main_window.py:1050
 msgid "Translated"
 msgstr "已翻譯"
 
-#: lexisync.po:3894
+#: utils/enums.py:60
 msgid "Translated an Empty Original"
 msgstr "翻譯了空白原文"
 
-#: lexisync.po:3898
+#: dialogs/search_dialog.py:58 main_window.py:747 main_window.py:3723
+#: main_window.py:3782 main_window.py:3791 main_window.py:4533
 msgid "Translation"
 msgstr "翻譯"
 
-#: lexisync.po:3902
+#: dialogs/statistics_dialog.py:561
 msgid "Translation Chars (Translated only)"
 msgstr "譯文字元數 (僅已翻譯)"
 
-#: lexisync.po:3906
+#: utils/enums.py:58
 msgid "Translation Empty"
 msgstr "譯文為空"
 
-#: lexisync.po:3910
+#: dialogs/project_settings_dialog.py:419 dialogs/resources_page.py:24
 msgid "Translation Memory"
 msgstr "翻譯記憶庫"
 
-#: lexisync.po:3914
+#: main_window.py:776 main_window.py:1288
 msgid "Translation Memory Matches"
 msgstr "翻譯記憶庫比對"
 
-#: lexisync.po:3918
+#: main_window.py:720 main_window.py:1321
 msgid "Translation Memory Panel"
 msgstr "翻譯記憶庫面板"
 
-#: lexisync.po:3922
+#: dialogs/statistics_dialog.py:329
 msgid "Translation Progress"
 msgstr "翻譯進度"
 
-#: lexisync.po:3926
+#: main_window.py:3243
 #, python-brace-format
 msgid "Translation applied: \"{original_semantic}...\""
 msgstr "已套用翻譯：「{original_semantic}...」"
 
-#: lexisync.po:3931
+#: services/validation_service.py:75
 msgid "Translation ends with space, original does not."
 msgstr "譯文以空白結尾，原文則無。"
 
-#: lexisync.po:3935
+#: models/translatable_string.py:156 services/validation_service.py:33
 msgid "Translation is marked as fuzzy and needs review."
 msgstr "翻譯被標記為模糊，需要審閱。"
 
-#: lexisync.po:3939
+#: services/validation_service.py:65
 msgid "Translation starts with space, original does not."
 msgstr "譯文以空白開頭，原文則無。"
 
-#: lexisync.po:3943
+#: ui_components/details_panel.py:63 ui_components/details_panel.py:212
 msgid "Translation:"
 msgstr "翻譯："
 
-#: lexisync.po:3947
+#: main_window.py:4111
 #, python-brace-format
 msgid "Translations exported to PO file: {filename}"
 msgstr "翻譯已匯出至 PO 檔案：{filename}"
 
-#: lexisync.po:3952
+#: main_window.py:5280
 msgid "Translations for selected items are already empty, no clearing needed."
 msgstr "選定項目的翻譯已為空，無需清除。"
 
-#: lexisync.po:3956
+#: dialogs/new_project_dialog.py:36 dialogs/project_settings_dialog.py:263
+#: dialogs/prompt_manager_dialog.py:101
 msgid "Type"
 msgstr "類型"
 
-#: lexisync.po:3960
+#: dialogs/prompt_manager_dialog.py:306
 msgid "Type:"
 msgstr "類型："
 
-#: lexisync.po:3964
+#: dialogs/settings_pages.py:101
 msgid "UI Language:"
 msgstr "UI 語言："
 
-#: lexisync.po:3968
+#: ui_components/file_explorer_panel.py:179
 msgid "UI Setup Error"
 msgstr "UI 設定錯誤"
 
-#: lexisync.po:3972
+#: main_window.py:2744
 msgid "Un-ignore Warnings for Selected"
 msgstr "取消忽略選定項的警告"
 
-#: lexisync.po:3976
+#: main_window.py:3172
 #, python-brace-format
 msgid "Un-ignored warnings for {count} item(s)."
 msgstr "已取消忽略 {count} 個項目的警告。"
 
-#: lexisync.po:3981
+#: dialogs/diff_dialog.py:202 dialogs/diff_dialog.py:214
 msgid "Unchanged"
 msgstr "未變更"
 
-#: lexisync.po:3985
+#: main_window.py:516 main_window.py:703
 msgid "Undo"
 msgstr "復原"
 
-#: lexisync.po:3989
+#: main_window.py:1633
 #, python-brace-format
 msgid "Undo error: Object ID {obj_id} not found"
 msgstr "復原錯誤：找不到物件 ID {obj_id}"
 
-#: lexisync.po:3994
+#: main_window.py:1651
 #, python-brace-format
 msgid "Undo: Bulk change ({count} items)"
 msgstr "復原：批次變更 ({count} 個項目)"
 
-#: lexisync.po:3999
+#: main_window.py:1630
 #, python-brace-format
 msgid "Undo: {field} for ID {id} -> '{value}'"
 msgstr "復原：ID {id} 的 {field} -> '{value}'"
 
-#: lexisync.po:4004
+#: ui_components/file_explorer_panel.py:466
 msgid "Unexpected error occurred while navigating."
 msgstr "瀏覽時發生未預期的錯誤。"
 
-#: lexisync.po:4008
+#: services/ai_translator.py:48
 msgid "Unknown API error structure"
 msgstr "未知的 API 錯誤結構"
 
-#: lexisync.po:4012
+#: services/ai_translator.py:62
 msgid "Unknown error occurred during translation"
 msgstr "翻譯期間發生未知錯誤"
 
-#: lexisync.po:4016
+#: main_window.py:2728
 msgid "Unmark as Ignored"
 msgstr "取消標記為忽略"
 
-#: lexisync.po:4020
+#: dialogs/extraction_pattern_dialog.py:91
 msgid "Unnamed Rule"
 msgstr "未命名規則"
 
-#: lexisync.po:4024
+#: main_window.py:757 main_window.py:1056
 msgid "Unreviewed"
 msgstr "未審閱"
 
-#: lexisync.po:4028
+#: main_window.py:2443
 msgid "Unsaved Changes"
 msgstr "未儲存的變更"
 
-#: lexisync.po:4032
+#: main_window.py:1923
 msgid "Unsupported Area"
 msgstr "不支援的區域"
 
-#: lexisync.po:4036
+#: main_window.py:1865
 msgid "Unsupported File"
 msgstr "不支援的檔案"
 
-#: lexisync.po:4040
+#: services/tm_service.py:211
 #, python-brace-format
 msgid "Unsupported TM file format: {ext}"
 msgstr "不支援的翻譯記憶庫檔案格式：{ext}"
 
-#: lexisync.po:4045
+#: main_window.py:850
 msgid "Unsupported Type"
 msgstr "不支援的類型"
 
-#: lexisync.po:4049
+#: dialogs/statistics_dialog.py:528 dialogs/statistics_dialog.py:585
+#: main_window.py:755 main_window.py:1044
 msgid "Untranslated"
 msgstr "未翻譯"
 
-#: lexisync.po:4053
+#: ui_components/file_explorer_panel.py:228
+#: ui_components/file_explorer_panel.py:938
 msgid "Up"
 msgstr "向上"
 
-#: lexisync.po:4057
+#: dialogs/marketplace_dialog.py:162 plugins/plugin_dialog.py:586
 msgid "Update"
 msgstr "更新"
 
-#: lexisync.po:4061
+#: ui_components/tm_panel.py:34 ui_components/tm_panel.py:90
 msgid "Update TM for Selected"
 msgstr "更新選定項的翻譯記憶庫"
 
-#: lexisync.po:4065
+#: dialogs/pot_drop_dialog.py:24
 msgid "Update from POT"
 msgstr "從 POT 更新"
 
-#: lexisync.po:4069
+#: main_window.py:5215
 #, python-brace-format
 msgid "Updated comments for {count} items."
 msgstr "已更新 {count} 個項目的註解。"
 
-#: lexisync.po:4074
+#: main_window.py:2760
 msgid "Use AI to Translate Selected Items"
 msgstr "使用 AI 翻譯選定項目"
 
-#: lexisync.po:4078
+#: dialogs/new_project_dialog.py:206
 msgid "Use Global Glossary"
 msgstr "使用全域術語庫"
 
-#: lexisync.po:4082
+#: dialogs/new_project_dialog.py:228
 msgid "Use Global Translation Memory"
 msgstr "使用全域翻譯記憶庫"
 
-#: lexisync.po:4086
+#: dialogs/settings_pages.py:278 dialogs/settings_pages.py:292
 msgid "Use nearby"
 msgstr "使用鄰近的"
 
-#: lexisync.po:4090
+#: dialogs/settings_pages.py:273
 msgid "Use nearby original text as context"
 msgstr "使用鄰近的原文作為上下文"
 
-#: lexisync.po:4094
+#: dialogs/settings_pages.py:287
 msgid "Use nearby translated text as context"
 msgstr "使用鄰近的譯文作為上下文"
 
-#: lexisync.po:4098
+#: dialogs/settings_pages.py:211
 msgid "Use static sorting (Press F5 to manual refresh)"
 msgstr "使用靜態排序（按 F5 手動重新整理）"
 
-#: lexisync.po:4102
+#: main_window.py:3130
 msgid "Validating all entries..."
 msgstr "正在驗證所有條目..."
 
-#: lexisync.po:4106
+#: dialogs/settings_dialog.py:117
 msgid "Validation"
 msgstr "驗證"
 
-#: lexisync.po:4110
+#: main_window.py:3142
 msgid "Validation complete."
 msgstr "驗證完成。"
 
-#: lexisync.po:4114
+#: main_window.py:982
 #, python-brace-format
 msgid "Validation complete. Language pair set to {src} -> {tgt}."
 msgstr "驗證完成。語言對已設定為 {src} -> {tgt}。"
 
-#: lexisync.po:4119
+#: dialogs/marketplace_dialog.py:429 plugins/plugin_dialog.py:383
+#: plugins/plugin_dialog.py:398
 msgid "Version"
 msgstr "版本"
 
-#: lexisync.po:4123
+#: main_window.py:5375 main_window.py:5465
 msgid "Version Comparison Results"
 msgstr "版本比較結果"
 
-#: lexisync.po:4127
+#: main_window.py:5487
 msgid "Version comparison failed."
 msgstr "版本比較失敗。"
 
-#: lexisync.po:4131
+#: main_window.py:5386 main_window.py:5482
 msgid "Version update cancelled."
 msgstr "版本更新已取消。"
 
-#: lexisync.po:4135
+#: main_window.py:951
 msgid "View refreshed."
 msgstr "檢視已重新整理。"
 
-#: lexisync.po:4139
+#: plugins/plugin_dialog.py:402
 msgid "Visit Plugin Homepage"
 msgstr "访问外掛主页"
 
-#: lexisync.po:4143
+#: ui_components/welcome_screen.py:380 ui_components/welcome_screen.py:385
 msgid "Waiting for initialization to complete..."
 msgstr "等待初始化完成..."
 
-#: lexisync.po:4147
+#: dialogs/language_pair_dialog.py:470 dialogs/management_tabs.py:376
+#: dialogs/management_tabs.py:566 main_window.py:1479 main_window.py:2333
+#: main_window.py:4266 ui_components/marker_bar.py:30
 msgid "Warning"
 msgstr "警告"
 
-#: lexisync.po:4151
+#: main_window.py:3811
 #, python-brace-format
-msgid "Warning: Excel row {row_num}, UUID {uuid} - Original text does not match the one in Excel. Data will still be imported."
+msgid ""
+"Warning: Excel row {row_num}, UUID {uuid} - Original text does not match "
+"the one in Excel. Data will still be imported."
 msgstr "警告：Excel 第 {row_num} 列，UUID {uuid} - 原文與 Excel 中的不符。資料仍將被匯入。"
 
-#: lexisync.po:4156
+#: main_window.py:3946
 msgid "YAML files (*.yaml *.yml);;All Files (*.*)"
 msgstr "YAML 檔案 (*.yaml *.yml);;所有檔案 (*.*)"
 
-#: lexisync.po:4160
+#: main_window.py:3504 main_window.py:3540 main_window.py:3744
+#: main_window.py:3745 main_window.py:3844 main_window.py:3854
 msgid "Yes"
 msgstr "是"
 
-#: lexisync.po:4164
+#: main_window.py:4879
 #, python-brace-format
 msgid ""
 "You are about to AI translate {count} unique strings.\n"
@@ -4176,70 +4377,71 @@ msgstr ""
 "預計時間：約 {time_s:.1f} 秒。\n"
 "要繼續嗎？"
 
-#: lexisync.po:4177
+#: main_window.py:5371 main_window.py:5461
 #, python-brace-format
 msgid "and {modified} modified/inherited items."
 msgstr "以及 {modified} 個已修改/已繼承的項目。"
 
-#: lexisync.po:4182
+#: dialogs/marketplace_dialog.py:126 dialogs/marketplace_dialog.py:429
 msgid "by"
 msgstr "作者："
 
-#: lexisync.po:4186
+#: main_window.py:4132
 msgid "current in-memory code"
 msgstr "目前記憶體中的程式碼"
 
-#: lexisync.po:4190
+#: main_window.py:2553
 msgid "external file"
 msgstr "外部檔案"
 
-#: lexisync.po:4194
+#: main_window.py:4137
 #, python-brace-format
 msgid "file '{filename}'"
 msgstr "檔案 '{filename}'"
 
-#: lexisync.po:4199
+#: main_window.py:2557 main_window.py:2560 main_window.py:2563
 msgid "internal project file"
 msgstr "內部專案檔案"
 
-#: lexisync.po:4203
+#: dialogs/settings_pages.py:284
 msgid "original strings (0 for all)"
 msgstr "個原文 (0 為全部)"
 
-#: lexisync.po:4207
+#: dialogs/settings_pages.py:298
 msgid "translations (0 for all)"
 msgstr "筆翻譯 (0 為全部)"
 
-#: lexisync.po:4211
+#: dialogs/marketplace_dialog.py:432
 msgid "with your app version."
 msgstr "與當前版本。"
 
-#: lexisync.po:4215
+#: main_window.py:5369 main_window.py:5459
 #, python-brace-format
 msgid "{added} new items, "
 msgstr "{added} 個新項目、"
 
-#: lexisync.po:4220
+#: main_window.py:4844
 #, python-brace-format
 msgid "{count} item(s) already have translations."
 msgstr "{count} 個項目已有翻譯。"
 
-#: lexisync.po:4225
+#: main_window.py:4679 main_window.py:4734
 #, python-brace-format
 msgid "{count} items' ignore status updated."
 msgstr "{count} 個項目的忽略狀態已更新。"
 
-#: lexisync.po:4230
+#: main_window.py:4706 main_window.py:4762
 #, python-brace-format
 msgid "{count} items' review status updated."
 msgstr "{count} 個項目的審閱狀態已更新。"
 
-#: lexisync.po:4235
+#: main_window.py:5370 main_window.py:5460
 #, python-brace-format
 msgid "{removed} removed items, "
 msgstr "{removed} 個已移除的項目、"
 
-#: lexisync.po:4240
+#: dialogs/import_configuration_dialog.py:21
 #, python-brace-format
 msgid "{resource_type} Import Configuration"
 msgstr "{resource_type} 匯入設定"
+
