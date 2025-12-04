@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 
 def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None):
     line_num = entry.linenum
-    occurrences = [(po_file_rel_path, str(line_num))]
+    occurrences = entry.occurrences if hasattr(entry, 'occurrences') and entry.occurrences else []
+    if not occurrences:
+        occurrences = [(po_file_rel_path, str(line_num))]
     msgctxt = entry.msgctxt if entry.msgctxt else ""
     stable_name_for_uuid = f"{po_file_rel_path}::{msgctxt}::{entry.msgid}"
     try:
@@ -149,19 +151,35 @@ def load_from_po(filepath):
             continue
 
         full_code_lines = []
-        if project_root and entry.occurrences:
+        if entry.occurrences:
+            source_path_to_read = None
             try:
                 relative_path = entry.occurrences[0][0]
                 normalized_rel_path = os.path.normpath(relative_path)
-                full_source_path = os.path.join(project_root, normalized_rel_path)
 
-                if full_source_path in file_content_cache:
-                    full_code_lines = file_content_cache[full_source_path]
-                elif os.path.exists(full_source_path):
-                    with open(full_source_path, 'r', encoding='utf-8', errors='replace') as f:
-                        lines = f.read().splitlines()
-                        file_content_cache[full_source_path] = lines
-                        full_code_lines = lines
+                if project_root:
+                    candidate = os.path.join(project_root, normalized_rel_path)
+                    if os.path.exists(candidate):
+                        source_path_to_read = candidate
+                else:
+                    current_search_dir = Path(filepath).parent
+                    for _ in range(6):
+                        candidate = current_search_dir / normalized_rel_path
+                        if candidate.is_file():
+                            source_path_to_read = str(candidate)
+                            break
+                        if current_search_dir.parent == current_search_dir: # Root reached
+                            break
+                        current_search_dir = current_search_dir.parent
+
+                if source_path_to_read:
+                    if source_path_to_read in file_content_cache:
+                        full_code_lines = file_content_cache[source_path_to_read]
+                    else:
+                        with open(source_path_to_read, 'r', encoding='utf-8', errors='replace') as f:
+                            lines = f.read().splitlines()
+                            file_content_cache[source_path_to_read] = lines
+                            full_code_lines = lines
             except Exception as e:
                 logger.warning(f"Warning: Could not load context file for entry '{entry.msgid[:20]}...': {e}")
 

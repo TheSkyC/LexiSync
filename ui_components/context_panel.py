@@ -38,7 +38,7 @@ class ContextPanel(QWidget):
         cursor.setCharFormat(self.default_format)
         self.context_text_display.clear()
 
-        if not  ts_obj or not ts_obj.context_lines:
+        if not ts_obj or not ts_obj.context_lines:
             self.context_text_display.setPlainText("")
             return
 
@@ -58,29 +58,48 @@ class ContextPanel(QWidget):
             cursor = QTextCursor(current_block)
             cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
             cursor.setCharFormat(self.line_highlight_format)
+
             if self.app_instance.is_project_mode:
                 file_content_for_context = self.app_instance.current_active_source_file_content
             else:
                 file_content_for_context = self.app_instance.original_raw_code_content
 
             keyword_cursor = None
-            if file_content_for_context:
+
+            # 1. 绝对偏移量精确定位
+            if file_content_for_context and ts_obj.char_pos_start_in_file > 0:
                 line_start_char_pos_in_file = file_content_for_context.rfind(
                     '\n', 0, ts_obj.char_pos_start_in_file
                 ) + 1
                 keyword_start_in_line = ts_obj.char_pos_start_in_file - line_start_char_pos_in_file
 
                 if keyword_start_in_line >= 0:
-                    keyword_cursor = QTextCursor(current_block)
-                    keyword_cursor.setPosition(current_block.position() + keyword_start_in_line)
-                    keyword_cursor.setPosition(
+                    temp_cursor = QTextCursor(current_block)
+                    temp_cursor.setPosition(current_block.position() + keyword_start_in_line)
+                    temp_cursor.setPosition(
                         current_block.position() + keyword_start_in_line + len(keyword_to_highlight),
                         QTextCursor.KeepAnchor
                     )
-                    if keyword_cursor.selectedText() == keyword_to_highlight:
-                        keyword_cursor.setCharFormat(self.keyword_highlight_format)
-                    else:
-                        keyword_cursor = None
+                    if temp_cursor.selectedText() == keyword_to_highlight:
+                        keyword_cursor = temp_cursor
+
+            # 2. 回退策略：如果精确位置不可用，则在当前行内搜索关键词
+            if not keyword_cursor:
+                current_line_text = current_block.text()
+                try:
+                    start_index = current_line_text.index(keyword_to_highlight)
+                    keyword_cursor = QTextCursor(current_block)
+                    keyword_cursor.setPosition(current_block.position() + start_index)
+                    keyword_cursor.setPosition(
+                        current_block.position() + start_index + len(keyword_to_highlight),
+                        QTextCursor.KeepAnchor
+                    )
+                except ValueError:
+                    pass
+
+            # 应用高亮
+            if keyword_cursor:
+                keyword_cursor.setCharFormat(self.keyword_highlight_format)
 
             # 定位到关键词
             scroll_target_cursor = keyword_cursor if keyword_cursor else QTextCursor(current_block)
@@ -96,6 +115,7 @@ class ContextPanel(QWidget):
             target_x = self.context_text_display.horizontalScrollBar().value() + cursor_rect.left() - (
                         viewport_width / 2) + (cursor_rect.width() / 2)
             self.context_text_display.horizontalScrollBar().setValue(int(target_x))
+
             final_cursor = self.context_text_display.textCursor()
             start_position = final_cursor.selectionStart()
             final_cursor.clearSelection()
