@@ -1,0 +1,36 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - bot-user-name
+
+  categories:
+    - title: '🚀 New Features | 新功能'
+      labels:
+        - 'feature'
+        - 'enhancement'
+        - 'feat'
+
+    - title: '🐛 Bug Fixes | 修复'
+      labels:
+        - 'fix'
+        - 'bug'
+
+    - title: '⚡ Performance | 性能优化'
+      labels:
+        - 'perf'
+        - 'performance'
+
+    - title: '🧰 Maintenance | 维护与重构'
+      labels:
+        - 'chore'
+        - 'refactor'
+        - 'test'
+        - 'build'
+        - 'ci'
+
+    - title: '📚 Documentation | 文档'
+      labels:
+        - 'docs'
+        - 'documentation'
