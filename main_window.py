@@ -369,6 +369,8 @@ class LexiSyncApp(QMainWindow):
         self.update_counts_display()
         self.update_recent_files_menu()
         self.restore_window_state()
+        if hasattr(self, 'project_toolbar'):
+            self.project_toolbar.setVisible(False)
 
     def _setup_ui(self):
         self._setup_menu()
@@ -2419,6 +2421,8 @@ class LexiSyncApp(QMainWindow):
         self.refresh_sheet()
         self.clear_details_pane()
         self.update_ui_state_after_file_load(file_or_project_loaded=False)
+        if hasattr(self, 'project_toolbar'):
+            self.project_toolbar.setVisible(False)
         self.update_title()
 
     def handle_pot_file_drop(self, pot_filepath):
