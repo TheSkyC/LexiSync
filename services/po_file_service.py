@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None):
     line_num = entry.linenum
-    occurrences = entry.occurrences if hasattr(entry, 'occurrences') and entry.occurrences else []
+    occurrences = [(po_file_rel_path, str(line_num))]
     if not occurrences:
         occurrences = [(po_file_rel_path, str(line_num))]
     msgctxt = entry.msgctxt if entry.msgctxt else ""
