@@ -7,19 +7,18 @@
   <p align="center">中文 | <a href="./docs/README.en.md">English</a> | <a href="./docs/README.ja.md">日本語</a><br></p>
 
 # LexiSync
-
----
 **LexiSync** 是一款功能强大的桌面应用程序。它提供了一套完整、高效的本地化解决方案，从智能提取文本，到 AI 辅助翻译，再到数据驱动的质量保证，极大简化了多语言内容的管理流程。
 
 本工具完全兼容行业标准的 PO/POT 文件，而且支持《守望先锋》工坊代码翻译，是一个通用的本地化编辑和管理平台。
 
 ---
+
 ## 📥 下载
 您可以从 **[GitHub Releases](https://github.com/TheSkyC/LexiSync/releases/latest)** 页面下载最新版本。
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/TheSkyC/LexiSync?style=for-the-badge)](https://github.com/TheSkyC/LexiSync/releases/latest)
 
----
+
 ## 🚀 核心特性
 
 ### 📂 项目管理系统
