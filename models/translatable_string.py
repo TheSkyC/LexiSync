@@ -15,6 +15,7 @@ class TranslatableString:
                  full_code_lines, string_type="Custom String", source_file_path="", occurrences=None):
         name_string_for_uuid = f"{source_file_path}::{original_semantic}::{string_type}::L{line_num}::C{char_pos_start_in_file}"
         self.id = str(uuid.uuid5(APP_NAMESPACE_UUID, name_string_for_uuid))
+        self.context = ""
         self.original_raw = original_raw
         self.original_semantic = original_semantic
         self.translation = ""
@@ -104,6 +105,7 @@ class TranslatableString:
             'char_pos_start_in_file': self.char_pos_start_in_file,
             'char_pos_end_in_file': self.char_pos_end_in_file,
             'string_type': self.string_type,
+            'context': self.context,
             'comment': self.comment,
             'is_reviewed': self.is_reviewed,
             'is_fuzzy': self.is_fuzzy,
@@ -131,6 +133,7 @@ class TranslatableString:
         ts.translation = data.get('translation', "")
         ts.is_ignored = data.get('is_ignored', False)
         ts.was_auto_ignored = data.get('was_auto_ignored', False)
+        ts.context = data.get('context', "")
         ts.comment = data.get('comment', "")
         ts.is_reviewed = data.get('is_reviewed', False)
         ts.is_fuzzy = data.get('is_fuzzy', False)

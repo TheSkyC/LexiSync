@@ -6,8 +6,8 @@ __pycache__/
 
 .Python
 build_temp/
-python_standalone_src/
 build/
+python_standalone_src/
 develop-eggs/
 dist/
 downloads/
@@ -40,7 +40,7 @@ venv.bak/
 .idea/
 .vscode/
 
-build.ps1
+build*
 config.json
 *.prompt
 *.extract

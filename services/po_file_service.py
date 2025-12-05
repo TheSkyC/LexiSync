@@ -60,6 +60,9 @@ def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=No
     ts.id = str(uuid.uuid5(APP_NAMESPACE_UUID, stable_name_for_uuid))
     ts.translation = entry.msgstr or ""
 
+    if entry.msgctxt:
+        ts.context = entry.msgctxt
+
     all_comment_lines = []
     if entry.comment:
         all_comment_lines.extend(entry.comment.splitlines())

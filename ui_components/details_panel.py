@@ -42,8 +42,26 @@ class DetailsPanel(QWidget):
         self.original_label.setObjectName("original_label")
         self.original_label.setMinimumHeight(18)
 
+        # Context Badge
+        self.context_badge = QLabel(self)
+        self.context_badge.setVisible(False)
+        self.context_badge.setFixedHeight(18)
+        self.context_badge.setAlignment(Qt.AlignCenter)
+        self.context_badge.setStyleSheet("""
+            QLabel {
+                background-color: #E1F5FE;
+                color: #0277BD;
+                border-radius: 3px;
+                padding: 0px 6px;
+                font-size: 10px;
+                font-weight: bold;
+                margin-left: 6px;
+                border: 1px solid #B3E5FC;
+            }
+       """)
+
         # Format Badge
-        self.format_badge = QLabel()
+        self.format_badge = QLabel(self)
         self.format_badge.setVisible(False)
         self.format_badge.setFixedHeight(18)
         self.format_badge.setAlignment(Qt.AlignCenter)
@@ -63,6 +81,7 @@ class DetailsPanel(QWidget):
         self.char_count_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
         original_header_layout.addWidget(self.original_label)
+        original_header_layout.addWidget(self.context_badge)
         original_header_layout.addWidget(self.format_badge)
         original_header_layout.addStretch()
         original_header_layout.addWidget(self.char_count_label)
@@ -233,6 +252,16 @@ class DetailsPanel(QWidget):
         self.findChild(QLabel, "translation_label").setText(_("Translation:"))
         self.findChild(QPushButton, "apply_btn").setText(_("Apply Translation"))
         self.findChild(QPushButton, "ai_translate_current_btn").setText(_("AI Translate Selected"))
+
+    def update_context_badge(self, ts_obj):
+        """
+        Updates the context badge based on ts_obj.context (msgctxt).
+        """
+        if ts_obj and ts_obj.context:
+            self.context_badge.setText(ts_obj.context)
+            self.context_badge.setVisible(True)
+        else:
+            self.context_badge.setVisible(False)
 
     def update_format_badge(self, ts_obj):
         """
