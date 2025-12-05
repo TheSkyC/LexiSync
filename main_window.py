@@ -5136,6 +5136,7 @@ class LexiSyncApp(QMainWindow):
         try:
             self.details_panel.original_text_display.setPlainText(ts_obj.original_semantic)
             self.details_panel.translation_edit_text.setPlainText(ts_obj.get_translation_for_ui())
+            self.details_panel.update_format_badge(ts_obj)
         finally:
             self.details_panel.original_text_display.blockSignals(False)
             self.details_panel.translation_edit_text.blockSignals(False)

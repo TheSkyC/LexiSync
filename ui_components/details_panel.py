@@ -32,8 +32,6 @@ class DetailsPanel(QWidget):
         main_layout.setSpacing(5)
         splitter = QSplitter(Qt.Vertical)
 
-
-
         # --- 原文 ---
         original_container = QWidget()
         original_layout = QVBoxLayout(original_container)
@@ -42,12 +40,35 @@ class DetailsPanel(QWidget):
         original_header_layout = QHBoxLayout()
         self.original_label = QLabel(_("Original:"))
         self.original_label.setObjectName("original_label")
+        self.original_label.setMinimumHeight(18)
+
+        # Format Badge
+        self.format_badge = QLabel()
+        self.format_badge.setVisible(False)
+        self.format_badge.setFixedHeight(18)
+        self.format_badge.setAlignment(Qt.AlignCenter)
+        self.format_badge.setStyleSheet("""
+            QLabel {
+                background-color: #E0E0E0;
+                color: #444444;
+                border-radius: 4px;
+                padding: 2px 6px;
+                font-size: 11px;
+                font-weight: bold;
+                margin-left: 5px;
+            }
+        """)
+
         self.char_count_label = QLabel("")
         self.char_count_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
         original_header_layout.addWidget(self.original_label)
-        original_header_layout.addStretch()  # 添加一个伸缩项，将右侧标签推到最右边
+        original_header_layout.addWidget(self.format_badge)
+        original_header_layout.addStretch()
         original_header_layout.addWidget(self.char_count_label)
+
         original_layout.addLayout(original_header_layout)
+
         self.original_text_display = NewlineTextEdit()
         self.original_text_display.setReadOnly(True)
         self.original_text_display.setLineWrapMode(NewlineTextEdit.WidgetWidth)
@@ -212,3 +233,84 @@ class DetailsPanel(QWidget):
         self.findChild(QLabel, "translation_label").setText(_("Translation:"))
         self.findChild(QPushButton, "apply_btn").setText(_("Apply Translation"))
         self.findChild(QPushButton, "ai_translate_current_btn").setText(_("AI Translate Selected"))
+
+    def update_format_badge(self, ts_obj):
+        """
+        Parses the po_comment to find format flags (e.g., python-format) and updates the badge.
+        """
+        if not ts_obj or not ts_obj.po_comment:
+            self.format_badge.setVisible(False)
+            return
+
+        from itertools import chain
+
+        flags = set(chain.from_iterable(
+            (f.strip() for f in line.replace('#,', '').strip().split(','))
+            for line in ts_obj.po_comment.splitlines()
+            if line.strip().startswith('#,')
+        ))
+
+        format_map = {
+            # Python
+            'python-format': 'Python',
+            'python-brace-format': 'Python Brace',
+
+            # C
+            'c-format': 'C',
+            'c-sharp-format': 'C#',
+            'objc-format': 'Objective-C',
+
+            # Java
+            'java-format': 'Java',
+            'java-printf-format': 'Java Printf',
+
+            # JavaScript/Web
+            'javascript-format': 'JavaScript',
+            'typescript-format': 'TypeScript',
+
+            # Shell
+            'sh-format': 'Shell',
+            'bash-format': 'Bash',
+            'perl-format': 'Perl',
+            'perl-brace-format': 'Perl Brace',
+
+            # PHP
+            'php-format': 'PHP',
+
+            # Qt
+            'qt-format': 'Qt',
+            'qt-plural-format': 'Qt Plural',
+
+            # Ruby
+            'ruby-format': 'Ruby',
+
+            # Lisp
+            'lisp-format': 'Lisp',
+            'scheme-format': 'Scheme',
+
+            # Others
+            'elisp-format': 'Emacs Lisp',
+            'librep-format': 'LibRep',
+            'smalltalk-format': 'Smalltalk',
+            'tcl-format': 'Tcl',
+            'awk-format': 'AWK',
+            'lua-format': 'Lua',
+            'gcc-internal-format': 'GCC Internal',
+            'gfc-internal-format': 'GFortran Internal',
+            'boost-format': 'Boost',
+        }
+
+        found_format = next(
+            (format_map[flag] for flag in flags if flag in format_map),
+            next(
+                (flag.replace('-format', '').capitalize()
+                 for flag in flags if flag.endswith('-format')),
+                None
+            )
+        )
+
+        if found_format:
+            self.format_badge.setText(f"{found_format} {_('Format')}")
+            self.format_badge.setVisible(True)
+        else:
+            self.format_badge.setVisible(False)
