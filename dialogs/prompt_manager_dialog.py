@@ -334,6 +334,12 @@ class PromptItemEditor(QDialog):
             placeholders_group = QGroupBox(_("Available Placeholders (Click to Insert)"))
             placeholders_layout = QVBoxLayout(placeholders_group)
 
+            # [CRITICAL UI CHOICE]
+            # We use QLabel instead of QTextBrowser here.
+            # QTextBrowser has a built-in navigation behavior on anchor clicks that is hard to suppress,
+            # often causing the widget content to clear or reload when a link is clicked.
+            # QLabel with openExternalLinks=False provides a safer way to handle link clicks via signals.
+            # ---------------------------------------------------------------------------
             self.placeholders_browser = QLabel(self)
             self.placeholders_browser.setWordWrap(True)
             self.placeholders_browser.setTextFormat(Qt.RichText)

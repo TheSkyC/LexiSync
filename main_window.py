@@ -2383,6 +2383,15 @@ class LexiSyncApp(QMainWindow):
         self.build_worker = None
 
     def _save_current_view_changes(self):
+        # [CRITICAL DATA INTEGRITY NOTE]
+        # Do NOT attempt to optimize this by updating objects in place using a dictionary map.
+        # Previous attempts caused data loss for files not currently loaded in the view.
+        #
+        # The logic MUST be:
+        # 1. Filter out all strings belonging to the current active file from the main cache.
+        # 2. Append the current view's strings (which contain the latest edits) to the remaining strings.
+        # This ensures that data from other files remains untouched and current edits are saved.
+        # ---------------------------------------------------------------------------
         if not self.is_project_mode or not self.current_project_modified:
             return
         for ts_in_view in self.translatable_objects:

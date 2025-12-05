@@ -131,6 +131,13 @@ class MarkerBar(QWidget):
             self._cache_valid = True
             return
         pixel_map = {}
+        # [CRITICAL RENDERING LOGIC]
+        # We sort by priority in DESCENDING order (Higher number = Higher priority).
+        # We iterate from highest to lowest priority.
+        # The check `if y not in pixel_map` ensures that the HIGHEST priority marker
+        # claims the pixel first. Lower priority markers at the same pixel are ignored.
+        # DO NOT CHANGE SORT ORDER without understanding this "first-come-first-served" logic.
+        # ---------------------------------------------------------------------------
         sorted_marker_types = sorted(
             [mt for mt in self._marker_configs if mt in self._point_markers],
             key=lambda k: self._marker_configs[k]['priority'],
