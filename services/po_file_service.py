@@ -204,6 +204,7 @@ def load_from_po(filepath):
     logger.debug(f"[load_from_po] Finished loading. Found {len(translatable_objects)} entries.")
     return translatable_objects, po_file.metadata, po_lang
 
+
 def save_to_po(filepath, translatable_objects, metadata=None, original_file_name="source_code", app_instance=None):
     po_file = polib.POFile(wrapwidth=0)
     if metadata:
@@ -213,9 +214,11 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
     po_file.metadata['PO-Revision-Date'] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M%z")
     po_file.metadata['Content-Type'] = 'text/plain; charset=utf-8'
     po_file.metadata['Content-Transfer-Encoding'] = '8bit'
+
     for ts_obj in translatable_objects:
         if not ts_obj.original_semantic or ts_obj.id == "##NEW_ENTRY##":
             continue
+
         if ts_obj.is_reviewed or ts_obj.is_warning_ignored:
             ts_obj.is_fuzzy = False
         entry_flags = []
@@ -223,6 +226,7 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
             entry_flags.append('fuzzy')
 
         po_comment_lines = ts_obj.po_comment.splitlines()
+
         flags_line = next((line for line in po_comment_lines if line.strip().startswith('#,')), None)
         if flags_line:
             flags_str = flags_line.replace('#,', '').strip()
@@ -232,21 +236,42 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         if ts_obj.is_reviewed or ts_obj.is_warning_ignored:
             if 'fuzzy' in entry_flags:
                 entry_flags.remove('fuzzy')
-        entry_occurrences = ts_obj.occurrences
+
+        entry_occurrences = []
+        location_lines = [line for line in po_comment_lines if line.strip().startswith('#:')]
+
+        for line in location_lines:
+            # Format: #: file1.py:10 file2.py:20
+            content = line.replace('#:', '').strip()
+            parts = content.split()
+            for part in parts:
+                # Split filename
+                if ':' in part:
+                    try:
+                        fpath, lineno = part.rsplit(':', 1)
+                        entry_occurrences.append((fpath, lineno))
+                    except ValueError:
+                        pass  # Skip malformed parts
+
+        # Fallback for new entries created manually in UI
         if not entry_occurrences and ts_obj.line_num_in_file > 0:
+            # Only use this fallback if we couldn't find any #: comments
             entry_occurrences = [(original_file_name, str(ts_obj.line_num_in_file))]
+
+        # --- Comments Handling ---
         user_comment_lines = ts_obj.comment.splitlines()
         if ts_obj.is_reviewed:
             user_comment_lines.append("#LexiSync:reviewed")
         if ts_obj.is_ignored:
             user_comment_lines.append("#LexiSync:ignored")
         translator_comment = "\n".join(user_comment_lines)
-        po_comment_lines = ts_obj.po_comment.splitlines()
+
         developer_comment_lines = [
             line for line in po_comment_lines
             if not line.strip().startswith(('#:', '#,', '#|'))
         ]
         developer_comment = "\n".join(developer_comment_lines)
+
         entry = polib.POEntry(
             msgid=ts_obj.original_semantic,
             msgstr=ts_obj.translation,
@@ -256,6 +281,7 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
             flags=entry_flags
         )
         po_file.append(entry)
+
     try:
         po_file.save(filepath)
     except Exception as e:
