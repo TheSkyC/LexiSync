@@ -13,6 +13,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None):
+    # [CRITICAL ARCHITECTURE NOTE]
+    # We MUST force the 'occurrences' to point to the PO file itself (e.g., 'source/zh.po'),
+    # ignoring the actual occurrences listed inside the PO entry (e.g., '#: main.py:123').
+    #
+    # Reason:
+    # In LexiSync's Project Mode, the "Active File" switching logic relies on exact path matching.
+    # It filters the global string list using: ts.source_file_path == active_file_project_path.
+    #
+    # If we use entry.occurrences, the source_file_path becomes 'main.py', which does NOT match
+    # the project file path 'source/zh.po', causing the view to be empty.
+    #
+    # The original occurrences are preserved in 'po_comment' for reference, but for
+    # internal logic, the "source" of this string is the PO file.
     line_num = entry.linenum
     occurrences = [(po_file_rel_path, str(line_num))]
     if not occurrences:
