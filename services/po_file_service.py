@@ -151,6 +151,12 @@ def load_from_po(filepath):
     translatable_objects = []
     project_root = _find_project_root(filepath)
     file_content_cache = {}
+    path_exists_cache = {}
+
+    def cached_is_file(path_str):
+        if path_str not in path_exists_cache:
+            path_exists_cache[path_str] = os.path.isfile(path_str)
+        return path_exists_cache[path_str]
 
     po_file_rel_path = ""
     if project_root:
@@ -175,16 +181,17 @@ def load_from_po(filepath):
 
                 if project_root:
                     candidate = os.path.join(project_root, normalized_rel_path)
-                    if os.path.exists(candidate):
+                    if cached_is_file(candidate):
                         source_path_to_read = candidate
                 else:
                     current_search_dir = Path(filepath).parent
                     for _ in range(6):
                         candidate = current_search_dir / normalized_rel_path
-                        if candidate.is_file():
-                            source_path_to_read = str(candidate)
+                        candidate_str = str(candidate)
+                        if cached_is_file(candidate_str):
+                            source_path_to_read = candidate_str
                             break
-                        if current_search_dir.parent == current_search_dir: # Root reached
+                        if current_search_dir.parent == current_search_dir:
                             break
                         current_search_dir = current_search_dir.parent
 

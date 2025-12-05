@@ -4021,6 +4021,7 @@ class LexiSyncApp(QMainWindow):
 
     def import_po_file_dialog_with_path(self, po_filepath):
         self._reset_app_state()
+        self.proxy_model.setDynamicSortFilter(False)
         try:
             self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(po_filepath)
             self.original_raw_code_content = ""
@@ -4078,6 +4079,12 @@ class LexiSyncApp(QMainWindow):
                 filename=os.path.basename(po_filepath), error=e))
             self._reset_app_state()
             self.update_statusbar(_("PO file loading failed"), persistent=True)
+        finally:
+            if not self.use_static_sorting_var:
+                self.proxy_model.setDynamicSortFilter(True)
+                current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
+                current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
+                self.proxy_model.sort(current_sort_column, current_sort_order)
         self.update_counts_display()
 
     def import_po_file_dialog(self):
