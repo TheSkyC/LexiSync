@@ -45,6 +45,19 @@ class InstallThread(QThread):
         success = DependencyManager.get_instance().install_dependencies(self.dependencies, self.progress.emit)
         self.finished.emit(success)
 
+class UninstallThread(QThread):
+    progress = Signal(str)
+    finished = Signal(bool)
+
+    def __init__(self, package_name):
+        super().__init__()
+        self.package_name = package_name
+
+    def run(self):
+        success = DependencyManager.get_instance().uninstall_package(self.package_name, self.progress.emit)
+        self.finished.emit(success)
+
+
 class PluginManagerDialog(QDialog):
     ICON_GREEN = None
     ICON_RED = None
@@ -579,8 +592,31 @@ class PluginManagerDialog(QDialog):
         res = DependencyManager.get_instance().check_external_dependency(lib_name, spec)
 
         if res['status'] == 'ok':
-            QMessageBox.information(self, _("Dependency Check"),
-                                    _("Library '{lib}' is already installed and compatible.").format(lib=lib_name))
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle(_("Dependency Check"))
+            msg_box.setText(_("Library '{lib}' is already installed and compatible.").format(lib=lib_name))
+            msg_box.setIcon(QMessageBox.Information)
+            uninstall_btn = msg_box.addButton(_("Uninstall"), QMessageBox.ResetRole)
+            ok_btn = msg_box.addButton(_("OK"), QMessageBox.AcceptRole)
+            uninstall_btn.setStyleSheet("""
+                QPushButton {
+                    color: #F56C6C;
+                    border: 1px solid #FBC4C4;
+                    border-radius: 4px;
+                    padding: 6px 12px;
+                    background-color: #FFFFFF;
+                }
+                QPushButton:hover {
+                    background-color: #FEF0F0;
+                    color: #F56C6C;
+                    border-color: #F56C6C;
+                }
+            """)
+
+            msg_box.exec()
+
+            if msg_box.clickedButton() == uninstall_btn:
+                self.confirm_and_uninstall(lib_name)
             return
 
         action_text = _("Install") if res['status'] == 'missing' else _("Update")
@@ -619,6 +655,43 @@ class PluginManagerDialog(QDialog):
         else:
             QMessageBox.critical(self, _("Failed"),
                                  _("Failed to install library '{lib}'.\nPlease check the log for details.").format(
+                                     lib=lib_name))
+
+    def confirm_and_uninstall(self, lib_name):
+        reply = QMessageBox.question(
+            self,
+            _("Confirm Uninstall"),
+            _("Are you sure you want to uninstall the library '{lib}'?\nThis may break plugins that depend on it.").format(
+                lib=lib_name),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            log_dialog = QDialog(self)
+            log_dialog.setWindowTitle(_("Uninstalling {lib}...").format(lib=lib_name))
+            log_dialog.setMinimumSize(600, 400)
+            layout = QVBoxLayout(log_dialog)
+            log_browser = QTextBrowser()
+            layout.addWidget(log_browser)
+
+            self.uninstall_thread = UninstallThread(lib_name)
+            self.uninstall_thread.progress.connect(log_browser.append)
+            self.uninstall_thread.finished.connect(
+                lambda success: self.on_uninstall_finished(success, lib_name, log_dialog)
+            )
+            self.uninstall_thread.start()
+            log_dialog.exec()
+
+    def on_uninstall_finished(self, success, lib_name, log_dialog):
+        log_dialog.close()
+        if success:
+            QMessageBox.information(self, _("Success"), _(
+                "Library '{lib}' uninstalled successfully.").format(lib=lib_name))
+            self.update_details(self.plugin_list.currentItem(), None)
+        else:
+            QMessageBox.critical(self, _("Failed"),
+                                 _("Failed to uninstall library '{lib}'.\nPlease check the log for details.").format(
                                      lib=lib_name))
 
     def reload_plugins(self):

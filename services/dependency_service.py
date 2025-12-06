@@ -101,6 +101,62 @@ class DependencyManager:
                 progress_callback(f"Error: {e}")
             return False
 
+    def uninstall_package(self, package_name: str, progress_callback=None):
+        libs_path = get_plugin_libs_path()
+        python_executable = sys.executable
+
+        if getattr(sys, 'frozen', False):
+            base_path = os.path.dirname(sys.executable)
+            python_executable = os.path.join(base_path, 'python.exe')
+            if not os.path.exists(python_executable):
+                error_msg = "FATAL: Bundled python.exe not found. Cannot uninstall."
+                logger.error(error_msg)
+                if progress_callback: progress_callback(error_msg)
+                return False
+
+        command = [python_executable, "-m", "pip", "uninstall", "-y", package_name]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = libs_path + os.pathsep + env.get("PYTHONPATH", "")
+
+        if progress_callback:
+            progress_callback(f"Running command: {' '.join(command)}")
+            progress_callback(f"Target context: {libs_path}")
+
+        try:
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding='utf-8',
+                env=env,
+                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+            )
+
+            for line in iter(process.stdout.readline, ''):
+                if progress_callback:
+                    progress_callback(line.strip())
+
+            process.wait()
+
+            if process.returncode != 0:
+                error_msg = f"Uninstall failed with exit code {process.returncode}."
+                logger.error(error_msg)
+                if progress_callback: progress_callback(error_msg)
+                return False
+
+            if progress_callback:
+                progress_callback("Package uninstalled successfully.")
+
+            self._cache.pop(package_name, None)
+            return True
+
+        except Exception as e:
+            error_msg = f"An unknown error occurred during uninstall: {e}"
+            logger.error(error_msg, exc_info=True)
+            if progress_callback: progress_callback(error_msg)
+            return False
+
     def install_dependencies(self, dependencies: dict, progress_callback=None):
         if not dependencies:
             if progress_callback:
