@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import QWidget, QTableView
-from PySide6.QtCore import Qt, Signal, QEvent
+from PySide6.QtCore import Qt, Signal, QEvent, QTimer
 from PySide6.QtGui import QPainter, QColor, QMouseEvent
 from .tooltip import Tooltip
 import bisect
@@ -20,7 +20,11 @@ class MarkerBar(QWidget):
         super().__init__(parent)
         self.table_view = table_view
         self.proxy_model = None
-
+        self._selection_model = None
+        self._update_timer = QTimer(self)
+        self._update_timer.setSingleShot(True)
+        self._update_timer.setInterval(50)
+        self._update_timer.timeout.connect(self._update_selection_ranges_from_model)
         self._point_markers = defaultdict(list)
         self._range_markers = defaultdict(list)
 
@@ -103,6 +107,98 @@ class MarkerBar(QWidget):
         else:
             self._range_markers.clear()
         self._invalidate_cache()
+
+    def set_selection_model(self, selection_model):
+        if hasattr(self, '_selection_model') and self._selection_model:
+            try:
+                self._selection_model.selectionChanged.disconnect(self._on_selection_changed_internal)
+            except RuntimeError:
+                pass
+
+        self._selection_model = selection_model
+        if self._selection_model:
+            self._selection_model.selectionChanged.connect(self._on_selection_changed_internal)
+
+    def _on_selection_changed_internal(self, selected, deselected):
+        self._update_timer.start()
+
+    def _update_selection_ranges_from_model(self):
+        if not self._selection_model or not self.proxy_model:
+            self.clear_ranges('selection')
+            return
+
+        selection = self._selection_model.selection()
+        if selection.isEmpty():
+            self.clear_ranges('selection')
+            return
+
+        # 计算选中总行数
+        total_selected_rows = sum(r.height() for r in selection)
+        total_source_rows = self._get_total_rows()
+
+        # 阈值设置
+        SELECTION_THRESHOLD = 1000
+
+        # 全选
+        if total_selected_rows == total_source_rows and total_source_rows > 0:
+            self.set_ranges('selection', [(0, total_source_rows - 1)])
+            return
+
+        # 选中过多
+        if total_selected_rows > SELECTION_THRESHOLD:
+            self.clear_ranges('selection')
+            return
+
+        # 正常选择
+        ranges = []
+        source_rows = []
+
+        for selection_range in selection:
+            if not selection_range.isValid():
+                continue
+
+            top = selection_range.top()
+            bottom = selection_range.bottom()
+
+            for r in range(top, bottom + 1):
+                src_idx = self.proxy_model.mapToSource(self.proxy_model.index(r, 0))
+                if src_idx.isValid():
+                    source_rows.append(src_idx.row())
+
+        if source_rows:
+            source_rows.sort()
+            ranges = self._merge_selection_ranges(source_rows)
+            self.set_ranges('selection', ranges)
+        else:
+            self.clear_ranges('selection')
+
+    def _merge_selection_ranges(self, sorted_source_rows: list) -> list:
+        if not sorted_source_rows:
+            return []
+
+        # 如果两个标记在屏幕上的距离小于3像素，则合并显示
+        Y_THRESHOLD = 3
+        ranges = []
+        current_range_start = sorted_source_rows[0]
+        current_range_end = sorted_source_rows[0]
+
+        for i in range(1, len(sorted_source_rows)):
+            prev_row = sorted_source_rows[i - 1]
+            current_row = sorted_source_rows[i]
+
+            # 计算视觉距离
+            y_prev = self._row_to_y(prev_row)
+            y_current = self._row_to_y(current_row)
+
+            if (current_row == prev_row + 1) or ((y_current - y_prev) <= Y_THRESHOLD):
+                current_range_end = current_row
+            else:
+                ranges.append((current_range_start, current_range_end))
+                current_range_start = current_row
+                current_range_end = current_row
+
+        ranges.append((current_range_start, current_range_end))
+        return ranges
 
     def _invalidate_cache(self):
         self._cache_valid = False
