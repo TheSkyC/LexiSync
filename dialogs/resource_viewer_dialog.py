@@ -4,7 +4,7 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QComboBox, QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox,
-    QAbstractItemView, QMenu, QGroupBox
+    QAbstractItemView, QMenu, QGroupBox, QGridLayout, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction, QCursor
@@ -105,21 +105,17 @@ class ResourceViewerDialog(QDialog):
             )
 
     def _reset_all_filters(self):
-        """重置所有筛选器"""
         for combo in [self.source_combo, self.src_lang_combo, self.tgt_lang_combo]:
             combo.blockSignals(True)
             combo.clear()
 
-        # 重新添加默认选项
         self.source_combo.addItem(_("All Sources"), "All")
         self.src_lang_combo.addItem(_("All Source Langs"), "All")
         self.tgt_lang_combo.addItem(_("All Target Langs"), "All")
 
-        # 恢复信号
         for combo in [self.source_combo, self.src_lang_combo, self.tgt_lang_combo]:
             combo.blockSignals(False)
 
-        # 清空搜索框
         self.search_edit.clear()
 
     def _clear_all_data(self):
@@ -129,54 +125,104 @@ class ResourceViewerDialog(QDialog):
 
     def setup_ui(self):
         main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(10)
+
+        # 1. Type & Database
+        main_layout.addLayout(self._create_scope_section())
+
+        # 2. 筛选
         main_layout.addWidget(self._create_filter_section())
+
+        # 3. 数据表格
         main_layout.addWidget(self._create_table())
+
+        # 4. 分页控件
         main_layout.addLayout(self._create_pagination_section())
 
-    def _create_filter_section(self):
-        """创建筛选区域"""
-        filter_group = QGroupBox(_("Filters"))
-        filter_layout = QHBoxLayout(filter_group)
+    def _create_scope_section(self):
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # 资源类型选择器
+        layout.addWidget(QLabel(_("Type:")))
+        self.mode_selector = QComboBox()
+        self.mode_selector.addItem(_("Translation Memory"), "tm")
+        self.mode_selector.addItem(_("Glossary"), "glossary")
+
+        initial_index = self.mode_selector.findData(self.mode)
+        if initial_index != -1:
+            self.mode_selector.setCurrentIndex(initial_index)
+        self.mode_selector.currentIndexChanged.connect(self.on_mode_changed)
+        layout.addWidget(self.mode_selector)
+
+        layout.addSpacing(20)
 
         # 数据库选择器
-        filter_layout.addWidget(QLabel(_("Database:")))
+        layout.addWidget(QLabel(_("Database:")))
         self.db_selector = self._create_db_selector()
-        filter_layout.addWidget(self.db_selector)
+        layout.addWidget(self.db_selector)
+        layout.addStretch()
 
-        # 搜索框
+        return layout
+
+    def _create_filter_section(self):
+        filter_group = QGroupBox(_("Filters"))
+        filter_layout = QHBoxLayout(filter_group)
+        filter_layout.setContentsMargins(10, 10, 10, 10)
+        filter_layout.setSpacing(10)
+
+        # Source
+        filter_layout.addWidget(QLabel(_("Source:")))
+        self.source_combo = QComboBox()
+        self.source_combo.addItem(_("All Sources"), "All")
+        self.source_combo.setMinimumWidth(120)
+        self.source_combo.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        filter_layout.addWidget(self.source_combo)
+
+        # Src Lang
+        filter_layout.addWidget(QLabel(_("Src:")))
+        self.src_lang_combo = QComboBox()
+        self.src_lang_combo.addItem(_("All"), "All")
+        filter_layout.addWidget(self.src_lang_combo)
+
+        # Tgt Lang
+        filter_layout.addWidget(QLabel(_("Tgt:")))
+        self.tgt_lang_combo = QComboBox()
+        self.tgt_lang_combo.addItem(_("All"), "All")
+        filter_layout.addWidget(self.tgt_lang_combo)
+
+        # Search Box
         self.search_edit = QLineEdit()
         self.search_edit.setPlaceholderText(_("Search text..."))
         self.search_edit.returnPressed.connect(self.on_search)
+        self.search_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        filter_layout.addWidget(self.search_edit)
 
-        # 筛选下拉框
-        self.source_combo = QComboBox()
-        self.source_combo.addItem(_("All Sources"), "All")
-
-        self.src_lang_combo = QComboBox()
-        self.src_lang_combo.addItem(_("All Source Langs"), "All")
-
-        self.tgt_lang_combo = QComboBox()
-        self.tgt_lang_combo.addItem(_("All Target Langs"), "All")
-
-        # 按钮
+        # Buttons
         search_btn = QPushButton(_("Search"))
         search_btn.clicked.connect(self.on_search)
+        filter_layout.addWidget(search_btn)
 
         reset_btn = QPushButton(_("Reset"))
         reset_btn.clicked.connect(self.reset_filters)
-
-        # 添加到布局
-        filter_layout.addWidget(QLabel(_("Source:")))
-        filter_layout.addWidget(self.source_combo)
-        filter_layout.addWidget(QLabel(_("Src:")))
-        filter_layout.addWidget(self.src_lang_combo)
-        filter_layout.addWidget(QLabel(_("Tgt:")))
-        filter_layout.addWidget(self.tgt_lang_combo)
-        filter_layout.addWidget(self.search_edit)
-        filter_layout.addWidget(search_btn)
         filter_layout.addWidget(reset_btn)
 
+        filter_layout.setStretchFactor(self.source_combo, 1)
+        filter_layout.setStretchFactor(self.search_edit, 2)
+
         return filter_group
+
+    def on_mode_changed(self, index):
+        """切换资源类型 (TM <-> Glossary)"""
+        new_mode = self.mode_selector.itemData(index)
+        if new_mode == self.mode:
+            return
+
+        self.mode = new_mode
+        self._init_service()
+        self.setWindowTitle(self.title_prefix)
+        self.initial_source_key = None
+        self.on_db_changed(self.db_selector.currentIndex())
 
     def _create_db_selector(self):
         """创建数据库选择器"""
