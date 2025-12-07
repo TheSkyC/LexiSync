@@ -9,7 +9,7 @@ CONFIG_FILE = "config.json"
 EXPANSION_DATA_DIR = "expansion_data"
 MAX_UNDO_HISTORY = 30
 DEFAULT_API_URL = "https://api.deepseek.com/chat/completions"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 PROMPT_PRESET_EXTENSION = ".prompt"
 EXTRACTION_PATTERN_PRESET_EXTENSION = ".extract"
 
