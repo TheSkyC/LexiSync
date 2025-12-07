@@ -594,6 +594,10 @@ class LexiSyncApp(QMainWindow):
         self.tools_menu.addAction(self.action_stop_ai_batch_translation)
         self.tools_menu.addSeparator()
 
+        self.action_resource_viewer = QAction(_("Resource Viewer..."), self)
+        self.action_resource_viewer.triggered.connect(self.show_resource_viewer)
+        self.tools_menu.addAction(self.action_resource_viewer)
+
         self.tools_menu.addSeparator()
         self.action_run_validation_on_all = QAction(_("Re-validate All Entries"), self)
         self.action_run_validation_on_all.triggered.connect(self._run_and_refresh_with_validation)
@@ -4231,6 +4235,11 @@ class LexiSyncApp(QMainWindow):
                                  _("Error reloading translatable text: {error}").format(error=e))
             self.update_statusbar(_("Reload failed."), persistent=True)
         self.update_counts_display()
+
+    def show_resource_viewer(self):
+        from dialogs.resource_viewer_dialog import ResourceViewerDialog
+        dialog = ResourceViewerDialog(self, self, mode='tm')
+        dialog.show()
 
     def show_statistics_dialog(self):
         if not self.translatable_objects:

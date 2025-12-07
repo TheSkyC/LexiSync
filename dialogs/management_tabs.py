@@ -12,6 +12,7 @@ from utils.localization import _
 from utils.path_utils import get_app_data_path
 from utils.tbx_parser import TBXParser
 from services.glossary_service import MANIFEST_FILE as GLOSSARY_MANIFEST_FILE
+from .resource_viewer_dialog import ResourceViewerDialog
 from .import_configuration_dialog import ImportConfigurationDialog
 from .tm_import_dialog import TMImportDialog
 import os
@@ -162,12 +163,20 @@ class GlossaryManagementTab(QWidget):
         header.setSectionResizeMode(5, QHeaderView.Stretch)
         self.sources_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.sources_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.sources_table.cellDoubleClicked.connect(self.on_item_double_clicked)
         self.main_layout.addWidget(self.sources_table)
 
     def closeEvent(self, event):
         logger.info("GlossarySettingsPage closeEvent called")
         self._force_cleanup()
         super().closeEvent(event)
+
+    def on_item_double_clicked(self, row, column):
+        item = self.sources_table.item(row, 0)
+        source_key = item.data(Qt.UserRole) or item.text()
+
+        dialog = ResourceViewerDialog(self.window(), self.app, mode='glossary', initial_source_key=source_key)
+        dialog.show()
 
     def _force_cleanup(self):
         try:
@@ -495,7 +504,7 @@ class TMManagementTab(QWidget):
         if self.context == "project":
             if not self.app.is_project_mode:
                 self.setEnabled(False)
-                self.main_layout.addWidget(QLabel(_("No project open.")))  # 使用新布局
+                self.main_layout.addWidget(QLabel(_("No project open.")))
                 return
             self.tm_dir = os.path.join(self.app.current_project_path, "tm")
         else:
@@ -535,8 +544,16 @@ class TMManagementTab(QWidget):
         header.setSectionResizeMode(5, QHeaderView.Stretch)
         self.sources_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.sources_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.sources_table.cellDoubleClicked.connect(self.on_item_double_clicked)
 
         self.main_layout.addWidget(self.sources_table)
+
+    def on_item_double_clicked(self, row, column):
+        item = self.sources_table.item(row, 0)
+        source_key = item.data(Qt.UserRole) or item.text()
+
+        dialog = ResourceViewerDialog(self.window(), self.app, mode='tm', initial_source_key=source_key)
+        dialog.show()
 
     def import_tm_file(self, filepath: Optional[str] = None):
         if not filepath:

@@ -303,6 +303,108 @@ class TMService:
                 conn.rollback()
                 logger.error(f"Failed to remove TM source '{source_key}': {e}", exc_info=True)
                 return False, str(e)
+
+    def query_entries(self, db_path: str, page: int = 1, page_size: int = 50,
+                      source_key: str = None, src_lang: str = None, tgt_lang: str = None,
+                      search_term: str = None) -> List[Dict]:
+        if not db_path or not os.path.exists(db_path):
+            return []
+
+        offset = (page - 1) * page_size
+        query = "SELECT id, source_text, target_text, source_lang, target_lang, source_manifest_key, created_at FROM translation_units WHERE 1=1"
+        params = []
+
+        if source_key and source_key != "All":
+            query += " AND source_manifest_key = ?"
+            params.append(source_key)
+        if src_lang and src_lang != "All":
+            query += " AND source_lang = ?"
+            params.append(src_lang)
+        if tgt_lang and tgt_lang != "All":
+            query += " AND target_lang = ?"
+            params.append(tgt_lang)
+        if search_term:
+            query += " AND (source_text LIKE ? OR target_text LIKE ?)"
+            wildcard = f"%{search_term}%"
+            params.extend([wildcard, wildcard])
+
+        query += " ORDER BY id DESC LIMIT ? OFFSET ?"
+        params.extend([page_size, offset])
+
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(query, params)
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"TM query failed: {e}")
+            return []
+
+    def count_entries(self, db_path: str, source_key: str = None, src_lang: str = None,
+                      tgt_lang: str = None, search_term: str = None) -> int:
+        if not db_path or not os.path.exists(db_path): return 0
+
+        query = "SELECT COUNT(*) FROM translation_units WHERE 1=1"
+        params = []
+
+        if source_key and source_key != "All":
+            query += " AND source_manifest_key = ?"
+            params.append(source_key)
+        if src_lang and src_lang != "All":
+            query += " AND source_lang = ?"
+            params.append(src_lang)
+        if tgt_lang and tgt_lang != "All":
+            query += " AND target_lang = ?"
+            params.append(tgt_lang)
+        if search_term:
+            query += " AND (source_text LIKE ? OR target_text LIKE ?)"
+            wildcard = f"%{search_term}%"
+            params.extend([wildcard, wildcard])
+
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(query, params)
+                return cursor.fetchone()[0]
+        except Exception as e:
+            logger.error(f"TM count failed: {e}")
+            return 0
+
+    def update_entry_target(self, db_path: str, entry_id: int, new_target: str) -> bool:
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE translation_units SET target_text = ? WHERE id = ?", (new_target, entry_id))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"TM update failed: {e}")
+            return False
+
+    def delete_entry_by_id(self, db_path: str, entry_id: int) -> bool:
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM translation_units WHERE id = ?", (entry_id,))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"TM delete failed: {e}")
+            return False
+
+    def get_distinct_languages(self, db_path: str) -> Tuple[List[str], List[str]]:
+        if not db_path or not os.path.exists(db_path): return [], []
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT DISTINCT source_lang FROM translation_units")
+                srcs = [r[0] for r in cursor.fetchall()]
+                cursor.execute("SELECT DISTINCT target_lang FROM translation_units")
+                tgts = [r[0] for r in cursor.fetchall()]
+                return sorted(srcs), sorted(tgts)
+        except Exception:
+            return [], []
+
     def _read_manifest(self, manifest_path: str) -> Dict:
         try:
             with open(manifest_path, 'r', encoding='utf-8') as f:

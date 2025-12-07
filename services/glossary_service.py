@@ -594,6 +594,113 @@ class GlossaryService:
             logger.error(f"Batch query failed: {e}")
             return {}
 
+    def query_entries(self, db_path: str, page: int = 1, page_size: int = 50,
+                      source_key: str = None, src_lang: str = None, tgt_lang: str = None,
+                      search_term: str = None) -> List[Dict]:
+        if not db_path or not os.path.exists(db_path): return []
+
+        offset = (page - 1) * page_size
+
+        query = """
+            SELECT 
+                tt.id, 
+                s.term_text as source_text, 
+                t.term_text as target_text, 
+                s.language_code as source_lang, 
+                t.language_code as target_lang, 
+                tt.source_manifest_key,
+                tt.comment
+            FROM term_translations tt
+            JOIN terms s ON tt.source_term_id = s.id
+            JOIN terms t ON tt.target_term_id = t.id
+            WHERE 1=1
+        """
+        params = []
+
+        if source_key and source_key != "All":
+            query += " AND tt.source_manifest_key = ?"
+            params.append(source_key)
+        if src_lang and src_lang != "All":
+            query += " AND s.language_code = ?"
+            params.append(src_lang)
+        if tgt_lang and tgt_lang != "All":
+            query += " AND t.language_code = ?"
+            params.append(tgt_lang)
+        if search_term:
+            query += " AND (s.term_text LIKE ? OR t.term_text LIKE ?)"
+            wildcard = f"%{search_term}%"
+            params.extend([wildcard, wildcard])
+
+        query += " ORDER BY tt.id DESC LIMIT ? OFFSET ?"
+        params.extend([page_size, offset])
+
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(query, params)
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Glossary query failed: {e}")
+            return []
+
+    def count_entries(self, db_path: str, source_key: str = None, src_lang: str = None,
+                      tgt_lang: str = None, search_term: str = None) -> int:
+        if not db_path or not os.path.exists(db_path): return 0
+
+        query = """
+            SELECT COUNT(*) 
+            FROM term_translations tt
+            JOIN terms s ON tt.source_term_id = s.id
+            JOIN terms t ON tt.target_term_id = t.id
+            WHERE 1=1
+        """
+        params = []
+
+        if source_key and source_key != "All":
+            query += " AND tt.source_manifest_key = ?"
+            params.append(source_key)
+        if src_lang and src_lang != "All":
+            query += " AND s.language_code = ?"
+            params.append(src_lang)
+        if tgt_lang and tgt_lang != "All":
+            query += " AND t.language_code = ?"
+            params.append(tgt_lang)
+        if search_term:
+            query += " AND (s.term_text LIKE ? OR t.term_text LIKE ?)"
+            wildcard = f"%{search_term}%"
+            params.extend([wildcard, wildcard])
+
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(query, params)
+                return cursor.fetchone()[0]
+        except Exception as e:
+            logger.error(f"Glossary count failed: {e}")
+            return 0
+
+    def delete_entry_by_id(self, db_path: str, entry_id: int) -> bool:
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM term_translations WHERE id = ?", (entry_id,))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Glossary delete failed: {e}")
+            return False
+
+    def get_distinct_languages(self, db_path: str) -> Tuple[List[str], List[str]]:
+        if not db_path or not os.path.exists(db_path): return [], []
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT DISTINCT language_code FROM terms")
+                langs = [r[0] for r in cursor.fetchall()]
+                return sorted(langs), sorted(langs)  # 术语表通常双向，源/目标池相同
+        except Exception:
+            return [], []
+
     def _read_manifest(self, manifest_path: str) -> Dict:
         """读取manifest文件"""
         try:
