@@ -95,6 +95,15 @@ class AdvancedSearchDialog(QDialog):
         self.search_in_translation_checkbox.setChecked(True)
         self.search_in_comment_checkbox.setChecked(True)
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.search_term_entry.setFocus()
+        self.search_term_entry.selectAll()
+
+    def reject(self):
+        self.close()
+        super().reject()
+
     def closeEvent(self, event):
         self.app.clear_search_markers()
         self.app.find_highlight_indices.clear()
