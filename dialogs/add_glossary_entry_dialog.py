@@ -4,6 +4,7 @@
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QLineEdit,
                                QPushButton, QDialogButtonBox, QComboBox, QTextEdit,
                                QMessageBox)
+from PySide6.QtCore import Qt
 from utils.localization import _
 from utils.constants import SUPPORTED_LANGUAGES
 
@@ -12,7 +13,10 @@ class AddGlossaryEntryDialog(QDialog):
     def __init__(self, parent=None, default_source_lang=None, default_target_lang=None):
         super().__init__(parent)
         self.setWindowTitle(_("Add Glossary Entry"))
-        self.setModal(True)
+        self.setModal(False)
+
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
         self.setMinimumWidth(400)
 
         layout = QVBoxLayout(self)

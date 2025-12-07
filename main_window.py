@@ -1506,47 +1506,64 @@ class LexiSyncApp(QMainWindow):
             self.progress_bar.setVisible(False)
 
     def add_glossary_entry(self):
-        # Determine default languages
+        if hasattr(self, '_add_glossary_dialog') and self._add_glossary_dialog:
+            try:
+                if self._add_glossary_dialog.isVisible():
+                    self._add_glossary_dialog.raise_()
+                    self._add_glossary_dialog.activateWindow()
+                    return
+            except RuntimeError:
+                self._add_glossary_dialog = None
+
         source_lang = self.source_language
         target_lang = self.current_target_language if self.is_project_mode else self.target_language
 
-        dialog = AddGlossaryEntryDialog(self, default_source_lang=source_lang, default_target_lang=target_lang)
-        if dialog.exec():
-            data = dialog.get_data()
+        self._add_glossary_dialog = AddGlossaryEntryDialog(self, default_source_lang=source_lang,
+                                                           default_target_lang=target_lang)
 
-            # Determine which database to write to
-            db_path_to_use = None
-            if self.is_project_mode and self.glossary_service.project_db_path:
-                db_path_to_use = self.glossary_service.project_db_path
-                source_key = "manual_project"
-            elif self.glossary_service.global_db_path:
-                db_path_to_use = self.glossary_service.global_db_path
-                source_key = "manual_global"
+        self._add_glossary_dialog.accepted.connect(self._on_glossary_entry_added)
 
-            if not db_path_to_use:
-                QMessageBox.critical(self, _("Error"), _("No active glossary database found."))
-                return
+        self._add_glossary_dialog.show()
 
-            success, message = self.glossary_service.add_entry(
-                db_path=db_path_to_use,
-                source_term=data['source_term'],
-                target_term=data['target_term'],
-                source_lang=data['source_lang'],
-                target_lang=data['target_lang'],
-                comment=data['comment'],
-                source_key=source_key
-            )
+    def _on_glossary_entry_added(self):
+        if not hasattr(self, '_add_glossary_dialog') or not self._add_glossary_dialog:
+            return
 
-            if success:
-                self.update_statusbar(message)
-                # If a string is selected, re-run glossary analysis on it
-                if self.current_selected_ts_id:
-                    ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-                    if ts_obj:
-                        self.glossary_analysis_cache.pop(ts_obj.id, None)  # Clear cache for this item
-                        self.trigger_glossary_analysis(ts_obj)
-            else:
-                QMessageBox.critical(self, _("Error"), _("Failed to add glossary entry: {error}").format(error=message))
+        data = self._add_glossary_dialog.get_data()
+
+        db_path_to_use = None
+        source_key = "manual_global"
+
+        if self.is_project_mode and self.glossary_service.project_db_path:
+            db_path_to_use = self.glossary_service.project_db_path
+            source_key = "manual_project"
+        elif self.glossary_service.global_db_path:
+            db_path_to_use = self.glossary_service.global_db_path
+            source_key = "manual_global"
+
+        if not db_path_to_use:
+            QMessageBox.critical(self, _("Error"), _("No active glossary database found."))
+            return
+
+        success, message = self.glossary_service.add_entry(
+            db_path=db_path_to_use,
+            source_term=data['source_term'],
+            target_term=data['target_term'],
+            source_lang=data['source_lang'],
+            target_lang=data['target_lang'],
+            comment=data['comment'],
+            source_key=source_key
+        )
+
+        if success:
+            self.update_statusbar(message)
+            if self.current_selected_ts_id:
+                ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+                if ts_obj:
+                    self.glossary_analysis_cache.pop(ts_obj.id, None)
+                    self.trigger_glossary_analysis(ts_obj)
+        else:
+            QMessageBox.critical(self, _("Error"), _("Failed to add glossary entry: {error}").format(error=message))
 
     def show_glossary_settings(self):
         if self.is_project_mode:
