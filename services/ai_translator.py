@@ -3,7 +3,7 @@
 
 import json
 from utils.constants import DEFAULT_API_URL
-from utils.localization import _
+from utils.localization import _, lang_manager
 
 try:
     import requests
@@ -61,9 +61,19 @@ class AITranslator:
         except Exception as e:
             raise Exception(f"{_('Unknown error occurred during translation')}: {e}")
 
-    def test_connection(self, test_text="你好，世界！", system_prompt="Translate to English:"):
+    def test_connection(self):
+        current_ui_lang = lang_manager.get_current_language()
+        source_text = "Hello, World!"
+        target_lang_name = current_ui_lang
+        if current_ui_lang.startswith('en'):
+            source_text = "你好，世界！"
+            target_lang_name = "English"
+
+
+        system_prompt = f"You are a professional translator. Translate the following text to {target_lang_name}. Output ONLY the translated text, no explanations."
+
         try:
-            translation = self.translate(test_text, system_prompt)
-            return True, f"{_('Connection successful. Test translation')} ('{test_text}' -> '{translation[:30]}...')"
+            translation = self.translate(source_text, system_prompt)
+            return True, f"{_('Connection successful. Test translation')} ('{source_text}' -> '{translation[:30]}')"
         except Exception as e:
-            return False, f"{_('Connection failed')}: {e}"
+            return False, f"{_('Connection failed')}:\n{str(e)}"

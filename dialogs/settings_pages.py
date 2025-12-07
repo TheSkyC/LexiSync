@@ -1,8 +1,10 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QComboBox, QCheckBox, QSpinBox, QPushButton, QGroupBox, \
-    QHBoxLayout, QLineEdit, QMessageBox, QLabel
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QFormLayout, QComboBox, QCheckBox,
+    QSpinBox, QPushButton, QGroupBox, QHBoxLayout, QLineEdit,
+    QLabel, QMessageBox ,QApplication)
 from PySide6.QtCore import Qt
 from utils.localization import _, lang_manager
 from utils.constants import DEFAULT_API_URL
@@ -239,9 +241,12 @@ class AISettingsPage(BaseSettingsPage):
         self.api_key_entry.setEchoMode(QLineEdit.Password)
         self.api_base_url_entry = QLineEdit(self.app.config.get("ai_api_base_url", DEFAULT_API_URL))
         self.model_name_entry = QLineEdit(self.app.config.get("ai_model_name", "deepseek-chat"))
+        self.test_btn = QPushButton(_("Test Connection"))
+        self.test_btn.clicked.connect(self.on_test_connection)
         api_layout.addRow(_("API Key:"), self.api_key_entry)
         api_layout.addRow(_("API Base URL:"), self.api_base_url_entry)
         api_layout.addRow(_("Model Name:"), self.model_name_entry)
+        api_layout.addRow("", self.test_btn)
         self.page_layout.addWidget(api_group)
 
         perf_group = QGroupBox(_("Performance"))
@@ -321,6 +326,44 @@ class AISettingsPage(BaseSettingsPage):
         self.app.ai_translator.api_key = self.api_key_entry.text()
         self.app.ai_translator.api_url = self.api_base_url_entry.text()
         self.app.ai_translator.model_name = self.model_name_entry.text()
+
+    def on_test_connection(self):
+        api_key = self.api_key_entry.text().strip()
+        url = self.api_base_url_entry.text().strip()
+        model = self.model_name_entry.text().strip()
+
+        if not api_key:
+            QMessageBox.warning(self, _("Warning"), _("Please enter an API Key."))
+            return
+
+        old_key = self.app.ai_translator.api_key
+        old_url = self.app.ai_translator.api_url
+        old_model = self.app.ai_translator.model_name
+
+        self.app.ai_translator.api_key = api_key
+        self.app.ai_translator.api_url = url
+        self.app.ai_translator.model_name = model
+
+        self.test_btn.setEnabled(False)
+        self.test_btn.setText(_("Testing..."))
+        QApplication.processEvents()
+
+        try:
+            success, message = self.app.ai_translator.test_connection()
+
+            if success:
+                QMessageBox.information(self, _("Success"), message)
+            else:
+                QMessageBox.warning(self, _("Failed"), message)
+        except Exception as e:
+            QMessageBox.critical(self, _("Error"), str(e))
+        finally:
+            self.test_btn.setEnabled(True)
+            self.test_btn.setText(_("Test Connection"))
+
+            self.app.ai_translator.api_key = old_key
+            self.app.ai_translator.api_url = old_url
+            self.app.ai_translator.model_name = old_model
 
 
 class ValidationSettingsPage(BaseSettingsPage):
