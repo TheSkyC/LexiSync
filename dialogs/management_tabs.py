@@ -377,7 +377,9 @@ class GlossaryManagementTab(QWidget):
             return
 
         row = selected_items[0].row()
-        source_key = self.sources_table.item(row, 0).text()
+        item = self.sources_table.item(row, 0)
+        source_key = item.data(Qt.UserRole) or item.text()
+        display_name = item.text()
 
         if self._import_thread and self._import_thread.isRunning():
             QMessageBox.warning(self, _("Operation In Progress"),
@@ -387,7 +389,7 @@ class GlossaryManagementTab(QWidget):
         reply = QMessageBox.question(
             self, _("Confirm Removal"),
             _("Are you sure you want to remove all terms from '{source}'?\nThis action cannot be undone.").format(
-                source=source_key),
+                source=display_name),
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         if reply == QMessageBox.No:
@@ -407,36 +409,56 @@ class GlossaryManagementTab(QWidget):
             manifest = self.glossary_service._read_manifest(self.manifest_path)
             sources = manifest.get("imported_sources", {})
 
-            self.sources_table.setRowCount(len(sources))
-            for row_idx, (filename, data) in enumerate(sources.items()):
-                # 列 0: Source File
-                self.sources_table.setItem(row_idx, 0, QTableWidgetItem(filename))
+            manual_key = "manual_project" if self.context == "project" else "manual_global"
+            manual_count = self.glossary_service.get_entry_count_by_source(self.glossary_dir, manual_key)
 
-                # 列 1: Entry Count
-                self.sources_table.setItem(row_idx, 1, QTableWidgetItem(str(data.get("term_count", "N/A"))))
+            total_rows = len(sources) + (1 if manual_count > 0 else 0)
+            self.sources_table.setRowCount(total_rows)
 
-                # 列 2: Source Lang
-                self.sources_table.setItem(row_idx, 2, QTableWidgetItem(data.get("source_lang", "N/A")))
+            current_row = 0
 
-                # 列 3: Target Lang(s)
+            if manual_count > 0:
+                name_item = QTableWidgetItem(_("Manual Input"))
+                name_item.setData(Qt.UserRole, manual_key)
+                font = name_item.font()
+                font.setBold(True)
+                name_item.setFont(font)
+
+                self.sources_table.setItem(current_row, 0, name_item)
+                self.sources_table.setItem(current_row, 1, QTableWidgetItem(str(manual_count)))
+                self.sources_table.setItem(current_row, 2, QTableWidgetItem("-"))  # Source Lang
+                self.sources_table.setItem(current_row, 3, QTableWidgetItem("-"))  # Target Lang
+                self.sources_table.setItem(current_row, 4, QTableWidgetItem("-"))  # Date
+                self.sources_table.setItem(current_row, 5, QTableWidgetItem(_("Internal Database")))  # Path
+                current_row += 1
+
+            for filename, data in sources.items():
+                name_item = QTableWidgetItem(filename)
+                name_item.setData(Qt.UserRole, filename)  # 存储文件名作为 Key
+
+                self.sources_table.setItem(current_row, 0, name_item)
+                self.sources_table.setItem(current_row, 1, QTableWidgetItem(str(data.get("term_count", "N/A"))))
+                self.sources_table.setItem(current_row, 2, QTableWidgetItem(data.get("source_lang", "N/A")))
+
                 target_langs_list = data.get("target_langs", [])
                 target_langs_str = ", ".join(target_langs_list)
-                self.sources_table.setItem(row_idx, 3, QTableWidgetItem(target_langs_str))
+                self.sources_table.setItem(current_row, 3, QTableWidgetItem(target_langs_str))
 
-                # 列 4: Import Date
                 import_date_str = "N/A"
                 if "import_date" in data:
                     try:
-                        iso_str = data["import_date"].split('.')[0]  # 移除毫秒部分
+                        iso_str = data["import_date"].split('.')[0]
                         dt = datetime.datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%S")
                         import_date_str = dt.strftime("%Y-%m-%d %H:%M")
                     except (ValueError, TypeError):
                         import_date_str = data["import_date"]
-                self.sources_table.setItem(row_idx, 4, QTableWidgetItem(import_date_str))
+                self.sources_table.setItem(current_row, 4, QTableWidgetItem(import_date_str))
+
                 path_str = data.get("filepath", _("N/A"))
                 path_item = QTableWidgetItem(path_str)
                 path_item.setToolTip(path_str)
-                self.sources_table.setItem(row_idx, 5, path_item)
+                self.sources_table.setItem(current_row, 5, path_item)
+                current_row += 1
 
         except Exception as e:
             logger.exception("Error in load_sources_into_table")
@@ -567,12 +589,14 @@ class TMManagementTab(QWidget):
             return
 
         row = selected_items[0].row()
-        source_key = self.sources_table.item(row, 0).text()
+        item = self.sources_table.item(row, 0)
+        source_key = item.data(Qt.UserRole) or item.text()
+        display_name = item.text()
 
         reply = QMessageBox.question(
             self, _("Confirm Removal"),
             _("Are you sure you want to remove all TM entries from '{source}'?\nThis action cannot be undone.").format(
-                source=source_key),
+                source=display_name),
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         if reply == QMessageBox.No:
@@ -591,12 +615,38 @@ class TMManagementTab(QWidget):
         manifest = self.tm_service._read_manifest(self.manifest_path)
         sources = manifest.get("imported_sources", {})
 
-        self.sources_table.setRowCount(len(sources))
-        for row_idx, (filename, data) in enumerate(sources.items()):
-            self.sources_table.setItem(row_idx, 0, QTableWidgetItem(filename))
-            self.sources_table.setItem(row_idx, 1, QTableWidgetItem(str(data.get("tu_count", "N/A"))))
-            self.sources_table.setItem(row_idx, 2, QTableWidgetItem(data.get("source_lang", "N/A")))
-            self.sources_table.setItem(row_idx, 3, QTableWidgetItem(data.get("target_lang", "N/A")))
+        manual_key = "manual"
+        manual_count = self.tm_service.get_entry_count_by_source(self.tm_dir, manual_key)
+
+        total_rows = len(sources) + (1 if manual_count > 0 else 0)
+        self.sources_table.setRowCount(total_rows)
+
+        current_row = 0
+
+        if manual_count > 0:
+            name_item = QTableWidgetItem(_("Manual Input"))
+            name_item.setData(Qt.UserRole, manual_key)
+            font = name_item.font()
+            font.setBold(True)
+            name_item.setFont(font)
+
+            self.sources_table.setItem(current_row, 0, name_item)
+            self.sources_table.setItem(current_row, 1, QTableWidgetItem(str(manual_count)))
+            self.sources_table.setItem(current_row, 2, QTableWidgetItem("-"))
+            self.sources_table.setItem(current_row, 3, QTableWidgetItem("-"))
+            self.sources_table.setItem(current_row, 4, QTableWidgetItem("-"))
+            self.sources_table.setItem(current_row, 5, QTableWidgetItem(_("Internal Database")))
+            current_row += 1
+
+        # 显示导入文件
+        for filename, data in sources.items():
+            name_item = QTableWidgetItem(filename)
+            name_item.setData(Qt.UserRole, filename)
+
+            self.sources_table.setItem(current_row, 0, name_item)
+            self.sources_table.setItem(current_row, 1, QTableWidgetItem(str(data.get("tu_count", "N/A"))))
+            self.sources_table.setItem(current_row, 2, QTableWidgetItem(data.get("source_lang", "N/A")))
+            self.sources_table.setItem(current_row, 3, QTableWidgetItem(data.get("target_lang", "N/A")))
 
             import_date_str = "N/A"
             if "import_date" in data:
@@ -606,11 +656,12 @@ class TMManagementTab(QWidget):
                     import_date_str = dt.strftime("%Y-%m-%d %H:%M")
                 except (ValueError, TypeError):
                     import_date_str = data["import_date"]
-            self.sources_table.setItem(row_idx, 4, QTableWidgetItem(import_date_str))
+            self.sources_table.setItem(current_row, 4, QTableWidgetItem(import_date_str))
             path_str = data.get("filepath", _("N/A"))
             path_item = QTableWidgetItem(path_str)
             path_item.setToolTip(path_str)
-            self.sources_table.setItem(row_idx, 5, path_item)
+            self.sources_table.setItem(current_row, 5, path_item)
+            current_row += 1
 
     def save_settings(self):
         pass

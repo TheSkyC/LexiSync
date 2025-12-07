@@ -101,6 +101,29 @@ class TMService:
                 return self._query_translation_in_db(conn, source_text, source_lang, target_lang)
         return None
 
+    def get_entry_count_by_source(self, dir_path: str, source_key: str) -> int:
+        """获取指定来源的条目数量"""
+        if not dir_path or not os.path.exists(dir_path):
+            return 0
+
+        db_path = os.path.join(dir_path, DB_FILE)
+
+        if not os.path.exists(db_path):
+            return 0
+
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT COUNT(*) FROM translation_units WHERE source_manifest_key = ?",
+                    (source_key,)
+                )
+                result = cursor.fetchone()
+                return result[0] if result else 0
+        except Exception as e:
+            logger.error(f"Failed to get entry count for source '{source_key}': {e}")
+            return 0
+
     def _query_translation_in_db(self, conn: sqlite3.Connection, source_text: str, source_lang: str,
                                  target_lang: str) -> Optional[str]:
         cursor = conn.cursor()
