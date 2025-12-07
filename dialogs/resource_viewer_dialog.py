@@ -490,7 +490,7 @@ class ResourceViewerDialog(QDialog):
             QTableWidgetItem(row_data['source_manifest_key'])
         )
         from PySide6.QtGui import QColor
-        read_only_bg = QColor("#F8F9FA")
+        read_only_bg = QColor("#EFEFEF")
 
         read_only_cols = [
             self.COLUMN_ID,
