@@ -220,11 +220,13 @@ class GlossaryService:
                 AND tt.is_bidirectional = 1
                 """
 
+                if target_lang:
+                    reverse_query += " AND t_source.language_code = ?"
+
                 base_query += reverse_query
                 params.extend([term_text.lower(), source_lang])
 
                 if target_lang:
-                    base_query += " AND t_source.language_code = ?"
                     params.append(target_lang)
 
             cursor.execute(base_query, params)
@@ -501,7 +503,8 @@ class GlossaryService:
                     if remaining_words_in_chunk:
                         try:
                             with self._get_db_connection(self.global_db_path) as conn:
-                                matches = self._query_translations_batch_in_db(conn, remaining_words_in_chunk, source_lang,
+                                matches = self._query_translations_batch_in_db(conn, remaining_words_in_chunk,
+                                                                               source_lang,
                                                                                target_lang, include_reverse)
                                 all_matches.update(matches)
                         except Exception as e:
@@ -519,6 +522,7 @@ class GlossaryService:
             words_lower = [w.lower() for w in words]
             placeholders = ','.join('?' for _ in words_lower)
 
+            # --- 正向查询 ---
             base_query = f"""
             SELECT 
                 t_source.term_text_lower as source_key,
@@ -532,7 +536,6 @@ class GlossaryService:
             JOIN terms t_target ON tt.target_term_id = t_target.id
             WHERE t_source.term_text_lower IN ({placeholders})
             """
-
             params = words_lower[:]
 
             if source_lang != "auto":
@@ -543,6 +546,7 @@ class GlossaryService:
                 base_query += " AND t_target.language_code = ?"
                 params.append(target_lang)
 
+            # --- 反向查询 ---
             if include_reverse:
                 reverse_query = f"""
                 UNION
@@ -560,16 +564,19 @@ class GlossaryService:
                 AND tt.is_bidirectional = 1
                 """
 
+                if target_lang:
+                    reverse_query += " AND t_source.language_code = ?"
+
+                if source_lang != "auto":
+                    reverse_query += " AND t_target.language_code = ?"
+
                 base_query += reverse_query
                 params.extend(words_lower)
 
-                if source_lang != "auto":
-                    base_query += " AND t_target.language_code = ?"
-                    params.append(source_lang)
-
                 if target_lang:
-                    base_query += " AND t_source.language_code = ?"
                     params.append(target_lang)
+                if source_lang != "auto":
+                    params.append(source_lang)
 
             cursor = conn.cursor()
             cursor.execute(base_query, params)
@@ -591,7 +598,7 @@ class GlossaryService:
             return results
 
         except Exception as e:
-            logger.error(f"Batch query failed: {e}")
+            logger.error(f"Batch query failed: {e}", exc_info=True)
             return {}
 
     def query_entries(self, db_path: str, page: int = 1, page_size: int = 50,
