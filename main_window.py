@@ -1169,6 +1169,7 @@ class LexiSyncApp(QMainWindow):
         self.marker_bar = MarkerBar(self.table_view, self)
         self.marker_bar.set_proxy_model(self.proxy_model)
         self.marker_bar.set_selection_model(self.table_view.selectionModel())
+        self.marker_bar.marker_clicked.connect(self.on_marker_clicked)
         table_layout.addWidget(self.marker_bar)
 
         main_layout.addWidget(table_container)
