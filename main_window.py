@@ -5039,8 +5039,10 @@ class LexiSyncApp(QMainWindow):
                     self.add_to_undo_history('bulk_ai_translate', {'changes': single_translation_undo_changes})
                 else:
                     self.add_to_undo_history('single_change', single_translation_undo_changes[0])
-            if not is_batch_item:
+
+            if changed_ids:
                 self._update_view_for_ids(changed_ids)
+
             if self.current_selected_ts_id == trigger_ts_obj.id:
                 self.force_refresh_ui_for_current_selection()
 
