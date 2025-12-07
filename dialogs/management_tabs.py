@@ -175,7 +175,13 @@ class GlossaryManagementTab(QWidget):
         item = self.sources_table.item(row, 0)
         source_key = item.data(Qt.UserRole) or item.text()
 
-        dialog = ResourceViewerDialog(self.window(), self.app, mode='glossary', initial_source_key=source_key)
+        dialog = ResourceViewerDialog(
+            self.window(),
+            self.app,
+            mode='glossary',
+            initial_source_key=source_key,
+            initial_db_type=self.context
+        )
         dialog.show()
 
     def _force_cleanup(self):
@@ -552,7 +558,13 @@ class TMManagementTab(QWidget):
         item = self.sources_table.item(row, 0)
         source_key = item.data(Qt.UserRole) or item.text()
 
-        dialog = ResourceViewerDialog(self.window(), self.app, mode='tm', initial_source_key=source_key)
+        dialog = ResourceViewerDialog(
+            self.window(),
+            self.app,
+            mode='tm',
+            initial_source_key=source_key,
+            initial_db_type=self.context
+        )
         dialog.show()
 
     def import_tm_file(self, filepath: Optional[str] = None):

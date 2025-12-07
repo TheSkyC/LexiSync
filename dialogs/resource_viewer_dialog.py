@@ -26,11 +26,12 @@ class ResourceViewerDialog(QDialog):
     COLUMN_TGT_LANG = 4
     COLUMN_SOURCE_FILE = 5
 
-    def __init__(self, parent, app_instance, mode='tm', initial_source_key=None):
+    def __init__(self, parent, app_instance, mode='tm', initial_source_key=None, initial_db_type=None):
         super().__init__(parent)
         self.app = app_instance
         self.mode = mode
         self.initial_source_key = initial_source_key
+        self.initial_db_type = initial_db_type
 
         self._init_service()
 
@@ -65,7 +66,7 @@ class ResourceViewerDialog(QDialog):
     def _load_initial_data(self):
 
         try:
-            self.on_db_changed(0)
+            self.on_db_changed(self.db_selector.currentIndex())
         except Exception as e:
             logger.error(f"Failed to load initial data: {e}", exc_info=True)
             QMessageBox.warning(
@@ -232,6 +233,11 @@ class ResourceViewerDialog(QDialog):
             selector.addItem(_("Global Resource"), "global")
         else:
             selector.addItem(_("Global Resource"), "global")
+
+        if self.initial_db_type:
+            index = selector.findData(self.initial_db_type)
+            if index != -1:
+                selector.setCurrentIndex(index)
 
         selector.currentIndexChanged.connect(self.on_db_changed)
         return selector
