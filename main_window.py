@@ -3678,8 +3678,9 @@ class LexiSyncApp(QMainWindow):
             dialog.location_edit.setText(os.path.dirname(source_path))
 
             file_type = 'po' if self.is_po_mode else 'code'
-            dialog.source_files = [{'path': source_path, 'type': file_type}]
-            dialog.source_files_list.addItem(QListWidgetItem(source_path))
+            file_info = {'path': source_path, 'type': file_type}
+            dialog.source_files = [file_info]
+            dialog.source_files_tree.add_file_item(source_path, file_info)
 
         if dialog.exec():
             data = dialog.get_data()
