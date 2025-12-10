@@ -6,7 +6,7 @@ import os
 from copy import deepcopy
 from utils.constants import (
     CONFIG_FILE, DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS,
-    DEFAULT_EXTRACTION_PATTERNS
+    DEFAULT_EXTRACTION_PATTERNS, DEFAULT_VALIDATION_RULES
 )
 import logging
 logger = logging.getLogger(__name__)
@@ -85,6 +85,17 @@ def load_config():
     # Window state
     config_data.setdefault("window_state", "")
     config_data.setdefault("window_geometry", "")
+
+    if "validation_rules" not in config_data:
+        config_data["validation_rules"] = deepcopy(DEFAULT_VALIDATION_RULES)
+    else:
+        for key, default_val in DEFAULT_VALIDATION_RULES.items():
+            if key not in config_data["validation_rules"]:
+                config_data["validation_rules"][key] = default_val
+
+    config_data.setdefault("check_length", True)
+    config_data.setdefault("length_threshold_major", 2.5)
+    config_data.setdefault("length_threshold_minor", 2.0)
 
     return config_data
 

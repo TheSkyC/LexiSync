@@ -5,7 +5,9 @@ import regex as re
 from utils.localization import _
 from utils.enums import WarningType
 from utils.text_utils import get_linguistic_length
+from services import validation_helpers
 from services.expansion_ratio_service import ExpansionRatioService
+from utils.constants import DEFAULT_VALIDATION_RULES
 
 placeholder_regex = re.compile(r'\{([^{}]+)\}')
 def has_case(char):
@@ -17,171 +19,131 @@ def get_starting_cased_char(s):
         return stripped_s[0]
     return None
 
+
+def _report(ts_obj, config, rule_key, warning_type, message):
+    rules = config.get("validation_rules", {})
+    rule_cfg = rules.get(rule_key, DEFAULT_VALIDATION_RULES.get(rule_key, {"enabled": True, "level": "warning"}))
+
+    if not rule_cfg.get("enabled", True):
+        return
+
+    level = rule_cfg.get("level", "warning")
+
+    if level == "error":
+        ts_obj.warnings.append((warning_type, message))
+    else:
+        ts_obj.minor_warnings.append((warning_type, message))
+
+
 def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     ts_obj.warnings = []
     ts_obj.minor_warnings = []
 
     if not ts_obj.translation or ts_obj.is_ignored:
-        result = ([], [])
-        return result
+        return
 
     original = ts_obj.original_semantic
     translation = ts_obj.translation
 
-    # 模糊翻检查
-    if config.get('check_fuzzy', True) and ts_obj.is_fuzzy:
-        ts_obj.minor_warnings.append((WarningType.FUZZY_TRANSLATION, _("Translation is marked as fuzzy and needs review.")))
+    # --- 1. 代码安全检查 ---
+    if err := validation_helpers.check_printf(original, translation):
+        _report(ts_obj, config, "printf", WarningType.PRINTF_MISMATCH, err)
 
-    # 占位符检查
-    if config.get('check_placeholders', True):
-        original_placeholders = set(placeholder_regex.findall(original))
-        translated_placeholders = set(placeholder_regex.findall(translation))
-        missing_placeholders = original_placeholders - translated_placeholders
-        extra_placeholders = translated_placeholders - original_placeholders
+    if err := validation_helpers.check_python_brace(original, translation):
+        _report(ts_obj, config, "python_brace", WarningType.PYTHON_BRACE_MISMATCH, err)
 
-        if missing_placeholders:
-            ts_obj.warnings.append((WarningType.PLACEHOLDER_MISSING,
-                                    _("Missing placeholders: {placeholders}").format(
-                                        placeholders=", ".join(missing_placeholders))))
-        if extra_placeholders:
-            ts_obj.warnings.append((WarningType.PLACEHOLDER_EXTRA,
-                                    _("Extra placeholders: {placeholders}").format(
-                                        placeholders=", ".join(extra_placeholders))))
+    if err := validation_helpers.check_html_tags(original, translation):
+        _report(ts_obj, config, "html_tags", WarningType.PLACEHOLDER_MISSING, err)
 
-    # 格式检查
-    if config.get('check_formatting', True):
-        # 行数
-        if original.count('\n') != translation.count('\n'):
-            ts_obj.warnings.append((WarningType.LINE_COUNT_MISMATCH, _("Line count differs from original.")))
+    if err := validation_helpers.check_urls_emails(original, translation):
+        _report(ts_obj, config, "url_email", WarningType.URL_MISMATCH, err)
 
-        # 首位空白字符
-        original_starts_with_space = not original.lstrip() == original
-        translation_starts_with_space = not translation.lstrip() == translation
-        if original_starts_with_space and not translation_starts_with_space:
-            ts_obj.warnings.append(
-                (WarningType.LEADING_WHITESPACE_MISMATCH, _("Original starts with space, translation does not.")))
-        elif not original_starts_with_space and translation_starts_with_space:
-            ts_obj.warnings.append(
-                (WarningType.LEADING_WHITESPACE_MISMATCH, _("Translation starts with space, original does not.")))
+    # --- 2. 内容一致性 ---
+    if err := validation_helpers.check_numbers(original, translation):
+        _report(ts_obj, config, "numbers", WarningType.NUMBER_MISMATCH, err)
 
-        # 末尾空白字符
-        original_ends_with_space = not original.rstrip() == original
-        translation_ends_with_space = not translation.rstrip() == translation
-        if original_ends_with_space and not translation_ends_with_space:
-            ts_obj.warnings.append(
-                (WarningType.TRAILING_WHITESPACE_MISMATCH, _("Original ends with space, translation does not.")))
-        elif not original_ends_with_space and translation_ends_with_space:
-            ts_obj.warnings.append(
-                (WarningType.TRAILING_WHITESPACE_MISMATCH, _("Translation ends with space, original does not.")))
+    if ts_obj.is_fuzzy:
+        _report(ts_obj, config, "fuzzy", WarningType.FUZZY_TRANSLATION, _("Translation is marked as fuzzy."))
 
-        # 首位标点
-        punctuation_map = {'.': '。', ',': '，', '?': '？', '!': '！', ':': '：', ';': '；', '(': '（', ')': '）'}
-        all_punc_keys = list(punctuation_map.keys())
-        all_punc_values = list(punctuation_map.values())
+    # 术语库检查
+    if term_cache:
+        original_words = set(re.findall(r'\b\w+\b', original.lower()))
+        translation_lower = translation.lower()
+        for word in original_words:
+            if word in term_cache:
+                term_info = term_cache[word]
+                required_targets = [t['target'].lower() for t in term_info['translations']]
+                if not any(target in translation_lower for target in required_targets):
+                    msg = _("Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'.").format(
+                        term=word, targets=" / ".join(required_targets))
+                    _report(ts_obj, config, "glossary", WarningType.GLOSSARY_MISMATCH, msg)
 
-        original_stripped = original.strip()
-        translation_stripped = translation.strip()
+    # --- 3. 格式与标点 (全部使用 helpers) ---
+    if err := validation_helpers.check_brackets(original, translation):
+        _report(ts_obj, config, "brackets", WarningType.BRACKET_MISMATCH, err)
 
-        if original_stripped and translation_stripped:
-            # 检查开头
-            orig_start_char, trans_start_char = original_stripped[0], translation_stripped[0]
-            orig_is_punc_start = orig_start_char in all_punc_keys or orig_start_char in all_punc_values
-            trans_is_punc_start = trans_start_char in all_punc_keys or trans_start_char in all_punc_values
-            if orig_is_punc_start != trans_is_punc_start:
-                ts_obj.warnings.append(
-                    (WarningType.PUNCTUATION_MISMATCH_START, _("Starting punctuation presence differs.")))
-            elif orig_is_punc_start and (
-                    punctuation_map.get(orig_start_char) != trans_start_char and orig_start_char != trans_start_char):
-                ts_obj.warnings.append((WarningType.PUNCTUATION_MISMATCH_START,
-                                        _("Starting punctuation differs: '{c1}' vs '{c2}'.").format(c1=orig_start_char,
-                                                                                                    c2=trans_start_char)))
+    if err := validation_helpers.check_double_space(original, translation):
+        _report(ts_obj, config, "double_space", WarningType.DOUBLE_SPACE, _(err))
 
-            # 检查结尾
-            temp_orig_for_end = original_stripped
-            if temp_orig_for_end.lower().endswith('(s)'):
-                temp_orig_for_end = temp_orig_for_end[:-3].rstrip()
-            if not temp_orig_for_end:
-                temp_orig_for_end = original_stripped
+    # 空格检查
+    if err := validation_helpers.check_leading_whitespace(original, translation):
+        _report(ts_obj, config, "whitespace", WarningType.LEADING_WHITESPACE_MISMATCH, _(err))
 
-            orig_end_char = temp_orig_for_end[-1]
-            trans_end_char = translation_stripped[-1]
+    if err := validation_helpers.check_trailing_whitespace(original, translation):
+        _report(ts_obj, config, "whitespace", WarningType.TRAILING_WHITESPACE_MISMATCH, _(err))
 
-            orig_is_punc_end = orig_end_char in all_punc_keys or orig_end_char in all_punc_values
-            trans_is_punc_end = trans_end_char in all_punc_keys or trans_end_char in all_punc_values
+    # 标点检查
+    if err := validation_helpers.check_starting_punctuation(original, translation):
+        _report(ts_obj, config, "punctuation", WarningType.PUNCTUATION_MISMATCH_START, _(err))
 
-            if orig_is_punc_end != trans_is_punc_end:
-                ts_obj.warnings.append(
-                    (WarningType.PUNCTUATION_MISMATCH_END, _("Ending punctuation presence differs.")))
-            elif orig_is_punc_end and (
-                    punctuation_map.get(orig_end_char) != trans_end_char and orig_end_char != trans_end_char):
-                ts_obj.warnings.append((WarningType.PUNCTUATION_MISMATCH_END,
-                                        _("Ending punctuation differs: '{c1}' vs '{c2}'.").format(c1=orig_end_char,
-                                                                                                  c2=trans_end_char)))
+    if err := validation_helpers.check_ending_punctuation(original, translation):
+        _report(ts_obj, config, "punctuation", WarningType.PUNCTUATION_MISMATCH_END, _(err))
 
-        # 首字母大小写
-        first_char_original = get_starting_cased_char(original)
-        first_char_translation = get_starting_cased_char(translation)
-        if first_char_original and first_char_translation and (
-                first_char_original.isupper() != first_char_translation.isupper()):
-            ts_obj.warnings.append((WarningType.CAPITALIZATION_MISMATCH, _("Initial capitalization mismatch.")))
+    # 大小写检查
+    if err := validation_helpers.check_capitalization(original, translation):
+        _report(ts_obj, config, "capitalization", WarningType.CAPITALIZATION_MISMATCH, _(err))
 
-        # 膨胀率
-        warnings = []
-        minor_warnings = []
-        if not ts_obj.translation or ts_obj.is_ignored:
-            return [], []
-        if config.get('check_length', True):
-            original = ts_obj.original_semantic
-            translation = ts_obj.translation
-            if len(original) > 4 and original != translation:
-                len_orig = get_linguistic_length(original)
-                len_trans = get_linguistic_length(translation)
+    # --- 4. 长度检查 ---
+    if config.get('check_length', True):
+        # 逻辑条件：长度大于4 且 内容不同
+        if len(original) > 4 and original != translation:
+            len_orig = get_linguistic_length(original)
+            len_trans = get_linguistic_length(translation)
 
-                if len_orig > 0:
-                    actual_ratio = len_trans / len_orig
-                    service = ExpansionRatioService.get_instance()
-                    expected_ratio = service.get_expected_ratio(
-                        app_instance.source_language,
-                        app_instance.target_language,
-                        original,
-                        "none"
-                    )
-                    major_upper_threshold_factor = 2.5
-                    major_lower_threshold_factor = 0.4
-                    minor_upper_threshold_factor = 2.0
-                    minor_lower_threshold_factor = 0.5
-                    if expected_ratio is not None and expected_ratio > 0:
-                        if actual_ratio > expected_ratio * major_upper_threshold_factor or \
-                                actual_ratio < expected_ratio * major_lower_threshold_factor:
+            if len_orig > 0:
+                actual_ratio = len_trans / len_orig
+                service = ExpansionRatioService.get_instance()
+                expected_ratio = service.get_expected_ratio(
+                    app_instance.source_language,
+                    app_instance.target_language,
+                    original,
+                    "none"
+                )
 
-                            warning_msg = _(
-                                "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x.").format(
-                                actual=actual_ratio, expected=expected_ratio)
-                            ts_obj.warnings.append((WarningType.LENGTH_DEVIATION_MAJOR, warning_msg))
+                # 严格使用原代码的阈值变量名和默认值
+                # 优先从 config 读取，如果没有则使用硬编码默认值 (2.5, 0.4, 2.0, 0.5)
+                major_upper_threshold_factor = config.get("length_threshold_major", 2.5)
+                major_lower_threshold_factor = 1 / major_upper_threshold_factor
+                minor_upper_threshold_factor = config.get("length_threshold_minor", 2.0)
+                minor_lower_threshold_factor = 1 / minor_upper_threshold_factor
 
-                        elif actual_ratio > expected_ratio * minor_upper_threshold_factor or \
-                                actual_ratio < expected_ratio * minor_lower_threshold_factor:
+                if expected_ratio is not None and expected_ratio > 0:
+                    if actual_ratio > expected_ratio * major_upper_threshold_factor or \
+                            actual_ratio < expected_ratio * major_lower_threshold_factor:
 
-                            warning_msg = _(
-                                "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x.").format(
-                                actual=actual_ratio, expected=expected_ratio)
-                            ts_obj.minor_warnings.append((WarningType.LENGTH_DEVIATION_MINOR, warning_msg))
-        # 术语库检查
-        if config.get('check_glossary', True) and term_cache is not None:
-            original_words = set(re.findall(r'\b\w+\b', original.lower()))
-            translation_lower = translation.lower()
+                        warning_msg = _(
+                            "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x.").format(
+                            actual=actual_ratio, expected=expected_ratio)
+                        ts_obj.warnings.append((WarningType.LENGTH_DEVIATION_MAJOR, warning_msg))
 
-            for word in original_words:
-                if word in term_cache:
-                    term_info = term_cache[word]
-                    required_targets = [t['target'].lower() for t in term_info['translations']]
-                    if not any(target in translation_lower for target in required_targets):
-                        ts_obj.minor_warnings.append((
-                            WarningType.GLOSSARY_MISMATCH,
-                            _("Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'.").format(
-                                term=word, targets=" / ".join(required_targets)
-                            )
-                        ))
+                    # 轻微警告逻辑
+                    elif actual_ratio > expected_ratio * minor_upper_threshold_factor or \
+                            actual_ratio < expected_ratio * minor_lower_threshold_factor:
+
+                        warning_msg = _(
+                            "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x.").format(
+                            actual=actual_ratio, expected=expected_ratio)
+                        ts_obj.minor_warnings.append((WarningType.LENGTH_DEVIATION_MINOR, warning_msg))
 
 
 def run_validation_on_all(translatable_objects, config, app_instance=None):

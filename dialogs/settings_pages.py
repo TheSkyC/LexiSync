@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QFormLayout, QComboBox, QCheckBox,
-    QSpinBox, QPushButton, QGroupBox, QHBoxLayout, QLineEdit,
-    QLabel, QMessageBox ,QApplication)
+    QWidget, QVBoxLayout, QFormLayout, QComboBox, QCheckBox, QSpinBox,
+    QPushButton, QGroupBox, QHBoxLayout, QLineEdit, QMessageBox, QLabel,
+    QApplication, QScrollArea, QFrame, QDoubleSpinBox
+)
+from PySide6.QtGui import QColor, QPixmap, QPainter
 from PySide6.QtCore import Qt
 from utils.localization import _, lang_manager
-from utils.constants import DEFAULT_API_URL
+from utils.constants import DEFAULT_API_URL, DEFAULT_VALIDATION_RULES
 
 
 class BaseSettingsPage(QWidget):
@@ -366,34 +368,152 @@ class AISettingsPage(BaseSettingsPage):
             self.app.ai_translator.model_name = old_model
 
 
+class ValidationRuleWidget(QWidget):
+    def __init__(self, key, config_data):
+        super().__init__()
+        self.key = key
+        self.config_data = config_data
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 2, 0, 2)
+
+        # Checkbox
+        self.checkbox = QCheckBox(config_data.get("label", key))
+        self.checkbox.setChecked(config_data.get("enabled", True))
+        self.checkbox.stateChanged.connect(self.update_state)
+
+        # Combobox
+        self.level_combo = QComboBox()
+
+        # [MODIFIED] 添加带颜色的条目
+
+        # 1. Error
+        self.level_combo.addItem(_("Error"), "error")
+        self.level_combo.setItemData(0, QColor("#D32F2F"), Qt.ForegroundRole)
+        self.level_combo.setItemData(0, self._create_color_icon("#D32F2F"), Qt.DecorationRole)
+
+        # 2. Warning
+        self.level_combo.addItem(_("Warning"), "warning")
+        self.level_combo.setItemData(1, QColor("#F57C00"), Qt.ForegroundRole)
+        self.level_combo.setItemData(1, self._create_color_icon("#FBC02D"), Qt.DecorationRole)
+
+        current_level = config_data.get("level", "warning")
+        index = self.level_combo.findData(current_level)
+        if index != -1:
+            self.level_combo.setCurrentIndex(index)
+
+        self.level_combo.setFixedWidth(120)
+
+        layout.addWidget(self.checkbox, 1)
+        layout.addWidget(self.level_combo)
+
+        self.update_state()
+
+    def _create_color_icon(self, color_str):
+        pixmap = QPixmap(12, 12)
+        pixmap.fill(Qt.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        color = QColor(color_str)
+        painter.setBrush(color)
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(0, 0, 12, 12, 3, 3)
+        painter.end()
+        return pixmap
+
+    def update_state(self):
+        self.level_combo.setEnabled(self.checkbox.isChecked())
+
+    def get_data(self):
+        return {
+            "enabled": self.checkbox.isChecked(),
+            "level": self.level_combo.currentData(),
+            "label": self.config_data.get("label", self.key)  # 保持 Label 不变
+        }
+
 class ValidationSettingsPage(BaseSettingsPage):
     def __init__(self, app_instance):
         super().__init__()
         self.app = app_instance
+        self.rule_widgets = {}
 
-        group = QGroupBox(_("Enabled Validation Checks"))
-        layout = QVBoxLayout(group)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
 
-        self.check_placeholders = QCheckBox(_("Check for missing/extra placeholders"))
-        self.check_placeholders.setChecked(self.app.config.get('check_placeholders', True))
-        layout.addWidget(self.check_placeholders)
+        content_widget = QWidget()
 
-        self.check_formatting = QCheckBox(_("Check for formatting differences (whitespace, punctuation, etc.)"))
-        self.check_formatting.setChecked(self.app.config.get('check_formatting', True))
-        layout.addWidget(self.check_formatting)
+        content_widget.setObjectName("validationContent")
 
-        self.check_fuzzy = QCheckBox(_("Flag entries marked as 'Fuzzy'"))
-        self.check_fuzzy.setChecked(self.app.config.get('check_fuzzy', True))
-        layout.addWidget(self.check_fuzzy)
+        content_widget.setStyleSheet("""
+                    #validationContent {
+                        background-color: #FFFFFF;
+                    }
+                """)
 
-        self.check_length = QCheckBox(_("Check for unusual translation length/expansion ratio"))
+        self.main_layout = QVBoxLayout(content_widget)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+
+        # 获取当前配置
+        current_rules = self.app.config.get("validation_rules", DEFAULT_VALIDATION_RULES)
+
+        # 分组定义
+        groups = {
+            _("Code Safety"): ["printf", "python_brace", "html_tags", "url_email"],
+            _("Content Consistency"): ["numbers", "glossary", "fuzzy"],
+            _("Formatting & Punctuation"): ["punctuation", "brackets", "whitespace", "double_space", "capitalization"]
+        }
+
+        for group_name, keys in groups.items():
+            group_box = QGroupBox(group_name)
+            group_layout = QVBoxLayout(group_box)
+
+            for key in keys:
+                if key in current_rules:
+                    widget = ValidationRuleWidget(key, current_rules[key])
+                    self.rule_widgets[key] = widget
+                    group_layout.addWidget(widget)
+
+            self.main_layout.addWidget(group_box)
+
+        # 长度检查单独处理
+        length_group = QGroupBox(_("Length Constraints"))
+        length_layout = QFormLayout(length_group)
+
+        self.check_length = QCheckBox(_("Enable Length Check"))
         self.check_length.setChecked(self.app.config.get('check_length', True))
-        layout.addWidget(self.check_length)
 
-        self.page_layout.addWidget(group)
+        self.major_threshold = QDoubleSpinBox()
+        self.major_threshold.setRange(1.1, 10.0)
+        self.major_threshold.setSingleStep(0.1)
+        self.major_threshold.setValue(self.app.config.get('length_threshold_major', 2.5))
+
+        self.minor_threshold = QDoubleSpinBox()
+        self.minor_threshold.setRange(1.1, 10.0)
+        self.minor_threshold.setSingleStep(0.1)
+        self.minor_threshold.setValue(self.app.config.get('length_threshold_minor', 2.0))
+
+        length_layout.addRow(self.check_length)
+        length_layout.addRow(_("Major Threshold (Error):"), self.major_threshold)
+        length_layout.addRow(_("Minor Threshold (Warning):"), self.minor_threshold)
+
+        self.main_layout.addWidget(length_group)
+        self.main_layout.addStretch()
+
+        scroll.setWidget(content_widget)
+        self.page_layout.addWidget(scroll)
 
     def save_settings(self):
-        self.app.config['check_placeholders'] = self.check_placeholders.isChecked()
-        self.app.config['check_formatting'] = self.check_formatting.isChecked()
-        self.app.config['check_fuzzy'] = self.check_fuzzy.isChecked()
+        new_rules = {}
+        for key, widget in self.rule_widgets.items():
+            new_rules[key] = widget.get_data()
+
+        self.app.config["validation_rules"] = new_rules
+
         self.app.config['check_length'] = self.check_length.isChecked()
+        self.app.config['length_threshold_major'] = self.major_threshold.value()
+        self.app.config['length_threshold_minor'] = self.minor_threshold.value()
+
+        self.app._run_and_refresh_with_validation()
+        return False

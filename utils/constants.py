@@ -17,6 +17,27 @@ STRUCTURAL = "Structural Content"
 STATIC = "Static Instruction"
 DYNAMIC = "Dynamic Instruction"
 
+DEFAULT_VALIDATION_RULES = {
+    # --- 代码安全 ---
+    "printf": {"enabled": True, "level": "error", "label": "Printf Format (%s, %d)"},
+    "python_brace": {"enabled": True, "level": "error", "label": "Python Brace ({}, {name})"},
+    "html_tags": {"enabled": True, "level": "error", "label": "HTML/XML Tags"},
+    "url_email": {"enabled": True, "level": "warning", "label": "URL & Email"},
+
+    # --- 内容一致性 ---
+    "numbers": {"enabled": True, "level": "error", "label": "Numbers Consistency"},
+    "glossary": {"enabled": True, "level": "warning", "label": "Glossary Terms"},
+    "fuzzy": {"enabled": True, "level": "warning", "label": "Fuzzy State"},
+
+    # --- 格式与标点 ---
+    "punctuation": {"enabled": True, "level": "warning", "label": "Ending Punctuation"},
+    "brackets": {"enabled": True, "level": "warning", "label": "Paired Brackets () [] {}"},
+    "whitespace": {"enabled": True, "level": "warning", "label": "Leading/Trailing Whitespace"},
+    "double_space": {"enabled": True, "level": "warning", "label": "Double Spaces"},
+    "capitalization": {"enabled": False, "level": "warning", "label": "Initial Capitalization"},
+}
+
+
 DEFAULT_PROMPT_STRUCTURE = [
     {
         "id": str(uuid.uuid4()),
