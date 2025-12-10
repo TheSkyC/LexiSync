@@ -31,6 +31,7 @@ class TranslatableString:
         self.char_pos_end_in_file = char_pos_end_in_file
         self.warnings = []
         self.minor_warnings = []
+        self.infos = []
 
         self.is_warning_ignored = False
         self.string_type = string_type
@@ -91,6 +92,7 @@ class TranslatableString:
     def to_dict(self):
         serializable_warnings = [(wt.name, msg) for wt, msg in self.warnings]
         serializable_minor_warnings = [(wt.name, msg) for wt, msg in self.minor_warnings]
+        serializable_infos = [(wt.name, msg) for wt, msg in self.infos]
 
         return {
             'id': self.id,
@@ -113,6 +115,7 @@ class TranslatableString:
             'is_warning_ignored': self.is_warning_ignored,
             'warnings': serializable_warnings,
             'minor_warnings': serializable_minor_warnings,
+            'infos': serializable_infos,
         }
 
     @classmethod
@@ -153,6 +156,12 @@ class TranslatableString:
                 except KeyError:
                     logger.warning(
                         f"Warning: Unknown minor warning type name '{wt_name}' found in project file for ID {ts.id}. Original message: {msg}")
+        if 'infos' in data:
+            for wt_name, msg in data['infos']:
+                try:
+                    ts.infos.append((WarningType[wt_name], msg))
+                except KeyError:
+                    pass
         return ts
 
     def update_style_cache(self, all_strings_map=None):

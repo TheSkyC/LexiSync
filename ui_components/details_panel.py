@@ -218,16 +218,20 @@ class DetailsPanel(QWidget):
 
                 errors = [msg for __, msg in ts_obj.warnings] if not ts_obj.is_warning_ignored else []
                 warnings = [msg for __, msg in ts_obj.minor_warnings] if not ts_obj.is_warning_ignored else []
+                infos = [msg for __, msg in ts_obj.infos] if not ts_obj.is_warning_ignored else []
 
-                if not errors and not warnings:
+                if not errors and not warnings and not infos:
                     return super().eventFilter(obj, event)
 
                 if errors:
                     title = _("Error")
                     color = "#FF5252"
-                else:
+                elif warnings:
                     title = _("Warning")
                     color = "#FFC107"
+                else:
+                    title = _("Info")
+                    color = "#2196F3"
 
                 tooltip_html = f"<b style='color:{color}; font-size: 14px;'>{title}</b>"
 
@@ -236,7 +240,7 @@ class DetailsPanel(QWidget):
 
                 tooltip_html += "<hr style='border-color: #555; margin: 6px 0;'>"
 
-                all_msgs = errors + warnings
+                all_msgs = errors + warnings + infos
                 for msg in all_msgs:
                     tooltip_html += f"<div style='margin-bottom: 3px;'>• {msg}</div>"
 
@@ -352,35 +356,44 @@ class DetailsPanel(QWidget):
             self.warning_banner.hide()
             return
 
-        active_warnings = []
-        is_error = False
+        active_msg = None
+        style_type = "none"  # error, warning, info
 
+        # Error > Warning > Info
         if ts_obj.warnings and not ts_obj.is_warning_ignored:
-            active_warnings = ts_obj.warnings
-            is_error = True
+            active_msg = ts_obj.warnings[0][1]
+            style_type = "error"
         elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
-            active_warnings = ts_obj.minor_warnings
-            is_error = False
+            active_msg = ts_obj.minor_warnings[0][1]
+            style_type = "warning"
+        elif ts_obj.infos and not ts_obj.is_warning_ignored:  # [NEW] 检查 Info
+            active_msg = ts_obj.infos[0][1]
+            style_type = "info"
 
-        if active_warnings:
-            warning_type, msg = active_warnings[0]
-            self.warning_text_label.setText(msg)
-            if is_error:
-                # 错误：红色风格
+        if active_msg:
+            self.warning_text_label.setText(active_msg)
+            self.warning_text_label.setToolTip(active_msg)
+
+            if style_type == "error":
                 self.warning_banner.setStyleSheet("""
-                    #warning_banner { background-color: #F8D7DA; border: 1px solid #F5C6CB; border-radius: 4px; }
+                    #warning_banner { background-color: #F8D7DA; border: 1px solid #F5C6CB; border-radius: 3px; margin-left: 10px; }
                     QLabel { color: #721C24; }
                 """)
                 icon = self.style().standardIcon(self.style().StandardPixmap.SP_MessageBoxCritical)
-            else:
-                # 警告：黄色风格
+            elif style_type == "warning":
                 self.warning_banner.setStyleSheet("""
-                    #warning_banner { background-color: #FFF3CD; border: 1px solid #FFEEBA; border-radius: 4px; }
+                    #warning_banner { background-color: #FFF3CD; border: 1px solid #FFEEBA; border-radius: 3px; margin-left: 10px; }
                     QLabel { color: #856404; }
                 """)
                 icon = self.style().standardIcon(self.style().StandardPixmap.SP_MessageBoxWarning)
+            elif style_type == "info":
+                self.warning_banner.setStyleSheet("""
+                    #warning_banner { background-color: #E3F2FD; border: 1px solid #BBDEFB; border-radius: 3px; margin-left: 10px; }
+                    QLabel { color: #0D47A1; }
+                """)
+                icon = self.style().standardIcon(self.style().StandardPixmap.SP_MessageBoxInformation)
 
-            self.warning_icon_label.setPixmap(icon.pixmap(16, 16))
+            self.warning_icon_label.setPixmap(icon.pixmap(12, 12))
             self.warning_banner.show()
         else:
             self.warning_banner.hide()

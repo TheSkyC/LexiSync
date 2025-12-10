@@ -1188,6 +1188,7 @@ class LexiSyncApp(QMainWindow):
 
         errors = []
         warnings = []
+        infos = []
 
         source_model = self.proxy_model.sourceModel()
         if not source_model:
@@ -1197,17 +1198,22 @@ class LexiSyncApp(QMainWindow):
         id_to_index_map = source_model._id_to_index_map
 
         for ts_obj in data_source:
+            source_row = id_to_index_map.get(ts_obj.id)
+            if source_row is None:
+                continue
+
             if ts_obj.warnings and not ts_obj.is_warning_ignored:
-                source_row = id_to_index_map.get(ts_obj.id)
-                if source_row is not None:
-                    errors.append(source_row)
-            elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
-                source_row = id_to_index_map.get(ts_obj.id)
-                if source_row is not None:
-                    warnings.append(source_row)
+                errors.append(source_row)
+
+            if ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
+                warnings.append(source_row)
+
+            if ts_obj.infos and not ts_obj.is_warning_ignored:
+                infos.append(source_row)
 
         self.marker_bar.add_markers('error', errors)
         self.marker_bar.add_markers('warning', warnings)
+        self.marker_bar.add_markers('info', infos)
 
     def update_search_markers(self, source_rows: list):
         if self.marker_bar:
@@ -3423,36 +3429,45 @@ class LexiSyncApp(QMainWindow):
         for ts_id in changed_ids:
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if ts_obj:
-                # Store previous warning state
+                # 1. 记录旧状态
                 had_error = bool(ts_obj.warnings and not ts_obj.is_warning_ignored)
                 had_warning = bool(ts_obj.minor_warnings and not ts_obj.is_warning_ignored)
+                had_info = bool(ts_obj.infos and not ts_obj.is_warning_ignored)  # [NEW]
 
-                # Re-validate the string
+                # 2. 重新验证
                 validate_string(ts_obj, self.config, self)
                 ts_obj.update_style_cache()
 
-                # Get new warning state
+                # 3. 记录新状态
                 has_error = bool(ts_obj.warnings and not ts_obj.is_warning_ignored)
                 has_warning = bool(ts_obj.minor_warnings and not ts_obj.is_warning_ignored)
+                has_info = bool(ts_obj.infos and not ts_obj.is_warning_ignored)  # [NEW]
 
-                # Update marker bar in real-time
+                # 4. 更新 MarkerBar
                 if self.marker_bar:
                     source_index = self.sheet_model.index_from_id(ts_obj.id)
                     if source_index.isValid():
                         source_row = source_index.row()
-                        # Handle errors
+
+                        # Error 处理
                         if has_error and not had_error:
                             self.marker_bar.add_marker('error', source_row)
                         elif not has_error and had_error:
                             self.marker_bar.remove_marker('error', source_row)
 
-                        # Handle warnings (only if there's no error)
-                        if has_warning and not had_warning and not has_error:
+                        # Warning 处理
+                        if has_warning and not had_warning:
                             self.marker_bar.add_marker('warning', source_row)
-                        elif (not has_warning or has_error) and had_warning:
+                        elif not has_warning and had_warning:
                             self.marker_bar.remove_marker('warning', source_row)
 
-                # Update the view for this specific row
+                        # Info 处理
+                        if has_info and not had_info:
+                            self.marker_bar.add_marker('info', source_row)
+                        elif not has_info and had_info:
+                            self.marker_bar.remove_marker('info', source_row)
+
+                # 更新表格视图
                 source_index = self.sheet_model.index_from_id(ts_obj.id)
                 if source_index.isValid():
                     first_col_index = source_index.siblingAtColumn(0)

@@ -397,6 +397,11 @@ class ValidationRuleWidget(QWidget):
         self.level_combo.setItemData(1, QColor("#F57C00"), Qt.ForegroundRole)
         self.level_combo.setItemData(1, self._create_color_icon("#FBC02D"), Qt.DecorationRole)
 
+        # 3. Info
+        self.level_combo.addItem(_("Info"), "info")
+        self.level_combo.setItemData(2, QColor("#1976D2"), Qt.ForegroundRole)
+        self.level_combo.setItemData(2, self._create_color_icon("#2196F3"), Qt.DecorationRole)
+
         current_level = config_data.get("level", "warning")
         index = self.level_combo.findData(current_level)
         if index != -1:

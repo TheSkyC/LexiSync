@@ -32,7 +32,8 @@ class MarkerBar(QWidget):
             # Point Markers (drawn on the left track)
             'error': {'color': QColor(237, 28, 36, 200), 'priority': 10, 'label': _("Error")},
             'warning': {'color': QColor(255, 193, 7, 200), 'priority': 9, 'label': _("Warning")},
-            'search': {'color': QColor(147, 112, 219, 180), 'priority': 8, 'label': _("Search Match")},
+            'info': {'color': QColor(33, 150, 243, 200), 'priority': 8, 'label': _("Info")},
+            'search': {'color': QColor(147, 112, 219, 180), 'priority': 7, 'label': _("Search Match")},
 
             # Range Markers (drawn on the right track)
             'selection': {'color': QColor(0, 120, 215, 180), 'priority': 20, 'label': _("Selection")},
@@ -398,10 +399,14 @@ class MarkerBar(QWidget):
                         tooltip_text += f"<br>{_('Range')}: {found_marker['start'] + 1} - {found_marker['end'] + 1}"
                     else:
                         warnings_html = ""
-                        if found_marker.get('type') == 'error' and ts_obj.warnings:
+                        marker_type = found_marker.get('type')
+                        if marker_type == 'error' and ts_obj.warnings:
                             warnings_html = "<br>".join([f"• {msg}" for _, msg in ts_obj.warnings])
-                        elif found_marker.get('type') == 'warning' and ts_obj.minor_warnings:
+                        elif marker_type == 'warning' and ts_obj.minor_warnings:
                             warnings_html = "<br>".join([f"• {msg}" for _, msg in ts_obj.minor_warnings])
+                        elif marker_type == 'info' and hasattr(ts_obj, 'infos') and ts_obj.infos:
+                            warnings_html = "<br>".join([f"• {msg}" for _, msg in ts_obj.infos])
+
                         if warnings_html:
                             tooltip_text += f"<hr style='border-color: #555; margin: 4px 0;'>{warnings_html}"
 

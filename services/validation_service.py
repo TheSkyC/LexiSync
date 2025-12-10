@@ -31,13 +31,41 @@ def _report(ts_obj, config, rule_key, warning_type, message):
 
     if level == "error":
         ts_obj.warnings.append((warning_type, message))
+    elif level == "info":
+        ts_obj.infos.append((warning_type, message))
     else:
         ts_obj.minor_warnings.append((warning_type, message))
 
 
+"""
+[Developer Guide] How to add a new validation rule?
+【开发指南】如何增加一个新的验证规则？
+
+1. Define Type (定义类型):
+   - Modify `utils/enums.py`: Add a new member to `WarningType` (e.g., `QUOTE_MISMATCH`).
+
+2. Define Default Config (定义默认配置):
+   - Modify `utils/constants.py`: Add entry to `DEFAULT_VALIDATION_RULES`.
+     Example: "quotes": {"enabled": True, "level": "warning", "label": "Check Quotes"}
+
+3. Implement Logic (实现逻辑):
+   - Modify `services/validation_helpers.py`: Write a pure function that returns an error string or None.
+     Example: `def check_quotes(source, target): ...`
+
+4. Integrate (集成):
+   - Modify `services/validation_service.py`: In `validate_string`, call your helper and report it.
+     Example:
+     if err := validation_helpers.check_quotes(original, translation):
+         _report(ts_obj, config, "quotes", WarningType.QUOTE_MISMATCH, err)
+
+5. UI (UI显示):
+   - Modify `dialogs/settings_pages.py`: Add the new key to the `groups` dictionary to show it in Settings.
+"""
+
 def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     ts_obj.warnings = []
     ts_obj.minor_warnings = []
+    ts_obj.infos = []
 
     if not ts_obj.translation or ts_obj.is_ignored:
         return
