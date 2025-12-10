@@ -1,13 +1,14 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+import re
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFrame, QSizePolicy, QSplitter
 )
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor, QPixmap
-import re
+from PySide6.QtCore import Qt, Signal, QEvent
+from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor, QCursor
+from .tooltip import Tooltip
 from .newline_text_edit import NewlineTextEdit
 from .elided_label import ElidedLabel
 from utils.localization import _
@@ -23,6 +24,7 @@ class DetailsPanel(QWidget):
         super().__init__(parent)
         self.app_instance = parent
         self._ui_initialized = False
+        self.current_ts_obj = None
         self.setup_ui()
 
     def setup_ui(self):
@@ -139,6 +141,7 @@ class DetailsPanel(QWidget):
 
         self.warning_text_label = ElidedLabel()
         self.warning_text_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.warning_text_label.installEventFilter(self)
 
         self.ignore_warning_btn = QPushButton(_("Ignore"))
         self.ignore_warning_btn.setCursor(Qt.PointingHandCursor)
@@ -201,8 +204,51 @@ class DetailsPanel(QWidget):
         trans_actions_layout.addWidget(self.ai_translate_current_btn)
         main_layout.addWidget(trans_actions_frame)
 
+        self.tooltip = Tooltip(self)
         self.setup_text_formats()
         self._ui_initialized = True
+
+    def eventFilter(self, obj, event):
+        if obj == self.warning_text_label:
+            if event.type() == QEvent.Enter:
+                if not self.current_ts_obj:
+                    return super().eventFilter(obj, event)
+
+                ts_obj = self.current_ts_obj
+
+                errors = [msg for __, msg in ts_obj.warnings] if not ts_obj.is_warning_ignored else []
+                warnings = [msg for __, msg in ts_obj.minor_warnings] if not ts_obj.is_warning_ignored else []
+
+                if not errors and not warnings:
+                    return super().eventFilter(obj, event)
+
+                if errors:
+                    title = _("Error")
+                    color = "#FF5252"
+                else:
+                    title = _("Warning")
+                    color = "#FFC107"
+
+                tooltip_html = f"<b style='color:{color}; font-size: 14px;'>{title}</b>"
+
+                if ts_obj.line_num_in_file > 0:
+                    tooltip_html += f" <span style='color:#AAA;'>({_('Line')} {ts_obj.line_num_in_file})</span>"
+
+                tooltip_html += "<hr style='border-color: #555; margin: 6px 0;'>"
+
+                all_msgs = errors + warnings
+                for msg in all_msgs:
+                    tooltip_html += f"<div style='margin-bottom: 3px;'>• {msg}</div>"
+
+                self.tooltip.show_tooltip(QCursor.pos(), tooltip_html)
+                return True
+
+            elif event.type() == QEvent.Leave:
+                self.tooltip.hide()
+            elif event.type() == QEvent.MouseButtonPress:
+                self.tooltip.hide()
+
+        return super().eventFilter(obj, event)
 
     def _translation_focus_out_event(self, event):
         self.translation_focus_out_signal.emit()
@@ -301,6 +347,7 @@ class DetailsPanel(QWidget):
                 cursor.mergeCharFormat(self.whitespace_format)
 
     def update_warnings(self, ts_obj):
+        self.current_ts_obj = ts_obj
         if not ts_obj:
             self.warning_banner.hide()
             return
@@ -318,7 +365,6 @@ class DetailsPanel(QWidget):
         if active_warnings:
             warning_type, msg = active_warnings[0]
             self.warning_text_label.setText(msg)
-            self.warning_text_label.setToolTip(msg)
             if is_error:
                 # 错误：红色风格
                 self.warning_banner.setStyleSheet("""
