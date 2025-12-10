@@ -6,11 +6,11 @@ from PySide6.QtWidgets import (
     QFrame, QSizePolicy, QSplitter
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QTextCharFormat, QColor, QFont, QTextCursor
+from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor, QPixmap
 import re
 from .newline_text_edit import NewlineTextEdit
+from .elided_label import ElidedLabel
 from utils.localization import _
-from services.validation_service import placeholder_regex
 
 
 class DetailsPanel(QWidget):
@@ -18,6 +18,7 @@ class DetailsPanel(QWidget):
     ai_translate_signal = Signal()
     translation_text_changed_signal = Signal()
     translation_focus_out_signal = Signal()
+    warning_ignored_signal = Signal()
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app_instance = parent
@@ -32,11 +33,12 @@ class DetailsPanel(QWidget):
         main_layout.setSpacing(5)
         splitter = QSplitter(Qt.Vertical)
 
-        # --- 原文 ---
+        # --- 原文区域 ---
         original_container = QWidget()
         original_layout = QVBoxLayout(original_container)
         original_layout.setContentsMargins(0, 0, 0, 0)
         original_layout.setSpacing(5)
+
         original_header_layout = QHBoxLayout()
         self.original_label = QLabel(_("Original:"))
         self.original_label.setObjectName("original_label")
@@ -94,20 +96,82 @@ class DetailsPanel(QWidget):
         self.original_text_display.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         original_layout.addWidget(self.original_text_display)
 
-        # --- 译文 ---
+        # --- 译文区域 ---
         translation_container = QWidget()
         translation_layout = QVBoxLayout(translation_container)
         translation_layout.setContentsMargins(0, 0, 0, 0)
         translation_layout.setSpacing(5)
+
         translation_header_layout = QHBoxLayout()
         self.translation_label = QLabel(_("Translation:"))
         self.translation_label.setObjectName("translation_label")
+        self.translation_label.setMinimumHeight(20)
+
+        self.warning_banner = QFrame()
+        self.warning_banner.setObjectName("warning_banner")
+        self.warning_banner.setVisible(False)
+        self.warning_banner.setFixedHeight(20)
+        self.warning_banner.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        self.warning_banner.setStyleSheet("""
+            #warning_banner {
+                background-color: #FFF3CD;
+                border: 1px solid #FFEEBA;
+                border-radius: 3px;
+                margin-left: 10px;
+                /* margin-right: 10px;
+            }
+            QLabel { 
+                color: #856404; 
+                font-size: 11px;
+                border: none;
+                background: transparent;
+            }
+        """)
+
+        banner_layout = QHBoxLayout(self.warning_banner)
+        banner_layout.setContentsMargins(4, 0, 4, 0)
+        banner_layout.setSpacing(4)
+
+        self.warning_icon_label = QLabel()
+        self.warning_icon_label.setFixedSize(12, 12)
+        self.warning_icon_label.setScaledContents(True)
+        self.warning_icon_label.setStyleSheet("background: transparent; border: none;")
+
+        self.warning_text_label = ElidedLabel()
+        self.warning_text_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+
+        self.ignore_warning_btn = QPushButton(_("Ignore"))
+        self.ignore_warning_btn.setCursor(Qt.PointingHandCursor)
+        self.ignore_warning_btn.setFixedSize(40, 16)
+        self.ignore_warning_btn.setStyleSheet("""
+            QPushButton {
+                border: none;
+                color: #0056b3;
+                text-decoration: underline;
+                background: transparent;
+                font-weight: bold;
+                font-size: 10px;
+                padding: 0;
+                margin: 0;
+                text-align: right;
+            }
+            QPushButton:hover { color: #003d82; }
+        """)
+        self.ignore_warning_btn.clicked.connect(self.warning_ignored_signal.emit)
+
+        banner_layout.addWidget(self.warning_icon_label)
+        banner_layout.addWidget(self.warning_text_label, 1)
+        banner_layout.addWidget(self.ignore_warning_btn)
+
         self.ratio_label = QLabel("")
         self.ratio_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.ratio_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
         translation_header_layout.addWidget(self.translation_label)
-        translation_header_layout.addStretch()
+        translation_header_layout.addWidget(self.warning_banner)
+        translation_header_layout.addStretch(1)
         translation_header_layout.addWidget(self.ratio_label)
         translation_layout.addLayout(translation_header_layout)
+
         self.translation_edit_text = NewlineTextEdit()
         self.translation_edit_text.setLineWrapMode(NewlineTextEdit.WidgetWidth)
         self.translation_edit_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -115,10 +179,12 @@ class DetailsPanel(QWidget):
         self.translation_edit_text.focusOutEvent = self._translation_focus_out_event
         translation_layout.addWidget(self.translation_edit_text)
 
+
         splitter.addWidget(original_container)
         splitter.addWidget(translation_container)
         splitter.setSizes([100, 100])
         main_layout.addWidget(splitter)
+
         trans_actions_frame = QFrame()
         trans_actions_layout = QHBoxLayout(trans_actions_frame)
         trans_actions_layout.setContentsMargins(0, 0, 0, 0)
@@ -234,18 +300,63 @@ class DetailsPanel(QWidget):
                 cursor.setPosition(block.position() + trailing_ws_match.end(), QTextCursor.KeepAnchor)
                 cursor.mergeCharFormat(self.whitespace_format)
 
-    def update_stats_labels(self, char_counts: tuple | None, ratios: tuple | None):
-        if char_counts:
-            self.char_count_label.setText(f"{char_counts[0]} | {char_counts[1]}")
-        else:
-            self.char_count_label.setText("")
+    def update_warnings(self, ts_obj):
+        if not ts_obj:
+            self.warning_banner.hide()
+            return
 
-        if ratios:
-            actual_str = f"{ratios[0]:.2f}" if ratios[0] is not None else "-"
-            expected_str = f"{ratios[1]:.2f}" if ratios[1] is not None else "-"
-            self.ratio_label.setText(f"{actual_str} | {expected_str}")
+        active_warnings = []
+        is_error = False
+
+        if ts_obj.warnings and not ts_obj.is_warning_ignored:
+            active_warnings = ts_obj.warnings
+            is_error = True
+        elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
+            active_warnings = ts_obj.minor_warnings
+            is_error = False
+
+        if active_warnings:
+            warning_type, msg = active_warnings[0]
+            self.warning_text_label.setText(msg)
+            self.warning_text_label.setToolTip(msg)
+            if is_error:
+                # 错误：红色风格
+                self.warning_banner.setStyleSheet("""
+                    #warning_banner { background-color: #F8D7DA; border: 1px solid #F5C6CB; border-radius: 4px; }
+                    QLabel { color: #721C24; }
+                """)
+                icon = self.style().standardIcon(self.style().StandardPixmap.SP_MessageBoxCritical)
+            else:
+                # 警告：黄色风格
+                self.warning_banner.setStyleSheet("""
+                    #warning_banner { background-color: #FFF3CD; border: 1px solid #FFEEBA; border-radius: 4px; }
+                    QLabel { color: #856404; }
+                """)
+                icon = self.style().standardIcon(self.style().StandardPixmap.SP_MessageBoxWarning)
+
+            self.warning_icon_label.setPixmap(icon.pixmap(16, 16))
+            self.warning_banner.show()
         else:
-            self.ratio_label.setText("")
+            self.warning_banner.hide()
+
+    def update_stats_labels(self, char_counts: tuple | None, ratios: tuple | None):
+        try:
+            if not self.isVisible():
+                return
+
+            if char_counts:
+                self.char_count_label.setText(f"{char_counts[0]} | {char_counts[1]}")
+            else:
+                self.char_count_label.setText("")
+
+            if ratios:
+                actual_str = f"{ratios[0]:.2f}" if ratios[0] is not None else "-"
+                expected_str = f"{ratios[1]:.2f}" if ratios[1] is not None else "-"
+                self.ratio_label.setText(f"{actual_str} | {expected_str}")
+            else:
+                self.ratio_label.setText("")
+        except RuntimeError:
+            pass
 
     def update_ui_texts(self):
         self.findChild(QLabel, "original_label").setText(_("Original:"))

@@ -1260,6 +1260,7 @@ class LexiSyncApp(QMainWindow):
         self.details_panel.translation_text_changed_signal.connect(self.schedule_details_panel_stats_update)
         self.details_panel.translation_focus_out_signal.connect(self.apply_translation_focus_out)
         self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
+        self.details_panel.warning_ignored_signal.connect(lambda: self.cm_set_warning_ignored_status(True))
 
         # CommentStatusPanel
         self.comment_status_panel.apply_comment_signal.connect(self.apply_comment_from_button)
@@ -2904,14 +2905,7 @@ class LexiSyncApp(QMainWindow):
             text=ts_obj.original_semantic[:30].replace(chr(10), '↵'),
             line_num=ts_obj.line_num_in_file
         )
-        warning_message = ""
-        if ts_obj.warnings and not ts_obj.is_warning_ignored:
-            messages = [msg for wt, msg in ts_obj.warnings]
-            warning_message = "⚠️ " + " | ".join(messages)
-        elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
-            messages = [msg for wt, msg in ts_obj.minor_warnings]
-            warning_message = "💡 " + " | ".join(messages)
-        self.update_statusbar(warning_message if warning_message else status_message, persistent=True)
+        self.update_statusbar(status_message, persistent=True)
 
     def schedule_details_panel_stats_update(self):
         self.stats_update_timer.start(100)
@@ -5174,6 +5168,7 @@ class LexiSyncApp(QMainWindow):
             self.details_panel.translation_edit_text.setPlainText(ts_obj.get_translation_for_ui())
             self.details_panel.update_context_badge(ts_obj)
             self.details_panel.update_format_badge(ts_obj)
+            self.details_panel.update_warnings(ts_obj)
         finally:
             self.details_panel.original_text_display.blockSignals(False)
             self.details_panel.translation_edit_text.blockSignals(False)
