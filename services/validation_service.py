@@ -83,6 +83,7 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
         translation_stripped = translation.strip()
 
         if original_stripped and translation_stripped:
+            # 检查开头
             orig_start_char, trans_start_char = original_stripped[0], translation_stripped[0]
             orig_is_punc_start = orig_start_char in all_punc_keys or orig_start_char in all_punc_values
             trans_is_punc_start = trans_start_char in all_punc_keys or trans_start_char in all_punc_values
@@ -95,9 +96,19 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
                                         _("Starting punctuation differs: '{c1}' vs '{c2}'.").format(c1=orig_start_char,
                                                                                                     c2=trans_start_char)))
 
-            orig_end_char, trans_end_char = original_stripped[-1], translation_stripped[-1]
+            # 检查结尾
+            temp_orig_for_end = original_stripped
+            if temp_orig_for_end.lower().endswith('(s)'):
+                temp_orig_for_end = temp_orig_for_end[:-3].rstrip()
+            if not temp_orig_for_end:
+                temp_orig_for_end = original_stripped
+
+            orig_end_char = temp_orig_for_end[-1]
+            trans_end_char = translation_stripped[-1]
+
             orig_is_punc_end = orig_end_char in all_punc_keys or orig_end_char in all_punc_values
             trans_is_punc_end = trans_end_char in all_punc_keys or trans_end_char in all_punc_values
+
             if orig_is_punc_end != trans_is_punc_end:
                 ts_obj.warnings.append(
                     (WarningType.PUNCTUATION_MISMATCH_END, _("Ending punctuation presence differs.")))
