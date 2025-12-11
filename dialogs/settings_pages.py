@@ -277,17 +277,6 @@ class AISettingsPage(BaseSettingsPage):
 
         context_group = QGroupBox(_("Context & Prompts"))
         context_layout = QVBoxLayout(context_group)
-        target_lang_layout = QHBoxLayout()
-        target_lang_label = QLabel(_("Target Language:"))
-        target_lang_code = self.app.target_language
-        target_lang_name = lang_manager.get_language_name(target_lang_code)
-        self.target_language_display = QLineEdit(f"{target_lang_name} ({target_lang_code})")
-        self.target_language_display.setReadOnly(True)
-        self.target_language_display.setToolTip(_("Target language is set in 'Settings > Language Pair Settings...'"))
-        target_lang_layout.addWidget(target_lang_label)
-        target_lang_layout.addWidget(self.target_language_display)
-        context_layout.addLayout(target_lang_layout)
-        context_layout.addSpacing(10)
         self.use_original_context_check = QCheckBox(_("Use nearby original text as context"))
         self.use_original_context_check.setChecked(self.app.config.get("ai_use_original_context", True))
         context_layout.addWidget(self.use_original_context_check)

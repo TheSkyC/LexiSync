@@ -54,7 +54,6 @@ def load_config():
     # AI settings
     config_data.setdefault("ai_api_key", "")
     config_data.setdefault("ai_api_base_url", DEFAULT_API_URL)
-    config_data.setdefault("ai_target_language", "中文")
     config_data.setdefault("ai_model_name", "deepseek-chat")
     config_data.setdefault("ai_api_interval", 200)
     config_data.setdefault("ai_max_concurrent_requests", 1)
