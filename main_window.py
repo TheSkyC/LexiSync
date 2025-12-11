@@ -88,19 +88,6 @@ except ImportError:
     requests = None
     logger.warning("提示: requests 未找到, AI翻译功能不可用。pip install requests")
 
-class GlossaryHighlighter(QSyntaxHighlighter):
-    def __init__(self, parent, matches_list):
-        super().__init__(parent)
-        self.highlight_format = QTextCharFormat()
-        self.highlight_format.setUnderlineColor(QColor("teal"))
-        self.highlight_format.setUnderlineStyle(QTextCharFormat.WaveUnderline)
-        self.rules = []
-        if matches_list:
-            keywords = [re.escape(match['source']) for match in matches_list]
-            if keywords:
-                pattern = r'\b(' + '|'.join(keywords) + r')\b'
-                self.rules.append((re.compile(pattern, re.IGNORECASE), self.highlight_format))
-
     def highlightBlock(self, text):
         for pattern, format in self.rules:
             for match in pattern.finditer(text):
@@ -1624,10 +1611,34 @@ class LexiSyncApp(QMainWindow):
         return None
 
     def undo_action(self):
+        logger.info("--- Undo Action Triggered ---")
+        if hasattr(self, 'details_panel'):
+            trans_edit = self.details_panel.translation_edit_text
+            if trans_edit.hasFocus():
+                logger.info(f"Translation Edit has focus. Undo Available: {trans_edit.document().isUndoAvailable()}")
+                if trans_edit.document().isUndoAvailable():
+                    trans_edit.undo()
+                    logger.info("Executed trans_edit.undo()")
+                    return
+                else:
+                    logger.info("Translation Edit has NO undo steps.")
+
+        if hasattr(self, 'comment_status_panel'):
+            comment_edit = self.comment_status_panel.comment_edit_text
+            if comment_edit.hasFocus() and comment_edit.document().isUndoAvailable():
+                comment_edit.undo()
+                return
+
         focused_widget = QApplication.focusWidget()
-        if isinstance(focused_widget, QTextEdit) and focused_widget.document().isUndoAvailable():
-            focused_widget.undo()
-            return
+        if focused_widget:
+            if isinstance(focused_widget, QLineEdit):
+                if focused_widget.isUndoAvailable():
+                    focused_widget.undo()
+                    return
+            elif isinstance(focused_widget, QTextEdit):
+                if focused_widget.document().isUndoAvailable():
+                    focused_widget.undo()
+                    return
 
         if not self.undo_history:
             self.update_statusbar(_("No more actions to undo"))
@@ -1698,10 +1709,28 @@ class LexiSyncApp(QMainWindow):
         self.mark_project_modified()
 
     def redo_action(self):
+        if hasattr(self, 'details_panel'):
+            trans_edit = self.details_panel.translation_edit_text
+            if trans_edit.hasFocus() and trans_edit.document().isRedoAvailable():
+                trans_edit.redo()
+                return
+
+        if hasattr(self, 'comment_status_panel'):
+            comment_edit = self.comment_status_panel.comment_edit_text
+            if comment_edit.hasFocus() and comment_edit.document().isRedoAvailable():
+                comment_edit.redo()
+                return
+
         focused_widget = QApplication.focusWidget()
-        if isinstance(focused_widget, QTextEdit) and focused_widget.document().isRedoAvailable():
-            focused_widget.redo()
-            return
+        if focused_widget:
+            if isinstance(focused_widget, QLineEdit):
+                if focused_widget.isRedoAvailable():
+                    focused_widget.redo()
+                    return
+            elif isinstance(focused_widget, QTextEdit):
+                if focused_widget.document().isRedoAvailable():
+                    focused_widget.redo()
+                    return
 
         if not self.redo_history:
             self.update_statusbar(_("No more actions to redo"))
@@ -2988,11 +3017,16 @@ class LexiSyncApp(QMainWindow):
         original_text_widget = self.details_panel.original_text_display
         translation_text_widget = self.details_panel.translation_edit_text
 
-        original_placeholders = set(self.placeholder_regex.findall(ts_obj.original_semantic))
-        translated_placeholders = set(self.placeholder_regex.findall(translation_text_widget.toPlainText()))
+        translation_text_widget.blockSignals(True)
+        try:
+            original_placeholders = set(self.placeholder_regex.findall(ts_obj.original_semantic))
+            translated_placeholders = set(self.placeholder_regex.findall(translation_text_widget.toPlainText()))
 
-        self.details_panel.apply_placeholder_highlights(original_text_widget, translation_text_widget,
-                                                        original_placeholders, translated_placeholders)
+            self.details_panel.apply_placeholder_highlights(original_text_widget, translation_text_widget,
+                                                            original_placeholders, translated_placeholders)
+        finally:
+            translation_text_widget.blockSignals(False)
+
 
     def update_ui_state_for_selection(self, selected_id):
         state = True if selected_id else False
@@ -3127,11 +3161,8 @@ class LexiSyncApp(QMainWindow):
         self.glossary_analysis_cache[ts_id] = matches
         if self.current_selected_ts_id == ts_id:
             self.glossary_panel.update_matches(matches)
-            if self.original_highlighter:
-                self.original_highlighter.setParent(None)
-
-            self.original_highlighter = GlossaryHighlighter(self.details_panel.original_text_display.document(),
-                                                            matches)
+            if hasattr(self, 'details_panel'):
+                self.details_panel.update_glossary_highlights(matches)
 
     def clear_details_pane(self):
         # 清空 DetailsPanel
@@ -5214,6 +5245,7 @@ class LexiSyncApp(QMainWindow):
             self.details_panel.update_context_badge(ts_obj)
             self.details_panel.update_format_badge(ts_obj)
             self.details_panel.update_warnings(ts_obj)
+            self._update_all_highlights()
         finally:
             self.details_panel.original_text_display.blockSignals(False)
             self.details_panel.translation_edit_text.blockSignals(False)

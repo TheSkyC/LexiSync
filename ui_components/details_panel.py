@@ -11,6 +11,7 @@ from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor, QCursor
 from .tooltip import Tooltip
 from .newline_text_edit import NewlineTextEdit
 from .elided_label import ElidedLabel
+from .syntax_highlighter import TranslationHighlighter
 from utils.localization import _
 
 
@@ -97,6 +98,8 @@ class DetailsPanel(QWidget):
         self.original_text_display.setLineWrapMode(NewlineTextEdit.WidgetWidth)
         self.original_text_display.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         original_layout.addWidget(self.original_text_display)
+        self.original_highlighter = TranslationHighlighter(self.original_text_display.document())
+
 
         # --- 译文区域 ---
         translation_container = QWidget()
@@ -182,7 +185,6 @@ class DetailsPanel(QWidget):
         self.translation_edit_text.focusOutEvent = self._translation_focus_out_event
         translation_layout.addWidget(self.translation_edit_text)
 
-
         splitter.addWidget(original_container)
         splitter.addWidget(translation_container)
         splitter.setSizes([100, 100])
@@ -203,9 +205,10 @@ class DetailsPanel(QWidget):
         self.ai_translate_current_btn.setEnabled(False)
         trans_actions_layout.addWidget(self.ai_translate_current_btn)
         main_layout.addWidget(trans_actions_frame)
+        self.original_highlighter = TranslationHighlighter(self.original_text_display.document())
+        self.highlighter = TranslationHighlighter(self.translation_edit_text.document())
 
         self.tooltip = Tooltip(self)
-        self.setup_text_formats()
         self._ui_initialized = True
 
     def eventFilter(self, obj, event):
@@ -258,97 +261,19 @@ class DetailsPanel(QWidget):
         self.translation_focus_out_signal.emit()
         super(NewlineTextEdit, self.translation_edit_text).focusOutEvent(event)
 
-    def setup_text_formats(self):
-        self.placeholder_format = QTextCharFormat()
-        self.placeholder_format.setForeground(QColor("orange red"))
-
-        self.placeholder_error_format = QTextCharFormat()
-        self.placeholder_error_format.setBackground(QColor("#FFDDDD"))
-        self.placeholder_error_format.setForeground(QColor("red"))
-
-        self.whitespace_format = QTextCharFormat()
-        self.whitespace_format.setBackground(QColor("#DDEEFF"))
-
-        self.multi_space_format = QTextCharFormat()
-        self.multi_space_format.setBackground(QColor("#FFCCFF"))
-
-        self.newline_format = QTextCharFormat()
-        self.newline_format.setForeground(QColor("#007ACC"))
-        self.newline_format.setFontItalic(True)
+    def update_glossary_highlights(self, matches):
+        if hasattr(self, 'original_highlighter'):
+            self.original_highlighter.update_glossary(matches)
 
     def apply_placeholder_highlights(self, original_text_widget, translation_text_widget, original_placeholders,
                                      translated_placeholders):
-        cursor = QTextCursor(original_text_widget.document())
-        cursor.select(QTextCursor.Document)
-        cursor.setCharFormat(QTextCharFormat())
-        cursor = QTextCursor(translation_text_widget.document())
-        cursor.select(QTextCursor.Document)
-        cursor.setCharFormat(QTextCharFormat())
+        missing_in_translation = original_placeholders - translated_placeholders
 
-        original_doc = original_text_widget.document()
-        for p_text in original_placeholders:
-            tag_format = self.placeholder_error_format if p_text not in translated_placeholders else self.placeholder_format
-            self._apply_format_to_all_occurrences(original_doc, f"{{{p_text}}}", tag_format)
-        self._apply_whitespace_highlights(original_doc)
+        if hasattr(self, 'highlighter'):
+            self.highlighter.update_data(original_placeholders, set())
 
-        translation_doc = translation_text_widget.document()
-        all_placeholders = original_placeholders.union(translated_placeholders)
-        for p_text in all_placeholders:
-            if p_text in original_placeholders and p_text in translated_placeholders:
-                tag_format = self.placeholder_format
-            elif p_text in translated_placeholders:
-                tag_format = self.placeholder_error_format
-            else:
-                continue
-            self._apply_format_to_all_occurrences(translation_doc, f"{{{p_text}}}", tag_format)
-        self._apply_whitespace_highlights(translation_doc)
-
-    def _apply_format_to_all_occurrences(self, document, pattern, text_format):
-        cursor = QTextCursor(document)
-        start_pos = 0
-        while True:
-            inner_pattern = pattern[1:-1]
-            full_regex_pattern = r"\{" + re.escape(inner_pattern) + r"\}"
-            match = re.search(full_regex_pattern, document.toPlainText()[start_pos:])
-            if match:
-                actual_start = start_pos + match.start()
-                actual_end = start_pos + match.end()
-
-                cursor.setPosition(actual_start)
-                cursor.setPosition(actual_end, QTextCursor.KeepAnchor)
-                cursor.mergeCharFormat(text_format)
-                start_pos = actual_end
-            else:
-                break
-
-    def _apply_whitespace_highlights(self, document):
-        cursor = QTextCursor(document)
-        multi_space_regex = re.compile(r'\s{2,}')
-
-        for i in range(document.blockCount()):
-            block = document.findBlockByNumber(i)
-            text = block.text()
-
-            # Highlight multiple spaces in the middle of the text
-            for match in multi_space_regex.finditer(text):
-                start, end = match.span()
-                cursor.setPosition(block.position() + start)
-                cursor.setPosition(block.position() + end, QTextCursor.KeepAnchor)
-                cursor.mergeCharFormat(self.multi_space_format)
-
-            # Highlight leading whitespace
-            leading_ws_match = re.match(r'^\s+', text)
-            if leading_ws_match:
-                cursor.setPosition(block.position())
-                cursor.setPosition(block.position() + leading_ws_match.end(), QTextCursor.KeepAnchor)
-                cursor.mergeCharFormat(self.whitespace_format)
-
-            # Highlight trailing whitespace
-            trailing_ws_match = re.search(r'\s+$', text)
-            if trailing_ws_match:
-                cursor.setPosition(block.position() + trailing_ws_match.start())
-                cursor.setPosition(block.position() + trailing_ws_match.end(), QTextCursor.KeepAnchor)
-                cursor.mergeCharFormat(self.whitespace_format)
+        if hasattr(self, 'original_highlighter'):
+            self.original_highlighter.update_data(original_placeholders, missing_in_translation)
 
     def update_warnings(self, ts_obj):
         self.current_ts_obj = ts_obj
