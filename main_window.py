@@ -1167,8 +1167,15 @@ class LexiSyncApp(QMainWindow):
         if not source_index.isValid():
             return
         proxy_index = self.proxy_model.mapFromSource(source_index)
+
         if proxy_index.isValid():
             self.table_view.scrollTo(proxy_index, QTableView.PositionAtCenter)
+            self.table_view.selectionModel().setCurrentIndex(
+                proxy_index,
+                QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows
+            )
+        else:
+            self.update_statusbar(_("The selected item is currently hidden by filters."))
 
     def update_warning_markers(self):
         if not self.marker_bar:
