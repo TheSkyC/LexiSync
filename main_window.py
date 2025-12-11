@@ -1182,7 +1182,7 @@ class LexiSyncApp(QMainWindow):
         if not source_model:
             return
 
-        data_source = self.all_project_strings if self.is_project_mode else self.translatable_objects
+        data_source = self.translatable_objects
         id_to_index_map = source_model._id_to_index_map
 
         for ts_obj in data_source:
