@@ -25,6 +25,7 @@ class ObfuscatorLogic:
         self.dynamic_list = {'subroutines': [], 'global_vars': [], 'player_vars': []}
         self.obfuscated_names = self._get_obfuscated_names(1024)
 
+    @staticmethod
     def estimate_element_count(code_content: str) -> int:
         byte_count = len(code_content.encode('utf-8'))
         line_count = code_content.count('\n') + 1
