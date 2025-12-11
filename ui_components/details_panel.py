@@ -219,34 +219,40 @@ class DetailsPanel(QWidget):
 
                 ts_obj = self.current_ts_obj
 
-                errors = [msg for __, msg in ts_obj.warnings] if not ts_obj.is_warning_ignored else []
-                warnings = [msg for __, msg in ts_obj.minor_warnings] if not ts_obj.is_warning_ignored else []
-                infos = [msg for __, msg in ts_obj.infos] if not ts_obj.is_warning_ignored else []
+                # 过滤掉被忽略的警告
+                if ts_obj.is_warning_ignored:
+                    return super().eventFilter(obj, event)
+
+                errors = ts_obj.warnings
+                warnings = ts_obj.minor_warnings
+                infos = ts_obj.infos
 
                 if not errors and not warnings and not infos:
                     return super().eventFilter(obj, event)
-
-                if errors:
-                    title = _("Error")
-                    color = "#FF5252"
-                elif warnings:
-                    title = _("Warning")
-                    color = "#FFC107"
-                else:
-                    title = _("Info")
-                    color = "#2196F3"
-
-                tooltip_html = f"<b style='color:{color}; font-size: 14px;'>{title}</b>"
-
+                tooltip_parts = []
                 if ts_obj.line_num_in_file > 0:
-                    tooltip_html += f" <span style='color:#AAA;'>({_('Line')} {ts_obj.line_num_in_file})</span>"
+                    tooltip_parts.append(
+                        f"<div style='color:#777; margin-bottom:5px;'>{_('Line')} {ts_obj.line_num_in_file}</div>")
+                groups = [
+                    (_("Error"), errors, "#D32F2F"),  # 红色
+                    (_("Warning"), warnings, "#F57C00"),  # 橙色
+                    (_("Info"), infos, "#1976D2")  # 蓝色
+                ]
 
-                tooltip_html += "<hr style='border-color: #555; margin: 6px 0;'>"
+                for title, msg_list, color in groups:
+                    if msg_list:
+                        # 组标题
+                        tooltip_parts.append(
+                            f"<div style='color:{color}; font-weight:bold; margin-top:4px;'>{title}</div>")
+                        # 组内容
+                        for __, msg in msg_list:
+                            tooltip_parts.append(
+                                f"<div style='margin-left:10px;'>"
+                                f"<span style='color:{color};'>●</span> {msg}"
+                                f"</div>"
+                            )
 
-                all_msgs = errors + warnings + infos
-                for msg in all_msgs:
-                    tooltip_html += f"<div style='margin-bottom: 3px;'>• {msg}</div>"
-
+                tooltip_html = "".join(tooltip_parts)
                 self.tooltip.show_tooltip(QCursor.pos(), tooltip_html)
                 return True
 

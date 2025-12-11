@@ -391,26 +391,48 @@ class MarkerBar(QWidget):
                 ts_obj = self.proxy_model.sourceModel().data(source_index, Qt.UserRole)
 
                 if ts_obj:
-                    label = found_marker['label']
-                    color = found_marker['color']
-                    tooltip_text = f"<b style='color:{color.name()};'>{label}</b> ({_('Row')} {target_row + 1})"
-
+                    tooltip_parts = []
+                    main_label = found_marker['label']
+                    main_color = found_marker['color'].name()
+                    tooltip_parts.append(f"<b style='color:{main_color}; font-size:13px;'>{main_label}</b>")
                     if found_marker.get('is_range'):
-                        tooltip_text += f"<br>{_('Range')}: {found_marker['start'] + 1} - {found_marker['end'] + 1}"
+                        tooltip_parts.append(
+                            f" <span style='color:#777;'>({_('Range')}: {found_marker['start'] + 1} - {found_marker['end'] + 1})</span>")
                     else:
-                        warnings_html = ""
-                        marker_type = found_marker.get('type')
-                        if marker_type == 'error' and ts_obj.warnings:
-                            warnings_html = "<br>".join([f"• {msg}" for _, msg in ts_obj.warnings])
-                        elif marker_type == 'warning' and ts_obj.minor_warnings:
-                            warnings_html = "<br>".join([f"• {msg}" for _, msg in ts_obj.minor_warnings])
-                        elif marker_type == 'info' and hasattr(ts_obj, 'infos') and ts_obj.infos:
-                            warnings_html = "<br>".join([f"• {msg}" for _, msg in ts_obj.infos])
+                        tooltip_parts.append(f" <span style='color:#777;'>({_('Row')} {target_row + 1})</span>")
 
-                        if warnings_html:
-                            tooltip_text += f"<hr style='border-color: #555; margin: 4px 0;'>{warnings_html}"
+                    tooltip_parts.append("<hr style='border-color: #555; margin: 6px 0;'>")
 
-                    self.tooltip.show_tooltip(event.globalPos(), tooltip_text)
+                    if not ts_obj.is_warning_ignored:
+                        groups = [
+                            (_("Error"), ts_obj.warnings, "#D32F2F"),
+                            (_("Warning"), ts_obj.minor_warnings, "#F57C00"),
+                            (_("Info"), ts_obj.infos, "#1976D2")
+                        ]
+
+                        has_content = False
+                        for title, msg_list, color in groups:
+                            if msg_list:
+                                has_content = True
+                                tooltip_parts.append(
+                                    f"<div style='color:{color}; font-weight:bold; margin-top:4px;'>{title}</div>")
+                                for __, msg in msg_list:
+                                    tooltip_parts.append(
+                                        f"<div style='margin-left:8px;'>"
+                                        f"<span style='color:{color};'>●</span> {msg}"
+                                        f"</div>"
+                                    )
+
+                        if not has_content:
+                            summary = ts_obj.original_semantic.replace("\n", " ")
+                            if len(summary) > 50: summary = summary[:47] + "..."
+                            tooltip_parts.append(f"<div style='color:#CCC;'>{summary}</div>")
+
+                    else:
+                        tooltip_parts.append(
+                            f"<div style='color:#999; font-style:italic;'>{_('Warnings ignored')}</div>")
+
+                    self.tooltip.show_tooltip(event.globalPos(), "".join(tooltip_parts))
                 else:
                     self.tooltip.hide()
         else:
