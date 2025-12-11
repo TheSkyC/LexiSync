@@ -165,7 +165,15 @@ class GeneralSettingsPage(BaseSettingsPage):
         sub_options_v_layout.addWidget(self.sync_whitespace_checkbox)
         sub_options_v_layout.addWidget(self.normalize_newlines_checkbox)
         sub_options_layout.addWidget(sub_options_widget)
+        self.paste_protection_checkbox = QCheckBox(_("Enable Large Text Paste Protection"))
+        self.paste_protection_checkbox.setToolTip(
+            _("Warns when pasting large text that is significantly longer than the original."))
+        self.paste_protection_checkbox.setChecked(self.app.config.get('paste_protection_enabled', True))
+
+        paste_layout.addWidget(self.smart_paste_checkbox)
         paste_layout.addLayout(sub_options_layout)
+        paste_layout.addSpacing(5)
+        paste_layout.addWidget(self.paste_protection_checkbox)
         self.page_layout.addWidget(paste_group)
 
         # Extraction Rules
@@ -199,7 +207,10 @@ class GeneralSettingsPage(BaseSettingsPage):
         self.app.config['smart_paste_enabled'] = self.smart_paste_checkbox.isChecked()
         self.app.config['smart_paste_sync_whitespace'] = self.sync_whitespace_checkbox.isChecked()
         self.app.config['smart_paste_normalize_newlines'] = self.normalize_newlines_checkbox.isChecked()
+        self.app.config['paste_protection_enabled'] = self.paste_protection_checkbox.isChecked()
 
+        if hasattr(self.app, 'details_panel'):
+            self.app.details_panel.translation_edit_text.paste_protection_enabled = self.paste_protection_checkbox.isChecked()
         return lang_changed
 
 

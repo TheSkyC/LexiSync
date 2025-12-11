@@ -339,8 +339,9 @@ class LexiSyncApp(QMainWindow):
         last_path = self.config.get('last_file_explorer_path')
         if last_path and os.path.isdir(last_path):
             self.file_explorer_panel.set_root_path(last_path)
-
         ExpansionRatioService.initialize()
+        if hasattr(self, 'details_panel'):
+            self.details_panel.translation_edit_text.paste_protection_enabled = self.config.get('paste_protection_enabled', True)
         QTimer.singleShot(100, self.prewarm_dependencies)
         if hasattr(self, 'plugin_manager'):
             QTimer.singleShot(0, lambda: self.plugin_manager.run_hook('on_app_ready'))
@@ -4448,6 +4449,33 @@ class LexiSyncApp(QMainWindow):
         clipboard_content = QApplication.clipboard().text()
 
         if isinstance(clipboard_content, str):
+            if self.config.get('paste_protection_enabled', True):
+                text_len = len(clipboard_content)
+                threshold = 10000
+
+                if text_len > threshold:
+                    ref_len = len(ts_obj.original_semantic)
+                    ratio = ref_len / text_len if ref_len > 0 else 0
+                    if ratio < 0.7:
+                        logger.info(f"Large paste detected.")
+                        msg = _(
+                            "Large Text Detected ({len} chars).\n"
+                            "It exceeds the safety limit.\n\n"
+                            "Pasting this might freeze the application. Continue anyway?"
+                        ).format(len=text_len)
+
+                        reply = QMessageBox.question(
+                            self,
+                            _("Paste Protection"),
+                            msg,
+                            QMessageBox.Yes | QMessageBox.No,
+                            QMessageBox.No
+                        )
+
+                        if reply == QMessageBox.No:
+                            self.update_statusbar(_("Paste cancelled."))
+                            return
+
             formatted_content = self._format_pasted_text(clipboard_content, ts_obj.original_semantic)
             self.details_panel.translation_edit_text.setPlainText(formatted_content)
             self._apply_translation_to_model(ts_obj, formatted_content, source="manual_paste")
@@ -5182,6 +5210,7 @@ class LexiSyncApp(QMainWindow):
         try:
             self.details_panel.original_text_display.setPlainText(ts_obj.original_semantic)
             self.details_panel.translation_edit_text.setPlainText(ts_obj.get_translation_for_ui())
+            self.details_panel.translation_edit_text.reference_length = len(ts_obj.original_semantic)
             self.details_panel.update_context_badge(ts_obj)
             self.details_panel.update_format_badge(ts_obj)
             self.details_panel.update_warnings(ts_obj)

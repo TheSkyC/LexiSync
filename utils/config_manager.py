@@ -39,6 +39,14 @@ def load_config():
     config_data.setdefault("show_unreviewed", False)
     config_data.setdefault("auto_save_tm", False)
     config_data.setdefault("auto_backup_tm_on_save", True)
+
+    # Smart Paste Group
+    config_data.setdefault('smart_paste_enabled', True)
+    config_data.setdefault('smart_paste_sync_whitespace', True)
+    config_data.setdefault('smart_paste_normalize_newlines', True)
+
+    config_data.setdefault('paste_protection_enabled', True)
+
     config_data.setdefault("last_dir", "")
     config_data.setdefault("recent_files", [])
     config_data.setdefault("ui_state", {})
