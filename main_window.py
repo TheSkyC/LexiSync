@@ -1611,17 +1611,12 @@ class LexiSyncApp(QMainWindow):
         return None
 
     def undo_action(self):
-        logger.info("--- Undo Action Triggered ---")
         if hasattr(self, 'details_panel'):
             trans_edit = self.details_panel.translation_edit_text
-            if trans_edit.hasFocus():
-                logger.info(f"Translation Edit has focus. Undo Available: {trans_edit.document().isUndoAvailable()}")
-                if trans_edit.document().isUndoAvailable():
-                    trans_edit.undo()
-                    logger.info("Executed trans_edit.undo()")
-                    return
-                else:
-                    logger.info("Translation Edit has NO undo steps.")
+            if trans_edit.hasFocus() and trans_edit.document().isUndoAvailable():
+                trans_edit.undo()
+                return
+
 
         if hasattr(self, 'comment_status_panel'):
             comment_edit = self.comment_status_panel.comment_edit_text
