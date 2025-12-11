@@ -397,9 +397,9 @@ class MarkerBar(QWidget):
                     tooltip_parts.append(f"<b style='color:{main_color}; font-size:13px;'>{main_label}</b>")
                     if found_marker.get('is_range'):
                         tooltip_parts.append(
-                            f" <span style='color:#777;'>({_('Range')}: {found_marker['start'] + 1} - {found_marker['end'] + 1})</span>")
+                            f" <span style='color:#FFFFFF;'>({_('Range')}: {found_marker['start'] + 1} - {found_marker['end'] + 1})</span>")
                     else:
-                        tooltip_parts.append(f" <span style='color:#777;'>({_('Row')} {target_row + 1})</span>")
+                        tooltip_parts.append(f" <span style='color:#FFFFFF;'>({_('Row')} {target_row + 1})</span>")
 
                     tooltip_parts.append("<hr style='border-color: #555; margin: 6px 0;'>")
 

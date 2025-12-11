@@ -232,7 +232,7 @@ class DetailsPanel(QWidget):
                 tooltip_parts = []
                 if ts_obj.line_num_in_file > 0:
                     tooltip_parts.append(
-                        f"<div style='color:#777; margin-bottom:5px;'>{_('Line')} {ts_obj.line_num_in_file}</div>")
+                        f"<div style='color:#FFFFFF; margin-bottom:5px;'>{_('Line')} {ts_obj.line_num_in_file}</div>")
                 groups = [
                     (_("Error"), errors, "#D32F2F"),  # 红色
                     (_("Warning"), warnings, "#F57C00"),  # 橙色
