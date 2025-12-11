@@ -265,6 +265,9 @@ class DetailsPanel(QWidget):
         if hasattr(self, 'original_highlighter'):
             self.original_highlighter.update_glossary(matches)
 
+        if hasattr(self, 'original_text_display'):
+            self.original_text_display.set_glossary_matches(matches)
+
     def apply_placeholder_highlights(self, original_text_widget, translation_text_widget, original_placeholders,
                                      translated_placeholders):
         missing_in_translation = original_placeholders - translated_placeholders
