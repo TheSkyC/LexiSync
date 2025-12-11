@@ -42,6 +42,7 @@ def unescape_overwatch_string(s):
 def extract_translatable_strings(code_content, extraction_patterns, source_file_rel_path=""):
     strings = []
     full_code_lines = code_content.splitlines()
+    occurrence_counters = {}
 
     regex_all_digits = re.compile(r'^\d+$')
     regex_ow_placeholder = re.compile(r'^\{\d+\}$')
@@ -84,6 +85,10 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
 
             line_num = code_content.count('\n', 0, content_start_pos) + 1
 
+            counter_key = (semantic_content, string_type_from_pattern)
+            current_index = occurrence_counters.get(counter_key, 0)
+            occurrence_counters[counter_key] = current_index + 1
+
             ts = TranslatableString(
                 original_raw=raw_content,
                 original_semantic=semantic_content,
@@ -93,7 +98,8 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
                 full_code_lines=full_code_lines,
                 string_type=string_type_from_pattern,
                 source_file_path=source_file_rel_path,
-                occurrences=[(source_file_rel_path, str(line_num))]
+                occurrences=[(source_file_rel_path, str(line_num))],
+                occurrence_index=current_index  # [CHANGED] 传入计算出的次序
             )
 
             if string_type_from_pattern and string_type_from_pattern not in ["Custom String", "Custom", ""]:

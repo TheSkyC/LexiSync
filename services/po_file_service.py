@@ -55,7 +55,8 @@ def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=No
         full_code_lines=full_code_lines if full_code_lines else [],
         string_type="PO Import",
         source_file_path=po_file_rel_path,
-        occurrences=occurrences
+        occurrences=occurrences,
+        occurrence_index=0
     )
     ts.id = str(uuid.uuid5(APP_NAMESPACE_UUID, stable_name_for_uuid))
     ts.translation = entry.msgstr or ""

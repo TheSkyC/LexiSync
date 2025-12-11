@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 class TranslatableString:
     def __init__(self, original_raw, original_semantic, line_num, char_pos_start_in_file, char_pos_end_in_file,
-                 full_code_lines, string_type="Custom String", source_file_path="", occurrences=None):
-        name_string_for_uuid = f"{source_file_path}::{original_semantic}::{string_type}::L{line_num}::C{char_pos_start_in_file}"
+                 full_code_lines, string_type="Custom String", source_file_path="", occurrences=None, occurrence_index=0):
+        name_string_for_uuid = f"{source_file_path}::{original_semantic}::{string_type}::{str(occurrence_index)}"
         self.id = hashlib.md5(name_string_for_uuid.encode('utf-8')).hexdigest()
         self.context = ""
         self.original_raw = original_raw
