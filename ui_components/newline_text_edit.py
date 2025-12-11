@@ -16,6 +16,7 @@ class NewlineTextEdit(QTextEdit):
         self.newline_symbol_color = QColor(0, 122, 204, 100)
         self.reference_length = 0
         self.paste_limit_threshold = 10000
+        self.drawing_limit_threshold = 5000
 
     def canInsertFromMimeData(self, source: QMimeData) -> bool:
         return source.hasText()
@@ -56,6 +57,8 @@ class NewlineTextEdit(QTextEdit):
 
     def paintEvent(self, event):
         super().paintEvent(event)
+        if self.document().characterCount() > self.drawing_limit_threshold:
+            return
         painter = QPainter(self.viewport())
         symbol_font = QFont(self.font())
         symbol_font.setPointSize(int(self.font().pointSize() * 0.9))
@@ -71,7 +74,8 @@ class NewlineTextEdit(QTextEdit):
             cursor = QTextCursor(block)
             cursor.movePosition(QTextCursor.EndOfBlock)
             end_of_block_rect = self.cursorRect(cursor)
-            if end_of_block_rect.bottom() < event.rect().top():
+
+            if end_of_block_rect.bottom() < event.rect().top() or end_of_block_rect.top() > event.rect().bottom():
                 block = block.next()
                 continue
             x = end_of_block_rect.left() + 3
