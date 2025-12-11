@@ -5078,16 +5078,30 @@ class LexiSyncApp(QMainWindow):
 
             cleaned_translation = processed_text.strip()
             original_text_to_match = trigger_ts_obj.original_semantic
-            changed_ids = set()
+            trigger_current_translation = trigger_ts_obj.translation
 
+            changed_ids = set()
             single_translation_undo_changes = []
 
             for ts_obj in self.translatable_objects:
-                if ts_obj.original_semantic == original_text_to_match and \
-                        (not ts_obj.translation.strip() or ts_obj.id == trigger_ts_obj.id):
+                if ts_obj.original_semantic != original_text_to_match:
+                    continue
 
+                should_update = False
+
+                if ts_obj.id == trigger_ts_obj.id:
+                    should_update = True
+                elif not ts_obj.translation.strip():
+                    should_update = True
+                elif ts_obj.translation == trigger_current_translation:
+                    should_update = True
+
+                if should_update:
                     old_undo_val = ts_obj.get_translation_for_storage_and_tm()
                     new_undo_val = cleaned_translation.replace('\n', '\\n')
+
+                    if old_undo_val == new_undo_val:
+                        continue
 
                     change_data = {
                         'string_id': ts_obj.id,
@@ -5103,8 +5117,7 @@ class LexiSyncApp(QMainWindow):
 
                     ts_obj.set_translation_internal(cleaned_translation)
                     changed_ids.add(ts_obj.id)
-            if cleaned_translation:
-                pass
+
             if not is_batch_item and single_translation_undo_changes:
                 if len(single_translation_undo_changes) > 1:
                     self.add_to_undo_history('bulk_ai_translate', {'changes': single_translation_undo_changes})
