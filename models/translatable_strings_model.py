@@ -157,22 +157,40 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
             if left_obj.id == self.new_entry_id: return False
             if right_obj.id == self.new_entry_id: return True
         column = self.sortColumn()
-        if column == 0:
-            return left_index.row() < right_index.row()
-        elif column == 1 or column == 5:
+        if column == 1 or column == 5:
             def get_status_weight(ts_obj):
-                if ts_obj.is_ignored: return 5
-                if ts_obj.is_reviewed: return 4
-                if ts_obj.warnings and not ts_obj.is_warning_ignored: return 0
-                if not ts_obj.translation.strip(): return 1
-                if ts_obj.minor_warnings and not ts_obj.is_warning_ignored: return 2
-                return 3
+                # 优先级顺序 (数字越小，排序越靠前):
+                # 0: Error
+                # 1: Warning
+                # 2: Info
+                # 3: Untranslated
+                # 4: Translated
+                # 5: Reviewed
+                # 6: Ignored
+                if ts_obj.is_ignored:
+                    return 6
+                if ts_obj.is_reviewed:
+                    return 5
+
+                if not ts_obj.is_warning_ignored:
+                    if ts_obj.warnings:
+                        return 0  # Error
+                    if ts_obj.minor_warnings:
+                        return 1  # Warning
+                    if ts_obj.infos:
+                        return 2  # Info
+                if not ts_obj.translation.strip():
+                    return 3
+                return 4
+
             left_weight = get_status_weight(left_obj)
             right_weight = get_status_weight(right_obj)
             if left_weight != right_weight:
                 return left_weight < right_weight
             else:
                 return left_obj.line_num_in_file < right_obj.line_num_in_file
+        elif column == 0:
+            return left_index.row() < right_index.row()
         elif column == 2:
             return left_obj.original_semantic.lower() < right_obj.original_semantic.lower()
         elif column == 3:
@@ -181,7 +199,6 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
             return left_obj.comment.lower() < right_obj.comment.lower()
         elif column == 6:
             return left_obj.line_num_in_file < right_obj.line_num_in_file
-
         return False
 
     def invalidateFilter(self):

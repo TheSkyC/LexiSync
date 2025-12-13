@@ -35,7 +35,7 @@ DEFAULT_VALIDATION_RULES = {
     "whitespace": {"enabled": True, "level": "warning", "label": "Leading/Trailing Whitespace"},
     "double_space": {"enabled": True, "level": "warning", "label": "Double Spaces"},
     "capitalization": {"enabled": False, "level": "warning", "label": "Initial Capitalization"},
-    "repeated_word": {"enabled": True, "level": "warning", "label": "Repeated Words"},
+    "repeated_word": {"enabled": True, "level": "info", "label": "Repeated Words"},
     "newline_count": {"enabled": True, "level": "warning", "label": "Newline Count Mismatch"},
     "quotes": {"enabled": False, "level": "info", "label": "Mismatched Double Quotes"},
 }
