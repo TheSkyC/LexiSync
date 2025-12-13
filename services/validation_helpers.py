@@ -29,8 +29,9 @@ def _get_starting_cased_char(s):
 
 def check_leading_whitespace(source, target):
     """检查开头空格"""
-    src_has = source.lstrip() != source
-    tgt_has = target.lstrip() != target
+    whitespace_chars = ' \t'
+    src_has = source.lstrip(whitespace_chars) != source
+    tgt_has = target.lstrip(whitespace_chars) != target
 
     if src_has and not tgt_has:
         return "Missing leading whitespace."
@@ -41,8 +42,9 @@ def check_leading_whitespace(source, target):
 
 def check_trailing_whitespace(source, target):
     """检查结尾空格"""
-    src_has = source.rstrip() != source
-    tgt_has = target.rstrip() != target
+    whitespace_chars = ' \t'
+    src_has = source.rstrip(whitespace_chars) != source
+    tgt_has = target.rstrip(whitespace_chars) != target
 
     if src_has and not tgt_has:
         return "Missing trailing whitespace."
