@@ -38,6 +38,7 @@ DEFAULT_VALIDATION_RULES = {
     "repeated_word": {"enabled": True, "level": "info", "label": "Repeated Words"},
     "newline_count": {"enabled": True, "level": "warning", "label": "Newline Count Mismatch"},
     "quotes": {"enabled": False, "level": "info", "label": "Mismatched Double Quotes"},
+    "accelerator": {"enabled": True, "level": "error", "label": "Accelerator Mismatch"},
 }
 
 

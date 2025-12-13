@@ -73,6 +73,17 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     original = ts_obj.original_semantic
     translation = ts_obj.translation
 
+    # 加速键检查
+    accelerator_marker = config.get('accelerator_marker', '&')
+    if err := validation_helpers.check_accelerators(original, translation, accelerator_marker):
+        _report(ts_obj, config, "accelerator", WarningType.ACCELERATOR_MISMATCH, _(err))
+    # 剥离加速键的文本
+    original_clean = validation_helpers.strip_accelerators(original, accelerator_marker)
+    translation_clean = validation_helpers.strip_accelerators(translation, accelerator_marker)
+    print("Raw:   ",original, translation)
+    print("Clean: ",original_clean, translation_clean)
+
+
     # --- 1. 代码安全检查 ---
     if err := validation_helpers.check_printf(original, translation):
         _report(ts_obj, config, "printf", WarningType.PRINTF_MISMATCH, err)
@@ -106,38 +117,38 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
                         term=word, targets=" / ".join(required_targets))
                     _report(ts_obj, config, "glossary", WarningType.GLOSSARY_MISMATCH, msg)
 
-    # --- 3. 格式与标点 (全部使用 helpers) ---
-    if err := validation_helpers.check_brackets(original, translation):
+    # --- 3. 格式与标点 ---
+    if err := validation_helpers.check_brackets(original_clean, translation_clean):
         _report(ts_obj, config, "brackets", WarningType.BRACKET_MISMATCH, err)
 
     if err := validation_helpers.check_double_space(original, translation):
         _report(ts_obj, config, "double_space", WarningType.DOUBLE_SPACE, _(err))
 
     # 空格检查
-    if err := validation_helpers.check_leading_whitespace(original, translation):
+    if err := validation_helpers.check_leading_whitespace(original_clean, translation_clean):
         _report(ts_obj, config, "whitespace", WarningType.LEADING_WHITESPACE_MISMATCH, _(err))
 
-    if err := validation_helpers.check_trailing_whitespace(original, translation):
+    if err := validation_helpers.check_trailing_whitespace(original_clean, translation_clean):
         _report(ts_obj, config, "whitespace", WarningType.TRAILING_WHITESPACE_MISMATCH, _(err))
 
     # 标点检查
-    if err := validation_helpers.check_starting_punctuation(original, translation):
+    if err := validation_helpers.check_starting_punctuation(original_clean, translation_clean):
         _report(ts_obj, config, "punctuation", WarningType.PUNCTUATION_MISMATCH_START, _(err))
 
-    if err := validation_helpers.check_ending_punctuation(original, translation):
+    if err := validation_helpers.check_ending_punctuation(original_clean, translation_clean):
         _report(ts_obj, config, "punctuation", WarningType.PUNCTUATION_MISMATCH_END, _(err))
 
     # 大小写检查
-    if err := validation_helpers.check_capitalization(original, translation):
+    if err := validation_helpers.check_capitalization(original_clean, translation_clean):
         _report(ts_obj, config, "capitalization", WarningType.CAPITALIZATION_MISMATCH, _(err))
 
-    if err := validation_helpers.check_repeated_words(original, translation):
+    if err := validation_helpers.check_repeated_words(original_clean, translation_clean):
         _report(ts_obj, config, "repeated_word", WarningType.REPEATED_WORD, _(err))
 
-    if err := validation_helpers.check_newline_count(original, translation):
+    if err := validation_helpers.check_newline_count(original_clean, translation_clean):
         _report(ts_obj, config, "newline_count", WarningType.NEWLINE_COUNT_MISMATCH, _(err))
 
-    if err := validation_helpers.check_quotes(original, translation):
+    if err := validation_helpers.check_quotes(original_clean, translation_clean):
         _report(ts_obj, config, "quotes", WarningType.QUOTE_MISMATCH, _(err))
 
     # --- 4. 长度检查 ---

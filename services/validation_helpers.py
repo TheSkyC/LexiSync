@@ -141,6 +141,28 @@ def check_quotes(source, target):
     return None
 
 
+def strip_accelerators(text, marker):
+    if not marker or marker not in text:
+        return text
+    pattern_in_parens = re.compile(r'\s*\(' + re.escape(marker) + r'.\)')
+    cleaned_text = pattern_in_parens.sub('', text)
+    pattern_prefix = re.compile(r'(?<!' + re.escape(marker) + r')' + re.escape(marker) + r'(\w)')
+    cleaned_text = pattern_prefix.sub(r'\1', cleaned_text)
+    return cleaned_text
+
+
+def check_accelerators(source, target, marker):
+    """检查加速键标记符的数量是否一致，并正确处理上下文。"""
+    if not marker:
+        return None
+
+    pattern = re.compile(r'(?<!' + re.escape(marker) + r')' + re.escape(marker) + r'\w')
+    src_count = len(pattern.findall(source))
+    tgt_count = len(pattern.findall(target))
+    if src_count != tgt_count:
+        return f"Accelerator '{marker}' count mismatch (source: {src_count}, target: {tgt_count})."
+    return None
+
 def _compare_counts(src_list, tgt_list):
     src_counts = Counter(src_list)
     tgt_counts = Counter(tgt_list)

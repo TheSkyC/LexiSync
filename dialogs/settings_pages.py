@@ -245,6 +245,11 @@ class AppearanceSettingsPage(BaseSettingsPage):
         self.static_sort_checkbox.setChecked(self.app.config.get('use_static_sorting', False))
         form_layout.addRow(_("Sorting Mode:"), self.static_sort_checkbox)
 
+        self.accelerator_marker_edit = QLineEdit(self.app.config.get('accelerator_marker', '&'))
+        self.accelerator_marker_edit.setMaxLength(1)
+        self.accelerator_marker_edit.setToolTip(_("Enter a single character used for menu accelerators (e.g., &, _)."))
+        form_layout.addRow(_("Accelerator Marker:"), self.accelerator_marker_edit)
+
         self.font_button = QPushButton(_("Font Settings..."))
         self.font_button.clicked.connect(self.app.show_font_settings_dialog)
         form_layout.addRow(_("Fonts:"), self.font_button)
@@ -259,6 +264,7 @@ class AppearanceSettingsPage(BaseSettingsPage):
         is_checked = self.static_sort_checkbox.isChecked()
         if is_checked != self.app.use_static_sorting_var:
             self.app._toggle_static_sorting_mode(is_checked)
+        self.app.config['accelerator_marker'] = self.accelerator_marker_edit.text()
 
 
 class AISettingsPage(BaseSettingsPage):
@@ -483,7 +489,7 @@ class ValidationSettingsPage(BaseSettingsPage):
 
         # 分组定义
         groups = {
-            _("Code Safety"): ["printf", "python_brace", "html_tags", "url_email"],
+            _("Code Safety"): ["printf", "python_brace", "html_tags", "url_email", "accelerator"],
             _("Content Consistency"): ["numbers", "glossary", "fuzzy", "repeated_word"],
             _("Formatting & Punctuation"): ["punctuation", "brackets", "whitespace", "double_space", "capitalization", "newline_count", "quotes"]
         }

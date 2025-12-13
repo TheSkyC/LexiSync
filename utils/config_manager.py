@@ -39,6 +39,7 @@ def load_config():
     config_data.setdefault("show_unreviewed", False)
     config_data.setdefault("auto_save_tm", False)
     config_data.setdefault("auto_backup_tm_on_save", True)
+    config_data.setdefault("accelerator_marker", "&")
     config_data.setdefault("translation_propagation_mode", "smart")
 
     # Smart Paste Group
