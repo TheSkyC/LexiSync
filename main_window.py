@@ -2828,6 +2828,9 @@ class LexiSyncApp(QMainWindow):
         context_menu.addAction(
             QAction(_("Apply Memory to Selected Items"), self, triggered=self.cm_apply_tm_to_selected))
         context_menu.addAction(
+            QAction(_("Apply Translation to All Identical Sources"), self, triggered=self.cm_propagate_to_identical)
+        )
+        context_menu.addAction(
             QAction(_("Clear Selected Translations"), self, triggered=self.cm_clear_selected_translations))
         context_menu.addSeparator()
         context_menu.addAction(
@@ -3245,19 +3248,26 @@ class LexiSyncApp(QMainWindow):
 
         self._run_and_refresh_with_validation()
 
-    def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual", run_validation=True):
+    def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual",
+                                    force_propagation_mode=None):
         processed_translation = self.plugin_manager.run_hook(
             'process_string_for_save',
             new_translation_from_ui,
             ts_object=ts_obj,
             column='translation',
-            source = source
+            source=source
         )
-        if processed_translation == ts_obj.translation:
+
+        trigger_old_translation_internal = ts_obj.translation
+
+        # 如果新旧内容一样，则不执行任何操作
+        if processed_translation == trigger_old_translation_internal:
             return processed_translation, False
+
         old_translation_for_undo = ts_obj.get_translation_for_storage_and_tm()
         ids_to_update = {ts_obj.id}
         all_changes_for_undo_list = []
+
         ts_obj.set_translation_internal(processed_translation)
         self.plugin_manager.run_hook(
             'on_string_saved',
@@ -3272,6 +3282,8 @@ class LexiSyncApp(QMainWindow):
             'old_value': old_translation_for_undo, 'new_value': new_translation_for_tm_storage
         }
         all_changes_for_undo_list.append(primary_change_data)
+
+        # 更新 TM
         if new_translation_from_ui.strip():
             db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
             source_lang = self.source_language
@@ -3283,24 +3295,41 @@ class LexiSyncApp(QMainWindow):
                     ts_obj.get_translation_for_storage_and_tm(),
                     source_lang, target_lang
                 )
-        for other_ts_obj in self.translatable_objects:
-            if other_ts_obj.id != ts_obj.id and \
-                    other_ts_obj.original_semantic == ts_obj.original_semantic and \
-                    other_ts_obj.translation != new_translation_from_ui:
-                old_other_translation_for_undo = other_ts_obj.get_translation_for_storage_and_tm()
-                other_ts_obj.set_translation_internal(new_translation_from_ui)
-                self.plugin_manager.run_hook(
-                    'on_string_saved',
-                    ts_object=other_ts_obj,
-                    column='translation',
-                    new_value=new_translation_from_ui,
-                    old_value=old_other_translation_for_undo.replace("\\n", "\n")
-                )
-                all_changes_for_undo_list.append({
-                    'string_id': other_ts_obj.id, 'field': 'translation',
-                    'old_value': old_other_translation_for_undo, 'new_value': new_translation_for_tm_storage
-                })
-                ids_to_update.add(other_ts_obj.id)
+        propagation_mode = force_propagation_mode if force_propagation_mode is not None else self.config.get(
+            'translation_propagation_mode', 'smart')
+
+        if propagation_mode != 'single':
+            for other_ts_obj in self.translatable_objects:
+                if other_ts_obj.id == ts_obj.id:
+                    continue
+                if other_ts_obj.original_semantic != ts_obj.original_semantic:
+                    continue
+
+                should_update = False
+                if propagation_mode == 'always':
+                    should_update = True
+                elif propagation_mode == 'fill_blanks':
+                    should_update = not other_ts_obj.translation.strip()
+                elif propagation_mode == 'smart':
+                    should_update = (not other_ts_obj.translation.strip() or
+                                     other_ts_obj.translation == trigger_old_translation_internal)
+
+                if should_update and other_ts_obj.translation != processed_translation:
+                    old_other_translation_for_undo = other_ts_obj.get_translation_for_storage_and_tm()
+                    other_ts_obj.set_translation_internal(processed_translation)
+                    self.plugin_manager.run_hook(
+                        'on_string_saved',
+                        ts_object=other_ts_obj,
+                        column='translation',
+                        new_value=processed_translation,
+                        old_value=old_other_translation_for_undo.replace("\\n", "\n")
+                    )
+                    all_changes_for_undo_list.append({
+                        'string_id': other_ts_obj.id, 'field': 'translation',
+                        'old_value': old_other_translation_for_undo, 'new_value': new_translation_for_tm_storage
+                    })
+                    ids_to_update.add(other_ts_obj.id)
+
         undo_action_type = 'bulk_change' if len(all_changes_for_undo_list) > 1 else 'single_change'
         undo_data_payload = {'changes': all_changes_for_undo_list} if len(
             all_changes_for_undo_list) > 1 else primary_change_data
@@ -5079,22 +5108,28 @@ class LexiSyncApp(QMainWindow):
             cleaned_translation = processed_text.strip()
             original_text_to_match = trigger_ts_obj.original_semantic
             trigger_current_translation = trigger_ts_obj.translation
-
             changed_ids = set()
             single_translation_undo_changes = []
+
+            propagation_mode = self.config.get('translation_propagation_mode', 'smart')
 
             for ts_obj in self.translatable_objects:
                 if ts_obj.original_semantic != original_text_to_match:
                     continue
 
                 should_update = False
-
-                if ts_obj.id == trigger_ts_obj.id:
+                if propagation_mode == 'single':
+                    # 在AI场景下，'single'模式只更新触发的那一个
+                    if ts_obj.id == trigger_ts_obj.id:
+                        should_update = True
+                elif propagation_mode == 'always':
                     should_update = True
-                elif not ts_obj.translation.strip():
-                    should_update = True
-                elif ts_obj.translation == trigger_current_translation:
-                    should_update = True
+                elif propagation_mode == 'fill_blanks':
+                    should_update = not ts_obj.translation.strip()
+                elif propagation_mode == 'smart':
+                    should_update = (ts_obj.id == trigger_ts_obj.id or
+                                     not ts_obj.translation.strip() or
+                                     ts_obj.translation == trigger_current_translation)
 
                 if should_update:
                     old_undo_val = ts_obj.get_translation_for_storage_and_tm()
@@ -5109,7 +5144,6 @@ class LexiSyncApp(QMainWindow):
                         'old_value': old_undo_val,
                         'new_value': new_undo_val
                     }
-
                     if is_batch_item:
                         self.ai_batch_successful_translations_for_undo.append(change_data)
                     else:
@@ -5387,6 +5421,20 @@ class LexiSyncApp(QMainWindow):
         elif selected_objs:
             QMessageBox.information(self, _("Info"),
                                     _("No matching TM entries or no changes needed for selected items."))
+
+    def cm_propagate_to_identical(self):
+        selected_objs = self._get_selected_ts_objects_from_sheet()
+        if not selected_objs:
+            self.update_statusbar(_("No item selected."))
+            return
+        trigger_obj = selected_objs[0]
+        new_translation = trigger_obj.translation
+        self._apply_translation_to_model(
+            trigger_obj,
+            new_translation,
+            source="manual_propagate",
+            force_propagation_mode='always'
+        )
 
     def cm_clear_selected_translations(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()

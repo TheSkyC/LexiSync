@@ -119,6 +119,23 @@ class GeneralSettingsPage(BaseSettingsPage):
         auto_save_layout.addStretch()
         main_form_layout.addRow(_("Auto-save Interval:"), auto_save_layout)
 
+        self.propagation_combo = QComboBox()
+        self.propagation_map = {
+            'smart': _("Smart (Update empty or identical translations)"),
+            'fill_blanks': _("Fill Blanks Only (Update empty translations)"),
+            'always': _("Always (Update all identical source strings)"),
+            'single': _("Single (Update only the selected item)")
+        }
+        for key, text in self.propagation_map.items():
+            self.propagation_combo.addItem(text, key)
+
+        current_mode = self.app.config.get('translation_propagation_mode', 'smart')
+        index = self.propagation_combo.findData(current_mode)
+        if index != -1:
+            self.propagation_combo.setCurrentIndex(index)
+
+        main_form_layout.addRow(_("Translation Propagation:"), self.propagation_combo)
+
         self.page_layout.addLayout(main_form_layout)
 
         # Project Settings Group
@@ -194,6 +211,7 @@ class GeneralSettingsPage(BaseSettingsPage):
             self.current_lang_on_open = new_lang_code
             lang_changed = True
 
+        self.app.config['translation_propagation_mode'] = self.propagation_combo.currentData()
         self.app.auto_save_interval_sec = self.auto_save_spinbox.value()
         self.app.config['auto_save_interval_sec'] = self.app.auto_save_interval_sec
         self.app.setup_auto_save_timer()
