@@ -131,6 +131,15 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     if err := validation_helpers.check_capitalization(original, translation):
         _report(ts_obj, config, "capitalization", WarningType.CAPITALIZATION_MISMATCH, _(err))
 
+    if err := validation_helpers.check_repeated_words(original, translation):
+        _report(ts_obj, config, "repeated_word", WarningType.REPEATED_WORD, _(err))
+
+    if err := validation_helpers.check_newline_count(original, translation):
+        _report(ts_obj, config, "newline_count", WarningType.NEWLINE_COUNT_MISMATCH, _(err))
+
+    if err := validation_helpers.check_quotes(original, translation):
+        _report(ts_obj, config, "quotes", WarningType.QUOTE_MISMATCH, _(err))
+
     # --- 4. 长度检查 ---
     if config.get('check_length', True):
         # 逻辑条件：长度大于4 且 内容不同

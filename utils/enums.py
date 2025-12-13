@@ -16,13 +16,15 @@ class WarningType(Enum):
     # --- 格式与结构 ---
     # 包含大小写、空格、换行、标点符号及括号的成对情况
     CAPITALIZATION_MISMATCH = auto()  # 首字母大小写不匹配
+    REPEATED_WORD = auto() # 有重复文本
     LEADING_WHITESPACE_MISMATCH = auto()  # 前导空格不匹配
     TRAILING_WHITESPACE_MISMATCH = auto()  # 后导空格不匹配
     DOUBLE_SPACE = auto()  # 意外的双空格
-    LINE_COUNT_MISMATCH = auto()  # 换行符数量不匹配
+    NEWLINE_COUNT_MISMATCH = auto() # 换行符数量不匹配
     PUNCTUATION_MISMATCH_START = auto()  # 开头标点不匹配
     PUNCTUATION_MISMATCH_END = auto()  # 结尾标点不匹配
     BRACKET_MISMATCH = auto()  # 括号不成对
+    QUOTE_MISMATCH = auto() # 双引号不成对
 
     # --- 长度相关 ---
     LENGTH_DEVIATION_MINOR = auto()  # 译文长度与原文差异略大
@@ -51,7 +53,7 @@ class WarningType(Enum):
             return _("Leading Whitespace Mismatch")
         if self == WarningType.TRAILING_WHITESPACE_MISMATCH:
             return _("Trailing Whitespace Mismatch")
-        if self == WarningType.LINE_COUNT_MISMATCH:
+        if self == WarningType.NEWLINE_COUNT_MISMATCH:
             return _("Line Count Mismatch")
         if self == WarningType.PUNCTUATION_MISMATCH_START:
             return _("Starting Punctuation Mismatch")

@@ -484,8 +484,8 @@ class ValidationSettingsPage(BaseSettingsPage):
         # 分组定义
         groups = {
             _("Code Safety"): ["printf", "python_brace", "html_tags", "url_email"],
-            _("Content Consistency"): ["numbers", "glossary", "fuzzy"],
-            _("Formatting & Punctuation"): ["punctuation", "brackets", "whitespace", "double_space", "capitalization"]
+            _("Content Consistency"): ["numbers", "glossary", "fuzzy", "repeated_word"],
+            _("Formatting & Punctuation"): ["punctuation", "brackets", "whitespace", "double_space", "capitalization", "newline_count", "quotes"]
         }
 
         for group_name, keys in groups.items():

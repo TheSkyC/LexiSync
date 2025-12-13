@@ -11,7 +11,8 @@ ALL_PUNC_VALUES = set(PUNCTUATION_MAP.values())
 # --- 正则表达式 ---
 RE_PRINTF = re.compile(r'%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[diouxXeEfFgGcrs%]')
 RE_PYTHON_BRACE = re.compile(r'\{([_a-zA-Z0-9\s\.\:\[\]]*)\}')
-RE_URL = re.compile(r'https?://[^\s]+|www\.[^\s]+')
+RE_REPEATED_WORD = re.compile(r'\b(\w+)\s+\1\b', re.IGNORECASE)
+RE_URL = re.compile(r'(?:ht|f)tps?://[^\s]+|www\.[^\s]+|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/[^\s]*')
 RE_EMAIL = re.compile(r'[\w\.-]+@[\w\.-]+')
 RE_NUMBER = re.compile(r'\d+(?:\.\d+)?')
 
@@ -114,6 +115,30 @@ def check_capitalization(source, target):
     return None
 
 
+def check_repeated_words(source, target):
+    """检查译文中是否有重复的单词，如 'the the'"""
+    if RE_REPEATED_WORD.search(target):
+        match = RE_REPEATED_WORD.search(target)
+        return f"Repeated word: '{match.group(1)}'"
+    return None
+
+
+def check_newline_count(source, target):
+    """检查换行符数量是否一致"""
+    src_count = source.count('\n')
+    tgt_count = target.count('\n')
+    if src_count != tgt_count:
+        return f"Newline count mismatch (source: {src_count}, target: {tgt_count})."
+    return None
+
+
+def check_quotes(source, target):
+    """检查双引号数量是否匹配"""
+    if source.count('"') != target.count('"'):
+        return "Mismatched double quotes."
+    return None
+
+
 def _compare_counts(src_list, tgt_list):
     src_counts = Counter(src_list)
     tgt_counts = Counter(tgt_list)
@@ -150,17 +175,42 @@ def check_python_brace(source, target):
 
 
 def check_urls_emails(source, target):
-    # URL
-    src_urls = RE_URL.findall(source)
-    tgt_urls = RE_URL.findall(target)
-    missing, _ = _compare_counts(src_urls, tgt_urls)
-    if missing: return f"URL mismatch: {', '.join(missing)}"
-    # Email
-    src_emails = RE_EMAIL.findall(source)
-    tgt_emails = RE_EMAIL.findall(target)
-    missing_e, _ = _compare_counts(src_emails, tgt_emails)
-    if missing_e: return f"Email mismatch: {', '.join(missing_e)}"
-    return None
+    """检查 URL 和 Email 是否匹配"""
+    errors = []
+
+    # --- URL 检查 ---
+    src_urls = set(RE_URL.findall(source))
+    tgt_urls = set(RE_URL.findall(target))
+
+    if src_urls != tgt_urls:
+        missing_urls = src_urls - tgt_urls
+        extra_urls = tgt_urls - src_urls
+
+        error_parts = []
+        if missing_urls:
+            error_parts.append(f"Missing: {', '.join(missing_urls)}")
+        if extra_urls:
+            error_parts.append(f"Extra: {', '.join(extra_urls)}")
+
+        errors.append(f"URL mismatch ({' | '.join(error_parts)})")
+
+    # --- Email 检查 ---
+    src_emails = set(RE_EMAIL.findall(source))
+    tgt_emails = set(RE_EMAIL.findall(target))
+
+    if src_emails != tgt_emails:
+        missing_emails = src_emails - tgt_emails
+        extra_emails = tgt_emails - src_emails
+
+        error_parts = []
+        if missing_emails:
+            error_parts.append(f"Missing: {', '.join(missing_emails)}")
+        if extra_emails:
+            error_parts.append(f"Extra: {', '.join(extra_emails)}")
+
+        errors.append(f"Email mismatch ({' | '.join(error_parts)})")
+
+    return " | ".join(errors) if errors else None
 
 
 def check_numbers(source, target):
