@@ -88,6 +88,18 @@ class GeneralSettingsPage(BaseSettingsPage):
     def __init__(self, app_instance):
         super().__init__()
         self.app = app_instance
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        content_widget = QWidget()
+        content_widget.setObjectName("generalContent")
+        content_widget.setStyleSheet("#generalContent { background-color: #FFFFFF; }")
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(15)
+
+
         main_form_layout = QFormLayout()
         main_form_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
         main_form_layout.setLabelAlignment(Qt.AlignLeft)
@@ -136,7 +148,28 @@ class GeneralSettingsPage(BaseSettingsPage):
 
         main_form_layout.addRow(_("Translation Propagation:"), self.propagation_combo)
 
-        self.page_layout.addLayout(main_form_layout)
+        content_layout.addLayout(main_form_layout)
+
+        # Ctrl+Enter Behavior
+        self.next_behavior_combo = QComboBox()
+        self.next_behavior_map = {
+            'untranslated': _("Next Untranslated (Default)"),
+            'any': _("Next Item (Regardless of status)"),
+            'unreviewed': _("Next Unreviewed"),
+            'error': _("Next Error"),
+            'warning': _("Next Warning"),
+            'info': _("Next Info")
+        }
+        order = ['untranslated', 'any', 'unreviewed', 'error', 'warning', 'info']
+        for key in order:
+            self.next_behavior_combo.addItem(self.next_behavior_map[key], key)
+
+        current_behavior = self.app.config.get('apply_and_next_behavior', 'untranslated')
+        index = self.next_behavior_combo.findData(current_behavior)
+        if index != -1:
+            self.next_behavior_combo.setCurrentIndex(index)
+        main_form_layout.addRow(_("Ctrl+Enter Jump To:"), self.next_behavior_combo)
+        content_layout.addLayout(main_form_layout)
 
         # Project Settings Group
         project_group = QGroupBox(_("Project Settings"))
@@ -146,7 +179,7 @@ class GeneralSettingsPage(BaseSettingsPage):
             _("Improves performance for cross-file operations, but may increase initial loading time for large projects."))
         self.load_all_files_checkbox.setChecked(self.app.config.get('load_all_files_on_project_open', False))
         project_layout.addRow(self.load_all_files_checkbox)
-        self.page_layout.addWidget(project_group)
+        content_layout.addWidget(project_group)
 
         # On Save Options Group
         on_save_group = QGroupBox(_("On File Save"))
@@ -157,7 +190,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         self.compile_mo_checkbox.setChecked(self.app.config.get('auto_compile_mo_on_save', True))
         on_save_layout.addWidget(self.backup_tm_checkbox)
         on_save_layout.addWidget(self.compile_mo_checkbox)
-        self.page_layout.addWidget(on_save_group)
+        content_layout.addWidget(on_save_group)
 
         # Smart Paste Group
         paste_group = QGroupBox(_("Smart Paste"))
@@ -191,7 +224,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         paste_layout.addLayout(sub_options_layout)
         paste_layout.addSpacing(5)
         paste_layout.addWidget(self.paste_protection_checkbox)
-        self.page_layout.addWidget(paste_group)
+        content_layout.addWidget(paste_group)
 
         # Extraction Rules
         extraction_group = QGroupBox(_("Extraction"))
@@ -199,9 +232,12 @@ class GeneralSettingsPage(BaseSettingsPage):
         self.extraction_button = QPushButton(_("Manage Extraction Rules..."))
         self.extraction_button.clicked.connect(self.app.show_extraction_pattern_dialog)
         extraction_layout.addRow(self.extraction_button)
-        self.page_layout.addWidget(extraction_group)
+        content_layout.addWidget(extraction_group)
 
-        self.page_layout.addStretch(1)
+        content_layout.addStretch(1)
+        scroll_area.setWidget(content_widget)
+        self.page_layout.addWidget(scroll_area)
+
 
     def save_settings(self):
         lang_changed = False
@@ -221,7 +257,7 @@ class GeneralSettingsPage(BaseSettingsPage):
 
         self.app.auto_compile_mo_var = self.compile_mo_checkbox.isChecked()
         self.app.config['auto_compile_mo_on_save'] = self.app.auto_compile_mo_var
-
+        self.app.config['apply_and_next_behavior'] = self.next_behavior_combo.currentData()
         self.app.config['smart_paste_enabled'] = self.smart_paste_checkbox.isChecked()
         self.app.config['smart_paste_sync_whitespace'] = self.sync_whitespace_checkbox.isChecked()
         self.app.config['smart_paste_normalize_newlines'] = self.normalize_newlines_checkbox.isChecked()

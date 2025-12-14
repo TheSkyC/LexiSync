@@ -904,7 +904,7 @@ class LexiSyncApp(QMainWindow):
         global_actions = {
             'toggle_reviewed': self.cm_toggle_reviewed_status,
             'toggle_ignored': self.cm_toggle_ignored_status,
-            'apply_and_next': self.apply_and_select_next_untranslated,
+            'apply_and_next': self.apply_and_navigate_next,
             'refresh_sort': self.refresh_sort,
         }
 
@@ -4614,37 +4614,67 @@ class LexiSyncApp(QMainWindow):
         elif self.ai_batch_active_threads == 0 and self.ai_batch_completed_count >= self.ai_batch_total_items:
             self._finalize_batch_ai_translation()
 
-    def apply_and_select_next_untranslated(self):
-        if not self.current_selected_ts_id:
-            return
+    def _find_next_item_index(self, start_row, mode):
+        rowCount = self.proxy_model.rowCount()
+        ranges = [range(start_row, rowCount), range(0, start_row)]
 
-        self.apply_translation_from_button()
-        current_proxy_index = self.proxy_model.mapFromSource(
-            self.sheet_model.index_from_id(self.current_selected_ts_id))
-        if not current_proxy_index.isValid():
-            return
-
-        next_untranslated_id = None
-        start_row = current_proxy_index.row() + 1
-        for i in range(start_row, self.proxy_model.rowCount()):
-            index = self.proxy_model.index(i, 0)
-            ts_obj = self.proxy_model.data(index, Qt.UserRole)
-            if ts_obj and not ts_obj.translation.strip() and not ts_obj.is_ignored:
-                next_untranslated_id = ts_obj.id
-                break
-        if not next_untranslated_id:
-            for i in range(0, start_row - 1):
+        for r_range in ranges:
+            for i in r_range:
                 index = self.proxy_model.index(i, 0)
                 ts_obj = self.proxy_model.data(index, Qt.UserRole)
-                if ts_obj and not ts_obj.translation.strip() and not ts_obj.is_ignored:
-                    next_untranslated_id = ts_obj.id
-                    break
+                if not ts_obj: continue
 
-        if next_untranslated_id:
-            self.select_sheet_row_by_id(next_untranslated_id, see=True)
+                if ts_obj.is_ignored and not self.show_ignored_var:
+                    continue
+
+                match = False
+                if mode == 'any':
+                    match = True
+                elif mode == 'untranslated':
+                    match = not ts_obj.translation.strip()
+                elif mode == 'unreviewed':
+                    match = not ts_obj.is_reviewed
+                elif mode == 'error':
+                    match = bool(ts_obj.warnings and not ts_obj.is_warning_ignored)
+                elif mode == 'warning':
+                    match = bool(ts_obj.minor_warnings and not ts_obj.is_warning_ignored)
+                elif mode == 'info':
+                    match = bool(ts_obj.infos and not ts_obj.is_warning_ignored)
+
+                if match:
+                    return index
+        return QModelIndex()
+
+
+    def apply_and_navigate_next(self):
+        if not self.current_selected_ts_id:
+            return
+        self.apply_translation_from_button()
+        current_source_index = self.sheet_model.index_from_id(self.current_selected_ts_id)
+        current_proxy_index = self.proxy_model.mapFromSource(current_source_index)
+        if not current_proxy_index.isValid():
+            return
+        behavior_mode = self.config.get("apply_and_next_behavior", "untranslated")
+        next_index = self._find_next_item_index(current_proxy_index.row() + 1, behavior_mode)
+
+        if next_index.isValid():
+            self.table_view.selectionModel().setCurrentIndex(
+                next_index,
+                QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows
+            )
+            self.table_view.scrollTo(next_index, QAbstractItemView.PositionAtCenter)
             self.details_panel.translation_edit_text.setFocus()
         else:
-            self.update_statusbar(_("No more untranslated items."))
+            mode_names = {
+                'untranslated': _("untranslated"),
+                'error': _("error"),
+                'warning': _("warning"),
+                'info': _("info"),
+                'unreviewed': _("unreviewed"),
+                'any': _("available")
+            }
+            msg = _("No more {type} items found.").format(type=mode_names.get(behavior_mode, ""))
+            self.update_statusbar(msg)
 
     def _generate_ai_context_strings(self, current_ts_id_to_exclude):
         contexts = {
