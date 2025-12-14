@@ -212,13 +212,11 @@ def check_quotes(source, target, mode='flexible'):
     double_quote_variants = {'"', "“", "”", "『", "』", "«", "»", "„"}
 
     def get_quote_counts(text):
-        single_counts = {q: text.count(q) for q in single_quote_variants}
-        apostrophe_pattern = re.compile(r"(?<!')\b\w+(?:'\w+|s')(?![\w'])", re.IGNORECASE)
-        apostrophe_count = len(apostrophe_pattern.findall(text))
-        single_counts["'"] = max(0, single_counts["'"] - apostrophe_count)
-        total_single = sum(single_counts.values())
-        total_double = sum(text.count(q) for q in double_quote_variants)
-        return total_single, total_double
+        apostrophe_pattern = re.compile(r"(?<!['’])\b\w+(?:['’]\w+|s['’])(?![\w'’])", re.IGNORECASE)
+        text_without_apostrophes = apostrophe_pattern.sub('', text)
+        single_count = sum(text_without_apostrophes.count(q) for q in single_quote_variants)
+        double_count = sum(text_without_apostrophes.count(q) for q in double_quote_variants)
+        return single_count, double_count
 
     src_single_count, src_double_count = get_quote_counts(source)
     tgt_single_count, tgt_double_count = get_quote_counts(target)
