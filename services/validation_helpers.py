@@ -320,10 +320,32 @@ def check_double_space(source, target):
 
 
 def check_html_tags(source, target):
-    # 匹配 <tag> 或 </tag> 或 <tag />
-    tag_re = re.compile(r'</?[a-zA-Z0-9]+[^>]*>')
-    src_tags = [html.escape(t) for t in tag_re.findall(source)]
-    tgt_tags = [html.escape(t) for t in tag_re.findall(target)]
+    # 常见 HTML 标签
+    html_tags_whitelist = {
+        'a', 'abbr', 'acronym', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo',
+        'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col', 'colgroup', 'data',
+        'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset',
+        'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr',
+        'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map',
+        'mark', 'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param',
+        'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small',
+        'source', 'span', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template',
+        'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr'
+    }
+
+    # 匹配 <tag ...>
+    raw_tag_re = re.compile(r'</?([a-zA-Z0-9]+)[^>]*>')
+
+    def get_valid_tags(text):
+        valid_tags = []
+        for match in raw_tag_re.finditer(text):
+            tag_name = match.group(1).lower()
+            if tag_name in html_tags_whitelist:
+                valid_tags.append(html.escape(match.group(0)))
+        return valid_tags
+
+    src_tags = get_valid_tags(source)
+    tgt_tags = get_valid_tags(target)
 
     missing, extra = _compare_counts(src_tags, tgt_tags)
 
