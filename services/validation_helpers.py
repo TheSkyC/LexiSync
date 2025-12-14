@@ -238,6 +238,7 @@ def check_urls_emails(source, target):
 
 
 def check_numbers(source, target):
+    # 清理占位符
     src_clean = RE_PYTHON_BRACE.sub('', source)
     src_clean = RE_PRINTF.sub('', src_clean)
     tgt_clean = RE_PYTHON_BRACE.sub('', target)
@@ -245,9 +246,40 @@ def check_numbers(source, target):
 
     src_nums = RE_NUMBER.findall(src_clean)
     tgt_nums = RE_NUMBER.findall(tgt_clean)
-    missing, extra = _compare_counts(src_nums, tgt_nums)
+
+    if Counter(src_nums) == Counter(tgt_nums):
+        return None
+
+    ordinal_re = re.compile(r'(\d+)(st|nd|rd|th)\b', re.IGNORECASE)
+
+    src_ordinal_nums = {match.group(1) for match in ordinal_re.finditer(src_clean)}
+
+    src_nums_strict = [n for n in src_nums if n not in src_ordinal_nums]
+    tgt_nums_strict = list(tgt_nums)  # 创建副本
+
+    temp_src = list(src_nums_strict)
+    temp_tgt = list(tgt_nums_strict)
+
+    i = 0
+    while i < len(temp_src):
+        num = temp_src[i]
+        if num in temp_tgt:
+            temp_src.pop(i)
+            temp_tgt.remove(num)
+        else:
+            i += 1
+
+    missing = temp_src
+    extra = temp_tgt
+
     if missing or extra:
-        return f"Numbers mismatch. Missing: {', '.join(missing)} | Extra: {', '.join(extra)}"
+        error_parts = []
+        if missing:
+            error_parts.append(f"Missing: {', '.join(missing)}")
+        if extra:
+            error_parts.append(f"Extra: {', '.join(extra)}")
+        return f"Numbers mismatch ({' | '.join(error_parts)})"
+
     return None
 
 

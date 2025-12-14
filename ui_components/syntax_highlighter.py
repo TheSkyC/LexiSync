@@ -43,7 +43,6 @@ class TranslationHighlighter(QSyntaxHighlighter):
 
     def update_glossary(self, matches):
         self.glossary_matches = matches
-        logger.debug(f"Glossary data updated: {len(matches)} terms")
         self.rehighlight()
 
     def highlightBlock(self, text):

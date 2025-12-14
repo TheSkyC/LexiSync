@@ -80,9 +80,6 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     # 剥离加速键的文本
     original_clean = validation_helpers.strip_accelerators(original, accelerator_marker)
     translation_clean = validation_helpers.strip_accelerators(translation, accelerator_marker)
-    print("Raw:   ",original, translation)
-    print("Clean: ",original_clean, translation_clean)
-
 
     # --- 1. 代码安全检查 ---
     if err := validation_helpers.check_printf(original, translation):
