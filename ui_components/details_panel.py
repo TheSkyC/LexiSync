@@ -337,7 +337,7 @@ class DetailsPanel(QWidget):
         if active_msg:
             plain_text_msg = html.unescape(active_msg)
             self.warning_text_label.setText(plain_text_msg)
-            self.warning_text_label.setToolTip(active_msg)
+            self.warning_text_label.setToolTip("")
             if style_type == "error":
                 self.warning_banner.setStyleSheet("""
                     #warning_banner { background-color: #F8D7DA; border: 1px solid #F5C6CB; border-radius: 3px; margin-left: 10px; }
