@@ -417,26 +417,24 @@ def check_brackets(source, target):
         ('(', ')', '（', '）', 'Parentheses ()'),
         ('[', ']', '【', '】', 'Square Brackets []'),
         ('{', '}', None, None, 'Curly Braces {}'),
-        ('<', '>', '《', '》', 'Angle Brackets <>')
     ]
 
     # 使用全局正则移除 HTML 标签
-    source_no_tags = RE_HTML_TAG.sub('', source)
-    target_no_tags = RE_HTML_TAG.sub('', target)
+    s_plural_re = re.compile(r'\(s\)', re.IGNORECASE)
+    source_clean = s_plural_re.sub('', source)
+    target_clean = s_plural_re.sub('', target)
 
     errors = []
 
     for en_open, en_close, cn_open, cn_close, desc in bracket_groups:
-        # 如果是尖括号检查，使用无标签版字符串；其他括号使用原字符串
-        src_to_check = source_no_tags if en_open == '<' else source
-        tgt_to_check = target_no_tags if en_open == '<' else target
+
 
         # 1. 计算原文中的括号总数
-        src_open_count = src_to_check.count(en_open) + (src_to_check.count(cn_open) if cn_open else 0)
+        src_open_count = source_clean.count(en_open) + (source_clean.count(cn_open) if cn_open else 0)
 
         # 2. 计算译文中的括号总数
-        tgt_open_count = tgt_to_check.count(en_open) + (tgt_to_check.count(cn_open) if cn_open else 0)
-        tgt_close_count = tgt_to_check.count(en_close) + (tgt_to_check.count(cn_close) if cn_close else 0)
+        tgt_open_count = target_clean.count(en_open) + (target_clean.count(cn_open) if cn_open else 0)
+        tgt_close_count = target_clean.count(en_close) + (target_clean.count(cn_close) if cn_close else 0)
 
         # 3. 检查译文自身是否配对
         if tgt_open_count != tgt_close_count:
