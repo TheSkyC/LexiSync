@@ -88,22 +88,17 @@ def check_ending_punctuation(source, target):
     temp_s = s_strip
     if temp_s.lower().endswith('(s)'):
         temp_s = temp_s[:-3].rstrip()
-    if not temp_s:
-        temp_s = s_strip
+        if not temp_s:
+            temp_s = s_strip
 
     ellipses = ["...", "…", "……", "。。。"]
-
     src_has_ellipsis = any(temp_s.endswith(e) for e in ellipses)
     tgt_has_ellipsis = any(t_strip.endswith(e) for e in ellipses)
 
     if src_has_ellipsis and tgt_has_ellipsis:
         return None
-
-    if src_has_ellipsis and not tgt_has_ellipsis:
-        return "Missing ending ellipsis."
-
-    if not src_has_ellipsis and tgt_has_ellipsis:
-        return "Extra ending ellipsis."
+    if src_has_ellipsis != tgt_has_ellipsis:
+        return "Missing ending ellipsis." if src_has_ellipsis else "Extra ending ellipsis."
 
     s_char = temp_s[-1]
     t_char = t_strip[-1]
@@ -112,12 +107,29 @@ def check_ending_punctuation(source, target):
     t_is_punc = t_char in ALL_PUNC_KEYS or t_char in ALL_PUNC_VALUES
 
     if s_is_punc != t_is_punc:
-        return "Ending punctuation presence differs."
+        if not s_is_punc and t_is_punc:
+            allowed_closing_brackets = {')', ']', '}', '）', '】', '>', '》'}
+            if t_char in allowed_closing_brackets:
+                opening_brackets = {
+                    '(': ')', '[': ']', '{': '}',
+                    '（': '）', '【': '】', '<': '>', '《': '》'
+                }
+                reverse_map = {v: k for k, v in opening_brackets.items()}
+                expected_open = reverse_map.get(t_char)
+
+                if expected_open and expected_open in t_strip:
+                    return None
+
+            return "Extra ending punctuation."
+
+        if s_is_punc and not t_is_punc:
+            return "Missing ending punctuation."
 
     if s_is_punc:
         expected_t = PUNCTUATION_MAP.get(s_char, s_char)
         if t_char != expected_t and t_char != s_char:
             return f"Ending punctuation differs: '{s_char}' vs '{t_char}'."
+
     return None
 
 
