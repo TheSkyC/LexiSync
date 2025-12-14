@@ -73,39 +73,42 @@ def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=No
     user_comment_lines = []
     po_meta_comment_lines = []
 
-    for line in all_comment_lines:
-        stripped_line = line.strip()
-        if stripped_line.startswith('#.'):
-            content = stripped_line[2:].strip()
-            if content.startswith('LexiSync:'):
-                if 'reviewed' in content:
+    # 1. 处理提取注释 (Extracted Comments, #.)
+    # polib 会去掉 '#.' 前缀，我们需要补回来，以便在 UI 中显示并在保存时识别
+    if entry.tcomment:
+        for line in entry.tcomment.splitlines():
+            po_meta_comment_lines.append(f"#. {line}")
+
+    # 2. 处理翻译注释 (Translator Comments, #)
+    if entry.comment:
+        for line in entry.comment.splitlines():
+            stripped_line = line.strip()
+            # 识别 LexiSync 的特殊标记
+            if stripped_line.startswith('LexiSync:'):
+                if 'reviewed' in stripped_line:
                     ts.is_reviewed = True
-                if 'ignored' in content:
+                if 'ignored' in stripped_line:
                     ts.is_ignored = True
             else:
-                user_comment_lines.append(content)
-        elif stripped_line.startswith('#'):
-            po_meta_comment_lines.append(stripped_line)
-        else:
-            user_comment_lines.append(line)
+                user_comment_lines.append(line)
 
+    # 3. 处理引用 (References, #:)
     if hasattr(entry, 'occurrences') and entry.occurrences:
-        po_meta_comment_lines.append(
-            f"#: {' '.join(f'{p}:{l}' for p, l in entry.occurrences if p is not None and l is not None)}")
+        # 格式化为 #: file:line
+        refs = [f"{p}:{l}" if l else p for p, l in entry.occurrences]
+        po_meta_comment_lines.append(f"#: {' '.join(refs)}")
 
+    # 4. 处理标志 (Flags, #,)
     flags = getattr(entry, 'flags', [])
     if flags:
         po_meta_comment_lines.append(f"#, {', '.join(flags)}")
 
-    previous_msgid = getattr(entry, 'previous_msgid', None)
-    if previous_msgid:
-        previous_entries = previous_msgid if isinstance(previous_msgid, list) else [previous_msgid]
-        for p_msgid in previous_entries:
-            po_meta_comment_lines.append(f"#| msgid \"{p_msgid}\"")
-
+    # 5. 处理旧翻译 (Previous, #|) - polib 不直接支持 previous_msgid 的读写，通常作为注释存在
+    # 如果 polib 版本支持 previous_msgid/msgctxt，这里可以处理，否则可能在 entry.comment 中
+    if hasattr(entry, 'previous_msgid') and entry.previous_msgid:
+        po_meta_comment_lines.append(f"#| msgid \"{entry.previous_msgid}\"")
     ts.comment = "\n".join(user_comment_lines)
-    ts.po_comment = "\n".join(sorted(list(set(po_meta_comment_lines))))
-
+    ts.po_comment = "\n".join(po_meta_comment_lines)
     if 'fuzzy' in flags:
         ts.is_fuzzy = True
 
@@ -218,15 +221,6 @@ def load_from_po(filepath):
 
 def save_to_po(filepath, translatable_objects, metadata=None, original_file_name="source_code", app_instance=None):
     po_file = polib.POFile(wrapwidth=78)
-
-    if metadata:
-        po_file.metadata = metadata
-    if app_instance and app_instance.target_language:
-        po_file.metadata['Language'] = app_instance.target_language
-    po_file.metadata['PO-Revision-Date'] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M%z")
-    po_file.metadata['Content-Type'] = 'text/plain; charset=utf-8'
-    po_file.metadata['Content-Transfer-Encoding'] = '8bit'
-
     for ts_obj in translatable_objects:
         if not ts_obj.original_semantic or ts_obj.id == "##NEW_ENTRY##":
             continue
@@ -242,16 +236,15 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         flags_line = next((line for line in po_comment_lines if line.strip().startswith('#,')), None)
         if flags_line:
             flags_str = flags_line.replace('#,', '').strip()
-            entry_flags.extend([f.strip() for f in flags_str.split(',') if f.strip()])
+            existing_flags = [f.strip() for f in flags_str.split(',') if f.strip()]
+            for f in existing_flags:
+                if f not in entry_flags and f != 'fuzzy':
+                    entry_flags.append(f)
 
         entry_flags = sorted(list(set(entry_flags)))
-        if ts_obj.is_reviewed or ts_obj.is_warning_ignored:
-            if 'fuzzy' in entry_flags:
-                entry_flags.remove('fuzzy')
 
         entry_occurrences = []
         location_lines = [line for line in po_comment_lines if line.strip().startswith('#:')]
-
         for line in location_lines:
             content = line.replace('#:', '').strip()
             parts = content.split()
@@ -262,30 +255,33 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
                         entry_occurrences.append((fpath, lineno))
                     except ValueError:
                         pass
-
-        if not entry_occurrences and ts_obj.line_num_in_file > 0:
+        if not entry_occurrences and ts_obj.line_num_in_file > 0 and ts_obj.string_type != "PO Import":
             entry_occurrences = [(original_file_name, str(ts_obj.line_num_in_file))]
 
-        # --- Comments Handling ---
+        # 提取 extracted comments (#.)
+        extracted_comments = []
+        for line in po_comment_lines:
+            if line.strip().startswith('#.'):
+                clean_line = line.strip()[2:].strip()
+                extracted_comments.append(clean_line)
+
+        tcomment_str = "\n".join(extracted_comments) if extracted_comments else None
+
+        # 构造 translator comments (#)
         user_comment_lines = ts_obj.comment.splitlines()
         if ts_obj.is_reviewed:
             user_comment_lines.append("#LexiSync:reviewed")
         if ts_obj.is_ignored:
             user_comment_lines.append("#LexiSync:ignored")
-        translator_comment = "\n".join(user_comment_lines)
 
-        developer_comment_lines = [
-            line for line in po_comment_lines
-            if not line.strip().startswith(('#:', '#,', '#|'))
-        ]
-        developer_comment = "\n".join(developer_comment_lines)
+        translator_comment = "\n".join(user_comment_lines)
 
         entry = polib.POEntry(
             msgid=ts_obj.original_semantic,
             msgstr=ts_obj.translation,
             msgctxt=ts_obj.context if ts_obj.context else None,
-            tcomment=translator_comment,
-            comment=developer_comment,
+            tcomment=tcomment_str,
+            comment=translator_comment,
             occurrences=entry_occurrences,
             flags=entry_flags
         )
