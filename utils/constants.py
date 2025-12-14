@@ -25,7 +25,22 @@ DEFAULT_VALIDATION_RULES = {
     "url_email": {"enabled": True, "level": "warning", "label": "URL & Email"},
 
     # --- 内容一致性 ---
-    "numbers": {"enabled": True, "level": "error", "label": "Numbers Consistency"},
+    "numbers": {
+        "enabled": True,
+        "level": "error",
+        "label": "Numbers Consistency",
+        "modes": {
+            "strict": {
+                "name": "Strict",
+                "description": "Arabic numerals must match exactly (e.g. '1' must be '1')."
+            },
+            "loose": {
+                "name": "Loose",
+                "description": "Allows numerals to be translated into words (e.g. '1' -> 'One', '一', 'First')."
+            }
+        },
+        "default_mode": "loose"
+    },
     "glossary": {"enabled": True, "level": "warning", "label": "Glossary Terms"},
     "fuzzy": {"enabled": True, "level": "warning", "label": "Fuzzy State"},
 

@@ -28,7 +28,30 @@ HTML_TAGS_WHITELIST = {
     'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr'
 }
 RE_HTML_TAG = re.compile(r'</?(' + '|'.join(HTML_TAGS_WHITELIST) + r')\b[^>]*>', re.IGNORECASE)
-
+NUMBER_WORD_MAP = {
+    '0': {
+        'zero', 'null', 'cero', 'zéro', 'ноль', '零', '〇', 'rei', 'zero', '영', '공'},
+    '1': {
+        'one', 'first', '1st', 'eins', 'uno', 'un', 'une', 'um', 'один', '一', '壹', '①', '❶', 'ichi', 'hana', 'il'},
+    '2': {
+        'two', 'second', '2nd', 'zwei', 'dos', 'deux', 'dois', 'два', '二', '贰', '②', '❷', '两', 'ni', 'dul', 'i'},
+    '3': {
+        'three', 'third', '3rd', 'drei', 'tres', 'trois', 'três', 'три', '三', '叁', '③', '❸', 'san', 'set', 'sam'},
+    '4': {
+        'four', 'fourth', '4th', 'vier', 'cuatro', 'quatre', 'quatro', 'четыре', '四', '肆', '④', '❹', 'shi', 'yon', 'net', 'sa'},
+    '5': {
+        'five', 'fifth', '5th', 'fünf', 'cinco', 'cinq', 'пять', '五', '伍', '⑤', '❺', 'go', 'daseot', 'o'},
+    '6': {
+        'six', 'sixth', '6th', 'sechs', 'seis', 'six', 'шесть', '六', '陆', '⑥', '❻', 'roku', 'yeoseot', 'yuk'},
+    '7': {
+        'seven', 'seventh', '7th', 'sieben', 'siete', 'sept', 'sete', 'семь', '七', '柒', '⑦', '❼', 'shichi', 'nana', 'ilgop', 'chil'},
+    '8': {
+        'eight', 'eighth', '8th', 'acht', 'ocho', 'huit', 'oito', 'восемь', '八', '捌', '⑧', '❽', 'hachi', 'yeodeol', 'pal'},
+    '9': {
+        'nine', 'ninth', '9th', 'neun', 'nueve', 'neuf', 'nove', 'девять', '九', '玖', '⑨', '❾', 'kyu', 'ku', 'ahop', 'gu'},
+    '10': {
+        'ten', 'tenth', '10th', 'zehn', 'diez', 'dix', 'dez', 'десять', '十', '拾', '⑩', '❿', 'ju', 'yeol', 'sip'}
+}
 
 def _has_case(char):
     return char.lower() != char.upper()
@@ -298,30 +321,49 @@ def check_urls_emails(source, target):
     return " | ".join(errors) if errors else None
 
 
-def check_numbers(source, target):
-    # 清理占位符
+def check_numbers(source, target, mode='loose'):
+    # 1. 预处理：清理干扰项
     src_clean = RE_PYTHON_BRACE.sub('', source)
     src_clean = RE_PRINTF.sub('', src_clean)
     tgt_clean = RE_PYTHON_BRACE.sub('', target)
     tgt_clean = RE_PRINTF.sub('', tgt_clean)
 
+    # 2. 提取阿拉伯数字
+    # 即使在严格模式下，也先处理一下英文序数词后缀(1st->1)，防止误报
+    ordinal_re = re.compile(r'(\d+)(st|nd|rd|th)\b', re.IGNORECASE)
+    src_clean = ordinal_re.sub(r'\1', src_clean)
+    tgt_clean = ordinal_re.sub(r'\1', tgt_clean)
+
     src_nums = RE_NUMBER.findall(src_clean)
     tgt_nums = RE_NUMBER.findall(tgt_clean)
 
-    if Counter(src_nums) == Counter(tgt_nums):
-        return None
-    ordinal_re = re.compile(r'(\d+)(st|nd|rd|th)\b', re.IGNORECASE)
-    src_ordinal_nums = {match.group(1) for match in ordinal_re.finditer(src_clean)}
-    src_nums_filtered = [n for n in src_nums if n not in src_ordinal_nums]
-    src_counter = Counter(src_nums_filtered)
+    # 3. 计数比较
+    src_counter = Counter(src_nums)
     tgt_counter = Counter(tgt_nums)
+
+    # 如果完全匹配，直接通过
+    if src_counter == tgt_counter:
+        return None
+
+    # 计算差异
     missing = []
     extra = []
+
     all_nums = set(src_counter.keys()) | set(tgt_counter.keys())
     for num in all_nums:
         diff = src_counter[num] - tgt_counter[num]
         if diff > 0:
-            missing.extend([num] * diff)
+            is_exempt = False
+            if mode == 'loose' and num in NUMBER_WORD_MAP:
+                possible_words = NUMBER_WORD_MAP[num]
+                for word in possible_words:
+                    if word.lower() in target.lower():
+                        is_exempt = True
+                        break
+
+            if not is_exempt:
+                missing.extend([num] * diff)
+
         elif diff < 0:
             extra.extend([num] * abs(diff))
 

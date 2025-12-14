@@ -102,6 +102,16 @@ def load_config():
         for key, default_val in DEFAULT_VALIDATION_RULES.items():
             if key not in config_data["validation_rules"]:
                 config_data["validation_rules"][key] = default_val
+            else:
+                user_rule = config_data["validation_rules"][key]
+                user_rule.setdefault("label", default_val.get("label", key))
+                user_rule.setdefault("level", default_val.get("level", "warning"))
+                user_rule.setdefault("enabled", default_val.get("enabled", True))
+
+                if 'modes' in default_val:
+                    user_rule['modes'] = default_val['modes']
+                    user_rule['default_mode'] = default_val['default_mode']
+                    user_rule.setdefault("mode", default_val.get("default_mode"))
 
     config_data.setdefault("check_length", True)
     config_data.setdefault("length_threshold_major", 2.5)

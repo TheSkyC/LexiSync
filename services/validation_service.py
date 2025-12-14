@@ -72,6 +72,7 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
 
     original = ts_obj.original_semantic
     translation = ts_obj.translation
+    rules = config.get("validation_rules", {})
 
     # 加速键检查
     accelerator_marker = config.get('accelerator_marker', '&')
@@ -95,7 +96,8 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
         _report(ts_obj, config, "url_email", WarningType.URL_MISMATCH, err)
 
     # --- 2. 内容一致性 ---
-    if err := validation_helpers.check_numbers(original, translation):
+    numbers_mode = rules.get("numbers", {}).get("mode", "loose")
+    if err := validation_helpers.check_numbers(original, translation, mode=numbers_mode):
         _report(ts_obj, config, "numbers", WarningType.NUMBER_MISMATCH, err)
 
     if ts_obj.is_fuzzy:

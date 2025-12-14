@@ -442,11 +442,27 @@ class ValidationRuleWidget(QWidget):
         self.checkbox.setChecked(config_data.get("enabled", True))
         self.checkbox.stateChanged.connect(self.update_state)
 
-        # Combobox
+        # Modes
+        self.mode_combo = QComboBox()
+        self.mode_combo.setFixedWidth(100)
+        available_modes = self.config_data.get("modes")
+        if available_modes and len(available_modes) > 1:
+            tooltip_parts = [_("Available Modes:")]
+            for mode_key, mode_info in available_modes.items():
+                display_name = _(mode_info.get("name", mode_key))
+                description = _(mode_info.get("description", ""))
+                self.mode_combo.addItem(display_name, mode_key)
+                tooltip_parts.append(f"<b>• {display_name}:</b> {description}")
+            self.mode_combo.setToolTip("<br>".join(tooltip_parts))
+            current_mode = self.config_data.get("mode", self.config_data.get("default_mode"))
+            index = self.mode_combo.findData(current_mode)
+            if index != -1:
+                self.mode_combo.setCurrentIndex(index)
+        else:
+            self.mode_combo.setVisible(False)
+
+        # Level
         self.level_combo = QComboBox()
-
-        # [MODIFIED] 添加带颜色的条目
-
         # 1. Error
         self.level_combo.addItem(_("Error"), "error")
         self.level_combo.setItemData(0, QColor("#D32F2F"), Qt.ForegroundRole)
@@ -470,6 +486,7 @@ class ValidationRuleWidget(QWidget):
         self.level_combo.setFixedWidth(120)
 
         layout.addWidget(self.checkbox, 1)
+        layout.addWidget(self.mode_combo)
         layout.addWidget(self.level_combo)
 
         self.update_state()
@@ -488,14 +505,21 @@ class ValidationRuleWidget(QWidget):
         return pixmap
 
     def update_state(self):
-        self.level_combo.setEnabled(self.checkbox.isChecked())
+        is_enabled = self.checkbox.isChecked()
+        self.level_combo.setEnabled(is_enabled)
+        self.mode_combo.setEnabled(is_enabled)
 
     def get_data(self):
-        return {
+        data = {
             "enabled": self.checkbox.isChecked(),
             "level": self.level_combo.currentData(),
-            "label": self.config_data.get("label", self.key)  # 保持 Label 不变
+            "label": self.config_data.get("label", self.key)
         }
+        if self.mode_combo.isVisible():
+            data["mode"] = self.mode_combo.currentData()
+            data["modes"] = self.config_data.get("modes")
+            data["default_mode"] = self.config_data.get("default_mode")
+        return data
 
 class ValidationSettingsPage(BaseSettingsPage):
     def __init__(self, app_instance):
