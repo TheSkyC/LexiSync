@@ -106,6 +106,8 @@ class AITranslationWorker(QRunnable):
         self.context_dict = context_dict
         self.plugin_placeholders = plugin_placeholders
         self.is_batch_item = is_batch_item
+        self.custom_system_prompt = None
+        self.is_fix_operation = False
 
     def run(self):
         app = self.app_ref()
@@ -155,27 +157,30 @@ class AITranslationWorker(QRunnable):
                     rows.append(f"| {source_term_escaped} | {targets} |")
                 glossary_prompt_part = f"{header}" + "\n".join(rows)
 
-            placeholders = {
-                '[Target Language]': self.target_language,
-                '[Untranslated Context]': self.context_dict.get("original_context", ""),
-                '[Translated Context]': self.context_dict.get("translation_context", ""),
-                '[Glossary]': glossary_prompt_part
-            }
-            if self.plugin_placeholders:
-                placeholders.update(self.plugin_placeholders)
-            prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
-            final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
+            if self.custom_system_prompt:
+                final_prompt = self.custom_system_prompt
+            else:
+                placeholders = {
+                    '[Target Language]': self.target_language,
+                    '[Untranslated Context]': self.context_dict.get("original_context", ""),
+                    '[Translated Context]': self.context_dict.get("translation_context", ""),
+                    '[Glossary]': glossary_prompt_part
+                }
+                if self.plugin_placeholders:
+                    placeholders.update(self.plugin_placeholders)
+                prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
+                final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
             logger.debug("=" * 20 + " AI PROMPT" + "=" * 20)
             logger.debug(f"Original Text to Translate:\n---\n{self.original_text}\n---")
             logger.debug(f"\nFinal System Prompt Sent to AI:\n---\n{final_prompt}\n---")
             logger.debug("=" * 57)
             translated_text = app.ai_translator.translate(self.original_text, final_prompt)
             logger.debug(f"Raw response from AI for ts_id '{self.ts_id}': '{translated_text}'")
-            app.thread_signals.handle_ai_result.emit(self.ts_id, translated_text, None, self.is_batch_item)
+            app.thread_signals.handle_ai_result.emit(self.ts_id, translated_text, None, self.is_batch_item,
+                                                     self.is_fix_operation)
         except Exception as e:
-            app = self.app_ref()
-            if app:
-                app.thread_signals.handle_ai_result.emit(self.ts_id, None, str(e), self.is_batch_item)
+            app.thread_signals.handle_ai_result.emit(self.ts_id, None, str(e), self.is_batch_item,
+                                                     self.is_fix_operation)
         finally:
             app = self.app_ref()
             if app:
@@ -185,7 +190,7 @@ class AITranslationWorker(QRunnable):
                 app.running_workers.discard(self)
 
 class ThreadSafeSignals(QObject):
-    handle_ai_result = Signal(str, str, str, bool)
+    handle_ai_result = Signal(str, str, str, bool, bool)
     decrement_active_threads = Signal()
 
 class LexiSyncApp(QMainWindow):
@@ -3330,6 +3335,61 @@ class LexiSyncApp(QMainWindow):
 
             self.update_statusbar(_("Auto-fixed {count} items.").format(count=len(bulk_changes_for_undo)))
 
+    def ai_fix_current_item(self):
+        if not self.current_selected_ts_id: return
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+        if not ts_obj: return
+
+        # 获取纠错提示词结构
+        prompts = self.config.get("ai_prompts", [])
+        active_id = self.config.get("active_correction_prompt_id")
+        prompt_data = next((p for p in prompts if p["id"] == active_id), None)
+
+        if not prompt_data:
+            QMessageBox.warning(self, _("Error"), _("No active correction prompt found. Please check AI Settings."))
+            return
+
+        structure = prompt_data["structure"]
+
+        # 收集错误信息
+        errors = []
+        for wt, msg in ts_obj.warnings: errors.append(f"- Error: {msg}")
+        for wt, msg in ts_obj.minor_warnings: errors.append(f"- Warning: {msg}")
+        for wt, msg in ts_obj.infos: errors.append(f"- Info: {msg}")
+
+
+        error_list_str = "\n".join(errors)
+        if not error_list_str:
+            error_list_str = _("No specific errors detected, please review and improve.")
+
+        # 构建占位符
+        target_lang_code = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang_name = target_lang_code
+
+        placeholders = {
+            '[Target Language]': target_lang_name,
+            '[Source Text]': ts_obj.original_semantic,
+            '[Current Translation]': ts_obj.translation,
+            '[Error List]': error_list_str
+        }
+        final_prompt = generate_prompt_from_structure(structure, placeholders)
+        self.update_statusbar(_("AI is fixing the translation..."), persistent=True)
+
+        worker = AITranslationWorker(
+            self,
+            ts_obj.id,
+            ts_obj.original_semantic,
+            target_lang_name,
+            {},
+            {},
+            False
+        )
+
+        worker.custom_system_prompt = final_prompt
+        worker.is_fix_operation = True
+
+        self.ai_thread_pool.start(worker)
+
     def cm_set_warning_ignored_status(self, ignore_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs:
@@ -5227,7 +5287,7 @@ class LexiSyncApp(QMainWindow):
         finally:
             QTimer.singleShot(0, lambda: setattr(self, 'is_finalizing_batch_translation', False))
 
-    def _handle_ai_translation_result(self, ts_id, translated_text, error_message, is_batch_item):
+    def _handle_ai_translation_result(self, ts_id, translated_text, error_message, is_batch_item, is_fix_operation):
         trigger_ts_obj = self._find_ts_obj_by_id(ts_id)
         if not trigger_ts_obj:
             if is_batch_item: self.ai_batch_completed_count += 1
@@ -5237,10 +5297,9 @@ class LexiSyncApp(QMainWindow):
             error_msg_display = _("AI translation failed for \"{text}...\": {error}").format(
                 text=trigger_ts_obj.original_semantic[:20].replace('\n', '↵'), error=error_message)
             self.update_statusbar(error_msg_display)
-            if self.ai_batch_total_items == 1:
-                QMessageBox.critical(self, _("AI Translation Error"),
-                                     _("AI translation failed for \"{text}...\":\n{error}").format(
-                                         text=trigger_ts_obj.original_semantic[:50], error=error_message))
+            if not is_batch_item:
+                QMessageBox.critical(self, _("AI Operation Error"), error_msg_display)
+
         elif translated_text is not None and translated_text.strip():
             if hasattr(self, 'plugin_manager'):
                 processed_text = self.plugin_manager.run_hook(
@@ -5265,7 +5324,6 @@ class LexiSyncApp(QMainWindow):
 
                 should_update = False
                 if propagation_mode == 'single':
-                    # 在AI场景下，'single'模式只更新触发的那一个
                     if ts_obj.id == trigger_ts_obj.id:
                         should_update = True
                 elif propagation_mode == 'always':
@@ -5310,9 +5368,16 @@ class LexiSyncApp(QMainWindow):
             if self.current_selected_ts_id == trigger_ts_obj.id:
                 self.force_refresh_ui_for_current_selection()
 
-            if self.ai_batch_total_items == 1:
+            if not is_batch_item:
+                if is_fix_operation:
+                    self.update_statusbar(_("AI fix applied successfully."), persistent=False)
+                else:
+                    self.update_statusbar(_("AI translation successful."), persistent=False)
+            elif self.ai_batch_total_items == 1:
                 self.update_statusbar(_("AI translation successful: \"{text}...\"").format(
                     text=trigger_ts_obj.original_semantic[:20].replace('\n', '↵')))
+        elif not is_batch_item:
+            self.update_statusbar(_("AI operation returned no result."), persistent=False)
 
         if is_batch_item:
             self.ai_batch_completed_count += 1

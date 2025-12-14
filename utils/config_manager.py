@@ -5,7 +5,7 @@ import json
 import os
 from copy import deepcopy
 from utils.constants import (
-    CONFIG_FILE, DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS,
+    CONFIG_FILE, DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE, DEFAULT_CORRECTION_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS,
     DEFAULT_EXTRACTION_PATTERNS, DEFAULT_VALIDATION_RULES
 )
 import logging
@@ -66,8 +66,36 @@ def load_config():
     config_data.setdefault("ai_original_context_neighbors", 3)
 
     # Prompt structure
-    config_data.setdefault("ai_prompt_structure", deepcopy(DEFAULT_PROMPT_STRUCTURE))
-    config_data.pop("ai_prompt_template", None) # Remove old key if exists
+    # 1. 确保 ai_prompts 列表存在
+    if "ai_prompts" not in config_data:
+        config_data["ai_prompts"] = []
+
+    # 2. 迁移旧数据 (如果有)
+    if "ai_prompt_structure" in config_data:
+        has_default_trans = any(p["id"] == "default_translation" for p in config_data["ai_prompts"])
+        if not has_default_trans:
+            config_data["ai_prompts"].append({
+                "id": "default_translation",
+                "name": "Default Translation",
+                "type": "translation", # 类型：translation 或 correction
+                "structure": config_data["ai_prompt_structure"]
+            })
+        # 移除旧键，保持整洁 (可选，为了兼容性也可以保留)
+        config_data.pop("ai_prompt_structure", None)
+
+    # 3. 确保有默认的纠错预设
+    has_default_fix = any(p["id"] == "default_correction" for p in config_data["ai_prompts"])
+    if not has_default_fix:
+        config_data["ai_prompts"].append({
+            "id": "default_correction",
+            "name": "Default Correction",
+            "type": "correction",
+            "structure": deepcopy(DEFAULT_CORRECTION_PROMPT_STRUCTURE)
+        })
+
+    # 4. 设置当前激活的预设 ID
+    config_data.setdefault("active_translation_prompt_id", "default_translation")
+    config_data.setdefault("active_correction_prompt_id", "default_correction")
 
     # Extraction patterns
     config_data.setdefault("extraction_patterns", deepcopy(DEFAULT_EXTRACTION_PATTERNS))

@@ -185,9 +185,29 @@ class DetailsPanel(QWidget):
         self.fix_all_btn.clicked.connect(self.on_fix_all_clicked)
         self.fix_all_btn.hide()
 
+        # AI Fix
+        self.ai_fix_btn = QPushButton(_("AI Fix"))
+        self.ai_fix_btn.setCursor(Qt.PointingHandCursor)
+        self.ai_fix_btn.setFixedSize(50, 18)
+        self.ai_fix_btn.setStyleSheet("""
+            QPushButton {
+                border: 1px solid #673AB7;
+                border-radius: 3px;
+                color: #fff;
+                background-color: #673AB7; /* 深紫色 */
+                font-weight: bold;
+                font-size: 10px;
+                margin-right: 5px;
+            }
+            QPushButton:hover { background-color: #5E35B1; }
+        """)
+        self.ai_fix_btn.clicked.connect(self.app_instance.ai_fix_current_item)
+        self.ai_fix_btn.hide()
+
         banner_layout.addWidget(self.warning_icon_label)
         banner_layout.addWidget(self.warning_text_label, 1)
         banner_layout.addWidget(self.fix_all_btn)
+        banner_layout.addWidget(self.ai_fix_btn)
         banner_layout.addWidget(self.ignore_warning_btn)
 
         self.ratio_label = QLabel("")
@@ -358,15 +378,21 @@ class DetailsPanel(QWidget):
                 icon = self.style().standardIcon(self.style().StandardPixmap.SP_MessageBoxInformation)
             self.warning_icon_label.setPixmap(icon.pixmap(12, 12))
 
-            #Auto Fix
+            # Auto Fix
             target_lang = self.app_instance.current_target_language if self.app_instance.is_project_mode else self.app_instance.target_language
             fixed_text = fix_service.apply_all_fixes(ts_obj, target_lang)
-
             if fixed_text:
                 self.fix_all_btn.show()
                 self.fix_all_btn.setToolTip(_("Auto-fix: ") + fixed_text)
             else:
                 self.fix_all_btn.hide()
+
+            # Ai Fix
+            if self.app_instance.config.get("ai_api_key"):
+                self.ai_fix_btn.show()
+                self.ai_fix_btn.setToolTip(_("Use AI to fix translation errors"))
+            else:
+                self.ai_fix_btn.hide()
 
             self.warning_banner.show()
         else:

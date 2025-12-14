@@ -71,6 +71,44 @@ DEFAULT_VALIDATION_RULES = {
     "accelerator": {"enabled": True, "level": "error", "label": "Accelerator Mismatch"},
 }
 
+DEFAULT_CORRECTION_PROMPT_STRUCTURE = [
+    {
+        "id": str(uuid.uuid4()),
+        "type": "Structural Content",
+        "enabled": True,
+        "content": "你是一位专业的本地化QA专家。你的任务是修复以下译文中的错误，使其符合目标语言的语法习惯和项目规则。"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": "Static Instruction",
+        "enabled": True,
+        "content": "请参考以下错误报告（Errors），针对性地修正译文。"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": "Dynamic Instruction",
+        "enabled": True,
+        "content": "错误报告：\n[Error List]"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": "Dynamic Instruction",
+        "enabled": True,
+        "content": "原文：\n[Source Text]"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": "Dynamic Instruction",
+        "enabled": True,
+        "content": "当前有问题的译文：\n[Current Translation]"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": "Static Instruction",
+        "enabled": True,
+        "content": "请直接返回修正后的完整译文内容，不要包含任何解释、前缀或后缀。不要使用Markdown代码块。"
+    }
+]
 
 DEFAULT_PROMPT_STRUCTURE = [
     {

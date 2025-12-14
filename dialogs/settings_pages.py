@@ -337,6 +337,19 @@ class AISettingsPage(BaseSettingsPage):
 
         context_group = QGroupBox(_("Context & Prompts"))
         context_layout = QVBoxLayout(context_group)
+        prompt_select_layout = QFormLayout()
+
+        self.trans_prompt_combo = QComboBox()
+        self.fix_prompt_combo = QComboBox()
+
+        self._populate_prompt_combos()
+
+        prompt_select_layout.addRow(_("Translation Prompt:"), self.trans_prompt_combo)
+        prompt_select_layout.addRow(_("Correction Prompt:"), self.fix_prompt_combo)
+
+        context_layout.addLayout(prompt_select_layout)
+        context_layout.addSpacing(10)
+
         self.use_original_context_check = QCheckBox(_("Use nearby original text as context"))
         self.use_original_context_check.setChecked(self.app.config.get("ai_use_original_context", True))
         context_layout.addWidget(self.use_original_context_check)
@@ -371,9 +384,33 @@ class AISettingsPage(BaseSettingsPage):
         self.translation_neighbors_spinbox.setEnabled(self.use_translation_context_check.isChecked())
         context_layout.addSpacing(15)
         self.prompt_button = QPushButton(_("Prompt Manager..."))
-        self.prompt_button.clicked.connect(self.app.show_prompt_manager)
+        self.prompt_button.clicked.connect(self.open_prompt_manager)
         context_layout.addWidget(self.prompt_button)
         self.page_layout.addWidget(context_group)
+
+    def _populate_prompt_combos(self):
+        self.trans_prompt_combo.clear()
+        self.fix_prompt_combo.clear()
+
+        prompts = self.app.config.get("ai_prompts", [])
+        for p in prompts:
+            if p.get("type") == "translation":
+                self.trans_prompt_combo.addItem(p["name"], p["id"])
+            elif p.get("type") == "correction":
+                self.fix_prompt_combo.addItem(p["name"], p["id"])
+
+        curr_trans = self.app.config.get("active_translation_prompt_id")
+        curr_fix = self.app.config.get("active_correction_prompt_id")
+
+        idx_t = self.trans_prompt_combo.findData(curr_trans)
+        if idx_t != -1: self.trans_prompt_combo.setCurrentIndex(idx_t)
+
+        idx_f = self.fix_prompt_combo.findData(curr_fix)
+        if idx_f != -1: self.fix_prompt_combo.setCurrentIndex(idx_f)
+
+    def open_prompt_manager(self):
+        self.app.show_prompt_manager()
+        self._populate_prompt_combos()  # 刷新列表
 
     def save_settings(self):
         self.app.config["ai_api_key"] = self.api_key_entry.text()
@@ -385,6 +422,8 @@ class AISettingsPage(BaseSettingsPage):
         self.app.config["ai_original_context_neighbors"] = self.original_neighbors_spinbox.value()
         self.app.config["ai_use_translation_context"] = self.use_translation_context_check.isChecked()
         self.app.config["ai_context_neighbors"] = self.translation_neighbors_spinbox.value()
+        self.app.config["active_translation_prompt_id"] = self.trans_prompt_combo.currentData()
+        self.app.config["active_correction_prompt_id"] = self.fix_prompt_combo.currentData()
         self.app.ai_translator.api_key = self.api_key_entry.text()
         self.app.ai_translator.api_url = self.api_base_url_entry.text()
         self.app.ai_translator.model_name = self.model_name_entry.text()

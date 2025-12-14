@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QCheckBox, QTreeWidget, QTreeWidgetItem, QHeaderView, QMessageBox,
     QFileDialog, QWidget, QTextEdit, QComboBox, QGroupBox, QTextBrowser,
-    QAbstractItemView, QSizePolicy
+    QAbstractItemView, QSizePolicy, QInputDialog
 )
 from PySide6.QtCore import Qt, Signal, QEvent, QSize
 import json
@@ -59,17 +59,44 @@ class PromptManagerDialog(QDialog):
     def __init__(self, parent, title, app_instance):
         super().__init__(parent)
         self.app = app_instance
-        self.prompt_structure = deepcopy(self.app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE))
-        self.result = None
+        self.prompts_data = deepcopy(self.app.config.get("ai_prompts", []))
+
+        self.current_prompt_index = 0
 
         self.setWindowTitle(title)
         self.setModal(True)
         self.resize(1000, 700)
 
         self.setup_ui()
+        self.load_current_prompt_to_tree()
 
     def setup_ui(self):
         main_layout = QVBoxLayout(self)
+
+        # Preset Management
+        preset_group = QGroupBox(_("Preset Management"))
+        preset_layout = QHBoxLayout(preset_group)
+
+        self.preset_combo = QComboBox()
+        self.preset_combo.currentIndexChanged.connect(self.on_preset_changed)
+        self.update_preset_combo()
+
+        add_btn = QPushButton(_("New"))
+        add_btn.clicked.connect(self.add_new_preset)
+
+        del_btn = QPushButton(_("Delete"))
+        del_btn.clicked.connect(self.delete_current_preset)
+
+        rename_btn = QPushButton(_("Rename/Type"))
+        rename_btn.clicked.connect(self.edit_current_preset_meta)
+
+        preset_layout.addWidget(QLabel(_("Current Preset:")))
+        preset_layout.addWidget(self.preset_combo, 1)
+        preset_layout.addWidget(add_btn)
+        preset_layout.addWidget(rename_btn)
+        preset_layout.addWidget(del_btn)
+
+        main_layout.addWidget(preset_group)
 
         # Toolbar
         toolbar = QHBoxLayout()
@@ -110,7 +137,6 @@ class PromptManagerDialog(QDialog):
         self.tree.model().rowsMoved.connect(self.sync_data_from_tree)
         main_layout.addWidget(self.tree)
 
-        self.populate_tree()
 
         # Buttons
         button_box = QHBoxLayout()
@@ -170,6 +196,84 @@ class PromptManagerDialog(QDialog):
         if display_type == _("Static Instruction"): return STATIC
         if display_type == _("Dynamic Instruction"): return DYNAMIC
         return display_type
+
+    def update_preset_combo(self):
+        self.preset_combo.blockSignals(True)
+        self.preset_combo.clear()
+        for p in self.prompts_data:
+            type_str = _("Translation") if p.get("type") == "translation" else _("Correction")
+            self.preset_combo.addItem(f"{p['name']} ({type_str})", p['id'])
+
+        if 0 <= self.current_prompt_index < len(self.prompts_data):
+            self.preset_combo.setCurrentIndex(self.current_prompt_index)
+        self.preset_combo.blockSignals(False)
+
+    def on_preset_changed(self, index):
+        if index < 0: return
+        # 切换前先保存当前树的数据到内存中的 list
+        self.save_tree_to_current_memory()
+        self.current_prompt_index = index
+        self.load_current_prompt_to_tree()
+
+    def load_current_prompt_to_tree(self):
+        if not self.prompts_data:
+            self.tree.clear()
+            return
+
+        current_data = self.prompts_data[self.current_prompt_index]
+        self.prompt_structure = current_data["structure"]  # 绑定当前操作的结构
+        self.populate_tree()  # 复用原有的 populate_tree
+
+    def save_tree_to_current_memory(self):
+        if not self.prompts_data: return
+        # sync_data_from_tree 会更新 self.prompt_structure
+        # 我们需要确保 self.prompt_structure 指向的是 self.prompts_data 中的正确对象
+        self.sync_data_from_tree()
+        self.prompts_data[self.current_prompt_index]["structure"] = self.prompt_structure
+
+    def add_new_preset(self):
+        # 简单实现：复制当前预设
+        if not self.prompts_data: return
+        new_preset = deepcopy(self.prompts_data[self.current_prompt_index])
+        new_preset["id"] = str(uuid.uuid4())
+        new_preset["name"] = new_preset["name"] + " (Copy)"
+        self.prompts_data.append(new_preset)
+        self.save_tree_to_current_memory()  # 保存当前状态
+        self.current_prompt_index = len(self.prompts_data) - 1
+        self.update_preset_combo()
+        self.load_current_prompt_to_tree()
+
+    def delete_current_preset(self):
+        if len(self.prompts_data) <= 1:
+            QMessageBox.warning(self, _("Warning"), _("At least one preset must remain."))
+            return
+
+        reply = QMessageBox.question(self, _("Confirm Delete"), _("Are you sure you want to delete this preset?"))
+        if reply == QMessageBox.Yes:
+            self.prompts_data.pop(self.current_prompt_index)
+            self.current_prompt_index = max(0, self.current_prompt_index - 1)
+            self.update_preset_combo()
+            self.load_current_prompt_to_tree()
+
+    def edit_current_preset_meta(self):
+        # 这里应该弹出一个对话框修改 Name 和 Type，简化起见只修改 Name
+        current = self.prompts_data[self.current_prompt_index]
+        new_name, ok = QInputDialog.getText(self, _("Rename Preset"), _("Preset Name:"), text=current["name"])
+        if ok and new_name:
+            current["name"] = new_name
+
+            # 询问类型
+            types = ["translation", "correction"]
+            type_item, ok_type = QInputDialog.getItem(
+                self, _("Preset Type"), _("Select Usage Type:"),
+                [_("Translation"), _("Correction")],
+                0 if current.get("type") == "translation" else 1,
+                False
+            )
+            if ok_type:
+                current["type"] = "translation" if type_item == _("Translation") else "correction"
+
+            self.update_preset_combo()
 
     def add_item(self):
         new_part = {"id": str(uuid.uuid4()), "type": STATIC, "enabled": True, "content": _("New Instruction")}
@@ -274,11 +378,15 @@ class PromptManagerDialog(QDialog):
         self.sync_data_from_tree()
 
     def accept(self):
-        self.sync_data_from_tree()
-        self.app.config["ai_prompt_structure"] = self.prompt_structure
+        self.save_tree_to_current_memory()
+        self.app.config["ai_prompts"] = self.prompts_data
+        trans_preset = next((p for p in self.prompts_data if p.get("type") == "translation"), None)
+        if trans_preset:
+            self.app.config["ai_prompt_structure"] = trans_preset["structure"]
+
         self.app.save_config()
-        self.app.update_statusbar(_("AI prompt structure updated."))
-        super().accept()
+        self.app.update_statusbar(_("AI prompts updated."))
+        super(QDialog, self).accept()
 
     def reject(self):
         super().reject()
