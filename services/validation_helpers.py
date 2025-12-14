@@ -16,6 +16,19 @@ RE_REPEATED_WORD = re.compile(r'\b(\w+)\s+\1\b', re.IGNORECASE)
 RE_URL = re.compile(r'(?:ht|f)tps?://[^"<> \t\n\r]+|www\.[^"<> \t\n\r]+|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/[^"<> \t\n\r]*')
 RE_EMAIL = re.compile(r'[\w\.-]+@[\w\.-]+')
 RE_NUMBER = re.compile(r'\d+(?:\.\d+)?')
+HTML_TAGS_WHITELIST = {
+    'a', 'abbr', 'acronym', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo',
+    'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col', 'colgroup', 'data',
+    'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset',
+    'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr',
+    'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map',
+    'mark', 'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param',
+    'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small',
+    'source', 'span', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template',
+    'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr'
+}
+RE_HTML_TAG = re.compile(r'</?(' + '|'.join(HTML_TAGS_WHITELIST) + r')\b[^>]*>', re.IGNORECASE)
+
 
 def _has_case(char):
     return char.lower() != char.upper()
@@ -328,20 +341,27 @@ def check_brackets(source, target):
     bracket_groups = [
         ('(', ')', '（', '）', 'Parentheses ()'),
         ('[', ']', '【', '】', 'Square Brackets []'),
-        ('{', '}', None, None, 'Curly Braces {}'),  # 中文通常不用全角花括号作为语法符号
+        ('{', '}', None, None, 'Curly Braces {}'),
         ('<', '>', '《', '》', 'Angle Brackets <>')
     ]
+
+    # 使用全局正则移除 HTML 标签
+    source_no_tags = RE_HTML_TAG.sub('', source)
+    target_no_tags = RE_HTML_TAG.sub('', target)
 
     errors = []
 
     for en_open, en_close, cn_open, cn_close, desc in bracket_groups:
+        # 如果是尖括号检查，使用无标签版字符串；其他括号使用原字符串
+        src_to_check = source_no_tags if en_open == '<' else source
+        tgt_to_check = target_no_tags if en_open == '<' else target
+
         # 1. 计算原文中的括号总数
-        src_open_count = source.count(en_open) + (source.count(cn_open) if cn_open else 0)
-        src_close_count = source.count(en_close) + (source.count(cn_close) if cn_close else 0)
+        src_open_count = src_to_check.count(en_open) + (src_to_check.count(cn_open) if cn_open else 0)
 
         # 2. 计算译文中的括号总数
-        tgt_open_count = target.count(en_open) + (target.count(cn_open) if cn_open else 0)
-        tgt_close_count = target.count(en_close) + (target.count(cn_close) if cn_close else 0)
+        tgt_open_count = tgt_to_check.count(en_open) + (tgt_to_check.count(cn_open) if cn_open else 0)
+        tgt_close_count = tgt_to_check.count(en_close) + (tgt_to_check.count(cn_close) if cn_close else 0)
 
         # 3. 检查译文自身是否配对
         if tgt_open_count != tgt_close_count:
@@ -354,6 +374,7 @@ def check_brackets(source, target):
                 pass
             else:
                 errors.append(f"Count of {desc} differs: source {src_open_count}, target {tgt_open_count}")
+
     return " | ".join(errors) if errors else None
 
 
@@ -364,29 +385,8 @@ def check_double_space(source, target):
 
 
 def check_html_tags(source, target):
-    # 常见 HTML 标签
-    html_tags_whitelist = {
-        'a', 'abbr', 'acronym', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo',
-        'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col', 'colgroup', 'data',
-        'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset',
-        'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr',
-        'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map',
-        'mark', 'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param',
-        'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small',
-        'source', 'span', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template',
-        'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr'
-    }
-
-    # 匹配 <tag ...>
-    raw_tag_re = re.compile(r'</?([a-zA-Z0-9]+)[^>]*>')
-
     def get_valid_tags(text):
-        valid_tags = []
-        for match in raw_tag_re.finditer(text):
-            tag_name = match.group(1).lower()
-            if tag_name in html_tags_whitelist:
-                valid_tags.append(html.escape(match.group(0)))
-        return valid_tags
+        return [html.escape(m.group(0)) for m in RE_HTML_TAG.finditer(text)]
 
     src_tags = get_valid_tags(source)
     tgt_tags = get_valid_tags(target)
