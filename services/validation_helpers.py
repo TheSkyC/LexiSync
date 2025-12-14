@@ -3,6 +3,7 @@
 
 import re
 from collections import Counter
+import html
 
 PUNCTUATION_MAP = {'.': '。', ',': '，', '?': '？', '!': '！', ':': '：', ';': '；', '(': '（', ')': '）'}
 ALL_PUNC_KEYS = set(PUNCTUATION_MAP.keys())
@@ -321,9 +322,16 @@ def check_double_space(source, target):
 def check_html_tags(source, target):
     # 匹配 <tag> 或 </tag> 或 <tag />
     tag_re = re.compile(r'</?[a-zA-Z0-9]+[^>]*>')
-    src_tags = tag_re.findall(source)
-    tgt_tags = tag_re.findall(target)
+    src_tags = [html.escape(t) for t in tag_re.findall(source)]
+    tgt_tags = [html.escape(t) for t in tag_re.findall(target)]
+
     missing, extra = _compare_counts(src_tags, tgt_tags)
+
     if missing or extra:
-        return f"HTML Tag mismatch. Missing: {', '.join(missing)}"
+        error_parts = []
+        if missing:
+            error_parts.append(f"Missing: {', '.join(missing)}")
+        if extra:
+            error_parts.append(f"Extra: {', '.join(extra)}")
+        return f"HTML Tag mismatch ({' | '.join(error_parts)})"
     return None
