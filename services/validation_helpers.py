@@ -91,6 +91,20 @@ def check_ending_punctuation(source, target):
     if not temp_s:
         temp_s = s_strip
 
+    ellipses = ["...", "…", "……", "。。。"]
+
+    src_has_ellipsis = any(temp_s.endswith(e) for e in ellipses)
+    tgt_has_ellipsis = any(t_strip.endswith(e) for e in ellipses)
+
+    if src_has_ellipsis and tgt_has_ellipsis:
+        return None
+
+    if src_has_ellipsis and not tgt_has_ellipsis:
+        return "Missing ending ellipsis."
+
+    if not src_has_ellipsis and tgt_has_ellipsis:
+        return "Extra ending ellipsis."
+
     s_char = temp_s[-1]
     t_char = t_strip[-1]
 
