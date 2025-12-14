@@ -179,11 +179,27 @@ def _compare_counts(src_list, tgt_list):
 
 
 def check_printf(source, target):
-    src_fmt = [m.group() for m in RE_PRINTF.finditer(source)]
-    tgt_fmt = [m.group() for m in RE_PRINTF.finditer(target)]
+    def get_valid_printf_matches(text):
+        matches = []
+        for m in RE_PRINTF.finditer(text):
+            full_match = m.group(0)
+            # 过滤掉像 "% abc" 这样的误判
+            if re.fullmatch(r'%\s+[a-zA-Z]', full_match) and text[m.end():m.end() + 1].isalpha():
+                continue
+            matches.append(full_match)
+        return matches
+
+    src_fmt = get_valid_printf_matches(source)
+    tgt_fmt = get_valid_printf_matches(target)
+
     missing, extra = _compare_counts(src_fmt, tgt_fmt)
     if missing or extra:
-        return f"Printf mismatch. Missing: {', '.join(missing)} | Extra: {', '.join(extra)}"
+        error_parts = []
+        if missing:
+            error_parts.append(f"Missing: {', '.join(missing)}")
+        if extra:
+            error_parts.append(f"Extra: {', '.join(extra)}")
+        return f"Printf mismatch ({' | '.join(error_parts)})"
     return None
 
 
