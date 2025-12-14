@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QEvent
 from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor, QCursor
+from services import fix_service
 from .tooltip import Tooltip
 from .newline_text_edit import NewlineTextEdit
 from .elided_label import ElidedLabel
@@ -166,8 +167,27 @@ class DetailsPanel(QWidget):
         """)
         self.ignore_warning_btn.clicked.connect(self.warning_ignored_signal.emit)
 
+        self.fix_all_btn = QPushButton(_("Auto Fix"))
+        self.fix_all_btn.setCursor(Qt.PointingHandCursor)
+        self.fix_all_btn.setFixedSize(60, 18)
+        self.fix_all_btn.setStyleSheet("""
+            QPushButton {
+                border: 1px solid #28a745;
+                border-radius: 3px;
+                color: #fff;
+                background-color: #28a745;
+                font-weight: bold;
+                font-size: 10px;
+                margin-right: 5px;
+            }
+            QPushButton:hover { background-color: #218838; }
+        """)
+        self.fix_all_btn.clicked.connect(self.on_fix_all_clicked)
+        self.fix_all_btn.hide()
+
         banner_layout.addWidget(self.warning_icon_label)
         banner_layout.addWidget(self.warning_text_label, 1)
+        banner_layout.addWidget(self.fix_all_btn)
         banner_layout.addWidget(self.ignore_warning_btn)
 
         self.ratio_label = QLabel("")
@@ -285,6 +305,15 @@ class DetailsPanel(QWidget):
         if hasattr(self, 'original_highlighter'):
             self.original_highlighter.update_data(original_placeholders, missing_in_translation)
 
+    def on_fix_all_clicked(self):
+        if not self.current_ts_obj: return
+        target_lang = self.app_instance.current_target_language if self.app_instance.is_project_mode else self.app_instance.target_language
+
+        fixed_text = fix_service.apply_all_fixes(self.current_ts_obj, target_lang)
+        if fixed_text:
+            self.translation_edit_text.setPlainText(fixed_text)
+            self.app_instance._apply_translation_to_model(self.current_ts_obj, fixed_text, source="auto_fix")
+
     def update_warnings(self, ts_obj):
         self.current_ts_obj = ts_obj
         if not ts_obj:
@@ -327,8 +356,18 @@ class DetailsPanel(QWidget):
                     QLabel { color: #0D47A1; }
                 """)
                 icon = self.style().standardIcon(self.style().StandardPixmap.SP_MessageBoxInformation)
-
             self.warning_icon_label.setPixmap(icon.pixmap(12, 12))
+
+            #Auto Fix
+            target_lang = self.app_instance.current_target_language if self.app_instance.is_project_mode else self.app_instance.target_language
+            fixed_text = fix_service.apply_all_fixes(ts_obj, target_lang)
+
+            if fixed_text:
+                self.fix_all_btn.show()
+                self.fix_all_btn.setToolTip(_("Auto-fix: ") + fixed_text)
+            else:
+                self.fix_all_btn.hide()
+
             self.warning_banner.show()
         else:
             self.warning_banner.hide()

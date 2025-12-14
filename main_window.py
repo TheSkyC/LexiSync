@@ -61,10 +61,11 @@ from dialogs.project_settings_dialog import ProjectSettingsDialog
 from dialogs.search_dialog import AdvancedSearchDialog
 from dialogs.add_glossary_entry_dialog import AddGlossaryEntryDialog
 
+from services.ai_translator import AITranslator
 from services import language_service
+from services import fix_service
 from services.build_service import BuildWorker
 from services import export_service, po_file_service
-from services.ai_translator import AITranslator
 from services.code_file_service import extract_translatable_strings, save_translated_code
 from services.project_service import create_project, load_project_data, save_project
 from services.project_manager import ProjectManager
@@ -74,6 +75,7 @@ from services.expansion_ratio_service import ExpansionRatioService
 from services.tm_service import TMService
 from services.glossary_service import GlossaryService
 from services.glossary_worker import GlossaryAnalysisWorker
+
 
 from utils import config_manager
 from utils.constants import *
@@ -592,6 +594,10 @@ class LexiSyncApp(QMainWindow):
         self.action_run_validation_on_all.setEnabled(False)
         self.tools_menu.addAction(self.action_run_validation_on_all)
 
+        self.action_auto_fix_all = QAction(_("Auto Fix All Issues"), self)
+        self.action_auto_fix_all.triggered.connect(self.auto_fix_all_issues)
+        self.action_auto_fix_all.setEnabled(False)
+        self.tools_menu.addAction(self.action_auto_fix_all)
 
         self.action_reload_translatable_text = QAction(_("Reload Translatable Text"), self)
         self.action_reload_translatable_text.triggered.connect(self.reload_translatable_text)
@@ -1476,6 +1482,7 @@ class LexiSyncApp(QMainWindow):
         )
         self.action_show_statistics.setEnabled(has_content)
         self.action_run_validation_on_all.setEnabled(has_content)
+        self.action_auto_fix_all.setEnabled(has_content)
         if hasattr(self, 'action_show_project_settings'):
             self.action_show_project_settings.setEnabled(self.is_project_mode)
         if hasattr(self, 'action_build_project'):
@@ -2796,6 +2803,43 @@ class LexiSyncApp(QMainWindow):
         context_menu.addAction(QAction(_("Copy Translation"), self, triggered=self.cm_copy_translation))
         context_menu.addSeparator()
         selected_objs = self._get_selected_ts_objects_from_sheet()
+
+        # Auto Fix
+        if selected_objs and len(selected_objs) == 1:
+            ts_obj = selected_objs[0]
+            target_lang = self.current_target_language if self.is_project_mode else self.target_language
+            # 获取所有警告类型
+            all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos]
+            fixable_actions = []
+
+            for wt in all_warnings:
+                suggestion = fix_service.get_fix_for_warning(ts_obj, wt, target_lang)
+                if suggestion:
+                    def make_fix_slot(text):
+                        return lambda: self._apply_translation_to_model(ts_obj, text, source="quick_fix")
+                    readable_name = wt.name.replace('_', ' ').title()
+                    action_text = f"{_('Fix')}: {readable_name}"
+                    fixable_actions.append(QAction(action_text, self, triggered=make_fix_slot(suggestion)))
+
+            if fixable_actions:
+                fix_menu = context_menu.addMenu(_("Quick Fix"))
+                for action in fixable_actions:
+                    fix_menu.addAction(action)
+
+                # 如果有多个可修复项，添加 "Fix All"
+                if len(fixable_actions) > 1:
+                    fix_menu.addSeparator()
+
+                    def fix_all_slot():
+                        final_text = fix_service.apply_all_fixes(ts_obj, target_lang)
+                        if final_text:
+                            self._apply_translation_to_model(ts_obj, final_text, source="quick_fix_all")
+
+                    fix_menu.addAction(QAction(_("Fix All Issues"), self, triggered=fix_all_slot))
+
+                context_menu.addSeparator()
+
+
         if selected_objs:
             first_obj = selected_objs[0]
             action_ignore = QAction(_("Mark as Ignored"), self, triggered=lambda: self.cm_set_ignored_status(True))
@@ -3213,6 +3257,78 @@ class LexiSyncApp(QMainWindow):
         self.force_refresh_ui_for_current_selection()
         self.update_statusbar(_("Validation complete."), persistent=False)
         self.update_warning_markers()
+
+    def auto_fix_all_issues(self):
+        if not self.translatable_objects:
+            return
+        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+
+        # 1. 预扫描
+        fixable_count = 0
+        preview_changes = []
+
+        for ts_obj in self.translatable_objects:
+            if ts_obj.is_ignored: continue
+
+            fixed_text = fix_service.apply_all_fixes(ts_obj, target_lang)
+            if fixed_text and fixed_text != ts_obj.translation:
+                fixable_count += 1
+                preview_changes.append((ts_obj, fixed_text))
+
+        if fixable_count == 0:
+            QMessageBox.information(self, _("Auto Fix"), _("No auto-fixable issues found."))
+            return
+
+        # 2. 确认对话框
+        reply = QMessageBox.question(
+            self,
+            _("Confirm Auto Fix"),
+            _("Found {count} items with auto-fixable issues (e.g. whitespace, punctuation).\n\nDo you want to fix them all automatically?").format(
+                count=fixable_count),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reply != QMessageBox.Yes:
+            return
+
+        # 3. 执行批量修复
+        bulk_changes_for_undo = []
+        ids_to_update = set()
+
+        for ts_obj, new_text in preview_changes:
+            old_val = ts_obj.get_translation_for_storage_and_tm()
+
+            ts_obj.set_translation_internal(new_text)
+
+            # 记录 Undo
+            bulk_changes_for_undo.append({
+                'string_id': ts_obj.id,
+                'field': 'translation',
+                'old_value': old_val,
+                'new_value': ts_obj.get_translation_for_storage_and_tm()
+            })
+            ids_to_update.add(ts_obj.id)
+
+
+            self.plugin_manager.run_hook(
+                'on_string_saved',
+                ts_object=ts_obj,
+                column='translation',
+                new_value=new_text,
+                old_value=old_val.replace("\\n", "\n")
+            )
+
+        # 4. 提交 Undo 记录并刷新 UI
+        if bulk_changes_for_undo:
+            self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})
+            self.mark_project_modified()
+            self._update_view_for_ids(ids_to_update)
+
+            if self.current_selected_ts_id in ids_to_update:
+                self.force_refresh_ui_for_current_selection()
+
+            self.update_statusbar(_("Auto-fixed {count} items.").format(count=len(bulk_changes_for_undo)))
 
     def cm_set_warning_ignored_status(self, ignore_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()
