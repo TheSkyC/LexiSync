@@ -80,15 +80,20 @@ def check_leading_whitespace(source, target):
 def check_trailing_whitespace(source, target):
     """检查结尾空格"""
     whitespace_chars = ' \t'
-    src_has = source.rstrip(whitespace_chars) != source
-    tgt_has = target.rstrip(whitespace_chars) != target
+    src_has = source.rstrip('\n\r').endswith(' ') or source.rstrip('\n\r').endswith('\t')
+    tgt_has = target.rstrip('\n\r').endswith(' ') or target.rstrip('\n\r').endswith('\t')
 
     if src_has and not tgt_has:
+        tgt_stripped = target.rstrip()
+        if tgt_stripped:
+            last_char = tgt_stripped[-1]
+            full_width_puncts = {'：', '。', '？', '！', '，', '；'}
+            if last_char in full_width_puncts:
+                return None
         return "Missing trailing whitespace."
     if not src_has and tgt_has:
         return "Extra trailing whitespace."
     return None
-
 
 def check_starting_punctuation(source, target):
     """检查开头标点"""
