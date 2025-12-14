@@ -24,7 +24,7 @@ class WarningType(Enum):
     PUNCTUATION_MISMATCH_START = auto()  # 开头标点不匹配
     PUNCTUATION_MISMATCH_END = auto()  # 结尾标点不匹配
     BRACKET_MISMATCH = auto()  # 括号不成对
-    QUOTE_MISMATCH = auto() # 双引号不成对
+    QUOTE_MISMATCH = auto() # 引号不成对
     ACCELERATOR_MISMATCH = auto() #加速键不匹配
 
     # --- 长度相关 ---

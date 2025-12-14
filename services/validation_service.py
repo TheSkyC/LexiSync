@@ -167,7 +167,6 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
                     "none"
                 )
 
-                # 严格使用原代码的阈值变量名和默认值
                 # 优先从 config 读取，如果没有则使用硬编码默认值 (2.5, 0.4, 2.0, 0.5)
                 major_upper_threshold_factor = config.get("length_threshold_major", 2.5)
                 major_lower_threshold_factor = 1 / major_upper_threshold_factor

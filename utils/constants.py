@@ -52,7 +52,22 @@ DEFAULT_VALIDATION_RULES = {
     "capitalization": {"enabled": False, "level": "warning", "label": "Initial Capitalization"},
     "repeated_word": {"enabled": True, "level": "info", "label": "Repeated Words"},
     "newline_count": {"enabled": True, "level": "warning", "label": "Newline Count Mismatch"},
-    "quotes": {"enabled": False, "level": "info", "label": "Mismatched Double Quotes"},
+    "quotes": {
+        "enabled": True,
+        "level": "info",
+        "label": "Mismatched Quotes",
+        "modes": {
+            "strict": {
+                "name": "Strict",
+                "description": "Single and double quotes must match their types exactly."
+            },
+            "flexible": {
+                "name": "Flexible",
+                "description": "Allows converting single quotes to double quotes (e.g., '...' -> “...”) and vice versa."
+            }
+        },
+        "default_mode": "flexible"
+    },
     "accelerator": {"enabled": True, "level": "error", "label": "Accelerator Mismatch"},
 }
 
