@@ -2812,37 +2812,54 @@ class LexiSyncApp(QMainWindow):
         # Auto Fix
         if selected_objs and len(selected_objs) == 1:
             ts_obj = selected_objs[0]
-            target_lang = self.current_target_language if self.is_project_mode else self.target_language
-            # 获取所有警告类型
-            all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos]
-            fixable_actions = []
+            has_warnings = (ts_obj.warnings or ts_obj.minor_warnings or ts_obj.infos) and not ts_obj.is_warning_ignored
+            if has_warnings:
+                target_lang = self.current_target_language if self.is_project_mode else self.target_language
 
-            for wt in all_warnings:
-                suggestion = fix_service.get_fix_for_warning(ts_obj, wt, target_lang)
-                if suggestion:
-                    def make_fix_slot(text):
-                        return lambda: self._apply_translation_to_model(ts_obj, text, source="quick_fix")
-                    readable_name = wt.name.replace('_', ' ').title()
-                    action_text = f"{_('Fix')}: {readable_name}"
-                    fixable_actions.append(QAction(action_text, self, triggered=make_fix_slot(suggestion)))
+                # 获取所有警告类型
+                all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos]
+                fixable_actions = []
 
-            if fixable_actions:
-                fix_menu = context_menu.addMenu(_("Quick Fix"))
-                for action in fixable_actions:
-                    fix_menu.addAction(action)
+                # 1. 收集基于规则的修复
+                for wt in all_warnings:
+                    suggestion = fix_service.get_fix_for_warning(ts_obj, wt, target_lang)
+                    if suggestion:
+                        def make_fix_slot(text):
+                            return lambda: self._apply_translation_to_model(ts_obj, text, source="quick_fix")
 
-                # 如果有多个可修复项，添加 "Fix All"
-                if len(fixable_actions) > 1:
-                    fix_menu.addSeparator()
+                        readable_name = wt.name.replace('_', ' ').title()
+                        action_text = f"{_('Fix')}: {readable_name}"
+                        fixable_actions.append(QAction(action_text, self, triggered=make_fix_slot(suggestion)))
 
-                    def fix_all_slot():
-                        final_text = fix_service.apply_all_fixes(ts_obj, target_lang)
-                        if final_text:
-                            self._apply_translation_to_model(ts_obj, final_text, source="quick_fix_all")
+                # 2. 创建菜单
+                if fixable_actions or self.config.get("ai_api_key"):  # 只要有可修复项或AI可用就显示
+                    fix_menu = context_menu.addMenu(_("Auto Correct"))
 
-                    fix_menu.addAction(QAction(_("Fix All Issues"), self, triggered=fix_all_slot))
+                    # 添加规则修复项
+                    for action in fixable_actions:
+                        fix_menu.addAction(action)
 
-                context_menu.addSeparator()
+                    # 添加 "Fix All"
+                    if len(fixable_actions) > 1:
+                        fix_menu.addSeparator()
+
+                        def fix_all_slot():
+                            final_text = fix_service.apply_all_fixes(ts_obj, target_lang)
+                            if final_text:
+                                self._apply_translation_to_model(ts_obj, final_text, source="quick_fix_all")
+
+                        fix_menu.addAction(QAction(_("Fix All Rule-Based Issues"), self, triggered=fix_all_slot))
+
+                    # AI Fix
+                    if self.config.get("ai_api_key"):
+                        if fixable_actions:
+                            fix_menu.addSeparator()
+
+                        ai_fix_action = QAction(_("AI Fix This Issue..."), self)
+                        ai_fix_action.triggered.connect(self.ai_fix_current_item)
+                        fix_menu.addAction(ai_fix_action)
+
+                    context_menu.addSeparator()
 
 
         if selected_objs:
@@ -2853,7 +2870,6 @@ class LexiSyncApp(QMainWindow):
                 context_menu.addAction(action_unignore)
             else:
                 context_menu.addAction(action_ignore)
-            context_menu.addSeparator()
             action_reviewed = QAction(_("Mark as Reviewed"), self, triggered=lambda: self.cm_set_reviewed_status(True))
             action_unreviewed = QAction(_("Mark as Unreviewed"), self,
                                         triggered=lambda: self.cm_set_reviewed_status(False))
@@ -2861,7 +2877,6 @@ class LexiSyncApp(QMainWindow):
                 context_menu.addAction(action_unreviewed)
             else:
                 context_menu.addAction(action_reviewed)
-            context_menu.addSeparator()
             action_ignore_warning = QAction(_("Ignore Warnings for Selected"), self,
                                             triggered=lambda: self.cm_set_warning_ignored_status(True))
             action_unignore_warning = QAction(_("Un-ignore Warnings for Selected"), self,
@@ -3397,6 +3412,7 @@ class LexiSyncApp(QMainWindow):
             return
 
         changes_for_undo = []
+        changed_ids = set()
         for ts_obj in selected_objs:
             if ts_obj.is_warning_ignored != ignore_flag:
                 old_value = ts_obj.is_warning_ignored
@@ -3409,6 +3425,7 @@ class LexiSyncApp(QMainWindow):
                 })
 
                 ts_obj.is_warning_ignored = ignore_flag
+                changed_ids.add(ts_obj.id)  # [ADD]
 
         if changes_for_undo:
             self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
@@ -3422,7 +3439,7 @@ class LexiSyncApp(QMainWindow):
         else:
             self.update_statusbar(_("Selected item(s) already have the desired warning status."))
 
-        self._run_and_refresh_with_validation()
+        self._update_view_for_ids(changed_ids)
 
     def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual",
                                     force_propagation_mode=None):
@@ -3786,10 +3803,6 @@ class LexiSyncApp(QMainWindow):
         self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
             'Yes') if new_ignore_state else _('No')))
         self._update_view_for_ids({ts_obj.id})
-        def deferred_refresh():
-            if will_disappear:
-                self.force_full_refresh(id_to_reselect=neighbor_id_to_select)
-        QTimer.singleShot(0, deferred_refresh)
 
     def toggle_reviewed_selected_checkbox(self, state):
         new_reviewed_state = bool(state)
@@ -3822,10 +3835,6 @@ class LexiSyncApp(QMainWindow):
             _("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...",
                                                               status=_('Yes') if new_reviewed_state else _('No')))
         self._update_view_for_ids({ts_obj.id})
-        def deferred_refresh():
-            if will_disappear:
-                self.force_full_refresh(id_to_reselect=neighbor_id_to_select)
-        QTimer.singleShot(0, deferred_refresh)
 
     def save_code_file_content(self, filepath_to_save):
         if not self.original_raw_code_content:
