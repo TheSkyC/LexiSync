@@ -217,7 +217,8 @@ def load_from_po(filepath):
 
 
 def save_to_po(filepath, translatable_objects, metadata=None, original_file_name="source_code", app_instance=None):
-    po_file = polib.POFile(wrapwidth=0)
+    po_file = polib.POFile(wrapwidth=78)
+
     if metadata:
         po_file.metadata = metadata
     if app_instance and app_instance.target_language:
@@ -252,21 +253,17 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         location_lines = [line for line in po_comment_lines if line.strip().startswith('#:')]
 
         for line in location_lines:
-            # Format: #: file1.py:10 file2.py:20
             content = line.replace('#:', '').strip()
             parts = content.split()
             for part in parts:
-                # Split filename
                 if ':' in part:
                     try:
                         fpath, lineno = part.rsplit(':', 1)
                         entry_occurrences.append((fpath, lineno))
                     except ValueError:
-                        pass  # Skip malformed parts
+                        pass
 
-        # Fallback for new entries created manually in UI
         if not entry_occurrences and ts_obj.line_num_in_file > 0:
-            # Only use this fallback if we couldn't find any #: comments
             entry_occurrences = [(original_file_name, str(ts_obj.line_num_in_file))]
 
         # --- Comments Handling ---
@@ -286,6 +283,7 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         entry = polib.POEntry(
             msgid=ts_obj.original_semantic,
             msgstr=ts_obj.translation,
+            msgctxt=ts_obj.context if ts_obj.context else None,
             tcomment=translator_comment,
             comment=developer_comment,
             occurrences=entry_occurrences,
