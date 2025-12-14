@@ -117,8 +117,11 @@ def check_ending_punctuation(source, target):
                 reverse_map = {v: k for k, v in opening_brackets.items()}
                 expected_open = reverse_map.get(t_char)
 
-                if expected_open and expected_open in t_strip:
-                    return None
+                if expected_open:
+                    open_count = t_strip.count(expected_open)
+                    close_count = t_strip.count(t_char)
+                    if open_count > 0 and open_count == close_count:
+                        return None
 
             return "Extra ending punctuation."
 
@@ -211,8 +214,10 @@ def check_printf(source, target):
         for m in RE_PRINTF.finditer(text):
             full_match = m.group(0)
             # 过滤掉像 "% abc" 这样的误判
-            if re.fullmatch(r'%\s+[a-zA-Z]', full_match) and text[m.end():m.end() + 1].isalpha():
-                continue
+            if re.fullmatch(r'%\s+[a-zA-Z]', full_match):
+                # 安全检查边界
+                if m.end() < len(text) and text[m.end()].isalpha():
+                    continue
             matches.append(full_match)
         return matches
 
@@ -292,28 +297,20 @@ def check_numbers(source, target):
 
     if Counter(src_nums) == Counter(tgt_nums):
         return None
-
     ordinal_re = re.compile(r'(\d+)(st|nd|rd|th)\b', re.IGNORECASE)
-
     src_ordinal_nums = {match.group(1) for match in ordinal_re.finditer(src_clean)}
-
-    src_nums_strict = [n for n in src_nums if n not in src_ordinal_nums]
-    tgt_nums_strict = list(tgt_nums)  # 创建副本
-
-    temp_src = list(src_nums_strict)
-    temp_tgt = list(tgt_nums_strict)
-
-    i = 0
-    while i < len(temp_src):
-        num = temp_src[i]
-        if num in temp_tgt:
-            temp_src.pop(i)
-            temp_tgt.remove(num)
-        else:
-            i += 1
-
-    missing = temp_src
-    extra = temp_tgt
+    src_nums_filtered = [n for n in src_nums if n not in src_ordinal_nums]
+    src_counter = Counter(src_nums_filtered)
+    tgt_counter = Counter(tgt_nums)
+    missing = []
+    extra = []
+    all_nums = set(src_counter.keys()) | set(tgt_counter.keys())
+    for num in all_nums:
+        diff = src_counter[num] - tgt_counter[num]
+        if diff > 0:
+            missing.extend([num] * diff)
+        elif diff < 0:
+            extra.extend([num] * abs(diff))
 
     if missing or extra:
         error_parts = []
@@ -328,14 +325,35 @@ def check_numbers(source, target):
 
 def check_brackets(source, target):
     """检查括号是否成对且数量一致"""
-    brackets = [('(', ')'), ('[', ']'), ('{', '}'), ('（', '）'), ('【', '】')]
+    bracket_groups = [
+        ('(', ')', '（', '）', 'Parentheses ()'),
+        ('[', ']', '【', '】', 'Square Brackets []'),
+        ('{', '}', None, None, 'Curly Braces {}'),  # 中文通常不用全角花括号作为语法符号
+        ('<', '>', '《', '》', 'Angle Brackets <>')
+    ]
+
     errors = []
-    for start, end in brackets:
-        if target.count(start) != target.count(end):
-            errors.append(f"Unbalanced '{start}' and '{end}'")
-        # 检查数量是否与原文一致
-        # if source.count(start) != target.count(start):
-        #     errors.append(f"Count of '{start}' differs from original")
+
+    for en_open, en_close, cn_open, cn_close, desc in bracket_groups:
+        # 1. 计算原文中的括号总数
+        src_open_count = source.count(en_open) + (source.count(cn_open) if cn_open else 0)
+        src_close_count = source.count(en_close) + (source.count(cn_close) if cn_close else 0)
+
+        # 2. 计算译文中的括号总数
+        tgt_open_count = target.count(en_open) + (target.count(cn_open) if cn_open else 0)
+        tgt_close_count = target.count(en_close) + (target.count(cn_close) if cn_close else 0)
+
+        # 3. 检查译文自身是否配对
+        if tgt_open_count != tgt_close_count:
+            errors.append(f"Unbalanced {desc} in target")
+            continue
+
+        # 4. 检查数量是否与原文一致
+        if src_open_count != tgt_open_count:
+            if tgt_open_count > src_open_count:
+                pass
+            else:
+                errors.append(f"Count of {desc} differs: source {src_open_count}, target {tgt_open_count}")
     return " | ".join(errors) if errors else None
 
 
