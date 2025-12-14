@@ -13,7 +13,7 @@ ALL_PUNC_VALUES = set(PUNCTUATION_MAP.values())
 RE_PRINTF = re.compile(r'%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[diouxXeEfFgGcrs%]')
 RE_PYTHON_BRACE = re.compile(r'\{([_a-zA-Z0-9\s\.\:\[\]]*)\}')
 RE_REPEATED_WORD = re.compile(r'\b(\w+)\s+\1\b', re.IGNORECASE)
-RE_URL = re.compile(r'(?:ht|f)tps?://[^\s]+|www\.[^\s]+|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/[^\s]*')
+RE_URL = re.compile(r'(?:ht|f)tps?://[^"<> \t\n\r]+|www\.[^"<> \t\n\r]+|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/[^"<> \t\n\r]*')
 RE_EMAIL = re.compile(r'[\w\.-]+@[\w\.-]+')
 RE_NUMBER = re.compile(r'\d+(?:\.\d+)?')
 
