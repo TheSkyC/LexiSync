@@ -385,14 +385,16 @@ def check_numbers(source, target, mode='loose'):
     all_nums = set(src_counter.keys()) | set(tgt_counter.keys())
     for num in all_nums:
         diff = src_counter[num] - tgt_counter[num]
-        if diff > 0:
-            is_exempt = False
-            if mode == 'loose' and num in NUMBER_WORD_MAP:
-                possible_words = NUMBER_WORD_MAP[num]
-                for word in possible_words:
-                    if word.lower() in target.lower():
-                        is_exempt = True
-                        break
+
+        is_exempt = False
+        if mode == 'loose' and num in NUMBER_WORD_MAP:
+            possible_words = NUMBER_WORD_MAP[num]
+            text_to_check = target.lower() if diff > 0 else source.lower()
+
+            for word in possible_words:
+                if word.lower() in text_to_check:
+                    is_exempt = True
+                    break
 
             if not is_exempt:
                 missing.extend([num] * diff)
