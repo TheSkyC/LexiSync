@@ -79,7 +79,7 @@ from services.glossary_worker import GlossaryAnalysisWorker
 
 from utils import config_manager
 from utils.constants import *
-from utils.enums import WarningType
+from utils.enums import WarningType, AIOperationType
 from utils.localization import _, lang_manager
 from utils.text_utils import get_linguistic_length
 from utils.path_utils import get_app_data_path
@@ -96,101 +96,127 @@ except ImportError:
                 start, end = match.span()
                 self.setFormat(start, end - start, format)
 
-class AITranslationWorker(QRunnable):
-    def __init__(self, app_instance, ts_id, original_text, target_language, context_dict, plugin_placeholders, is_batch_item):
+
+class AIWorker(QRunnable):
+    def __init__(self, app_instance, ts_id, operation_type: AIOperationType, **kwargs):
         super().__init__()
         self.app_ref = weakref.ref(app_instance)
         self.ts_id = ts_id
-        self.original_text = original_text
-        self.target_language = target_language
-        self.context_dict = context_dict
-        self.plugin_placeholders = plugin_placeholders
-        self.is_batch_item = is_batch_item
-        self.custom_system_prompt = None
-        self.is_fix_operation = False
+        self.op_type = operation_type
+
+        # Common args
+        self.original_text = kwargs.get('original_text', "")
+        self.target_lang = kwargs.get('target_lang', "")
+
+        # Translation specific args
+        self.context_dict = kwargs.get('context_dict', {})
+        self.plugin_placeholders = kwargs.get('plugin_placeholders', {})
+
+        # Fix specific args (Pre-built prompt)
+        self.system_prompt = kwargs.get('system_prompt', None)
 
     def run(self):
         app = self.app_ref()
-        if not app:
-            return
+        if not app: return
+
+        # Register worker
         app.running_workers.add(self)
 
         try:
-            placeholder_spans = [m.span() for m in app.placeholder_regex.finditer(self.original_text)]
-            def is_inside_placeholder(pos):
-                for start, end in placeholder_spans:
-                    if start <= pos < end:
-                        return True
-                return False
-            original_words = set(re.findall(r'\b\w+\b', self.original_text.lower()))
-            potential_glossary_terms = {}
-            if original_words:
-                source_lang = app.source_language
-                target_lang_code = app.current_target_language if app.is_project_mode else app.target_language
-                potential_glossary_terms = app.glossary_service.get_translations_batch(
-                    words=list(original_words),
-                    source_lang=source_lang,
-                    target_lang=target_lang_code,
-                    include_reverse=False
-                )
-            valid_glossary_terms = {}
-            if potential_glossary_terms:
-                for word, term_info in potential_glossary_terms.items():
-                    is_valid_term = False
-                    try:
-                        for match in re.finditer(r'\b' + re.escape(word) + r'\b', self.original_text, re.IGNORECASE):
-                            if not is_inside_placeholder(match.start()):
-                                is_valid_term = True
-                                break
-                    except re.error:
-                        continue
+            final_prompt = ""
 
-                    if is_valid_term:
-                        valid_glossary_terms[word] = term_info
-            glossary_prompt_part = ""
-            if valid_glossary_terms:
-                header = f"| {_('Source Term')} | {_('Should be Translated As')} |\n|---|---|\n"
-                rows = []
-                for word, term_info in valid_glossary_terms.items():
-                    targets = " or ".join(f"'{t['target']}'" for t in term_info['translations'])
-                    source_term_escaped = word.replace('|', '\\|')
-                    rows.append(f"| {source_term_escaped} | {targets} |")
-                glossary_prompt_part = f"{header}" + "\n".join(rows)
+            # --- Logic Branch 1: Translation (Single or Batch) ---
+            if self.op_type in (AIOperationType.TRANSLATION, AIOperationType.BATCH_TRANSLATION):
+                # 1. Glossary Lookup (Heavy operation, done in thread)
+                glossary_prompt_part = self._build_glossary_context(app)
 
-            if self.custom_system_prompt:
-                final_prompt = self.custom_system_prompt
-            else:
+                # 2. Build Prompt
                 placeholders = {
-                    '[Target Language]': self.target_language,
+                    '[Target Language]': self.target_lang,
                     '[Untranslated Context]': self.context_dict.get("original_context", ""),
                     '[Translated Context]': self.context_dict.get("translation_context", ""),
                     '[Glossary]': glossary_prompt_part
                 }
                 if self.plugin_placeholders:
                     placeholders.update(self.plugin_placeholders)
+
                 prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
                 final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
-            logger.debug("=" * 20 + " AI PROMPT" + "=" * 20)
-            logger.debug(f"Original Text to Translate:\n---\n{self.original_text}\n---")
-            logger.debug(f"\nFinal System Prompt Sent to AI:\n---\n{final_prompt}\n---")
-            logger.debug("=" * 57)
+
+            # --- Logic Branch 2: Fix ---
+            elif self.op_type == AIOperationType.FIX:
+                # Fix prompt is constructed in UI thread because it needs access to validation warnings
+                final_prompt = self.system_prompt
+
+            # --- Execute API Call ---
+            logger.debug(f"[AIWorker] Type: {self.op_type.name}, ID: {self.ts_id}")
             translated_text = app.ai_translator.translate(self.original_text, final_prompt)
-            logger.debug(f"Raw response from AI for ts_id '{self.ts_id}': '{translated_text}'")
-            app.thread_signals.handle_ai_result.emit(self.ts_id, translated_text, None, self.is_batch_item,
-                                                     self.is_fix_operation)
+
+            # Emit Success
+            app.thread_signals.handle_ai_result.emit(
+                self.ts_id, translated_text, None, self.op_type
+            )
+
         except Exception as e:
-            app.thread_signals.handle_ai_result.emit(self.ts_id, None, str(e), self.is_batch_item,
-                                                     self.is_fix_operation)
+            # Emit Error
+            app.thread_signals.handle_ai_result.emit(
+                self.ts_id, None, str(e), self.op_type
+            )
+
         finally:
+            # Cleanup
             app = self.app_ref()
             if app:
-                if self.is_batch_item and app.ai_batch_semaphore is not None:
+                if self.op_type == AIOperationType.BATCH_TRANSLATION and app.ai_batch_semaphore:
                     app.ai_batch_semaphore.release()
                     app.thread_signals.decrement_active_threads.emit()
                 app.running_workers.discard(self)
 
+    def _build_glossary_context(self, app):
+        """Helper to extract glossary terms relevant to the text."""
+        original_words = set(re.findall(r'\b\w+\b', self.original_text.lower()))
+        if not original_words: return ""
+
+        source_lang = app.source_language
+        target_lang_code = app.current_target_language if app.is_project_mode else app.target_language
+
+        potential_terms = app.glossary_service.get_translations_batch(
+            words=list(original_words),
+            source_lang=source_lang,
+            target_lang=target_lang_code,
+            include_reverse=False
+        )
+
+        if not potential_terms: return ""
+
+        # Filter terms that actually appear in text (not inside placeholders)
+        placeholder_spans = [m.span() for m in app.placeholder_regex.finditer(self.original_text)]
+        valid_terms = {}
+
+        for word, term_info in potential_terms.items():
+            try:
+                for match in re.finditer(r'\b' + re.escape(word) + r'\b', self.original_text, re.IGNORECASE):
+                    # Check if match overlaps with any placeholder
+                    if not any(start <= match.start() < end for start, end in placeholder_spans):
+                        valid_terms[word] = term_info
+                        break
+            except re.error:
+                continue
+
+        if not valid_terms: return ""
+
+        # Format as Markdown table
+        header = f"| {_('Source Term')} | {_('Should be Translated As')} |\n|---|---|\n"
+        rows = []
+        for word, term_info in valid_terms.items():
+            targets = " or ".join(f"'{t['target']}'" for t in term_info['translations'])
+            rows.append(f"| {word} | {targets} |")
+
+        return header + "\n".join(rows)
+
+
 class ThreadSafeSignals(QObject):
-    handle_ai_result = Signal(str, str, str, bool, bool)
+    handle_ai_result = Signal(str, str, str, object)  # [CHANGED] Last arg is now AIOperationType object
     decrement_active_threads = Signal()
 
 class LexiSyncApp(QMainWindow):
@@ -3363,19 +3389,13 @@ class LexiSyncApp(QMainWindow):
         final_prompt = generate_prompt_from_structure(structure, placeholders)
         self.update_statusbar(_("AI is fixing the translation..."), persistent=True)
 
-        worker = AITranslationWorker(
+        worker = AIWorker(
             self,
-            ts_obj.id,
-            ts_obj.original_semantic,
-            target_lang_name,
-            {},
-            {},
-            False
+            ts_id=ts_obj.id,
+            operation_type=AIOperationType.FIX,
+            original_text=ts_obj.original_semantic,
+            system_prompt=final_prompt
         )
-
-        worker.custom_system_prompt = final_prompt
-        worker.is_fix_operation = True
-
         self.ai_thread_pool.start(worker)
 
     def cm_set_warning_ignored_status(self, ignore_flag):
@@ -4842,12 +4862,22 @@ class LexiSyncApp(QMainWindow):
             self.update_statusbar(
                 _("AI is translating: \"{text}...\"").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
 
+        # Prepare Data
         context_dict = self._generate_ai_context_strings(ts_obj.id)
         plugin_placeholders = self.plugin_manager.run_hook('get_ai_translation_context') or {}
         target_lang_code = self.current_target_language if self.is_project_mode else self.target_language
-        target_language_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code), target_lang_code)
-        worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language_name,
-                                     context_dict, plugin_placeholders, False)
+        target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
+                                target_lang_code)
+
+        worker = AIWorker(
+            self,
+            ts_id=ts_obj.id,
+            operation_type=AIOperationType.TRANSLATION,
+            original_text=ts_obj.original_semantic,
+            target_lang=target_lang_name,
+            context_dict=context_dict,
+            plugin_placeholders=plugin_placeholders
+        )
         self.ai_thread_pool.start(worker)
         return True
 
@@ -4879,14 +4909,20 @@ class LexiSyncApp(QMainWindow):
 
             if ts_obj and not ts_obj.is_ignored:
                 context_dict = self._generate_ai_context_strings(ts_obj.id)
-                plugin_context = self.plugin_manager.run_hook('get_ai_translation_context') or {}
                 plugin_placeholders = self.plugin_manager.run_hook('get_ai_translation_context') or {}
                 target_lang_code = self.current_target_language if self.is_project_mode else self.target_language
-                target_language_name = next(
-                    (name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
-                    target_lang_code)
-                worker = AITranslationWorker(self, ts_obj.id, ts_obj.original_semantic, target_language_name,
-                                             context_dict, plugin_placeholders , True)
+                target_lang_name = next(
+                    (name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code), target_lang_code)
+
+                worker = AIWorker(
+                    self,
+                    ts_id=ts_obj.id,
+                    operation_type=AIOperationType.BATCH_TRANSLATION,
+                    original_text=ts_obj.original_semantic,
+                    target_lang=target_lang_name,
+                    context_dict=context_dict,
+                    plugin_placeholders=plugin_placeholders
+                )
                 self.ai_thread_pool.start(worker)
             else:
                 self.ai_batch_semaphore.release()
@@ -5144,112 +5180,147 @@ class LexiSyncApp(QMainWindow):
         finally:
             QTimer.singleShot(0, lambda: setattr(self, 'is_finalizing_batch_translation', False))
 
-    def _handle_ai_translation_result(self, ts_id, translated_text, error_message, is_batch_item, is_fix_operation):
+    def _handle_ai_translation_result(self, ts_id, translated_text, error_message, op_type):
+        """
+        Central handler for all AI results.
+        """
         trigger_ts_obj = self._find_ts_obj_by_id(ts_id)
+
+        # Handle Batch Completion Counter (even if object not found)
+        if op_type == AIOperationType.BATCH_TRANSLATION:
+            self.ai_batch_completed_count += 1
+            self._update_batch_progress_ui()
+
         if not trigger_ts_obj:
-            if is_batch_item: self.ai_batch_completed_count += 1
             return
 
+        # 1. Handle Errors
         if error_message:
-            error_msg_display = _("AI translation failed for \"{text}...\": {error}").format(
-                text=trigger_ts_obj.original_semantic[:20].replace('\n', '↵'), error=error_message)
-            self.update_statusbar(error_msg_display)
-            if not is_batch_item:
-                QMessageBox.critical(self, _("AI Operation Error"), error_msg_display)
+            self._handle_ai_error(trigger_ts_obj, error_message, op_type)
+            return
 
-        elif translated_text is not None and translated_text.strip():
-            if hasattr(self, 'plugin_manager'):
-                processed_text = self.plugin_manager.run_hook(
-                    'process_ai_translated_text',
-                    translated_text,
-                    ts_object=trigger_ts_obj
-                )
+        # 2. Handle Success
+        if translated_text and translated_text.strip():
+            self._apply_ai_result_to_model(trigger_ts_obj, translated_text, op_type)
+        else:
+            if op_type != AIOperationType.BATCH_TRANSLATION:
+                self.update_statusbar(_("AI operation returned no result."), persistent=False)
+
+        # 3. Finalize Batch if needed
+        if op_type == AIOperationType.BATCH_TRANSLATION:
+            if self.ai_batch_completed_count >= self.ai_batch_total_items and self.ai_batch_active_threads == 0:
+                self._finalize_batch_ai_translation()
+
+    def _handle_ai_error(self, ts_obj, error_message, op_type):
+        error_display = _("AI failed for \"{text}...\": {error}").format(
+            text=ts_obj.original_semantic[:20].replace('\n', '↵'), error=error_message)
+
+        self.update_statusbar(error_display)
+
+        # Only show popup for single operations
+        if op_type != AIOperationType.BATCH_TRANSLATION:
+            QMessageBox.critical(self, _("AI Operation Error"), error_display)
+
+    def _apply_ai_result_to_model(self, trigger_ts_obj, raw_text, op_type):
+        # Plugin Hook
+        if hasattr(self, 'plugin_manager'):
+            processed_text = self.plugin_manager.run_hook(
+                'process_ai_translated_text', raw_text, ts_object=trigger_ts_obj
+            )
+        else:
+            processed_text = raw_text
+
+        cleaned_translation = processed_text.strip()
+
+        # Determine propagation strategy
+        propagation_mode = self.config.get('translation_propagation_mode', 'smart')
+
+        # Prepare Undo Data
+        changes_for_undo = []
+        changed_ids = set()
+
+        # Logic to find which items to update
+        items_to_update = []
+
+        if op_type == AIOperationType.BATCH_TRANSLATION:
+            # Batch mode
+            items_to_update = self._find_items_to_propagate(trigger_ts_obj, propagation_mode)
+        else:
+            # Single/Fix mode
+            items_to_update = self._find_items_to_propagate(trigger_ts_obj, propagation_mode)
+
+        # Apply Changes
+        for ts_obj in items_to_update:
+            old_val = ts_obj.get_translation_for_storage_and_tm()
+            new_val = cleaned_translation.replace('\n', '\\n')
+
+            if old_val == new_val: continue
+
+            change_data = {
+                'string_id': ts_obj.id, 'field': 'translation',
+                'old_value': old_val, 'new_value': new_val
+            }
+
+            if op_type == AIOperationType.BATCH_TRANSLATION:
+                self.ai_batch_successful_translations_for_undo.append(change_data)
             else:
-                processed_text = translated_text
+                changes_for_undo.append(change_data)
 
-            cleaned_translation = processed_text.strip()
-            original_text_to_match = trigger_ts_obj.original_semantic
-            trigger_current_translation = trigger_ts_obj.translation
-            changed_ids = set()
-            single_translation_undo_changes = []
+            ts_obj.set_translation_internal(cleaned_translation)
+            changed_ids.add(ts_obj.id)
 
-            propagation_mode = self.config.get('translation_propagation_mode', 'smart')
+        # Record Undo (for single ops)
+        if op_type != AIOperationType.BATCH_TRANSLATION and changes_for_undo:
+            action_name = 'bulk_ai_translate' if len(changes_for_undo) > 1 else 'single_change'
+            payload = {'changes': changes_for_undo} if len(changes_for_undo) > 1 else changes_for_undo[0]
+            self.add_to_undo_history(action_name, payload)
 
-            for ts_obj in self.translatable_objects:
-                if ts_obj.original_semantic != original_text_to_match:
-                    continue
-
-                should_update = False
-                if propagation_mode == 'single':
-                    if ts_obj.id == trigger_ts_obj.id:
-                        should_update = True
-                elif propagation_mode == 'always':
-                    should_update = True
-                elif propagation_mode == 'fill_blanks':
-                    should_update = not ts_obj.translation.strip()
-                elif propagation_mode == 'smart':
-                    should_update = (ts_obj.id == trigger_ts_obj.id or
-                                     not ts_obj.translation.strip() or
-                                     ts_obj.translation == trigger_current_translation)
-
-                if should_update:
-                    old_undo_val = ts_obj.get_translation_for_storage_and_tm()
-                    new_undo_val = cleaned_translation.replace('\n', '\\n')
-
-                    if old_undo_val == new_undo_val:
-                        continue
-
-                    change_data = {
-                        'string_id': ts_obj.id,
-                        'field': 'translation',
-                        'old_value': old_undo_val,
-                        'new_value': new_undo_val
-                    }
-                    if is_batch_item:
-                        self.ai_batch_successful_translations_for_undo.append(change_data)
-                    else:
-                        single_translation_undo_changes.append(change_data)
-
-                    ts_obj.set_translation_internal(cleaned_translation)
-                    changed_ids.add(ts_obj.id)
-
-            if not is_batch_item and single_translation_undo_changes:
-                if len(single_translation_undo_changes) > 1:
-                    self.add_to_undo_history('bulk_ai_translate', {'changes': single_translation_undo_changes})
-                else:
-                    self.add_to_undo_history('single_change', single_translation_undo_changes[0])
-
-            if changed_ids:
-                self._update_view_for_ids(changed_ids)
-
+        # UI Updates
+        if changed_ids:
+            self._update_view_for_ids(changed_ids)
             if self.current_selected_ts_id == trigger_ts_obj.id:
                 self.force_refresh_ui_for_current_selection()
 
-            if not is_batch_item:
-                if is_fix_operation:
-                    self.update_statusbar(_("AI fix applied successfully."), persistent=False)
-                else:
-                    self.update_statusbar(_("AI translation successful."), persistent=False)
-            elif self.ai_batch_total_items == 1:
-                self.update_statusbar(_("AI translation successful: \"{text}...\"").format(
-                    text=trigger_ts_obj.original_semantic[:20].replace('\n', '↵')))
-        elif not is_batch_item:
-            self.update_statusbar(_("AI operation returned no result."), persistent=False)
+        # Status Feedback
+        if op_type == AIOperationType.FIX:
+            self.update_statusbar(_("AI fix applied successfully."), persistent=False)
+        elif op_type == AIOperationType.TRANSLATION:
+            self.update_statusbar(_("AI translation successful."), persistent=False)
 
-        if is_batch_item:
-            self.ai_batch_completed_count += 1
-            if self.ai_batch_total_items > 0:
-                progress_percent = (self.ai_batch_completed_count / self.ai_batch_total_items) * 100
-                self.progress_bar.setValue(int(progress_percent))
+    def _find_items_to_propagate(self, trigger_obj, mode):
+        """Helper to find all TranslatableStrings that should be updated based on propagation mode."""
+        targets = []
+        original_text = trigger_obj.original_semantic
+        trigger_current_trans = trigger_obj.translation
 
+        for ts in self.translatable_objects:
+            if ts.original_semantic != original_text: continue
+
+            should_update = False
+            if mode == 'single':
+                should_update = (ts.id == trigger_obj.id)
+            elif mode == 'always':
+                should_update = True
+            elif mode == 'fill_blanks':
+                should_update = not ts.translation.strip()
+            elif mode == 'smart':
+                should_update = (ts.id == trigger_obj.id or
+                                 not ts.translation.strip() or
+                                 ts.translation == trigger_current_trans)
+
+            if should_update:
+                targets.append(ts)
+        return targets
+
+    def _update_batch_progress_ui(self):
+        if self.ai_batch_total_items > 0:
+            progress_percent = (self.ai_batch_completed_count / self.ai_batch_total_items) * 100
+            self.progress_bar.setValue(int(progress_percent))
             self.update_statusbar(
                 _("AI Batch: {current}/{total} completed ({progress_percent:.0f}%).").format(
                     current=self.ai_batch_completed_count, total=self.ai_batch_total_items,
                     progress_percent=progress_percent),
                 persistent=True)
-
-            if self.ai_batch_completed_count >= self.ai_batch_total_items and self.ai_batch_active_threads == 0:
-                self._finalize_batch_ai_translation()
 
 
     def check_batch_placeholder_mismatches(self):

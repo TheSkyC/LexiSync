@@ -73,3 +73,8 @@ class WarningType(Enum):
         if self == WarningType.FUZZY_TRANSLATION:
             return _("Fuzzy Translation")
         return self.name.replace('_', ' ').title()
+
+class AIOperationType(Enum):
+    TRANSLATION = auto()
+    BATCH_TRANSLATION = auto()
+    FIX = auto()
