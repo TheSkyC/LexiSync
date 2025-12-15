@@ -1277,8 +1277,6 @@ class LexiSyncApp(QMainWindow):
         # CommentStatusPanel
         self.comment_status_panel.apply_comment_signal.connect(self.apply_comment_from_button)
         self.comment_status_panel.comment_focus_out_signal.connect(self.apply_comment_focus_out)
-        self.comment_status_panel.ignore_checkbox.stateChanged.connect(self.toggle_ignore_selected_checkbox)
-        self.comment_status_panel.reviewed_checkbox.stateChanged.connect(self.toggle_reviewed_selected_checkbox)
 
         # TMPanel
         self.tm_panel.apply_tm_suggestion_signal.connect(self.apply_tm_suggestion_from_listbox)
@@ -3107,8 +3105,6 @@ class LexiSyncApp(QMainWindow):
         self.details_panel.ai_translate_current_btn.setEnabled(bool(can_ai_translate))
         # CommentPanel
         self.comment_status_panel.apply_comment_btn.setEnabled(state)
-        self.comment_status_panel.ignore_checkbox.setEnabled(state)
-        self.comment_status_panel.reviewed_checkbox.setEnabled(state)
         # TMPanel
         self.tm_panel.update_selected_tm_btn.setEnabled(state)
 
@@ -3244,11 +3240,6 @@ class LexiSyncApp(QMainWindow):
         # 清空 CommentStatusPanel
         self.comment_status_panel.comment_edit_text.setPlainText("")
         self.comment_status_panel.apply_comment_btn.setEnabled(False)
-        self.comment_status_panel.ignore_checkbox.setChecked(False)
-        self.comment_status_panel.ignore_checkbox.setText(_("Ignore this string"))
-        self.comment_status_panel.reviewed_checkbox.setChecked(False)
-        self.comment_status_panel.ignore_checkbox.setEnabled(False)
-        self.comment_status_panel.reviewed_checkbox.setEnabled(False)
 
         # 清空其他面板
         self.context_panel.set_context([])
@@ -3749,92 +3740,6 @@ class LexiSyncApp(QMainWindow):
             self.select_sheet_row_by_id(id_to_reselect, see=True)
         self.force_refresh_ui_for_current_selection()
         self.update_counts_display()
-
-    def _select_neighbor_or_first(self, removed_row_index):
-        if removed_row_index < self.proxy_model.rowCount():
-            neighbor_index = self.proxy_model.index(removed_row_index, 0)
-        elif self.proxy_model.rowCount() > 0:
-            neighbor_index = self.proxy_model.index(self.proxy_model.rowCount() - 1, 0)
-        else:
-            self.table_view.clearSelection()
-            self.on_sheet_select(QModelIndex(), QModelIndex())
-            return
-        selected_obj = self.proxy_model.data(neighbor_index, Qt.UserRole)
-        self.table_view.setCurrentIndex(neighbor_index)
-        self.on_sheet_select(neighbor_index, QModelIndex())
-
-    def _deferred_select_neighbor(self, neighbor_row_in_proxy):
-        if self.neighbor_select_timer.isActive():
-            self.neighbor_select_timer.stop()
-        if neighbor_row_in_proxy < self.proxy_model.rowCount():
-            new_index = self.proxy_model.index(neighbor_row_in_proxy, 0)
-            self.table_view.setCurrentIndex(new_index)
-        elif self.proxy_model.rowCount() > 0:
-            new_index = self.proxy_model.index(self.proxy_model.rowCount() - 1, 0)
-            self.table_view.setCurrentIndex(new_index)
-
-    def toggle_ignore_selected_checkbox(self, state):
-        new_ignore_state = bool(state)
-        if not self.current_selected_ts_id: return
-        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if not ts_obj or new_ignore_state == ts_obj.is_ignored: return
-        neighbor_id_to_select = None
-        will_disappear = not self.show_ignored_var and new_ignore_state
-        if will_disappear:
-            source_index = self.sheet_model.index_from_id(ts_obj.id)
-            proxy_index = self.proxy_model.mapFromSource(source_index)
-            if proxy_index.isValid():
-                current_row = proxy_index.row()
-                if current_row + 1 < self.proxy_model.rowCount():
-                    neighbor_proxy_index = self.proxy_model.index(current_row + 1, 0)
-                    neighbor_obj = self.proxy_model.data(neighbor_proxy_index, Qt.UserRole)
-                    if neighbor_obj: neighbor_id_to_select = neighbor_obj.id
-                elif current_row - 1 >= 0:
-                    neighbor_proxy_index = self.proxy_model.index(current_row - 1, 0)
-                    neighbor_obj = self.proxy_model.data(neighbor_proxy_index, Qt.UserRole)
-                    if neighbor_obj: neighbor_id_to_select = neighbor_obj.id
-        primary_change = {'string_id': ts_obj.id, 'field': 'is_ignored', 'old_value': ts_obj.is_ignored,
-                          'new_value': new_ignore_state}
-        self.add_to_undo_history('single_change', primary_change)
-        ts_obj.is_ignored = new_ignore_state
-        if not new_ignore_state: ts_obj.was_auto_ignored = False
-        ts_obj.update_style_cache()
-        self.mark_project_modified()
-        self.update_statusbar(_("Ignore status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...", status=_(
-            'Yes') if new_ignore_state else _('No')))
-        self._update_view_for_ids({ts_obj.id})
-
-    def toggle_reviewed_selected_checkbox(self, state):
-        new_reviewed_state = bool(state)
-        if not self.current_selected_ts_id: return
-        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if not ts_obj or new_reviewed_state == ts_obj.is_reviewed: return
-
-        neighbor_id_to_select = None
-        will_disappear = self.unreviewed_checkbox.isChecked() and new_reviewed_state
-        if will_disappear:
-            source_index = self.sheet_model.index_from_id(ts_obj.id)
-            proxy_index = self.proxy_model.mapFromSource(source_index)
-            if proxy_index.isValid():
-                current_row = proxy_index.row()
-                if current_row + 1 < self.proxy_model.rowCount():
-                    neighbor_proxy_index = self.proxy_model.index(current_row + 1, 0)
-                    neighbor_obj = self.proxy_model.data(neighbor_proxy_index, Qt.UserRole)
-                    if neighbor_obj: neighbor_id_to_select = neighbor_obj.id
-                elif current_row - 1 >= 0:
-                    neighbor_proxy_index = self.proxy_model.index(current_row - 1, 0)
-                    neighbor_obj = self.proxy_model.data(neighbor_proxy_index, Qt.UserRole)
-                    if neighbor_obj: neighbor_id_to_select = neighbor_obj.id
-        primary_change = {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': ts_obj.is_reviewed,
-                          'new_value': new_reviewed_state}
-        self.add_to_undo_history('single_change', primary_change)
-        ts_obj.is_reviewed = new_reviewed_state
-        ts_obj.update_style_cache()
-        self.mark_project_modified()
-        self.update_statusbar(
-            _("Review status for ID {id} -> {status}").format(id=str(ts_obj.id)[:8] + "...",
-                                                              status=_('Yes') if new_reviewed_state else _('No')))
-        self._update_view_for_ids({ts_obj.id})
 
     def save_code_file_content(self, filepath_to_save):
         if not self.original_raw_code_content:
@@ -5525,13 +5430,6 @@ class LexiSyncApp(QMainWindow):
         final_text = "\n".join(all_comment_lines)
         self.comment_status_panel.comment_edit_text.setPlainText(final_text)
 
-        self.comment_status_panel.ignore_checkbox.setChecked(ts_obj.is_ignored)
-        ignore_label = _("Ignore this string")
-        if ts_obj.is_ignored and ts_obj.was_auto_ignored:
-            ignore_label += _(" (Auto)")
-        self.comment_status_panel.ignore_checkbox.setText(ignore_label)
-
-        self.comment_status_panel.reviewed_checkbox.setChecked(ts_obj.is_reviewed)
         self.comment_status_panel.highlighter.rehighlight()
 
         self.context_panel.set_context(ts_obj)

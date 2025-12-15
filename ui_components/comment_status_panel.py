@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QCheckBox,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFrame, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal
@@ -14,8 +14,6 @@ from utils.localization import _
 class CommentStatusPanel(QWidget):
     apply_comment_signal = Signal()
     comment_focus_out_signal = Signal()
-    toggle_ignore_signal = Signal(bool)
-    toggle_reviewed_signal = Signal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -51,22 +49,6 @@ class CommentStatusPanel(QWidget):
         comment_actions_layout.addStretch(1)
         layout.addWidget(comment_actions_frame)
 
-        status_frame = QFrame()
-        status_layout = QHBoxLayout(status_frame)
-        status_layout.setContentsMargins(0, 0, 0, 0)
-        self.ignore_checkbox = QCheckBox(_("Ignore this string"))
-        self.ignore_checkbox.setObjectName("ignore_checkbox")
-        self.ignore_checkbox.stateChanged.connect(lambda state: self.toggle_ignore_signal.emit(bool(state)))
-        self.ignore_checkbox.setEnabled(False)
-        status_layout.addWidget(self.ignore_checkbox)
-        self.reviewed_checkbox = QCheckBox(_("Reviewed"))
-        self.reviewed_checkbox.setObjectName("reviewed_checkbox")
-        self.reviewed_checkbox.stateChanged.connect(lambda state: self.toggle_reviewed_signal.emit(bool(state)))
-        self.reviewed_checkbox.setEnabled(False)
-        status_layout.addWidget(self.reviewed_checkbox)
-        status_layout.addStretch(1)
-        layout.addWidget(status_frame)
-
     def _comment_focus_out_event(self, event):
         self.comment_focus_out_signal.emit()
         super(NewlineTextEdit, self.comment_edit_text).focusOutEvent(event)
@@ -74,9 +56,3 @@ class CommentStatusPanel(QWidget):
     def update_ui_texts(self):
         self.findChild(QLabel, "comment_label").setText(_("Comment:"))
         self.findChild(QPushButton, "apply_comment_btn").setText(_("Apply Comment"))
-        if hasattr(self, 'ignore_checkbox'):
-            current_ignore_text_key = "Ignore this string (Auto)" if (
-                self.ignore_checkbox.text().endswith(_(" (Auto)"))) else "Ignore this string"
-            self.ignore_checkbox.setText(_(current_ignore_text_key))
-        if hasattr(self, 'reviewed_checkbox'):
-            self.reviewed_checkbox.setText(_("Reviewed"))
