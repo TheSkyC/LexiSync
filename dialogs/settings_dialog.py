@@ -111,7 +111,7 @@ class SettingsDialog(QDialog):
         self._add_page(appearance_page, _("Appearance"))
 
         ai_page = AISettingsPage(self.app)
-        self._add_page(ai_page, _("AI Translation"))
+        self._add_page(ai_page, _("AI Assistance"))
 
         validation_page = ValidationSettingsPage(self.app)
         self._add_page(validation_page, _("Validation"))
