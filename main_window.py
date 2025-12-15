@@ -64,6 +64,7 @@ from dialogs.add_glossary_entry_dialog import AddGlossaryEntryDialog
 from services.ai_translator import AITranslator
 from services.ai_worker import AIWorker
 from services.ai_task_manager import AITaskManager
+from services.search_service import SearchService
 from services import language_service
 from services import fix_service
 from services.build_service import BuildWorker
@@ -114,6 +115,7 @@ class LexiSyncApp(QMainWindow):
             self.setGeometry(100, 100, 1600, 900)
         self.setWindowTitle(_("LexiSync - v{version}").format(version=APP_VERSION))
 
+        # AI
         self.thread_signals = ThreadSafeSignals()
         self.ai_manager = AITaskManager(self)
         self.ai_manager.batch_started.connect(self._on_ai_batch_started)
@@ -126,6 +128,10 @@ class LexiSyncApp(QMainWindow):
         self.is_finalizing_batch_translation = False
         self.ai_batch_successful_translations_for_undo = []
 
+        # Search and replace
+        self.search_service = SearchService(self)
+        self.search_service.highlights_changed.connect(lambda: self.table_view.viewport().update())
+        self.search_service.navigate_to.connect(self._on_search_navigate)
 
         self.project_manager = ProjectManager(self)
         self.drop_target_widget = None
@@ -186,17 +192,6 @@ class LexiSyncApp(QMainWindow):
         self.undo_history = []
         self.redo_history = []
         self.current_selected_ts_id = None
-
-        self.last_search_term = ""
-        self.last_replace_term = ""
-        self.last_search_options = {
-            "case_sensitive": False,
-            "in_original": True,
-            "in_translation": True,
-            "in_comment": True
-        }
-        self.find_highlight_indices = set()
-        self.current_find_highlight_index = None
         self.search_dialog_instance = None
         self.ai_translator = AITranslator(
             api_key=self.config.get("ai_api_key"),
@@ -847,6 +842,15 @@ class LexiSyncApp(QMainWindow):
         os.makedirs(tm_dir, exist_ok=True)
         return tm_dir
 
+    def _on_search_navigate(self, row, col):
+        index = self.proxy_model.index(row, col)
+        if index.isValid():
+            self.table_view.selectionModel().clearSelection()
+            self.table_view.selectionModel().setCurrentIndex(
+                index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows
+            )
+            self.table_view.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
+
     def refresh_sort(self):
         current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
         current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
@@ -1119,14 +1123,6 @@ class LexiSyncApp(QMainWindow):
         self.marker_bar.add_markers('error', errors)
         self.marker_bar.add_markers('warning', warnings)
         self.marker_bar.add_markers('info', infos)
-
-    def update_search_markers(self, source_rows: list):
-        if self.marker_bar:
-            self.marker_bar.add_markers('search', source_rows)
-
-    def clear_search_markers(self):
-        if self.marker_bar:
-            self.marker_bar.clear_markers('search')
 
     def eventFilter(self, obj, event):
         if obj is self.search_entry:
@@ -1731,6 +1727,8 @@ class LexiSyncApp(QMainWindow):
         self.glossary_service.disconnect_databases()
         self.save_config()
         self.save_window_state()
+        self.search_service.clear()
+        self.clear_search_markers()
         if hasattr(self, 'plugin_manager'):
             self.plugin_manager.run_hook('on_app_shutdown')
         event.accept()
@@ -2664,19 +2662,6 @@ class LexiSyncApp(QMainWindow):
             first_col = source_index.siblingAtColumn(0)
             last_col = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
             self.sheet_model.dataChanged.emit(first_col, last_col)
-
-    def on_search_focus_in(self, event):
-        if self.search_entry.text() == _("Quick search..."):
-            self.search_entry.setText("")
-            self.search_entry.setStyleSheet("color: black;")
-        QLineEdit.focusInEvent(self.search_entry, event)
-
-    def on_search_focus_out(self, event=None):
-        if not self.search_entry.text():
-            self.search_entry.setText(_("Quick search..."))
-            self.search_entry.setStyleSheet("color: grey;")
-        if event:
-            QLineEdit.focusOutEvent(self.search_entry, event)
 
     def _sort_sheet_column(self, logical_index):
         current_order = self.table_view.horizontalHeader().sortIndicatorOrder()

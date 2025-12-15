@@ -36,14 +36,20 @@ class CustomCellDelegate(QStyledItemDelegate):
         super().paint(painter, display_option, index)
         painter.save()
         current_proxy_index_tuple = (index.row(), index.column())
-        is_find_match = current_proxy_index_tuple in self.app.find_highlight_indices
-        is_current_find_focus = current_proxy_index_tuple == self.app.current_find_highlight_index
+
+        is_find_match = False
+        is_current_find_focus = False
+
+        if hasattr(self.app, 'search_service'):
+            is_find_match = current_proxy_index_tuple in self.app.search_service.highlight_indices
+            is_current_find_focus = current_proxy_index_tuple == self.app.search_service.current_focus_index
 
         if is_current_find_focus:
             painter.fillRect(display_option.rect, QColor(144, 238, 144, 150))
         elif is_find_match:
             painter.fillRect(display_option.rect, QColor(147, 112, 219, 110))
         painter.restore()
+
         painter.save()
         ts_obj = index.data(Qt.UserRole)
         if ts_obj:

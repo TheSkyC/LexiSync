@@ -225,13 +225,13 @@ class TMService:
         return [dict(row) for row in cursor.fetchall()]
 
     def _parse_tm_file(self, filepath: str, source_lang: str, target_lang: str) -> List[Dict]:
-        _, ext = os.path.splitext(filepath)
+        __, ext = os.path.splitext(filepath)
         ext = ext.lower()
 
         if ext == '.xlsx':
             return self._parse_xlsx(filepath, source_lang, target_lang)
         else:
-            raise ValueError(_("Unsupported TM file format: {ext}").format(ext=ext))
+            raise ValueError(_.format(ext=ext))
 
     def _parse_xlsx(self, filepath: str, source_lang: str, target_lang: str) -> List[Dict]:
         tus = []
