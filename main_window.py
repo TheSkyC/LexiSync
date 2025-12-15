@@ -304,7 +304,6 @@ class LexiSyncApp(QMainWindow):
         self.show_untranslated_var = self.config.get("show_untranslated", False)
         self.show_translated_var = self.config.get("show_translated", False)
         self.show_unreviewed_var = self.config.get("show_unreviewed", False)
-        self.use_static_sorting_var = self.config.get("use_static_sorting", False)
 
         self.search_term_var = self.config.get("ui_state", {}).get("search_term", "")
 
@@ -358,7 +357,6 @@ class LexiSyncApp(QMainWindow):
 
     def UI_initialization(self):
         self._setup_ui()
-        self.proxy_model.set_static_sorting_enabled(self.use_static_sorting_var)
         self.update_ui_state_after_file_load()
         self.update_ai_related_ui_state()
         self.update_counts_display()
@@ -934,16 +932,6 @@ class LexiSyncApp(QMainWindow):
 
             self.ACTION_MAP_FOR_DIALOG[name] = action
 
-    def _toggle_static_sorting_mode(self, checked: bool):
-        self.use_static_sorting_var = checked
-        self.proxy_model.set_static_sorting_enabled(checked)
-        self.set_config_var('use_static_sorting', checked)
-        if checked:
-            self.update_statusbar(_("Static sorting enabled. Press F5 to refresh."))
-        else:
-            self.update_statusbar(_("Dynamic sorting enabled."))
-            self.proxy_model.invalidate()
-
     def _get_global_tm_path(self):
         app_data_dir = get_app_data_path()
         tm_dir = os.path.join(app_data_dir, "tm")
@@ -951,9 +939,11 @@ class LexiSyncApp(QMainWindow):
         return tm_dir
 
     def refresh_sort(self):
-        if self.use_static_sorting_var:
-            self.proxy_model.invalidate()
-            self.update_statusbar(_("View refreshed."))
+        current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
+        current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
+        self.proxy_model.invalidate()
+        self.proxy_model.sort(current_sort_column, current_sort_order)
+        self.update_statusbar(_("View refreshed."))
 
     def detect_language_from_data(self, text_type: str) -> str | None:
         if not self.translatable_objects:
@@ -1708,10 +1698,7 @@ class LexiSyncApp(QMainWindow):
         if redo_payload_data:
             self.redo_history.append({'type': action_type, 'data': redo_payload_data})
 
-        if self.use_static_sorting_var:
-            self._update_view_for_ids(changed_ids)
-        else:
-            self._run_and_refresh_with_validation()
+        self._update_view_for_ids(changed_ids)
 
         if self.current_selected_ts_id in changed_ids:
             self.force_refresh_ui_for_current_selection()
@@ -1802,10 +1789,8 @@ class LexiSyncApp(QMainWindow):
             if len(self.undo_history) > MAX_UNDO_HISTORY:
                 self.undo_history.pop(0)
 
-        if self.use_static_sorting_var:
-            self._update_view_for_ids(changed_ids)
-        else:
-            self._run_and_refresh_with_validation()
+        self._update_view_for_ids(changed_ids)
+
 
         if self.current_selected_ts_id in changed_ids:
             self.force_refresh_ui_for_current_selection()
@@ -1846,7 +1831,6 @@ class LexiSyncApp(QMainWindow):
         self.config["show_untranslated"] = self.untranslated_checkbox.isChecked()
         self.config["show_translated"] = self.translated_checkbox.isChecked()
         self.config["show_unreviewed"] = self.unreviewed_checkbox.isChecked()
-        self.config["use_static_sorting"] = self.use_static_sorting_var
         self.config["auto_save_tm"] = self.auto_save_tm_var
         self.config["auto_backup_tm_on_save"] = self.auto_backup_tm_on_save_var
         self.config["auto_compile_mo_on_save"] = self.auto_compile_mo_var
@@ -3261,10 +3245,7 @@ class LexiSyncApp(QMainWindow):
         for ts_obj in self.translatable_objects:
             ts_obj.update_style_cache()
         self.sheet_model.set_translatable_objects(self.translatable_objects)
-        if self.use_static_sorting_var:
-            self.proxy_model.invalidate()
-        else:
-            self.refresh_sheet_preserve_selection()
+        self.refresh_sheet_preserve_selection()
         self.force_refresh_ui_for_current_selection()
         self.update_statusbar(_("Validation complete."), persistent=False)
         self.update_warning_markers()
@@ -3720,9 +3701,6 @@ class LexiSyncApp(QMainWindow):
                     first_col_index = source_index.siblingAtColumn(0)
                     last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
                     self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
-
-        if self.current_selected_ts_id in changed_ids:
-            self.force_refresh_ui_for_current_selection()
 
         self.update_counts_display()
 
@@ -4206,7 +4184,6 @@ class LexiSyncApp(QMainWindow):
 
     def import_po_file_dialog_with_path(self, po_filepath):
         self._reset_app_state()
-        self.proxy_model.setDynamicSortFilter(False)
         try:
             self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(po_filepath)
             self.original_raw_code_content = ""
@@ -4265,11 +4242,10 @@ class LexiSyncApp(QMainWindow):
             self._reset_app_state()
             self.update_statusbar(_("PO file loading failed"), persistent=True)
         finally:
-            if not self.use_static_sorting_var:
-                self.proxy_model.setDynamicSortFilter(True)
-                current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
-                current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
-                self.proxy_model.sort(current_sort_column, current_sort_order)
+            self.proxy_model.setDynamicSortFilter(True)
+            current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
+            current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
+            self.proxy_model.sort(current_sort_column, current_sort_order)
         self.update_counts_display()
 
     def import_po_file_dialog(self):
@@ -4945,16 +4921,11 @@ class LexiSyncApp(QMainWindow):
             self.mark_project_modified()
             self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
 
-            if will_any_disappear:
-                self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
-            else:
-                self._update_view_for_ids(changed_ids)
+            self._update_view_for_ids(changed_ids)
 
     def cm_set_reviewed_status(self, reviewed_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
-
-        will_any_disappear = reviewed_flag and self.unreviewed_checkbox.isChecked()
 
         bulk_changes = []
         changed_ids = set()
@@ -4972,16 +4943,11 @@ class LexiSyncApp(QMainWindow):
             self.mark_project_modified()
             self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
 
-            if will_any_disappear:
-                self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
-            else:
-                self._update_view_for_ids(changed_ids)
+            self._update_view_for_ids(changed_ids)
 
     def cm_toggle_ignored_status(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
-
-        will_any_disappear = (not self.show_ignored_var) and any(not ts_obj.is_ignored for ts_obj in selected_objs)
 
         bulk_changes = []
         changed_ids = set()
@@ -5000,10 +4966,7 @@ class LexiSyncApp(QMainWindow):
             self.mark_project_modified()
             self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
 
-            if will_any_disappear:
-                self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
-            else:
-                self._update_view_for_ids(changed_ids)
+            self._update_view_for_ids(changed_ids)
 
     def cm_toggle_reviewed_status(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()
@@ -5028,26 +4991,8 @@ class LexiSyncApp(QMainWindow):
             self.mark_project_modified()
             self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
 
-            if will_any_disappear:
-                self.force_full_refresh(id_to_reselect=self.current_selected_ts_id)
-            else:
-                self._update_view_for_ids(changed_ids)
+            self._update_view_for_ids(changed_ids)
 
-    def __and_dispatch_more(self):
-        if not self.is_aidecrement_active_threads_translating_batch:
-            if self.ai_batch_active_threads > 0: self.ai_batch_active_threads -= 1
-            if self.ai_batch_active_threads == 0:
-                self._finalize_batch_ai_translation()
-            return
-
-        if self.ai_batch_active_threads > 0:
-            self.ai_batch_active_threads -= 1
-
-        if self.ai_batch_next_item_index < self.ai_batch_total_items:
-            interval = self.config.get("ai_api_interval", 200)
-            QTimer.singleShot(interval, self._dispatch_next_ai_batch_item)
-        elif self.ai_batch_active_threads == 0 and self.ai_batch_completed_count >= self.ai_batch_total_items:
-            self._finalize_batch_ai_translation()
 
     def ai_translate_selected_from_menu(self):
         self.cm_ai_translate_selected()

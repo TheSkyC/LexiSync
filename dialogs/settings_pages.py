@@ -277,10 +277,6 @@ class AppearanceSettingsPage(BaseSettingsPage):
         form_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
         form_layout.setLabelAlignment(Qt.AlignLeft)
 
-        self.static_sort_checkbox = QCheckBox(_("Use static sorting (Press F5 to manual refresh)"))
-        self.static_sort_checkbox.setChecked(self.app.config.get('use_static_sorting', False))
-        form_layout.addRow(_("Sorting Mode:"), self.static_sort_checkbox)
-
         self.accelerator_marker_edit = QLineEdit(self.app.config.get('accelerator_marker', '&'))
         self.accelerator_marker_edit.setMaxLength(1)
         self.accelerator_marker_edit.setToolTip(_("Enter a single character used for menu accelerators (e.g., &, _)."))
@@ -297,9 +293,6 @@ class AppearanceSettingsPage(BaseSettingsPage):
         self.page_layout.addLayout(form_layout)
 
     def save_settings(self):
-        is_checked = self.static_sort_checkbox.isChecked()
-        if is_checked != self.app.use_static_sorting_var:
-            self.app._toggle_static_sorting_mode(is_checked)
         self.app.config['accelerator_marker'] = self.accelerator_marker_edit.text()
 
 

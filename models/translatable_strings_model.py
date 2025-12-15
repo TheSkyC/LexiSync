@@ -113,7 +113,7 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         self.is_po_mode = False
         self._current_filter_seen_originals = set()
         self.new_entry_id = "##NEW_ENTRY##"
-        self.setDynamicSortFilter(True)
+        self.setDynamicSortFilter(False)
 
     def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term, is_po_mode):
         current_sort_column = self.sortColumn()
