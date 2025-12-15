@@ -630,12 +630,23 @@ class ValidationSettingsPage(BaseSettingsPage):
         new_rules = {}
         for key, widget in self.rule_widgets.items():
             new_rules[key] = widget.get_data()
-
-        self.app.config["validation_rules"] = new_rules
-
-        self.app.config['check_length'] = self.check_length.isChecked()
-        self.app.config['length_threshold_major'] = self.major_threshold.value()
-        self.app.config['length_threshold_minor'] = self.minor_threshold.value()
-
-        self.app._run_and_refresh_with_validation()
+        new_check_length = self.check_length.isChecked()
+        new_major = self.major_threshold.value()
+        new_minor = self.minor_threshold.value()
+        old_rules = self.app.config.get("validation_rules", {})
+        old_check_length = self.app.config.get('check_length', True)
+        old_major = self.app.config.get('length_threshold_major', 2.5)
+        old_minor = self.app.config.get('length_threshold_minor', 2.0)
+        rules_changed = new_rules != old_rules
+        length_settings_changed = (
+                new_check_length != old_check_length or
+                abs(new_major - old_major) > 0.001 or
+                abs(new_minor - old_minor) > 0.001
+        )
+        if rules_changed or length_settings_changed:
+            self.app.config["validation_rules"] = new_rules
+            self.app.config['check_length'] = new_check_length
+            self.app.config['length_threshold_major'] = new_major
+            self.app.config['length_threshold_minor'] = new_minor
+            self.app._run_and_refresh_with_validation()
         return False
