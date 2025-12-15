@@ -38,6 +38,9 @@ class SearchService(QObject):
         self.current_focus_index = None
         self.highlights_changed.emit()
 
+        if hasattr(self.app, 'clear_search_markers'):
+            self.app.clear_search_markers()
+
     def _load_state_from_config(self):
         ui_state = self.app.config.get("ui_state", {})
         search_state = ui_state.get("search_dialog", {})
@@ -119,10 +122,15 @@ class SearchService(QObject):
         self.last_options = current_options_signature
         self.highlights_changed.emit()
 
-        # Update MarkerBar if available
+        # Update MarkerBar
         if hasattr(self.app, 'update_search_markers'):
-            source_rows = [self.app.proxy_model.mapToSource(self.app.proxy_model.index(r['proxy_row'], 0)).row()
-                           for r in self.search_results]
+            source_rows = []
+            for res in self.search_results:
+                proxy_idx = self.app.proxy_model.index(res['proxy_row'], 0)
+                source_idx = self.app.proxy_model.mapToSource(proxy_idx)
+                if source_idx.isValid():
+                    source_rows.append(source_idx.row())
+
             self.app.update_search_markers(source_rows)
 
         return len(self.search_results)

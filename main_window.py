@@ -1124,6 +1124,14 @@ class LexiSyncApp(QMainWindow):
         self.marker_bar.add_markers('warning', warnings)
         self.marker_bar.add_markers('info', infos)
 
+    def update_search_markers(self, source_rows: list):
+        if self.marker_bar:
+            self.marker_bar.add_markers('search', source_rows)
+
+    def clear_search_markers(self):
+        if self.marker_bar:
+            self.marker_bar.clear_markers('search')
+
     def eventFilter(self, obj, event):
         if obj is self.search_entry:
             if event.type() == QEvent.FocusIn:
