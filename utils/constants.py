@@ -3,6 +3,7 @@
 
 import uuid
 from utils.localization import _
+def N_(message): return message
 
 APP_NAMESPACE_UUID = uuid.UUID('c2e02333-2f1d-48ba-bc8d-90d49da373af')
 CONFIG_FILE = "config.json"
@@ -19,56 +20,56 @@ DYNAMIC = "Dynamic Instruction"
 
 DEFAULT_VALIDATION_RULES = {
     # --- 代码安全 ---
-    "printf": {"enabled": True, "level": "error", "label": "Printf Format (%s, %d)"},
-    "python_brace": {"enabled": True, "level": "error", "label": "Python Brace ({}, {name})"},
-    "html_tags": {"enabled": True, "level": "error", "label": "HTML/XML Tags"},
-    "url_email": {"enabled": True, "level": "warning", "label": "URL & Email"},
+    "printf": {"enabled": True, "level": "error", "label": N_("Printf Format (%s, %d)")},
+    "python_brace": {"enabled": True, "level": "error", "label": N_("Python Brace ({}, {name})")},
+    "html_tags": {"enabled": True, "level": "error", "label": N_("HTML/XML Tags")},
+    "url_email": {"enabled": True, "level": "warning", "label": N_("URL & Email")},
 
     # --- 内容一致性 ---
     "numbers": {
         "enabled": True,
         "level": "error",
-        "label": "Numbers Consistency",
+        "label": N_("Numbers Consistency"),
         "modes": {
             "strict": {
-                "name": "Strict",
-                "description": "Arabic numerals must match exactly (e.g. '1' must be '1')."
+                "name": N_("Strict"),
+                "description": N_("Arabic numerals must match exactly (e.g. '1' must be '1').")
             },
             "loose": {
-                "name": "Loose",
-                "description": "Allows numerals to be translated into words (e.g. '1' -> 'One', '一', 'First')."
+                "name": N_("Loose"),
+                "description": N_("Allows numerals to be translated into words (e.g. '1' -> 'One', '一', 'First').")
             }
         },
         "default_mode": "loose"
     },
-    "glossary": {"enabled": True, "level": "warning", "label": "Glossary Terms"},
-    "fuzzy": {"enabled": True, "level": "warning", "label": "Fuzzy State"},
+    "glossary": {"enabled": True, "level": "warning", "label": N_("Glossary Terms")},
+    "fuzzy": {"enabled": True, "level": "warning", "label": N_("Fuzzy State")},
 
     # --- 格式与标点 ---
-    "punctuation": {"enabled": True, "level": "warning", "label": "Ending Punctuation"},
-    "brackets": {"enabled": True, "level": "warning", "label": "Paired Brackets () [] {}"},
-    "whitespace": {"enabled": True, "level": "warning", "label": "Leading/Trailing Whitespace"},
-    "double_space": {"enabled": True, "level": "warning", "label": "Double Spaces"},
-    "capitalization": {"enabled": False, "level": "warning", "label": "Initial Capitalization"},
-    "repeated_word": {"enabled": True, "level": "info", "label": "Repeated Words"},
-    "newline_count": {"enabled": True, "level": "warning", "label": "Newline Count Mismatch"},
+    "punctuation": {"enabled": True, "level": "warning", "label": N_("Ending Punctuation")},
+    "brackets": {"enabled": True, "level": "warning", "label": N_("Paired Brackets () [] {}")},
+    "whitespace": {"enabled": True, "level": "warning", "label": N_("Leading/Trailing Whitespace")},
+    "double_space": {"enabled": True, "level": "warning", "label": N_("Double Spaces")},
+    "capitalization": {"enabled": False, "level": "warning", "label": N_("Initial Capitalization")},
+    "repeated_word": {"enabled": True, "level": "info", "label": N_("Repeated Words")},
+    "newline_count": {"enabled": True, "level": "warning", "label": N_("Newline Count Mismatch")},
     "quotes": {
         "enabled": True,
         "level": "info",
-        "label": "Mismatched Quotes",
+        "label": N_("Mismatched Quotes"),
         "modes": {
             "strict": {
-                "name": "Strict",
-                "description": "Single and double quotes must match their types exactly."
+                "name": N_("Strict"),
+                "description": N_("Single and double quotes must match their types exactly.")
             },
             "flexible": {
-                "name": "Flexible",
-                "description": "Allows converting single quotes to double quotes (e.g., '...' -> “...”) and vice versa."
+                "name": N_("Flexible"),
+                "description": N_("Allows converting single quotes to double quotes (e.g., '...' -> “...”) and vice versa.")
             }
         },
         "default_mode": "flexible"
     },
-    "accelerator": {"enabled": True, "level": "error", "label": "Accelerator Mismatch"},
+    "accelerator": {"enabled": True, "level": "error", "label": N_("Accelerator Mismatch")},
 }
 
 DEFAULT_CORRECTION_PROMPT_STRUCTURE = [

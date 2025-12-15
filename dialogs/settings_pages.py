@@ -470,7 +470,8 @@ class ValidationRuleWidget(QWidget):
         layout.setContentsMargins(0, 2, 0, 2)
 
         # Checkbox
-        self.checkbox = QCheckBox(config_data.get("label", key))
+        label_text = config_data.get("label", key)
+        self.checkbox = QCheckBox(_(label_text))
         self.checkbox.setChecked(config_data.get("enabled", True))
         self.checkbox.stateChanged.connect(self.update_state)
 
