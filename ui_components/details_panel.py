@@ -350,7 +350,7 @@ class DetailsPanel(QWidget):
         elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
             active_msg = ts_obj.minor_warnings[0][1]
             style_type = "warning"
-        elif ts_obj.infos and not ts_obj.is_warning_ignored:  # [NEW] 检查 Info
+        elif ts_obj.infos and not ts_obj.is_warning_ignored:
             active_msg = ts_obj.infos[0][1]
             style_type = "info"
 

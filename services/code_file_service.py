@@ -99,7 +99,7 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
                 string_type=string_type_from_pattern,
                 source_file_path=source_file_rel_path,
                 occurrences=[(source_file_rel_path, str(line_num))],
-                occurrence_index=current_index  # [CHANGED] 传入计算出的次序
+                occurrence_index=current_index
             )
 
             if string_type_from_pattern and string_type_from_pattern not in ["Custom String", "Custom", ""]:
