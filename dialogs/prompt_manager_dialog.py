@@ -305,6 +305,13 @@ class PromptManagerDialog(QDialog):
             return
 
         placeholders_data = [
+            {'placeholder': '[Source Text]', 'description': _('The original text to be translated.'),
+             'provider': _('Main App')},
+            {'placeholder': '[Translation]', 'description': _('The current translation text.'),
+             'provider': _('Main App')},
+            {'placeholder': '[Error List]',
+             'description': _('List of validation errors found in the current translation.'),
+             'provider': _('Main App')},
             {'placeholder': '[Target Language]', 'description': _('The target language for translation.'),
              'provider': _('Main App')},
             {'placeholder': '[Glossary]',

@@ -3251,16 +3251,35 @@ class LexiSyncApp(QMainWindow):
         if not error_list_str:
             error_list_str = _("No specific errors detected, please review and improve.")
 
-        # 构建占位符
+        # 构建术语表上下文
+        glossary_text = ""
+        if ts_obj.id in self.glossary_analysis_cache:
+            matches = self.glossary_analysis_cache[ts_obj.id]
+            if matches:
+                lines = [f"| {_('Source')} | {_('Target')} |", "|---|---|"]
+                for m in matches:
+                    src = m['source']
+                    # 提取所有推荐译文
+                    tgts = ", ".join([t['target'] for t in m['translations']])
+                    lines.append(f"| {src} | {tgts} |")
+                glossary_text = "\n".join(lines)
+
+        if not glossary_text and hasattr(self, 'glossary_service'):
+            pass
         target_lang_code = self.current_target_language if self.is_project_mode else self.target_language
-        target_lang_name = target_lang_code
+        from utils.constants import SUPPORTED_LANGUAGES
+        target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
+                                target_lang_code)
 
         placeholders = {
             '[Target Language]': target_lang_name,
             '[Source Text]': ts_obj.original_semantic,
+            '[Translation]': ts_obj.translation,
             '[Current Translation]': ts_obj.translation,
-            '[Error List]': error_list_str
+            '[Error List]': error_list_str,
+            '[Glossary]': glossary_text
         }
+
         final_prompt = generate_prompt_from_structure(structure, placeholders)
         self.update_statusbar(_("AI is fixing the translation..."), persistent=True)
 

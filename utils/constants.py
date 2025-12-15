@@ -76,7 +76,19 @@ DEFAULT_CORRECTION_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": "Structural Content",
         "enabled": True,
-        "content": "你是一位专业的本地化QA专家。你的任务是修复以下译文中的错误，使其符合目标语言的语法习惯和项目规则。"
+        "content": "你是一位专业的本地化QA专家。你的任务是修复以下译文中的错误，使其符合目标语言的语法习惯和项目规则。并确保与原文的格式一致（行数、符号等等）"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": "Static Instruction",
+        "enabled": True,
+        "content": "目标语言：[Target Language]"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": "Dynamic Instruction",
+        "enabled": True,
+        "content": "请参考以下术语表（Glossary），确保术语使用正确：\n[Glossary]"
     },
     {
         "id": str(uuid.uuid4()),
