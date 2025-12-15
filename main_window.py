@@ -357,6 +357,7 @@ class LexiSyncApp(QMainWindow):
 
     def UI_initialization(self):
         self._setup_ui()
+        self.proxy_model.setDynamicSortFilter(False)
         self.update_ui_state_after_file_load()
         self.update_ai_related_ui_state()
         self.update_counts_display()
@@ -4242,7 +4243,6 @@ class LexiSyncApp(QMainWindow):
             self._reset_app_state()
             self.update_statusbar(_("PO file loading failed"), persistent=True)
         finally:
-            self.proxy_model.setDynamicSortFilter(True)
             current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
             current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
             self.proxy_model.sort(current_sort_column, current_sort_order)
@@ -4901,8 +4901,6 @@ class LexiSyncApp(QMainWindow):
     def cm_set_ignored_status(self, ignore_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
-
-        will_any_disappear = ignore_flag and not self.show_ignored_var
 
         bulk_changes = []
         changed_ids = set()

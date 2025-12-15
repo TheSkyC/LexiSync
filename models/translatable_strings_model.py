@@ -113,7 +113,37 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         self.is_po_mode = False
         self._current_filter_seen_originals = set()
         self.new_entry_id = "##NEW_ENTRY##"
-        self.setDynamicSortFilter(False)
+        super().setDynamicSortFilter(False)
+
+    def setDynamicSortFilter(self, enable):
+        super().setDynamicSortFilter(False)
+
+    def setSourceModel(self, sourceModel):
+        # Disconnect previous model if exists
+        if self.sourceModel():
+            try:
+                self.sourceModel().dataChanged.disconnect(self._source_data_changed)
+            except RuntimeError:
+                pass
+
+        super().setSourceModel(sourceModel)
+
+        # Connect new model to custom handler
+        if sourceModel:
+            sourceModel.dataChanged.connect(self._source_data_changed)
+
+    def _source_data_changed(self, topLeft, bottomRight, roles=None):
+        # Custom handler to bypass QSortFilterProxyModel's default behavior
+        # which might re-filter rows even when dynamicSortFilter is False.
+        if not topLeft.isValid() or not bottomRight.isValid():
+            return
+
+        start_proxy = self.mapFromSource(topLeft)
+        end_proxy = self.mapFromSource(bottomRight)
+
+        # Only emit dataChanged for visible rows, do NOT trigger re-filtering
+        if start_proxy.isValid() and end_proxy.isValid():
+            self.dataChanged.emit(start_proxy, end_proxy, roles if roles is not None else [])
 
     def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term, is_po_mode):
         current_sort_column = self.sortColumn()
@@ -211,6 +241,3 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
             proxy_index = self.mapFromSource(source_index)
             return proxy_index.isValid()
         return False
-
-    def set_static_sorting_enabled(self, enabled: bool):
-        self.setDynamicSortFilter(not enabled)
