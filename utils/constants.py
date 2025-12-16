@@ -120,6 +120,12 @@ DEFAULT_CORRECTION_PROMPT_STRUCTURE = [
         "type": "Static Instruction",
         "enabled": True,
         "content": "请直接返回修正后的完整译文内容，不要包含任何解释、前缀或后缀。不要使用Markdown代码块。"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": "Static Instruction",
+        "enabled": True,
+        "content": "严格区分物理换行符 `\\n` 和 HTML 标签 `<br>`。如果原文此处使用的是 `\\n`，译文对应位置必须使用 `\\n`；如果原文使用的是 `<br>`，译文必须使用 `<br>`。禁止将一种转换为另一种。严格遵守原文的格式"
     }
 ]
 
@@ -159,6 +165,12 @@ DEFAULT_PROMPT_STRUCTURE = [
         "type": STATIC,
         "enabled": True,
         "content": "必须保留所有的格式化标记和控制字符，例如换行符 `\\n`、制表符 `\\t` 以及其他特殊转义字符。"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": "STATIC",
+        "enabled": True,
+        "content": "严格区分物理换行符 `\\n` 和 HTML 标签 `<br>`。如果原文此处使用的是 `\\n`，译文对应位置必须使用 `\\n`；如果原文使用的是 `<br>`，译文必须使用 `<br>`。禁止将一种转换为另一种。严格遵守原文的格式"
     },
     {
         "id": str(uuid.uuid4()),
