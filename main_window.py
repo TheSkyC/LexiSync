@@ -3422,6 +3422,9 @@ class LexiSyncApp(QMainWindow):
         self.update_statusbar(_("Translation applied: \"{original_semantic}...\"").format(
             original_semantic=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
         self.mark_project_modified()
+        if self.current_selected_ts_id == ts_obj.id:
+            if hasattr(self, 'details_panel'):
+                self.details_panel.update_warnings(ts_obj)
         return processed_translation, True
 
     def apply_translation_from_button(self):
