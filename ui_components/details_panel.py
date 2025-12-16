@@ -333,6 +333,7 @@ class DetailsPanel(QWidget):
         if fixed_text:
             self.translation_edit_text.setPlainText(fixed_text)
             self.app_instance._apply_translation_to_model(self.current_ts_obj, fixed_text, source="auto_fix")
+            self.update_warnings(self.current_ts_obj)
 
     def update_warnings(self, ts_obj):
         self.current_ts_obj = ts_obj
