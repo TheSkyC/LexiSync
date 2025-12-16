@@ -16,6 +16,7 @@ RE_REPEATED_WORD = re.compile(r'\b(\w+)\s+\1\b', re.IGNORECASE)
 RE_URL = re.compile(r'(?:ht|f)tps?://[^"<> \t\n\r]+|www\.[^"<> \t\n\r]+|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/[^"<> \t\n\r]*')
 RE_EMAIL = re.compile(r'[\w\.-]+@[\w\.-]+')
 RE_NUMBER = re.compile(r'\d+(?:\.\d+)?')
+RE_HTML_ENTITY_NUM = re.compile(r'&#(x[0-9a-fA-F]+|\d+);')
 STRFTIME_EQUIVALENCE = {
     # 月份：全称(B)、缩写(b/h) -> 映射为 数字(m)
     'B': 'm', 'b': 'm', 'h': 'm',
@@ -392,8 +393,11 @@ def check_numbers(source, target, mode='loose'):
     # 1. 预处理：清理干扰项
     src_clean = RE_PYTHON_BRACE.sub('', source)
     src_clean = RE_PRINTF.sub('', src_clean)
+    src_clean = RE_HTML_ENTITY_NUM.sub('', src_clean)
+
     tgt_clean = RE_PYTHON_BRACE.sub('', target)
     tgt_clean = RE_PRINTF.sub('', tgt_clean)
+    tgt_clean = RE_HTML_ENTITY_NUM.sub('', tgt_clean)
 
     # 2. 提取阿拉伯数字
     # 即使在严格模式下，也先处理一下英文序数词后缀(1st->1)，防止误报
