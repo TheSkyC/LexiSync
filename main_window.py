@@ -1287,6 +1287,7 @@ class LexiSyncApp(QMainWindow):
         self.setStatusBar(self.statusBar)
 
         self.statusbar_label = ElidedLabel()
+        self.statusbar_label.setTextFormat(Qt.PlainText)
         self.statusbar_label.setText(_("Ready"))
         self.statusBar.addWidget(self.statusbar_label, 1)
 
