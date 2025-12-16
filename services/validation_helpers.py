@@ -469,7 +469,16 @@ def check_double_space(source, target):
 
 def check_html_tags(source, target):
     def get_valid_tags(text):
-        return [html.escape(m.group(0)) for m in RE_HTML_TAG.finditer(text)]
+        tags = []
+        for m in RE_HTML_TAG.finditer(text):
+            tag_content = m.group(0)
+            inner_content = tag_content[1:-1]
+            if ' ' in inner_content and '=' not in inner_content:
+                if not inner_content.strip().endswith('/'):
+                    continue
+
+            tags.append(html.escape(tag_content))
+        return tags
 
     src_tags = get_valid_tags(source)
     tgt_tags = get_valid_tags(target)
