@@ -278,20 +278,28 @@ def _compare_counts(src_list, tgt_list):
 
 
 def check_printf(source, target):
-    def get_valid_printf_matches(text):
+    def get_normalized_printf_matches(text):
         matches = []
         for m in RE_PRINTF.finditer(text):
             full_match = m.group(0)
-            # 过滤掉像 "% abc" 这样的误判
+
+            # 过滤掉像 "% abc"
             if re.fullmatch(r'%\s+[a-zA-Z]', full_match):
-                # 安全检查边界
                 if m.end() < len(text) and text[m.end()].isalpha():
                     continue
-            matches.append(full_match)
+
+            # 移除修饰符 (-, +, 0, #, 空格)
+            # %-d, %02d, %+d -> %d
+            normalized_match = re.sub(r'[-+ 0#]', '', full_match)
+
+            # 移除宽度和精度数字 (%2d -> %d, %.2f -> %f)
+            normalized_match = re.sub(r'(?<!\$)\d+(\.\d+)?', '', normalized_match)
+
+            matches.append(normalized_match)
         return matches
 
-    src_fmt = get_valid_printf_matches(source)
-    tgt_fmt = get_valid_printf_matches(target)
+    src_fmt = get_normalized_printf_matches(source)
+    tgt_fmt = get_normalized_printf_matches(target)
 
     missing, extra = _compare_counts(src_fmt, tgt_fmt)
     if missing or extra:
