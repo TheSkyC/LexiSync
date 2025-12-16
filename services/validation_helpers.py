@@ -10,12 +10,24 @@ ALL_PUNC_KEYS = set(PUNCTUATION_MAP.keys())
 ALL_PUNC_VALUES = set(PUNCTUATION_MAP.values())
 
 # --- 正则表达式 ---
-RE_PRINTF = re.compile(r'%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[diouxXeEfFgGcrs%]')
+RE_PRINTF = re.compile(r'%%|%\d+|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]')
 RE_PYTHON_BRACE = re.compile(r'\{([_a-zA-Z0-9\s\.\:\[\]]*)\}')
 RE_REPEATED_WORD = re.compile(r'\b(\w+)\s+\1\b', re.IGNORECASE)
 RE_URL = re.compile(r'(?:ht|f)tps?://[^"<> \t\n\r]+|www\.[^"<> \t\n\r]+|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/[^"<> \t\n\r]*')
 RE_EMAIL = re.compile(r'[\w\.-]+@[\w\.-]+')
 RE_NUMBER = re.compile(r'\d+(?:\.\d+)?')
+STRFTIME_EQUIVALENCE = {
+    # 月份：全称(B)、缩写(b/h) -> 映射为 数字(m)
+    'B': 'm', 'b': 'm', 'h': 'm',
+    # 年份：全称(Y) -> 映射为 缩写(y) (反之亦可，只要统一即可)
+    'Y': 'y',
+    # 日期：不补零(e) -> 映射为 补零(d)
+    'e': 'd',
+    # 小时：12小时(I/l)、24小时(k) -> 映射为 24小时(H)
+    'I': 'H', 'k': 'H', 'l': 'H',
+    # 上下午：大写(P) -> 映射为 小写(p)
+    'P': 'p'
+}
 HTML_TAGS_WHITELIST = {
     'a', 'abbr', 'acronym', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo',
     'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col', 'colgroup', 'data',
@@ -283,17 +295,31 @@ def check_printf(source, target):
         for m in RE_PRINTF.finditer(text):
             full_match = m.group(0)
 
-            # 过滤掉像 "% abc"
-            if re.fullmatch(r'%\s+[a-zA-Z]', full_match):
+            # 过滤误判
+            if not full_match.startswith('%') or (
+                    len(full_match) > 1 and full_match[1].isdigit() and full_match != '%%'):
+                pass
+            elif re.fullmatch(r'%\s+[a-zA-Z]', full_match):
                 if m.end() < len(text) and text[m.end()].isalpha():
                     continue
 
-            # 移除修饰符 (-, +, 0, #, 空格)
-            # %-d, %02d, %+d -> %d
-            normalized_match = re.sub(r'[-+ 0#]', '', full_match)
-
-            # 移除宽度和精度数字 (%2d -> %d, %.2f -> %f)
-            normalized_match = re.sub(r'(?<!\$)\d+(\.\d+)?', '', normalized_match)
+            # 标准化逻辑
+            if full_match == '%%':
+                normalized_match = '%%'
+            elif full_match[1:].isdigit():
+                # Qt/Boost (%1)
+                normalized_match = full_match
+            else:
+                # 标准 Printf
+                # 移除修饰符 (%-d, %02d, %+d -> %d)
+                normalized_match = re.sub(r'[-+ 0#]', '', full_match)
+                # 移除宽度和精度数字 (%2d -> %d, %.2f -> %f)
+                normalized_match = re.sub(r'(?<!\$)\d+(\.\d+)?', '', normalized_match)
+                # 替换最后一个字符为通用代表字符
+                # 例如: %B -> %m, %Y -> %y
+                type_char = normalized_match[-1]
+                if type_char in STRFTIME_EQUIVALENCE:
+                    normalized_match = normalized_match[:-1] + STRFTIME_EQUIVALENCE[type_char]
 
             matches.append(normalized_match)
         return matches
