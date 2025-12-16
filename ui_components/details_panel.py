@@ -332,6 +332,12 @@ class DetailsPanel(QWidget):
         fixed_text = fix_service.apply_all_fixes(self.current_ts_obj, target_lang)
         if fixed_text:
             self.translation_edit_text.setPlainText(fixed_text)
+
+            cursor = self.translation_edit_text.textCursor()
+            cursor.movePosition(QTextCursor.End)
+            self.translation_edit_text.setTextCursor(cursor)
+            self.translation_edit_text.setFocus()
+
             self.app_instance._apply_translation_to_model(self.current_ts_obj, fixed_text, source="auto_fix")
             self.update_warnings(self.current_ts_obj)
 
