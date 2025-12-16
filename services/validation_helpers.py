@@ -408,33 +408,45 @@ def check_numbers(source, target, mode='loose'):
     src_counter = Counter(src_nums)
     tgt_counter = Counter(tgt_nums)
 
-    # 如果完全匹配，直接通过
     if src_counter == tgt_counter:
         return None
 
-    # 计算差异
     missing = []
     extra = []
 
     all_nums = set(src_counter.keys()) | set(tgt_counter.keys())
+
     for num in all_nums:
         diff = src_counter[num] - tgt_counter[num]
 
-        is_exempt = False
-        if mode == 'loose' and num in NUMBER_WORD_MAP:
-            possible_words = NUMBER_WORD_MAP[num]
-            text_to_check = target.lower() if diff > 0 else source.lower()
+        if diff == 0:
+            continue
 
-            for word in possible_words:
-                if word.lower() in text_to_check:
-                    is_exempt = True
-                    break
+        if diff > 0:
+            # 情况 A: Missing (原文有，译文缺)
+            # 检查豁免：是否将数字翻译成了单词 (例如: "1" -> "One")
+            is_exempt = False
+            if mode == 'loose' and num in NUMBER_WORD_MAP:
+                for word in NUMBER_WORD_MAP[num]:
+                    if word.lower() in target.lower():
+                        is_exempt = True
+                        break
 
             if not is_exempt:
                 missing.extend([num] * diff)
 
         elif diff < 0:
-            extra.extend([num] * abs(diff))
+            # 情况 B: Extra (译文多，原文缺)
+            # 检查豁免：是否将单词翻译成了数字 (例如: "Zero" -> "0")
+            is_exempt = False
+            if mode == 'loose' and num in NUMBER_WORD_MAP:
+                for word in NUMBER_WORD_MAP[num]:
+                    if word.lower() in source.lower():
+                        is_exempt = True
+                        break
+
+            if not is_exempt:
+                extra.extend([num] * abs(diff))
 
     if missing or extra:
         error_parts = []
