@@ -635,27 +635,43 @@ class ValidationSettingsPage(BaseSettingsPage):
         scroll_area.setWidget(content_widget)
         self.page_layout.addWidget(scroll_area)
 
+        self._take_state_snapshot()
+
+    def _take_state_snapshot(self):
+        self._initial_rules_state = {}
+        for key, widget in self.rule_widgets.items():
+            self._initial_rules_state[key] = widget.get_data()
+        self._initial_length_state = {
+            'check': self.check_length.isChecked(),
+            'major': self.major_threshold.value(),
+            'minor': self.minor_threshold.value()
+        }
+
     def save_settings(self):
         new_rules = {}
         for key, widget in self.rule_widgets.items():
             new_rules[key] = widget.get_data()
-        new_check_length = self.check_length.isChecked()
-        new_major = self.major_threshold.value()
-        new_minor = self.minor_threshold.value()
-        old_rules = self.app.config.get("validation_rules", {})
-        old_check_length = self.app.config.get('check_length', True)
-        old_major = self.app.config.get('length_threshold_major', 2.5)
-        old_minor = self.app.config.get('length_threshold_minor', 2.0)
-        rules_changed = new_rules != old_rules
+
+        new_length_state = {
+            'check': self.check_length.isChecked(),
+            'major': self.major_threshold.value(),
+            'minor': self.minor_threshold.value()
+        }
+
+        rules_changed = new_rules != self._initial_rules_state
+
         length_settings_changed = (
-                new_check_length != old_check_length or
-                abs(new_major - old_major) > 0.001 or
-                abs(new_minor - old_minor) > 0.001
+                new_length_state['check'] != self._initial_length_state['check'] or
+                abs(new_length_state['major'] - self._initial_length_state['major']) > 0.001 or
+                abs(new_length_state['minor'] - self._initial_length_state['minor']) > 0.001
         )
+
         if rules_changed or length_settings_changed:
             self.app.config["validation_rules"] = new_rules
-            self.app.config['check_length'] = new_check_length
-            self.app.config['length_threshold_major'] = new_major
-            self.app.config['length_threshold_minor'] = new_minor
+            self.app.config['check_length'] = new_length_state['check']
+            self.app.config['length_threshold_major'] = new_length_state['major']
+            self.app.config['length_threshold_minor'] = new_length_state['minor']
+            self._take_state_snapshot()
             self.app._run_and_refresh_with_validation()
+
         return False
