@@ -301,6 +301,17 @@ class AISettingsPage(BaseSettingsPage):
         super().__init__()
         self.app = app_instance
 
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        content_widget = QWidget()
+        content_widget.setObjectName("aiContent")
+        content_widget.setStyleSheet("#aiContent { background-color: #FFFFFF; }")
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(15)
+
+        # API
         api_group = QGroupBox(_("API Settings"))
         api_layout = QFormLayout(api_group)
         self.api_key_entry = QLineEdit(self.app.config.get("ai_api_key", ""))
@@ -313,8 +324,9 @@ class AISettingsPage(BaseSettingsPage):
         api_layout.addRow(_("API Base URL:"), self.api_base_url_entry)
         api_layout.addRow(_("Model Name:"), self.model_name_entry)
         api_layout.addRow("", self.test_btn)
-        self.page_layout.addWidget(api_group)
+        content_layout.addWidget(api_group)
 
+        # Performance
         perf_group = QGroupBox(_("Performance"))
         perf_layout = QFormLayout(perf_group)
         self.interval_spinbox = QSpinBox()
@@ -326,15 +338,15 @@ class AISettingsPage(BaseSettingsPage):
         self.concurrent_spinbox.setValue(self.app.config.get("ai_max_concurrent_requests", 8))
         perf_layout.addRow(_("API Call Interval:"), self.interval_spinbox)
         perf_layout.addRow(_("Max Concurrent Requests:"), self.concurrent_spinbox)
-        self.page_layout.addWidget(perf_group)
+        content_layout.addWidget(perf_group)
 
+        # Context & Prompts
         context_group = QGroupBox(_("Context & Prompts"))
         context_layout = QVBoxLayout(context_group)
         prompt_select_layout = QFormLayout()
 
         self.trans_prompt_combo = QComboBox()
         self.fix_prompt_combo = QComboBox()
-
         self._populate_prompt_combos()
 
         prompt_select_layout.addRow(_("Translation Prompt:"), self.trans_prompt_combo)
@@ -378,8 +390,12 @@ class AISettingsPage(BaseSettingsPage):
         context_layout.addSpacing(15)
         self.prompt_button = QPushButton(_("Prompt Manager..."))
         self.prompt_button.clicked.connect(self.open_prompt_manager)
+
         context_layout.addWidget(self.prompt_button)
-        self.page_layout.addWidget(context_group)
+        content_layout.addWidget(context_group)
+        content_layout.addStretch(1)
+        scroll_area.setWidget(content_widget)
+        self.page_layout.addWidget(scroll_area)
 
     def _populate_prompt_combos(self):
         self.trans_prompt_combo.clear()
@@ -560,19 +576,12 @@ class ValidationSettingsPage(BaseSettingsPage):
         self.app = app_instance
         self.rule_widgets = {}
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.NoFrame)
         content_widget = QWidget()
-
         content_widget.setObjectName("validationContent")
-
-        content_widget.setStyleSheet("""
-                    #validationContent {
-                        background-color: #FFFFFF;
-                    }
-                """)
+        content_widget.setStyleSheet("#validationContent { background-color: #FFFFFF; }")
 
         self.main_layout = QVBoxLayout(content_widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
@@ -623,8 +632,8 @@ class ValidationSettingsPage(BaseSettingsPage):
         self.main_layout.addWidget(length_group)
         self.main_layout.addStretch()
 
-        scroll.setWidget(content_widget)
-        self.page_layout.addWidget(scroll)
+        scroll_area.setWidget(content_widget)
+        self.page_layout.addWidget(scroll_area)
 
     def save_settings(self):
         new_rules = {}
