@@ -47,28 +47,31 @@ class AIWorker(QRunnable):
 
             # --- Logic Branch 1: Translation (Single or Batch) ---
             if self.op_type in (AIOperationType.TRANSLATION, AIOperationType.BATCH_TRANSLATION):
-                # 1. Glossary Lookup
-                glossary_prompt_part = self._build_glossary_context(app)
+                if self.system_prompt:
+                    final_prompt = self.system_prompt
+                else:
+                    # 1. Glossary Lookup
+                    glossary_prompt_part = self._build_glossary_context(app)
 
-                # 2. Build Prompt
-                placeholders = {
-                    '[Target Language]': self.target_lang,
-                    '[Untranslated Context]': self.context_dict.get("original_context", ""),
-                    '[Translated Context]': self.context_dict.get("translation_context", ""),
-                    '[Glossary]': glossary_prompt_part
-                }
-                if self.plugin_placeholders:
-                    placeholders.update(self.plugin_placeholders)
+                    # 2. Build Prompt
+                    placeholders = {
+                        '[Target Language]': self.target_lang,
+                        '[Untranslated Context]': self.context_dict.get("original_context", ""),
+                        '[Translated Context]': self.context_dict.get("translation_context", ""),
+                        '[Glossary]': glossary_prompt_part
+                    }
+                    if self.plugin_placeholders:
+                        placeholders.update(self.plugin_placeholders)
 
-                prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
-                final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
+                    prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
+                    final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
 
             # --- Logic Branch 2: Fix ---
             elif self.op_type == AIOperationType.FIX:
                 final_prompt = self.system_prompt
 
             # --- Execute API Call ---
-            # logger.debug(f"[AIWorker] Type: {self.op_type.name}, ID: {self.ts_id}")
+            logger.debug(f"[AIWorker] Type: {self.op_type.name}, ID: {self.ts_id}")
             translated_text = app.ai_translator.translate(self.original_text, final_prompt)
 
             # Emit Success

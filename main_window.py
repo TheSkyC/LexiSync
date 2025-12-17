@@ -489,7 +489,14 @@ class LexiSyncApp(QMainWindow):
         self.action_stop_ai_batch_translation.triggered.connect(self.stop_batch_ai_translation)
         self.action_stop_ai_batch_translation.setEnabled(False)
         self.tools_menu.addAction(self.action_stop_ai_batch_translation)
+
+        self.action_smart_batch_translate = QAction(_("Intelligent Batch Translation..."), self)
+        self.action_smart_batch_translate.triggered.connect(self.show_smart_translation_dialog)
+        self.action_smart_batch_translate.setEnabled(False)
+        self.tools_menu.addAction(self.action_smart_batch_translate)
+
         self.tools_menu.addSeparator()
+
 
         self.action_resource_viewer = QAction(_("Resource Viewer..."), self)
         self.action_resource_viewer.triggered.connect(self.show_resource_viewer)
@@ -1413,6 +1420,8 @@ class LexiSyncApp(QMainWindow):
         self.action_ai_translate_selected.setEnabled(can_start_ai_ops and item_selected)
         self.action_ai_translate_all_untranslated.setEnabled(can_start_ai_ops)
         self.action_stop_ai_batch_translation.setEnabled(self.ai_manager.is_running)
+        if hasattr(self, 'action_smart_batch_translate'):
+            self.action_smart_batch_translate.setEnabled(can_start_ai_ops)
 
         self.details_panel.ai_translate_current_btn.setEnabled(can_start_ai_ops and item_selected)
 
@@ -4985,8 +4994,9 @@ class LexiSyncApp(QMainWindow):
         trigger_ts_obj = self._find_ts_obj_by_id(ts_id)
 
         if op_type == AIOperationType.BATCH_TRANSLATION:
-            self.ai_batch_completed_count += 1
-            self._update_batch_progress_ui()
+            if hasattr(self, 'ai_batch_completed_count'):
+                self.ai_batch_completed_count += 1
+                self._update_batch_progress_ui()
 
         if not trigger_ts_obj:
             return
@@ -5216,6 +5226,21 @@ class LexiSyncApp(QMainWindow):
 
         self.update_statusbar(_("AI batch translation stop requested..."), persistent=True)
         self.ai_manager.stop()
+
+    def show_smart_translation_dialog(self):
+        if not self.translatable_objects:
+            QMessageBox.warning(self, _("Warning"), _("Please load a project or file first."))
+            return
+
+        if not self._check_ai_prerequisites():
+            return
+
+        from dialogs.smart_translation_dialog import SmartTranslationDialog
+        dialog = SmartTranslationDialog(self)
+        dialog.exec()
+
+        self.refresh_sheet_preserve_selection()
+        self.update_counts_display()
 
     def _get_selected_ts_objects_from_sheet(self):
         selected_objs = []
