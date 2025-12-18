@@ -4,7 +4,8 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTextEdit, QProgressBar, QStackedWidget, QWidget,
-    QGroupBox, QCheckBox, QSpinBox, QComboBox, QMessageBox, QSplitter
+    QGroupBox, QCheckBox, QSpinBox, QComboBox, QMessageBox, QSplitter,
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView
 )
 from PySide6.QtCore import Qt, QThread, Signal, QObject
 from utils.localization import _
@@ -75,7 +76,7 @@ class SmartTranslationDialog(QDialog):
         self.app = parent
         self.setWindowTitle(_("Intelligent Batch Translation"))
         self.resize(900, 700)
-        self.setModal(False)  # Non-modal to allow interaction with main window if needed
+        self.setModal(False)
 
         # Data
         self.target_items = []
@@ -168,10 +169,27 @@ class SmartTranslationDialog(QDialog):
         # Glossary
         glossary_widget = QWidget()
         glossary_layout = QVBoxLayout(glossary_widget)
-        glossary_layout.addWidget(QLabel(_("Extracted Glossary (Markdown):")))
-        self.edit_glossary = QTextEdit()
-        glossary_layout.addWidget(self.edit_glossary)
+        glossary_layout.setContentsMargins(5, 0, 0, 0)
+        glossary_layout.addWidget(QLabel(_("Extracted Glossary:")))
+
+        self.table_glossary = QTableWidget()
+        self.table_glossary.setColumnCount(3)
+        self.table_glossary.setHorizontalHeaderLabels(["", _("Source"), _("Target")])
+
+        # 设置列宽行为
+        header = self.table_glossary.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.Stretch)
+
+        self.table_glossary.setSelectionBehavior(QAbstractItemView.SelectRows)
+        glossary_layout.addWidget(self.table_glossary)
+
         splitter.addWidget(glossary_widget)
+
+        splitter.setSizes([400, 400])
+
+        layout.addWidget(splitter)
 
         layout.addWidget(splitter)
 
@@ -215,6 +233,55 @@ class SmartTranslationDialog(QDialog):
             self.retrieval_info.setStyleSheet("color: green; margin-left: 20px;")
         else:
             self.retrieval_enabled = False
+
+    def _populate_glossary_table(self, markdown_text):
+        self.table_glossary.setRowCount(0)
+
+        lines = markdown_text.strip().split('\n')
+        for line in lines:
+            # 跳过分隔线 (---) 和空行
+            if '---' in line or not line.strip():
+                continue
+            parts = [p.strip() for p in line.split('|') if p.strip()]
+
+            if len(parts) >= 2:
+                source_text = parts[0]
+                target_text = parts[1]
+
+                # 跳过表头
+                if source_text.lower() == 'source' and target_text.lower() == 'target':
+                    continue
+
+                row = self.table_glossary.rowCount()
+                self.table_glossary.insertRow(row)
+
+                # Col 0: Checkbox
+                check_item = QTableWidgetItem()
+                check_item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+                check_item.setCheckState(Qt.Checked)
+                self.table_glossary.setItem(row, 0, check_item)
+
+                # Col 1: Source
+                self.table_glossary.setItem(row, 1, QTableWidgetItem(source_text))
+
+                # Col 2: Target
+                self.table_glossary.setItem(row, 2, QTableWidgetItem(target_text))
+
+    def _get_glossary_string_from_table(self):
+        lines = []
+        for row in range(self.table_glossary.rowCount()):
+            check_item = self.table_glossary.item(row, 0)
+            if check_item.checkState() == Qt.Checked:
+                src = self.table_glossary.item(row, 1).text().strip()
+                tgt = self.table_glossary.item(row, 2).text().strip()
+                if src and tgt:
+                    lines.append(f"- {src}: {tgt}")
+
+        if not lines:
+            return _("No glossary terms provided.")
+
+        return "\n".join(lines)
+
 
     def log(self, message, level="INFO"):
         color = "#D4D4D4"
@@ -276,8 +343,8 @@ class SmartTranslationDialog(QDialog):
 
     def on_analysis_finished(self, style, glossary):
         self.edit_style.setPlainText(style)
-        self.edit_glossary.setPlainText(glossary)
-        self.stack.setCurrentIndex(1)  # Go to Preview
+        self._populate_glossary_table(glossary)
+        self.stack.setCurrentIndex(1)
 
     def on_analysis_error(self, error_msg):
         self.log(f"Analysis failed: {error_msg}", "ERROR")
@@ -373,7 +440,7 @@ class SmartTranslationDialog(QDialog):
             "original_context": base_context["original_context"],
             "translation_context": base_context["translation_context"],
             "[Style Guide]": self.edit_style.toPlainText(),
-            "[Glossary]": self.edit_glossary.toPlainText(),
+            "[Glossary]": self._get_glossary_string_from_table(),
             "[Semantic Context]": semantic_context
         }
 
