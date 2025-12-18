@@ -14,8 +14,8 @@ from services.ai_worker import AIWorker
 from utils.enums import AIOperationType
 from copy import deepcopy
 import json
+import uuid
 import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -381,31 +381,55 @@ class SmartTranslationDialog(QDialog):
 
         smart_structure = [
             {
-                "id": "smart_1",
+                "id": str(uuid.uuid4()),
                 "type": "Structural Content",
                 "enabled": True,
-                "content": f"You are a professional translator. Translate the following text from {src_lang} to {tgt_lang}."
+                "content": f"You are a professional localization expert responsible for translating UI text in software or games from {src_lang} into {tgt_lang}. These texts are from standard PO/POT localization files."
             },
             {
-                "id": "smart_2",
+                "id": str(uuid.uuid4()),
+                "type": "Structural Content",
+                "enabled": True,
+                "content": "All placeholders must be fully preserved, such as `%s`, `%d`, `%{count}`, `{variable}`, etc. The placeholders themselves do not need to be translated. Ensure the quantity and names of placeholders in the translation exactly match the original text."
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "type": "Structural Content",
+                "enabled": True,
+                "content": "All formatting marks and control characters must be retained, such as line breaks `\\n`, tabs `\\t`, and other special escape characters."
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "type": "Structural Content",
+                "enabled": True,
+                "content": "Strictly distinguish between physical line breaks `\\n` and HTML tags `<br>`. If the original text uses `\\n`, the translation must use `\\n` in the corresponding position; if the original text uses `<br>`, the translation must use `<br>`. Conversion between the two is prohibited. Strictly adhere to the original format."
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "type": "Structural Content",
+                "enabled": True,
+                "content": "Aside from the translation itself, no characters, symbols, or spaces not present in the original text may be added or deleted. Unless it is to align with local symbol usage conventions."
+            },
+            {
+                "id": str(uuid.uuid4()),
                 "type": "Dynamic Instruction",
                 "enabled": True,
                 "content": "Style Guide:\n[Style Guide]"
             },
             {
-                "id": "smart_3",
+                "id": str(uuid.uuid4()),
                 "type": "Dynamic Instruction",
                 "enabled": True,
                 "content": "Terminology:\n[Glossary]"
             },
             {
-                "id": "smart_4",
+                "id": str(uuid.uuid4()),
                 "type": "Dynamic Instruction",
                 "enabled": True,
                 "content": "Reference Context:\n[Semantic Context]\n[Untranslated Context]\n[Translated Context]"
             },
             {
-                "id": "smart_5",
+                "id": str(uuid.uuid4()),
                 "type": "Static Instruction",
                 "enabled": True,
                 "content": "Output ONLY the translation."

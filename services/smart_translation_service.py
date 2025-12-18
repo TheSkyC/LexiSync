@@ -93,13 +93,19 @@ class SmartTranslationService:
     def generate_style_guide_prompt(samples, source_lang, target_lang):
         sample_text = "\n".join([f"- {ts.original_semantic}" for ts in samples])
         return (
-            f"You are a localization expert. Analyze the following {len(samples)} sample texts from a software/game project.\n"
+            f"Role: You are a Senior Localization Lead. Analyze the following {len(samples)} sample texts from a software/game project to create a Style Guide.\n"
             f"Source Language: {source_lang}\n"
             f"Target Language: {target_lang}\n\n"
             f"Samples:\n{sample_text}\n\n"
-            "Task: Generate a concise 'Translation Style Guide' (max 150 words). \n"
-            "Cover: 1. Tone (Formal/Casual) 2. Target Audience 3. Formatting Rules 4. Specific grammatical instructions for the target language.\n"
-            "Output ONLY the Style Guide content."
+            "Constraints for the Guide:\n"
+            "1. DO NOT mention technical formatting (placeholders, line breaks, HTML, variables). These are strictly handled by a separate system logic.\n"
+            "2. Focus PURELY on linguistic style, cultural nuance, and terminology strategy.\n\n"
+            "Task: Generate a dense, high-impact 'Translation Style Guide' (max 150 words) covering:\n"
+            "- **Vibe & Domain**: The specific sub-genre (e.g., 'Cyberpunk UI', 'Corporate SaaS', 'High-Fantasy') and emotional tone.\n"
+            "- **Lexical Choice**: Rules for specific nouns/verbs (e.g., 'Use intuitive verbs over formal nouns', 'Keep proper names in English').\n"
+            "- **Syntactical Constraints**: Instructions on sentence length (e.g., 'Prioritize brevity for buttons', 'Avoid passive voice').\n"
+            "- **Addressing the User**: How to refer to the user (e.g., 'You/您' vs 'Player/玩家' vs impersonal).\n\n"
+            "Output ONLY the Style Guide content as a bulleted list."
         )
 
     @staticmethod
