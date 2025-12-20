@@ -16,11 +16,13 @@ from copy import deepcopy
 import json
 import uuid
 import logging
+import threading
+
 logger = logging.getLogger(__name__)
 
 
 class AnalysisWorker(QObject):
-    """Worker for Phase 1: Analysis"""
+    """Phase 1 分析工作线程"""
     progress = Signal(str)
     finished = Signal(str, str)  # style_guide, glossary_md
     error = Signal(str)
@@ -34,43 +36,82 @@ class AnalysisWorker(QObject):
         self._is_cancelled = False
 
     def run(self):
+        """执行分析任务"""
         try:
             translator = self.app.ai_translator
 
-            # 1. Style Analysis
-            if self._is_cancelled: return
+            # 步骤1: 风格分析
+            if self._is_cancelled:
+                return
+
             self.progress.emit(_("Analyzing style and tone..."))
-            style_prompt = SmartTranslationService.generate_style_guide_prompt(
-                self.samples, self.source_lang, self.target_lang
-            )
-            style_guide = translator.translate("Analyze these samples.", style_prompt)
+            style_guide = self._analyze_style(translator)
 
-            # 2. Term Extraction
-            if self._is_cancelled: return
+            # 步骤2: 术语提取
+            if self._is_cancelled:
+                return
+
             self.progress.emit(_("Extracting key terminology..."))
-            term_prompt = SmartTranslationService.extract_terms_prompt(self.samples)
-            terms_json_str = translator.translate("Extract terms.", term_prompt)
+            terms_list = self._extract_terms(translator)
 
-            # 3. Term Translation
-            if self._is_cancelled: return
+            # 步骤3: 术语翻译
+            if self._is_cancelled:
+                return
+
             self.progress.emit(_("Pre-translating terminology..."))
-            # Clean up potential markdown code blocks from AI response
-            terms_clean = terms_json_str.replace("```json", "").replace("```", "").strip()
-            glossary_md = translator.translate(
-                terms_clean,
-                SmartTranslationService.translate_terms_prompt(terms_clean, self.target_lang)
-            )
+            glossary_md = self._translate_terms(translator, terms_list)
 
             self.finished.emit(style_guide, glossary_md)
 
         except Exception as e:
+            logger.error(f"Analysis failed: {e}", exc_info=True)
             self.error.emit(str(e))
 
+    def _analyze_style(self, translator):
+        """分析翻译风格"""
+        style_prompt = SmartTranslationService.generate_style_guide_prompt(
+            self.samples, self.source_lang, self.target_lang
+        )
+        style_guide = translator.translate("Analyze these samples.", style_prompt)
+        return style_guide.strip()
+
+    def _extract_terms(self, translator):
+        """提取关键术语"""
+        term_prompt = SmartTranslationService.extract_terms_prompt(self.samples)
+        terms_json_str = translator.translate("Extract terms.", term_prompt)
+
+        # 清理和验证JSON响应
+        is_valid, result = SmartTranslationService.validate_terms_json(terms_json_str)
+
+        if not is_valid:
+            logger.warning(f"Term extraction validation failed: {result}")
+            return []
+
+        return result
+
+    def _translate_terms(self, translator, terms_list):
+        """翻译术语列表"""
+        if not terms_list:
+            return "| Source | Target |\n|--------|--------|\n"
+
+        terms_json = json.dumps(terms_list, ensure_ascii=False)
+        translate_prompt = SmartTranslationService.translate_terms_prompt(
+            terms_json, self.target_lang
+        )
+
+        glossary_raw = translator.translate(terms_json, translate_prompt)
+        glossary_md = SmartTranslationService.clean_ai_response(glossary_raw, "markdown")
+
+        return glossary_md
+
     def cancel(self):
+        """取消分析任务"""
         self._is_cancelled = True
 
 
 class SmartTranslationDialog(QDialog):
+    """智能批量翻译对话框"""
+
     def __init__(self, parent):
         super().__init__(parent)
         self.app = parent
@@ -78,55 +119,81 @@ class SmartTranslationDialog(QDialog):
         self.resize(900, 700)
         self.setModal(False)
 
-        # Data
+        # 数据成员
         self.target_items = []
         self.analysis_samples = []
         self.style_guide = ""
         self.glossary_content = ""
         self.retrieval_enabled = False
+        self._original_prompt_structure = None
 
+        # 线程管理
+        self.analysis_thread = None
+        self.analysis_worker = None
+
+        # 初始化UI和检查插件
         self.setup_ui()
         self.check_plugins()
 
+
     def setup_ui(self):
+        """设置UI布局"""
         layout = QVBoxLayout(self)
 
-        # Stacked Widget for phases
+        # 配置 -> 预览 -> 执行
         self.stack = QStackedWidget()
 
-        # Page 1: Configuration
-        self.page_config = QWidget()
-        self.setup_config_page(self.page_config)
+        self.page_config = self._create_config_page()
+        self.page_preview = self._create_preview_page()
+        self.page_monitor = self._create_monitor_page()
+
         self.stack.addWidget(self.page_config)
-
-        # Page 2: Preview
-        self.page_preview = QWidget()
-        self.setup_preview_page(self.page_preview)
         self.stack.addWidget(self.page_preview)
-
-        # Page 3: Execution (Monitor)
-        self.page_monitor = QWidget()
-        self.setup_monitor_page(self.page_monitor)
         self.stack.addWidget(self.page_monitor)
 
         layout.addWidget(self.stack)
 
-    def setup_config_page(self, page):
+    def _create_config_page(self):
+        """创建配置页面"""
+        page = QWidget()
         layout = QVBoxLayout(page)
 
-        # Scope
+        # 作用域选择
+        layout.addWidget(self._create_scope_group())
+
+        # 策略选择
+        layout.addWidget(self._create_strategy_group())
+
+        layout.addStretch()
+
+        # 底部按钮
+        btn_layout = QHBoxLayout()
+        btn_analyze = QPushButton(_("Analyze & Preview"))
+        btn_analyze.clicked.connect(self.start_analysis)
+        btn_analyze.setStyleSheet("font-weight: bold; padding: 8px;")
+        btn_layout.addStretch()
+        btn_layout.addWidget(btn_analyze)
+        layout.addLayout(btn_layout)
+
+        return page
+
+    def _create_scope_group(self):
+        """创建作用域选择组"""
         scope_group = QGroupBox(_("Scope"))
         scope_layout = QVBoxLayout(scope_group)
+
         self.scope_combo = QComboBox()
         self.scope_combo.addItems([
             _("All Untranslated Items"),
-            _("All Items (Overwrite)"),
+            _("All Items"),
             _("Selected Items Only")
         ])
         scope_layout.addWidget(self.scope_combo)
-        layout.addWidget(scope_group)
 
-        # Strategy
+        return scope_group
+
+    def _create_strategy_group(self):
+        """创建策略选择组"""
         strat_group = QGroupBox(_("Strategy"))
         strat_layout = QVBoxLayout(strat_group)
 
@@ -142,35 +209,61 @@ class SmartTranslationDialog(QDialog):
         self.retrieval_info.setStyleSheet("color: gray; margin-left: 20px;")
         strat_layout.addWidget(self.retrieval_info)
 
-        layout.addWidget(strat_group)
-        layout.addStretch()
+        return strat_group
 
-        btn_layout = QHBoxLayout()
-        btn_analyze = QPushButton(_("Analyze & Preview"))
-        btn_analyze.clicked.connect(self.start_analysis)
-        btn_analyze.setStyleSheet("font-weight: bold; padding: 8px;")
-        btn_layout.addStretch()
-        btn_layout.addWidget(btn_analyze)
-        layout.addLayout(btn_layout)
-
-    def setup_preview_page(self, page):
+    def _create_preview_page(self):
+        """创建预览页面"""
+        page = QWidget()
         layout = QVBoxLayout(page)
 
         splitter = QSplitter(Qt.Horizontal)
 
-        # Style Guide
-        style_widget = QWidget()
-        style_layout = QVBoxLayout(style_widget)
-        style_layout.addWidget(QLabel(_("Generated Style Guide:")))
-        self.edit_style = QTextEdit()
-        style_layout.addWidget(self.edit_style)
-        splitter.addWidget(style_widget)
+        # 风格指南编辑器
+        splitter.addWidget(self._create_style_guide_widget())
 
-        # Glossary
-        glossary_widget = QWidget()
-        glossary_layout = QVBoxLayout(glossary_widget)
-        glossary_layout.setContentsMargins(5, 0, 0, 0)
-        glossary_layout.addWidget(QLabel(_("Extracted Glossary:")))
+        # 术语表编辑器
+        splitter.addWidget(self._create_glossary_widget())
+
+        splitter.setSizes([400, 400])
+        layout.addWidget(splitter)
+
+        # 底部按钮
+        btn_layout = QHBoxLayout()
+        btn_back = QPushButton(_("Back"))
+        btn_back.clicked.connect(lambda: self.stack.setCurrentIndex(0))
+
+        btn_start = QPushButton(_("Start Translation"))
+        btn_start.clicked.connect(self.start_translation)
+        btn_start.setStyleSheet(
+            "background-color: #4CAF50; color: white; "
+            "font-weight: bold; padding: 8px;"
+        )
+
+        btn_layout.addWidget(btn_back)
+        btn_layout.addStretch()
+        btn_layout.addWidget(btn_start)
+        layout.addLayout(btn_layout)
+
+        return page
+
+    def _create_style_guide_widget(self):
+        """创建风格指南编辑器"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.addWidget(QLabel(_("Generated Style Guide:")))
+
+        self.edit_style = QTextEdit()
+        self.edit_style.setPlaceholderText(_("Style guide will appear here after analysis..."))
+        layout.addWidget(self.edit_style)
+
+        return widget
+
+    def _create_glossary_widget(self):
+        """创建术语表编辑器"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(5, 0, 0, 0)
+        layout.addWidget(QLabel(_("Extracted Glossary:")))
 
         self.table_glossary = QTableWidget()
         self.table_glossary.setColumnCount(3)
@@ -183,29 +276,13 @@ class SmartTranslationDialog(QDialog):
         header.setSectionResizeMode(2, QHeaderView.Stretch)
 
         self.table_glossary.setSelectionBehavior(QAbstractItemView.SelectRows)
-        glossary_layout.addWidget(self.table_glossary)
+        layout.addWidget(self.table_glossary)
 
-        splitter.addWidget(glossary_widget)
+        return widget
 
-        splitter.setSizes([400, 400])
-
-        layout.addWidget(splitter)
-
-        layout.addWidget(splitter)
-
-        btn_layout = QHBoxLayout()
-        btn_back = QPushButton(_("Back"))
-        btn_back.clicked.connect(lambda: self.stack.setCurrentIndex(0))
-        btn_start = QPushButton(_("Start Translation"))
-        btn_start.clicked.connect(self.start_translation)
-        btn_start.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
-
-        btn_layout.addWidget(btn_back)
-        btn_layout.addStretch()
-        btn_layout.addWidget(btn_start)
-        layout.addLayout(btn_layout)
-
-    def setup_monitor_page(self, page):
+    def _create_monitor_page(self):
+        """创建执行监控页面"""
+        page = QWidget()
         layout = QVBoxLayout(page)
 
         self.lbl_status = QLabel(_("Initializing..."))
@@ -217,285 +294,541 @@ class SmartTranslationDialog(QDialog):
 
         self.log_view = QTextEdit()
         self.log_view.setReadOnly(True)
-        self.log_view.setStyleSheet("background-color: #1E1E1E; color: #D4D4D4; font-family: Consolas;")
+        self.log_view.setStyleSheet(
+            "background-color: #1E1E1E; color: #D4D4D4; "
+            "font-family: Consolas, monospace;"
+        )
         layout.addWidget(self.log_view)
 
         self.btn_stop = QPushButton(_("Stop"))
         self.btn_stop.clicked.connect(self.stop_translation)
         layout.addWidget(self.btn_stop)
 
+        return page
+
     def check_plugins(self):
-        # Check if Retrieval Enhancer is available
+        """检查可用插件"""
         plugin = self.app.plugin_manager.get_plugin("com_theskyc_retrieval_enhancer")
         if plugin and plugin.is_ready:
             self.retrieval_enabled = True
-            self.retrieval_info.setText(_("Context Source: TF-IDF Semantic Retrieval (Plugin Active)"))
+            self.retrieval_info.setText(
+                _("Context Source: TF-IDF Semantic Retrieval (Plugin Active)")
+            )
             self.retrieval_info.setStyleSheet("color: green; margin-left: 20px;")
         else:
             self.retrieval_enabled = False
 
+    # ==================== 阶段1：分析 ====================
+
+    def start_analysis(self):
+        """启动分析阶段"""
+        # 1. 确定作用域
+        self.target_items = self._determine_scope()
+
+        if not self.target_items:
+            QMessageBox.warning(
+                self,
+                _("Warning"),
+                _("No items found in the selected scope.")
+            )
+            return
+
+        # 2. 智能采样
+        self.analysis_samples = SmartTranslationService.intelligent_sampling(
+            self.target_items, 100
+        )
+
+        # 3. 如果不需要分析，直接跳到预览页
+        if not self.chk_analyze.isChecked():
+            self.stack.setCurrentIndex(1)
+            return
+
+        # 4. 启动分析线程
+        self._start_analysis_thread()
+
+    def _determine_scope(self):
+        """根据用户选择确定翻译作用域"""
+        scope_idx = self.scope_combo.currentIndex()
+        all_objs = self.app.translatable_objects
+
+        if scope_idx == 0:  # 未翻译项
+            return [ts for ts in all_objs if not ts.translation.strip() and not ts.is_ignored]
+        elif scope_idx == 1:  # 所有项
+            return [ts for ts in all_objs if not ts.is_ignored]
+        elif scope_idx == 2:  # 选中项
+            return self.app._get_selected_ts_objects_from_sheet()
+
+        return []
+
+    def _start_analysis_thread(self):
+        """启动分析工作线程"""
+        self.stack.setCurrentIndex(2)  # 使用监控页面显示进度
+        self.lbl_status.setText(_("Phase 1/2: Analyzing Content..."))
+        self.progress_bar.setRange(0, 0)  # 不确定进度
+
+        # 创建工作线程
+        self.analysis_thread = QThread()
+        self.analysis_worker = AnalysisWorker(
+            self.app,
+            self.analysis_samples,
+            self.app.source_language,
+            self._get_target_language()
+        )
+        self.analysis_worker.moveToThread(self.analysis_thread)
+
+        # 连接信号
+        self.analysis_thread.started.connect(self.analysis_worker.run)
+        self.analysis_worker.progress.connect(self._on_analysis_progress)
+        self.analysis_worker.finished.connect(self._on_analysis_finished)
+        self.analysis_worker.error.connect(self._on_analysis_error)
+
+        # 线程清理
+        self.analysis_worker.finished.connect(self.analysis_thread.quit)
+        self.analysis_worker.error.connect(self.analysis_thread.quit)
+        self.analysis_thread.finished.connect(self.analysis_thread.deleteLater)
+
+        self.analysis_thread.start()
+
+    def _get_target_language(self):
+        """获取目标语言"""
+        if self.app.is_project_mode:
+            return self.app.current_target_language
+        return self.app.target_language
+
+    def _on_analysis_progress(self, message):
+        """分析进度回调"""
+        self.log(message, "INFO")
+
+    def _on_analysis_finished(self, style, glossary):
+        """分析完成回调"""
+        self.log(_("Analysis completed successfully"), "SUCCESS")
+
+        self.style_guide = style
+        self.glossary_content = glossary
+
+        # 更新预览页面
+        self.edit_style.setPlainText(style)
+        self._populate_glossary_table(glossary)
+
+        # 切换到预览页
+        self.stack.setCurrentIndex(1)
+
+    def _on_analysis_error(self, error_msg):
+        """分析错误回调"""
+        self.log(f"Analysis failed: {error_msg}", "ERROR")
+        QMessageBox.critical(
+            self,
+            _("Error"),
+            _("Analysis failed:\n") + error_msg
+        )
+        self.stack.setCurrentIndex(0)
+
+
     def _populate_glossary_table(self, markdown_text):
+        """从Markdown文本填充术语表"""
         self.table_glossary.setRowCount(0)
 
+        if not markdown_text or not markdown_text.strip():
+            return
+
         lines = markdown_text.strip().split('\n')
+
         for line in lines:
-            # 跳过分隔线 (---) 和空行
-            if '---' in line or not line.strip():
+            # 跳过分隔线和空行
+            if not line.strip() or '---' in line or '===' in line:
                 continue
+
+            # 解析表格行
             parts = [p.strip() for p in line.split('|') if p.strip()]
 
-            if len(parts) >= 2:
-                source_text = parts[0]
-                target_text = parts[1]
+            if len(parts) < 2:
+                continue
 
-                # 跳过表头
-                if source_text.lower() == 'source' and target_text.lower() == 'target':
-                    continue
+            source_text = parts[0]
+            target_text = parts[1] if len(parts) > 1 else ""
 
-                row = self.table_glossary.rowCount()
-                self.table_glossary.insertRow(row)
+            # 跳过表头
+            if self._is_table_header(source_text, target_text):
+                continue
 
-                # Col 0: Checkbox
-                check_item = QTableWidgetItem()
-                check_item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
-                check_item.setCheckState(Qt.Checked)
-                self.table_glossary.setItem(row, 0, check_item)
+            # 添加行
+            self._add_glossary_row(source_text, target_text)
 
-                # Col 1: Source
-                self.table_glossary.setItem(row, 1, QTableWidgetItem(source_text))
+    def _is_table_header(self, source, target):
+        """判断是否为表头"""
+        source_lower = source.lower()
+        target_lower = target.lower()
 
-                # Col 2: Target
-                self.table_glossary.setItem(row, 2, QTableWidgetItem(target_text))
+        header_keywords = ['source', 'term', 'original', 'target', 'translation']
+
+        return source_lower in header_keywords and target_lower in header_keywords
+
+    def _add_glossary_row(self, source, target):
+        """添加术语表行"""
+        row = self.table_glossary.rowCount()
+        self.table_glossary.insertRow(row)
+
+        # 列0: 复选框
+        check_item = QTableWidgetItem()
+        check_item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+        check_item.setCheckState(Qt.Checked)
+        self.table_glossary.setItem(row, 0, check_item)
+
+        # 列1: 源文本
+        self.table_glossary.setItem(row, 1, QTableWidgetItem(source))
+
+        # 列2: 目标文本
+        self.table_glossary.setItem(row, 2, QTableWidgetItem(target))
 
     def _get_glossary_string_from_table(self):
+        """从表格获取术语表字符串"""
         lines = []
+
         for row in range(self.table_glossary.rowCount()):
             check_item = self.table_glossary.item(row, 0)
-            if check_item.checkState() == Qt.Checked:
-                src = self.table_glossary.item(row, 1).text().strip()
-                tgt = self.table_glossary.item(row, 2).text().strip()
-                if src and tgt:
-                    lines.append(f"- {src}: {tgt}")
+
+            # 只包含勾选的项
+            if check_item and check_item.checkState() == Qt.Checked:
+                src_item = self.table_glossary.item(row, 1)
+                tgt_item = self.table_glossary.item(row, 2)
+
+                if src_item and tgt_item:
+                    src = src_item.text().strip()
+                    tgt = tgt_item.text().strip()
+
+                    if src and tgt:
+                        lines.append(f"- {src}: {tgt}")
 
         if not lines:
             return _("No glossary terms provided.")
 
         return "\n".join(lines)
 
-
-    def log(self, message, level="INFO"):
-        color = "#D4D4D4"
-        if level == "SUCCESS":
-            color = "#4CAF50"
-        elif level == "ERROR":
-            color = "#F44336"
-        elif level == "WARNING":
-            color = "#FFC107"
-
-        html = f'<span style="color: {color}">[{level}] {message}</span>'
-        self.log_view.append(html)
-
-    def start_analysis(self):
-        # 1. Determine Scope
-        scope_idx = self.scope_combo.currentIndex()
-        all_objs = self.app.translatable_objects
-
-        if scope_idx == 0:  # Untranslated
-            self.target_items = [ts for ts in all_objs if not ts.translation.strip() and not ts.is_ignored]
-        elif scope_idx == 1:  # All
-            self.target_items = [ts for ts in all_objs if not ts.is_ignored]
-        elif scope_idx == 2:  # Selected
-            self.target_items = self.app._get_selected_ts_objects_from_sheet()
-
-        if not self.target_items:
-            QMessageBox.warning(self, _("Warning"), _("No items found in the selected scope."))
-            return
-
-        # 2. Sampling
-        self.analysis_samples = SmartTranslationService.intelligent_sampling(self.target_items, 100)
-
-        if not self.chk_analyze.isChecked():
-            # Skip analysis, go straight to preview (empty) or start
-            self.stack.setCurrentIndex(1)
-            return
-
-        # 3. Start Analysis Thread
-        self.stack.setCurrentIndex(2)  # Use monitor page for progress
-        self.lbl_status.setText(_("Phase 1/2: Analyzing Content..."))
-        self.progress_bar.setRange(0, 0)  # Indeterminate
-
-        self.analysis_thread = QThread()
-        self.analysis_worker = AnalysisWorker(
-            self.app, self.analysis_samples,
-            self.app.source_language,
-            self.app.current_target_language if self.app.is_project_mode else self.app.target_language
-        )
-        self.analysis_worker.moveToThread(self.analysis_thread)
-
-        self.analysis_thread.started.connect(self.analysis_worker.run)
-        self.analysis_worker.progress.connect(lambda msg: self.log(msg))
-        self.analysis_worker.finished.connect(self.on_analysis_finished)
-        self.analysis_worker.error.connect(self.on_analysis_error)
-        self.analysis_worker.finished.connect(self.analysis_thread.quit)
-        self.analysis_thread.finished.connect(self.analysis_thread.deleteLater)
-
-        self.analysis_thread.start()
-
-    def on_analysis_finished(self, style, glossary):
-        self.edit_style.setPlainText(style)
-        self._populate_glossary_table(glossary)
-        self.stack.setCurrentIndex(1)
-
-    def on_analysis_error(self, error_msg):
-        self.log(f"Analysis failed: {error_msg}", "ERROR")
-        QMessageBox.critical(self, _("Error"), error_msg)
-        self.stack.setCurrentIndex(0)  # Go back
+    # ==================== 阶段2：翻译 ====================
 
     def start_translation(self):
-        # 1. UI 状态切换
+        """启动翻译阶段"""
+        # 1. 切换UI状态
+        self._switch_to_translation_mode()
+
+        # 2. 异步构建检索索引
+        if self.chk_retrieval.isChecked() and self.retrieval_enabled:
+            self._build_retrieval_index_async()
+
+        # 3. 注入智能提示词结构
+        self._inject_smart_prompt_structure()
+
+        # 4. 连接AI管理器信号
+        self._connect_ai_manager_signals()
+
+        # 5. 开始批量翻译
+        self.app.ai_manager.start_batch(
+            self.target_items,
+            self.custom_context_provider
+        )
+
+    def _switch_to_translation_mode(self):
+        """切换UI到翻译模式"""
         self.stack.setCurrentIndex(2)
         self.lbl_status.setText(_("Phase 2/2: Translating..."))
         self.progress_bar.setRange(0, len(self.target_items))
         self.progress_bar.setValue(0)
         self.btn_stop.setText(_("Stop"))
         self.btn_stop.setEnabled(True)
+        self.log_view.clear()
 
-        # 2. 构建检索索引 (如果启用)
-        if self.chk_retrieval.isChecked() and self.retrieval_enabled:
-            self.log("Building semantic index...", "INFO")
-            knowledge_base = []
-            for ts in self.app.translatable_objects:
-                if ts.translation.strip() and not ts.is_ignored:
-                    knowledge_base.append({
-                        'source': ts.original_semantic,
-                        'target': ts.translation
-                    })
+    def _build_retrieval_index_async(self):
+        """异步构建检索索引"""
 
-            self.app.plugin_manager.run_hook('build_retrieval_index', knowledge_base)
-            self.log(f"Index built with {len(knowledge_base)} items.", "SUCCESS")
+        def build_task():
+            try:
+                self.log("Building semantic index...", "INFO")
 
-        # 3. 临时注入专用提示词结构
-        self._original_prompt_structure = deepcopy(self.app.config.get("ai_prompt_structure"))
+                knowledge_base = []
+                for ts in self.app.translatable_objects:
+                    if ts.translation.strip() and not ts.is_ignored:
+                        knowledge_base.append({
+                            'source': ts.original_semantic,
+                            'target': ts.translation
+                        })
+
+                self.app.plugin_manager.run_hook('build_retrieval_index', knowledge_base)
+                self.log(f"✓ Index built with {len(knowledge_base)} items.", "SUCCESS")
+
+            except Exception as e:
+                self.log(f"⚠ Index build failed: {str(e)}", "WARNING")
+                logger.error(f"Retrieval index build error: {e}", exc_info=True)
+
+        # 在后台线程执行
+        threading.Thread(target=build_task, daemon=True).start()
+
+    def _inject_smart_prompt_structure(self):
+        """注入智能翻译专用提示词结构"""
+        # 保存原始配置
+        self._original_prompt_structure = deepcopy(
+            self.app.config.get("ai_prompt_structure")
+        )
+
+        # 创建智能提示词结构
+        smart_structure = self._create_smart_prompt_structure()
+
+        # 覆盖全局配置
+        self.app.config["ai_prompt_structure"] = smart_structure
+
+    def _create_smart_prompt_structure(self):
+        """创建智能提示词结构"""
         src_lang = self.app.source_language
-        tgt_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+        tgt_lang = self._get_target_language()
 
-        smart_structure = [
+        return [
             {
                 "id": str(uuid.uuid4()),
                 "type": "Structural Content",
                 "enabled": True,
-                "content": f"You are a professional localization expert responsible for translating UI text in software or games from {src_lang} into {tgt_lang}. These texts are from standard PO/POT localization files."
+                "content": (
+                    f"You are a professional localization expert translating UI text from {src_lang} to {tgt_lang}. These texts are from standard PO/POT localization files."
+                )
             },
             {
                 "id": str(uuid.uuid4()),
                 "type": "Structural Content",
                 "enabled": True,
-                "content": "All placeholders must be fully preserved, such as `%s`, `%d`, `%{count}`, `{variable}`, etc. The placeholders themselves do not need to be translated. Ensure the quantity and names of placeholders in the translation exactly match the original text."
+                "content": (
+                    "CRITICAL: Preserve ALL placeholders exactly as-is:\n"
+                    "- Format specifiers: %s, %d, %f, %.2f, etc.\n"
+                    "- Named placeholders: {variable}, %{count}, {{name}}\n"
+                    "- Template syntax: ${var}, [[key]], <placeholder>\n"
+                    "The quantity, order, and names must match the original perfectly."
+                )
             },
             {
                 "id": str(uuid.uuid4()),
                 "type": "Structural Content",
                 "enabled": True,
-                "content": "All formatting marks and control characters must be retained, such as line breaks `\\n`, tabs `\\t`, and other special escape characters."
+                "content": (
+                    "CRITICAL: Preserve ALL formatting exactly:\n"
+                    "- Escape sequences: \\n, \\t, \\r, \\\"\n"
+                    "- HTML tags: <br>, <b>, <i>, <span>, <a>, etc.\n"
+                    "- Do NOT convert between \\n and <br>\n"
+                    "- Match the original format character-by-character"
+                )
             },
             {
                 "id": str(uuid.uuid4()),
                 "type": "Structural Content",
                 "enabled": True,
-                "content": "Strictly distinguish between physical line breaks `\\n` and HTML tags `<br>`. If the original text uses `\\n`, the translation must use `\\n` in the corresponding position; if the original text uses `<br>`, the translation must use `<br>`. Conversion between the two is prohibited. Strictly adhere to the original format."
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "type": "Structural Content",
-                "enabled": True,
-                "content": "Aside from the translation itself, no characters, symbols, or spaces not present in the original text may be added or deleted. Unless it is to align with local symbol usage conventions."
+                "content": (
+                    "Do not add or remove any characters, symbols, or spaces not present in the original text, unless required by the target language's punctuation conventions."
+                )
             },
             {
                 "id": str(uuid.uuid4()),
                 "type": "Dynamic Instruction",
                 "enabled": True,
-                "content": "Style Guide:\n[Style Guide]"
+                "content": "### Translation Style Guide\n[Style Guide]"
             },
             {
                 "id": str(uuid.uuid4()),
                 "type": "Dynamic Instruction",
                 "enabled": True,
-                "content": "Terminology:\n[Glossary]"
+                "content": "### Terminology Glossary\n[Glossary]"
             },
             {
                 "id": str(uuid.uuid4()),
                 "type": "Dynamic Instruction",
                 "enabled": True,
-                "content": "Reference Context:\n[Semantic Context]\n[Untranslated Context]\n[Translated Context]"
+                "content": (
+                    "### Reference Context\n"
+                    "[Semantic Context]\n"
+                    "[Untranslated Context]\n"
+                    "[Translated Context]"
+                )
             },
             {
                 "id": str(uuid.uuid4()),
                 "type": "Static Instruction",
                 "enabled": True,
-                "content": "Output ONLY the translation."
-            },
+                "content": "Output ONLY the final translation. No explanations, no notes."
+            }
         ]
-        # 覆盖全局配置
-        self.app.config["ai_prompt_structure"] = smart_structure
 
-        # 4. 配置 AI 管理器信号
+    def _connect_ai_manager_signals(self):
+        """连接AI管理器信号"""
+        if self._signals_connected:
+            return
+
         self.app.ai_manager.batch_progress.connect(self.on_batch_progress)
         self.app.ai_manager.item_result.connect(self.on_item_result)
         self.app.ai_manager.batch_finished.connect(self.on_batch_finished)
+        self._signals_connected = True
 
-        # 5. 开始批量任务
-        self.app.ai_manager.start_batch(self.target_items, self.custom_context_provider)
-
-    def custom_context_provider(self, ts_id):
-        # 1. Get Base Context (Neighbors)
-        base_context = self.app._generate_ai_context_strings(ts_id)
-
-        # 2. Get Semantic Context (RAG)
-        semantic_context = ""
-        ts_obj = self.app._find_ts_obj_by_id(ts_id)
-        if self.chk_retrieval.isChecked() and self.retrieval_enabled and ts_obj:
-            results = self.app.plugin_manager.run_hook('retrieve_context', ts_obj.original_semantic)
-            if results:
-                lines = [f"- Source: {r['source']}\n  Target: {r['target']}" for r in results]
-                semantic_context = "Similar Translations:\n" + "\n".join(lines)
-
-        # 3. Combine
-        return {
-            "original_context": base_context["original_context"],
-            "translation_context": base_context["translation_context"],
-            "[Style Guide]": self.edit_style.toPlainText(),
-            "[Glossary]": self._get_glossary_string_from_table(),
-            "[Semantic Context]": semantic_context
-        }
-
-    def on_batch_progress(self, current, total):
-        self.progress_bar.setValue(current)
-        self.lbl_status.setText(f"Translating {current}/{total}...")
-
-    def on_item_result(self, ts_id, text, error, op_type):
-        ts_obj = self.app._find_ts_obj_by_id(ts_id)
-        if error:
-            self.log(f"Failed: {ts_obj.original_semantic[:20]}... - {error}", "ERROR")
-        else:
-            self.log(f"Translated: {ts_obj.original_semantic[:20]}...", "SUCCESS")
-
-    def on_batch_finished(self, results, completed, total):
-        self.lbl_status.setText(_("Translation Complete!"))
-        self.btn_stop.setText(_("Close"))
-        self.btn_stop.clicked.disconnect()
-        self.btn_stop.clicked.connect(self.accept)
-
-        if hasattr(self, '_original_prompt_structure') and self._original_prompt_structure:
-            self.app.config["ai_prompt_structure"] = self._original_prompt_structure
-            self.app.save_config()
+    def _disconnect_ai_manager_signals(self):
+        """断开AI管理器信号"""
+        if not self._signals_connected:
+            return
 
         try:
             self.app.ai_manager.batch_progress.disconnect(self.on_batch_progress)
             self.app.ai_manager.item_result.disconnect(self.on_item_result)
             self.app.ai_manager.batch_finished.disconnect(self.on_batch_finished)
+        except (RuntimeError, TypeError):
+            pass
+        finally:
+            self._signals_connected = False
+
+
+    def custom_context_provider(self, ts_id):
+        try:
+            # 1. 获取基础上下文（邻近项）
+            base_context = self.app._generate_ai_context_strings(ts_id)
+
+            # 2. 获取语义上下文（RAG检索）
+            semantic_context = ""
+            if self.chk_retrieval.isChecked() and self.retrieval_enabled:
+                semantic_context = self._get_semantic_context(ts_id)
+
+            # 3. 组合所有上下文
+            return {
+                "original_context": base_context.get("original_context", ""),
+                "translation_context": base_context.get("translation_context", ""),
+                "[Style Guide]": self.edit_style.toPlainText(),
+                "[Glossary]": self._get_glossary_string_from_table(),
+                "[Semantic Context]": semantic_context
+            }
+
+        except Exception as e:
+            logger.error(f"Error in context provider for {ts_id}: {e}", exc_info=True)
+
+            # 返回最小上下文，确保不阻塞翻译流程
+            return {
+                "original_context": "",
+                "translation_context": "",
+                "[Style Guide]": self.edit_style.toPlainText(),
+                "[Glossary]": self._get_glossary_string_from_table(),
+                "[Semantic Context]": ""
+            }
+
+    def _get_semantic_context(self, ts_id):
+        # 获取语义检索上下文
+        try:
+            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+            if not ts_obj:
+                return ""
+
+            # 调用插件进行检索
+            results = self.app.plugin_manager.run_hook(
+                'retrieve_context',
+                ts_obj.original_semantic
+            )
+
+            if not results:
+                return ""
+
+            # 格式化结果（限制数量和长度）
+            lines = []
+            for r in results[:5]:  # 最多5个结果
+                src = r.get('source', '')[:60]
+                tgt = r.get('target', '')[:60]
+                if src and tgt:
+                    lines.append(f"- {src}... → {tgt}...")
+
+            if lines:
+                return "Similar Translations:\n" + "\n".join(lines)
+
+            return ""
+
+        except Exception as e:
+            logger.warning(f"Semantic retrieval failed for {ts_id}: {e}")
+            return ""
+
+
+    def on_batch_progress(self, current, total):
+        """批量翻译进度回调"""
+        self.progress_bar.setValue(current)
+        self.lbl_status.setText(f"Translating {current}/{total}...")
+
+    def on_item_result(self, ts_id, text, error, op_type):
+        """单项翻译结果回调"""
+        ts_obj = self.app._find_ts_obj_by_id(ts_id)
+        if not ts_obj:
+            return
+
+        preview = ts_obj.original_semantic[:30]
+
+        if error:
+            self.log(f"✗ Failed: {preview}... - {error}", "ERROR")
+        else:
+            self.log(f"✓ Translated: {preview}...", "SUCCESS")
+
+    def on_batch_finished(self, results, completed, total):
+        """批量翻译完成回调"""
+        self.lbl_status.setText(_("Translation Complete!"))
+        self.btn_stop.setText(_("Close"))
+
+        # 断开停止按钮的原有连接
+        try:
+            self.btn_stop.clicked.disconnect()
         except:
             pass
 
+        self.btn_stop.clicked.connect(self.accept)
+
+        # 恢复原始提示词结构
+        self._restore_original_prompt_structure()
+
+        # 断开AI管理器信号
+        self._disconnect_ai_manager_signals()
+
+        # 显示统计信息
+        success_rate = (completed / total * 100) if total > 0 else 0
+        self.log(
+            f"✓ Completed: {completed}/{total} ({success_rate:.1f}%)",
+            "SUCCESS"
+        )
+
+    def _restore_original_prompt_structure(self):
+        """恢复原始提示词结构"""
+        if self._original_prompt_structure:
+            self.app.config["ai_prompt_structure"] = self._original_prompt_structure
+            self.app.save_config()
+            self._original_prompt_structure = None
+
     def stop_translation(self):
+        """停止翻译"""
         self.app.ai_manager.stop()
-        self.log("Stopping...", "WARNING")
+        self.log("Stopping translation...", "WARNING")
+
+
+    def log(self, message, level="INFO"):
+        """
+        添加日志到视图
+
+        Args:
+            message: 日志消息
+            level: 日志级别 (INFO/SUCCESS/ERROR/WARNING)
+        """
+        color_map = {
+            "INFO": "#D4D4D4",
+            "SUCCESS": "#4CAF50",
+            "ERROR": "#F44336",
+            "WARNING": "#FFC107"
+        }
+
+        color = color_map.get(level, "#D4D4D4")
+        html = f'<span style="color: {color}">[{level}] {message}</span>'
+        self.log_view.append(html)
+
+
+    def closeEvent(self, event):
+        """对话框关闭事件"""
+        # 取消正在运行的分析
+        if self.analysis_worker:
+            self.analysis_worker.cancel()
+
+        # 恢复原始配置
+        self._restore_original_prompt_structure()
+
+        # 断开信号
+        self._disconnect_ai_manager_signals()
+
+        super().closeEvent(event)
