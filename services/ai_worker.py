@@ -35,8 +35,9 @@ class AIWorker(QRunnable):
         self.context_dict = kwargs.get('context_dict', {})
         self.plugin_placeholders = kwargs.get('plugin_placeholders', {})
 
-        # Fix specific args
+        # Args
         self.system_prompt = kwargs.get('system_prompt', None)
+        self.temperature = kwargs.get('temperature', None)
 
     def run(self):
         app = self.app_ref()
@@ -72,7 +73,9 @@ class AIWorker(QRunnable):
 
             # --- Execute API Call ---
             logger.debug(f"[AIWorker] Type: {self.op_type.name}, ID: {self.ts_id}")
-            translated_text = app.ai_translator.translate(self.original_text, final_prompt)
+            translated_text = app.ai_translator.translate(
+                self.original_text, final_prompt, temperature=self.temperature
+            )
 
             # Emit Success
             self.signals.result.emit(

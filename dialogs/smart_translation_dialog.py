@@ -5,7 +5,8 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTextEdit, QProgressBar, QStackedWidget, QWidget,
     QGroupBox, QCheckBox, QSpinBox, QComboBox, QMessageBox, QSplitter,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
+    QDoubleSpinBox
 )
 from PySide6.QtCore import Qt, QThread, Signal, QObject
 from utils.localization import _
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 class AnalysisWorker(QObject):
     """Phase 1 分析工作线程"""
     progress = Signal(str)
-    finished = Signal(str, str)  # style_guide, glossary_md
+    finished = Signal(str, str, float)  # style_guide, glossary_md, recommended_temp
     error = Signal(str)
 
     def __init__(self, app, samples, source_lang, target_lang):
@@ -45,7 +46,8 @@ class AnalysisWorker(QObject):
                 return
 
             self.progress.emit(_("Analyzing style and tone..."))
-            style_guide = self._analyze_style(translator)
+            raw_style_guide = self._analyze_style(translator)
+            clean_style_guide, rec_temp = self._parse_and_strip_temperature(raw_style_guide)
 
             # 步骤2: 术语提取
             if self._is_cancelled:
@@ -61,11 +63,29 @@ class AnalysisWorker(QObject):
             self.progress.emit(_("Pre-translating terminology..."))
             glossary_md = self._translate_terms(translator, terms_list)
 
-            self.finished.emit(style_guide, glossary_md)
+            self.finished.emit(clean_style_guide, glossary_md, rec_temp)
 
         except Exception as e:
             logger.error(f"Analysis failed: {e}", exc_info=True)
             self.error.emit(str(e))
+
+    def _parse_and_strip_temperature(self, text):
+        """从风格指南中提取温度并将其从文本中移除"""
+        import re
+        rec_temp = 0.3  # 默认回退值
+
+        pattern = r'[\-\*]*\s*(\*\*)?Recommended Temperature(\*\*)?:\s*([0-9.]+).*?(\n|$)'
+
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            try:
+                val = float(match.group(3))
+                rec_temp = max(0.1, min(1.0, val))
+                text = text.replace(match.group(0), "")
+            except ValueError:
+                pass
+
+        return text.strip(), rec_temp
 
     def _analyze_style(self, translator):
         """分析翻译风格"""
@@ -126,6 +146,9 @@ class SmartTranslationDialog(QDialog):
         self.glossary_content = ""
         self.retrieval_enabled = False
         self._original_prompt_structure = None
+
+        # 初始化信号连接标志位
+        self._signals_connected = False
 
         # 线程管理
         self.analysis_thread = None
@@ -215,6 +238,20 @@ class SmartTranslationDialog(QDialog):
         """创建预览页面"""
         page = QWidget()
         layout = QVBoxLayout(page)
+
+        top_bar = QHBoxLayout()
+        top_bar.addWidget(QLabel(_("Recommended Temperature:")))
+
+        self.temp_spinbox = QDoubleSpinBox()
+        self.temp_spinbox.setRange(0.0, 1.5)
+        self.temp_spinbox.setSingleStep(0.1)
+        self.temp_spinbox.setValue(0.3)  # 默认值
+        self.temp_spinbox.setToolTip(
+            _("Lower values (0.1) are more deterministic/precise.\nHigher values (0.8) are more creative."))
+        top_bar.addWidget(self.temp_spinbox)
+        top_bar.addStretch()
+
+        layout.addLayout(top_bar)
 
         splitter = QSplitter(Qt.Horizontal)
 
@@ -399,7 +436,7 @@ class SmartTranslationDialog(QDialog):
         """分析进度回调"""
         self.log(message, "INFO")
 
-    def _on_analysis_finished(self, style, glossary):
+    def _on_analysis_finished(self, style, glossary, recommended_temp):
         """分析完成回调"""
         self.log(_("Analysis completed successfully"), "SUCCESS")
 
@@ -409,6 +446,10 @@ class SmartTranslationDialog(QDialog):
         # 更新预览页面
         self.edit_style.setPlainText(style)
         self._populate_glossary_table(glossary)
+
+        # [ADD] 设置温度值
+        self.temp_spinbox.setValue(recommended_temp)
+        self.log(f"AI recommended temperature: {recommended_temp}", "INFO")
 
         # 切换到预览页
         self.stack.setCurrentIndex(1)
@@ -520,11 +561,13 @@ class SmartTranslationDialog(QDialog):
 
         # 4. 连接AI管理器信号
         self._connect_ai_manager_signals()
+        current_temp = self.temp_spinbox.value()
 
         # 5. 开始批量翻译
         self.app.ai_manager.start_batch(
             self.target_items,
-            self.custom_context_provider
+            self.custom_context_provider,
+            temperature=current_temp
         )
 
     def _switch_to_translation_mode(self):

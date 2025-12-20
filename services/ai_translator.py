@@ -16,7 +16,7 @@ class AITranslator:
         self.api_url = api_url if api_url and api_url.strip() else DEFAULT_API_URL
         self.model_name = model_name
 
-    def translate(self, text_to_translate, system_prompt):
+    def translate(self, text_to_translate, system_prompt, temperature=None):
         if not self.api_key:
             raise ValueError(_("API Key not set."))
         if not requests:
@@ -26,14 +26,14 @@ class AITranslator:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
-
+        final_temp = temperature if temperature is not None else 0.3
         payload = {
             "model": self.model_name,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": text_to_translate}
             ],
-            "temperature": 0.3,
+            "temperature": final_temp,
         }
 
         try:

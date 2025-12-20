@@ -263,6 +263,7 @@ class SmartTranslationService:
             "- **Formality**: [formality level, e.g., 'Use informal you/你', 'Avoid passive voice']\n"
             "- **Key Rules**: [2-3 specific translation rules]\n"
             "- **Terminology**: [strategy for proper nouns, e.g., 'Keep brand names in English']\n\n"
+            "- **Recommended Temperature**: [0.1 - 1.0] (e.g., 0.3 for UI, 0.8 for creative text)\n\n"
 
             "## Critical Constraints:\n"
             "1. Focus ONLY on linguistic style and cultural adaptation\n"

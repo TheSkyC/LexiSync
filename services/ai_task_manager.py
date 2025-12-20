@@ -35,7 +35,7 @@ class AITaskManager(QObject):
         self.semaphore = None
         self.context_provider = None
 
-    def start_batch(self, items, context_provider_func):
+    def start_batch(self, items, context_provider_func, **worker_kwargs):
         if self.is_running:
             return False
 
@@ -46,6 +46,7 @@ class AITaskManager(QObject):
         self.active_threads = 0
         self.successful_changes = []
         self.context_provider = context_provider_func
+        self.worker_kwargs = worker_kwargs
         self.is_running = True
 
         max_concurrency = self.app.config.get("ai_max_concurrent_requests", 1)
@@ -104,7 +105,8 @@ class AITaskManager(QObject):
                 original_text=ts_obj.original_semantic,
                 target_lang=target_lang_name,
                 context_dict=context_dict,
-                plugin_placeholders=plugin_placeholders
+                plugin_placeholders=plugin_placeholders,
+                **self.worker_kwargs
             )
 
             # Connect Signals
