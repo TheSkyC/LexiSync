@@ -223,6 +223,7 @@ class SmartTranslationDialog(QDialog):
         # 数据成员
         self.target_items = []
         self.analysis_samples = []
+        self._cached_glossary_dict = {}
         self.style_guide = ""
         self.glossary_content = ""
         self.retrieval_enabled = False
@@ -490,6 +491,25 @@ class SmartTranslationDialog(QDialog):
         # 4. 启动分析线程
         self._start_analysis_thread()
 
+
+    def _cache_glossary_from_ui(self):
+        self._cached_glossary_dict = {}
+        for row in range(self.table_glossary.rowCount()):
+            check_item = self.table_glossary.item(row, 0)
+            if check_item and check_item.checkState() == Qt.Checked:
+                src_item = self.table_glossary.item(row, 1)
+                tgt_item = self.table_glossary.item(row, 2)
+                if src_item and tgt_item:
+                    src = src_item.text().strip()
+                    tgt = tgt_item.text().strip()
+                    if src and tgt:
+                        # 存入字典，key为原文
+                        self._cached_glossary_dict[src] = tgt
+
+        count = len(self._cached_glossary_dict)
+        if count > 0:
+            self.log(f"Indexed {count} glossary terms for context injection.", "INFO")
+
     def _determine_scope(self):
         """根据用户选择确定翻译作用域"""
         scope_idx = self.scope_combo.currentIndex()
@@ -557,7 +577,7 @@ class SmartTranslationDialog(QDialog):
         self.edit_style.setPlainText(style)
         self._populate_glossary_table(glossary)
 
-        # [ADD] 设置温度值
+        # 设置温度值
         self.temp_spinbox.setValue(recommended_temp)
         self.log(f"AI recommended temperature: {recommended_temp}", "INFO")
 
@@ -659,26 +679,29 @@ class SmartTranslationDialog(QDialog):
 
     def start_translation(self):
         """启动翻译阶段"""
-        # 1. 切换UI状态
+        # 预处理术语表
+        self._cache_glossary_from_ui()
+
+        # 切换UI状态
         self._switch_to_translation_mode()
 
-        # 2. 异步构建检索索引
+        # 异步构建检索索引
         if self.chk_retrieval.isChecked() and self.retrieval_enabled:
             self._build_retrieval_index_async()
 
-        # 3. 注入智能提示词结构
+        # 注入智能提示词结构
         self._inject_smart_prompt_structure()
 
-        # 4. 连接AI管理器信号
+        # 连接AI管理器信号
         self._connect_ai_manager_signals()
         current_temp = self.temp_spinbox.value()
         concurrency = self.thread_spinbox.value()
 
-        # 5. 开始批量翻译
+        # 开始批量翻译
         self.app.ai_manager.start_batch(
             self.target_items,
             self.custom_context_provider,
-            concurrency_override=concurrency,  # [ADD] Pass override
+            concurrency_override=concurrency,
             temperature=current_temp
         )
 
@@ -842,12 +865,25 @@ class SmartTranslationDialog(QDialog):
             if self.chk_retrieval.isChecked() and self.retrieval_enabled:
                 semantic_context = self._get_semantic_context(ts_id)
 
+            # 3. 获取术语表
+            relevant_glossary = ""
+            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+            if ts_obj and self._cached_glossary_dict:
+                original_text = ts_obj.original_semantic
+                matched_terms = []
+                for term_src, term_tgt in self._cached_glossary_dict.items():
+                    if term_src.lower() in original_text.lower():
+                        matched_terms.append(f"- {term_src}: {term_tgt}")
+
+                if matched_terms:
+                    relevant_glossary = "\n".join(matched_terms)
+
             # 3. 组合所有上下文
             return {
                 "original_context": base_context.get("original_context", ""),
                 "translation_context": base_context.get("translation_context", ""),
                 "[Style Guide]": self.edit_style.toPlainText(),
-                "[Glossary]": self._get_glossary_string_from_table(),
+                "[Glossary]": relevant_glossary,
                 "[Semantic Context]": semantic_context
             }
 
@@ -859,7 +895,7 @@ class SmartTranslationDialog(QDialog):
                 "original_context": "",
                 "translation_context": "",
                 "[Style Guide]": self.edit_style.toPlainText(),
-                "[Glossary]": self._get_glossary_string_from_table(),
+                "[Glossary]": "",
                 "[Semantic Context]": ""
             }
 
