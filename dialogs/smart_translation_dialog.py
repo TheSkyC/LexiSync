@@ -163,15 +163,47 @@ class AnalysisWorker(QObject):
         if not terms_list:
             return "| Source | Target |\n|--------|--------|\n"
 
-        terms_json = json.dumps(terms_list, ensure_ascii=False)
-        translate_prompt = SmartTranslationService.translate_terms_prompt(
-            terms_json, self.target_lang
-        )
+        BATCH_SIZE = 50
+        batches = [terms_list[i:i + BATCH_SIZE] for i in range(0, len(terms_list), BATCH_SIZE)]
+        total_batches = len(batches)
+        self.progress.emit(_("Translating terms in {t} batches (Threads: {n})...").format(
+            t=total_batches, n=self.max_threads))
 
-        glossary_raw = translator.translate(terms_json, translate_prompt)
-        glossary_md = SmartTranslationService.clean_ai_response(glossary_raw, "markdown")
+        results = ["| Source | Target |\n|--------|--------|"]
+        completed_batches = 0
+        lock = threading.Lock()
 
-        return glossary_md
+        def process_batch(batch_items):
+            if self._is_cancelled: return ""
+            try:
+                terms_json = json.dumps(batch_items, ensure_ascii=False)
+                translate_prompt = SmartTranslationService.translate_terms_prompt(
+                    terms_json, self.target_lang
+                )
+                glossary_raw = translator.translate(terms_json, translate_prompt)
+                return SmartTranslationService.clean_ai_response(glossary_raw, "markdown")
+            except Exception as e:
+                logger.warning(f"Term batch translation failed: {e}")
+                return ""
+
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            futures = {executor.submit(process_batch, batch): batch for batch in batches}
+
+            for future in as_completed(futures):
+                if self._is_cancelled:
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    return ""
+
+                batch_result = future.result()
+                if batch_result:
+                    with lock:
+                        results.append(batch_result)
+                        completed_batches += 1
+                        self.progress.emit(
+                            _("Translating terms: Batch {c}/{t} done...").format(c=completed_batches, t=total_batches)
+                        )
+
+        return "\n".join(results)
 
     def cancel(self):
         """取消分析任务"""
