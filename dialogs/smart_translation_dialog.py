@@ -29,7 +29,7 @@ class AnalysisWorker(QObject):
     finished = Signal(str, str, float)  # style_guide, glossary_md, recommended_temp
     error = Signal(str)
 
-    def __init__(self, app, samples, all_items, source_lang, target_lang, term_mode="fast", max_threads=1):
+    def __init__(self, app, samples, all_items, source_lang, target_lang, term_mode="fast", max_threads=1, use_context=True):
         super().__init__()
         self.app = app
         self.samples = samples
@@ -38,6 +38,7 @@ class AnalysisWorker(QObject):
         self.all_items = all_items
         self.term_mode = term_mode
         self.max_threads = max_threads
+        self.use_context = use_context
         self._is_cancelled = False
 
     def run(self):
@@ -46,38 +47,48 @@ class AnalysisWorker(QObject):
             translator = self.app.ai_translator
 
             # 步骤1: 风格分析
-            if self._is_cancelled:
-                return
-
+            if self._is_cancelled: return
             self.progress.emit(_("Analyzing style and tone..."))
             raw_style_guide = self._analyze_style(translator)
             clean_style_guide, rec_temp = self._parse_and_strip_temperature(raw_style_guide)
 
             # 步骤2: 术语提取
-            if self._is_cancelled:
-                return
-
+            if self._is_cancelled: return
             self.progress.emit(_("Extracting key terminology..."))
-            terms_list = self._extract_terms(translator)
+            terms_data = self._extract_terms(translator)
+            logger.debug(f"[SmartTrans] Total terms extracted: {len(terms_data)}")
 
             # 步骤3: 术语翻译
-            if self._is_cancelled:
-                return
+            if self._is_cancelled: return
 
             glossary_md = ""
 
             if self.term_mode == "fast":
                 self.progress.emit(_("Running frequency analysis (Fast Mode)..."))
                 candidates = SmartTranslationService.extract_terms_frequency_based(self.all_items, 100)
-                candidates_str = ", ".join(candidates)
+                terms_data = [{"term": c, "context": ""} for c in candidates]
 
-                self.progress.emit(_("AI filtering and translating terms..."))
-                prompt = SmartTranslationService.filter_and_translate_terms_prompt(candidates_str, self.target_lang)
-                glossary_md = translator.translate("Filter and translate.", prompt)
+                if self.use_context:
+                    self.progress.emit(_("Scanning context snippets for terms..."))
+                    total_c = len(terms_data)
+                    for i, item in enumerate(terms_data):
+                        if self._is_cancelled: return
+                        if i % 10 == 0:
+                            self.progress.emit(_("Scanning context: {i}/{t}").format(i=i + 1, t=total_c))
+
+                        snippet = SmartTranslationService.find_context_snippets(item['term'], self.all_items)
+                        item['context'] = snippet
+
+                        if i < 5:
+                            logger.debug(f"[SmartTrans] Fast Context for '{item['term']}': {snippet}")
+
+
+                self.progress.emit(_("Translating terms with context..."))
+                glossary_md = self._translate_terms(translator, terms_data)
 
             elif self.term_mode == "deep":
-                self.progress.emit(f"Translating {len(terms_list)} unique terms...")
-                glossary_md = self._translate_terms(translator, terms_list)
+                self.progress.emit(f"Translating {len(terms_data)} unique terms...")
+                glossary_md = self._translate_terms(translator, terms_data)
 
             self.finished.emit(clean_style_guide, glossary_md, rec_temp)
 
@@ -112,11 +123,12 @@ class AnalysisWorker(QObject):
         return style_guide.strip()
 
     def _extract_terms(self, translator):
-        """提取关键术语"""
+        """提取关键术语 (返回 [{'term':..., 'context':...}])"""
 
         if self.term_mode == "deep":
             self.progress.emit(_("Starting Deep Scan (Parallel Threads: {n})...").format(n=self.max_threads))
-            all_terms = set()
+            all_terms_dict = {}
+
             batch_size = 50
             batches = [self.all_items[i:i + batch_size] for i in range(0, len(self.all_items), batch_size)]
             total_batches = len(batches)
@@ -129,7 +141,14 @@ class AnalysisWorker(QObject):
                 prompt = SmartTranslationService.extract_terms_batch_prompt(batch_text)
                 try:
                     resp = translator.translate("Extract terms.", prompt)
+                    logger.debug(f"[SmartTrans] Deep Extract Raw Resp: {resp[:200]}...")
+
                     valid, terms = SmartTranslationService.validate_terms_json(resp)
+                    if valid:
+                        logger.debug(f"[SmartTrans] Deep Extract Parsed: {json.dumps(terms, ensure_ascii=False)}")
+                    else:
+                        logger.warning(f"[SmartTrans] Deep Extract Validation Failed: {terms}")
+
                     return terms if valid else []
                 except Exception as e:
                     logger.warning(f"Batch extraction failed: {e}")
@@ -143,29 +162,31 @@ class AnalysisWorker(QObject):
                         executor.shutdown(wait=False, cancel_futures=True)
                         return []
 
-                    result_terms = future.result()
+                    result_items = future.result()
                     with lock:
-                        all_terms.update(result_terms)
+                        for item in result_items:
+                            t = item['term']
+                            if t not in all_terms_dict:
+                                all_terms_dict[t] = item
+                            elif not all_terms_dict[t].get('context') and item.get('context'):
+                                all_terms_dict[t] = item
+
                         completed_batches += 1
                         self.progress.emit(f"Deep Scan: Batch {completed_batches}/{total_batches}...")
-            return list(all_terms)
 
-        else:
-            term_prompt = SmartTranslationService.extract_terms_prompt(self.samples)
-            terms_json_str = translator.translate("Extract terms.", term_prompt)
-            is_valid, result = SmartTranslationService.validate_terms_json(terms_json_str)
-            if not is_valid:
-                return []
-            return result
+            return list(all_terms_dict.values())
+        return []
 
-    def _translate_terms(self, translator, terms_list):
+    def _translate_terms(self, translator, terms_data_list):
         """翻译术语列表"""
-        if not terms_list:
+        if not terms_data_list:
             return "| Source | Target |\n|--------|--------|\n"
 
+        # 配置批次大小
         BATCH_SIZE = 50
-        batches = [terms_list[i:i + BATCH_SIZE] for i in range(0, len(terms_list), BATCH_SIZE)]
+        batches = [terms_data_list[i:i + BATCH_SIZE] for i in range(0, len(terms_data_list), BATCH_SIZE)]
         total_batches = len(batches)
+
         self.progress.emit(_("Translating terms in {t} batches (Threads: {n})...").format(
             t=total_batches, n=self.max_threads))
 
@@ -176,11 +197,18 @@ class AnalysisWorker(QObject):
         def process_batch(batch_items):
             if self._is_cancelled: return ""
             try:
+                # 构造包含 Context 的 JSON
+                # batch_items: [{"term": "Home", "context": "..."}]
                 terms_json = json.dumps(batch_items, ensure_ascii=False)
-                translate_prompt = SmartTranslationService.translate_terms_prompt(
+                logger.debug(f"[SmartTrans] Translating Batch Input: {terms_json}")
+
+                translate_prompt = SmartTranslationService.translate_terms_with_context_prompt(
                     terms_json, self.target_lang
                 )
+
                 glossary_raw = translator.translate(terms_json, translate_prompt)
+                logger.debug(f"[SmartTrans] Translation Raw Output: {glossary_raw[:200]}...")
+
                 return SmartTranslationService.clean_ai_response(glossary_raw, "markdown")
             except Exception as e:
                 logger.warning(f"Term batch translation failed: {e}")
@@ -331,6 +359,14 @@ class SmartTranslationDialog(QDialog):
         self.chk_analyze = QCheckBox(_("Auto-analyze Style & Terminology"))
         self.chk_analyze.setChecked(True)
         strat_layout.addWidget(self.chk_analyze)
+
+        self.chk_term_context = QCheckBox(_("Provide Context for Term Translation"))
+        self.chk_term_context.setChecked(True)
+        self.chk_term_context.setToolTip(
+            _("If enabled, extracts example sentences (Fast Mode) or AI explanations (Deep Mode) "
+              "to help the AI translate terms accurately.\nConsumes more tokens but improves quality.")
+        )
+        strat_layout.addWidget(self.chk_term_context)
 
         self.chk_retrieval = QCheckBox(_("Use Semantic Context Retrieval"))
         self.chk_retrieval.setChecked(True)
@@ -542,7 +578,8 @@ class SmartTranslationDialog(QDialog):
             self.app.source_language,
             self._get_target_language(),
             self.term_mode_combo.currentData(),
-            max_threads=max_threads
+            max_threads=max_threads,
+            use_context=self.chk_term_context.isChecked()
         )
         self.analysis_worker.moveToThread(self.analysis_thread)
 

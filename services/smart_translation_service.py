@@ -244,6 +244,35 @@ class SmartTranslationService:
         return current_samples
 
     @staticmethod
+    def find_context_snippets(term, all_items, max_snippets=2, window_size=30):
+        """为术语查找上下文例句。"""
+        snippets = []
+        term_lower = term.lower()
+
+        try:
+            pattern = re.compile(r'\b' + re.escape(term) + r'\b', re.IGNORECASE)
+        except:
+            pattern = re.compile(re.escape(term), re.IGNORECASE)
+
+        for ts in all_items:
+            text = ts.original_semantic
+            if pattern.search(text):
+                clean_text = text.replace('\n', ' ').strip()
+                if len(clean_text) > 40:
+                    match = pattern.search(clean_text)
+                    start = max(0, match.start() - window_size)
+                    end = min(len(clean_text), match.end() + window_size)
+                    snippet = "..." + clean_text[start:end] + "..."
+                else:
+                    snippet = clean_text
+
+                snippets.append(snippet)
+                if len(snippets) >= max_snippets:
+                    break
+
+        return "; ".join(snippets)
+
+    @staticmethod
     def generate_style_guide_prompt(samples, source_lang, target_lang):
         sample_texts = [ts.original_semantic for ts in samples[:50]]
         sample_text = "\n".join([f"- {text}" for text in sample_texts])
@@ -305,12 +334,12 @@ class SmartTranslationService:
     def extract_terms_batch_prompt(text_batch):
         return (
             f"Analyze these texts:\n{text_batch}\n\n"
-            "Extract key domain terms, proper nouns, and UI labels. Return as a JSON list of strings. "
+            "Task: Extract key domain terms, proper nouns, and UI labels.\n"
+            "For each term, provide a very brief context or meaning based on usage.\n\n"
+            "Output Format: A JSON Array of objects.\n"
+            "Example: [{\"term\": \"Home\", \"context\": \"Main dashboard button\"}, {\"term\": \"Save\", \"context\": \"Action to write file\"}]\n\n"
             "Exclude common words. Output JSON only."
         )
-
-
-
 
     @staticmethod
     def extract_terms_prompt(samples):
@@ -373,6 +402,27 @@ class SmartTranslationService:
             "- Do NOT wrap in code blocks"
         )
 
+
+    @staticmethod
+    def translate_terms_with_context_prompt(terms_data_json, target_lang):
+        return (
+            f"Translate these domain-specific terms into {target_lang}.\n"
+            f"I have provided context/usage examples for each term to help you disambiguate.\n\n"
+            f"Input Data: {terms_data_json}\n\n"
+
+            "Translation Requirements:\n"
+            "1. Use the provided 'context' to choose the correct meaning (e.g., 'Home' -> '主页' vs '家').\n"
+            "2. Maintain professional terminology standards.\n\n"
+
+            "Output Format (MANDATORY):\n"
+            "Create a markdown table with this EXACT format:\n"
+            "| Source | Target |\n"
+            "|--------|--------|\n"
+            "| term1  | 翻译1  |\n\n"
+
+            "Output ONLY the table."
+        )
+
     @staticmethod
     def clean_ai_response(response_text, expected_format="json"):
         if not response_text:
@@ -418,16 +468,26 @@ class SmartTranslationService:
     def validate_terms_json(json_str):
         try:
             cleaned = SmartTranslationService.clean_ai_response(json_str, "json")
-            terms_list = json.loads(cleaned)
+            data = json.loads(cleaned)
 
-            if not isinstance(terms_list, list):
+            if not isinstance(data, list):
                 return False, "Expected a JSON array"
 
-            # 过滤无效项
-            valid_terms = [
-                term for term in terms_list
-                if isinstance(term, str) and term.strip() and len(term.strip()) > 1
-            ]
+            valid_terms = []
+            for item in data:
+                # 情况 1: ["Term1", "Term2"] (AI未遵循指令)
+                if isinstance(item, str):
+                    if item.strip() and len(item.strip()) > 1:
+                        valid_terms.append({"term": item.strip(), "context": ""})
+
+                # 情况 2: [{"term": "Term1", "context": "..."}]
+                elif isinstance(item, dict) and "term" in item:
+                    term_val = item["term"]
+                    if isinstance(term_val, str) and term_val.strip() and len(term_val.strip()) > 1:
+                        context_val = item.get("context", "")
+                        if not isinstance(context_val, str):
+                            context_val = ""
+                        valid_terms.append({"term": term_val.strip(), "context": context_val})
 
             return True, valid_terms
 
