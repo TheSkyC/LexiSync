@@ -35,7 +35,7 @@ class AITaskManager(QObject):
         self.semaphore = None
         self.context_provider = None
 
-    def start_batch(self, items, context_provider_func, **worker_kwargs):
+    def start_batch(self, items, context_provider_func, concurrency_override=None, **worker_kwargs):
         if self.is_running:
             return False
 
@@ -49,7 +49,13 @@ class AITaskManager(QObject):
         self.worker_kwargs = worker_kwargs
         self.is_running = True
 
-        max_concurrency = self.app.config.get("ai_max_concurrent_requests", 1)
+        if concurrency_override is not None:
+            max_concurrency = int(concurrency_override)
+        else:
+            max_concurrency = self.app.config.get("ai_max_concurrent_requests", 1)
+
+        max_concurrency = max(1, max_concurrency)
+
         self.semaphore = threading.Semaphore(max_concurrency)
 
         self.batch_started.emit(self.total_items)

@@ -13,11 +13,12 @@ from utils.localization import _
 from services.smart_translation_service import SmartTranslationService
 from services.ai_worker import AIWorker
 from utils.enums import AIOperationType
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 import json
 import uuid
-import logging
 import threading
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class AnalysisWorker(QObject):
     finished = Signal(str, str, float)  # style_guide, glossary_md, recommended_temp
     error = Signal(str)
 
-    def __init__(self, app, samples, all_items, source_lang, target_lang, term_mode="fast"):
+    def __init__(self, app, samples, all_items, source_lang, target_lang, term_mode="fast", max_threads=1):
         super().__init__()
         self.app = app
         self.samples = samples
@@ -36,6 +37,7 @@ class AnalysisWorker(QObject):
         self.target_lang = target_lang
         self.all_items = all_items
         self.term_mode = term_mode
+        self.max_threads = max_threads
         self._is_cancelled = False
 
     def run(self):
@@ -74,28 +76,8 @@ class AnalysisWorker(QObject):
                 glossary_md = translator.translate("Filter and translate.", prompt)
 
             elif self.term_mode == "deep":
-                self.progress.emit(_("Starting Deep Scan (This may take a while)..."))
-                all_terms = set()
-                batch_size = 50
-                total_batches = (len(self.all_items) + batch_size - 1) // batch_size
-
-                for i in range(0, len(self.all_items), batch_size):
-                    if self._is_cancelled: return
-                    batch = self.all_items[i:i + batch_size]
-                    batch_text = "\n".join([t.original_semantic for t in batch])
-
-                    self.progress.emit(f"Deep Scan: Batch {i // batch_size + 1}/{total_batches}...")
-
-                    prompt = SmartTranslationService.extract_terms_batch_prompt(batch_text)
-                    try:
-                        resp = translator.translate("Extract terms.", prompt)
-                        valid, terms = SmartTranslationService.validate_terms_json(resp)
-                        if valid:
-                            all_terms.update(terms)
-                    except Exception as e:
-                        logger.warning(f"Batch extraction failed: {e}")
-                self.progress.emit(f"Translating {len(all_terms)} unique terms...")
-                glossary_md = self._translate_terms(translator, list(all_terms))
+                self.progress.emit(f"Translating {len(terms_list)} unique terms...")
+                glossary_md = self._translate_terms(translator, terms_list)
 
             self.finished.emit(clean_style_guide, glossary_md, rec_temp)
 
@@ -131,17 +113,50 @@ class AnalysisWorker(QObject):
 
     def _extract_terms(self, translator):
         """提取关键术语"""
-        term_prompt = SmartTranslationService.extract_terms_prompt(self.samples)
-        terms_json_str = translator.translate("Extract terms.", term_prompt)
 
-        # 清理和验证JSON响应
-        is_valid, result = SmartTranslationService.validate_terms_json(terms_json_str)
+        if self.term_mode == "deep":
+            self.progress.emit(_("Starting Deep Scan (Parallel Threads: {n})...").format(n=self.max_threads))
+            all_terms = set()
+            batch_size = 50
+            batches = [self.all_items[i:i + batch_size] for i in range(0, len(self.all_items), batch_size)]
+            total_batches = len(batches)
+            completed_batches = 0
+            lock = threading.Lock()
 
-        if not is_valid:
-            logger.warning(f"Term extraction validation failed: {result}")
-            return []
+            def process_batch(batch_items):
+                if self._is_cancelled: return []
+                batch_text = "\n".join([t.original_semantic for t in batch_items])
+                prompt = SmartTranslationService.extract_terms_batch_prompt(batch_text)
+                try:
+                    resp = translator.translate("Extract terms.", prompt)
+                    valid, terms = SmartTranslationService.validate_terms_json(resp)
+                    return terms if valid else []
+                except Exception as e:
+                    logger.warning(f"Batch extraction failed: {e}")
+                    return []
 
-        return result
+            with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+                futures = {executor.submit(process_batch, batch): batch for batch in batches}
+
+                for future in as_completed(futures):
+                    if self._is_cancelled:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        return []
+
+                    result_terms = future.result()
+                    with lock:
+                        all_terms.update(result_terms)
+                        completed_batches += 1
+                        self.progress.emit(f"Deep Scan: Batch {completed_batches}/{total_batches}...")
+            return list(all_terms)
+
+        else:
+            term_prompt = SmartTranslationService.extract_terms_prompt(self.samples)
+            terms_json_str = translator.translate("Extract terms.", term_prompt)
+            is_valid, result = SmartTranslationService.validate_terms_json(terms_json_str)
+            if not is_valid:
+                return []
+            return result
 
     def _translate_terms(self, translator, terms_list):
         """翻译术语列表"""
@@ -254,6 +269,7 @@ class SmartTranslationDialog(QDialog):
         strat_group = QGroupBox(_("Strategy"))
         strat_layout = QVBoxLayout(strat_group)
 
+        # Term Extraction Mode
         term_layout = QHBoxLayout()
         term_layout.addWidget(QLabel(_("Term Extraction:")))
         self.term_mode_combo = QComboBox()
@@ -266,6 +282,19 @@ class SmartTranslationDialog(QDialog):
         term_layout.addWidget(self.term_mode_combo)
         strat_layout.addLayout(term_layout)
 
+        # Concurrency Setting
+        thread_layout = QHBoxLayout()
+        thread_layout.addWidget(QLabel(_("Concurrency (Threads):")))
+        self.thread_spinbox = QSpinBox()
+        self.thread_spinbox.setRange(1, 16)
+        default_threads = self.app.config.get("ai_max_concurrent_requests", 3)
+        self.thread_spinbox.setValue(default_threads)
+        self.thread_spinbox.setToolTip(_("Number of parallel AI requests for Deep Scan and Translation Phase."))
+        thread_layout.addWidget(self.thread_spinbox)
+        thread_layout.addStretch()
+        strat_layout.addLayout(thread_layout)
+
+        # Existing Checkboxes
         self.chk_analyze = QCheckBox(_("Auto-analyze Style & Terminology"))
         self.chk_analyze.setChecked(True)
         strat_layout.addWidget(self.chk_analyze)
@@ -445,11 +474,13 @@ class SmartTranslationDialog(QDialog):
 
     def _start_analysis_thread(self):
         """启动分析工作线程"""
-        self.stack.setCurrentIndex(2)  # 使用监控页面显示进度
+        self.stack.setCurrentIndex(2)
         self.lbl_status.setText(_("Phase 1/2: Analyzing Content..."))
-        self.progress_bar.setRange(0, 0)  # 不确定进度
+        self.progress_bar.setRange(0, 0)
 
-        # 创建工作线程
+        # Get thread count from UI
+        max_threads = self.thread_spinbox.value()
+
         self.analysis_thread = QThread()
         self.analysis_worker = AnalysisWorker(
             self.app,
@@ -457,17 +488,16 @@ class SmartTranslationDialog(QDialog):
             self.target_items,
             self.app.source_language,
             self._get_target_language(),
-            self.term_mode_combo.currentData()
+            self.term_mode_combo.currentData(),
+            max_threads=max_threads
         )
         self.analysis_worker.moveToThread(self.analysis_thread)
 
-        # 连接信号
         self.analysis_thread.started.connect(self.analysis_worker.run)
         self.analysis_worker.progress.connect(self._on_analysis_progress)
         self.analysis_worker.finished.connect(self._on_analysis_finished)
         self.analysis_worker.error.connect(self._on_analysis_error)
 
-        # 线程清理
         self.analysis_worker.finished.connect(self.analysis_thread.quit)
         self.analysis_worker.error.connect(self.analysis_thread.quit)
         self.analysis_thread.finished.connect(self.analysis_thread.deleteLater)
@@ -610,11 +640,13 @@ class SmartTranslationDialog(QDialog):
         # 4. 连接AI管理器信号
         self._connect_ai_manager_signals()
         current_temp = self.temp_spinbox.value()
+        concurrency = self.thread_spinbox.value()
 
         # 5. 开始批量翻译
         self.app.ai_manager.start_batch(
             self.target_items,
             self.custom_context_provider,
+            concurrency_override=concurrency,  # [ADD] Pass override
             temperature=current_temp
         )
 
