@@ -28,12 +28,14 @@ class AnalysisWorker(QObject):
     finished = Signal(str, str, float)  # style_guide, glossary_md, recommended_temp
     error = Signal(str)
 
-    def __init__(self, app, samples, source_lang, target_lang):
+    def __init__(self, app, samples, all_items, source_lang, target_lang, term_mode="fast"):
         super().__init__()
         self.app = app
         self.samples = samples
         self.source_lang = source_lang
         self.target_lang = target_lang
+        self.all_items = all_items
+        self.term_mode = term_mode
         self._is_cancelled = False
 
     def run(self):
@@ -60,8 +62,40 @@ class AnalysisWorker(QObject):
             if self._is_cancelled:
                 return
 
-            self.progress.emit(_("Pre-translating terminology..."))
-            glossary_md = self._translate_terms(translator, terms_list)
+            glossary_md = ""
+
+            if self.term_mode == "fast":
+                self.progress.emit(_("Running frequency analysis (Fast Mode)..."))
+                candidates = SmartTranslationService.extract_terms_frequency_based(self.all_items, 100)
+                candidates_str = ", ".join(candidates)
+
+                self.progress.emit(_("AI filtering and translating terms..."))
+                prompt = SmartTranslationService.filter_and_translate_terms_prompt(candidates_str, self.target_lang)
+                glossary_md = translator.translate("Filter and translate.", prompt)
+
+            elif self.term_mode == "deep":
+                self.progress.emit(_("Starting Deep Scan (This may take a while)..."))
+                all_terms = set()
+                batch_size = 50
+                total_batches = (len(self.all_items) + batch_size - 1) // batch_size
+
+                for i in range(0, len(self.all_items), batch_size):
+                    if self._is_cancelled: return
+                    batch = self.all_items[i:i + batch_size]
+                    batch_text = "\n".join([t.original_semantic for t in batch])
+
+                    self.progress.emit(f"Deep Scan: Batch {i // batch_size + 1}/{total_batches}...")
+
+                    prompt = SmartTranslationService.extract_terms_batch_prompt(batch_text)
+                    try:
+                        resp = translator.translate("Extract terms.", prompt)
+                        valid, terms = SmartTranslationService.validate_terms_json(resp)
+                        if valid:
+                            all_terms.update(terms)
+                    except Exception as e:
+                        logger.warning(f"Batch extraction failed: {e}")
+                self.progress.emit(f"Translating {len(all_terms)} unique terms...")
+                glossary_md = self._translate_terms(translator, list(all_terms))
 
             self.finished.emit(clean_style_guide, glossary_md, rec_temp)
 
@@ -219,6 +253,18 @@ class SmartTranslationDialog(QDialog):
         """创建策略选择组"""
         strat_group = QGroupBox(_("Strategy"))
         strat_layout = QVBoxLayout(strat_group)
+
+        term_layout = QHBoxLayout()
+        term_layout.addWidget(QLabel(_("Term Extraction:")))
+        self.term_mode_combo = QComboBox()
+        self.term_mode_combo.addItem(_("Fast (Frequency-based)"), "fast")
+        self.term_mode_combo.addItem(_("Deep (AI-Scan All)"), "deep")
+        self.term_mode_combo.setToolTip(
+            _("Fast: Scans high-frequency words locally, then AI filters them. Cheap & Fast.\n"
+              "Deep: AI reads ALL texts to find terms. Expensive & Slow but thorough.")
+        )
+        term_layout.addWidget(self.term_mode_combo)
+        strat_layout.addLayout(term_layout)
 
         self.chk_analyze = QCheckBox(_("Auto-analyze Style & Terminology"))
         self.chk_analyze.setChecked(True)
@@ -408,8 +454,10 @@ class SmartTranslationDialog(QDialog):
         self.analysis_worker = AnalysisWorker(
             self.app,
             self.analysis_samples,
+            self.target_items,
             self.app.source_language,
-            self._get_target_language()
+            self._get_target_language(),
+            self.term_mode_combo.currentData()
         )
         self.analysis_worker.moveToThread(self.analysis_thread)
 

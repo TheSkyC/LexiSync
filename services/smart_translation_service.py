@@ -274,6 +274,45 @@ class SmartTranslationService:
         )
 
     @staticmethod
+    def extract_terms_frequency_based(translatable_objects, top_n=100):
+        """
+        快速模式：统计高频词作为候选术语
+        """
+        all_text = " ".join([ts.original_semantic for ts in translatable_objects])
+
+        words = re.findall(r'\b[a-zA-Z]{3,}\b', all_text.lower())
+
+        stopwords = {
+            'the', 'and', 'for', 'that', 'this', 'with', 'you', 'not', 'are',
+            'from', 'have', 'will', 'can', 'all', 'one', 'has', 'but', 'into'
+        }
+
+        filtered_words = [w for w in words if w not in stopwords]
+        counter = Counter(filtered_words)
+
+        return [word for word, count in counter.most_common(top_n)]
+
+    @staticmethod
+    def filter_and_translate_terms_prompt(candidate_list_str, target_lang):
+        return (
+            f"Here is a list of high-frequency words from a software project:\n{candidate_list_str}\n\n"
+            "Task 1: Filter. Select only the words that are likely to be **domain-specific terms**, **UI elements**, or **technical jargon**. Discard common verbs/adjectives.\n"
+            f"Task 2: Translate. Translate the selected terms into {target_lang}.\n\n"
+            "Output a Markdown table with columns 'Source' and 'Target'. No other text."
+        )
+
+    @staticmethod
+    def extract_terms_batch_prompt(text_batch):
+        return (
+            f"Analyze these texts:\n{text_batch}\n\n"
+            "Extract key domain terms, proper nouns, and UI labels. Return as a JSON list of strings. "
+            "Exclude common words. Output JSON only."
+        )
+
+
+
+
+    @staticmethod
     def extract_terms_prompt(samples):
         sample_texts = [ts.original_semantic for ts in samples]
         sample_text = "\n".join([f"- {text}" for text in sample_texts])
