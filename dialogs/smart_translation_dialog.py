@@ -421,6 +421,7 @@ class SmartTranslationDialog(QDialog):
         header.setSectionResizeMode(2, QHeaderView.Stretch)
 
         self.table_glossary.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table_glossary.setSortingEnabled(True)
         layout.addWidget(self.table_glossary)
 
         return widget
@@ -594,15 +595,17 @@ class SmartTranslationDialog(QDialog):
         )
         self.stack.setCurrentIndex(0)
 
-
     def _populate_glossary_table(self, markdown_text):
         """从Markdown文本填充术语表"""
+        self.table_glossary.setSortingEnabled(False)
         self.table_glossary.setRowCount(0)
 
         if not markdown_text or not markdown_text.strip():
+            self.table_glossary.setSortingEnabled(True)
             return
 
         lines = markdown_text.strip().split('\n')
+        parsed_entries = []
 
         for line in lines:
             # 跳过分隔线和空行
@@ -622,8 +625,18 @@ class SmartTranslationDialog(QDialog):
             if self._is_table_header(source_text, target_text):
                 continue
 
-            # 添加行
-            self._add_glossary_row(source_text, target_text)
+            # 收集数据
+            parsed_entries.append((source_text, target_text))
+
+        # 按原文进行 A-Z 排序
+        parsed_entries.sort(key=lambda x: x[0].lower())
+
+        # 添加行
+        for src, tgt in parsed_entries:
+            self._add_glossary_row(src, tgt)
+
+        # 恢复排序功能
+        self.table_glossary.setSortingEnabled(True)
 
     def _is_table_header(self, source, target):
         """判断是否为表头"""
