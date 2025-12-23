@@ -159,6 +159,7 @@ class AnalysisWorker(QObject):
 
                 for future in as_completed(futures):
                     if self._is_cancelled:
+                        logger.info("AnalysisWorker cancelled during extraction loop.")
                         executor.shutdown(wait=False, cancel_futures=True)
                         return []
 
@@ -195,7 +196,10 @@ class AnalysisWorker(QObject):
         lock = threading.Lock()
 
         def process_batch(batch_items):
-            if self._is_cancelled: return ""
+            if self._is_cancelled:
+                logger.info("AnalysisWorker cancelled during translation loop.")
+                executor.shutdown(wait=False, cancel_futures=True)
+                return ""
             try:
                 # 构造包含 Context 的 JSON
                 # batch_items: [{"term": "Home", "context": "..."}]
@@ -1035,9 +1039,45 @@ class SmartTranslationDialog(QDialog):
             self._original_prompt_structure = None
 
     def stop_translation(self):
-        """停止翻译"""
-        self.app.ai_manager.stop()
-        self.log("Stopping translation...", "WARNING")
+        """停止操作 (分析、翻译)"""
+        self.log("Stopping operation...", "WARNING")
+
+        # 1. 停止翻译阶段 (Phase 2)
+        if self.app.ai_manager.is_running:
+            self.app.ai_manager.stop()
+            self.log("Translation task manager stopped.", "INFO")
+
+        # 2. 停止分析阶段 (Phase 1)
+        if hasattr(self, 'analysis_worker') and self.analysis_worker:
+            self.analysis_worker.cancel()
+            self.log("Analysis worker cancellation requested.", "INFO")
+
+        # 3. 强制终止分析线程
+        if hasattr(self, 'analysis_thread') and self.analysis_thread and self.analysis_thread.isRunning():
+            self.analysis_thread.requestInterruption()
+            self.analysis_thread.quit()
+            self.analysis_thread.wait(500)
+            if self.analysis_thread.isRunning():
+                self.log("Force terminating analysis thread...", "WARNING")
+                self.analysis_thread.terminate()
+                self.analysis_thread.wait()
+            self.analysis_thread = None
+            self.analysis_worker = None
+
+        # 4. 更新 UI 状态
+        self.lbl_status.setText(_("Operation Stopped"))
+        self.progress_bar.setValue(0)
+        self.btn_stop.setEnabled(False)
+
+        # 允许用户返回配置页重试
+        self.btn_stop.setText(_("Close"))
+        try:
+            self.btn_stop.clicked.disconnect()
+        except:
+            pass
+        self.btn_stop.clicked.connect(self.accept)
+
+        self.btn_stop.setEnabled(True)
 
 
     def log(self, message, level="INFO"):
