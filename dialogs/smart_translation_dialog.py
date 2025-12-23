@@ -8,11 +8,12 @@ from PySide6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
     QDoubleSpinBox
 )
-from PySide6.QtCore import Qt, QThread, Signal, QObject
+from PySide6.QtCore import Qt, QThread, Signal, QObject, QEvent
 from utils.localization import _
 from services.smart_translation_service import SmartTranslationService
 from services.ai_worker import AIWorker
 from utils.enums import AIOperationType
+from ui_components.tooltip import Tooltip
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 import json
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 class AnalysisWorker(QObject):
     """Phase 1 分析工作线程"""
     progress = Signal(str)
-    finished = Signal(str, str, float)  # style_guide, glossary_md, recommended_temp
+    finished = Signal(str, str, float, list)   # style_guide, glossary_md, recommended_temp, context_list
     error = Signal(str)
 
     def __init__(self, app, samples, all_items, source_lang, target_lang, term_mode="fast", max_threads=1, use_context=True):
@@ -55,8 +56,27 @@ class AnalysisWorker(QObject):
             # 步骤2: 术语提取
             if self._is_cancelled: return
             self.progress.emit(_("Extracting key terminology..."))
+
             terms_data = self._extract_terms(translator)
             logger.debug(f"[SmartTrans] Total terms extracted: {len(terms_data)}")
+
+            # 混合模式增强：如果是 Deep 模式且开启了上下文，追加原文例句
+            if self.term_mode == "deep" and self.use_context:
+                self.progress.emit(_("Augmenting AI explanations with source snippets..."))
+                total_c = len(terms_data)
+                for i, item in enumerate(terms_data):
+                    if self._is_cancelled: return
+
+                    # 查找原文例句
+                    snippet = SmartTranslationService.find_context_snippets(item['term'], self.all_items)
+
+                    if snippet:
+                        # 组合 AI 解释和原文例句
+                        ai_explanation = item.get('context', '')
+                        if ai_explanation:
+                            item['context'] = f"<b>[AI]:</b> {ai_explanation}<br><b>[Ref]:</b> {snippet}"
+                        else:
+                            item['context'] = snippet
 
             # 步骤3: 术语翻译
             if self._is_cancelled: return
@@ -79,10 +99,6 @@ class AnalysisWorker(QObject):
                         snippet = SmartTranslationService.find_context_snippets(item['term'], self.all_items)
                         item['context'] = snippet
 
-                        if i < 5:
-                            logger.debug(f"[SmartTrans] Fast Context for '{item['term']}': {snippet}")
-
-
                 self.progress.emit(_("Translating terms with context..."))
                 glossary_md = self._translate_terms(translator, terms_data)
 
@@ -90,7 +106,7 @@ class AnalysisWorker(QObject):
                 self.progress.emit(f"Translating {len(terms_data)} unique terms...")
                 glossary_md = self._translate_terms(translator, terms_data)
 
-            self.finished.emit(clean_style_guide, glossary_md, rec_temp)
+            self.finished.emit(clean_style_guide, glossary_md, rec_temp, terms_data)
 
         except Exception as e:
             logger.error(f"Analysis failed: {e}", exc_info=True)
@@ -251,6 +267,8 @@ class SmartTranslationDialog(QDialog):
         self.setWindowTitle(_("Intelligent Batch Translation"))
         self.resize(900, 700)
         self.setModal(False)
+        self.tooltip = Tooltip(self)
+        self._last_hovered_row = -1
 
         # 数据成员
         self.target_items = []
@@ -462,9 +480,42 @@ class SmartTranslationDialog(QDialog):
 
         self.table_glossary.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table_glossary.setSortingEnabled(True)
+
+        self.table_glossary.setMouseTracking(True)
+        self.table_glossary.viewport().installEventFilter(self)
+
         layout.addWidget(self.table_glossary)
 
         return widget
+
+    def eventFilter(self, obj, event):
+        if obj == self.table_glossary.viewport():
+            if event.type() == QEvent.MouseMove:
+                index = self.table_glossary.indexAt(event.pos())
+                if index.isValid() and index.column() == 1:  # 1: Source
+                    row = index.row()
+                    if row != self._last_hovered_row:
+                        self._last_hovered_row = row
+                        item = self.table_glossary.item(row, 1)
+                        context = item.data(Qt.UserRole)
+
+                        if context:
+                            html = (
+                                f"<b style='color:#4CAF50;'>{_('Context / Usage')}:</b><br>"
+                                f"<div style='margin-top:4px; color:#DDD;'>{context}</div>"
+                            )
+                            self.tooltip.show_tooltip(event.globalPos(), html)
+                        else:
+                            self.tooltip.hide()
+                else:
+                    self.tooltip.hide()
+                    self._last_hovered_row = -1
+
+            elif event.type() == QEvent.Leave:
+                self.tooltip.hide()
+                self._last_hovered_row = -1
+
+        return super().eventFilter(obj, event)
 
     def _create_monitor_page(self):
         """创建执行监控页面"""
@@ -608,7 +659,7 @@ class SmartTranslationDialog(QDialog):
         """分析进度回调"""
         self.log(message, "INFO")
 
-    def _on_analysis_finished(self, style, glossary, recommended_temp):
+    def _on_analysis_finished(self, style, glossary, recommended_temp, terms_data):
         """分析完成回调"""
         self.log(_("Analysis completed successfully"), "SUCCESS")
 
@@ -617,7 +668,7 @@ class SmartTranslationDialog(QDialog):
 
         # 更新预览页面
         self.edit_style.setPlainText(style)
-        self._populate_glossary_table(glossary)
+        self._populate_glossary_table(glossary, terms_data)
 
         # 设置温度值
         self.temp_spinbox.setValue(recommended_temp)
@@ -636,10 +687,17 @@ class SmartTranslationDialog(QDialog):
         )
         self.stack.setCurrentIndex(0)
 
-    def _populate_glossary_table(self, markdown_text):
+    def _populate_glossary_table(self, markdown_text, terms_data=None):
         """从Markdown文本填充术语表"""
         self.table_glossary.setSortingEnabled(False)
         self.table_glossary.setRowCount(0)
+
+        # 构建上下文映射表 {term: context}
+        context_map = {}
+        if terms_data:
+            for item in terms_data:
+                if isinstance(item, dict):
+                    context_map[item.get('term')] = item.get('context', '')
 
         if not markdown_text or not markdown_text.strip():
             self.table_glossary.setSortingEnabled(True)
@@ -667,16 +725,16 @@ class SmartTranslationDialog(QDialog):
                 continue
 
             # 收集数据
-            parsed_entries.append((source_text, target_text))
+            context = context_map.get(source_text, "")
+            parsed_entries.append((source_text, target_text, context))
 
-        # 按原文进行 A-Z 排序
+        # 排序
         parsed_entries.sort(key=lambda x: x[0].lower())
 
         # 添加行
-        for src, tgt in parsed_entries:
-            self._add_glossary_row(src, tgt)
+        for src, tgt, ctx in parsed_entries:
+            self._add_glossary_row(src, tgt, ctx)
 
-        # 恢复排序功能
         self.table_glossary.setSortingEnabled(True)
 
     def _is_table_header(self, source, target):
@@ -688,7 +746,7 @@ class SmartTranslationDialog(QDialog):
 
         return source_lower in header_keywords and target_lower in header_keywords
 
-    def _add_glossary_row(self, source, target):
+    def _add_glossary_row(self, source, target, context=""):
         """添加术语表行"""
         row = self.table_glossary.rowCount()
         self.table_glossary.insertRow(row)
@@ -699,8 +757,13 @@ class SmartTranslationDialog(QDialog):
         check_item.setCheckState(Qt.Checked)
         self.table_glossary.setItem(row, 0, check_item)
 
-        # 列1: 源文本
-        self.table_glossary.setItem(row, 1, QTableWidgetItem(source))
+        # 列1: 源文本 (存储 Context 到 UserRole)
+        src_item = QTableWidgetItem(source)
+        # 存储上下文数据
+        if context:
+            src_item.setData(Qt.UserRole, context)
+
+        self.table_glossary.setItem(row, 1, src_item)
 
         # 列2: 目标文本
         self.table_glossary.setItem(row, 2, QTableWidgetItem(target))
