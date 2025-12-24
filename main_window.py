@@ -3187,7 +3187,7 @@ class LexiSyncApp(QMainWindow):
         reply = QMessageBox.question(
             self,
             _("Confirm Auto Fix"),
-            _("Found {count} items with auto-fixable issues (e.g. whitespace, punctuation).\n\nDo you want to fix them all automatically?").format(
+            _("Found {count} items with auto-fixable issues.\n\nDo you want to fix them all automatically?").format(
                 count=fixable_count),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No

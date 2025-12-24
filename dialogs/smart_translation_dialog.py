@@ -379,15 +379,26 @@ class SmartTranslationDialog(QDialog):
         strat_layout.addLayout(thread_layout)
 
         # Existing Checkboxes
+        resource_layout = QVBoxLayout()
+        self.chk_use_tm = QCheckBox(_("Use Translation Memory"))
+        self.chk_use_tm.setChecked(True)
+        self.chk_use_tm.setToolTip(
+            _("Search for fuzzy matches in your local TM databases and provide them as reference."))
+
+        self.chk_use_glossary_db = QCheckBox(_("Use Existing Glossary"))
+        self.chk_use_glossary_db.setChecked(True)
+        self.chk_use_glossary_db.setToolTip(_("Search for terms in your local Glossary databases and enforce them."))
+
         self.chk_analyze = QCheckBox(_("Auto-analyze Style & Terminology"))
         self.chk_analyze.setChecked(True)
         strat_layout.addWidget(self.chk_analyze)
 
-        self.chk_term_context = QCheckBox(_("Provide Context for Term Translation"))
-        self.chk_term_context.setChecked(True)
+        self.chk_term_context = QCheckBox(_("Provide Context for Terminology Disambiguation"))
+        self.chk_term_context.setChecked(False)
         self.chk_term_context.setToolTip(
-            _("If enabled, extracts example sentences (Fast Mode) or AI explanations (Deep Mode) "
-              "to help the AI translate terms accurately.\nConsumes more tokens but improves quality.")
+            _("During the terminology analysis phase, this provides example sentences or AI explanations "
+              "to ensure words with multiple meanings (e.g., 'Home' as 'Main Page' vs 'House') "
+              "are translated correctly based on their actual usage in your project.")
         )
         strat_layout.addWidget(self.chk_term_context)
 
@@ -990,31 +1001,52 @@ class SmartTranslationDialog(QDialog):
         finally:
             self._signals_connected = False
 
-
     def custom_context_provider(self, ts_id):
         try:
-            # 1. 获取基础上下文（邻近项）
+            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+            if not ts_obj:
+                return {}
+
+            original_text = ts_obj.original_semantic
+
+            # 1. 获取基础上下文
             base_context = self.app._generate_ai_context_strings(ts_id)
 
-            # 2. 获取语义上下文（RAG检索）
-            semantic_context = ""
-            if self.chk_retrieval.isChecked() and self.retrieval_enabled:
-                semantic_context = self._get_semantic_context(ts_id)
+            # 2. 构建 [Semantic Context]
+            semantic_context_parts = []
 
-            # 3. 获取术语表
-            relevant_glossary = ""
-            ts_obj = self.app._find_ts_obj_by_id(ts_id)
-            if ts_obj and self._cached_glossary_dict:
-                original_text = ts_obj.original_semantic
-                matched_terms = []
+            # 2.1 RAG (插件)
+            if self.chk_retrieval.isChecked() and self.retrieval_enabled:
+                rag_result = self._get_semantic_context(ts_id)
+                if rag_result:
+                    semantic_context_parts.append(rag_result)
+
+            # 2.2 TM (本地数据库)
+            if self.chk_use_tm.isChecked():
+                tm_result = self._fetch_tm_context(original_text)
+                if tm_result:
+                    semantic_context_parts.append(tm_result)
+
+            semantic_context = "\n\n".join(semantic_context_parts)
+
+            # 3. Glossary
+            glossary_lines = []
+
+            # 3.1 AI 提取的术语 (Phase 1)
+            if self._cached_glossary_dict:
                 for term_src, term_tgt in self._cached_glossary_dict.items():
                     if term_src.lower() in original_text.lower():
-                        matched_terms.append(f"- {term_src}: {term_tgt}")
+                        glossary_lines.append(f"- {term_src}: {term_tgt} (AI Generated)")
 
-                if matched_terms:
-                    relevant_glossary = "\n".join(matched_terms)
+            # 3.2 本地静态术语库 (Phase 2)
+            if self.chk_use_glossary_db.isChecked():
+                static_terms = self._fetch_static_glossary_context(original_text)
+                if static_terms:
+                    glossary_lines.extend(static_terms)
+            # 去重
+            relevant_glossary = "\n".join(glossary_lines)
 
-            # 3. 组合所有上下文
+            # 4. 组合所有上下文
             return {
                 "original_context": base_context.get("original_context", ""),
                 "translation_context": base_context.get("translation_context", ""),
@@ -1025,8 +1057,6 @@ class SmartTranslationDialog(QDialog):
 
         except Exception as e:
             logger.error(f"Error in context provider for {ts_id}: {e}", exc_info=True)
-
-            # 返回最小上下文，确保不阻塞翻译流程
             return {
                 "original_context": "",
                 "translation_context": "",
@@ -1051,9 +1081,9 @@ class SmartTranslationDialog(QDialog):
             if not results:
                 return ""
 
-            # 格式化结果（限制数量和长度）
+            # 格式化结果
             lines = []
-            for r in results[:5]:  # 最多5个结果
+            for r in results[:5]:
                 src = r.get('source', '')[:60]
                 tgt = r.get('target', '')[:60]
                 if src and tgt:
@@ -1067,6 +1097,58 @@ class SmartTranslationDialog(QDialog):
         except Exception as e:
             logger.warning(f"Semantic retrieval failed for {ts_id}: {e}")
             return ""
+
+    def _fetch_tm_context(self, source_text):
+        try:
+            source_lang = self.app.source_language
+            target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+            # 获取模糊匹配
+            matches = self.app.tm_service.get_fuzzy_matches(
+                source_text, source_lang, target_lang, limit=3, threshold=0.8
+            )
+
+            if not matches:
+                return ""
+
+            lines = ["TM Matches (Reference):"]
+            for m in matches:
+                score = int(m['score'] * 100)
+                src = m['source_text'].replace('\n', ' ')
+                tgt = m['target_text'].replace('\n', ' ')
+                if len(src) > 50: src = src[:47] + "..."
+                if len(tgt) > 50: tgt = tgt[:47] + "..."
+                lines.append(f"- [{score}%] {src} -> {tgt}")
+
+            return "\n".join(lines)
+        except Exception as e:
+            logger.warning(f"Failed to fetch TM context: {e}")
+            return ""
+
+    def _fetch_static_glossary_context(self, source_text):
+        try:
+            # 分词
+            words = set(re.findall(r'\b\w+\b', source_text.lower()))
+            if not words: return []
+
+            source_lang = self.app.source_language
+            target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+
+            # 批量查询
+            results = self.app.glossary_service.get_translations_batch(
+                list(words), source_lang, target_lang, include_reverse=False
+            )
+
+            lines = []
+            for term, info in results.items():
+                if re.search(r'\b' + re.escape(term) + r'\b', source_text, re.IGNORECASE):
+                    targets = ", ".join([t['target'] for t in info['translations']])
+                    lines.append(f"- {term}: {targets} (Database)")
+
+            return lines
+        except Exception as e:
+            logger.warning(f"Failed to fetch glossary context: {e}")
+            return []
+
 
 
     def on_batch_progress(self, current, total):
