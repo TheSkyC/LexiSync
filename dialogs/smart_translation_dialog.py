@@ -16,6 +16,7 @@ from utils.enums import AIOperationType
 from ui_components.tooltip import Tooltip
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
+import re
 import json
 import uuid
 import threading
@@ -497,12 +498,30 @@ class SmartTranslationDialog(QDialog):
                     if row != self._last_hovered_row:
                         self._last_hovered_row = row
                         item = self.table_glossary.item(row, 1)
+                        term = item.text()  # 获取当前术语
                         context = item.data(Qt.UserRole)
 
                         if context:
+                            # 高亮关键词
+                            # 1. 转义术语中的正则特殊字符 (如 +, ?, *)
+                            escaped_term = re.escape(term)
+
+                            # 2. 定义高亮样式 (黄色背景，黑色文字，圆角)
+                            hl_style = "background-color: #FFEB3B; color: #000; font-weight: bold; padding: 0 2px; border-radius: 2px;"
+
+                            # 3. 正则替换
+                            try:
+                                highlighted_context = re.sub(
+                                    f"(?i)({escaped_term})",
+                                    f"<span style='{hl_style}'>\\1</span>",
+                                    context
+                                )
+                            except Exception:
+                                highlighted_context = context
+
                             html = (
                                 f"<b style='color:#4CAF50;'>{_('Context / Usage')}:</b><br>"
-                                f"<div style='margin-top:4px; color:#DDD;'>{context}</div>"
+                                f"<div style='margin-top:4px; color:#DDD;'>{highlighted_context}</div>"
                             )
                             self.tooltip.show_tooltip(event.globalPos(), html)
                         else:
