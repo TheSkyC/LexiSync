@@ -31,7 +31,9 @@ class AnalysisWorker(QObject):
     finished = Signal(str, str, float, list)   # style_guide, glossary_md, recommended_temp, context_list
     error = Signal(str)
 
-    def __init__(self, app, samples, all_items, source_lang, target_lang, term_mode="fast", max_threads=1, use_context=True):
+    def __init__(self, app, samples, all_items, source_lang, target_lang,
+                 term_mode="fast", max_threads=1, use_context=True,
+                 batch_size=50, orphan_ratio=0.2):
         super().__init__()
         self.app = app
         self.samples = samples
@@ -41,6 +43,8 @@ class AnalysisWorker(QObject):
         self.term_mode = term_mode
         self.max_threads = max_threads
         self.use_context = use_context
+        self.batch_size = batch_size
+        self.orphan_ratio = orphan_ratio
         self._is_cancelled = False
 
     def run(self):
@@ -175,7 +179,12 @@ class AnalysisWorker(QObject):
             self.progress.emit(_("Starting Deep Scan (Parallel Threads: {n})...").format(n=self.max_threads))
             all_terms_dict = {}
 
-            batches = self._create_smart_batches(self.all_items, batch_size=50, merge_threshold_ratio=0.2)
+            # 配置批次大小
+            batches = self._create_smart_batches(
+                self.all_items,
+                batch_size=self.batch_size,
+                merge_threshold_ratio=self.orphan_ratio
+            )
             total_batches = len(batches)
             completed_batches = 0
             lock = threading.Lock()
@@ -229,7 +238,11 @@ class AnalysisWorker(QObject):
             return "| Source | Target |\n|--------|--------|\n"
 
         # 配置批次大小
-        batches = self._create_smart_batches(terms_data_list, batch_size=50, merge_threshold_ratio=0.1)
+        batches = self._create_smart_batches(
+            terms_data_list,
+            batch_size=self.batch_size,
+            merge_threshold_ratio=self.orphan_ratio
+        )
         total_batches = len(batches)
 
         self.progress.emit(_("Translating terms in {t} batches (Threads: {n})...").format(
@@ -341,11 +354,9 @@ class SmartTranslationDialog(QDialog):
         page = QWidget()
         layout = QVBoxLayout(page)
 
-        # 作用域选择
         layout.addWidget(self._create_scope_group())
-
-        # 策略选择
         layout.addWidget(self._create_strategy_group())
+        layout.addWidget(self._create_advanced_group())
 
         layout.addStretch()
 
@@ -385,25 +396,13 @@ class SmartTranslationDialog(QDialog):
         term_layout.addWidget(QLabel(_("Term Extraction:")))
         self.term_mode_combo = QComboBox()
         self.term_mode_combo.addItem(_("Fast (Frequency-based)"), "fast")
-        self.term_mode_combo.addItem(_("Deep (AI-Scan All)"), "deep")
+        self.term_mode_combo.addItem(_("Deep (AI-Scan)"), "deep")
         self.term_mode_combo.setToolTip(
             _("Fast: Scans high-frequency words locally, then AI filters them. Cheap & Fast.\n"
               "Deep: AI reads ALL texts to find terms. Expensive & Slow but thorough.")
         )
         term_layout.addWidget(self.term_mode_combo)
         strat_layout.addLayout(term_layout)
-
-        # Concurrency Setting
-        thread_layout = QHBoxLayout()
-        thread_layout.addWidget(QLabel(_("Concurrency (Threads):")))
-        self.thread_spinbox = QSpinBox()
-        self.thread_spinbox.setRange(1, 16)
-        default_threads = self.app.config.get("ai_max_concurrent_requests", 3)
-        self.thread_spinbox.setValue(default_threads)
-        self.thread_spinbox.setToolTip(_("Number of parallel AI requests for Deep Scan and Translation Phase."))
-        thread_layout.addWidget(self.thread_spinbox)
-        thread_layout.addStretch()
-        strat_layout.addLayout(thread_layout)
 
         # Existing Checkboxes
         resource_layout = QVBoxLayout()
@@ -438,6 +437,75 @@ class SmartTranslationDialog(QDialog):
         strat_layout.addWidget(self.retrieval_info)
 
         return strat_group
+
+    def _create_advanced_group(self):
+        adv_group = QGroupBox(_("Advanced Configuration"))
+        adv_layout = QVBoxLayout(adv_group)
+
+        # Row 1: Concurrency, Batch Size, Orphan Ratio
+        row1 = QHBoxLayout()
+
+        # Concurrency
+        row1.addWidget(QLabel(_("Threads:")))
+        self.thread_spinbox = QSpinBox()
+        self.thread_spinbox.setRange(1, 16)
+        self.thread_spinbox.setValue(self.app.config.get("ai_max_concurrent_requests", 4))
+        self.thread_spinbox.setToolTip(_("Parallel requests count."))
+        row1.addWidget(self.thread_spinbox)
+
+        row1.addSpacing(15)
+
+        # Batch Size
+        row1.addWidget(QLabel(_("Batch Size:")))
+        self.batch_size_spinbox = QSpinBox()
+        self.batch_size_spinbox.setRange(1, 500)
+        self.batch_size_spinbox.setSingleStep(10)
+        self.batch_size_spinbox.setValue(50)
+        self.batch_size_spinbox.setToolTip(_("Items per AI request."))
+        row1.addWidget(self.batch_size_spinbox)
+
+        row1.addSpacing(15)
+
+        # Orphan Ratio
+        row1.addWidget(QLabel(_("Orphan Ratio:")))
+        self.orphan_ratio_spinbox = QDoubleSpinBox()
+        self.orphan_ratio_spinbox.setRange(0.0, 1.0)
+        self.orphan_ratio_spinbox.setSingleStep(0.05)
+        self.orphan_ratio_spinbox.setValue(0.2)
+        self.orphan_ratio_spinbox.setToolTip(_("Merge last batch if smaller than this ratio of Batch Size."))
+        row1.addWidget(self.orphan_ratio_spinbox)
+
+        row1.addStretch()
+        adv_layout.addLayout(row1)
+
+        # Row 2: Self-Repair, Timeout
+        row2 = QHBoxLayout()
+
+        # Self-Repair
+        row2.addWidget(QLabel(_("Self-Repair:")))
+        self.repair_spinbox = QSpinBox()
+        self.repair_spinbox.setRange(0, 3)
+        self.repair_spinbox.setValue(1)
+        self.repair_spinbox.setSuffix(_(" times"))
+        self.repair_spinbox.setToolTip(_("Max retries if validation fails."))
+        row2.addWidget(self.repair_spinbox)
+
+        row2.addSpacing(15)
+
+        # Timeout
+        row2.addWidget(QLabel(_("Timeout:")))
+        self.timeout_spinbox = QSpinBox()
+        self.timeout_spinbox.setRange(10, 300)
+        self.timeout_spinbox.setSingleStep(5)
+        self.timeout_spinbox.setValue(60)
+        self.timeout_spinbox.setSuffix(" s")
+        self.timeout_spinbox.setToolTip(_("Max time to wait for AI response."))
+        row2.addWidget(self.timeout_spinbox)
+
+        row2.addStretch()
+        adv_layout.addLayout(row2)
+
+        return adv_group
 
     def _create_preview_page(self):
         """创建预览页面"""
@@ -691,7 +759,9 @@ class SmartTranslationDialog(QDialog):
             self._get_target_language(),
             self.term_mode_combo.currentData(),
             max_threads=max_threads,
-            use_context=self.chk_term_context.isChecked()
+            use_context=self.chk_term_context.isChecked(),
+            batch_size=self.batch_size_spinbox.value(),
+            orphan_ratio=self.orphan_ratio_spinbox.value()
         )
         self.analysis_worker.moveToThread(self.analysis_thread)
 
@@ -870,13 +940,17 @@ class SmartTranslationDialog(QDialog):
         self._connect_ai_manager_signals()
         current_temp = self.temp_spinbox.value()
         concurrency = self.thread_spinbox.value()
+        repair_limit = self.repair_spinbox.value()
+        timeout = self.timeout_spinbox.value()
 
         # 开始批量翻译
         self.app.ai_manager.start_batch(
             self.target_items,
             self.custom_context_provider,
             concurrency_override=concurrency,
-            temperature=current_temp
+            temperature=current_temp,
+            self_repair_limit=repair_limit,
+            api_timeout=timeout
         )
 
     def _switch_to_translation_mode(self):

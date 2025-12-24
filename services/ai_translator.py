@@ -16,7 +16,7 @@ class AITranslator:
         self.api_url = api_url if api_url and api_url.strip() else DEFAULT_API_URL
         self.model_name = model_name
 
-    def translate(self, text_to_translate, system_prompt, temperature=None):
+    def translate(self, text_to_translate, system_prompt, temperature=None, timeout=60):
         if not self.api_key:
             raise ValueError(_("API Key not set."))
         if not requests:
@@ -37,7 +37,7 @@ class AITranslator:
         }
 
         try:
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=45)
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=timeout)
             response.raise_for_status()
             result = response.json()
 

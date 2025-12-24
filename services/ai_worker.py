@@ -38,6 +38,8 @@ class AIWorker(QRunnable):
         self.plugin_placeholders = kwargs.get('plugin_placeholders', {})
         self.system_prompt = kwargs.get('system_prompt', None)
         self.temperature = kwargs.get('temperature', None)
+        self.self_repair_limit = kwargs.get('self_repair_limit', 1)
+        self.api_timeout = kwargs.get('api_timeout', 60)
 
     def run(self):
         app = self.app_ref()
@@ -63,12 +65,14 @@ class AIWorker(QRunnable):
 
             # --- 2. 执行翻译循环---
             current_attempt = 1
-            max_attempts = 2
+            max_attempts = 1 + self.self_repair_limit
             last_translated_text = ""
 
             while current_attempt <= max_attempts:
                 translated_text = app.ai_translator.translate(
-                    self.original_text, final_prompt, temperature=self.temperature
+                    self.original_text, final_prompt,
+                    temperature=self.temperature,
+                    timeout=self.api_timeout
                 )
                 last_translated_text = translated_text
 
