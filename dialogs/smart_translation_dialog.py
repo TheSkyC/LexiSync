@@ -113,6 +113,35 @@ class AnalysisWorker(QObject):
             logger.error(f"Analysis failed: {e}", exc_info=True)
             self.error.emit(str(e))
 
+    def _create_smart_batches(self, items, batch_size=50, merge_threshold_ratio=0.2):
+        """
+        创建智能批次。
+        如果最后一批的数量少于 batch_size * ratio (例如 50 * 0.2 = 10)，
+        则将其合并到倒数第二批中，防止产生过小的孤立批次。
+        """
+        total = len(items)
+        if total == 0: return []
+
+        # 如果总量本身就只比一个批次多一点点 (例如 55 个，阈值是 60)，直接作为一个批次
+        # 50 * (1 + 0.2) = 60
+        if total <= batch_size * (1 + merge_threshold_ratio):
+            return [items]
+
+        # 标准分批
+        batches = [items[i:i + batch_size] for i in range(0, total, batch_size)]
+
+        # 检查最后一批
+        if len(batches) > 1:
+            last_batch = batches[-1]
+            # 如果最后一批太小 (比如只有 1-10 个)
+            if len(last_batch) < (batch_size * merge_threshold_ratio):
+                # 合并到倒数第二批
+                prev_batch = batches[-2]
+                batches[-2] = prev_batch + last_batch
+                batches.pop()  # 移除最后一个
+
+        return batches
+
     def _parse_and_strip_temperature(self, text):
         """从风格指南中提取温度并将其从文本中移除"""
         import re
@@ -146,8 +175,7 @@ class AnalysisWorker(QObject):
             self.progress.emit(_("Starting Deep Scan (Parallel Threads: {n})...").format(n=self.max_threads))
             all_terms_dict = {}
 
-            batch_size = 50
-            batches = [self.all_items[i:i + batch_size] for i in range(0, len(self.all_items), batch_size)]
+            batches = self._create_smart_batches(self.all_items, batch_size=50, merge_threshold_ratio=0.2)
             total_batches = len(batches)
             completed_batches = 0
             lock = threading.Lock()
@@ -201,8 +229,7 @@ class AnalysisWorker(QObject):
             return "| Source | Target |\n|--------|--------|\n"
 
         # 配置批次大小
-        BATCH_SIZE = 50
-        batches = [terms_data_list[i:i + BATCH_SIZE] for i in range(0, len(terms_data_list), BATCH_SIZE)]
+        batches = self._create_smart_batches(terms_data_list, batch_size=50, merge_threshold_ratio=0.1)
         total_batches = len(batches)
 
         self.progress.emit(_("Translating terms in {t} batches (Threads: {n})...").format(
