@@ -1012,7 +1012,11 @@ class SmartTranslationDialog(QDialog):
         self.app.ai_manager.batch_progress.connect(self.on_batch_progress)
         self.app.ai_manager.item_result.connect(self.on_item_result)
         self.app.ai_manager.batch_finished.connect(self.on_batch_finished)
+        self.app.ai_manager.worker_log.connect(self.on_worker_log)
         self._signals_connected = True
+
+    def on_worker_log(self, message, level):
+        self.log(message, level)
 
     def _disconnect_ai_manager_signals(self):
         """断开AI管理器信号"""

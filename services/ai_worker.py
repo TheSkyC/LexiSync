@@ -8,7 +8,9 @@ import logging
 from utils.enums import AIOperationType
 from utils.localization import _
 from services.prompt_service import generate_prompt_from_structure
-from utils.constants import DEFAULT_PROMPT_STRUCTURE, SUPPORTED_LANGUAGES
+from services.validation_service import validate_string
+from models.translatable_string import TranslatableString
+from utils.constants import DEFAULT_PROMPT_STRUCTURE, SUPPORTED_LANGUAGES, DEFAULT_CORRECTION_PROMPT_STRUCTURE
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +18,8 @@ logger = logging.getLogger(__name__)
 class AIWorkerSignals(QObject):
     # ts_id, translated_text, error_message, op_type
     result = Signal(str, str, str, object)
+    # message, level
+    log_message = Signal(str, str)
     finished = Signal()
 
 
@@ -27,15 +31,11 @@ class AIWorker(QRunnable):
         self.op_type = operation_type
         self.signals = AIWorkerSignals()
 
-        # Common args
+        # Args
         self.original_text = kwargs.get('original_text', "")
         self.target_lang = kwargs.get('target_lang', "")
-
-        # Translation specific args
         self.context_dict = kwargs.get('context_dict', {})
         self.plugin_placeholders = kwargs.get('plugin_placeholders', {})
-
-        # Args
         self.system_prompt = kwargs.get('system_prompt', None)
         self.temperature = kwargs.get('temperature', None)
 
@@ -44,52 +44,100 @@ class AIWorker(QRunnable):
         if not app: return
 
         try:
-            final_prompt = ""
-
-            # --- Logic Branch 1: Translation (Single or Batch) ---
-            if self.op_type in (AIOperationType.TRANSLATION, AIOperationType.BATCH_TRANSLATION):
-                if self.system_prompt:
-                    final_prompt = self.system_prompt
-                else:
-                    # 1. Glossary Lookup
-                    glossary_prompt_part = self._build_glossary_context(app)
-
-                    # 2. Build Prompt
-                    placeholders = {
-                        '[Target Language]': self.target_lang,
-                        '[Untranslated Context]': self.context_dict.get("original_context", ""),
-                        '[Translated Context]': self.context_dict.get("translation_context", ""),
-                        '[Glossary]': glossary_prompt_part
-                    }
-                    if self.plugin_placeholders:
-                        placeholders.update(self.plugin_placeholders)
-
-                    prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
-                    final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
-
-            # --- Logic Branch 2: Fix ---
-            elif self.op_type == AIOperationType.FIX:
+            # --- 1. 准备初始翻译 Prompt ---
+            if self.system_prompt:
                 final_prompt = self.system_prompt
+            else:
+                glossary_prompt_part = self._build_glossary_context(app)
+                placeholders = {
+                    '[Target Language]': self.target_lang,
+                    '[Untranslated Context]': self.context_dict.get("original_context", ""),
+                    '[Translated Context]': self.context_dict.get("translation_context", ""),
+                    '[Glossary]': glossary_prompt_part
+                }
+                if self.plugin_placeholders:
+                    placeholders.update(self.plugin_placeholders)
 
-            # --- Execute API Call ---
-            logger.debug(f"[AIWorker] Type: {self.op_type.name}, ID: {self.ts_id}")
-            translated_text = app.ai_translator.translate(
-                self.original_text, final_prompt, temperature=self.temperature
-            )
+                prompt_structure = app.config.get("ai_prompt_structure", DEFAULT_PROMPT_STRUCTURE)
+                final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
 
-            # Emit Success
-            self.signals.result.emit(
-                self.ts_id, translated_text, None, self.op_type
-            )
+            # --- 2. 执行翻译循环---
+            current_attempt = 1
+            max_attempts = 2
+            last_translated_text = ""
+
+            while current_attempt <= max_attempts:
+                translated_text = app.ai_translator.translate(
+                    self.original_text, final_prompt, temperature=self.temperature
+                )
+                last_translated_text = translated_text
+
+                # 如果是修复模式或非翻译任务，不触发自修复
+                if self.op_type == AIOperationType.FIX:
+                    break
+
+                # --- 3. 自修复检查---
+                if current_attempt < max_attempts:
+                    temp_ts = TranslatableString("", self.original_text, 0, 0, 0, [])
+                    temp_ts.translation = translated_text
+                    validate_string(temp_ts, app.config, app)
+
+                    # 如果有错误
+                    if temp_ts.warnings:
+                        error_details = "\n".join([f"- {msg}" for __, msg in temp_ts.warnings])
+
+                        log_msg = _(
+                            "Self-Repair: '{text}...' failed validation. Issues:\n{errors}\nRetrying with user correction template...").format(
+                            text=self.original_text[:20], errors=error_details
+                        )
+                        self.signals.log_message.emit(log_msg, "WARNING")
+
+                        # 构建自修复 Prompt
+                        final_prompt = self._build_self_repair_prompt(app, translated_text, error_details)
+                        current_attempt += 1
+                        continue
+
+                break
+
+            self.signals.result.emit(self.ts_id, last_translated_text, None, self.op_type)
 
         except Exception as e:
-            # Emit Error
-            self.signals.result.emit(
-                self.ts_id, None, str(e), self.op_type
-            )
-
+            self.signals.result.emit(self.ts_id, None, str(e), self.op_type)
         finally:
             self.signals.finished.emit()
+
+    def _build_self_repair_prompt(self, app, failed_translation, error_details):
+        # 1. 获取用户定义的纠错模板
+        prompts = app.config.get("ai_prompts", [])
+        active_fix_id = app.config.get("active_correction_prompt_id")
+        prompt_data = next((p for p in prompts if p["id"] == active_fix_id), None)
+
+        if prompt_data:
+            structure = prompt_data["structure"]
+        else:
+            # 如果没找到，回退到默认纠错结构
+            structure = DEFAULT_CORRECTION_PROMPT_STRUCTURE
+
+        # 2. 填充占位符
+        placeholders = {
+            '[Target Language]': self.target_lang,
+            '[Source Text]': self.original_text,
+            '[Current Translation]': failed_translation,
+            '[Error List]': error_details,
+            '[Glossary]': self._build_glossary_context(app)
+        }
+
+        base_prompt = generate_prompt_from_structure(structure, placeholders)
+
+        strict_suffix = (
+            "\n\n"
+            "### CRITICAL AUTOMATION RULES:\n"
+            "1. Your previous output failed technical validation. You MUST fix the errors listed above.\n"
+            "2. Ensure all placeholders, HTML tags, and escape sequences match the source EXACTLY.\n"
+            "3. Output ONLY the raw corrected text. NO explanations, NO notes, NO markdown code blocks."
+        )
+
+        return base_prompt + strict_suffix
 
     def _build_glossary_context(self, app):
         """Helper to extract glossary terms relevant to the text."""

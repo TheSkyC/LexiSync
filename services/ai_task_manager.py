@@ -17,6 +17,7 @@ class AITaskManager(QObject):
     batch_progress = Signal(int, int)
     batch_finished = Signal(list, int, int)
     item_result = Signal(str, str, str, object)
+    worker_log = Signal(str, str)
 
     def __init__(self, app_instance):
         super().__init__()
@@ -119,7 +120,7 @@ class AITaskManager(QObject):
             worker.signals.result.connect(self.item_result)
             worker.signals.result.connect(self._collect_success_for_undo)
             worker.signals.finished.connect(self._on_worker_finished)
-
+            worker.signals.log_message.connect(self.worker_log)
             self.thread_pool.start(worker)
 
     def _on_worker_finished(self):
