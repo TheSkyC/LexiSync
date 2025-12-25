@@ -1127,18 +1127,21 @@ class SmartTranslationDialog(QDialog):
 
             # 2. 构建 [Semantic Context]
             semantic_context_parts = []
+            seen_semantic_content = set()
 
             # 2.1 RAG (插件)
             if self.chk_retrieval.isChecked() and self.retrieval_enabled:
                 rag_result = self._get_semantic_context(ts_id)
-                if rag_result:
+                if rag_result and rag_result not in seen_semantic_content:
                     semantic_context_parts.append(rag_result)
+                    seen_semantic_content.add(rag_result)
 
             # 2.2 TM (本地数据库)
             if self.chk_use_tm.isChecked():
                 tm_result = self._fetch_tm_context(original_text)
-                if tm_result:
+                if tm_result and tm_result not in seen_semantic_content:
                     semantic_context_parts.append(tm_result)
+                    seen_semantic_content.add(tm_result)
 
             semantic_context = "\n\n".join(semantic_context_parts)
 
