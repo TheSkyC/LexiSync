@@ -1180,7 +1180,7 @@ class SmartTranslationDialog(QDialog):
             if self._cached_glossary_dict:
                 for term_src, term_tgt in self._cached_glossary_dict.items():
                     if term_src.lower() in original_text.lower():
-                        glossary_lines.append(f"- {term_src}: {term_tgt} (AI Generated)")
+                        glossary_lines.append(f"- {term_src}: {term_tgt}")
 
             # 3.2 本地静态术语库 (Phase 2)
             if self.chk_use_glossary_db.isChecked():

@@ -128,7 +128,7 @@ class TestTranslationDialog(QDialog):
         right_layout.addWidget(res_group)
 
         # 2. Context Inspector
-        ctx_group = QGroupBox(_("Context Inspector (What AI Sees)"))
+        ctx_group = QGroupBox(_("Context Inspector"))
         ctx_layout = QVBoxLayout(ctx_group)
         self.ctx_tabs = QTabWidget()
 

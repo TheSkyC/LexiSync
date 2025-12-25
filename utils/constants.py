@@ -77,7 +77,7 @@ DEFAULT_CORRECTION_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": "Structural Content",
         "enabled": True,
-        "content": "你是一位专业的本地化QA专家。你的任务是修复以下译文中的错误，使其符合目标语言的语法习惯和项目规则。并确保与原文的格式一致（行数、符号等等）"
+        "content": "你是一位专业的本地化QA专家。你的任务是修复以下译文中的错误，使其符合目标语言的语法习惯和项目规则。"
     },
     {
         "id": str(uuid.uuid4()),
@@ -89,19 +89,13 @@ DEFAULT_CORRECTION_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "请参考以下术语表（Glossary），确保术语使用正确：\n[Glossary]"
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "type": "Static Instruction",
-        "enabled": True,
-        "content": "请参考以下错误报告（Errors），针对性地修正译文。"
+        "content": "参考术语表：\n[Glossary]"
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "错误报告：\n[Error List]"
+        "content": "检测到的错误：\n[Error List]"
     },
     {
         "id": str(uuid.uuid4()),
@@ -113,19 +107,19 @@ DEFAULT_CORRECTION_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "当前有问题的译文：\n[Current Translation]"
+        "content": "当前有问题的译文：\n<translate_input>\n[Current Translation]\n</translate_input>"
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Static Instruction",
         "enabled": True,
-        "content": "请直接返回修正后的完整译文内容，不要包含任何解释、前缀或后缀。不要使用Markdown代码块。"
+        "content": "重要：必须严格保留原文中的所有格式，包括：\n- XML/HTML 标签 (例如 <br>, <b>, <![CDATA[...]]>)\n- 转义字符 (\\n, \\t, \\r, \\\")\n- 占位符 (%s, {var})\n不要移除或解释包裹内容的标签。"
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Static Instruction",
         "enabled": True,
-        "content": "严格区分物理换行符 `\\n` 和 HTML 标签 `<br>`。如果原文此处使用的是 `\\n`，译文对应位置必须使用 `\\n`；如果原文使用的是 `<br>`，译文必须使用 `<br>`。禁止将一种转换为另一种。严格遵守原文的格式"
+        "content": "请根据原文和错误列表修复 <translate_input> 中的内容。仅输出修复后的译文，不要包含 <translate_input> 标签，不要包含任何解释。"
     }
 ]
 
