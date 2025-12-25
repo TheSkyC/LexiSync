@@ -149,16 +149,19 @@ class AnalysisWorker(QObject):
     def _parse_and_strip_temperature(self, text):
         """从风格指南中提取温度并将其从文本中移除"""
         import re
-        rec_temp = 0.3  # 默认回退值
+        rec_temp = 0.3  # 默认值
 
-        pattern = r'[\-\*]*\s*(\*\*)?Recommended Temperature(\*\*)?:\s*([0-9.]+).*?(\n|$)'
+        # 匹配 "Recommended Temperature" 后面的第一个数字 (如 0.5, .5, 1.0)
+        pattern = r'[\-\*]*\s*(\*\*)?Recommended Temperature(\*\*)?:\s*([0-1]?\.?\d+)'
 
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
             try:
-                val = float(match.group(3))
+                val_str = match.group(3)
+                val = float(val_str)
                 rec_temp = max(0.1, min(1.0, val))
-                text = text.replace(match.group(0), "")
+                # 移除整行
+                text = re.sub(r'[\-\*]*\s*(\*\*)?Recommended Temperature(\*\*)?:\s*.*(\n|$)', '', text, flags=re.IGNORECASE)
             except ValueError:
                 pass
 
