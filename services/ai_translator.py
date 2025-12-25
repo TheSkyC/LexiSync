@@ -61,6 +61,47 @@ class AITranslator:
         except Exception as e:
             raise Exception(f"{_('Unknown error occurred during translation')}: {e}")
 
+    def translate_stream(self, text_to_translate, system_prompt, temperature=None, timeout=45):
+        if not self.api_key: raise ValueError(_("API Key not set."))
+        if not requests: raise ImportError(_("'requests' library not found."))
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+        final_temp = temperature if temperature is not None else 0.3
+        payload = {
+            "model": self.model_name,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text_to_translate}
+            ],
+            "temperature": final_temp,
+            "stream": True
+        }
+
+        try:
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=timeout, stream=True)
+            response.raise_for_status()
+
+            for line in response.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8')
+                    if decoded_line.startswith('data: '):
+                        data_str = decoded_line[6:]  # 去掉 'data: '
+                        if data_str.strip() == '[DONE]':
+                            break
+                        try:
+                            data_json = json.loads(data_str)
+                            delta = data_json.get("choices", [{}])[0].get("delta", {})
+                            content = delta.get("content", "")
+                            if content:
+                                yield content
+                        except json.JSONDecodeError:
+                            continue
+        except Exception as e:
+            raise Exception(f"{_('Stream Error')}: {e}")
+
     def test_connection(self):
         current_ui_lang = lang_manager.get_current_language()
         source_text = "Hello, World!"

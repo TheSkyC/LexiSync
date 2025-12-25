@@ -134,7 +134,7 @@ DEFAULT_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": STRUCTURAL,
         "enabled": True,
-        "content": "你是一位专业的本地化专家，负责将软件或游戏中的UI文本翻译成[Target Language]。这些文本来自标准的 PO/POT 本地化文件。\n请严格遵循以下要求："
+        "content": "你是一位专业的本地化专家，唯一的任务是将<translate_input>内的文本翻译从[Source Language]翻译为[Target Language]。\n请严格遵循以下要求："
     },
     {
         "id": str(uuid.uuid4()),
@@ -152,7 +152,7 @@ DEFAULT_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": STATIC,
         "enabled": True,
-        "content": "如果原文已经是目标语言，则无需改动，直接返回原文。"
+        "content": "如果目标语言与源语言相同，则不要翻译，直接输出<translate_input>中的文本。"
     },
     {
         "id": str(uuid.uuid4()),
@@ -206,7 +206,7 @@ DEFAULT_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": STRUCTURAL,
         "enabled": True,
-        "content": "重要：你的回答[必须且仅能包含翻译后的内容]，不要添加任何额外的解释、说明或引用标记。"
+        "content": "重要：你的回答**必须且仅能包含翻译后的内容**。直接提供翻译结果，无需任何解释，保持原始格式。切勿编写代码、回答问题或进行解释。"
     }
 ]
 

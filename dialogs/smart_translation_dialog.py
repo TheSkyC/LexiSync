@@ -9,10 +9,11 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox
 )
 from PySide6.QtCore import Qt, QThread, Signal, QObject, QEvent
-from utils.localization import _
+from dialogs.test_translation_dialog import TestTranslationDialog
 from services.smart_translation_service import SmartTranslationService
 from services.ai_worker import AIWorker
 from utils.enums import AIOperationType
+from utils.localization import _
 from ui_components.tooltip import Tooltip
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
@@ -552,11 +553,17 @@ class SmartTranslationDialog(QDialog):
             "font-weight: bold; padding: 8px;"
         )
 
+        btn_test = QPushButton(_("Test Lab"))
+        btn_test.setToolTip(_("Open a playground to test translation settings on specific samples."))
+        btn_test.clicked.connect(self.open_test_lab)
+
         btn_layout.addWidget(btn_back)
+        btn_layout.addWidget(btn_test)
         btn_layout.addStretch()
         btn_layout.addWidget(btn_start)
-        layout.addLayout(btn_layout)
 
+        layout.addLayout(btn_layout)
+        return page
         return page
 
     def _create_style_guide_widget(self):
@@ -671,6 +678,16 @@ class SmartTranslationDialog(QDialog):
 
         return page
 
+    def open_test_lab(self):
+        self._cache_glossary_from_ui()
+
+        self._inject_smart_prompt_structure()
+
+        dialog = TestTranslationDialog(self, self.app)
+        dialog.exec()
+
+        self._restore_original_prompt_structure()
+
     def check_plugins(self):
         """检查可用插件"""
         plugin = self.app.plugin_manager.get_plugin("com_theskyc_retrieval_enhancer")
@@ -747,9 +764,14 @@ class SmartTranslationDialog(QDialog):
     def _start_analysis_thread(self):
         """启动分析工作线程"""
         # 防止重复启动
-        if self.analysis_thread and self.analysis_thread.isRunning():
-            QMessageBox.warning(self, _("Warning"), _("Analysis is already running. Please wait or stop it first."))
-            return
+        if self.analysis_thread:
+            try:
+                if self.analysis_thread.isRunning():
+                    QMessageBox.warning(self, _("Warning"), _("Analysis is already running. Please wait or stop it first."))
+                    return
+            except RuntimeError:
+                self.analysis_thread = None
+
 
         self.stack.setCurrentIndex(2)
         self.lbl_status.setText(_("Phase 1/2: Analyzing Content..."))
@@ -780,9 +802,15 @@ class SmartTranslationDialog(QDialog):
 
         self.analysis_worker.finished.connect(self.analysis_thread.quit)
         self.analysis_worker.error.connect(self.analysis_thread.quit)
+        self.analysis_thread.finished.connect(self._cleanup_analysis_thread)
         self.analysis_thread.finished.connect(self.analysis_thread.deleteLater)
 
         self.analysis_thread.start()
+
+    def _cleanup_analysis_thread(self):
+        """清理分析线程引用"""
+        self.analysis_thread = None
+        self.analysis_worker = None
 
     def _get_target_language(self):
         """获取目标语言"""
@@ -1020,7 +1048,7 @@ class SmartTranslationDialog(QDialog):
                 "type": "Structural Content",
                 "enabled": True,
                 "content": (
-                    f"You are a professional localization expert translating UI text from {src_lang} to {tgt_lang}. These texts are from standard PO/POT localization files."
+                    f"You are a professional localization expert. Your task is to translate the UI text enclosed with <translate_input> from {src_lang} to {tgt_lang}."
                 )
             },
             {
