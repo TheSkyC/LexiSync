@@ -743,6 +743,11 @@ class SmartTranslationDialog(QDialog):
 
     def _start_analysis_thread(self):
         """启动分析工作线程"""
+        # 防止重复启动
+        if self.analysis_thread and self.analysis_thread.isRunning():
+            QMessageBox.warning(self, _("Warning"), _("Analysis is already running. Please wait or stop it first."))
+            return
+
         self.stack.setCurrentIndex(2)
         self.lbl_status.setText(_("Phase 1/2: Analyzing Content..."))
         self.progress_bar.setRange(0, 0)
