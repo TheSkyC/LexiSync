@@ -603,7 +603,6 @@ class SmartTranslationDialog(QDialog):
 
         layout.addLayout(btn_layout)
         return page
-        return page
 
     def _create_style_guide_widget(self):
         """创建风格指南编辑器"""
@@ -800,10 +799,101 @@ class SmartTranslationDialog(QDialog):
 
         return []
 
-    def _generate_local_neighbor_context(self, current_ts_id):
+    def _capture_context_config(self):
+        """Capture all necessary UI states for context generation."""
+        return {
+            "use_neighbors": self.chk_neighbors.isChecked(),
+            "neighbors_count": self.spin_neighbors.value(),
+            "use_retrieval": self.chk_retrieval.isChecked() and self.retrieval_enabled,
+            "retrieval_limit": self.spin_retrieval.value(),
+            "use_tm": self.chk_use_tm.isChecked(),
+            "tm_limit": self.spin_retrieval.value(),  # Reusing the same limit spinner
+            "use_glossary_db": self.chk_use_glossary_db.isChecked(),
+            "style_guide_text": self.edit_style.toPlainText(),
+            "cached_glossary": self._cached_glossary_dict.copy()
+        }
+
+    def _worker_context_provider(self, ts_id, config):
+        try:
+            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+            if not ts_obj:
+                return {}
+
+            original_text = ts_obj.original_semantic
+
+            # 1. 获取基础上下文 (Neighboring)
+            base_context = self._generate_local_neighbor_context(ts_id, config)
+
+            # 2. 构建 [Semantic Context]
+            semantic_context_parts = []
+            seen_semantic_content = set()
+
+            # 2.1 RAG (插件)
+            if config["use_retrieval"]:
+                rag_limit = config["retrieval_limit"]
+                rag_result = self._get_semantic_context(ts_id, limit=rag_limit)
+                if rag_result and rag_result not in seen_semantic_content:
+                    semantic_context_parts.append(rag_result)
+                    seen_semantic_content.add(rag_result)
+
+            # 2.2 TM (本地数据库)
+            if config["use_tm"]:
+                tm_limit = config["tm_limit"]
+                tm_result = self._fetch_tm_context(original_text, limit=tm_limit)
+                if tm_result and tm_result not in seen_semantic_content:
+                    semantic_context_parts.append(tm_result)
+                    seen_semantic_content.add(tm_result)
+
+            semantic_context = "\n\n".join(semantic_context_parts)
+
+            # 3. Glossary
+            glossary_lines = []
+
+            # 3.1 AI 提取的术语 (Phase 1)
+            cached_glossary = config["cached_glossary"]
+            if cached_glossary:
+                for term_src, term_tgt in cached_glossary.items():
+                    if term_src.lower() in original_text.lower():
+                        glossary_lines.append(f"- {term_src}: {term_tgt}")
+
+            # 3.2 本地静态术语库 (Phase 2)
+            if config["use_glossary_db"]:
+                static_terms = self._fetch_static_glossary_context(original_text)
+                if static_terms:
+                    glossary_lines.extend(static_terms)
+
+            relevant_glossary = "\n".join(glossary_lines)
+
+            # 4. 组合所有上下文
+            return {
+                "original_context": base_context.get("original_context", ""),
+                "translation_context": base_context.get("translation_context", ""),
+                "[Style Guide]": config["style_guide_text"],
+                "[Glossary]": relevant_glossary,
+                "[Semantic Context]": semantic_context
+            }
+
+        except Exception as e:
+            logger.error(f"Error in worker context provider for {ts_id}: {e}", exc_info=True)
+            return {
+                "original_context": "",
+                "translation_context": "",
+                "[Style Guide]": config.get("style_guide_text", ""),
+                "[Glossary]": "",
+                "[Semantic Context]": ""
+            }
+
+    def _generate_local_neighbor_context(self, current_ts_id, config=None):
         contexts = {"translation_context": "", "original_context": ""}
 
-        if not self.chk_neighbors.isChecked():
+        if config is None:
+            use_neighbors = self.chk_neighbors.isChecked()
+            max_neighbors = self.spin_neighbors.value()
+        else:
+            use_neighbors = config["use_neighbors"]
+            max_neighbors = config["neighbors_count"]
+
+        if not use_neighbors:
             return contexts
 
         try:
@@ -817,8 +907,6 @@ class SmartTranslationDialog(QDialog):
 
             if current_idx == -1:
                 return contexts
-
-            max_neighbors = self.spin_neighbors.value()
 
             # 1. Untranslated Context (Originals)
             context_items = []
@@ -1091,11 +1179,14 @@ class SmartTranslationDialog(QDialog):
         concurrency = self.thread_spinbox.value()
         repair_limit = self.repair_spinbox.value()
         timeout = self.timeout_spinbox.value()
+        config_snapshot = self._capture_context_config()
+        context_provider = lambda ts_id: self._worker_context_provider(ts_id, config_snapshot)
+
 
         # 开始批量翻译
         self.app.ai_manager.start_batch(
             self.target_items,
-            self.custom_context_provider,
+            context_provider,
             concurrency_override=concurrency,
             temperature=current_temp,
             self_repair_limit=repair_limit,
@@ -1255,75 +1346,6 @@ class SmartTranslationDialog(QDialog):
         finally:
             self._signals_connected = False
 
-    def custom_context_provider(self, ts_id):
-        try:
-            ts_obj = self.app._find_ts_obj_by_id(ts_id)
-            if not ts_obj:
-                return {}
-
-            original_text = ts_obj.original_semantic
-
-            # 1. 获取基础上下文
-            base_context = self._generate_local_neighbor_context(ts_id)
-
-            # 2. 构建 [Semantic Context]
-            semantic_context_parts = []
-            seen_semantic_content = set()
-
-            # 2.1 RAG (插件)
-            if self.chk_retrieval.isChecked() and self.retrieval_enabled:
-                rag_limit = self.spin_retrieval.value()
-                rag_result = self._get_semantic_context(ts_id, limit=rag_limit)
-                if rag_result and rag_result not in seen_semantic_content:
-                    semantic_context_parts.append(rag_result)
-                    seen_semantic_content.add(rag_result)
-
-            # 2.2 TM (本地数据库)
-            if self.chk_use_tm.isChecked():
-                tm_limit = self.spin_retrieval.value()
-                tm_result = self._fetch_tm_context(original_text, limit=tm_limit)
-                if tm_result and tm_result not in seen_semantic_content:
-                    semantic_context_parts.append(tm_result)
-                    seen_semantic_content.add(tm_result)
-
-            semantic_context = "\n\n".join(semantic_context_parts)
-
-            # 3. Glossary
-            glossary_lines = []
-
-            # 3.1 AI 提取的术语 (Phase 1)
-            if self._cached_glossary_dict:
-                for term_src, term_tgt in self._cached_glossary_dict.items():
-                    if term_src.lower() in original_text.lower():
-                        glossary_lines.append(f"- {term_src}: {term_tgt}")
-
-            # 3.2 本地静态术语库 (Phase 2)
-            if self.chk_use_glossary_db.isChecked():
-                static_terms = self._fetch_static_glossary_context(original_text)
-                if static_terms:
-                    glossary_lines.extend(static_terms)
-            # 去重
-            relevant_glossary = "\n".join(glossary_lines)
-
-            # 4. 组合所有上下文
-            return {
-                "original_context": base_context.get("original_context", ""),
-                "translation_context": base_context.get("translation_context", ""),
-                "[Style Guide]": self.edit_style.toPlainText(),
-                "[Glossary]": relevant_glossary,
-                "[Semantic Context]": semantic_context
-            }
-
-        except Exception as e:
-            logger.error(f"Error in context provider for {ts_id}: {e}", exc_info=True)
-            return {
-                "original_context": "",
-                "translation_context": "",
-                "[Style Guide]": self.edit_style.toPlainText(),
-                "[Glossary]": "",
-                "[Semantic Context]": ""
-            }
-
     def _get_semantic_context(self, ts_id, limit=5):
         # 获取语义检索上下文
         try:
@@ -1408,8 +1430,6 @@ class SmartTranslationDialog(QDialog):
         except Exception as e:
             logger.warning(f"Failed to fetch glossary context: {e}")
             return []
-
-
 
     def on_batch_progress(self, current, total):
         """批量翻译进度回调"""

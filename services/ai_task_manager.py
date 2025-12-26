@@ -96,7 +96,6 @@ class AITaskManager(QObject):
             self.active_threads += 1
 
             # Prepare Worker Data
-            context_dict = self.context_provider(ts_obj.id) if self.context_provider else {}
             plugin_placeholders = {}
             if hasattr(self.app, 'plugin_manager'):
                 plugin_placeholders = self.app.plugin_manager.run_hook('get_ai_translation_context') or {}
@@ -111,7 +110,7 @@ class AITaskManager(QObject):
                 operation_type=AIOperationType.BATCH_TRANSLATION,
                 original_text=ts_obj.original_semantic,
                 target_lang=target_lang_name,
-                context_dict=context_dict,
+                context_provider=self.context_provider,
                 plugin_placeholders=plugin_placeholders,
                 **self.worker_kwargs
             )

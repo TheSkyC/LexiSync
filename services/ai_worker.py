@@ -36,7 +36,10 @@ class AIWorker(QRunnable):
         # Args
         self.original_text = kwargs.get('original_text', "")
         self.target_lang = kwargs.get('target_lang', "")
+
+        self.context_provider = kwargs.get('context_provider', None)
         self.context_dict = kwargs.get('context_dict', {})
+
         self.plugin_placeholders = kwargs.get('plugin_placeholders', {})
         self.system_prompt = kwargs.get('system_prompt', None)
         self.temperature = kwargs.get('temperature', None)
@@ -48,7 +51,18 @@ class AIWorker(QRunnable):
         app = self.app_ref()
         if not app: return
 
+
+
         try:
+            if self.context_provider and callable(self.context_provider):
+                try:
+                    # This executes the heavy lifting (TF-IDF, TM lookup) in the background thread
+                    generated_context = self.context_provider(self.ts_id)
+                    if generated_context:
+                        self.context_dict.update(generated_context)
+                except Exception as e:
+                    logger.error(f"Error generating context for {self.ts_id}: {e}", exc_info=True)
+
             # --- 1. 准备初始翻译 Prompt ---
             if self.system_prompt:
                 final_prompt = self.system_prompt
@@ -59,8 +73,13 @@ class AIWorker(QRunnable):
                     '[Target Language]': self.target_lang,
                     '[Untranslated Context]': self.context_dict.get("original_context", ""),
                     '[Translated Context]': self.context_dict.get("translation_context", ""),
-                    '[Glossary]': glossary_prompt_part
+                    '[Glossary]': glossary_prompt_part,
+                    '[Semantic Context]': self.context_dict.get("[Semantic Context]", "")
                 }
+                for k, v in self.context_dict.items():
+                    if k.startswith('[') and k.endswith(']'):
+                        placeholders[k] = v
+
                 if self.plugin_placeholders:
                     placeholders.update(self.plugin_placeholders)
 
@@ -78,12 +97,12 @@ class AIWorker(QRunnable):
             else:
                 text_to_send = self.original_text
 
-            # ============================================================
-            logger.info(f"========== AI WORKER DEBUG ({self.ts_id}) ==========")
-            logger.info(f"[SYSTEM PROMPT]:\n{final_prompt}")
-            logger.info(f"[USER INPUT]:\n{text_to_send}")
-            logger.info("====================================================")
-            # ============================================================
+            # # ============================================================
+            # logger.info(f"========== AI WORKER DEBUG ({self.ts_id}) ==========")
+            # logger.info(f"[SYSTEM PROMPT]:\n{final_prompt}")
+            # logger.info(f"[USER INPUT]:\n{text_to_send}")
+            # logger.info("====================================================")
+            # # ============================================================
 
             # --- 2. 执行翻译循环---
             current_attempt = 1
