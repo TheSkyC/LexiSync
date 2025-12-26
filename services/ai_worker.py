@@ -78,6 +78,13 @@ class AIWorker(QRunnable):
             else:
                 text_to_send = self.original_text
 
+            # ============================================================
+            logger.info(f"========== AI WORKER DEBUG ({self.ts_id}) ==========")
+            logger.info(f"[SYSTEM PROMPT]:\n{final_prompt}")
+            logger.info(f"[USER INPUT]:\n{text_to_send}")
+            logger.info("====================================================")
+            # ============================================================
+
             # --- 2. 执行翻译循环---
             current_attempt = 1
             max_attempts = 1 + self.self_repair_limit

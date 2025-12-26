@@ -4714,6 +4714,7 @@ class LexiSyncApp(QMainWindow):
                 contexts["original_context"] = "\n".join(formatted_items)
 
         return contexts
+
     def _initiate_single_ai_translation(self, ts_id_to_translate, called_from_cm=False):
         if not ts_id_to_translate:
             return False

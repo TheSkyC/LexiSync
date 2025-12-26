@@ -280,7 +280,8 @@ class TestTranslationDialog(QDialog):
         # 2. TM
         tm_context = ""
         if self.parent_dialog.chk_use_tm.isChecked():
-            tm_context = self.parent_dialog._fetch_tm_context(text)
+            tm_limit = self.parent_dialog.spin_retrieval.value()
+            tm_context = self.parent_dialog._fetch_tm_context(text, limit=tm_limit)
 
         return {
             "original_context": "",

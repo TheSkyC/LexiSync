@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QTextEdit, QProgressBar, QStackedWidget, QWidget,
     QGroupBox, QCheckBox, QSpinBox, QComboBox, QMessageBox, QSplitter,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
-    QDoubleSpinBox
+    QDoubleSpinBox, QGridLayout
 )
 from PySide6.QtCore import Qt, QThread, Signal, QObject, QEvent
 from dialogs.test_translation_dialog import TestTranslationDialog
@@ -408,17 +408,65 @@ class SmartTranslationDialog(QDialog):
         term_layout.addWidget(self.term_mode_combo)
         strat_layout.addLayout(term_layout)
 
-        # Existing Checkboxes
-        resource_layout = QVBoxLayout()
-        self.chk_use_tm = QCheckBox(_("Use Translation Memory"))
+
+        # --- Context Settings Sub-group ---
+        context_box = QGroupBox(_("Context Sources"))
+        context_box.setStyleSheet(
+            "QGroupBox { border: 1px solid #DDD; border-radius: 4px; margin-top: 5px; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 3px; }")
+        context_layout = QGridLayout(context_box)
+        context_layout.setContentsMargins(10, 10, 10, 10)
+        context_layout.setVerticalSpacing(8)
+
+        # 1. Neighboring Context
+        self.chk_neighbors = QCheckBox(_("Neighboring Text"))
+        self.chk_neighbors.setChecked(True)
+        self.chk_neighbors.setToolTip(
+            _("Include nearby original and translated text to help AI understand the context."))
+
+        self.spin_neighbors = QSpinBox()
+        self.spin_neighbors.setRange(1, 20)
+        self.spin_neighbors.setValue(3)
+        self.spin_neighbors.setSuffix(_(" lines"))
+        self.spin_neighbors.setToolTip(_("Number of preceding and succeeding lines to include."))
+        self.chk_neighbors.stateChanged.connect(self.spin_neighbors.setEnabled)
+
+        context_layout.addWidget(self.chk_neighbors, 0, 0)
+        context_layout.addWidget(self.spin_neighbors, 0, 1)
+
+        # 2. Semantic Retrieval
+        self.chk_retrieval = QCheckBox(_("Semantic Retrieval"))
+        self.chk_retrieval.setChecked(True)
+        self.chk_retrieval.setToolTip(
+            _("Search for semantically similar texts in the project to maintain consistency."))
+
+        self.spin_retrieval = QSpinBox()
+        self.spin_retrieval.setRange(1, 20)
+        self.spin_retrieval.setValue(5)
+        self.spin_retrieval.setSuffix(_(" items"))
+        self.spin_retrieval.setToolTip(_("Number of similar examples to retrieve."))
+        self.chk_retrieval.stateChanged.connect(self.spin_retrieval.setEnabled)
+
+        context_layout.addWidget(self.chk_retrieval, 1, 0)
+        context_layout.addWidget(self.spin_retrieval, 1, 1)
+
+        # 3. TM & Glossary
+        self.chk_use_tm = QCheckBox(_("Translation Memory (Exact/Fuzzy)"))
         self.chk_use_tm.setChecked(True)
-        self.chk_use_tm.setToolTip(
-            _("Search for fuzzy matches in your local TM databases and provide them as reference."))
 
-        self.chk_use_glossary_db = QCheckBox(_("Use Existing Glossary"))
+        self.chk_use_glossary_db = QCheckBox(_("Existing Glossary Database"))
         self.chk_use_glossary_db.setChecked(True)
-        self.chk_use_glossary_db.setToolTip(_("Search for terms in your local Glossary databases and enforce them."))
 
+        context_layout.addWidget(self.chk_use_tm, 2, 0, 1, 2)
+        context_layout.addWidget(self.chk_use_glossary_db, 3, 0, 1, 2)
+
+        strat_layout.addWidget(context_box)
+
+        # Retrieval Info Label
+        self.retrieval_info = QLabel(_("Context Source: Basic Fuzzy Match (Plugin not found)"))
+        self.retrieval_info.setStyleSheet("color: gray; margin-left: 5px; font-size: 11px;")
+        strat_layout.addWidget(self.retrieval_info)
+
+        # Analysis Options
         self.chk_analyze = QCheckBox(_("Auto-analyze Style & Terminology"))
         self.chk_analyze.setChecked(True)
         strat_layout.addWidget(self.chk_analyze)
@@ -427,18 +475,9 @@ class SmartTranslationDialog(QDialog):
         self.chk_term_context.setChecked(False)
         self.chk_term_context.setToolTip(
             _("During the terminology analysis phase, this provides example sentences or AI explanations "
-              "to ensure words with multiple meanings (e.g., 'Home' as 'Main Page' vs 'House') "
-              "are translated correctly based on their actual usage in your project.")
+              "to ensure words with multiple meanings are translated correctly.")
         )
         strat_layout.addWidget(self.chk_term_context)
-
-        self.chk_retrieval = QCheckBox(_("Use Semantic Context Retrieval"))
-        self.chk_retrieval.setChecked(True)
-        strat_layout.addWidget(self.chk_retrieval)
-
-        self.retrieval_info = QLabel(_("Context Source: Basic Fuzzy Match (Plugin not found)"))
-        self.retrieval_info.setStyleSheet("color: gray; margin-left: 20px;")
-        strat_layout.addWidget(self.retrieval_info)
 
         return strat_group
 
@@ -760,6 +799,80 @@ class SmartTranslationDialog(QDialog):
             return self.app._get_selected_ts_objects_from_sheet()
 
         return []
+
+    def _generate_local_neighbor_context(self, current_ts_id):
+        contexts = {"translation_context": "", "original_context": ""}
+
+        if not self.chk_neighbors.isChecked():
+            return contexts
+
+        try:
+            # Find index
+            all_objs = self.app.translatable_objects
+            current_idx = -1
+            for i, ts in enumerate(all_objs):
+                if ts.id == current_ts_id:
+                    current_idx = i
+                    break
+
+            if current_idx == -1:
+                return contexts
+
+            max_neighbors = self.spin_neighbors.value()
+
+            # 1. Untranslated Context (Originals)
+            context_items = []
+            # Preceding
+            count = 0
+            for i in range(current_idx - 1, -1, -1):
+                if count >= max_neighbors: break
+                ts = all_objs[i]
+                if not ts.is_ignored:
+                    context_items.insert(0, ts.original_semantic)
+                    count += 1
+            # Succeeding
+            count = 0
+            for i in range(current_idx + 1, len(all_objs)):
+                if count >= max_neighbors: break
+                ts = all_objs[i]
+                if not ts.is_ignored:
+                    context_items.append(ts.original_semantic)
+                    count += 1
+
+            if context_items:
+                formatted_items = [f"- \"{item.replace(chr(10), ' ').strip()}\"" for item in context_items]
+                contexts["original_context"] = "\n".join(formatted_items)
+
+            # 2. Translated Context
+            context_pairs = []
+            # Preceding
+            count = 0
+            for i in range(current_idx - 1, -1, -1):
+                if count >= max_neighbors: break
+                ts = all_objs[i]
+                if ts.translation.strip() and not ts.is_ignored:
+                    context_pairs.insert(0, (ts.original_semantic, ts.get_translation_for_ui()))
+                    count += 1
+            # Succeeding
+            count = 0
+            for i in range(current_idx + 1, len(all_objs)):
+                if count >= max_neighbors: break
+                ts = all_objs[i]
+                if ts.translation.strip() and not ts.is_ignored:
+                    context_pairs.append((ts.original_semantic, ts.get_translation_for_ui()))
+                    count += 1
+
+            if context_pairs:
+                header = f"| {_('Original')} | {_('Translation')} |\n|---|---|\n"
+                rows = [
+                    f"| {orig.replace('|', '\\|').replace(chr(10), ' ')} | {trans.replace('|', '\\|').replace(chr(10), ' ')} |"
+                    for orig, trans in context_pairs]
+                contexts["translation_context"] = header + "\n".join(rows)
+
+        except Exception as e:
+            logger.error(f"Error generating local neighbor context: {e}")
+
+        return contexts
 
     def _start_analysis_thread(self):
         """启动分析工作线程"""
@@ -1151,7 +1264,7 @@ class SmartTranslationDialog(QDialog):
             original_text = ts_obj.original_semantic
 
             # 1. 获取基础上下文
-            base_context = self.app._generate_ai_context_strings(ts_id)
+            base_context = self._generate_local_neighbor_context(ts_id)
 
             # 2. 构建 [Semantic Context]
             semantic_context_parts = []
@@ -1159,14 +1272,16 @@ class SmartTranslationDialog(QDialog):
 
             # 2.1 RAG (插件)
             if self.chk_retrieval.isChecked() and self.retrieval_enabled:
-                rag_result = self._get_semantic_context(ts_id)
+                rag_limit = self.spin_retrieval.value()
+                rag_result = self._get_semantic_context(ts_id, limit=rag_limit)
                 if rag_result and rag_result not in seen_semantic_content:
                     semantic_context_parts.append(rag_result)
                     seen_semantic_content.add(rag_result)
 
             # 2.2 TM (本地数据库)
             if self.chk_use_tm.isChecked():
-                tm_result = self._fetch_tm_context(original_text)
+                tm_limit = self.spin_retrieval.value()
+                tm_result = self._fetch_tm_context(original_text, limit=tm_limit)
                 if tm_result and tm_result not in seen_semantic_content:
                     semantic_context_parts.append(tm_result)
                     seen_semantic_content.add(tm_result)
@@ -1209,7 +1324,7 @@ class SmartTranslationDialog(QDialog):
                 "[Semantic Context]": ""
             }
 
-    def _get_semantic_context(self, ts_id):
+    def _get_semantic_context(self, ts_id, limit=5):
         # 获取语义检索上下文
         try:
             ts_obj = self.app._find_ts_obj_by_id(ts_id)
@@ -1219,7 +1334,8 @@ class SmartTranslationDialog(QDialog):
             # 调用插件进行检索
             results = self.app.plugin_manager.run_hook(
                 'retrieve_context',
-                ts_obj.original_semantic
+                ts_obj.original_semantic,
+                limit=limit
             )
 
             if not results:
@@ -1227,7 +1343,7 @@ class SmartTranslationDialog(QDialog):
 
             # 格式化结果
             lines = []
-            for r in results[:5]:
+            for r in results:
                 src = r.get('source', '')[:60]
                 tgt = r.get('target', '')[:60]
                 if src and tgt:
@@ -1242,13 +1358,13 @@ class SmartTranslationDialog(QDialog):
             logger.warning(f"Semantic retrieval failed for {ts_id}: {e}")
             return ""
 
-    def _fetch_tm_context(self, source_text):
+    def _fetch_tm_context(self, source_text, limit: int = 3):
         try:
             source_lang = self.app.source_language
             target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
             # 获取模糊匹配
             matches = self.app.tm_service.get_fuzzy_matches(
-                source_text, source_lang, target_lang, limit=3, threshold=0.8
+                source_text, source_lang, target_lang, limit=limit, threshold=0.8
             )
 
             if not matches:
