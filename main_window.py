@@ -5077,16 +5077,8 @@ class LexiSyncApp(QMainWindow):
             if re.search(r'<\s*br\s*/?>', processed_text, re.IGNORECASE):
                 logger.info(f"Detected AI hallucinated <br> tags for ID {trigger_ts_obj.id}. Auto-converting to \\n.")
                 processed_text = re.sub(r'<\s*br\s*/?>', '\n', processed_text, flags=re.IGNORECASE)
-        source_text = trigger_ts_obj.original_semantic
-        if not source_text.strip():
-            final_translation = source_text
-        else:
-            leading_ws = source_text[:len(source_text) - len(source_text.lstrip())]
-            ai_stripped = processed_text.strip()
-            if not processed_text.startswith(leading_ws):
-                logger.info(
-                    f"AI whitespace mismatch detected for ID {trigger_ts_obj.id}. Auto-restoring based on source.")
-            final_translation = leading_ws + ai_stripped
+
+        final_translation = processed_text
 
         cleaned_translation = final_translation
 
