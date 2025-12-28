@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QTextEdit, QProgressBar, QStackedWidget, QWidget,
     QGroupBox, QCheckBox, QSpinBox, QComboBox, QMessageBox, QSplitter,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
-    QDoubleSpinBox, QGridLayout
+    QDoubleSpinBox, QGridLayout, QButtonGroup ,QRadioButton
 )
 from PySide6.QtCore import Qt, QThread, Signal, QObject, QEvent
 from dialogs.test_translation_dialog import TestTranslationDialog
@@ -179,7 +179,7 @@ class AnalysisWorker(QObject):
     def _extract_terms(self, translator):
         """提取关键术语 (返回 [{'term':..., 'context':...}])"""
         if self.term_mode == "deep":
-            self.progress.emit(_("Starting Deep Scan (Parallel Threads: {n})...").format(n=self.max_threads))
+            self.progress.emit(_("Starting Deep Scan (Threads: {n})...").format(n=self.max_threads))
             all_terms_dict = {}
 
             # 配置批次大小
@@ -426,7 +426,7 @@ class SmartTranslationDialog(QDialog):
         context_layout.setContentsMargins(10, 10, 10, 10)
         context_layout.setVerticalSpacing(8)
 
-        # 1. Neighboring Context
+        # Neighboring Context
         self.chk_neighbors = QCheckBox(_("Neighboring Text"))
         self.chk_neighbors.setChecked(True)
         self.chk_neighbors.setToolTip(
@@ -442,7 +442,7 @@ class SmartTranslationDialog(QDialog):
         context_layout.addWidget(self.chk_neighbors, 0, 0)
         context_layout.addWidget(self.spin_neighbors, 0, 1)
 
-        # 2. Semantic Retrieval
+        # Semantic Retrieval
         self.chk_retrieval = QCheckBox(_("Semantic Retrieval"))
         self.chk_retrieval.setChecked(True)
         self.chk_retrieval.setToolTip(
@@ -458,14 +458,49 @@ class SmartTranslationDialog(QDialog):
         context_layout.addWidget(self.chk_retrieval, 1, 0)
         context_layout.addWidget(self.spin_retrieval, 1, 1)
 
-        # 3. TM & Glossary
-        self.chk_use_tm = QCheckBox(_("Translation Memory (Exact/Fuzzy)"))
+        # TM & Glossary
+        tm_container = QWidget()
+        tm_layout = QHBoxLayout(tm_container)
+        tm_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.chk_use_tm = QCheckBox(_("Translation Memory"))
         self.chk_use_tm.setChecked(True)
 
+        self.tm_mode_group = QButtonGroup(self)
+        self.rb_tm_exact = QRadioButton(_("Exact"))
+        self.rb_tm_fuzzy = QRadioButton(_("Fuzzy"))
+        self.rb_tm_fuzzy.setChecked(True)  # Default to Fuzzy
+        self.tm_mode_group.addButton(self.rb_tm_exact)
+        self.tm_mode_group.addButton(self.rb_tm_fuzzy)
+
+        self.lbl_tm_threshold = QLabel(_("Threshold:"))
+        self.spin_tm_threshold = QDoubleSpinBox()
+        self.spin_tm_threshold.setRange(0.1, 1.0)
+        self.spin_tm_threshold.setSingleStep(0.05)
+        self.spin_tm_threshold.setValue(0.75)
+        self.spin_tm_threshold.setToolTip(_("Minimum similarity score (0.0 - 1.0)"))
+
+        # Logic connections
+        self.chk_use_tm.toggled.connect(self.rb_tm_exact.setEnabled)
+        self.chk_use_tm.toggled.connect(self.rb_tm_fuzzy.setEnabled)
+        self.chk_use_tm.toggled.connect(self._update_tm_threshold_state)
+        self.rb_tm_exact.toggled.connect(self._update_tm_threshold_state)
+        self.rb_tm_fuzzy.toggled.connect(self._update_tm_threshold_state)
+
+        tm_layout.addWidget(self.chk_use_tm)
+        tm_layout.addSpacing(10)
+        tm_layout.addWidget(self.rb_tm_exact)
+        tm_layout.addWidget(self.rb_tm_fuzzy)
+        tm_layout.addSpacing(5)
+        tm_layout.addWidget(self.lbl_tm_threshold)
+        tm_layout.addWidget(self.spin_tm_threshold)
+        tm_layout.addStretch()
+
+        context_layout.addWidget(tm_container, 2, 0, 1, 2)
+
+        # Glossary
         self.chk_use_glossary_db = QCheckBox(_("Existing Glossary Database"))
         self.chk_use_glossary_db.setChecked(True)
-
-        context_layout.addWidget(self.chk_use_tm, 2, 0, 1, 2)
         context_layout.addWidget(self.chk_use_glossary_db, 3, 0, 1, 2)
 
         strat_layout.addWidget(context_box)
@@ -652,6 +687,32 @@ class SmartTranslationDialog(QDialog):
 
         return widget
 
+    def _create_monitor_page(self):
+        """创建执行监控页面"""
+        page = QWidget()
+        layout = QVBoxLayout(page)
+
+        self.lbl_status = QLabel(_("Initializing..."))
+        self.lbl_status.setStyleSheet("font-size: 14px; font-weight: bold;")
+        layout.addWidget(self.lbl_status)
+
+        self.progress_bar = QProgressBar()
+        layout.addWidget(self.progress_bar)
+
+        self.log_view = QTextEdit()
+        self.log_view.setReadOnly(True)
+        self.log_view.setStyleSheet(
+            "background-color: #1E1E1E; color: #D4D4D4; "
+            "font-family: Consolas, monospace;"
+        )
+        layout.addWidget(self.log_view)
+
+        self.btn_stop = QPushButton(_("Stop"))
+        self.btn_stop.clicked.connect(self.stop_translation)
+        layout.addWidget(self.btn_stop)
+
+        return page
+
     def eventFilter(self, obj, event):
         if obj == self.table_glossary.viewport():
             if event.type() == QEvent.MouseMove:
@@ -699,31 +760,12 @@ class SmartTranslationDialog(QDialog):
 
         return super().eventFilter(obj, event)
 
-    def _create_monitor_page(self):
-        """创建执行监控页面"""
-        page = QWidget()
-        layout = QVBoxLayout(page)
-
-        self.lbl_status = QLabel(_("Initializing..."))
-        self.lbl_status.setStyleSheet("font-size: 14px; font-weight: bold;")
-        layout.addWidget(self.lbl_status)
-
-        self.progress_bar = QProgressBar()
-        layout.addWidget(self.progress_bar)
-
-        self.log_view = QTextEdit()
-        self.log_view.setReadOnly(True)
-        self.log_view.setStyleSheet(
-            "background-color: #1E1E1E; color: #D4D4D4; "
-            "font-family: Consolas, monospace;"
-        )
-        layout.addWidget(self.log_view)
-
-        self.btn_stop = QPushButton(_("Stop"))
-        self.btn_stop.clicked.connect(self.stop_translation)
-        layout.addWidget(self.btn_stop)
-
-        return page
+    def _update_tm_threshold_state(self):
+        """Enable/Disable threshold spinbox based on TM settings."""
+        tm_enabled = self.chk_use_tm.isChecked()
+        is_fuzzy = self.rb_tm_fuzzy.isChecked()
+        self.lbl_tm_threshold.setEnabled(tm_enabled and is_fuzzy)
+        self.spin_tm_threshold.setEnabled(tm_enabled and is_fuzzy)
 
     def open_test_lab(self):
         self._cache_glossary_from_ui()
@@ -816,7 +858,9 @@ class SmartTranslationDialog(QDialog):
             "use_retrieval": self.chk_retrieval.isChecked() and self.retrieval_enabled,
             "retrieval_limit": self.spin_retrieval.value(),
             "use_tm": self.chk_use_tm.isChecked(),
-            "tm_limit": self.spin_retrieval.value(),  # Reusing the same limit spinner
+            "tm_mode": "fuzzy" if self.rb_tm_fuzzy.isChecked() else "exact", # [CHANGED] Added TM mode
+            "tm_threshold": self.spin_tm_threshold.value(),                 # [CHANGED] Added TM threshold
+            "tm_limit": self.spin_retrieval.value(), # Reusing the same limit spinner
             "use_glossary_db": self.chk_use_glossary_db.isChecked(),
             "style_guide_text": self.edit_style.toPlainText(),
             "cached_glossary": self._cached_glossary_dict.copy()
@@ -845,10 +889,16 @@ class SmartTranslationDialog(QDialog):
                     semantic_context_parts.append(rag_result)
                     seen_semantic_content.add(rag_result)
 
-            # 2.2 TM (本地数据库)
+            # 2.2 TM
             if config["use_tm"]:
                 tm_limit = config["tm_limit"]
-                tm_result = self._fetch_tm_context(original_text, limit=tm_limit)
+                # [CHANGED] Pass new config params
+                tm_result = self._fetch_tm_context(
+                    original_text,
+                    limit=tm_limit,
+                    mode=config["tm_mode"],
+                    threshold=config["tm_threshold"]
+                )
                 if tm_result and tm_result not in seen_semantic_content:
                     semantic_context_parts.append(tm_result)
                     seen_semantic_content.add(tm_result)
@@ -1389,26 +1439,38 @@ class SmartTranslationDialog(QDialog):
             logger.warning(f"Semantic retrieval failed for {ts_id}: {e}")
             return ""
 
-    def _fetch_tm_context(self, source_text, limit: int = 3):
+    def _fetch_tm_context(self, source_text, limit: int = 3, mode: str = "fuzzy", threshold: float = 0.75):
         try:
             source_lang = self.app.source_language
             target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
-            # 获取模糊匹配
-            matches = self.app.tm_service.get_fuzzy_matches(
-                source_text, source_lang, target_lang, limit=limit, threshold=0.8
-            )
 
-            if not matches:
+            lines = []
+
+            if mode == "exact":
+                # Exact Match
+                exact_match = self.app.tm_service.get_translation(source_text, source_lang, target_lang)
+                if exact_match:
+                    lines = ["TM Matches (Exact):"]
+                    tgt = exact_match.replace('\n', ' ')
+                    if len(tgt) > 50: tgt = tgt[:47] + "..."
+                    lines.append(f"- [100%] {tgt}")
+            else:
+                # Fuzzy Match
+                matches = self.app.tm_service.get_fuzzy_matches(
+                    source_text, source_lang, target_lang, limit=limit, threshold=threshold
+                )
+                if matches:
+                    lines = [f"TM Matches (Fuzzy > {int(threshold * 100)}%):"]
+                    for m in matches:
+                        score = int(m['score'] * 100)
+                        src = m['source_text'].replace('\n', ' ')
+                        tgt = m['target_text'].replace('\n', ' ')
+                        if len(src) > 50: src = src[:47] + "..."
+                        if len(tgt) > 50: tgt = tgt[:47] + "..."
+                        lines.append(f"- [{score}%] {src} -> {tgt}")
+
+            if not lines:
                 return ""
-
-            lines = ["TM Matches (Reference):"]
-            for m in matches:
-                score = int(m['score'] * 100)
-                src = m['source_text'].replace('\n', ' ')
-                tgt = m['target_text'].replace('\n', ' ')
-                if len(src) > 50: src = src[:47] + "..."
-                if len(tgt) > 50: tgt = tgt[:47] + "..."
-                lines.append(f"- [{score}%] {src} -> {tgt}")
 
             return "\n".join(lines)
         except Exception as e:
