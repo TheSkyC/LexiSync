@@ -221,17 +221,22 @@ class AnalysisWorker(QObject):
                         executor.shutdown(wait=False, cancel_futures=True)
                         return []
 
-                    result_items = future.result()
-                    with lock:
-                        for item in result_items:
-                            t = item['term']
-                            if t not in all_terms_dict:
-                                all_terms_dict[t] = item
-                            elif not all_terms_dict[t].get('context') and item.get('context'):
-                                all_terms_dict[t] = item
+                result_items = future.result()
+                with lock:
+                    for item in result_items:
+                        t = item['term'].strip()
+                        if len(t.split()) > 5 or len(t) > 25:
+                            continue
+                        if t.endswith(('。', '.', '!', '！', '?', '？',':','：')):
+                            continue
 
-                        completed_batches += 1
-                        self.progress.emit(f"Deep Scan: Batch {completed_batches}/{total_batches}...")
+                        if t not in all_terms_dict:
+                            all_terms_dict[t] = item
+                        elif not all_terms_dict[t].get('context') and item.get('context'):
+                            all_terms_dict[t] = item
+
+                    completed_batches += 1
+                    self.progress.emit(f"Deep Scan: Batch {completed_batches}/{total_batches}...")
 
             return list(all_terms_dict.values())
         return []

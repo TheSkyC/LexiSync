@@ -333,12 +333,43 @@ class SmartTranslationService:
     @staticmethod
     def extract_terms_batch_prompt(text_batch):
         return (
-            f"Analyze these texts:\n{text_batch}\n\n"
-            "Task: Extract key domain terms, proper nouns, and UI labels.\n"
-            "For each term, provide a very brief context or meaning based on usage.\n\n"
-            "Output Format: A JSON Array of objects.\n"
-            "Example: [{\"term\": \"Home\", \"context\": \"Main dashboard button\"}, {\"term\": \"Save\", \"context\": \"Action to write file\"}]\n\n"
-            "Exclude common words. Output JSON only."
+            f"Analyze these UI texts and extract domain-specific terms:\n{text_batch}\n\n"
+
+            "## CRITICAL REQUIREMENTS:\n"
+            "1. **Term Length**: Each term must be 1-4 words MAXIMUM (e.g., 'Apply TM', 'Add File', 'Dashboard')\n"
+            "2. **No Descriptions in Term**: The 'term' field must contain ONLY the term itself, NO parentheses, NO explanations\n"
+            "3. **Context Separation**: Put explanations ONLY in the 'context' field, never in 'term'\n\n"
+
+            "## What to Extract:\n"
+            "- UI action labels (e.g., 'Apply Comment', 'Add Entry')\n"
+            "- Feature names (e.g., 'Memory', 'Glossary')\n"
+            "- Technical terms (e.g., 'API Key', 'TM', 'Source File')\n"
+            "- Product-specific terms (avoid generic words like 'click', 'button', 'file' alone)\n\n"
+
+            "## What to EXCLUDE:\n"
+            "- Common verbs alone ('add', 'delete', 'save')\n"
+            "- Generic UI words ('button', 'window', 'dialog')\n"
+            "- Complete sentences or phrases longer than 4 words\n"
+            "- Terms with parentheses or inline descriptions\n\n"
+
+            "## Output Format (MANDATORY):\n"
+            "Return a valid JSON array of objects. Each object must have:\n"
+            "- 'term': The exact term (1-4 words, no parentheses)\n"
+            "- 'context': Brief explanation or usage context\n\n"
+
+            "## Examples:\n"
+            "✅ CORRECT:\n"
+            '[{"term": "Apply TM", "context": "Apply translation memory to current segment"},\n'
+            ' {"term": "Source File", "context": "Original document to be translated"},\n'
+            ' {"term": "Glossary Entry", "context": "Term definition in terminology database"}]\n\n'
+
+            "❌ INCORRECT:\n"
+            '[{"term": "Apply TM to Untranslated Segments Only", "context": "..."}, // Too long!\n'
+            ' {"term": "Source File (original)", "context": "..."}, // Has parentheses!\n'
+            ' {"term": "file", "context": "..."}, // Too generic!\n'
+            ' {"term": "Click the button to save", "context": "..."}] // Complete sentence!\n\n'
+
+            "Output ONLY the JSON array, no markdown code blocks, no explanations."
         )
 
     @staticmethod
