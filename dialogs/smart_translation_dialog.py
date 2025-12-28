@@ -178,7 +178,6 @@ class AnalysisWorker(QObject):
 
     def _extract_terms(self, translator):
         """提取关键术语 (返回 [{'term':..., 'context':...}])"""
-
         if self.term_mode == "deep":
             self.progress.emit(_("Starting Deep Scan (Parallel Threads: {n})...").format(n=self.max_threads))
             all_terms_dict = {}
@@ -221,22 +220,27 @@ class AnalysisWorker(QObject):
                         executor.shutdown(wait=False, cancel_futures=True)
                         return []
 
-                result_items = future.result()
-                with lock:
-                    for item in result_items:
-                        t = item['term'].strip()
-                        if len(t.split()) > 5 or len(t) > 25:
-                            continue
-                        if t.endswith(('。', '.', '!', '！', '?', '？',':','：')):
-                            continue
+                    try:
+                        result_items = future.result()
+                        with lock:
+                            for item in result_items:
+                                t = item['term'].strip()
+                                # Length check
+                                if len(t.split()) > 5 or len(t) > 25:
+                                    continue
+                                # Punctuation check
+                                if t.endswith(('。', '.', '!', '！', '?', '？', ':', '：')):
+                                    continue
 
-                        if t not in all_terms_dict:
-                            all_terms_dict[t] = item
-                        elif not all_terms_dict[t].get('context') and item.get('context'):
-                            all_terms_dict[t] = item
+                                if t not in all_terms_dict:
+                                    all_terms_dict[t] = item
+                                elif not all_terms_dict[t].get('context') and item.get('context'):
+                                    all_terms_dict[t] = item
 
-                    completed_batches += 1
-                    self.progress.emit(f"Deep Scan: Batch {completed_batches}/{total_batches}...")
+                            completed_batches += 1
+                            self.progress.emit(f"Deep Scan: Batch {completed_batches}/{total_batches}...")
+                    except Exception as e:
+                        logger.error(f"Error processing batch result: {e}")
 
             return list(all_terms_dict.values())
         return []
