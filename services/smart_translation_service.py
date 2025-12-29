@@ -93,7 +93,6 @@ class SmartTranslationService:
             if text.isdigit() or text.isspace():
                 continue
 
-            # [CHANGED] Case-insensitive deduplication
             text_lower = text.lower()
             if text_lower in seen_texts_lower:
                 continue
@@ -101,7 +100,7 @@ class SmartTranslationService:
             seen_texts.add(text)
             seen_texts_lower.add(text_lower)
 
-            tokens = set(re.findall(r'\w+', text_lower))  # tokens are already lowercased here
+            tokens = set(re.findall(r'\w+', text_lower))
 
             if not tokens:
                 continue

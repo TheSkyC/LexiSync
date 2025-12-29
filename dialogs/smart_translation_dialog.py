@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QThread, Signal, QObject, QEvent
 from dialogs.test_translation_dialog import TestTranslationDialog
+from dialogs.interactive_review_dialog import InteractiveReviewDialog
 from services.smart_translation_service import SmartTranslationService
 from services.ai_worker import AIWorker
 from utils.enums import AIOperationType
@@ -383,7 +384,10 @@ class SmartTranslationDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_analyze = QPushButton(_("Analyze & Preview"))
         btn_analyze.clicked.connect(self.start_analysis)
-        btn_analyze.setStyleSheet("font-weight: bold; padding: 8px;")
+        btn_analyze.setStyleSheet(
+            "background-color: #4CAF50; color: white; "
+            "font-weight: bold; padding: 8px;"
+        )
         btn_layout.addStretch()
         btn_layout.addWidget(btn_analyze)
         layout.addLayout(btn_layout)
@@ -631,24 +635,46 @@ class SmartTranslationDialog(QDialog):
         layout.addWidget(splitter)
 
         # 底部按钮
+
+        # Back
         btn_layout = QHBoxLayout()
         btn_back = QPushButton(_("Back"))
         btn_back.clicked.connect(lambda: self.stack.setCurrentIndex(0))
+        btn_back.setStyleSheet(
+            "background-color: #757575; color: white; "
+            "font-weight: bold; padding: 8px;"
+        )
 
-        btn_start = QPushButton(_("Start Translation"))
+        # Test Lab
+        btn_test = QPushButton(_("Test Lab"))
+        btn_test.setToolTip(_("Open a playground to test translation settings on specific samples."))
+        btn_test.clicked.connect(self.open_test_lab)
+        btn_test.setStyleSheet(
+            "background-color: #9C27B0; color: white; "
+            "font-weight: bold; padding: 8px;"
+        )
+
+        # Interactive Review Button
+        btn_review = QPushButton(_("Start Interactive Review"))
+        btn_review.setToolTip(_("Review translations one by one with AI assistance."))
+        btn_review.clicked.connect(self.start_interactive_review)
+        btn_review.setStyleSheet(
+            "background-color: #2196F3; color: white; "
+            "font-weight: bold; padding: 8px;"
+        )
+
+        # Batch Translation
+        btn_start = QPushButton(_("Start Batch Translation"))
         btn_start.clicked.connect(self.start_translation)
         btn_start.setStyleSheet(
             "background-color: #4CAF50; color: white; "
             "font-weight: bold; padding: 8px;"
         )
 
-        btn_test = QPushButton(_("Test Lab"))
-        btn_test.setToolTip(_("Open a playground to test translation settings on specific samples."))
-        btn_test.clicked.connect(self.open_test_lab)
-
         btn_layout.addWidget(btn_back)
         btn_layout.addWidget(btn_test)
         btn_layout.addStretch()
+        btn_layout.addWidget(btn_review)
         btn_layout.addWidget(btn_start)
 
         layout.addLayout(btn_layout)
@@ -859,14 +885,15 @@ class SmartTranslationDialog(QDialog):
     def _capture_context_config(self):
         """Capture all necessary UI states for context generation."""
         return {
+            "temperature": self.temp_spinbox.value(),
             "use_neighbors": self.chk_neighbors.isChecked(),
             "neighbors_count": self.spin_neighbors.value(),
             "use_retrieval": self.chk_retrieval.isChecked() and self.retrieval_enabled,
             "retrieval_limit": self.spin_retrieval.value(),
             "use_tm": self.chk_use_tm.isChecked(),
-            "tm_mode": "fuzzy" if self.rb_tm_fuzzy.isChecked() else "exact", # [CHANGED] Added TM mode
-            "tm_threshold": self.spin_tm_threshold.value(),                 # [CHANGED] Added TM threshold
-            "tm_limit": self.spin_retrieval.value(), # Reusing the same limit spinner
+            "tm_mode": "fuzzy" if self.rb_tm_fuzzy.isChecked() else "exact",
+            "tm_threshold": self.spin_tm_threshold.value(),
+            "tm_limit": self.spin_retrieval.value(),
             "use_glossary_db": self.chk_use_glossary_db.isChecked(),
             "style_guide_text": self.edit_style.toPlainText(),
             "cached_glossary": self._cached_glossary_dict.copy()
@@ -1222,6 +1249,32 @@ class SmartTranslationDialog(QDialog):
         return "\n".join(lines)
 
     # ==================== 阶段2：翻译 ====================
+
+    def start_interactive_review(self):
+        # 预处理术语表
+        self._cache_glossary_from_ui()
+
+        # 检查 AI
+        if not self.app._check_ai_prerequisites():
+            return
+
+        # 捕获配置快照 (包含最新的 Style Guide 和 Glossary)
+        config_snapshot = self._capture_context_config()
+
+        # 创建 Context Provider
+        context_provider = lambda ts_id: self._worker_context_provider(ts_id, config_snapshot)
+
+        # 启动对话框
+        if not self.target_items:
+            QMessageBox.warning(self, _("Warning"), _("No items to review."))
+            return
+
+        dialog = InteractiveReviewDialog(self, self.app, self.target_items, context_provider, config_snapshot)
+        dialog.exec()
+
+        # 6. 刷新主界面
+        self.app.refresh_sheet_preserve_selection()
+        self.app.update_counts_display()
 
     def start_translation(self):
         """启动翻译阶段"""
