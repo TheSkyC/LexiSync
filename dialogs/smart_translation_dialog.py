@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSplitter,
     QTextEdit, QProgressBar, QStackedWidget, QWidget,
-    QGroupBox, QCheckBox, QSpinBox, QComboBox, QMessageBox, QSplitter,
+    QGroupBox, QCheckBox, QSpinBox, QComboBox, QMessageBox,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
     QDoubleSpinBox, QGridLayout, QButtonGroup ,QRadioButton
 )
@@ -16,6 +16,7 @@ from services.ai_worker import AIWorker
 from utils.enums import AIOperationType
 from utils.localization import _
 from ui_components.tooltip import Tooltip
+from ui_components.styled_button import StyledButton
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 import re
@@ -382,12 +383,8 @@ class SmartTranslationDialog(QDialog):
 
         # 底部按钮
         btn_layout = QHBoxLayout()
-        btn_analyze = QPushButton(_("Analyze & Preview"))
-        btn_analyze.clicked.connect(self.start_analysis)
-        btn_analyze.setStyleSheet(
-            "background-color: #4CAF50; color: white; "
-            "font-weight: bold; padding: 8px;"
-        )
+        btn_analyze = StyledButton(_("Analyze & Preview"), on_click=self.start_analysis, btn_type="success")
+        logger.debug(f"[SmartTrans]sizeHint: {btn_analyze.sizeHint()}")
         btn_layout.addStretch()
         btn_layout.addWidget(btn_analyze)
         layout.addLayout(btn_layout)
@@ -479,7 +476,7 @@ class SmartTranslationDialog(QDialog):
         self.tm_mode_group = QButtonGroup(self)
         self.rb_tm_exact = QRadioButton(_("Exact"))
         self.rb_tm_fuzzy = QRadioButton(_("Fuzzy"))
-        self.rb_tm_fuzzy.setChecked(True)  # Default to Fuzzy
+        self.rb_tm_fuzzy.setChecked(True)
         self.tm_mode_group.addButton(self.rb_tm_exact)
         self.tm_mode_group.addButton(self.rb_tm_fuzzy)
 
@@ -635,41 +632,19 @@ class SmartTranslationDialog(QDialog):
         layout.addWidget(splitter)
 
         # 底部按钮
-
         # Back
         btn_layout = QHBoxLayout()
-        btn_back = QPushButton(_("Back"))
-        btn_back.clicked.connect(lambda: self.stack.setCurrentIndex(0))
-        btn_back.setStyleSheet(
-            "background-color: #757575; color: white; "
-            "font-weight: bold; padding: 8px;"
-        )
+        btn_back = StyledButton(_("Back"), on_click=lambda: self.stack.setCurrentIndex(0), btn_type="default")
 
         # Test Lab
-        btn_test = QPushButton(_("Test Lab"))
-        btn_test.setToolTip(_("Open a playground to test translation settings on specific samples."))
-        btn_test.clicked.connect(self.open_test_lab)
-        btn_test.setStyleSheet(
-            "background-color: #9C27B0; color: white; "
-            "font-weight: bold; padding: 8px;"
-        )
+        btn_test = StyledButton(_("Test Lab"), on_click=self.open_test_lab, btn_type="purple")
 
         # Interactive Review Button
-        btn_review = QPushButton(_("Start Interactive Review"))
-        btn_review.setToolTip(_("Review translations one by one with AI assistance."))
-        btn_review.clicked.connect(self.start_interactive_review)
-        btn_review.setStyleSheet(
-            "background-color: #2196F3; color: white; "
-            "font-weight: bold; padding: 8px;"
-        )
+        btn_review = StyledButton(_("Start Interactive Review"), on_click=self.start_interactive_review, btn_type="primary")
 
         # Batch Translation
-        btn_start = QPushButton(_("Start Batch Translation"))
-        btn_start.clicked.connect(self.start_translation)
-        btn_start.setStyleSheet(
-            "background-color: #4CAF50; color: white; "
-            "font-weight: bold; padding: 8px;"
-        )
+        btn_start = StyledButton(_("Start Batch Translation"), on_click=self.start_translation, btn_type="success")
+
 
         btn_layout.addWidget(btn_back)
         btn_layout.addWidget(btn_test)
@@ -739,8 +714,7 @@ class SmartTranslationDialog(QDialog):
         )
         layout.addWidget(self.log_view)
 
-        self.btn_stop = QPushButton(_("Stop"))
-        self.btn_stop.clicked.connect(self.stop_translation)
+        self.btn_stop = StyledButton(_("Stop"), on_click=self.stop_translation, btn_type="danger")
         layout.addWidget(self.btn_stop)
 
         return page

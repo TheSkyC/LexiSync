@@ -15,6 +15,7 @@ from utils.enums import AIOperationType, WarningType
 from services.validation_service import validate_string
 from models.translatable_string import TranslatableString
 from ui_components.tooltip import Tooltip
+from ui_components.styled_button import StyledButton
 from utils.localization import _
 import collections
 import logging
@@ -294,24 +295,12 @@ class InteractiveReviewDialog(QDialog):
         footer_layout.addStretch()
 
         # Buttons
-        self.btn_skip = QPushButton(_("Skip (Ctrl+Right)"))
+        self.btn_skip = StyledButton(_("Skip (Ctrl+Right)"), on_click=self.skip_current, btn_type="default")
         self.btn_skip.setFixedSize(140, 45)
-        self.btn_skip.clicked.connect(self.skip_current)
 
-        self.btn_accept = QPushButton(_("Accept (Enter)"))
+        self.btn_accept = StyledButton(_("Accept (Enter)"), on_click=self.accept_current, btn_type="success")
         self.btn_accept.setFixedSize(160, 45)
-        self.btn_accept.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50; 
-                color: white; 
-                font-weight: bold; 
-                font-size: 14px; 
-                border-radius: 6px;
-            }
-            QPushButton:hover { background-color: #45a049; }
-            QPushButton:disabled { background-color: #CCC; }
-        """)
-        self.btn_accept.clicked.connect(self.accept_current)
+
 
         footer_layout.addWidget(self.btn_skip)
         footer_layout.addWidget(self.btn_accept)

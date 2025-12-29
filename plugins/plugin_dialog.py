@@ -4,9 +4,10 @@
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QHBoxLayout, QLabel, QTextBrowser, QPushButton, QSplitter, QWidget, QMessageBox, QMenu, QFileDialog
 from PySide6.QtCore import Qt, QUrl, Signal, QThread, QRectF
 from PySide6.QtGui import QColor, QFont, QIcon, QPixmap, QPainter, QDesktopServices, QAction
-from utils.localization import _
+from ui_components.styled_button import StyledButton
 from services.dependency_service import DependencyManager
 from plugins.plugin_base import PluginBase
+from utils.localization import _
 import os
 import shutil
 
@@ -80,36 +81,6 @@ class PluginManagerDialog(QDialog):
                 background-color: transparent;
                 border: none;
             }
-            QPushButton {
-                padding: 6px 12px;
-                border-radius: 4px;
-                border: 1px solid #DCDFE6;
-                background-color: #FFFFFF;
-                font-weight: 500;
-            }
-            QPushButton:hover {
-                background-color: #ECF5FF;
-                color: #409EFF;
-                border-color: #C6E2FF;
-            }
-            QPushButton#deleteButton {
-                color: #F56C6C;
-                border-color: #FBC4C4;
-            }
-            QPushButton#deleteButton:hover {
-                background-color: #FEF0F0;
-                color: #F56C6C;
-                border-color: #F56C6C;
-            }
-            QPushButton#reloadButton {
-                background-color: #F0F9EB;
-                color: #67C23A;
-                border-color: #E1F3D8;
-            }
-            QPushButton#reloadButton:hover {
-                background-color: #67C23A;
-                color: white;
-            }
         """)
         if PluginManagerDialog.ICON_GREEN is None:
             PluginManagerDialog.ICON_GREEN = create_icon("#2ECC71")
@@ -158,21 +129,18 @@ class PluginManagerDialog(QDialog):
         self.actions_layout = QHBoxLayout()
         self.actions_layout.setContentsMargins(0, 10, 0, 0)
 
-        self.open_dir_button = QPushButton(_("Open Plugin Directory"))
-        self.open_dir_button.clicked.connect(self.open_plugin_directory)
+        self.open_dir_button = StyledButton(_("Open Plugin Directory"), on_click=self.open_plugin_directory, btn_type="default")
         self.open_dir_button.setVisible(False)
         self.actions_layout.addWidget(self.open_dir_button)
 
-        self.delete_button = QPushButton(_("Delete Plugin"))
+        self.delete_button = StyledButton(_("Delete Plugin"), on_click=self.delete_plugin, btn_type="danger")
         self.delete_button.setObjectName("deleteButton")
-        self.delete_button.clicked.connect(self.delete_plugin)
         self.delete_button.setVisible(False)
         self.actions_layout.addWidget(self.delete_button)
 
         self.actions_layout.addStretch(1)
 
-        self.settings_button = QPushButton(_("Settings..."))
-        self.settings_button.clicked.connect(self.open_plugin_settings)
+        self.settings_button = StyledButton(_("Settings..."), on_click=self.open_plugin_settings, btn_type="primary")
         self.settings_button.setVisible(False)
 
         details_layout.addWidget(self.name_label)
@@ -189,19 +157,18 @@ class PluginManagerDialog(QDialog):
 
         button_layout = QHBoxLayout()
 
-        install_button = QPushButton(_("Install from File..."))
-        install_button.clicked.connect(self.install_from_file)
+        install_button = StyledButton(_("Install from File..."), on_click=self.install_from_file, btn_type="default")
         button_layout.addWidget(install_button)
-        marketplace_button = QPushButton(_("Open Marketplace..."))
-        marketplace_button.clicked.connect(self.open_marketplace)
+
+        marketplace_button = StyledButton(_("Open Marketplace..."), on_click=self.open_marketplace, btn_type="default")
         button_layout.addWidget(marketplace_button)
-        reload_button = QPushButton(_("Reload All Plugins"))
+
+        reload_button = StyledButton(_("Reload All Plugins"), on_click=self.reload_plugins, btn_type="warning")
         reload_button.setObjectName("reloadButton")
-        reload_button.clicked.connect(self.reload_plugins)
         button_layout.addWidget(reload_button)
+
         button_layout.addStretch()
-        close_button = QPushButton(_("Close"))
-        close_button.clicked.connect(self.accept)
+        close_button = StyledButton(_("Close"), on_click=self.accept, btn_type="default")
         button_layout.addWidget(close_button)
         main_layout.addLayout(button_layout)
 
