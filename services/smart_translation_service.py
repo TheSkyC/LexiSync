@@ -82,18 +82,26 @@ class SmartTranslationService:
         """预处理候选项：过滤、去重、计算特征"""
         candidates = []
         seen_texts = set()
+        seen_texts_lower = set()
 
         for ts in translatable_objects:
             text = ts.original_semantic.strip()
 
             # 基本过滤
-            if not text or text in seen_texts or len(text) < 2:
+            if not text or len(text) < 2:
                 continue
             if text.isdigit() or text.isspace():
                 continue
 
+            # [CHANGED] Case-insensitive deduplication
+            text_lower = text.lower()
+            if text_lower in seen_texts_lower:
+                continue
+
             seen_texts.add(text)
-            tokens = set(re.findall(r'\w+', text.lower()))
+            seen_texts_lower.add(text_lower)
+
+            tokens = set(re.findall(r'\w+', text_lower))  # tokens are already lowercased here
 
             if not tokens:
                 continue

@@ -181,6 +181,7 @@ class AnalysisWorker(QObject):
         if self.term_mode == "deep":
             self.progress.emit(_("Starting Deep Scan (Threads: {n})...").format(n=self.max_threads))
             all_terms_dict = {}
+            seen_terms_lower = set()
 
             # 配置批次大小
             batches = self._create_smart_batches(
@@ -231,11 +232,16 @@ class AnalysisWorker(QObject):
                                 # Punctuation check
                                 if t.endswith(('。', '.', '!', '！', '?', '？', ':', '：')):
                                     continue
+                                t_lower = t.lower()
 
-                                if t not in all_terms_dict:
+                                if t_lower not in seen_terms_lower:
                                     all_terms_dict[t] = item
-                                elif not all_terms_dict[t].get('context') and item.get('context'):
-                                    all_terms_dict[t] = item
+                                    seen_terms_lower.add(t_lower)
+                                else:
+                                    existing_key = next((k for k in all_terms_dict if k.lower() == t_lower), None)
+                                    if existing_key:
+                                        if not all_terms_dict[existing_key].get('context') and item.get('context'):
+                                            all_terms_dict[existing_key]['context'] = item['context']
 
                             completed_batches += 1
                             self.progress.emit(f"Deep Scan: Batch {completed_batches}/{total_batches}...")
