@@ -40,8 +40,11 @@ class ReviewController(QObject):
         self.buffer_limit = 5  # 预加载数量
         self.is_stopped = False
 
+        logger.info(f"[ReviewDebug] Controller initialized with {len(items)} items.")
+
     def start_prefetch(self):
         """启动预加载"""
+        logger.info("[ReviewDebug] Starting prefetch...")
         self._fill_buffer()
 
     def _fill_buffer(self):
@@ -52,8 +55,9 @@ class ReviewController(QObject):
         # 检查是否需要补充
         current_buffer_size = len(self.result_buffer)
         active_tasks = len(self.processing_ids)
-
         needed = self.buffer_limit - (current_buffer_size + active_tasks)
+
+        # logger.debug(f"[ReviewDebug] Fill Check: Buffer={current_buffer_size}, Active={active_tasks}, Needed={needed}, QueueLeft={len(self.items_queue)}")
 
         if needed <= 0:
             return
@@ -61,6 +65,7 @@ class ReviewController(QObject):
         # 启动 Worker
         for _ in range(needed):
             if not self.items_queue:
+                logger.info("[ReviewDebug] Queue empty, no more items to spawn.")
                 break
 
             ts_obj = self.items_queue.popleft()
@@ -68,6 +73,7 @@ class ReviewController(QObject):
 
     def _spawn_worker(self, ts_obj):
         """生成一个翻译工作线程"""
+        logger.info(f"[ReviewDebug] Spawning worker for ID: {ts_obj.id[:8]}...")
         self.processing_ids.add(ts_obj.id)
 
         # 获取上下文
@@ -99,30 +105,35 @@ class ReviewController(QObject):
             self.processing_ids.remove(ts_id)
 
         if not error and text:
+            logger.info(f"[ReviewDebug] Worker SUCCESS for ID: {ts_id[:8]}. Storing in buffer.")
             self.result_buffer[ts_id] = text
             self.item_ready.emit(ts_id, text)
         else:
-            # 如果失败，存入空字符串，UI层会显示错误或允许重试
-            logger.warning(f"Translation failed for {ts_id}: {error}")
+            logger.warning(f"[ReviewDebug] Worker FAILED for ID: {ts_id[:8]}: {error}")
             self.result_buffer[ts_id] = ""
             self.item_ready.emit(ts_id, "")
 
         self.buffer_status.emit(len(self.result_buffer))
-
         self._fill_buffer()
 
     def get_result(self, ts_id):
         if ts_id in self.result_buffer:
+            logger.info(f"[ReviewDebug] get_result HIT for ID: {ts_id[:8]}.")
             result = self.result_buffer.pop(ts_id)
-            self.buffer_status.emit(len(self.result_buffer))
-
             # 立即尝试填充缓冲区
+            self.buffer_status.emit(len(self.result_buffer))  # Update UI immediately
             self._fill_buffer()
             return result
+
+        logger.warning(
+            f"[ReviewDebug] get_result MISS for ID: {ts_id[:8]}. Buffer keys: {[k[:8] for k in self.result_buffer.keys()]}")
+        # 如果 MISS，强制检查一下是否需要补充（防止死锁）
+        self._fill_buffer()
         return None
 
     def stop(self):
         """停止预加载"""
+        logger.info("[ReviewDebug] Controller stopped.")
         self.is_stopped = True
 
 
@@ -264,7 +275,7 @@ class InteractiveReviewDialog(QDialog):
         footer.setFixedHeight(80)
         footer.setStyleSheet("background-color: #FFFFFF;")
         footer_layout = QHBoxLayout(footer)
-        footer_layout.setContentsMargins(20, 10, 20, 10)
+        footer_layout.setContentsMargins(20, 10, 20, 0)
 
         self.chk_auto_run = QCheckBox(_("Auto-Run (Stop on Error)"))
         self.chk_auto_run.setStyleSheet("""
@@ -295,12 +306,9 @@ class InteractiveReviewDialog(QDialog):
         footer_layout.addStretch()
 
         # Buttons
-        self.btn_skip = StyledButton(_("Skip (Ctrl+Right)"), on_click=self.skip_current, btn_type="default")
-        self.btn_skip.setFixedSize(140, 45)
+        self.btn_skip = StyledButton(_("Skip"), on_click=self.skip_current, btn_type="default", size="large")
 
-        self.btn_accept = StyledButton(_("Accept (Enter)"), on_click=self.accept_current, btn_type="success")
-        self.btn_accept.setFixedSize(160, 45)
-
+        self.btn_accept = StyledButton(_("Accept"), on_click=self.accept_current, btn_type="success", size="large")
 
         footer_layout.addWidget(self.btn_skip)
         footer_layout.addWidget(self.btn_accept)
@@ -322,6 +330,7 @@ class InteractiveReviewDialog(QDialog):
             return
 
         self.current_ts = self.items[self.current_index]
+        logger.info(f"[ReviewDebug] UI Loading Item Index: {self.current_index}, ID: {self.current_ts.id[:8]}")
 
         # Update Progress
         self.progress_label.setText(f"{self.current_index + 1} / {self.total_count}")
@@ -330,36 +339,36 @@ class InteractiveReviewDialog(QDialog):
         # Update Source
         self.source_view.setPlainText(self.current_ts.original_semantic)
 
-        # Update Context (Async fetch if needed, but usually fast enough here)
+        # Update Context
         self._render_context()
 
         # Check Buffer
         cached_translation = self.controller.get_result(self.current_ts.id)
 
         if cached_translation is not None:
+            logger.info(f"[ReviewDebug] UI Found cached result for {self.current_ts.id[:8]}")
             self.editor.setPlainText(cached_translation)
             self.editor.setEnabled(True)
             self.btn_accept.setEnabled(True)
             self._validate_current()
 
-            # 如果是自动模式，且已经有结果，触发计时器
             if self.is_auto_running:
                 self.auto_run_timer.start()
         else:
-            # Waiting for AI
+            logger.info(f"[ReviewDebug] UI Waiting for result for {self.current_ts.id[:8]}")
             self.editor.setPlaceholderText(_("AI is translating..."))
             self.editor.clear()
             self.editor.setEnabled(False)
             self.btn_accept.setEnabled(False)
             self.validation_banner.hide()
-            # 暂停自动运行，等待回调
             self.auto_run_timer.stop()
 
     def _on_item_ready(self, ts_id, text):
         """当某个项目的翻译准备好时调用"""
-        # 更新缓冲区指示器在buffer_status信号中处理
 
         if self.current_ts and ts_id == self.current_ts.id:
+            self.controller.get_result(ts_id)
+
             self.editor.setPlainText(text)
             self.editor.setEnabled(True)
             self.btn_accept.setEnabled(True)

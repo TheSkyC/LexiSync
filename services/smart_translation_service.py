@@ -442,14 +442,24 @@ class SmartTranslationService:
 
 
     @staticmethod
-    def translate_terms_with_context_prompt(terms_data_json, target_lang):
+    def translate_terms_with_context_prompt(terms_data_json, target_lang, style_guide=""):
+        # [CHANGED] Inject Style Guide
+        style_instruction = ""
+        if style_guide:
+            style_instruction = (
+                f"### Reference Style Guide\n"
+                f"Please strictly follow these rules when translating terms:\n"
+                f"{style_guide}\n\n"
+            )
+
         return (
             f"Translate these domain-specific terms into {target_lang}.\n"
             f"I have provided context/usage examples for each term to help you disambiguate.\n\n"
+            f"{style_instruction}"
             f"Input Data: {terms_data_json}\n\n"
 
             "Translation Requirements:\n"
-            "1. Use the provided 'context' to choose the correct meaning (e.g., 'Home' -> '主页' vs '家').\n"
+            "1. Use the provided 'context' to choose the correct meaning.\n"
             "2. Maintain professional terminology standards.\n\n"
 
             "Output Format (MANDATORY):\n"

@@ -108,11 +108,11 @@ class AnalysisWorker(QObject):
                         item['context'] = snippet
 
                 self.progress.emit(_("Translating terms with context..."))
-                glossary_md = self._translate_terms(translator, terms_data)
+                glossary_md = self._translate_terms(translator, terms_data, style_guide=clean_style_guide)
 
             elif self.term_mode == "deep":
                 self.progress.emit(f"Translating {len(terms_data)} unique terms...")
-                glossary_md = self._translate_terms(translator, terms_data)
+                glossary_md = self._translate_terms(translator, terms_data, style_guide=clean_style_guide)
 
             self.finished.emit(clean_style_guide, glossary_md, rec_temp, terms_data)
 
@@ -253,7 +253,7 @@ class AnalysisWorker(QObject):
             return list(all_terms_dict.values())
         return []
 
-    def _translate_terms(self, translator, terms_data_list):
+    def _translate_terms(self, translator, terms_data_list, style_guide=""):
         """翻译术语列表"""
         if not terms_data_list:
             return "| Source | Target |\n|--------|--------|\n"
@@ -285,7 +285,7 @@ class AnalysisWorker(QObject):
                 logger.debug(f"[SmartTrans] Translating Batch Input: {terms_json}")
 
                 translate_prompt = SmartTranslationService.translate_terms_with_context_prompt(
-                    terms_json, self.target_lang
+                    terms_json, self.target_lang, style_guide
                 )
 
                 glossary_raw = translator.translate(terms_json, translate_prompt)
@@ -384,7 +384,6 @@ class SmartTranslationDialog(QDialog):
         # 底部按钮
         btn_layout = QHBoxLayout()
         btn_analyze = StyledButton(_("Analyze & Preview"), on_click=self.start_analysis, btn_type="success")
-        logger.debug(f"[SmartTrans]sizeHint: {btn_analyze.sizeHint()}")
         btn_layout.addStretch()
         btn_layout.addWidget(btn_analyze)
         layout.addLayout(btn_layout)
