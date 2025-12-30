@@ -168,11 +168,13 @@ class DetailsPanel(QWidget):
         """)
         self.ignore_warning_btn.clicked.connect(self.warning_ignored_signal.emit)
 
+        # Auto Fix Button
         self.fix_all_btn = QPushButton(_("Auto Fix"))
+        self.fix_all_btn.setObjectName("fix_all_btn")
         self.fix_all_btn.setCursor(Qt.PointingHandCursor)
         self.fix_all_btn.setFixedSize(60, 18)
         self.fix_all_btn.setStyleSheet("""
-            QPushButton {
+            QPushButton#fix_all_btn {
                 border: 1px solid #28a745;
                 border-radius: 3px;
                 color: #fff;
@@ -180,27 +182,30 @@ class DetailsPanel(QWidget):
                 font-weight: bold;
                 font-size: 10px;
                 margin-right: 5px;
+                padding: 0; /* Reset padding */
             }
-            QPushButton:hover { background-color: #218838; }
+            QPushButton#fix_all_btn:hover { background-color: #218838; }
         """)
         self.fix_all_btn.clicked.connect(self.on_fix_all_clicked)
         self.fix_all_btn.hide()
 
-        # AI Fix
+        # AI Fix Button
         self.ai_fix_btn = QPushButton(_("AI Fix"))
+        self.ai_fix_btn.setObjectName("ai_fix_btn")
         self.ai_fix_btn.setCursor(Qt.PointingHandCursor)
         self.ai_fix_btn.setFixedSize(50, 18)
         self.ai_fix_btn.setStyleSheet("""
-            QPushButton {
+            QPushButton#ai_fix_btn {
                 border: 1px solid #673AB7;
                 border-radius: 3px;
                 color: #fff;
-                background-color: #673AB7; /* 深紫色 */
+                background-color: #673AB7;
                 font-weight: bold;
                 font-size: 10px;
                 margin-right: 5px;
+                padding: 0; /* Reset padding */
             }
-            QPushButton:hover { background-color: #5E35B1; }
+            QPushButton#ai_fix_btn:hover { background-color: #5E35B1; }
         """)
         self.ai_fix_btn.clicked.connect(self.app_instance.ai_fix_current_item)
         self.ai_fix_btn.hide()
