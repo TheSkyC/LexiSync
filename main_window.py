@@ -46,6 +46,7 @@ from ui_components.tm_panel import TMPanel
 from ui_components.glossary_panel import GlossaryPanel
 from ui_components.drop_overlay import DropOverlay
 from ui_components.marker_bar import MarkerBar
+from ui_components.styled_button import StyledButton
 
 from dialogs.font_settings_dialog import FontSettingsDialog
 from dialogs.keybinding_dialog import KeybindingDialog
@@ -78,7 +79,6 @@ from services.expansion_ratio_service import ExpansionRatioService
 from services.tm_service import TMService
 from services.glossary_service import GlossaryService
 from services.glossary_worker import GlossaryAnalysisWorker
-
 
 from utils import config_manager
 from utils.constants import *
@@ -994,8 +994,7 @@ class LexiSyncApp(QMainWindow):
         self.search_entry.installEventFilter(self)
         toolbar_layout.addWidget(self.search_entry)
 
-        self.search_button = QPushButton(_("Find"))
-        self.search_button.clicked.connect(self.find_string_from_toolbar)
+        self.search_button = StyledButton(_("Find"), on_click=self.find_string_from_toolbar, btn_type="default", size="small")
         toolbar_layout.addWidget(self.search_button)
         main_layout.addWidget(toolbar_frame)
 

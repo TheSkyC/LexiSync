@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from .newline_text_edit import NewlineTextEdit
 from .po_comment_highlighter import PoCommentHighlighter
+from .styled_button import StyledButton
 from utils.localization import _
 
 
@@ -41,9 +42,8 @@ class CommentStatusPanel(QWidget):
         comment_actions_frame = QFrame()
         comment_actions_layout = QHBoxLayout(comment_actions_frame)
         comment_actions_layout.setContentsMargins(0, 0, 0, 0)
-        self.apply_comment_btn = QPushButton(_("Apply Comment"))
+        self.apply_comment_btn = StyledButton(_("Apply Comment"), on_click=self.apply_comment_signal.emit, btn_type="default", size="small")
         self.apply_comment_btn.setObjectName("apply_comment_btn")
-        self.apply_comment_btn.clicked.connect(self.apply_comment_signal.emit)
         self.apply_comment_btn.setEnabled(False)
         comment_actions_layout.addWidget(self.apply_comment_btn)
         comment_actions_layout.addStretch(1)

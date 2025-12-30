@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushBu
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 from typing import List, Dict, Optional
+from .styled_button import StyledButton
 from utils.localization import _
 
 class TMPanel(QWidget):
@@ -31,15 +32,13 @@ class TMPanel(QWidget):
         tm_actions_frame = QWidget()
         tm_actions_layout = QHBoxLayout(tm_actions_frame)
         tm_actions_layout.setContentsMargins(0, 0, 0, 0)
-        self.update_selected_tm_btn = QPushButton(_("Update TM for Selected"))
+        self.update_selected_tm_btn = StyledButton(_("Update TM for Selected"), on_click=self.update_tm_signal.emit, btn_type="default", size="small")
         self.update_selected_tm_btn.setObjectName("update_selected_tm_btn")
-        self.update_selected_tm_btn.clicked.connect(self.update_tm_signal.emit)
         self.update_selected_tm_btn.setEnabled(False)
         tm_actions_layout.addWidget(self.update_selected_tm_btn)
 
-        self.clear_selected_tm_btn = QPushButton(_("Clear TM for Selected"))
+        self.clear_selected_tm_btn = StyledButton(_("Clear TM for Selected"), on_click=self.clear_tm_signal.emit, btn_type="danger", size="small")
         self.clear_selected_tm_btn.setObjectName("clear_selected_tm_btn")
-        self.clear_selected_tm_btn.clicked.connect(self.clear_tm_signal.emit)
         self.clear_selected_tm_btn.setEnabled(False)
         tm_actions_layout.addWidget(self.clear_selected_tm_btn)
         tm_actions_layout.addStretch(1)

@@ -14,6 +14,7 @@ from .tooltip import Tooltip
 from .newline_text_edit import NewlineTextEdit
 from .elided_label import ElidedLabel
 from .syntax_highlighter import TranslationHighlighter
+from .styled_button import StyledButton
 from utils.localization import _
 
 
@@ -234,15 +235,15 @@ class DetailsPanel(QWidget):
         trans_actions_frame = QFrame()
         trans_actions_layout = QHBoxLayout(trans_actions_frame)
         trans_actions_layout.setContentsMargins(0, 0, 0, 0)
-        self.apply_btn = QPushButton(_("Apply Translation"))
+        self.apply_btn = StyledButton(_("Apply Translation"), on_click=self.apply_translation_signal.emit, btn_type="success", size="medium")
         self.apply_btn.setObjectName("apply_btn")
-        self.apply_btn.clicked.connect(self.apply_translation_signal.emit)
         self.apply_btn.setEnabled(False)
         trans_actions_layout.addWidget(self.apply_btn)
+
         trans_actions_layout.addStretch(1)
-        self.ai_translate_current_btn = QPushButton(_("AI Translate Selected"))
+
+        self.ai_translate_current_btn = StyledButton(_("AI Translate Selected"), on_click=self.ai_translate_signal.emit, btn_type="primary", size="medium")
         self.ai_translate_current_btn.setObjectName("ai_translate_current_btn")
-        self.ai_translate_current_btn.clicked.connect(self.ai_translate_signal.emit)
         self.ai_translate_current_btn.setEnabled(False)
         trans_actions_layout.addWidget(self.ai_translate_current_btn)
         main_layout.addWidget(trans_actions_frame)
