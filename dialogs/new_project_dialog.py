@@ -2,17 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QLineEdit,
-                               QPushButton, QDialogButtonBox, QFileDialog,
-                               QListWidgetItem, QHBoxLayout,
-                               QComboBox, QMessageBox, QCheckBox, QTabWidget, QWidget,
-                               QLabel, QGroupBox, QTreeWidget, QTreeWidgetItem, QHeaderView)
+                               QPushButton, QFileDialog, QLabel, QGroupBox,
+                               QListWidgetItem, QHBoxLayout, QTabWidget,
+                               QComboBox, QMessageBox, QCheckBox, QWidget,
+                               QTreeWidget, QTreeWidgetItem, QHeaderView)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDragMoveEvent
 import os
 from datetime import datetime
-from utils.localization import _
+from ui_components.styled_button import StyledButton
 from utils.text_utils import format_file_size
 from utils.constants import SUPPORTED_LANGUAGES
+from utils.localization import _
 import logging
 
 logger = logging.getLogger(__name__)
@@ -169,13 +170,14 @@ class NewProjectDialog(QDialog):
         source_files_layout.setContentsMargins(0, 0, 0, 0)
 
         self.source_files_tree = DropTreeWidget('source')
-        self.source_files_tree.setToolTip(_("Drag and drop .ow, .txt, .po, or .pot files here"))
+        self.source_files_tree.setToolTip(_("Drag and drop files here"))
         self.source_files_tree.setMinimumHeight(150)
         self.source_files_tree.files_dropped.connect(self.handle_files_dropped)
 
         source_buttons_layout = QHBoxLayout()
-        add_file_button = QPushButton(_("Add..."))
-        remove_file_button = QPushButton(_("Remove"))
+        add_file_button = StyledButton(_("Add..."), on_click=self.add_source_files)
+        remove_file_button = StyledButton(_("Remove"), on_click=lambda: self._remove_item(self.source_files_tree, self.source_files), btn_type="danger")
+
         source_buttons_layout.addStretch()
         source_buttons_layout.addWidget(add_file_button)
         source_buttons_layout.addWidget(remove_file_button)
@@ -205,8 +207,8 @@ class NewProjectDialog(QDialog):
         glossary_bottom_layout = QHBoxLayout()
         self.use_global_glossary_checkbox = QCheckBox(_("Use Global Glossary"))
         self.use_global_glossary_checkbox.setChecked(True)
-        add_glossary_button = QPushButton(_("Add..."))
-        remove_glossary_button = QPushButton(_("Remove"))
+        add_glossary_button = StyledButton(_("Add..."), on_click=self.add_glossary_files)
+        remove_glossary_button = StyledButton(_("Remove"), on_click=lambda: self._remove_item(self.glossary_files_tree, self.glossary_files), btn_type="danger")
 
         glossary_bottom_layout.addWidget(self.use_global_glossary_checkbox)
         glossary_bottom_layout.addStretch()
@@ -227,8 +229,8 @@ class NewProjectDialog(QDialog):
         tm_bottom_layout = QHBoxLayout()
         self.use_global_tm_checkbox = QCheckBox(_("Use Global Translation Memory"))
         self.use_global_tm_checkbox.setChecked(True)
-        add_tm_button = QPushButton(_("Add..."))
-        remove_tm_button = QPushButton(_("Remove"))
+        add_tm_button = StyledButton(_("Add..."), on_click=self.add_tm_files)
+        remove_tm_button = StyledButton(_("Remove"), on_click=lambda: self._remove_item(self.tm_files_tree, self.tm_files), btn_type="danger")
 
         tm_bottom_layout.addWidget(self.use_global_tm_checkbox)
         tm_bottom_layout.addStretch()
@@ -244,19 +246,21 @@ class NewProjectDialog(QDialog):
 
         main_layout.addWidget(self.tab_widget)
 
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        main_layout.addWidget(button_box)
+        button_layout = QHBoxLayout()
+        button_layout.setContentsMargins(0, 10, 0, 0)
+        button_layout.setSpacing(15)
+        button_layout.addStretch()
+
+        self.ok_button = StyledButton(_("OK"), on_click=self.accept, btn_type="primary", size="large")
+        self.cancel_button = StyledButton(_("Cancel"), on_click=self.reject, btn_type="default", size="large")
+
+        button_layout.addWidget(self.ok_button)
+        button_layout.addWidget(self.cancel_button)
+
+        main_layout.addLayout(button_layout)
 
         # Connections
         self.browse_button.clicked.connect(self.browse_location)
-        add_file_button.clicked.connect(self.add_source_files)
-        remove_file_button.clicked.connect(lambda: self._remove_item(self.source_files_tree, self.source_files))
-        add_glossary_button.clicked.connect(self.add_glossary_files)
-        remove_glossary_button.clicked.connect(lambda: self._remove_item(self.glossary_files_tree, self.glossary_files))
-        add_tm_button.clicked.connect(self.add_tm_files)
-        remove_tm_button.clicked.connect(lambda: self._remove_item(self.tm_files_tree, self.tm_files))
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
 
     def dragMoveEvent(self, event: QDragMoveEvent):
         pass

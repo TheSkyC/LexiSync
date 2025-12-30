@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import (QDialog, QHBoxLayout, QListWidget, QStackedWidget,
-                               QDialogButtonBox, QListWidgetItem,QVBoxLayout, QMessageBox)
-from utils.localization import _
+                               QListWidgetItem,QVBoxLayout, QMessageBox)
+from ui_components.styled_button import StyledButton
 from .settings_pages import GeneralSettingsPage, AppearanceSettingsPage, AISettingsPage, ValidationSettingsPage
 from .resources_page import ResourcesSettingsPage
+from utils.localization import _
 import logging
 logger = logging.getLogger(__name__)
 
@@ -86,21 +87,21 @@ class SettingsDialog(QDialog):
 
         self.nav_list.currentRowChanged.connect(self.stack.setCurrentIndex)
 
-        self.button_box = QDialogButtonBox()
-        self.apply_button = self.button_box.addButton(_("Apply"), QDialogButtonBox.ApplyRole)
-        ok_btn = self.button_box.addButton(QDialogButtonBox.Ok)
-        ok_btn.setText(_("OK"))
-        cancel_btn = self.button_box.addButton(QDialogButtonBox.Cancel)
-        cancel_btn.setText(_("Cancel"))
-
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-        self.apply_button.clicked.connect(self.on_apply_button_clicked)
-
+        # Button
         button_container_layout = QHBoxLayout()
-        button_container_layout.setContentsMargins(10, 10, 10, 0)
+        button_container_layout.setContentsMargins(0, 10, 10, 0)
+        button_container_layout.setSpacing(15)
         button_container_layout.addStretch()
-        button_container_layout.addWidget(self.button_box)
+
+        # Apply
+        self.apply_button = StyledButton(_("Apply"), on_click=self.on_apply_button_clicked, btn_type="success")
+        button_container_layout.addWidget(self.apply_button)
+        # OK
+        self.ok_button = StyledButton(_("OK"), on_click=self.accept, btn_type="primary")
+        button_container_layout.addWidget(self.ok_button)
+        # Cancel
+        self.cancel_button = StyledButton(_("Cancel"), on_click=self.reject, btn_type="default")
+        button_container_layout.addWidget(self.cancel_button)
         main_layout.addLayout(button_container_layout)
 
     def setup_pages(self):
