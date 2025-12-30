@@ -36,7 +36,33 @@ if __name__ == "__main__":
         stream=sys.stdout,
     )
     app = QApplication(sys.argv)
-
+    app.setStyleSheet("""
+        QPushButton {
+            background-color: #FFFFFF;
+            border: 1px solid #DCDFE6;
+            color: #606266;
+            padding: 5px 15px;
+            border-radius: 4px;
+            font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        QPushButton:hover {
+            background-color: #ECF5FF;
+            border-color: #C6E2FF;
+            color: #409EFF;
+        }
+        QPushButton:pressed {
+            background-color: #3A8EE6;
+            border-color: #3A8EE6;
+            color: #FFFFFF;
+        }
+        QPushButton:disabled {
+            background-color: #F5F7FA;
+            border-color: #E4E7ED;
+            color: #C0C4CC;
+        }
+    """)
     from utils.config_manager import load_config
     from utils.localization import lang_manager
 
