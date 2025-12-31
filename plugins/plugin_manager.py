@@ -341,6 +341,12 @@ class PluginManager:
                             logger.error(
                                 f"Error in plugin '{plugin.plugin_id()}' notification/collecting hook '{hook_name}': {e}",
                                 exc_info=True)
+                if hook_name == 'retrieve_context':
+                    flat_list = []
+                    for res in all_results:
+                        if isinstance(res, list):
+                            flat_list.extend(res)
+                    return flat_list
                 if hook_name in ['on_file_tree_context_menu', 'on_table_context_menu']:
                     flat_list = [item for sublist in all_results for item in sublist]
                     return flat_list

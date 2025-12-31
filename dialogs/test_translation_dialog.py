@@ -278,18 +278,41 @@ class TestTranslationDialog(QDialog):
                 if src.lower() in text.lower():
                     glossary_lines.append(f"- {src}: {tgt}")
 
-        # 2. TM
-        tm_context = ""
+        # 2. TM & RAG [FIX]
+        semantic_parts = []
+
+        # TM
         if self.parent_dialog.chk_use_tm.isChecked():
             tm_limit = self.parent_dialog.spin_retrieval.value()
             tm_context = self.parent_dialog._fetch_tm_context(text, limit=tm_limit)
+            if tm_context:
+                semantic_parts.append(tm_context)
+
+        # RAG
+        if self.parent_dialog.chk_retrieval.isChecked() and self.parent_dialog.retrieval_enabled:
+            rag_result = self.app.plugin_manager.run_hook(
+                'retrieve_context',
+                text,
+                limit=self.parent_dialog.spin_retrieval.value(),
+                mode=self.parent_dialog.combo_retrieval_mode.currentData()
+            )
+            # 格式化结果
+            if rag_result:
+                lines = []
+                for r in rag_result:
+                    src = r.get('source', '')[:60]
+                    tgt = r.get('target', '')[:60]
+                    if src and tgt:
+                        lines.append(f"- {src}... → {tgt}...")
+                if lines:
+                    semantic_parts.append("Similar Translations:\n" + "\n".join(lines))
 
         return {
             "original_context": "",
             "translation_context": "",
             "[Style Guide]": self.style_override.toPlainText(),
             "[Glossary]": "\n".join(glossary_lines),
-            "[Semantic Context]": tm_context
+            "[Semantic Context]": "\n\n".join(semantic_parts)
         }
 
     def on_stream_chunk(self, chunk):

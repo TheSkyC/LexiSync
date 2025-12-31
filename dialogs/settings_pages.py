@@ -153,8 +153,8 @@ class GeneralSettingsPage(BaseSettingsPage):
         # Ctrl+Enter Behavior
         self.next_behavior_combo = QComboBox()
         self.next_behavior_map = {
-            'untranslated': _("Next Untranslated (Default)"),
-            'any': _("Next Item (Regardless of status)"),
+            'untranslated': _("Next Untranslated"),
+            'any': _("Next Item"),
             'unreviewed': _("Next Unreviewed"),
             'error': _("Next Error"),
             'warning': _("Next Warning"),

@@ -464,6 +464,31 @@ class SmartTranslationDialog(QDialog):
         context_layout.addWidget(self.chk_retrieval, 1, 0)
         context_layout.addWidget(self.spin_retrieval, 1, 1)
 
+        # Retrieval Mode Combo
+        self.combo_retrieval_mode = QComboBox()
+        self.combo_retrieval_mode.addItem(_("Auto (Best)"), "auto")
+        self.combo_retrieval_mode.addItem("TF-IDF", "tfidf")
+        self.combo_retrieval_mode.addItem("Local LLM", "onnx")
+        self.combo_retrieval_mode.setToolTip(_("Select the algorithm for semantic retrieval."))
+
+        # Check availability via plugin
+        plugin = self.app.plugin_manager.get_plugin("com_theskyc_retrieval_enhancer")
+        if plugin:
+            status = plugin.get_available_backends()
+            model = self.combo_retrieval_mode.model()
+            if not status.get('tfidf'): model.item(1).setEnabled(False)
+            if not status.get('onnx'): model.item(2).setEnabled(False)
+        else:
+            self.combo_retrieval_mode.setEnabled(False)
+
+        context_layout.addWidget(self.chk_retrieval, 1, 0)
+
+        retrieval_opts = QHBoxLayout()
+        retrieval_opts.setContentsMargins(0, 0, 0, 0)
+        retrieval_opts.addWidget(self.spin_retrieval)
+        retrieval_opts.addWidget(self.combo_retrieval_mode)
+        context_layout.addLayout(retrieval_opts, 1, 1)
+
         # TM & Glossary
         tm_container = QWidget()
         tm_layout = QHBoxLayout(tm_container)
@@ -775,6 +800,9 @@ class SmartTranslationDialog(QDialog):
     def open_test_lab(self):
         self._cache_glossary_from_ui()
 
+        if self.chk_retrieval.isChecked() and self.retrieval_enabled:
+            self._build_retrieval_index_async()
+
         self._inject_smart_prompt_structure()
 
         dialog = TestTranslationDialog(self, self.app)
@@ -785,14 +813,26 @@ class SmartTranslationDialog(QDialog):
     def check_plugins(self):
         """检查可用插件"""
         plugin = self.app.plugin_manager.get_plugin("com_theskyc_retrieval_enhancer")
-        if plugin and plugin.is_ready:
+
+        is_available = False
+        if plugin:
+            # Check if at least one backend is available
+            backends = plugin.get_available_backends()
+            if backends.get('tfidf') or backends.get('onnx'):
+                is_available = True
+
+        if is_available:
             self.retrieval_enabled = True
-            self.retrieval_info.setText(
-                _("Context Source: TF-IDF Semantic Retrieval (Plugin Active)")
-            )
-            self.retrieval_info.setStyleSheet("color: green; margin-left: 20px;")
+            if backends.get('onnx'):
+                self.retrieval_info.setText(_("Context Source: Retrieval Enhancer (LLM Ready)"))
+                self.retrieval_info.setStyleSheet("color: green; margin-left: 20px;")
+            else:
+                self.retrieval_info.setText(_("Context Source: Retrieval Enhancer (TF-IDF Only)"))
+                self.retrieval_info.setStyleSheet("color: #1976D2; margin-left: 20px;")
         else:
             self.retrieval_enabled = False
+            self.retrieval_info.setText(_("Context Source: Basic Fuzzy Match (Plugin not ready)"))
+            self.retrieval_info.setStyleSheet("color: gray; margin-left: 20px;")
 
     # ==================== 阶段1：分析 ====================
 
@@ -862,6 +902,7 @@ class SmartTranslationDialog(QDialog):
             "use_neighbors": self.chk_neighbors.isChecked(),
             "neighbors_count": self.spin_neighbors.value(),
             "use_retrieval": self.chk_retrieval.isChecked() and self.retrieval_enabled,
+            "retrieval_mode": self.combo_retrieval_mode.currentData(),
             "retrieval_limit": self.spin_retrieval.value(),
             "use_tm": self.chk_use_tm.isChecked(),
             "tm_mode": "fuzzy" if self.rb_tm_fuzzy.isChecked() else "exact",
@@ -890,15 +931,14 @@ class SmartTranslationDialog(QDialog):
             # 2.1 RAG (插件)
             if config["use_retrieval"]:
                 rag_limit = config["retrieval_limit"]
-                rag_result = self._get_semantic_context(ts_id, limit=rag_limit)
-                if rag_result and rag_result not in seen_semantic_content:
+                mode = config["retrieval_mode"]
+                rag_result = self._get_semantic_context(ts_id, limit=rag_limit, mode=mode)
+                if rag_result:
                     semantic_context_parts.append(rag_result)
-                    seen_semantic_content.add(rag_result)
 
             # 2.2 TM
             if config["use_tm"]:
                 tm_limit = config["tm_limit"]
-                # [CHANGED] Pass new config params
                 tm_result = self._fetch_tm_context(
                     original_text,
                     limit=tm_limit,
@@ -1231,6 +1271,10 @@ class SmartTranslationDialog(QDialog):
         if not self.app._check_ai_prerequisites():
             return
 
+        # 构建索引
+        if self.chk_retrieval.isChecked() and self.retrieval_enabled:
+            self._build_retrieval_index_async()
+
         # 捕获配置快照 (包含最新的 Style Guide 和 Glossary)
         config_snapshot = self._capture_context_config()
 
@@ -1296,7 +1340,6 @@ class SmartTranslationDialog(QDialog):
 
     def _build_retrieval_index_async(self):
         """异步构建检索索引"""
-
         def build_task():
             try:
                 self.log("Building semantic index...", "INFO")
@@ -1308,6 +1351,12 @@ class SmartTranslationDialog(QDialog):
                             'source': ts.original_semantic,
                             'target': ts.translation
                         })
+
+                if not knowledge_base:
+                    self.log("⚠ Index build skipped: No translated items found to build index.", "WARNING")
+                    return
+
+                logger.info(f"[SmartDialog] Triggering plugin build_index with {len(knowledge_base)} items.")
 
                 self.app.plugin_manager.run_hook('build_retrieval_index', knowledge_base)
                 self.log(f"✓ Index built with {len(knowledge_base)} items.", "SUCCESS")
@@ -1437,7 +1486,7 @@ class SmartTranslationDialog(QDialog):
         finally:
             self._signals_connected = False
 
-    def _get_semantic_context(self, ts_id, limit=5):
+    def _get_semantic_context(self, ts_id, limit=5, mode="auto"):
         # 获取语义检索上下文
         try:
             ts_obj = self.app._find_ts_obj_by_id(ts_id)
@@ -1448,7 +1497,8 @@ class SmartTranslationDialog(QDialog):
             results = self.app.plugin_manager.run_hook(
                 'retrieve_context',
                 ts_obj.original_semantic,
-                limit=limit
+                limit=limit,
+                mode=mode
             )
 
             if not results:

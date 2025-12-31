@@ -443,7 +443,6 @@ class SmartTranslationService:
 
     @staticmethod
     def translate_terms_with_context_prompt(terms_data_json, target_lang, style_guide=""):
-        # [CHANGED] Inject Style Guide
         style_instruction = ""
         if style_guide:
             style_instruction = (
