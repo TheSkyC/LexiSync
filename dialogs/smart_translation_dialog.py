@@ -536,11 +536,6 @@ class SmartTranslationDialog(QDialog):
 
         strat_layout.addWidget(context_box)
 
-        # Retrieval Info Label
-        self.retrieval_info = QLabel(_("Context Source: Basic Fuzzy Match (Plugin not found)"))
-        self.retrieval_info.setStyleSheet("color: gray; margin-left: 5px; font-size: 11px;")
-        strat_layout.addWidget(self.retrieval_info)
-
         # Analysis Options
         self.chk_analyze = QCheckBox(_("Auto-analyze Style & Terminology"))
         self.chk_analyze.setChecked(True)
@@ -823,16 +818,8 @@ class SmartTranslationDialog(QDialog):
 
         if is_available:
             self.retrieval_enabled = True
-            if backends.get('onnx'):
-                self.retrieval_info.setText(_("Context Source: Retrieval Enhancer (LLM Ready)"))
-                self.retrieval_info.setStyleSheet("color: green; margin-left: 20px;")
-            else:
-                self.retrieval_info.setText(_("Context Source: Retrieval Enhancer (TF-IDF Only)"))
-                self.retrieval_info.setStyleSheet("color: #1976D2; margin-left: 20px;")
         else:
             self.retrieval_enabled = False
-            self.retrieval_info.setText(_("Context Source: Basic Fuzzy Match (Plugin not ready)"))
-            self.retrieval_info.setStyleSheet("color: gray; margin-left: 20px;")
 
     # ==================== 阶段1：分析 ====================
 

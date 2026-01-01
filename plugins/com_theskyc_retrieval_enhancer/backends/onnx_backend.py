@@ -4,8 +4,8 @@
 from .base import RetrievalBackend
 import logging
 import os
-import numpy as np
 import gc
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +73,24 @@ class OnnxBackend(RetrievalBackend):
             temp_tokenizer.enable_truncation(max_length=512)
 
             sess_options = ort.SessionOptions()
+
             sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-            temp_session = ort.InferenceSession(onnx_file, sess_options, providers=['CPUExecutionProvider'])
+            sess_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
+            try:
+                num_threads = os.cpu_count()
+                if num_threads:
+                    sess_options.intra_op_num_threads = num_threads
+                    sess_options.inter_op_num_threads = num_threads
+                    logger.info(f"[OnnxBackend] Set ONNX threads to {num_threads}.")
+            except Exception as e:
+                logger.warning(f"[OnnxBackend] Could not set thread count: {e}")
+            available_providers = ort.get_available_providers()
+            providers_to_use = []
+            if 'DmlExecutionProvider' in available_providers:
+                providers_to_use.append('DmlExecutionProvider')
+            providers_to_use.append('CPUExecutionProvider')
+            logger.info(f"[OnnxBackend] Using ONNX providers: {providers_to_use}")
+            temp_session = ort.InferenceSession(onnx_file, sess_options, providers=providers_to_use)
 
             if self._use_token_type_ids is None:
                 encoded = temp_tokenizer.encode_batch(["test"])
