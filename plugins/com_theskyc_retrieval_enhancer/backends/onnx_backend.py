@@ -155,7 +155,7 @@ class OnnxBackend(RetrievalBackend):
         norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
         return embeddings / np.clip(norm, a_min=1e-9, a_max=None)
 
-    def build_index(self, data_list: list, progress_callback=None) -> bool:
+    def build_index(self, data_list: list, progress_callback=None, check_cancel=None) -> bool:
         if not self.is_available(): return False
         try:
             self.indexed_data = data_list
@@ -172,10 +172,10 @@ class OnnxBackend(RetrievalBackend):
                 new_vectors_map = {}
                 total_missing = len(missing_texts)
 
-                for i in range(0, total_missing, batch_size):
-                    if progress_callback:
-                        percent = int((i / total_missing) * 100)
-                        progress_callback(percent)
+                for i in range(0, len(missing_texts), batch_size):
+                    if check_cancel and check_cancel():
+                        logger.info("[OnnxBackend] Build index cancelled.")
+                        return False
 
                     batch = missing_texts[i:i + batch_size]
                     embeddings = self._compute_embeddings(batch)

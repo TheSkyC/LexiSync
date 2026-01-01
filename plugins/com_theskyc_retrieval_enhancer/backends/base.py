@@ -17,7 +17,7 @@ class RetrievalBackend(ABC):
         pass
 
     @abstractmethod
-    def build_index(self, data_list: List[Dict[str, str]], progress_callback=None) -> bool:
+    def build_index(self, data_list: List[Dict[str, str]], progress_callback=None, check_cancel=None) -> bool:
         """
         Build index from data.
         progress_callback: function(int) -> None

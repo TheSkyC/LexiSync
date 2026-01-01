@@ -86,10 +86,10 @@ class RetrievalCore:
         self.active_backend = None
         logger.info("[RetrievalCore] All backend indexes have been cleared.")
 
-    def build_index(self, data_list, progress_callback=None):
+    def build_index(self, data_list, progress_callback=None, check_cancel=None):
         # 优先尝试 ONNX
         if self.onnx_backend.is_available():
-            if self.onnx_backend.build_index(data_list, progress_callback):
+            if self.onnx_backend.build_index(data_list, progress_callback, check_cancel):
                 self.active_backend = self.onnx_backend
                 return True
 

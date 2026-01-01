@@ -36,6 +36,10 @@ class IndexBuildWorker(QObject):
         super().__init__()
         self.app = app
         self.knowledge_base = knowledge_base
+        self._is_cancelled = False
+
+    def cancel(self):
+        self._is_cancelled = True
 
     def run(self):
         try:
@@ -43,7 +47,8 @@ class IndexBuildWorker(QObject):
                 self.app.plugin_manager.run_hook(
                     'build_retrieval_index',
                     self.knowledge_base,
-                    progress_callback=self.progress.emit
+                    progress_callback=self.progress.emit,
+                    check_cancel=lambda: self._is_cancelled
                 )
         except Exception as e:
             logger.error(f"Index build failed: {e}")
@@ -1698,17 +1703,17 @@ class SmartTranslationDialog(QDialog):
         """停止操作 (分析、翻译)"""
         self.log("Stopping operation...", "WARNING")
 
-        # 1. 停止翻译阶段 (Phase 2)
+        # 停止翻译阶段 (Phase 2)
         if self.app.ai_manager.is_running:
             self.app.ai_manager.stop()
             self.log("Translation task manager stopped.", "INFO")
 
-        # 2. 停止分析阶段 (Phase 1)
+        # 停止分析阶段 (Phase 1)
         if hasattr(self, 'analysis_worker') and self.analysis_worker:
             self.analysis_worker.cancel()
             self.log("Analysis worker cancellation requested.", "INFO")
 
-        # 3. 强制终止分析线程
+        # 强制终止分析线程
         if hasattr(self, 'analysis_thread') and self.analysis_thread and self.analysis_thread.isRunning():
             self.analysis_thread.requestInterruption()
             self.analysis_thread.quit()
@@ -1720,7 +1725,11 @@ class SmartTranslationDialog(QDialog):
             self.analysis_thread = None
             self.analysis_worker = None
 
-        # 4. 更新 UI 状态
+        if hasattr(self, 'index_worker') and self.index_worker:
+            self.index_worker.cancel()
+            self.log("Index build cancellation requested.", "INFO")
+
+        # 更新 UI 状态
         self.lbl_status.setText(_("Operation Stopped"))
         self.progress_bar.setValue(0)
         self.btn_stop.setEnabled(False)
