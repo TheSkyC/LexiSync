@@ -28,6 +28,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class IndexBuildWorker(QObject):
+    finished = Signal()
+
+    def __init__(self, app, knowledge_base):
+        super().__init__()
+        self.app = app
+        self.knowledge_base = knowledge_base
+
+    def run(self):
+        try:
+            if self.knowledge_base:
+                self.app.plugin_manager.run_hook('build_retrieval_index', self.knowledge_base)
+        except Exception as e:
+            logger.error(f"Index build failed: {e}")
+        finally:
+            self.finished.emit()
+
+
 class AnalysisWorker(QObject):
     """Phase 1 分析工作线程"""
     progress = Signal(str)
@@ -1285,35 +1303,44 @@ class SmartTranslationDialog(QDialog):
         # 预处理术语表
         self._cache_glossary_from_ui()
 
-        # 切换UI状态
+        # 切换UI到监控模式
         self._switch_to_translation_mode()
 
-        # 异步构建检索索引
+        # 检查是否需要构建索引
         if self.chk_retrieval.isChecked() and self.retrieval_enabled:
-            self._build_retrieval_index_async()
+            self.lbl_status.setText(_("Phase 2a: Building Knowledge Base..."))
+            self.progress_bar.setRange(0, 0)  # 忙碌状态
 
-        # 注入智能提示词结构
-        self._inject_smart_prompt_structure()
+            # 准备知识库数据
+            knowledge_base = []
+            for ts in self.app.translatable_objects:
+                if ts.translation.strip() and not ts.is_ignored:
+                    knowledge_base.append({
+                        'source': ts.original_semantic,
+                        'target': ts.translation
+                    })
 
-        # 连接AI管理器信号
-        self._connect_ai_manager_signals()
-        current_temp = self.temp_spinbox.value()
-        concurrency = self.thread_spinbox.value()
-        repair_limit = self.repair_spinbox.value()
-        timeout = self.timeout_spinbox.value()
-        config_snapshot = self._capture_context_config()
-        context_provider = lambda ts_id: self._worker_context_provider(ts_id, config_snapshot)
+            if knowledge_base:
+                self.log(f"Building retrieval index with {len(knowledge_base)} items...", "INFO")
 
+                # 启动索引构建线程
+                self.index_thread = QThread()
+                self.index_worker = IndexBuildWorker(self.app, knowledge_base)
+                self.index_worker.moveToThread(self.index_thread)
 
-        # 开始批量翻译
-        self.app.ai_manager.start_batch(
-            self.target_items,
-            context_provider,
-            concurrency_override=concurrency,
-            temperature=current_temp,
-            self_repair_limit=repair_limit,
-            api_timeout=timeout
-        )
+                self.index_thread.started.connect(self.index_worker.run)
+                self.index_worker.finished.connect(self.index_thread.quit)
+                self.index_worker.finished.connect(self._on_index_build_complete)
+                self.index_thread.finished.connect(self.index_thread.deleteLater)
+                self.index_worker.finished.connect(self.index_worker.deleteLater)
+
+                self.index_thread.start()
+                return
+
+            else:
+                self.log("No translated items found for index. Skipping RAG.", "WARNING")
+
+        self._execute_batch_translation()
 
     def _switch_to_translation_mode(self):
         """切换UI到翻译模式"""
@@ -1326,34 +1353,68 @@ class SmartTranslationDialog(QDialog):
         self.log_view.clear()
 
     def _build_retrieval_index_async(self):
-        """异步构建检索索引"""
-        def build_task():
-            try:
-                self.log("Building semantic index...", "INFO")
+        # 准备数据
+        knowledge_base = []
+        for ts in self.app.translatable_objects:
+            if ts.translation.strip() and not ts.is_ignored:
+                knowledge_base.append({
+                    'source': ts.original_semantic,
+                    'target': ts.translation
+                })
 
-                knowledge_base = []
-                for ts in self.app.translatable_objects:
-                    if ts.translation.strip() and not ts.is_ignored:
-                        knowledge_base.append({
-                            'source': ts.original_semantic,
-                            'target': ts.translation
-                        })
+        if not knowledge_base:
+            return
 
-                if not knowledge_base:
-                    self.log("⚠ Index build skipped: No translated items found to build index.", "WARNING")
-                    return
+        self.log(f"Background: Updating retrieval index with {len(knowledge_base)} items...", "INFO")
 
-                logger.info(f"[SmartDialog] Triggering plugin build_index with {len(knowledge_base)} items.")
+        # 启动后台线程
+        self._bg_thread = QThread()
+        self._bg_worker = IndexBuildWorker(self.app, knowledge_base)
+        self._bg_worker.moveToThread(self._bg_thread)
 
-                self.app.plugin_manager.run_hook('build_retrieval_index', knowledge_base)
-                self.log(f"✓ Index built with {len(knowledge_base)} items.", "SUCCESS")
+        self._bg_thread.started.connect(self._bg_worker.run)
+        self._bg_worker.finished.connect(self._bg_thread.quit)
+        self._bg_worker.finished.connect(self._bg_worker.deleteLater)
+        self._bg_thread.finished.connect(self._bg_thread.deleteLater)
 
-            except Exception as e:
-                self.log(f"⚠ Index build failed: {str(e)}", "WARNING")
-                logger.error(f"Retrieval index build error: {e}", exc_info=True)
+        self._bg_worker.finished.connect(lambda: self.log("Background index update complete.", "INFO"))
 
-        # 在后台线程执行
-        threading.Thread(target=build_task, daemon=True).start()
+        self._bg_thread.start()
+
+    def _on_index_build_complete(self):
+        """索引构建完成的回调"""
+        self.log("✓ Knowledge base ready.", "SUCCESS")
+        self._execute_batch_translation()
+
+    def _execute_batch_translation(self):
+        """执行实际的批量翻译逻辑 (原 start_translation 的后半部分)"""
+        self.lbl_status.setText(_("Phase 2b: Translating..."))
+        self.progress_bar.setRange(0, len(self.target_items))
+        self.progress_bar.setValue(0)
+
+        # 注入智能提示词结构
+        self._inject_smart_prompt_structure()
+
+        # 连接AI管理器信号
+        self._connect_ai_manager_signals()
+
+        current_temp = self.temp_spinbox.value()
+        concurrency = self.thread_spinbox.value()
+        repair_limit = self.repair_spinbox.value()
+        timeout = self.timeout_spinbox.value()
+
+        config_snapshot = self._capture_context_config()
+        context_provider = lambda ts_id: self._worker_context_provider(ts_id, config_snapshot)
+
+        # 开始批量翻译
+        self.app.ai_manager.start_batch(
+            self.target_items,
+            context_provider,
+            concurrency_override=concurrency,
+            temperature=current_temp,
+            self_repair_limit=repair_limit,
+            api_timeout=timeout
+        )
 
     def _inject_smart_prompt_structure(self):
         """注入智能翻译专用提示词结构"""
