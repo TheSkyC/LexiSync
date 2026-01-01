@@ -347,7 +347,7 @@ class PluginManager:
                         if isinstance(res, list):
                             flat_list.extend(res)
                     return flat_list
-                if hook_name in ['on_file_tree_context_menu', 'on_table_context_menu']:
+                if hook_name in ['on_file_tree_context_menu', 'on_table_context_menu', 'register_resource_viewers']:
                     flat_list = [item for sublist in all_results for item in sublist]
                     return flat_list
                 if hook_name in ['add_statusbar_widgets', 'register_settings_pages', 'register_ai_placeholders']:

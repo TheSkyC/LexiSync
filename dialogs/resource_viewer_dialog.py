@@ -33,6 +33,8 @@ class ResourceViewerDialog(QDialog):
         self.initial_source_key = initial_source_key
         self.initial_db_type = initial_db_type
 
+        self.custom_services = {}
+
         self._init_service()
 
         # 分页
@@ -48,12 +50,21 @@ class ResourceViewerDialog(QDialog):
 
     def _init_service(self):
         """初始化服务"""
+        if hasattr(self.app, 'plugin_manager'):
+            viewers = self.app.plugin_manager.run_hook('register_resource_viewers')
+            if viewers:
+                for v in viewers:
+                    self.custom_services[v['id']] = v
+
         if self.mode == 'tm':
             self.service = self.app.tm_service
             self.title_prefix = _("Translation Memory Viewer")
-        else:
+        elif self.mode == 'glossary':
             self.service = self.app.glossary_service
             self.title_prefix = _("Glossary Viewer")
+        elif self.mode in self.custom_services:
+            self.service = self.custom_services[self.mode]['service']
+            self.title_prefix = self.custom_services[self.mode]['name']
 
         self.db_path = None
 
@@ -149,6 +160,9 @@ class ResourceViewerDialog(QDialog):
         self.mode_selector = QComboBox()
         self.mode_selector.addItem(_("Translation Memory"), "tm")
         self.mode_selector.addItem(_("Glossary"), "glossary")
+
+        for mode_id, info in self.custom_services.items():
+            self.mode_selector.addItem(info['name'], mode_id)
 
         initial_index = self.mode_selector.findData(self.mode)
         if initial_index != -1:
@@ -317,24 +331,25 @@ class ResourceViewerDialog(QDialog):
     def _load_source_options(self):
         """加载来源选项"""
         try:
-            manifest_path = os.path.join(os.path.dirname(self.db_path), "manifest.json")
-
-            if self.mode == 'tm':
-                manifest = self.app.tm_service._read_manifest(manifest_path)
-                manual_key = 'manual'
+            if self.mode in self.custom_services:
+                manifest = self.service._read_manifest(None)
+                manual_key = None
             else:
-                manifest = self.app.glossary_service._read_manifest(manifest_path)
-                manual_key = 'manual_project' if self.app.is_project_mode else 'manual_global'
+                manifest_path = os.path.join(os.path.dirname(self.db_path), "manifest.json")
+                if self.mode == 'tm':
+                    manifest = self.app.tm_service._read_manifest(manifest_path)
+                    manual_key = 'manual'
+                else:
+                    manifest = self.app.glossary_service._read_manifest(manifest_path)
+                    manual_key = 'manual_project' if self.app.is_project_mode else 'manual_global'
 
             sources = list(manifest.get("imported_sources", {}).keys())
 
-            # 检查是否有手动录入
-            if self.service.get_entry_count_by_source(
+            if manual_key and self.service.get_entry_count_by_source(
                     os.path.dirname(self.db_path), manual_key
             ) > 0:
                 sources.insert(0, manual_key)
 
-            # 添加到下拉框
             self.source_combo.addItems(sources)
 
             # 如果有初始筛选，选中它

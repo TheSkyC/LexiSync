@@ -4,6 +4,7 @@
 from plugins.plugin_base import PluginBase
 from .core import RetrievalCore
 from .ui.settings_dialog import SettingsDialog
+from .utils.cache_service import CacheViewerService
 from PySide6.QtWidgets import QMessageBox
 import os
 import logging
@@ -25,7 +26,7 @@ class RetrievalEnhancerPlugin(PluginBase):
         return self._("Provides advanced semantic retrieval using TF-IDF or Local LLM (ONNX).")
 
     def version(self) -> str:
-        return "2.2.0"
+        return "2.3.0"
 
     def author(self) -> str:
         return "TheSkyC"
@@ -59,6 +60,12 @@ class RetrievalEnhancerPlugin(PluginBase):
         return False
 
     # --- Hooks ---
+    def register_resource_viewers(self) -> list:
+        return [{
+            'id': 'retrieval_cache',
+            'name': self._("Retrieval Cache Viewer"),
+            'service': CacheViewerService(self.core.cache_db_path)
+        }]
 
     def build_retrieval_index(self, data_list: list):
         """Hook called by SmartTranslationDialog to build index."""

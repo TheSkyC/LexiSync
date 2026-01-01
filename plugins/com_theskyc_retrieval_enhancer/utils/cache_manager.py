@@ -12,6 +12,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class CacheManager:
     def __init__(self, db_path):
         self.db_path = db_path
@@ -27,11 +28,18 @@ class CacheManager:
                         hash TEXT NOT NULL,
                         model_name TEXT NOT NULL,
                         vector BLOB NOT NULL,
+                        text TEXT,  -- New column
                         last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         PRIMARY KEY (hash, model_name)
                     )
                 """)
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_model ON embeddings (model_name)")
+                try:
+                    conn.execute("SELECT text FROM embeddings LIMIT 1")
+                except sqlite3.OperationalError:
+                    logger.info("Migrating cache db: adding 'text' column")
+                    conn.execute("ALTER TABLE embeddings ADD COLUMN text TEXT")
+
                 conn.commit()
         except Exception as e:
             logger.error(f"Failed to init cache db: {e}")
@@ -41,11 +49,11 @@ class CacheManager:
         hashes = {self._hash_text(t): t for t in texts}
         result = {}
         try:
-            with self._lock, sqlite3.connect(self.db_path) as conn: # [ADD] lock
+            with self._lock, sqlite3.connect(self.db_path) as conn:
                 hash_keys = list(hashes.keys())
                 batch_size = 900
                 for i in range(0, len(hash_keys), batch_size):
-                    batch = hash_keys[i:i+batch_size]
+                    batch = hash_keys[i:i + batch_size]
                     placeholders = ','.join('?' for _ in batch)
                     query = f"SELECT hash, vector FROM embeddings WHERE model_name = ? AND hash IN ({placeholders})"
                     cursor = conn.execute(query, [model_name] + batch)
@@ -65,11 +73,11 @@ class CacheManager:
         for text, vector in text_vector_map.items():
             h = self._hash_text(text)
             blob = vector.tobytes()
-            data_to_insert.append((h, model_name, blob))
+            data_to_insert.append((h, model_name, blob, text))
         try:
             with self._lock, sqlite3.connect(self.db_path) as conn:
                 conn.executemany(
-                    "INSERT OR IGNORE INTO embeddings (hash, model_name, vector) VALUES (?, ?, ?)",
+                    "INSERT OR IGNORE INTO embeddings (hash, model_name, vector, text) VALUES (?, ?, ?, ?)",
                     data_to_insert
                 )
                 conn.commit()
