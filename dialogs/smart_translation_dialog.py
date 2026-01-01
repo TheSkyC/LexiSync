@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class IndexBuildWorker(QObject):
     finished = Signal()
+    progress = Signal(int)
 
     def __init__(self, app, knowledge_base):
         super().__init__()
@@ -39,7 +40,11 @@ class IndexBuildWorker(QObject):
     def run(self):
         try:
             if self.knowledge_base:
-                self.app.plugin_manager.run_hook('build_retrieval_index', self.knowledge_base)
+                self.app.plugin_manager.run_hook(
+                    'build_retrieval_index',
+                    self.knowledge_base,
+                    progress_callback=self.progress.emit
+                )
         except Exception as e:
             logger.error(f"Index build failed: {e}")
         finally:
@@ -810,6 +815,11 @@ class SmartTranslationDialog(QDialog):
         self.lbl_tm_threshold.setEnabled(tm_enabled and is_fuzzy)
         self.spin_tm_threshold.setEnabled(tm_enabled and is_fuzzy)
 
+    def _on_index_build_progress(self, percent):
+        if percent >= self._next_progress_milestone:
+            self.log(f"Building index: {percent}%...", "INFO")
+            self._next_progress_milestone += 25
+
     def open_test_lab(self):
         self._cache_glossary_from_ui()
 
@@ -1322,13 +1332,14 @@ class SmartTranslationDialog(QDialog):
 
             if knowledge_base:
                 self.log(f"Building retrieval index with {len(knowledge_base)} items...", "INFO")
-
+                self._next_progress_milestone = 25
                 # 启动索引构建线程
                 self.index_thread = QThread()
                 self.index_worker = IndexBuildWorker(self.app, knowledge_base)
                 self.index_worker.moveToThread(self.index_thread)
 
                 self.index_thread.started.connect(self.index_worker.run)
+                self.index_worker.progress.connect(self._on_index_build_progress)
                 self.index_worker.finished.connect(self.index_thread.quit)
                 self.index_worker.finished.connect(self._on_index_build_complete)
                 self.index_thread.finished.connect(self.index_thread.deleteLater)

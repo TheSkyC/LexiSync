@@ -17,10 +17,10 @@ class RetrievalBackend(ABC):
         pass
 
     @abstractmethod
-    def build_index(self, data_list: List[Dict[str, str]]) -> bool:
+    def build_index(self, data_list: List[Dict[str, str]], progress_callback=None) -> bool:
         """
         Build index from data.
-        data_list: [{'source': '...', 'target': '...'}, ...]
+        progress_callback: function(int) -> None
         """
         pass
 

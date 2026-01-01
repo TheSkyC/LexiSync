@@ -155,13 +155,14 @@ class OnnxBackend(RetrievalBackend):
         norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
         return embeddings / np.clip(norm, a_min=1e-9, a_max=None)
 
-    def build_index(self, data_list: list) -> bool:
+    def build_index(self, data_list: list, progress_callback=None) -> bool:
         if not self.is_available(): return False
         try:
             self.indexed_data = data_list
             corpus = [item['source'] for item in data_list]
             cached_vectors = self.cache_manager.get_vectors(corpus, self.model_id)
             missing_texts = [t for t in corpus if t not in cached_vectors]
+
             logger.info(
                 f"[OnnxBackend] Cache Stats - Total: {len(corpus)}, Hits: {len(cached_vectors)}, Misses: {len(missing_texts)}")
 
@@ -169,12 +170,20 @@ class OnnxBackend(RetrievalBackend):
                 logger.info(f"Computing embeddings for {len(missing_texts)} new items...")
                 batch_size = 32
                 new_vectors_map = {}
-                for i in range(0, len(missing_texts), batch_size):
+                total_missing = len(missing_texts)
+
+                for i in range(0, total_missing, batch_size):
+                    if progress_callback:
+                        percent = int((i / total_missing) * 100)
+                        progress_callback(percent)
+
                     batch = missing_texts[i:i + batch_size]
                     embeddings = self._compute_embeddings(batch)
                     if embeddings is not None:
                         for j, text in enumerate(batch):
                             new_vectors_map[text] = embeddings[j]
+
+                # Save remaining
                 self.cache_manager.save_vectors(new_vectors_map, self.model_id)
                 cached_vectors.update(new_vectors_map)
 
@@ -184,11 +193,8 @@ class OnnxBackend(RetrievalBackend):
                     final_list.append(cached_vectors[text])
                     valid_indices.append(i)
 
-            if final_list:
-                self.index_embeddings = np.vstack(final_list)
-                self.indexed_data = [data_list[i] for i in valid_indices]
-                return True
-            return False
+            if progress_callback: progress_callback(100)
+            return True
         except Exception as e:
             logger.error(f"ONNX build failed: {e}", exc_info=True)
             return False

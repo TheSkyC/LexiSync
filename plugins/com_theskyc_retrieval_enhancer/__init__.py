@@ -26,7 +26,7 @@ class RetrievalEnhancerPlugin(PluginBase):
         return self._("Provides advanced semantic retrieval using TF-IDF or Local LLM (ONNX).")
 
     def version(self) -> str:
-        return "2.3.0"
+        return "2.4.0"
 
     def author(self) -> str:
         return "TheSkyC"
@@ -67,10 +67,10 @@ class RetrievalEnhancerPlugin(PluginBase):
             'service': CacheViewerService(self.core.cache_db_path)
         }]
 
-    def build_retrieval_index(self, data_list: list):
+    def build_retrieval_index(self, data_list: list, progress_callback=None):
         """Hook called by SmartTranslationDialog to build index."""
         logger.info(f"[RetrievalPlugin] Building index for {len(data_list)} items...")
-        result = self.core.build_index(data_list)
+        result = self.core.build_index(data_list, progress_callback)
         logger.info(f"[RetrievalPlugin] Build index result: {result}")
         return result
 

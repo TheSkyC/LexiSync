@@ -86,16 +86,16 @@ class RetrievalCore:
         self.active_backend = None
         logger.info("[RetrievalCore] All backend indexes have been cleared.")
 
-    def build_index(self, data_list):
+    def build_index(self, data_list, progress_callback=None):
         # 优先尝试 ONNX
         if self.onnx_backend.is_available():
-            if self.onnx_backend.build_index(data_list):
+            if self.onnx_backend.build_index(data_list, progress_callback):
                 self.active_backend = self.onnx_backend
                 return True
 
         # 降级到 TF-IDF
         if self.tfidf_backend.is_available():
-            if self.tfidf_backend.build_index(data_list):
+            if self.tfidf_backend.build_index(data_list, progress_callback):
                 self.active_backend = self.tfidf_backend
                 return True
 
