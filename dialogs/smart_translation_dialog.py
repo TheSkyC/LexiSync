@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QThread, Signal, QObject, QEvent
 from dialogs.test_translation_dialog import TestTranslationDialog
 from dialogs.interactive_review_dialog import InteractiveReviewDialog
+from dialogs.save_glossary_dialog import SaveGlossaryOptionsDialog, GlossaryConflictDialog
 from services.smart_translation_service import SmartTranslationService
 from services.ai_worker import AIWorker
 from utils.enums import AIOperationType
@@ -19,9 +20,11 @@ from ui_components.tooltip import Tooltip
 from ui_components.styled_button import StyledButton
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
+import os
 import re
 import json
 import uuid
+from datetime import datetime
 import threading
 import logging
 
@@ -565,7 +568,7 @@ class SmartTranslationDialog(QDialog):
         strat_layout.addWidget(context_box)
 
         # Analysis Options
-        self.chk_analyze = QCheckBox(_("Auto-analyze Style & Terminology"))
+        self.chk_analyze = QCheckBox(_("Auto-analyze Style && Terminology"))
         self.chk_analyze.setChecked(True)
         strat_layout.addWidget(self.chk_analyze)
 
@@ -718,11 +721,22 @@ class SmartTranslationDialog(QDialog):
         """创建术语表编辑器"""
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(5, 0, 0, 0)
-        layout.addWidget(QLabel(_("Extracted Glossary:")))
+
+        # Header with button
+        header_layout = QHBoxLayout()
+        header_layout.addWidget(QLabel(_("Extracted Glossary:")))
+        header_layout.addStretch()
+
+        self.btn_save_glossary = StyledButton(_("Save to Glossary..."), on_click=self.on_save_glossary_clicked,
+                                              btn_type="primary", size="small")
+        header_layout.addWidget(self.btn_save_glossary)
+
+        layout.addLayout(header_layout)
 
         self.table_glossary = QTableWidget()
+
         self.table_glossary.setColumnCount(3)
+
         self.table_glossary.setHorizontalHeaderLabels(["", _("Source"), _("Target")])
 
         # 设置列宽行为
@@ -824,6 +838,113 @@ class SmartTranslationDialog(QDialog):
         if percent >= self._next_progress_milestone:
             self.log(f"Building index: {percent}%...", "INFO")
             self._next_progress_milestone += 25
+
+    def on_save_glossary_clicked(self):
+        # 1. 收集选中的术语
+        entries_to_save = []
+        for row in range(self.table_glossary.rowCount()):
+            check_item = self.table_glossary.item(row, 0)
+            if check_item and check_item.checkState() == Qt.Checked:
+                src_item = self.table_glossary.item(row, 1)
+                tgt_item = self.table_glossary.item(row, 2)
+                if src_item and tgt_item:
+                    src = src_item.text().strip()
+                    tgt = tgt_item.text().strip()
+                    ctx = src_item.data(Qt.UserRole) or ""
+                    if src and tgt:
+                        entries_to_save.append({'source': src, 'target': tgt, 'context': ctx})
+
+        if not entries_to_save:
+            QMessageBox.warning(self, _("Warning"), _("No terms selected to save."))
+            return
+
+        # 2. 弹出选项对话框
+        opt_dialog = SaveGlossaryOptionsDialog(self, self.app.is_project_mode)
+        if not opt_dialog.exec():
+            return
+
+        options = opt_dialog.get_data()
+        target_db = options['target_db']
+        strategy = options['strategy']
+        save_context = options['save_context']
+
+        # 3. 确定数据库路径
+        db_path = self.app.glossary_service.project_db_path if target_db == 'project' else self.app.glossary_service.global_db_path
+        if not db_path:
+            QMessageBox.critical(self, _("Error"), _("Target database not available."))
+            return
+
+        source_lang = self.app.source_language
+        target_lang = self.app._get_target_language() if hasattr(self.app,
+                                                                 '_get_target_language') else self.app.target_language
+        current_filename = "Unknown File"
+        if self.app.is_project_mode:
+            current_filename = self.app.get_current_active_filename()
+        elif self.app.current_po_file_path:
+            current_filename = os.path.basename(self.app.current_po_file_path)
+        elif self.app.current_code_file_path:
+            current_filename = os.path.basename(self.app.current_code_file_path)
+
+        source_key = f"smart_extract::{current_filename}"
+        display_name = f"{current_filename} (Smart Extract)"
+
+        # 4. 检查冲突 (传入 target_lang)
+        src_terms = [e['source'] for e in entries_to_save]
+        conflicts = self.app.glossary_service.find_conflicts(db_path, src_terms, source_lang, target_lang)
+
+        # 5. 准备最终保存列表
+        final_entries = []
+
+        # 如果策略是手动，且有冲突，弹出解决对话框
+        resolutions = {}
+        if strategy == 'manual' and conflicts:
+            conflict_dialog = GlossaryConflictDialog(self, conflicts, entries_to_save)
+            if not conflict_dialog.exec():
+                return
+            resolutions = conflict_dialog.resolutions
+
+        for entry in entries_to_save:
+            src_lower = entry['source'].lower()
+            action = 'new'
+            term_id = None
+
+            if src_lower in conflicts:
+                conflict_info = conflicts[src_lower]
+                term_id = conflict_info['id']
+
+                if strategy == 'manual':
+                    action = resolutions.get(src_lower, 'skip')
+                else:
+                    action = strategy
+
+            final_entries.append({
+                'source': entry['source'],
+                'target': entry['target'],
+                'comment': entry['context'] if save_context else "",
+                'action': action,
+                'term_id': term_id
+            })
+
+        # 6. 执行保存
+        success, msg = self.app.glossary_service.batch_save_entries(
+            db_path, final_entries, source_lang, target_lang, source_key
+        )
+
+        if success:
+            saved_count = len([e for e in final_entries if e['action'] != 'skip'])
+
+            # 获取当前该 Key 下的总数（累加）
+            glossary_dir = os.path.dirname(db_path)
+            total_count = self.app.glossary_service.get_entry_count_by_source(glossary_dir, source_key)
+
+            self.app.glossary_service.register_source_in_manifest(
+                glossary_dir, source_key, display_name, total_count, source_lang, target_lang
+            )
+
+            QMessageBox.information(self, _("Success"), msg)
+            self.app.glossary_analysis_cache.clear()
+        else:
+            QMessageBox.critical(self, _("Error"), msg)
 
     def open_test_lab(self):
         self._cache_glossary_from_ui()
@@ -1178,6 +1299,7 @@ class SmartTranslationDialog(QDialog):
 
     def _populate_glossary_table(self, markdown_text, terms_data=None):
         """从Markdown文本填充术语表"""
+        logger.info(f"Populating glossary table. Markdown length: {len(markdown_text)}")
         self.table_glossary.setSortingEnabled(False)
         self.table_glossary.setRowCount(0)
 
@@ -1194,7 +1316,6 @@ class SmartTranslationDialog(QDialog):
 
         lines = markdown_text.strip().split('\n')
         parsed_entries = []
-
         for line in lines:
             # 跳过分隔线和空行
             if not line.strip() or '---' in line or '===' in line:
@@ -1217,12 +1338,15 @@ class SmartTranslationDialog(QDialog):
             context = context_map.get(source_text, "")
             parsed_entries.append((source_text, target_text, context))
 
+        logger.info(f"Parsed {len(parsed_entries)} entries.")
+
         # 排序
         parsed_entries.sort(key=lambda x: x[0].lower())
 
         # 添加行
         for src, tgt, ctx in parsed_entries:
             self._add_glossary_row(src, tgt, ctx)
+        logger.info(f"Table row count after population: {self.table_glossary.rowCount()}")
 
         self.table_glossary.setSortingEnabled(True)
 

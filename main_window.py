@@ -490,7 +490,7 @@ class LexiSyncApp(QMainWindow):
         self.action_stop_ai_batch_translation.setEnabled(False)
         self.tools_menu.addAction(self.action_stop_ai_batch_translation)
 
-        self.action_smart_batch_translate = QAction(_("Intelligent Batch Translation..."), self)
+        self.action_smart_batch_translate = QAction(_("Intelligent Translation..."), self)
         self.action_smart_batch_translate.triggered.connect(self.show_smart_translation_dialog)
         self.action_smart_batch_translate.setEnabled(False)
         self.tools_menu.addAction(self.action_smart_batch_translate)

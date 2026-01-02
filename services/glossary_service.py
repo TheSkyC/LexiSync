@@ -132,6 +132,37 @@ class GlossaryService:
             logger.error(f"Schema creation failed: {e}")
             raise
 
+    def register_source_in_manifest(self, glossary_dir_path: str, source_key: str, display_name: str,
+                                    term_count: int, source_lang: str, target_lang: str):
+        manifest_path = os.path.join(glossary_dir_path, MANIFEST_FILE)
+
+        try:
+            with self._lock:
+                manifest = self._read_manifest(manifest_path)
+
+                # UTC 时间
+                import datetime
+                now_utc = datetime.datetime.utcnow().isoformat() + "Z"
+
+                # 覆盖更新信息
+                manifest.setdefault("imported_sources", {})[source_key] = {
+                    "filepath": display_name,
+                    "filesize": 0,
+                    "last_modified": now_utc,
+                    "checksum": "smart_extract",
+                    "import_date": now_utc,
+                    "term_count": term_count,
+                    "source_lang": source_lang,
+                    "target_langs": [target_lang],
+                    "is_bidirectional": True
+                }
+
+                self._write_manifest(manifest_path, manifest)
+                return True
+        except Exception as e:
+            logger.error(f"Failed to register source in manifest: {e}")
+            return False
+
     def get_translations(self, term_text: str, source_lang: str, target_lang: str = None,
                          include_reverse: bool = True) -> Optional[List[Dict]]:
         with self._lock:
@@ -754,6 +785,141 @@ class GlossaryService:
         except Exception as e:
             logger.error(f"Failed to calculate checksum for {filepath}: {e}")
             raise
+
+    def find_conflicts(self, db_path: str, source_terms: List[str], source_lang: str, target_lang: str) -> Dict[
+        str, dict]:
+        """
+        批量检查术语是否存在（精确匹配源语言和目标语言）。
+        返回: { 'source_term_lower': {'id': term_id, 'existing_targets': ['tgt1', 'tgt2']} }
+        """
+        if not db_path or not os.path.exists(db_path):
+            return {}
+
+        conflicts = {}
+        # 归一化
+        terms_lower = [t.strip().lower() for t in source_terms]
+
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                chunk_size = 900
+                for i in range(0, len(terms_lower), chunk_size):
+                    chunk = terms_lower[i:i + chunk_size]
+                    placeholders = ','.join('?' for _ in chunk)
+
+                    query = f"""
+                        SELECT t_source.id, t_source.term_text as src_text, t_target.term_text as tgt_text
+                        FROM terms t_source
+                        JOIN term_translations tt ON t_source.id = tt.source_term_id
+                        JOIN terms t_target ON tt.target_term_id = t_target.id
+                        WHERE t_source.term_text_lower IN ({placeholders}) 
+                          AND t_source.language_code = ?
+                          AND t_target.language_code = ?
+                    """
+                    # 传入 source_lang 和 target_lang
+                    cursor.execute(query, chunk + [source_lang, target_lang])
+
+                    rows = cursor.fetchall()
+                    for row in rows:
+                        term_id = row['id']
+                        src_text = row['src_text']
+                        tgt_text = row['tgt_text']
+
+                        key = src_text.strip().lower()
+
+                        if key not in conflicts:
+                            conflicts[key] = {'id': term_id, 'original_text': src_text, 'existing_targets': []}
+
+                        conflicts[key]['existing_targets'].append(tgt_text)
+
+        except Exception as e:
+            logger.error(f"Failed to find conflicts: {e}")
+
+        return conflicts
+
+    def batch_save_entries(self, db_path: str, entries: List[Dict], source_lang: str, target_lang: str,
+                           source_key: str):
+        """
+        批量保存条目。
+        entries: List of dicts:
+        {
+            'source': str,
+            'target': str,
+            'comment': str,
+            'action': 'new' | 'skip' | 'overwrite' | 'merge',
+            'term_id': int (optional, for overwrite/merge)
+        }
+        """
+        if not db_path: return False, "No database path."
+
+        count_success = 0
+        try:
+            with self._lock, self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("BEGIN IMMEDIATE TRANSACTION")
+
+                for entry in entries:
+                    action = entry.get('action', 'new')
+                    if action == 'skip':
+                        continue
+
+                    src_text = entry['source'].strip()
+                    tgt_text = entry['target'].strip()
+                    comment = entry.get('comment', "")
+
+                    source_id = entry.get('term_id')
+
+                    # 1. 处理源术语 ID
+                    if not source_id:
+                        cursor.execute("SELECT id FROM terms WHERE term_text_lower = ? AND language_code = ?",
+                                       (src_text.lower(), source_lang))
+                        row = cursor.fetchone()
+                        if row:
+                            source_id = row['id']
+                        else:
+                            cursor.execute(
+                                "INSERT INTO terms (term_text, term_text_lower, language_code) VALUES (?, ?, ?)",
+                                (src_text, src_text.lower(), source_lang)
+                            )
+                            source_id = cursor.lastrowid
+
+                    # 2. 处理 Overwrite (先删除旧关系)
+                    if action == 'overwrite':
+                        cursor.execute("DELETE FROM term_translations WHERE source_term_id = ?", (source_id,))
+
+                    # 3. 获取或插入目标术语 ID
+                    cursor.execute("SELECT id FROM terms WHERE term_text_lower = ? AND language_code = ?",
+                                   (tgt_text.lower(), target_lang))
+                    row_tgt = cursor.fetchone()
+                    if row_tgt:
+                        target_id = row_tgt['id']
+                    else:
+                        cursor.execute(
+                            "INSERT INTO terms (term_text, term_text_lower, language_code) VALUES (?, ?, ?)",
+                            (tgt_text, tgt_text.lower(), target_lang)
+                        )
+                        target_id = cursor.lastrowid
+
+                    # 4. 插入关系 (Merge 模式下如果是重复关系则忽略)
+                    try:
+                        cursor.execute(
+                            """
+                            INSERT OR IGNORE INTO term_translations 
+                            (source_term_id, target_term_id, is_bidirectional, comment, source_manifest_key)
+                            VALUES (?, ?, ?, ?, ?)
+                            """,
+                            (source_id, target_id, 1, comment, source_key)
+                        )
+                        count_success += 1
+                    except sqlite3.IntegrityError:
+                        pass  # 关系已存在
+
+                cursor.execute("COMMIT")
+                return True, _("Successfully saved {count} entries.").format(count=count_success)
+
+        except Exception as e:
+            logger.error(f"Batch save failed: {e}", exc_info=True)
+            return False, str(e)
 
     def add_entry(self, db_path: str, source_term: str, target_term: str, source_lang: str, target_lang: str, comment: str = "", source_key: str = "manual"):
         if not db_path:
