@@ -415,7 +415,7 @@ class SmartTranslationDialog(QDialog):
         super().__init__(parent)
         self.app = parent
         self.setWindowTitle(_("Intelligent Batch Translation"))
-        self.resize(900, 700)
+        self.resize(800, 700)
         self.setModal(False)
         self.tooltip = Tooltip(self)
         self._last_hovered_row = -1
@@ -487,7 +487,7 @@ class SmartTranslationDialog(QDialog):
         self.scope_combo.addItems([
             _("All Untranslated Items"),
             _("All Items"),
-            _("Selected Items Only")
+            _("Selected Items")
         ])
         scope_layout.addWidget(self.scope_combo)
 
@@ -497,29 +497,19 @@ class SmartTranslationDialog(QDialog):
         """创建策略选择组"""
         strat_group = QGroupBox(_("Strategy"))
         strat_layout = QVBoxLayout(strat_group)
+        strat_layout.setSpacing(15)
 
-        # Term Extraction Mode
-        term_layout = QHBoxLayout()
-        term_layout.addWidget(QLabel(_("Term Extraction:")))
-        self.term_mode_combo = QComboBox()
-        self.term_mode_combo.addItem(_("Fast (Frequency-based)"), "fast")
-        self.term_mode_combo.addItem(_("Deep (AI-Scan)"), "deep")
-        self.term_mode_combo.setToolTip(
-            _("Fast: Scans high-frequency words locally, then AI filters them. Cheap & Fast.\n"
-              "Deep: AI reads ALL texts to find terms. Expensive & Slow but thorough.")
-        )
-        term_layout.addWidget(self.term_mode_combo)
-        strat_layout.addLayout(term_layout)
-
-        # --- Context Settings Sub-group ---
+        # --- Group 1: Context Sources (Used during Translation Phase) ---
         context_box = QGroupBox(_("Context Sources"))
         context_box.setStyleSheet(
-            "QGroupBox { border: 1px solid #DDD; border-radius: 4px; margin-top: 5px; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 3px; }")
+            "QGroupBox { border: 1px solid #DDD; border-radius: 4px; margin-top: 5px; } "
+            "QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 3px; font-weight: bold; }"
+        )
         context_layout = QGridLayout(context_box)
-        context_layout.setContentsMargins(10, 10, 10, 10)
+        context_layout.setContentsMargins(10, 15, 10, 10)
         context_layout.setVerticalSpacing(8)
 
-        # Neighboring Context
+        # 1. Neighboring Context
         self.chk_neighbors = QCheckBox(_("Neighboring Text"))
         self.chk_neighbors.setChecked(True)
         self.chk_neighbors.setToolTip(
@@ -529,13 +519,12 @@ class SmartTranslationDialog(QDialog):
         self.spin_neighbors.setRange(1, 20)
         self.spin_neighbors.setValue(3)
         self.spin_neighbors.setSuffix(_(" lines"))
-        self.spin_neighbors.setToolTip(_("Number of preceding and succeeding lines to include."))
         self.chk_neighbors.stateChanged.connect(self.spin_neighbors.setEnabled)
 
         context_layout.addWidget(self.chk_neighbors, 0, 0)
         context_layout.addWidget(self.spin_neighbors, 0, 1)
 
-        # Semantic Retrieval
+        # 2. Semantic Retrieval
         self.chk_retrieval = QCheckBox(_("Semantic Retrieval"))
         self.chk_retrieval.setChecked(True)
         self.chk_retrieval.setToolTip(
@@ -545,7 +534,6 @@ class SmartTranslationDialog(QDialog):
         self.spin_retrieval.setRange(1, 20)
         self.spin_retrieval.setValue(5)
         self.spin_retrieval.setSuffix(_(" items"))
-        self.spin_retrieval.setToolTip(_("Number of similar examples to retrieve."))
         self.chk_retrieval.stateChanged.connect(self.spin_retrieval.setEnabled)
 
         # Retrieval Mode Combo
@@ -553,7 +541,6 @@ class SmartTranslationDialog(QDialog):
         self.combo_retrieval_mode.addItem(_("Auto (Best)"), "auto")
         self.combo_retrieval_mode.addItem("TF-IDF", "tfidf")
         self.combo_retrieval_mode.addItem("Local LLM", "onnx")
-        self.combo_retrieval_mode.setToolTip(_("Select the algorithm for semantic retrieval."))
 
         # Check availability via plugin
         plugin = self.app.plugin_manager.get_plugin("com_theskyc_retrieval_enhancer")
@@ -573,7 +560,7 @@ class SmartTranslationDialog(QDialog):
         retrieval_opts.addWidget(self.combo_retrieval_mode)
         context_layout.addLayout(retrieval_opts, 1, 1)
 
-        # TM & Glossary
+        # 3. TM
         tm_container = QWidget()
         tm_layout = QHBoxLayout(tm_container)
         tm_layout.setContentsMargins(0, 0, 0, 0)
@@ -593,9 +580,7 @@ class SmartTranslationDialog(QDialog):
         self.spin_tm_threshold.setRange(0.1, 1.0)
         self.spin_tm_threshold.setSingleStep(0.05)
         self.spin_tm_threshold.setValue(0.75)
-        self.spin_tm_threshold.setToolTip(_("Minimum similarity score (0.0 - 1.0)"))
 
-        # Logic connections
         self.chk_use_tm.toggled.connect(self.rb_tm_exact.setEnabled)
         self.chk_use_tm.toggled.connect(self.rb_tm_fuzzy.setEnabled)
         self.chk_use_tm.toggled.connect(self._update_tm_threshold_state)
@@ -603,44 +588,81 @@ class SmartTranslationDialog(QDialog):
         self.rb_tm_fuzzy.toggled.connect(self._update_tm_threshold_state)
 
         tm_layout.addWidget(self.chk_use_tm)
-        tm_layout.addSpacing(10)
+        tm_layout.addStretch(1)  # [CHANGED] Push options to the right
         tm_layout.addWidget(self.rb_tm_exact)
+        tm_layout.addSpacing(10)
         tm_layout.addWidget(self.rb_tm_fuzzy)
-        tm_layout.addSpacing(5)
+        tm_layout.addSpacing(15)
         tm_layout.addWidget(self.lbl_tm_threshold)
         tm_layout.addWidget(self.spin_tm_threshold)
-        tm_layout.addStretch()
+        # Removed trailing addStretch() to align right
 
         context_layout.addWidget(tm_container, 2, 0, 1, 2)
 
-        # Glossary
+        # 4. Glossary Database
         self.chk_use_glossary_db = QCheckBox(_("Existing Glossary Database"))
         self.chk_use_glossary_db.setChecked(True)
+        self.chk_use_glossary_db.setToolTip(_("Use established terms from the database during translation."))
         context_layout.addWidget(self.chk_use_glossary_db, 3, 0, 1, 2)
 
         strat_layout.addWidget(context_box)
 
-        self.chk_inject_glossary = QCheckBox(_("Inject Existing Glossary (Consistency)"))
+        # --- Group 2: Analysis & Glossary Generation (Phase 1) ---
+        analysis_box = QGroupBox(_("Analysis & Glossary Generation"))
+        analysis_box.setStyleSheet(
+            "QGroupBox { border: 1px solid #DDD; border-radius: 4px; margin-top: 5px; } "
+            "QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 3px; font-weight: bold; }"
+        )
+        analysis_layout = QVBoxLayout(analysis_box)
+        analysis_layout.setContentsMargins(10, 15, 10, 10)
+
+        # Master Switch
+        self.chk_analyze = QCheckBox(_("Auto-analyze Style & Terminology"))
+        self.chk_analyze.setChecked(True)
+        self.chk_analyze.setStyleSheet("font-weight: bold;")
+        analysis_layout.addWidget(self.chk_analyze)
+
+        # Sub-options Container
+        analysis_options_widget = QWidget()
+        analysis_options_layout = QVBoxLayout(analysis_options_widget)
+        analysis_options_layout.setContentsMargins(20, 0, 0, 0)  # Indent
+        analysis_options_layout.setSpacing(8)
+
+        # Generation Method
+        method_layout = QHBoxLayout()
+        method_layout.addWidget(QLabel(_("Generation Method:")))
+        self.term_mode_combo = QComboBox()
+        self.term_mode_combo.addItem(_("Fast (Frequency-based)"), "fast")
+        self.term_mode_combo.addItem(_("Deep (AI-Scan)"), "deep")
+        self.term_mode_combo.setToolTip(
+            _("Fast: Scans high-frequency words locally, then AI filters them. Cheap & Fast.\n"
+              "Deep: AI reads ALL texts to find terms. Expensive & Slow but thorough.")
+        )
+        method_layout.addWidget(self.term_mode_combo)
+        method_layout.addStretch()
+        analysis_options_layout.addLayout(method_layout)
+
+        # Reference Existing Terms
+        self.chk_inject_glossary = QCheckBox(_("Reference Existing Terms"))
         self.chk_inject_glossary.setChecked(True)
         self.chk_inject_glossary.setToolTip(
-            _("Uses existing glossary terms as reference to ensure consistent translation of compound words "
-              "(e.g., using 'File' -> '文件' when translating 'File Manager').\n"
-              "Also prevents re-extracting known terms.")
+            _("During analysis, check against the existing glossary to avoid duplicates and ensure compound word consistency (e.g., 'File Manager' uses 'File').")
         )
-        strat_layout.addWidget(self.chk_inject_glossary)
+        analysis_options_layout.addWidget(self.chk_inject_glossary)
 
-        # Analysis Options
-        self.chk_analyze = QCheckBox(_("Auto-analyze Style && Terminology"))
-        self.chk_analyze.setChecked(True)
-        strat_layout.addWidget(self.chk_analyze)
-
-        self.chk_term_context = QCheckBox(_("Provide Context for Terminology Disambiguation"))
+        # Enhance Context
+        self.chk_term_context = QCheckBox(_("Enhance Terms with Contextual Examples"))
         self.chk_term_context.setChecked(False)
         self.chk_term_context.setToolTip(
-            _("During the terminology analysis phase, this provides example sentences or AI explanations "
-              "to ensure words with multiple meanings are translated correctly.")
+            _("Provide example sentences for each extracted term to help the AI disambiguate meanings (e.g., 'Home' as 'Base' vs 'Menu').")
         )
-        strat_layout.addWidget(self.chk_term_context)
+        analysis_options_layout.addWidget(self.chk_term_context)
+
+        analysis_layout.addWidget(analysis_options_widget)
+        strat_layout.addWidget(analysis_box)
+
+        # Logic: Disable sub-options if analysis is unchecked
+        self.chk_analyze.toggled.connect(analysis_options_widget.setEnabled)
 
         return strat_group
 
