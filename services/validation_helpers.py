@@ -10,7 +10,7 @@ ALL_PUNC_KEYS = set(PUNCTUATION_MAP.keys())
 ALL_PUNC_VALUES = set(PUNCTUATION_MAP.values())
 
 # --- 正则表达式 ---
-RE_PRINTF = re.compile(r'%%|%\d+|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]')
+RE_PRINTF = re.compile(r'%%|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]|%\d+')
 RE_PYTHON_BRACE = re.compile(r'\{([_a-zA-Z0-9\s\.\:\[\]]*)\}')
 RE_REPEATED_WORD = re.compile(r'\b(\w+)\s+\1\b', re.IGNORECASE)
 RE_URL = re.compile(r'(?:ht|f)tps?://[^"<> \t\n\r]+|www\.[^"<> \t\n\r]+|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/[^"<> \t\n\r]*')
@@ -20,7 +20,7 @@ RE_HTML_ENTITY_NUM = re.compile(r'&#(x[0-9a-fA-F]+|\d+);')
 STRFTIME_EQUIVALENCE = {
     # 月份：全称(B)、缩写(b/h) -> 映射为 数字(m)
     'B': 'm', 'b': 'm', 'h': 'm',
-    # 年份：全称(Y) -> 映射为 缩写(y) (反之亦可，只要统一即可)
+    # 年份：全称(Y) -> 映射为 缩写(y)
     'Y': 'y',
     # 日期：不补零(e) -> 映射为 补零(d)
     'e': 'd',
@@ -290,43 +290,47 @@ def _compare_counts(src_list, tgt_list):
     return missing, extra
 
 
-def check_printf(source, target):
-    def get_normalized_printf_matches(text):
+def check_printf(source, target, mode='loose'):
+    def get_normalized_printf_matches(text, label="Text"):
         matches = []
+        raw_matches = []  # For logging
+
         for m in RE_PRINTF.finditer(text):
             full_match = m.group(0)
 
             # 过滤误判
             if not full_match.startswith('%') or (
-                    len(full_match) > 1 and full_match[1].isdigit() and full_match != '%%'):
+                    len(full_match) > 1 and full_match[1].isdigit() and '$' not in full_match and full_match != '%%'):
                 pass
             elif re.fullmatch(r'%\s+[a-zA-Z]', full_match):
                 if m.end() < len(text) and text[m.end()].isalpha():
                     continue
 
-            # 标准化逻辑
-            if full_match == '%%':
-                normalized_match = '%%'
-            elif full_match[1:].isdigit():
-                # Qt/Boost (%1)
-                normalized_match = full_match
-            else:
-                # 标准 Printf
-                # 移除修饰符 (%-d, %02d, %+d -> %d)
-                normalized_match = re.sub(r'[-+ 0#]', '', full_match)
-                # 移除宽度和精度数字 (%2d -> %d, %.2f -> %f)
-                normalized_match = re.sub(r'(?<!\$)\d+(\.\d+)?', '', normalized_match)
-                # 替换最后一个字符为通用代表字符
-                # 例如: %B -> %m, %Y -> %y
-                type_char = normalized_match[-1]
-                if type_char in STRFTIME_EQUIVALENCE:
-                    normalized_match = normalized_match[:-1] + STRFTIME_EQUIVALENCE[type_char]
+            normalized_match = full_match
+
+            if mode == 'loose':
+                if full_match == '%%':
+                    normalized_match = '%%'
+                elif full_match[1:].isdigit() and '$' not in full_match:
+                    normalized_match = full_match
+                else:
+                    # 1. 移除位置参数 (例如 %1$s -> %s)
+                    normalized_match = re.sub(r'\d+\$', '', normalized_match)
+                    # 2. 移除修饰符 (-+ 0#)
+                    normalized_match = re.sub(r'[-+ 0#]', '', normalized_match)
+                    # 3. 移除宽度和精度 (例如 %2d -> %d, %.2f -> %f)
+                    normalized_match = re.sub(r'\d+(\.\d+)?', '', normalized_match)
+                    # 4. 归一化时间格式字符
+                    type_char = normalized_match[-1]
+                    if type_char in STRFTIME_EQUIVALENCE:
+                        normalized_match = normalized_match[:-1] + STRFTIME_EQUIVALENCE[type_char]
 
             matches.append(normalized_match)
+            raw_matches.append(full_match)
         return matches
 
-    src_fmt = get_normalized_printf_matches(source)
-    tgt_fmt = get_normalized_printf_matches(target)
+    src_fmt = get_normalized_printf_matches(source, "Source")
+    tgt_fmt = get_normalized_printf_matches(target, "Target")
 
     missing, extra = _compare_counts(src_fmt, tgt_fmt)
     if missing or extra:

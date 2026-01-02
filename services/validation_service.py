@@ -83,7 +83,8 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     translation_clean = validation_helpers.strip_accelerators(translation, accelerator_marker)
 
     # --- 1. 代码安全检查 ---
-    if err := validation_helpers.check_printf(original, translation):
+    printf_mode = rules.get("printf", {}).get("mode", "loose")
+    if err := validation_helpers.check_printf(original, translation, mode=printf_mode):
         _report(ts_obj, config, "printf", WarningType.PRINTF_MISMATCH, err)
 
     if err := validation_helpers.check_python_brace(original, translation):

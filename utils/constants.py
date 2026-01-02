@@ -20,7 +20,22 @@ DYNAMIC = "Dynamic Instruction"
 
 DEFAULT_VALIDATION_RULES = {
     # --- 代码安全 ---
-    "printf": {"enabled": True, "level": "error", "label": _("Printf Format (%s, %d)")},
+    "printf": {
+        "enabled": True,
+        "level": "error",
+        "label": _("Printf Format (%s, %d)"),
+        "modes": {
+            "strict": {
+                "name": _("Strict"),
+                "description": _("Format specifiers must match exactly (e.g. %s != %1$s).")
+            },
+            "loose": {
+                "name": _("Loose"),
+                "description": _("Allows positional arguments and width changes (e.g. %s == %1$s).")
+            }
+        },
+        "default_mode": "loose"
+    },
     "python_brace": {"enabled": True, "level": "error", "label": _("Python Brace ({}, {name})")},
     "html_tags": {"enabled": True, "level": "error", "label": _("HTML/XML Tags")},
     "url_email": {"enabled": True, "level": "warning", "label": _("URL & Email")},
