@@ -201,7 +201,11 @@ class PromptManagerDialog(QDialog):
         self.preset_combo.blockSignals(True)
         self.preset_combo.clear()
         for p in self.prompts_data:
-            type_str = _("Translation") if p.get("type") == "translation" else _("Correction")
+            if p.get("type") == "translation":
+                type_str = _("Translation Prompt")
+            else:
+                type_str = _("Correction Prompt")
+
             self.preset_combo.addItem(f"{p['name']} ({type_str})", p['id'])
 
         if 0 <= self.current_prompt_index < len(self.prompts_data):
