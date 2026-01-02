@@ -311,33 +311,30 @@ class AISettingsPage(BaseSettingsPage):
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(15)
 
-        # API
-        api_group = QGroupBox(_("API Settings"))
-        api_layout = QFormLayout(api_group)
-        self.api_key_entry = QLineEdit(self.app.config.get("ai_api_key", ""))
-        self.api_key_entry.setEchoMode(QLineEdit.Password)
-        self.api_base_url_entry = QLineEdit(self.app.config.get("ai_api_base_url", DEFAULT_API_URL))
-        self.model_name_entry = QLineEdit(self.app.config.get("ai_model_name", "deepseek-chat"))
-        self.test_btn = QPushButton(_("Test Connection"))
-        self.test_btn.clicked.connect(self.on_test_connection)
-        api_layout.addRow(_("API Key:"), self.api_key_entry)
-        api_layout.addRow(_("API Base URL:"), self.api_base_url_entry)
-        api_layout.addRow(_("Model Name:"), self.model_name_entry)
-        api_layout.addRow("", self.test_btn)
-        content_layout.addWidget(api_group)
+        # Model Management Section
+        model_group = QGroupBox(_("AI Models"))
+        model_layout = QVBoxLayout(model_group)
+
+        # Show currently active model
+        self.lbl_active_model = QLabel()
+        self.update_active_model_label()
+        model_layout.addWidget(self.lbl_active_model)
+
+        self.btn_manage_models = QPushButton(_("Manage AI Models..."))
+        self.btn_manage_models.setMinimumHeight(36)
+        self.btn_manage_models.clicked.connect(self.open_model_manager)
+        model_layout.addWidget(self.btn_manage_models)
+
+        content_layout.addWidget(model_group)
 
         # Performance
-        perf_group = QGroupBox(_("Performance"))
+        perf_group = QGroupBox(_("Global Settings"))
         perf_layout = QFormLayout(perf_group)
         self.interval_spinbox = QSpinBox()
         self.interval_spinbox.setRange(0, 10000)
         self.interval_spinbox.setSuffix(" ms")
-        self.interval_spinbox.setValue(self.app.config.get("ai_api_interval", 500))
-        self.concurrent_spinbox = QSpinBox()
-        self.concurrent_spinbox.setRange(1, 16)
-        self.concurrent_spinbox.setValue(self.app.config.get("ai_max_concurrent_requests", 8))
+        self.interval_spinbox.setValue(self.app.config.get("ai_api_interval", 200))
         perf_layout.addRow(_("API Call Interval:"), self.interval_spinbox)
-        perf_layout.addRow(_("Max Concurrent Requests:"), self.concurrent_spinbox)
         content_layout.addWidget(perf_group)
 
         # Context & Prompts
@@ -358,35 +355,40 @@ class AISettingsPage(BaseSettingsPage):
         self.use_original_context_check = QCheckBox(_("Use nearby original text as context"))
         self.use_original_context_check.setChecked(self.app.config.get("ai_use_original_context", True))
         context_layout.addWidget(self.use_original_context_check)
+
         original_neighbor_layout = QHBoxLayout()
         original_neighbor_layout.addSpacing(20)
         original_neighbor_layout.addWidget(QLabel(_("Use nearby")))
         self.original_neighbors_spinbox = QSpinBox()
         self.original_neighbors_spinbox.setRange(0, 20)
-        self.original_neighbors_spinbox.setValue(self.app.config.get("ai_original_context_neighbors", 8))
+        self.original_neighbors_spinbox.setValue(self.app.config.get("ai_original_context_neighbors", 3))
         self.original_neighbors_spinbox.setMinimumWidth(70)
         original_neighbor_layout.addWidget(self.original_neighbors_spinbox)
         original_neighbor_layout.addWidget(QLabel(_("original strings (0 for all)")))
         original_neighbor_layout.addStretch()
         context_layout.addLayout(original_neighbor_layout)
+
         self.use_translation_context_check = QCheckBox(_("Use nearby translated text as context"))
-        self.use_translation_context_check.setChecked(self.app.config.get("ai_use_translation_context", True))
+        self.use_translation_context_check.setChecked(self.app.config.get("ai_use_translation_context", False))
         context_layout.addWidget(self.use_translation_context_check)
+
         translation_neighbor_layout = QHBoxLayout()
         translation_neighbor_layout.addSpacing(20)
         translation_neighbor_layout.addWidget(QLabel(_("Use nearby")))
         self.translation_neighbors_spinbox = QSpinBox()
         self.translation_neighbors_spinbox.setRange(0, 20)
-        self.translation_neighbors_spinbox.setValue(self.app.config.get("ai_context_neighbors", 8))
+        self.translation_neighbors_spinbox.setValue(self.app.config.get("ai_context_neighbors", 4))
         self.translation_neighbors_spinbox.setMinimumWidth(70)
         translation_neighbor_layout.addWidget(self.translation_neighbors_spinbox)
         translation_neighbor_layout.addWidget(QLabel(_("translations (0 for all)")))
         translation_neighbor_layout.addStretch()
         context_layout.addLayout(translation_neighbor_layout)
+
         self.use_original_context_check.stateChanged.connect(self.original_neighbors_spinbox.setEnabled)
         self.use_translation_context_check.stateChanged.connect(self.translation_neighbors_spinbox.setEnabled)
         self.original_neighbors_spinbox.setEnabled(self.use_original_context_check.isChecked())
         self.translation_neighbors_spinbox.setEnabled(self.use_translation_context_check.isChecked())
+
         context_layout.addSpacing(15)
         self.prompt_button = QPushButton(_("Prompt Manager..."))
         self.prompt_button.clicked.connect(self.open_prompt_manager)
@@ -394,8 +396,28 @@ class AISettingsPage(BaseSettingsPage):
         context_layout.addWidget(self.prompt_button)
         content_layout.addWidget(context_group)
         content_layout.addStretch(1)
+
         scroll_area.setWidget(content_widget)
         self.page_layout.addWidget(scroll_area)
+
+    def update_active_model_label(self):
+        active_id = self.app.config.get("active_ai_model_id", "")
+        models = self.app.config.get("ai_models", [])
+        active_model = next((m for m in models if m["id"] == active_id), None)
+
+        if active_model:
+            text = f"<b>{_('Current Active Model')}:</b> {active_model.get('name', 'Unknown')}<br>" \
+                   f"<span style='color:gray'>{active_model.get('model_name', '')} @ {active_model.get('api_base_url', '')}</span>"
+        else:
+            text = f"<b>{_('Current Active Model')}:</b> {_('None Selected')}"
+
+        self.lbl_active_model.setText(text)
+
+    def open_model_manager(self):
+        from dialogs.ai_model_manager_dialog import AIModelManagerDialog
+        dialog = AIModelManagerDialog(self, self.app)
+        if dialog.exec():
+            self.update_active_model_label()
 
     def _populate_prompt_combos(self):
         self.trans_prompt_combo.clear()
@@ -422,20 +444,14 @@ class AISettingsPage(BaseSettingsPage):
         self._populate_prompt_combos()  # 刷新列表
 
     def save_settings(self):
-        self.app.config["ai_api_key"] = self.api_key_entry.text()
-        self.app.config["ai_api_base_url"] = self.api_base_url_entry.text()
-        self.app.config["ai_model_name"] = self.model_name_entry.text()
         self.app.config["ai_api_interval"] = self.interval_spinbox.value()
-        self.app.config["ai_max_concurrent_requests"] = self.concurrent_spinbox.value()
         self.app.config["ai_use_original_context"] = self.use_original_context_check.isChecked()
         self.app.config["ai_original_context_neighbors"] = self.original_neighbors_spinbox.value()
         self.app.config["ai_use_translation_context"] = self.use_translation_context_check.isChecked()
         self.app.config["ai_context_neighbors"] = self.translation_neighbors_spinbox.value()
         self.app.config["active_translation_prompt_id"] = self.trans_prompt_combo.currentData()
         self.app.config["active_correction_prompt_id"] = self.fix_prompt_combo.currentData()
-        self.app.ai_translator.api_key = self.api_key_entry.text()
-        self.app.ai_translator.api_url = self.api_base_url_entry.text()
-        self.app.ai_translator.model_name = self.model_name_entry.text()
+        return False
 
     def on_test_connection(self):
         api_key = self.api_key_entry.text().strip()

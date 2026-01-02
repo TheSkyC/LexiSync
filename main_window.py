@@ -497,6 +497,9 @@ class LexiSyncApp(QMainWindow):
 
         self.tools_menu.addSeparator()
 
+        self.action_ai_model_manager = QAction(_("AI Model Manager..."), self)
+        self.action_ai_model_manager.triggered.connect(self.show_ai_model_manager)
+        self.tools_menu.addAction(self.action_ai_model_manager)
 
         self.action_resource_viewer = QAction(_("Resource Viewer..."), self)
         self.action_resource_viewer.triggered.connect(self.show_resource_viewer)
@@ -4319,6 +4322,11 @@ class LexiSyncApp(QMainWindow):
                                  _("Error reloading translatable text: {error}").format(error=e))
             self.update_statusbar(_("Reload failed."), persistent=True)
         self.update_counts_display()
+
+    def show_ai_model_manager(self):
+        from dialogs.ai_model_manager_dialog import AIModelManagerDialog
+        dialog = AIModelManagerDialog(self, self)
+        dialog.exec()
 
     def show_resource_viewer(self):
         from dialogs.resource_viewer_dialog import ResourceViewerDialog

@@ -1,6 +1,7 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+import uuid
 import json
 import os
 from copy import deepcopy
@@ -55,11 +56,39 @@ def load_config():
     config_data.setdefault("ui_state", {})
     config_data.setdefault("favorite_language_pairs", [])
     # AI settings
-    config_data.setdefault("ai_api_key", "")
-    config_data.setdefault("ai_api_base_url", DEFAULT_API_URL)
-    config_data.setdefault("ai_model_name", "deepseek-chat")
-    config_data.setdefault("ai_api_interval", 200)
-    config_data.setdefault("ai_max_concurrent_requests", 1)
+    config_data.setdefault("ai_models", [])
+    config_data.setdefault("active_ai_model_id", "")
+    legacy_key = config_data.get("ai_api_key", "")
+    if legacy_key and not config_data["ai_models"]:
+        new_id = str(uuid.uuid4())
+        legacy_model = {
+            "id": new_id,
+            "name": "Default (Legacy)",
+            "provider": "Custom",
+            "api_base_url": config_data.get("ai_api_base_url", DEFAULT_API_URL),
+            "api_key": legacy_key,
+            "model_name": config_data.get("ai_model_name", "deepseek-chat"),
+            "concurrency": config_data.get("ai_max_concurrent_requests", 1),
+            "timeout": 60
+        }
+        config_data["ai_models"].append(legacy_model)
+        config_data["active_ai_model_id"] = new_id
+
+    if not config_data["ai_models"]:
+        default_id = str(uuid.uuid4())
+        config_data["ai_models"].append({
+            "id": default_id,
+            "name": "DeepSeek V3",
+            "provider": "DeepSeek",
+            "api_base_url": "https://api.deepseek.com",
+            "api_key": "",
+            "model_name": "deepseek-chat",
+            "concurrency": 8,
+            "timeout": 60
+        })
+        config_data["active_ai_model_id"] = default_id
+
+
     config_data.setdefault("ai_use_translation_context", False)
     config_data.setdefault("ai_context_neighbors", 0)
     config_data.setdefault("ai_use_original_context", True)

@@ -361,3 +361,71 @@ SUPPORTED_LANGUAGES = {
     "繁體中文": "zh_TW",
     "Zulu": "zu",
 }
+
+AI_PROVIDER_PRESETS = {
+    "DeepSeek": {
+        "api_base_url": "https://api.deepseek.com",
+        "model_name": "deepseek-chat",
+        "concurrency": 8
+    },
+    "SiliconFlow": {
+        "api_base_url": "https://api.siliconflow.cn/v1",
+        "model_name": "deepseek-ai/DeepSeek-V3",
+        "concurrency": 5
+    },
+    "OpenAI": {
+        "api_base_url": "https://api.openai.com/v1",
+        "model_name": "gpt-4o",
+        "concurrency": 5
+    },
+    "火山引擎": {
+        "api_base_url": "https://ark.cn-beijing.volces.com/api/v3",
+        "model_name": "ep-",
+        "concurrency": 16
+    },
+    "Moonshot (Kimi)": {
+        "api_base_url": "https://api.moonshot.cn/v1",
+        "model_name": "moonshot-v1-8k",
+        "concurrency": 3
+    },
+    "Ollama (Local)": {
+        "api_base_url": "http://localhost:11434/v1",
+        "model_name": "qwen2.5:7b",
+        "concurrency": 1
+    },
+    "LM Studio (Local)": {
+        "api_base_url": "http://localhost:1234/v1",
+        "model_name": "local-model",
+        "concurrency": 1
+    },
+    "vLLM (Local)": {
+        "api_base_url": "http://localhost:8000/v1",
+        "model_name": "default",
+        "concurrency": 4
+    },
+    "OpenRouter": {
+        "api_base_url": "https://openrouter.ai/api/v1",
+        "model_name": "deepseek/deepseek-chat",
+        "concurrency": 5
+    },
+    "Groq": {
+        "api_base_url": "https://api.groq.com/openai/v1",
+        "model_name": "llama3-70b-8192",
+        "concurrency": 5
+    },
+    "Zhipu AI": {
+        "api_base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "model_name": "glm-4-flash",
+        "concurrency": 5
+    },
+    "AiHubMix": {
+        "api_base_url": "https://aihubmix.com/v1",
+        "model_name": "gpt-4o",
+        "concurrency": 5
+    },
+    "Custom": {
+        "api_base_url": "",
+        "model_name": "",
+        "concurrency": 1
+    }
+}
