@@ -338,10 +338,19 @@ class SmartTranslationService:
         )
 
     @staticmethod
-    def extract_terms_batch_prompt(text_batch):
-        return (
+    def extract_terms_batch_prompt(text_batch, existing_terms_str=""):
+        prompt = (
             f"Analyze these UI texts and extract domain-specific terms:\n{text_batch}\n\n"
+        )
 
+        if existing_terms_str:
+            prompt += (
+                "## EXISTING GLOSSARY (IGNORE THESE):\n"
+                "The following terms are ALREADY in the glossary. DO NOT extract them unless they appear in a completely new context:\n"
+                f"{existing_terms_str}\n\n"
+            )
+
+        prompt += (
             "## CRITICAL REQUIREMENTS:\n"
             "1. **Term Length**: Each term must be 1-4 words MAXIMUM (e.g., 'Apply TM', 'Add File', 'Dashboard')\n"
             "2. **No Descriptions in Term**: The 'term' field must contain ONLY the term itself, NO parentheses, NO explanations\n"
@@ -364,20 +373,9 @@ class SmartTranslationService:
             "- 'term': The exact term (1-4 words, no parentheses)\n"
             "- 'context': Brief explanation or usage context\n\n"
 
-            "## Examples:\n"
-            "✅ CORRECT:\n"
-            '[{"term": "Apply TM", "context": "Apply translation memory to current segment"},\n'
-            ' {"term": "Source File", "context": "Original document to be translated"},\n'
-            ' {"term": "Glossary Entry", "context": "Term definition in terminology database"}]\n\n'
-
-            "❌ INCORRECT:\n"
-            '[{"term": "Apply TM to Untranslated Segments Only", "context": "..."}, // Too long!\n'
-            ' {"term": "Source File (original)", "context": "..."}, // Has parentheses!\n'
-            ' {"term": "file", "context": "..."}, // Too generic!\n'
-            ' {"term": "Click the button to save", "context": "..."}] // Complete sentence!\n\n'
-
-            "Output ONLY the JSON array, no markdown code blocks, no explanations."
+            "Output ONLY the JSON array."
         )
+        return prompt
 
     @staticmethod
     def extract_terms_prompt(samples):
@@ -440,9 +438,8 @@ class SmartTranslationService:
             "- Do NOT wrap in code blocks"
         )
 
-
     @staticmethod
-    def translate_terms_with_context_prompt(terms_data_json, target_lang, style_guide=""):
+    def translate_terms_with_context_prompt(terms_data_json, target_lang, style_guide="", reference_glossary_str=""):
         style_instruction = ""
         if style_guide:
             style_instruction = (
@@ -451,15 +448,25 @@ class SmartTranslationService:
                 f"{style_guide}\n\n"
             )
 
+        glossary_instruction = ""
+        if reference_glossary_str:
+            glossary_instruction = (
+                f"### Reference Glossary (Consistency Check)\n"
+                f"The following sub-terms/words appear in the input. You MUST use these existing translations to ensure consistency:\n"
+                f"{reference_glossary_str}\n\n"
+            )
+
         return (
             f"Translate these domain-specific terms into {target_lang}.\n"
             f"I have provided context/usage examples for each term to help you disambiguate.\n\n"
             f"{style_instruction}"
+            f"{glossary_instruction}"
             f"Input Data: {terms_data_json}\n\n"
 
             "Translation Requirements:\n"
             "1. Use the provided 'context' to choose the correct meaning.\n"
-            "2. Maintain professional terminology standards.\n\n"
+            "2. Maintain professional terminology standards.\n"
+            "3. If a term contains words from the 'Reference Glossary', combine them naturally.\n\n"
 
             "Output Format (MANDATORY):\n"
             "Create a markdown table with this EXACT format:\n"
