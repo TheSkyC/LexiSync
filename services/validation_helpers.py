@@ -253,27 +253,46 @@ def check_quotes(source, target, mode='flexible'):
     return None
 
 
-def strip_accelerators(text, marker):
-    if not marker or marker not in text:
+def strip_accelerators(text, markers):
+    """
+    Removes accelerator markers from text.
+    markers: a list of marker characters (e.g. ['&', '_'])
+    """
+    if not markers or not text:
         return text
-    pattern_in_parens = re.compile(r'\s*\(' + re.escape(marker) + r'.\)')
-    cleaned_text = pattern_in_parens.sub('', text)
-    pattern_prefix = re.compile(r'(?<!' + re.escape(marker) + r')' + re.escape(marker) + r'(\w)')
-    cleaned_text = pattern_prefix.sub(r'\1', cleaned_text)
+
+    cleaned_text = text
+    for marker in markers:
+        if marker in cleaned_text:
+            # Remove pattern in parens: "File (&F)" -> "File "
+            pattern_in_parens = re.compile(r'\s*\(' + re.escape(marker) + r'.\)')
+            cleaned_text = pattern_in_parens.sub('', cleaned_text)
+
+            # Remove prefix pattern: "&File" -> "File"
+            pattern_prefix = re.compile(r'(?<!' + re.escape(marker) + r')' + re.escape(marker) + r'(\w)')
+            cleaned_text = pattern_prefix.sub(r'\1', cleaned_text)
     return cleaned_text
 
 
-def check_accelerators(source, target, marker):
+def check_accelerators(source, target, markers):
     """检查加速键标记符的数量是否一致，并正确处理上下文。"""
-    if not marker:
+    if not markers:
         return None
+    errors = []
+    for marker in markers:
+        pattern = re.compile(r'(?<!' + re.escape(marker) + r')' + re.escape(marker) + r'\w')
 
-    pattern = re.compile(r'(?<!' + re.escape(marker) + r')' + re.escape(marker) + r'\w')
-    src_count = len(pattern.findall(source))
-    tgt_count = len(pattern.findall(target))
-    if src_count != tgt_count:
-        return f"Accelerator '{marker}' count mismatch (source: {src_count}, target: {tgt_count})."
+        src_count = len(pattern.findall(source))
+        tgt_count = len(pattern.findall(target))
+
+        if src_count != tgt_count:
+            errors.append(f"Accelerator '{marker}' count mismatch (source: {src_count}, target: {tgt_count})")
+
+    if errors:
+        return " | ".join(errors)
+
     return None
+
 
 def _compare_counts(src_list, tgt_list):
     src_counts = Counter(src_list)

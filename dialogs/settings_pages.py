@@ -278,9 +278,9 @@ class AppearanceSettingsPage(BaseSettingsPage):
         form_layout.setLabelAlignment(Qt.AlignLeft)
 
         self.accelerator_marker_edit = QLineEdit(self.app.config.get('accelerator_marker', '&'))
-        self.accelerator_marker_edit.setMaxLength(1)
-        self.accelerator_marker_edit.setToolTip(_("Enter a single character used for menu accelerators (e.g., &, _)."))
-        form_layout.addRow(_("Accelerator Marker:"), self.accelerator_marker_edit)
+        self.accelerator_marker_edit.setMaxLength(20)
+        self.accelerator_marker_edit.setToolTip(_("Enter characters used for menu accelerators, separated by comma (e.g., '&, _')."))
+        form_layout.addRow(_("Accelerator Marker(s):"), self.accelerator_marker_edit)
 
         self.font_button = QPushButton(_("Font Settings..."))
         self.font_button.clicked.connect(self.app.show_font_settings_dialog)

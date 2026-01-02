@@ -75,12 +75,16 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     rules = config.get("validation_rules", {})
 
     # 加速键检查
-    accelerator_marker = config.get('accelerator_marker', '&')
-    if err := validation_helpers.check_accelerators(original, translation, accelerator_marker):
+    accelerator_markers_str = config.get('accelerator_marker', '&')
+    markers = [m.strip() for m in accelerator_markers_str.split(',') if m.strip()]
+    if not markers:
+        markers = ['&']
+    if err := validation_helpers.check_accelerators(original, translation, markers):
         _report(ts_obj, config, "accelerator", WarningType.ACCELERATOR_MISMATCH, _(err))
-    # 剥离加速键的文本
-    original_clean = validation_helpers.strip_accelerators(original, accelerator_marker)
-    translation_clean = validation_helpers.strip_accelerators(translation, accelerator_marker)
+
+    # 剥离加速键
+    original_clean = validation_helpers.strip_accelerators(original, markers)
+    translation_clean = validation_helpers.strip_accelerators(translation, markers)
 
     # --- 1. 代码安全检查 ---
     printf_mode = rules.get("printf", {}).get("mode", "loose")
