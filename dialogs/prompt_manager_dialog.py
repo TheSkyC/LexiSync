@@ -226,13 +226,10 @@ class PromptManagerDialog(QDialog):
 
     def save_tree_to_current_memory(self):
         if not self.prompts_data: return
-        # sync_data_from_tree 会更新 self.prompt_structure
-        # 我们需要确保 self.prompt_structure 指向的是 self.prompts_data 中的正确对象
         self.sync_data_from_tree()
         self.prompts_data[self.current_prompt_index]["structure"] = self.prompt_structure
 
     def add_new_preset(self):
-        # 简单实现：复制当前预设
         if not self.prompts_data: return
         new_preset = deepcopy(self.prompts_data[self.current_prompt_index])
         new_preset["id"] = str(uuid.uuid4())
@@ -256,13 +253,11 @@ class PromptManagerDialog(QDialog):
             self.load_current_prompt_to_tree()
 
     def edit_current_preset_meta(self):
-        # 这里应该弹出一个对话框修改 Name 和 Type，简化起见只修改 Name
         current = self.prompts_data[self.current_prompt_index]
         new_name, ok = QInputDialog.getText(self, _("Rename Preset"), _("Preset Name:"), text=current["name"])
         if ok and new_name:
             current["name"] = new_name
 
-            # 询问类型
             types = ["translation", "correction"]
             type_item, ok_type = QInputDialog.getItem(
                 self, _("Preset Type"), _("Select Usage Type:"),
@@ -393,7 +388,8 @@ class PromptManagerDialog(QDialog):
 
         self.app.save_config()
         self.app.update_statusbar(_("AI prompts updated."))
-        super(QDialog, self).accept()
+
+        super().accept()
 
     def reject(self):
         super().reject()
