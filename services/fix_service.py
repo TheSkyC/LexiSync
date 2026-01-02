@@ -12,6 +12,11 @@ PUNCTUATION_MAP = {
     'ja': {'.': '。', ',': '、', ':': '：', ';': '；', '?': '？', '!': '！', '(': '（', ')': '）'},
 }
 
+ALL_ENDING_PUNCTS = {
+    '.', ',', ':', ';', '?', '!', ')', ']', '}', '>', '"', "'",
+    '。', '，', '：', '；', '？', '！', '）', '】', '》', '”', '’', '、'
+}
+
 
 def get_fix_for_warning(ts_obj, warning_type, target_lang):
     """
@@ -55,13 +60,28 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
 
     # 5. 结尾标点修复
     if warning_type == WarningType.PUNCTUATION_MISMATCH_END:
-        src_last = original.rstrip()[-1] if original.strip() else ''
-        tgt_last = current_translation.rstrip()[-1] if current_translation.strip() else ''
-        lang_map = PUNCTUATION_MAP.get(target_lang, {})
-        expected_punct = lang_map.get(src_last, src_last)
-        if src_last in {'.', ',', ':', ';', '?', '!', ')'}:
+        src_strip = original.rstrip()
+        tgt_strip = current_translation.rstrip()
+
+        if not src_strip or not tgt_strip:
+            return None
+
+        src_last = src_strip[-1]
+        tgt_last = tgt_strip[-1]
+
+        is_src_punct = src_last in ALL_ENDING_PUNCTS
+        is_tgt_punct = tgt_last in ALL_ENDING_PUNCTS
+
+        if not is_src_punct and is_tgt_punct:
+            return current_translation.rstrip()[:-1]
+
+        # 情况 2: 原文有标点 -> 修正或补充
+        if is_src_punct:
+            lang_map = PUNCTUATION_MAP.get(target_lang, {})
+            expected_punct = lang_map.get(src_last, src_last)
+
             base_text = current_translation.rstrip()
-            if tgt_last in {'.', '。', ',', '，', ':', '：', ';', '；', '?', '？', '!', '！', ')', '）'}:
+            if is_tgt_punct:
                 base_text = base_text[:-1]
 
             return base_text + expected_punct
