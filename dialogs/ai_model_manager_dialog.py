@@ -249,7 +249,7 @@ class AIModelManagerDialog(QDialog):
             "• <b>Raw Mode:</b> End with <code>#</code> to disable auto-append.<br>"
             "<hr>"
         )
-        self.btn_help = HelpButton(self.base_help_text)  # Save reference
+        self.btn_help = HelpButton(self.base_help_text)
 
         url_label_layout.addWidget(lbl_url)
         url_label_layout.addWidget(self.btn_help)

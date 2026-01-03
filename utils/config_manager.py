@@ -1,15 +1,17 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import uuid
-import json
 import os
+import json
+import uuid
 from copy import deepcopy
 from utils.constants import (
-    CONFIG_FILE, DEFAULT_API_URL, DEFAULT_PROMPT_STRUCTURE, DEFAULT_CORRECTION_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS,
+    CONFIG_FILE, DEFAULT_PROMPT_STRUCTURE, DEFAULT_CORRECTION_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS,
     DEFAULT_EXTRACTION_PATTERNS, DEFAULT_VALIDATION_RULES
 )
+from utils.security_utils import encrypt_text, decrypt_text
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,24 +57,14 @@ def load_config():
     config_data.setdefault("recent_files", [])
     config_data.setdefault("ui_state", {})
     config_data.setdefault("favorite_language_pairs", [])
+
     # AI settings
     config_data.setdefault("ai_models", [])
     config_data.setdefault("active_ai_model_id", "")
-    legacy_key = config_data.get("ai_api_key", "")
-    if legacy_key and not config_data["ai_models"]:
-        new_id = str(uuid.uuid4())
-        legacy_model = {
-            "id": new_id,
-            "name": "Default (Legacy)",
-            "provider": "Custom",
-            "api_base_url": config_data.get("ai_api_base_url", DEFAULT_API_URL),
-            "api_key": legacy_key,
-            "model_name": config_data.get("ai_model_name", "deepseek-chat"),
-            "concurrency": config_data.get("ai_max_concurrent_requests", 1),
-            "timeout": 60
-        }
-        config_data["ai_models"].append(legacy_model)
-        config_data["active_ai_model_id"] = new_id
+    # Decrypt API Keys
+    for model in config_data["ai_models"]:
+        if "api_key" in model:
+            model["api_key"] = decrypt_text(model["api_key"])
 
     if not config_data["ai_models"]:
         default_id = str(uuid.uuid4())
@@ -88,31 +80,27 @@ def load_config():
         })
         config_data["active_ai_model_id"] = default_id
 
-
+    # Global AI Context Settings
+    config_data.setdefault("ai_api_interval", 200)
     config_data.setdefault("ai_use_translation_context", False)
     config_data.setdefault("ai_context_neighbors", 0)
     config_data.setdefault("ai_use_original_context", True)
     config_data.setdefault("ai_original_context_neighbors", 3)
 
     # Prompt structure
-    # 1. 确保 ai_prompts 列表存在
     if "ai_prompts" not in config_data:
         config_data["ai_prompts"] = []
 
-    # 2. 迁移旧数据 (如果有)
-    if "ai_prompt_structure" in config_data:
-        has_default_trans = any(p["id"] == "default_translation" for p in config_data["ai_prompts"])
-        if not has_default_trans:
-            config_data["ai_prompts"].append({
-                "id": "default_translation",
-                "name": "Default Translation",
-                "type": "translation", # 类型：translation 或 correction
-                "structure": config_data["ai_prompt_structure"]
-            })
-        # 移除旧键，保持整洁 (可选，为了兼容性也可以保留)
-        config_data.pop("ai_prompt_structure", None)
+    # Ensure default prompts exist
+    has_default_trans = any(p["id"] == "default_translation" for p in config_data["ai_prompts"])
+    if not has_default_trans:
+        config_data["ai_prompts"].append({
+            "id": "default_translation",
+            "name": "Default Translation",
+            "type": "translation",
+            "structure": deepcopy(DEFAULT_PROMPT_STRUCTURE)
+        })
 
-    # 3. 确保有默认的纠错预设
     has_default_fix = any(p["id"] == "default_correction" for p in config_data["ai_prompts"])
     if not has_default_fix:
         config_data["ai_prompts"].append({
@@ -122,7 +110,6 @@ def load_config():
             "structure": deepcopy(DEFAULT_CORRECTION_PROMPT_STRUCTURE)
         })
 
-    # 4. 设置当前激活的预设 ID
     config_data.setdefault("active_translation_prompt_id", "default_translation")
     config_data.setdefault("active_correction_prompt_id", "default_correction")
 
@@ -153,6 +140,7 @@ def load_config():
     config_data.setdefault("window_state", "")
     config_data.setdefault("window_geometry", "")
 
+    # Validation Rules
     if "validation_rules" not in config_data:
         config_data["validation_rules"] = deepcopy(DEFAULT_VALIDATION_RULES)
     else:
@@ -178,18 +166,27 @@ def load_config():
 
 
 def save_config(app_instance):
-    config = app_instance.config
-    config['extraction_patterns'] = app_instance.config.get("extraction_patterns", deepcopy(DEFAULT_EXTRACTION_PATTERNS))
+    config_to_save = deepcopy(app_instance.config)
+
+    # Encrypt API Keys
+    if "ai_models" in config_to_save:
+        for model in config_to_save["ai_models"]:
+            if "api_key" in model:
+                model["api_key"] = encrypt_text(model["api_key"])
+
+
+    config_to_save['extraction_patterns'] = app_instance.config.get("extraction_patterns",
+                                                                    deepcopy(DEFAULT_EXTRACTION_PATTERNS))
 
     if app_instance.current_project_path:
-        config["last_dir"] = os.path.dirname(app_instance.current_project_path)
+        config_to_save["last_dir"] = os.path.dirname(app_instance.current_project_path)
     elif app_instance.current_code_file_path:
-        config["last_dir"] = os.path.dirname(app_instance.current_code_file_path)
+        config_to_save["last_dir"] = os.path.dirname(app_instance.current_code_file_path)
     elif app_instance.current_po_file_path:
-        config["last_dir"] = os.path.dirname(app_instance.current_po_file_path)
+        config_to_save["last_dir"] = os.path.dirname(app_instance.current_po_file_path)
 
     try:
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=4, ensure_ascii=False)
+            json.dump(config_to_save, f, indent=4, ensure_ascii=False)
     except Exception as e:
         logger.error(f"Error saving config file: {e}")
