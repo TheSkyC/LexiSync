@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+from urllib.parse import urlparse, urlunparse
 from utils.constants import DEFAULT_API_URL
 from utils.localization import _, lang_manager
 
@@ -21,6 +22,7 @@ class AITranslator:
             raise ValueError(_("API Key not set."))
         if not requests:
             raise ImportError(_("'requests' library not found. AI translation feature is unavailable."))
+        full_url = self._normalize_url(self.api_url)
 
         headers = {
             "Content-Type": "application/json",
@@ -37,7 +39,7 @@ class AITranslator:
         }
 
         try:
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=timeout)
+            response = requests.post(full_url, headers=headers, json=payload, timeout=timeout)
             response.raise_for_status()
             result = response.json()
 
@@ -64,6 +66,7 @@ class AITranslator:
     def translate_stream(self, text_to_translate, system_prompt, temperature=None, timeout=45):
         if not self.api_key: raise ValueError(_("API Key not set."))
         if not requests: raise ImportError(_("'requests' library not found."))
+        full_url = self._normalize_url(self.api_url)
 
         headers = {
             "Content-Type": "application/json",
@@ -81,7 +84,7 @@ class AITranslator:
         }
 
         try:
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=timeout, stream=True)
+            response = requests.post(full_url, headers=headers, json=payload, timeout=timeout, stream=True)
             response.raise_for_status()
 
             for line in response.iter_lines():
@@ -118,3 +121,28 @@ class AITranslator:
             return True, f"{_('Connection successful. Test translation')} ('{source_text}' -> '{translation[:30]}')"
         except Exception as e:
             return False, f"{_('Connection failed')}:\n{str(e)}"
+
+
+    @staticmethod
+    def _normalize_url(url):
+        url = url.strip()
+
+        if url.endswith('#'):
+            return url[:-1]
+
+        parsed = urlparse(url)
+        original_path = parsed.path
+
+        path_lower = original_path.lower().rstrip('/')
+
+        # Case A: 已经是完整路径 (e.g., .../chat/completions 或 .../Chat/Completions)
+        if path_lower.endswith('/chat/completions'):
+            # 已经是完美的了，直接返回原 URL
+            return url
+        # Case B: 用户只写了一半 (e.g., .../v1/chat 或 .../chat)
+        elif path_lower.endswith('/chat'):
+            new_path = original_path.rstrip('/') + '/completions'
+        else:
+            new_path = original_path.rstrip('/') + '/chat/completions'
+
+        return urlunparse(parsed._replace(path=new_path))

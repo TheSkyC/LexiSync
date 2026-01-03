@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 import uuid
 import copy
+from services.ai_translator import AITranslator
+from ui_components.help_button import HelpButton
 from ui_components.styled_button import StyledButton
 from utils.path_utils import get_resource_path
 from utils.constants import AI_PROVIDER_PRESETS
@@ -226,22 +228,54 @@ class AIModelManagerDialog(QDialog):
         conn_group = QGroupBox(_("Connection Details"))
         conn_layout = QFormLayout(conn_group)
 
+        # -- API Base URL Row with Help Icon --
         self.base_url_edit = QLineEdit()
         self.base_url_edit.setPlaceholderText("https://api.example.com/v1")
         self.base_url_edit.textChanged.connect(self.save_current_form_to_buffer)
+        self.base_url_edit.textChanged.connect(self.update_url_tooltip)
 
+        # Container for Label + Help
+        url_label_container = QWidget()
+        url_label_layout = QHBoxLayout(url_label_container)
+        url_label_layout.setContentsMargins(0, 0, 0, 0)
+        url_label_layout.setSpacing(4)
+
+        lbl_url = QLabel(_("API Base URL:"))
+
+        # Base help text template
+        self.base_help_text = _(
+            "<b>Smart URL Handling:</b><br>"
+            "• <b>Default:</b> Automatically appends <code>/chat/completions</code>.<br>"
+            "• <b>Raw Mode:</b> End with <code>#</code> to disable auto-append.<br>"
+            "<hr>"
+        )
+        self.btn_help = HelpButton(self.base_help_text)  # Save reference
+
+        url_label_layout.addWidget(lbl_url)
+        url_label_layout.addWidget(self.btn_help)
+        url_label_layout.addStretch()
+
+        conn_layout.addRow(url_label_container, self.base_url_edit)
+
+        # Preview Label
+        self.url_preview_label = QLabel()
+        self.url_preview_label.setStyleSheet("color: #909399; font-size: 11px; margin-left: 2px;")
+        self.url_preview_label.setWordWrap(True)
+        conn_layout.addRow("", self.url_preview_label)
+
+        # -- API Key --
         self.api_key_edit = QLineEdit()
         self.api_key_edit.setEchoMode(QLineEdit.Password)
         self.api_key_edit.setPlaceholderText("sk-...")
         self.api_key_edit.textChanged.connect(self.save_current_form_to_buffer)
+        conn_layout.addRow(_("API Key:"), self.api_key_edit)
 
+        # -- Model Name --
         self.model_name_edit = QLineEdit()
         self.model_name_edit.setPlaceholderText("gpt-4o, deepseek-chat...")
         self.model_name_edit.textChanged.connect(self.save_current_form_to_buffer)
-
-        conn_layout.addRow(_("API Base URL:"), self.base_url_edit)
-        conn_layout.addRow(_("API Key:"), self.api_key_edit)
         conn_layout.addRow(_("Model Name:"), self.model_name_edit)
+
         right_layout.addWidget(conn_group)
 
         # 4. Performance
@@ -330,6 +364,7 @@ class AIModelManagerDialog(QDialog):
             self.current_editing_item = model_data
             self.name_edit.setText(model_data.get("name", ""))
             self.base_url_edit.setText(model_data.get("api_base_url", ""))
+            self.update_url_tooltip(self.base_url_edit.text())
             self.api_key_edit.setText(model_data.get("api_key", ""))
             self.model_name_edit.setText(model_data.get("model_name", ""))
             self.concurrency_spin.setValue(model_data.get("concurrency", 1))
@@ -364,6 +399,20 @@ class AIModelManagerDialog(QDialog):
             if self.current_editing_item["id"] == self.active_model_id:
                 display_name += f" ({_('Active')})"
             current_item.setText(display_name)
+
+    def update_url_tooltip(self, text):
+        final_url = AITranslator._normalize_url(text) if text else ""
+
+        if text.strip().endswith('#'):
+            mode_text = f"<span style='color:#E6A23C'>[{_('Raw Mode')}]</span>"
+        else:
+            mode_text = f"<span style='color:#67C23A'>[{_('Auto')}]</span>"
+
+        preview_html = f"<b>{_('Preview')}:</b><br>{mode_text} {final_url}"
+
+        # Combine base help with dynamic preview
+        full_tooltip = self.base_help_text + preview_html
+        self.btn_help.set_tooltip_text(full_tooltip)
 
     def apply_preset(self, index):
         if self.is_loading_ui or index <= 0: return
