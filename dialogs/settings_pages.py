@@ -8,74 +8,116 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QPixmap, QPainter
 from PySide6.QtCore import Qt
-from utils.localization import _, lang_manager
+from utils.path_utils import get_resource_path
 from utils.constants import DEFAULT_API_URL, DEFAULT_VALIDATION_RULES
+from utils.localization import _, lang_manager
 
 
 class BaseSettingsPage(QWidget):
     def __init__(self):
         super().__init__()
-        self.setStyleSheet("""
-            QGroupBox {
+
+        icon_down = get_resource_path("icons/chevron-down.svg").replace("\\", "/")
+        icon_up = get_resource_path("icons/chevron-up.svg").replace("\\", "/")
+
+        self.setStyleSheet(f"""
+            QGroupBox {{
                 border: 1px solid #E4E7ED;
                 border-radius: 4px;
                 margin-top: 10px;
                 padding: 15px;
                 font-weight: bold;
-            }
-            QGroupBox::title {
+                background-color: #FFFFFF;
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 padding: 0 5px;
                 left: 10px;
-            }
-            QLabel {
+                color: #303133;
+            }}
+            QLabel {{
                 font-size: 14px;
-            }
-            QLineEdit, QComboBox, QSpinBox {
+                color: #606266;
+            }}
+            QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {{
                 padding: 5px 8px;
                 border: 1px solid #DCDFE6;
                 border-radius: 4px;
                 min-height: 22px;
                 background-color: #FFFFFF;
-            }
-            QLineEdit:focus, QComboBox:focus, QSpinBox:focus {
+                color: #606266;
+            }}
+            QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {{
                 border-color: #409EFF;
-            }
-            QComboBox::drop-down {
+            }}
+
+            /* QComboBox 美化 */
+            QComboBox::drop-down {{
                 subcontrol-origin: padding;
                 subcontrol-position: top right;
-                width: 8px;
-                border-left-width: 1px;
-                border-left-color: #DCDFE6;
-                border-left-style: solid;
-                border-top-right-radius: 3px;
-                border-bottom-right-radius: 3px;
-            }
-            QSpinBox {
-                padding-right: 20px;
-            }
-            QSpinBox::up-button {
+                width: 24px;
+                border-left: 1px solid #DCDFE6;
+                border-top-right-radius: 4px;
+                border-bottom-right-radius: 4px;
+                background-color: #FAFAFA;
+            }}
+            QComboBox::drop-down:hover {{
+                background-color: #F0F2F5;
+            }}
+            QComboBox::drop-down:on {{
+                background-color: #E6F1FC;
+            }}
+            QComboBox::down-arrow {{
+                image: url("{icon_down}");
+                width: 12px;
+                height: 12px;
+            }}
+            QComboBox::down-arrow:on {{
+                image: url("{icon_up}");
+            }}
+
+            /* QSpinBox & QDoubleSpinBox 美化 */
+            QSpinBox, QDoubleSpinBox {{
+                padding-right: 24px;
+            }}
+            QSpinBox::up-button, QDoubleSpinBox::up-button {{
                 subcontrol-origin: border;
                 subcontrol-position: top right;
-                width: 16px;
-                border-left-width: 1px;
-                border-left-color: #E4E7ED;
-                border-left-style: solid;
-                border-top-right-radius: 3px;
-            }
-            QSpinBox::down-button {
+                width: 24px;
+                border-left: 1px solid #DCDFE6;
+                border-bottom: 1px solid #DCDFE6;
+                border-top-right-radius: 4px;
+                background-color: #FAFAFA;
+                margin-bottom: 0px;
+            }}
+            QSpinBox::down-button, QDoubleSpinBox::down-button {{
                 subcontrol-origin: border;
                 subcontrol-position: bottom right;
-                width: 16px;
-                border-top-width: 1px;
-                border-top-color: #E4E7ED;
-                border-top-style: solid;
-                border-left-width: 1px;
-                border-left-color: #E4E7ED;
-                border-left-style: solid;
-                border-bottom-right-radius: 3px;
-            }
+                width: 24px;
+                border-left: 1px solid #DCDFE6;
+                border-bottom-right-radius: 4px;
+                background-color: #FAFAFA;
+                margin-top: 0px;
+            }}
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover,
+            QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {{
+                background-color: #F0F2F5;
+            }}
+            QSpinBox::up-button:pressed, QSpinBox::down-button:pressed,
+            QDoubleSpinBox::up-button:pressed, QDoubleSpinBox::down-button:pressed {{
+                background-color: #E6F1FC;
+            }}
+            QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {{
+                image: url("{icon_up}");
+                width: 10px;
+                height: 10px;
+            }}
+            QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {{
+                image: url("{icon_down}");
+                width: 10px;
+                height: 10px;
+            }}
         """)
 
         self.page_layout = QVBoxLayout(self)

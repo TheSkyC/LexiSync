@@ -9,9 +9,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 import uuid
 import copy
-from utils.localization import _
-from utils.constants import AI_PROVIDER_PRESETS
 from ui_components.styled_button import StyledButton
+from utils.path_utils import get_resource_path
+from utils.constants import AI_PROVIDER_PRESETS
+from utils.localization import _
 
 
 class AIModelManagerDialog(QDialog):
@@ -21,56 +22,132 @@ class AIModelManagerDialog(QDialog):
         self.setWindowTitle(_("AI Model Manager"))
         self.resize(800, 600)
 
-        self.setStyleSheet("""
-            QDialog {
+        icon_down = get_resource_path("icons/chevron-down.svg").replace("\\", "/")
+        icon_up = get_resource_path("icons/chevron-up.svg").replace("\\", "/")
+
+        self.setStyleSheet(f"""
+            QDialog {{
                 background-color: #F5F7FA;
-            }
-            QListWidget {
+            }}
+            QListWidget {{
                 border: 1px solid #DCDFE6;
                 border-radius: 4px;
                 background-color: #FFFFFF;
                 outline: 0;
-            }
-            QListWidget::item {
+            }}
+            QListWidget::item {{
                 padding: 8px 12px;
                 border-radius: 4px;
                 margin: 2px;
-            }
-            QListWidget::item:selected {
+                color: #606266;
+            }}
+            QListWidget::item:selected {{
                 background-color: #E6F7FF;
                 color: #409EFF;
                 border: 1px solid #BAE7FF;
-            }
-            QListWidget::item:hover:!selected {
+            }}
+            QListWidget::item:hover:!selected {{
                 background-color: #F5F7FA;
-            }
-            QLineEdit, QComboBox, QSpinBox {
+            }}
+
+            QLineEdit, QComboBox, QSpinBox {{
                 padding: 6px 8px;
                 border: 1px solid #DCDFE6;
                 border-radius: 4px;
                 background-color: #FFFFFF;
                 min-height: 20px;
-            }
-            QLineEdit:focus, QComboBox:focus, QSpinBox:focus {
+                color: #606266;
+                selection-background-color: #409EFF;
+            }}
+            QLineEdit:focus, QComboBox:focus, QSpinBox:focus {{
                 border-color: #409EFF;
-            }
-            QGroupBox {
+            }}
+
+            /* QComboBox 美化 */
+            QComboBox::drop-down {{
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 24px;
+                border-left: 1px solid #DCDFE6; /* 左侧分割线 */
+                border-top-right-radius: 4px;
+                border-bottom-right-radius: 4px;
+                background-color: #FAFAFA;
+            }}
+            QComboBox::drop-down:hover {{
+                background-color: #F0F2F5;
+            }}
+            QComboBox::drop-down:on {{
+                background-color: #E6F1FC;
+            }}
+            QComboBox::down-arrow {{
+                image: url("{icon_down}");
+                width: 12px;
+                height: 12px;
+            }}
+            QComboBox::down-arrow:on {{
+                /* [CHANGED] Use UP arrow when expanded */
+                image: url("{icon_up}");
+            }}
+
+            /* QSpinBox 美化 */
+            QSpinBox {{
+                padding-right: 24px;
+            }}
+            QSpinBox::up-button {{
+                subcontrol-origin: border;
+                subcontrol-position: top right;
+                width: 24px;
+                border-left: 1px solid #DCDFE6;   /* 左边框 */
+                border-bottom: 1px solid #DCDFE6; /* 底部边框*/
+                border-top-right-radius: 4px;
+                background-color: #FAFAFA;
+                margin-bottom: 0px;
+            }}
+            QSpinBox::down-button {{
+                subcontrol-origin: border;
+                subcontrol-position: bottom right;
+                width: 24px;
+                border-left: 1px solid #DCDFE6;   /* 左边框 */
+                border-bottom-right-radius: 4px;
+                background-color: #FAFAFA;
+                margin-top: 0px;
+            }}
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {{
+                background-color: #F0F2F5;
+            }}
+            QSpinBox::up-button:pressed, QSpinBox::down-button:pressed {{
+                background-color: #E6F1FC;
+            }}
+            QSpinBox::up-arrow {{
+                image: url("{icon_up}");
+                width: 10px;
+                height: 10px;
+            }}
+            QSpinBox::down-arrow {{
+                image: url("{icon_down}");
+                width: 10px;
+                height: 10px;
+            }}
+
+            /* GroupBox 样式 */
+            QGroupBox {{
                 border: 1px solid #E4E7ED;
                 border-radius: 4px;
                 margin-top: 10px;
                 padding: 15px;
                 font-weight: bold;
                 background-color: #FFFFFF;
-            }
-            QGroupBox::title {
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 padding: 0 5px;
                 left: 10px;
-            }
-            QLabel {
+                color: #303133;
+            }}
+            QLabel {{
                 color: #606266;
-            }
+            }}
         """)
 
         self.models_buffer = copy.deepcopy(self.app.config.get("ai_models", []))
