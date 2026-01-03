@@ -358,9 +358,17 @@ class AISettingsPage(BaseSettingsPage):
         model_layout = QVBoxLayout(model_group)
 
         # Show currently active model
-        self.lbl_active_model = QLabel()
+        self.lbl_active_model_name = QLabel()
+        self.lbl_active_model_name.setStyleSheet("font-size: 14px; margin-bottom: 2px;")
+
+        from ui_components.elided_label import ElidedLabel
+        self.lbl_active_model_detail = ElidedLabel()
+        self.lbl_active_model_detail.setStyleSheet("color: gray; font-size: 12px;")
+
         self.update_active_model_label()
-        model_layout.addWidget(self.lbl_active_model)
+
+        model_layout.addWidget(self.lbl_active_model_name)
+        model_layout.addWidget(self.lbl_active_model_detail)
 
         self.btn_manage_models = QPushButton(_("Manage AI Models..."))
         self.btn_manage_models.setMinimumHeight(36)
@@ -448,12 +456,18 @@ class AISettingsPage(BaseSettingsPage):
         active_model = next((m for m in models if m["id"] == active_id), None)
 
         if active_model:
-            text = f"<b>{_('Current Active Model')}:</b> {active_model.get('name', 'Unknown')}<br>" \
-                   f"<span style='color:gray'>{active_model.get('model_name', '')} @ {active_model.get('api_base_url', '')}</span>"
-        else:
-            text = f"<b>{_('Current Active Model')}:</b> {_('None Selected')}"
+            # Line 1: Profile Name
+            self.lbl_active_model_name.setText(
+                f"<b>{_('Current Active Model')}:</b> {active_model.get('name', 'Unknown')}")
 
-        self.lbl_active_model.setText(text)
+            # Line 2: Model ID @ URL
+            detail_text = f"{active_model.get('model_name', '')} @ {active_model.get('api_base_url', '')}"
+            self.lbl_active_model_detail.setText(detail_text)
+            self.lbl_active_model_detail.setToolTip(detail_text)
+        else:
+            self.lbl_active_model_name.setText(f"<b>{_('Current Active Model')}:</b> {_('None Selected')}")
+            self.lbl_active_model_detail.setText("")
+            self.lbl_active_model_detail.setToolTip("")
 
     def open_model_manager(self):
         from dialogs.ai_model_manager_dialog import AIModelManagerDialog
