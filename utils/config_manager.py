@@ -8,15 +8,16 @@ import uuid
 from copy import deepcopy
 from PySide6.QtWidgets import QMessageBox, QApplication
 from utils.constants import (
-    CONFIG_FILE, DEFAULT_PROMPT_STRUCTURE, DEFAULT_CORRECTION_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS,
+    DEFAULT_PROMPT_STRUCTURE, DEFAULT_CORRECTION_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS,
     DEFAULT_EXTRACTION_PATTERNS, DEFAULT_VALIDATION_RULES
 )
 from utils.security_utils import encrypt_text, decrypt_text
+from utils.path_utils import get_app_data_path
 from utils.localization import _
 import logging
 
 logger = logging.getLogger(__name__)
-
+CONFIG_FILE = os.path.join(get_app_data_path(), "config.json")
 
 def get_default_font_settings():
     return {
@@ -213,6 +214,8 @@ def save_config(app_instance):
             elif app_instance.current_po_file_path:
                 config_to_save["last_dir"] = os.path.dirname(app_instance.current_po_file_path)
 
+            os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+
             # Perform the actual save
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 json.dump(config_to_save, f, indent=4, ensure_ascii=False)
@@ -251,6 +254,6 @@ def save_config(app_instance):
                     QMessageBox.critical(app_instance, _("Save Failed"),
                                          _("Failed to save even in plaintext mode. Error: {error}").format(
                                              error=plain_e))
-                    return False  # The save operation failed completely
+                    return False
             else:  # Cancel
-                return False  # The save operation was cancelled by the user
+                return False

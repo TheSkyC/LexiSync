@@ -6,7 +6,6 @@ def _(message): return message
 
 
 APP_NAMESPACE_UUID = uuid.UUID('c2e02333-2f1d-48ba-bc8d-90d49da373af')
-CONFIG_FILE = "config.json"
 EXPANSION_DATA_DIR = "expansion_data"
 MAX_UNDO_HISTORY = 30
 DEFAULT_API_URL = "https://api.deepseek.com/chat/completions"

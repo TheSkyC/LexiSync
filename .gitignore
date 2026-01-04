@@ -1,34 +1,40 @@
+# ==========================
+# Python Core & Compiled
+# ==========================
 __pycache__/
 *.py[cod]
 *$py.class
-
 *.so
-
 .Python
-build_temp/
+
+# ==========================
+# Build, Distribution & Eggs
+# ==========================
+build*
 build/
-python_standalone_src/
-develop-eggs/
+build_temp/
 dist/
-downloads/
+python_standalone_src/
+sdist/
+var/
+parts/
+# Eggs & Wheels
+*.egg
+*.egg-info/
 eggs/
 .eggs/
+develop-eggs/
 lib/
 lib64/
-parts/
-sdist/
-tm_backups/
-var/
 wheels/
 pip-wheel-metadata/
 share/python-wheels/
-*.egg-info/
 .installed.cfg
-*.egg
 MANIFEST
 
-.ipynb_checkpoints
-
+# ==========================
+# Virtual Environments
+# ==========================
 .env
 .venv
 env/
@@ -37,16 +43,28 @@ ENV/
 env.bak/
 venv.bak/
 
+# ==========================
+# IDEs & Editor Configs
+# ==========================
 .idea/
 .vscode/
+.ipynb_checkpoints
 
-build*
-config.json
-*.prompt
-*.extract
-babel.cfg
-plugins/*/config.json
+# ==========================
+# OS Generated Files
+# ==========================
 .DS_Store
 Thumbs.db
+
+# ==========================
+# Project Specific (LexiSync)
+# ==========================
+# PyInstaller Spec
 /LexiSync.spec
+
+# Custom Configs & Data
+babel.cfg
+plugins/*/config.json
 /identifier.sqlite
+*.prompt
+*.extract
