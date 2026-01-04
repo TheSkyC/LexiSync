@@ -453,7 +453,6 @@ class FileExplorerPanel(QWidget):
             try:
                 if hasattr(self.app, 'config') and hasattr(self.app, 'save_config'):
                     self.app.config['last_file_explorer_path'] = normalized_path
-                    self.app.save_config()
             except Exception as e:
                 logger.error(f"Error saving configuration: {e}")
 

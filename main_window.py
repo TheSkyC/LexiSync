@@ -1745,7 +1745,6 @@ class LexiSyncApp(QMainWindow):
                 self.stop_batch_ai_translation(silent=True)
         self.tm_service.disconnect_databases()
         self.glossary_service.disconnect_databases()
-        self.save_config()
         self.save_window_state()
         self.search_service.clear()
         self.clear_search_markers()
@@ -2048,7 +2047,6 @@ class LexiSyncApp(QMainWindow):
             self.plugin_manager.run_hook('on_project_loaded', self.translatable_objects)
             self.add_to_recent_files(project_path)
             self.config["last_dir"] = os.path.dirname(project_path)
-            self.save_config()
 
             self._update_language_switcher()
             self.mark_project_modified(False)
@@ -2240,7 +2238,6 @@ class LexiSyncApp(QMainWindow):
             self.current_po_metadata = None
             self.add_to_recent_files(filepath)
             self.config["last_dir"] = os.path.dirname(filepath)
-            self.save_config()
             self.update_statusbar(_("Extracting strings..."), persistent=True)
             QApplication.processEvents()
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
@@ -4148,7 +4145,6 @@ class LexiSyncApp(QMainWindow):
 
             self.add_to_recent_files(po_filepath)
             self.config["last_dir"] = os.path.dirname(po_filepath)
-            self.save_config()
 
             self.undo_history.clear()
             self.redo_history.clear()
