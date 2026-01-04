@@ -5,6 +5,7 @@ from plugins.plugin_base import PluginBase
 from .core import RetrievalCore
 from .ui.settings_dialog import SettingsDialog
 from .utils.cache_service import CacheViewerService
+from utils.path_utils import get_app_data_path
 from PySide6.QtWidgets import QMessageBox
 import os
 import logging
@@ -26,7 +27,7 @@ class RetrievalEnhancerPlugin(PluginBase):
         return self._("Provides advanced semantic retrieval using TF-IDF or Local LLM (ONNX).")
 
     def version(self) -> str:
-        return "2.5.0"
+        return "2.5.1"
 
     def author(self) -> str:
         return "TheSkyC"
@@ -39,10 +40,15 @@ class RetrievalEnhancerPlugin(PluginBase):
             'tokenizers': ''
         }
 
+    def get_default_config(self) -> dict:
+        from .utils.constants import DEFAULT_CONFIG
+        return DEFAULT_CONFIG
+
     def setup(self, main_window, plugin_manager):
         super().setup(main_window, plugin_manager)
-        plugin_dir = os.path.join(plugin_manager.plugin_dir, self.plugin_id())
-        self.core = RetrievalCore(plugin_dir)
+        plugin_data_dir = os.path.dirname(self.config_path)
+        self.core = RetrievalCore(plugin_data_dir=plugin_data_dir, config_path=self.config_path)
+        self.config = self.core.config
 
     def show_settings_dialog(self, parent_widget) -> bool:
         dialog = SettingsDialog(parent_widget, self.core, self._)
@@ -50,6 +56,9 @@ class RetrievalEnhancerPlugin(PluginBase):
 
         if dialog.model_was_changed():
             self.core.clear_all_backends()
+            self.config = self.core.config
+            self.save_config()
+
             QMessageBox.information(
                 parent_widget,
                 self._("Model Changed"),
@@ -57,6 +66,9 @@ class RetrievalEnhancerPlugin(PluginBase):
                        "Please re-open the 'Smart Translation' dialog to rebuild the index with the new model.")
             )
             return True
+
+        self.config = self.core.config
+        self.save_config()
         return False
 
     # --- Hooks ---

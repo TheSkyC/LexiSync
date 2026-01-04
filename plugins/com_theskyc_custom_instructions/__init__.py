@@ -9,11 +9,6 @@ import os
 GLOBAL_SETTINGS_KEY = "__GLOBAL__"
 
 class PersonalizedTranslationPlugin(PluginBase):
-    def __init__(self):
-        super().__init__()
-        self.settings_cache = {}
-        self.settings_file_path = ""
-
     def plugin_id(self) -> str:
         return "com_theskyc_custom_instructions"
 
@@ -27,7 +22,7 @@ class PersonalizedTranslationPlugin(PluginBase):
         return "TheSkyC"
 
     def version(self) -> str:
-        return "1.0.0"
+        return "1.0.1"
 
     def url(self) -> str:
         return "https://github.com/TheSkyC/lexisync/tree/master/plugins/com_theskyc_custom_instructions"
@@ -50,26 +45,10 @@ class PersonalizedTranslationPlugin(PluginBase):
             }
         ]
 
-    def setup(self, main_window, plugin_manager):
-        super().setup(main_window, plugin_manager)
-        self.settings_file_path = os.path.join(
-            self.plugin_manager.plugin_dir, self.plugin_id(), "config.json"
-        )
-        self._load_settings()
-
-    def _load_settings(self):
-        try:
-            with open(self.settings_file_path, 'r', encoding='utf-8') as f:
-                self.settings_cache = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            self.settings_cache = {}
-
-    def _save_settings(self):
-        try:
-            with open(self.settings_file_path, 'w', encoding='utf-8') as f:
-                json.dump(self.settings_cache, f, indent=4, ensure_ascii=False)
-        except Exception as e:
-            print(f"Error saving personalized settings: {e}")
+    def get_default_config(self) -> dict:
+        return {
+            GLOBAL_SETTINGS_KEY: ""
+        }
 
     def get_current_project_key(self):
         if self.main_window.current_project_path:
@@ -94,42 +73,40 @@ class PersonalizedTranslationPlugin(PluginBase):
             QMessageBox.warning(self.main_window, self._("No Project"), self._("Please open a file first."))
             return
 
-        current_instructions = self.settings_cache.get(project_key, "")
+        current_instructions = self.config.get(project_key, "")
         new_instructions, ok = QInputDialog.getMultiLineText(
             self.main_window,
             self._("Project-specific Instructions"),
-            self._(
-                "Enter instructions for this project.\n(e.g., 'Translate \"Hero\" as \"Agent\"', 'Use a formal tone')."),
+            self._("Enter instructions for this project..."),
             current_instructions
         )
 
         if ok and new_instructions != current_instructions:
-            self.settings_cache[project_key] = new_instructions
-            self._save_settings()
+            self.config[project_key] = new_instructions
+            self.save_config()
             self.main_window.update_statusbar(self._("Project-specific instructions updated."))
 
     def show_global_settings_dialog(self):
-        current_instructions = self.settings_cache.get(GLOBAL_SETTINGS_KEY, "")
+        current_instructions = self.config.get(GLOBAL_SETTINGS_KEY, "")
 
         new_instructions, ok = QInputDialog.getMultiLineText(
             self.main_window,
             self._("Global Instructions"),
-            self._(
-                "Enter global instructions that will apply to all projects\n(e.g., 'Always use simplified Chinese characters', 'Maintain a neutral tone')."),
+            self._("Enter global instructions..."),
             current_instructions
         )
 
         if ok and new_instructions != current_instructions:
-            self.settings_cache[GLOBAL_SETTINGS_KEY] = new_instructions
-            self._save_settings()
+            self.config[GLOBAL_SETTINGS_KEY] = new_instructions
+            self.save_config()
             self.main_window.update_statusbar(self._("Global instructions updated."))
 
     def get_ai_translation_context(self) -> dict:
-        global_instructions = self.settings_cache.get(GLOBAL_SETTINGS_KEY, "")
+        global_instructions = self.config.get(GLOBAL_SETTINGS_KEY, "")
         project_instructions = ""
         project_key = self.get_current_project_key()
         if project_key:
-            project_instructions = self.settings_cache.get(project_key, "")
+            project_instructions = self.config.get(project_key, "")
         return {
             '[Global Instructions]': global_instructions,
             '[Project Instructions]': project_instructions

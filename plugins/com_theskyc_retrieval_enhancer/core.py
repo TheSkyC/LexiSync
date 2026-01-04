@@ -13,15 +13,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 class RetrievalCore:
-    def __init__(self, plugin_dir):
-        self.plugin_dir = plugin_dir
-
-        # 数据目录: AppData/Local/LexiSync/plugins_data/com_theskyc_retrieval_enhancer/
-        self.data_dir = os.path.join(get_app_data_path(), "plugins_data", "com_theskyc_retrieval_enhancer")
-        os.makedirs(self.data_dir, exist_ok=True)
+    def __init__(self, plugin_data_dir: str, config_path: str):
+        self.data_dir = plugin_data_dir
+        self.config_path = config_path
 
         self.models_dir = os.path.join(self.data_dir, "models")
-        self.config_path = os.path.join(self.data_dir, "config.json")
         self.cache_db_path = os.path.join(self.data_dir, "cache.db")
 
         self.config = self._load_config()
@@ -38,19 +34,16 @@ class RetrievalCore:
         self._apply_config()
 
     def _load_config(self):
-        # 优先读取 AppData 下的配置
         if os.path.exists(self.config_path):
             try:
                 with open(self.config_path, 'r', encoding='utf-8') as f:
                     user_config = json.load(f)
-                    # 合并默认配置，防止缺字段
                     config = DEFAULT_CONFIG.copy()
                     config.update(user_config)
                     return config
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to load retrieval enhancer config, falling back to default: {e}")
 
-        # 首次运行，保存默认配置
         self._save_config_to_disk(DEFAULT_CONFIG)
         return DEFAULT_CONFIG
 

@@ -31,15 +31,11 @@ class PluginBase(ABC):
 
     def setup(self, main_window: 'LexiSyncApp', plugin_manager: 'PluginManager'):
         """
-        Called when the plugin is loaded. Use this to initialize resources.
-        The main window instance and plugin manager are provided.
+        Called when the plugin is loaded..
         """
         self.main_window = main_window
         self.plugin_manager = plugin_manager
         self._ = self.plugin_manager.get_translator_for_plugin(self.plugin_id())
-        self.config_path = os.path.join(
-            plugin_manager.plugin_dir, self.plugin_id(), "config.json"
-        )
         self.load_config()
 
     def teardown(self):

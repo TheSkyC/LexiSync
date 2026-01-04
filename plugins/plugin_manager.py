@@ -10,6 +10,7 @@ from plugins.plugin_base import PluginBase
 from plugins.plugin_dialog import PluginManagerDialog
 from dialogs.marketplace_dialog import PluginMarketplaceDialog
 from utils.constants import APP_VERSION
+from utils.path_utils import get_app_data_path
 from utils.plugin_context import plugin_libs_context
 from utils.localization import _
 from services.dependency_service import DependencyManager
@@ -103,7 +104,14 @@ class PluginManager:
             self.plugins = sorted_instances
 
             for instance in self.plugins:
-                self.setup_plugin_translation(instance.plugin_id())
+                plugin_id = instance.plugin_id()
+
+                plugin_data_dir = os.path.join(get_app_data_path(), "plugins_data", plugin_id)
+                os.makedirs(plugin_data_dir, exist_ok=True)
+                config_path = os.path.join(plugin_data_dir, "config.json")
+                instance.config_path = config_path
+
+                self.setup_plugin_translation(plugin_id)
                 instance.setup(self.main_window, self)
 
                 # 检查版本兼容性
@@ -111,13 +119,13 @@ class PluginManager:
                 if not self._is_version_compatible(APP_VERSION, required_version):
                     reason = _("Incompatible with app version (requires {req}, current is {curr})").format(
                         req=required_version, curr=APP_VERSION)
-                    self.incompatible_plugins[instance.plugin_id()] = {
+                    self.incompatible_plugins[plugin_id] = {
                         'spec': {'class': instance.__class__},
                         'reason': reason,
                         'required': required_version,
                         'current': APP_VERSION
                     }
-                    logger.warning(f"Plugin '{instance.plugin_id()}' is incompatible. {reason}")
+                    logger.warning(f"Plugin '{plugin_id}' is incompatible. {reason}")
 
                 # 检查外部库依赖
                 failed_deps = []

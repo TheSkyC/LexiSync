@@ -588,7 +588,7 @@ class SmartTranslationDialog(QDialog):
         self.rb_tm_fuzzy.toggled.connect(self._update_tm_threshold_state)
 
         tm_layout.addWidget(self.chk_use_tm)
-        tm_layout.addStretch(1)  # [CHANGED] Push options to the right
+        tm_layout.addStretch(1)
         tm_layout.addWidget(self.rb_tm_exact)
         tm_layout.addSpacing(10)
         tm_layout.addWidget(self.rb_tm_fuzzy)
