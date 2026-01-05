@@ -22,6 +22,7 @@ class AITranslator:
             raise ValueError(_("API Key not set."))
         if not requests:
             raise ImportError(_("'requests' library not found. AI translation feature is unavailable."))
+
         full_url = self._normalize_url(self.api_url)
 
         headers = {
@@ -36,30 +37,37 @@ class AITranslator:
                 {"role": "user", "content": text_to_translate}
             ],
             "temperature": final_temp,
+            "stream": True
         }
 
         try:
-            response = requests.post(full_url, headers=headers, json=payload, timeout=timeout)
+            response = requests.post(full_url, headers=headers, json=payload, timeout=timeout, stream=True)
             response.raise_for_status()
-            result = response.json()
 
-            if result.get("choices") and len(result["choices"]) > 0:
-                translation = result["choices"][0].get("message", {}).get("content", "").strip()
-                return translation
-            else:
-                error_message = result.get("error", {}).get("message", _("Unknown API error structure"))
-                if not error_message and result.get("choices") and len(result["choices"]) > 0 and "message" not in \
-                        result["choices"][0]:
-                    error_message = result["choices"][0].get("finish_reason",
-                                                             _("No content in message"))
-                raise Exception(f"{_('API Error')}: {error_message}. {_('Response')}: {result}")
+            full_content = []
+
+            for line in response.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8')
+                    if decoded_line.startswith('data: '):
+                        data_str = decoded_line[6:]
+                        if data_str.strip() == '[DONE]':
+                            break
+                        try:
+                            data_json = json.loads(data_str)
+                            delta = data_json.get("choices", [{}])[0].get("delta", {})
+                            content = delta.get("content", "")
+                            if content:
+                                full_content.append(content)
+                        except json.JSONDecodeError:
+                            continue
+
+            return "".join(full_content)
+
         except requests.exceptions.Timeout:
-            raise Exception(_("API request timed out."))
+            raise Exception(_("API request timed out.").format(t=timeout))
         except requests.exceptions.RequestException as e:
             raise Exception(f"{_('Network error or API request failed')}: {e}")
-        except json.JSONDecodeError:
-            raise Exception(
-                f"{_('Could not decode API response. Response text')}: {response.text if 'response' in locals() else _('No response object')}")
         except Exception as e:
             raise Exception(f"{_('Unknown error occurred during translation')}: {e}")
 
