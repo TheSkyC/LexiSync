@@ -43,8 +43,9 @@ class HelpButton(QToolButton):
             elif event.type() == QEvent.Leave:
                 self.tooltip_widget.hide()
                 return True
+
             elif event.type() == QEvent.MouseButtonPress:
-                self.tooltip_widget.hide()
+                return True
 
         return super().eventFilter(obj, event)
 

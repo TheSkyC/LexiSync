@@ -35,7 +35,7 @@ def _get_or_create_master_key() -> bytes:
             os.chmod(key_path, 0o600)
 
     except Exception as e:
-        print(f"DEBUG: Exception caught in _get_or_create_master_key: {e}")  # Your debug print
+        print(f"DEBUG: Exception caught in _get_or_create_master_key: {e}")
         error_message = _(
             "Could not create or write the encryption key file at:\n{path}\n\n"
             "Please check folder permissions, disk space, and antivirus settings.\n\n"
