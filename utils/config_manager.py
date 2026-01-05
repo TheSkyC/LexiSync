@@ -21,13 +21,15 @@ CONFIG_FILE = os.path.join(get_app_data_path(), "config.json")
 
 def get_default_font_settings():
     return {
-        "override_default_fonts": False,
-        "scripts": {
-            "latin": {"family": "Segoe UI", "size": 10, "style": "normal"},
-            "cjk": {"family": "Microsoft YaHei UI", "size": 10, "style": "normal"},
-            "cyrillic": {"family": "Segoe UI", "size": 10, "style": "normal"},
+        "enable_custom_fonts": False,
+        "ui_font": {
+            "family": "Segoe UI, Microsoft YaHei, sans-serif",
+            "size": 9
         },
-        "code_context": {"family": "Consolas", "size": 9, "style": "normal"}
+        "editor_font": {
+            "family": "Consolas, Microsoft YaHei, monospace",
+            "size": 10
+        }
     }
 
 
@@ -131,16 +133,23 @@ def load_config():
 
             # Font settings
             default_fonts = get_default_font_settings()
-            if "font_settings" not in config_data:
+            if "font_settings" not in config_data or "scripts" in config_data["font_settings"]:
                 config_data["font_settings"] = default_fonts
             else:
-                config_data["font_settings"].setdefault("override_default_fonts", default_fonts["override_default_fonts"])
-                config_data["font_settings"].setdefault("scripts", default_fonts["scripts"])
-                config_data["font_settings"].setdefault("code_context", default_fonts["code_context"])
-                for script, settings in default_fonts["scripts"].items():
-                    config_data["font_settings"]["scripts"].setdefault(script, settings)
-                for key, value in default_fonts["code_context"].items():
-                    config_data["font_settings"]["code_context"].setdefault(key, value)
+                config_data["font_settings"].setdefault("enable_custom_fonts", default_fonts["enable_custom_fonts"])
+
+                if "ui_font" not in config_data["font_settings"]:
+                    config_data["font_settings"]["ui_font"] = default_fonts["ui_font"]
+                else:
+                    config_data["font_settings"]["ui_font"].setdefault("family", default_fonts["ui_font"]["family"])
+                    config_data["font_settings"]["ui_font"].setdefault("size", default_fonts["ui_font"]["size"])
+
+                if "editor_font" not in config_data["font_settings"]:
+                    config_data["font_settings"]["editor_font"] = default_fonts["editor_font"]
+                else:
+                    config_data["font_settings"]["editor_font"].setdefault("family",
+                                                                           default_fonts["editor_font"]["family"])
+                    config_data["font_settings"]["editor_font"].setdefault("size", default_fonts["editor_font"]["size"])
 
             # Window state
             config_data.setdefault("window_state", "")

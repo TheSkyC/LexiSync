@@ -3,12 +3,96 @@
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QCheckBox, QSpinBox, QMessageBox, QWidget, QComboBox, QTabWidget
+    QCheckBox, QSpinBox, QMessageBox, QGroupBox, QFontComboBox, QDialogButtonBox
 )
-from PySide6.QtGui import QFont, QFontDatabase
+from PySide6.QtGui import QFont
 from PySide6.QtCore import Qt
 from utils.localization import _
 from utils.config_manager import get_default_font_settings
+
+
+class FontPickerWidget(QGroupBox):
+    def __init__(self, title, initial_family, initial_size, parent=None):
+        super().__init__(title, parent)
+        self.initial_family = initial_family
+        self.initial_size = initial_size
+
+        layout = QVBoxLayout(self)
+
+        # Family Input
+        family_layout = QHBoxLayout()
+        family_layout.addWidget(QLabel(_("Font Family:")))
+        self.family_edit = QLineEdit(initial_family)
+        self.family_edit.setPlaceholderText("e.g. Consolas, Microsoft YaHei")
+        self.family_edit.setToolTip(
+            _("Enter font families separated by commas. The first available font will be used."))
+        family_layout.addWidget(self.family_edit)
+
+        # Font Combo Helper
+        self.font_combo = QFontComboBox()
+        self.font_combo.setFixedWidth(120)
+        self.font_combo.currentFontChanged.connect(self._append_font)
+        family_layout.addWidget(self.font_combo)
+
+        layout.addLayout(family_layout)
+
+        # Size Input
+        size_layout = QHBoxLayout()
+        size_layout.addWidget(QLabel(_("Size:")))
+        self.size_spin = QSpinBox()
+        self.size_spin.setRange(6, 72)
+        self.size_spin.setValue(initial_size)
+        size_layout.addWidget(self.size_spin)
+        size_layout.addStretch()
+
+        layout.addLayout(size_layout)
+
+        # Preview
+        self.preview_label = QLabel(_("Preview Text / 预览文本 / 123"))
+        self.preview_label.setFixedHeight(40)
+        self.preview_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        self.preview_label.setStyleSheet("border: 1px solid #DDD; padding: 5px; background: white;")
+        layout.addWidget(self.preview_label)
+
+        # Connect signals for preview
+        self.family_edit.textChanged.connect(self._update_preview)
+        self.size_spin.valueChanged.connect(self._update_preview)
+        self._update_preview()
+
+    def _append_font(self, font):
+        current = self.family_edit.text().strip()
+        new_family = font.family()
+        if '"' in new_family or ' ' in new_family:
+            new_family = f'"{new_family}"'
+
+        if current:
+            if new_family not in current:
+                self.family_edit.setText(f"{current}, {new_family}")
+        else:
+            self.family_edit.setText(new_family)
+
+    def _update_preview(self):
+        families = self.family_edit.text().split(',')
+        # Clean up quotes
+        families = [f.strip().strip('"').strip("'") for f in families if f.strip()]
+
+        font = QFont()
+        if families:
+            font.setFamilies(families)
+        font.setPointSize(self.size_spin.value())
+
+        self.preview_label.setFont(font)
+
+    def get_data(self):
+        return {
+            "family": self.family_edit.text(),
+            "size": self.size_spin.value()
+        }
+
+    def set_enabled_state(self, enabled):
+        self.family_edit.setEnabled(enabled)
+        self.font_combo.setEnabled(enabled)
+        self.size_spin.setEnabled(enabled)
 
 
 class FontSettingsDialog(QDialog):
@@ -16,140 +100,84 @@ class FontSettingsDialog(QDialog):
         super().__init__(parent)
         self.app = app_instance
         self.config = app_instance.config
-        self.font_settings_buffer = self.config["font_settings"].copy()
+
+        # Load or init settings
+        self.settings = self.config.get("font_settings", get_default_font_settings())
+
+        # Migration check (if old format)
+        if "scripts" in self.settings:
+            self.settings = get_default_font_settings()
 
         self.setWindowTitle(title)
         self.setModal(True)
-        self.resize(600, 450)
-
-        self.available_fonts = sorted(QFontDatabase().families())
+        self.resize(500, 450)
 
         self.setup_ui()
 
     def setup_ui(self):
-        main_layout = QVBoxLayout(self)
+        layout = QVBoxLayout(self)
 
-        self.override_checkbox = QCheckBox(_("Override default font settings"))
-        self.override_checkbox.setChecked(self.font_settings_buffer["override_default_fonts"])
-        self.override_checkbox.stateChanged.connect(self.toggle_controls)
-        main_layout.addWidget(self.override_checkbox)
+        self.enable_check = QCheckBox(_("Enable Custom Fonts"))
+        self.enable_check.setChecked(self.settings.get("enable_custom_fonts", False))
+        self.enable_check.toggled.connect(self._toggle_widgets)
+        layout.addWidget(self.enable_check)
 
-        self.notebook = QTabWidget()
-        main_layout.addWidget(self.notebook)
+        # UI Font
+        ui_conf = self.settings.get("ui_font", {})
+        self.ui_picker = FontPickerWidget(
+            _("Application UI Font"),
+            ui_conf.get("family", "Segoe UI"),
+            ui_conf.get("size", 9)
+        )
+        layout.addWidget(self.ui_picker)
 
-        self.script_tabs = {}
-        scripts = self.font_settings_buffer["scripts"]
-        for script_name, settings in scripts.items():
-            frame = QWidget()
-            self.notebook.addTab(frame, script_name.capitalize())
-            self.create_font_selector(frame, script_name, settings)
+        # Editor Font
+        editor_conf = self.settings.get("editor_font", {})
+        self.editor_picker = FontPickerWidget(
+            _("Translation Editor Font"),
+            editor_conf.get("family", "Consolas"),
+            editor_conf.get("size", 10)
+        )
+        layout.addWidget(self.editor_picker)
 
-        code_frame = QWidget()
-        self.notebook.addTab(code_frame, _("Code Context"))
-        self.create_font_selector(code_frame, "code_context", self.font_settings_buffer["code_context"])
+        layout.addStretch()
 
-        button_frame = QHBoxLayout()
-        reset_btn = QPushButton(_("Reset to Defaults"))
-        reset_btn.clicked.connect(self.reset_to_defaults)
-        button_frame.addWidget(reset_btn)
-        button_frame.addStretch(1)
+        btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        reset_button = QPushButton(_("Reset Defaults"))
+        btn_box.addButton(reset_button, QDialogButtonBox.ResetRole)
 
-        ok_btn = QPushButton(_("OK"))
-        ok_btn.clicked.connect(self.accept)
-        button_frame.addWidget(ok_btn)
+        btn_box.accepted.connect(self.accept)
+        btn_box.rejected.connect(self.reject)
+        reset_button.clicked.connect(self.reset_defaults)
 
-        cancel_btn = QPushButton(_("Cancel"))
-        cancel_btn.clicked.connect(self.reject)
-        button_frame.addWidget(cancel_btn)
-        main_layout.addLayout(button_frame)
+        layout.addWidget(btn_box)
 
-        self.toggle_controls()
+        self._toggle_widgets(self.enable_check.isChecked())
 
-    def create_font_selector(self, parent_widget, script_name, settings):
-        layout = QVBoxLayout(parent_widget)
-        layout.setContentsMargins(10, 10, 10, 10)
+    def _toggle_widgets(self, checked):
+        self.ui_picker.set_enabled_state(checked)
+        self.editor_picker.set_enabled_state(checked)
 
-        # Font Family
-        family_layout = QHBoxLayout()
-        family_layout.addWidget(QLabel(_("Font Family:")))
-        family_combo = QComboBox()
-        family_combo.addItems(self.available_fonts)
-        family_combo.setCurrentText(settings["family"])
-        family_layout.addWidget(family_combo)
-        layout.addLayout(family_layout)
+    def reset_defaults(self):
+        defaults = get_default_font_settings()
+        self.enable_check.setChecked(False)
 
-        # Size
-        size_layout = QHBoxLayout()
-        size_layout.addWidget(QLabel(_("Size:")))
-        size_spin = QSpinBox()
-        size_spin.setRange(6, 72)
-        size_spin.setValue(settings["size"])
-        size_layout.addWidget(size_spin)
-        size_layout.addStretch(1)
-        layout.addLayout(size_layout)
+        d_ui = defaults["ui_font"]
+        self.ui_picker.family_edit.setText(d_ui["family"])
+        self.ui_picker.size_spin.setValue(d_ui["size"])
 
-        # Style
-        style_layout = QHBoxLayout()
-        style_layout.addWidget(QLabel(_("Style:")))
-        style_combo = QComboBox()
-        style_combo.addItems(["normal", "bold", "italic", "bold italic"])
-        style_combo.setCurrentText(settings["style"])
-        style_layout.addWidget(style_combo)
-        style_layout.addStretch(1)
-        layout.addLayout(style_layout)
-
-        layout.addStretch(1)
-
-        self.script_tabs[script_name] = {
-            "frame": parent_widget,
-            "family_combo": family_combo,
-            "size_spin": size_spin,
-            "style_combo": style_combo
-        }
-
-    def toggle_controls(self):
-        enabled = self.override_checkbox.isChecked()
-        for script_name, controls in self.script_tabs.items():
-            controls["family_combo"].setEnabled(enabled)
-            controls["size_spin"].setEnabled(enabled)
-            controls["style_combo"].setEnabled(enabled)
-
-    def reset_to_defaults(self):
-        reply = QMessageBox.question(self, _("Confirmation"), _("Reset all font settings to default?"),
-                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            default_settings = get_default_font_settings()
-            self.font_settings_buffer = default_settings.copy()
-            self.override_checkbox.setChecked(default_settings["override_default_fonts"])
-            for script, controls in self.script_tabs.items():
-                if script in default_settings["scripts"]:
-                    settings = default_settings["scripts"][script]
-                elif script == "code_context":
-                    settings = default_settings["code_context"]
-                else:
-                    continue
-                controls["family_combo"].setCurrentText(settings["family"])
-                controls["size_spin"].setValue(settings["size"])
-                controls["style_combo"].setCurrentText(settings["style"])
-            self.toggle_controls()
+        d_ed = defaults["editor_font"]
+        self.editor_picker.family_edit.setText(d_ed["family"])
+        self.editor_picker.size_spin.setValue(d_ed["size"])
 
     def accept(self):
-        new_settings = self.font_settings_buffer.copy()
-        new_settings["override_default_fonts"] = self.override_checkbox.isChecked()
-        for script, controls in self.script_tabs.items():
-            if script in new_settings["scripts"]:
-                target = new_settings["scripts"][script]
-            elif script == "code_context":
-                target = new_settings["code_context"]
-            else:
-                continue
-            target["family"] = controls["family_combo"].currentText()
-            target["size"] = controls["size_spin"].value()
-            target["style"] = controls["style_combo"].currentText()
+        new_settings = {
+            "enable_custom_fonts": self.enable_check.isChecked(),
+            "ui_font": self.ui_picker.get_data(),
+            "editor_font": self.editor_picker.get_data()
+        }
 
         self.config["font_settings"] = new_settings
         self.app.save_config()
-        super().accept()
 
-    def reject(self):
-        super().reject()
+        super().accept()

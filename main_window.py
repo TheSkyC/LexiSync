@@ -259,6 +259,7 @@ class LexiSyncApp(QMainWindow):
             self.update_statusbar(error_msg)
 
     def UI_initialization(self):
+        self._apply_custom_fonts()
         self._setup_ui()
         self.proxy_model.setDynamicSortFilter(False)
         self.update_ui_state_after_file_load()
@@ -268,6 +269,41 @@ class LexiSyncApp(QMainWindow):
         self.restore_window_state()
         if hasattr(self, 'project_toolbar'):
             self.project_toolbar.setVisible(False)
+
+    def _apply_custom_fonts(self):
+        font_settings = self.config.get("font_settings", {})
+
+        # Apply UI Font
+        ui_conf = font_settings.get("ui_font", {})
+        if ui_conf:
+            families = [f.strip().strip('"') for f in ui_conf.get("family", "").split(',') if f.strip()]
+            size = ui_conf.get("size", 9)
+            if families:
+                font = QFont()
+                font.setFamilies(families)
+                font.setPointSize(size)
+                QApplication.setFont(font)
+
+    def _update_editor_fonts(self):
+        font_settings = self.config.get("font_settings", {})
+        if not font_settings.get("enable_custom_fonts", False): return
+
+        editor_conf = font_settings.get("editor_font", {})
+        families = [f.strip().strip('"') for f in editor_conf.get("family", "").split(',') if f.strip()]
+        size = editor_conf.get("size", 10)
+
+        if families:
+            font = QFont()
+            font.setFamilies(families)
+            font.setPointSize(size)
+
+            # Apply to specific widgets
+            if hasattr(self, 'details_panel'):
+                self.details_panel.original_text_display.setFont(font)
+                self.details_panel.translation_edit_text.setFont(font)
+
+            if hasattr(self, 'comment_status_panel'):
+                self.comment_status_panel.comment_edit_text.setFont(font)
 
     def _setup_ui(self):
         self._setup_menu()
@@ -1267,6 +1303,8 @@ class LexiSyncApp(QMainWindow):
 
         if self.default_window_state is None:
             self.default_window_state = self.saveState()
+
+        self._update_editor_fonts()
 
     def restore_default_layout(self):
         if self.default_window_state:
