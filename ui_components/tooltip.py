@@ -2,25 +2,24 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import QLabel, QApplication
-from PySide6.QtCore import Qt, QPoint, QPropertyAnimation, QEasingCurve
-from PySide6.QtGui import QPalette, QColor
+from PySide6.QtCore import Qt, QPoint, QPropertyAnimation, QEasingCurve, QRectF
+from PySide6.QtGui import QPainter, QColor, QBrush, QPen
 
 
 class Tooltip(QLabel):
     def __init__(self, parent=None):
         super().__init__(parent, Qt.ToolTip | Qt.FramelessWindowHint)
-        self.setWindowOpacity(0.0)  # Start invisible
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowOpacity(0.0)
+
         self.setAlignment(Qt.AlignLeft)
         self.setIndent(5)
         self.setWordWrap(True)
 
         self.setStyleSheet("""
             QLabel {
-                background-color: #333333;
                 color: #FFFFFF;
-                border: 1px solid #555555;
-                border-radius: 4px;
-                padding: 8px;
+                padding: 10px;
                 font-size: 13px;
             }
         """)
@@ -30,6 +29,21 @@ class Tooltip(QLabel):
         self.target_opacity = 0.95
         self.opacity_anim.finished.connect(self._on_animation_finished)
         self._is_fading_out = False
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        # Draw background
+        rect = self.rect()
+        painter.setBrush(QBrush(QColor("#333333")))
+        painter.setPen(QPen(QColor("#555555"), 1))
+
+        # Draw rounded rect
+        painter.drawRoundedRect(QRectF(rect).adjusted(0.5, 0.5, -0.5, -0.5), 6, 6)
+
+        # Draw text
+        super().paintEvent(event)
 
     def show_tooltip(self, pos: QPoint, text: str):
         self.setText(text)
@@ -55,7 +69,7 @@ class Tooltip(QLabel):
             self.setWindowOpacity(0.0)
             self.show()
 
-        self.opacity_anim.setDuration(150)
+        self.opacity_anim.setDuration(100)
         self.opacity_anim.setStartValue(self.windowOpacity())
         self.opacity_anim.setEndValue(self.target_opacity)
         self.opacity_anim.setEasingCurve(QEasingCurve.OutCubic)
