@@ -221,4 +221,3 @@ class OnnxBackend(RetrievalBackend):
     def clear(self):
         self.index_embeddings = None
         self.indexed_data = []
-        logger.info(f"[OnnxBackend] In-memory index cleared for model '{self.model_id}'.")
