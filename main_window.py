@@ -551,15 +551,30 @@ class LexiSyncApp(QMainWindow):
         # --- Quality Assurance (QA) Submenu ---
         self.qa_menu = self.tools_menu.addMenu(_("Quality Assurance"))
 
+        # --- Submenu: Fix All Issues ---
+        self.fix_all_menu = self.qa_menu.addMenu(_("Fix All Issues"))
+        self.fix_all_menu.setEnabled(False)
+
+        self.action_smart_fix_all = QAction(_("Smart Fix"), self)
+        self.action_smart_fix_all.setToolTip(_("First, apply rule-based fixes, then use AI for remaining issues."))
+        self.action_smart_fix_all.triggered.connect(self.smart_fix_all_issues)
+        self.fix_all_menu.addAction(self.action_smart_fix_all)
+
+        self.action_rule_fix_all = QAction(_("Fix with Rules"), self)
+        self.action_rule_fix_all.setToolTip(_("Apply fast, deterministic fixes based on validation rules."))
+        self.action_rule_fix_all.triggered.connect(self.auto_fix_all_issues)
+        self.fix_all_menu.addAction(self.action_rule_fix_all)
+
+        self.action_ai_fix_all = QAction(_("Fix with AI"), self)
+        self.action_ai_fix_all.setToolTip(_("Use AI to correct all items with warnings or errors."))
+        self.action_ai_fix_all.triggered.connect(self.ai_fix_all_issues)
+        self.fix_all_menu.addAction(self.action_ai_fix_all)
+
+        # --- Other QA items ---
         self.action_run_validation_on_all = QAction(_("Re-validate All Entries"), self)
         self.action_run_validation_on_all.triggered.connect(self._run_and_refresh_with_validation)
         self.action_run_validation_on_all.setEnabled(False)
         self.qa_menu.addAction(self.action_run_validation_on_all)
-
-        self.action_auto_fix_all = QAction(_("Auto Fix All Issues"), self)
-        self.action_auto_fix_all.triggered.connect(self.auto_fix_all_issues)
-        self.action_auto_fix_all.setEnabled(False)
-        self.qa_menu.addAction(self.action_auto_fix_all)
 
         self.qa_menu.addSeparator()
 
@@ -1466,7 +1481,7 @@ class LexiSyncApp(QMainWindow):
         )
         self.action_show_statistics.setEnabled(has_content)
         self.action_run_validation_on_all.setEnabled(has_content)
-        self.action_auto_fix_all.setEnabled(has_content)
+        self.fix_all_menu.setEnabled(has_content)
         if hasattr(self, 'action_show_project_settings'):
             self.action_show_project_settings.setEnabled(self.is_project_mode)
         if hasattr(self, 'action_build_project'):
@@ -3301,6 +3316,139 @@ class LexiSyncApp(QMainWindow):
 
             self.update_statusbar(_("Auto-fixed {count} items.").format(count=len(bulk_changes_for_undo)))
 
+    def ai_fix_all_issues(self):
+        """Slot for 'Fix with AI' menu action."""
+        if not self._check_ai_prerequisites(): return
+
+        items_with_issues = [
+            ts for ts in self.translatable_objects
+            if not ts.is_ignored and not ts.is_warning_ignored and (ts.warnings or ts.minor_warnings)
+        ]
+
+        if not items_with_issues:
+            QMessageBox.information(self, _("AI Fix"), _("No items with fixable issues found."))
+            return
+
+        reply = QMessageBox.question(self, _("Confirm AI Fix"),
+                                     _("You are about to use AI to fix {count} items with issues. This may consume a significant amount of tokens.\n\nContinue?").format(
+                                         count=len(items_with_issues)),
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.No:
+            return
+
+        self._start_ai_batch_fix(items_with_issues)
+
+    def smart_fix_all_issues(self):
+        """Slot for 'Smart Fix' menu action."""
+        if not self.translatable_objects: return
+
+        # Step 1: Rule Pass
+        fixed_by_rules_count = self._apply_rule_fixes_silently()
+        if fixed_by_rules_count > 0:
+            self._run_and_refresh_with_validation()
+
+        # Step 2: Filter Pass
+        items_for_ai = [
+            ts for ts in self.translatable_objects
+            if not ts.is_ignored and not ts.is_warning_ignored and (ts.warnings or ts.minor_warnings)
+        ]
+
+        if not items_for_ai:
+            QMessageBox.information(self, _("Smart Fix Complete"),
+                                    _("Fixed {count} items using rules. No remaining issues found for AI to fix.").format(
+                                        count=fixed_by_rules_count))
+            return
+
+        # Step 3: AI Pass
+        if not self._check_ai_prerequisites(show_error=False):
+            QMessageBox.information(self, _("Smart Fix Complete"),
+                                    _("Fixed {count} items using rules. AI is not configured, skipping AI fix step.").format(
+                                        count=fixed_by_rules_count))
+            return
+
+        reply = QMessageBox.question(self, _("Confirm Smart Fix"),
+                                     _("Fixed {rule_count} items using rules.\n\nNow, {ai_count} items with remaining issues will be sent to AI for fixing. This may consume tokens.\n\nContinue?").format(
+                                         rule_count=fixed_by_rules_count, ai_count=len(items_for_ai)),
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.No:
+            return
+
+        self._start_ai_batch_fix(items_for_ai)
+
+    def _apply_rule_fixes_silently(self):
+        """Helper for Smart Fix: applies rule-based fixes without user prompts."""
+        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+
+        preview_changes = []
+        for ts_obj in self.translatable_objects:
+            if ts_obj.is_ignored or ts_obj.is_warning_ignored: continue
+            fixed_text = fix_service.apply_all_fixes(ts_obj, target_lang)
+            if fixed_text and fixed_text != ts_obj.translation:
+                preview_changes.append((ts_obj, fixed_text))
+
+        if not preview_changes:
+            return 0
+
+        bulk_changes_for_undo = []
+        ids_to_update = set()
+
+        for ts_obj, new_text in preview_changes:
+            old_val = ts_obj.get_translation_for_storage_and_tm()
+            ts_obj.set_translation_internal(new_text)
+            bulk_changes_for_undo.append({
+                'string_id': ts_obj.id, 'field': 'translation',
+                'old_value': old_val, 'new_value': ts_obj.get_translation_for_storage_and_tm()
+            })
+            ids_to_update.add(ts_obj.id)
+
+        if bulk_changes_for_undo:
+            self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})
+            self.mark_project_modified()
+            self._update_view_for_ids(ids_to_update)
+
+        return len(bulk_changes_for_undo)
+
+    def _start_ai_batch_fix(self, items_to_fix):
+        """Initiates a batch AI fix operation."""
+        if self.ai_manager.is_running:
+            QMessageBox.warning(self, _("Operation Restricted"), _("An AI task is already in progress."))
+            return
+
+        self.ai_batch_successful_translations_for_undo = []
+
+        def context_provider(ts_id):
+            ts_obj = self._find_ts_obj_by_id(ts_id)
+            if not ts_obj: return {}
+
+            errors = [f"- {w[1]}" for w in ts_obj.warnings + ts_obj.minor_warnings]
+            error_list_str = "\n".join(errors)
+
+            return {
+                '[Error List]': error_list_str,
+                '[Glossary]': self._build_glossary_context(ts_obj),
+                'current_translation': ts_obj.translation
+            }
+
+        self.ai_manager.start_batch(
+            items_to_fix,
+            context_provider,
+            operation_type=AIOperationType.BATCH_FIX
+        )
+
+        self.ai_manager.start_batch(
+            items_to_fix,
+            context_provider,
+            operation_type=AIOperationType.FIX
+        )
+
+    def _build_glossary_context(self, ts_obj):
+        if ts_obj.id in self.glossary_analysis_cache:
+            matches = self.glossary_analysis_cache[ts_obj.id]
+            if matches:
+                lines = [f"- {m['source']}: {', '.join(t['target'] for t in m['translations'])}" for m in matches]
+                return "\n".join(lines)
+        return ""
+
     def ai_fix_current_item(self):
         if not self.current_selected_ts_id: return
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
@@ -5105,18 +5253,20 @@ class LexiSyncApp(QMainWindow):
 
     def _on_ai_batch_finished(self, _unused_results, completed_count, total_items):
         self.progress_bar.setVisible(False)
-        changed_ids = {change['string_id'] for change in self.ai_batch_successful_translations_for_undo}
+
         if self.ai_batch_successful_translations_for_undo:
             self.add_to_undo_history('bulk_ai_translate',
                                      {'changes': self.ai_batch_successful_translations_for_undo})
             self.mark_project_modified()
             self.check_batch_placeholder_mismatches()
+
         success_count = len(self.ai_batch_successful_translations_for_undo)
+        changed_ids = {change['string_id'] for change in self.ai_batch_successful_translations_for_undo}
+
         self.update_statusbar(
-            _("AI batch translation complete. Successfully translated {success_count}/{processed_count} items (total {total_items} planned).").format(
+            _("AI batch operation complete. Successfully processed {success_count}/{processed_count} items.").format(
                 success_count=success_count,
-                processed_count=completed_count,
-                total_items=total_items),
+                processed_count=completed_count),
             persistent=True)
 
         self.is_ai_translating_batch = False
@@ -5150,7 +5300,6 @@ class LexiSyncApp(QMainWindow):
                 processed_text = re.sub(r'<\s*br\s*/?>', '\n', processed_text, flags=re.IGNORECASE)
 
         final_translation = processed_text
-
         cleaned_translation = final_translation
 
         # Determine propagation strategy
@@ -5161,14 +5310,7 @@ class LexiSyncApp(QMainWindow):
         changed_ids = set()
 
         # Logic to find which items to update
-        items_to_update = []
-
-        if op_type == AIOperationType.BATCH_TRANSLATION:
-            # Batch mode
-            items_to_update = self._find_items_to_propagate(trigger_ts_obj, propagation_mode)
-        else:
-            # Single/Fix mode
-            items_to_update = self._find_items_to_propagate(trigger_ts_obj, propagation_mode)
+        items_to_update = self._find_items_to_propagate(trigger_ts_obj, propagation_mode)
 
         # Apply Changes
         for ts_obj in items_to_update:
@@ -5182,7 +5324,7 @@ class LexiSyncApp(QMainWindow):
                 'old_value': old_val, 'new_value': new_val
             }
 
-            if op_type == AIOperationType.BATCH_TRANSLATION:
+            if op_type in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX]:
                 self.ai_batch_successful_translations_for_undo.append(change_data)
             else:
                 changes_for_undo.append(change_data)
@@ -5191,7 +5333,7 @@ class LexiSyncApp(QMainWindow):
             changed_ids.add(ts_obj.id)
 
         # Record Undo (for single ops)
-        if op_type != AIOperationType.BATCH_TRANSLATION and changes_for_undo:
+        if op_type not in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX] and changes_for_undo:
             action_name = 'bulk_ai_translate' if len(changes_for_undo) > 1 else 'single_change'
             payload = {'changes': changes_for_undo} if len(changes_for_undo) > 1 else changes_for_undo[0]
             self.add_to_undo_history(action_name, payload)
@@ -5208,6 +5350,8 @@ class LexiSyncApp(QMainWindow):
         elif op_type == AIOperationType.TRANSLATION:
             self.update_statusbar(_("AI translation successful: \"{text}...\"").format(
                 text=trigger_ts_obj.original_semantic[:20].replace('\n', '↵')))
+
+
     def _find_items_to_propagate(self, trigger_obj, mode):
         """Helper to find all TranslatableStrings that should be updated based on propagation mode."""
         targets = []

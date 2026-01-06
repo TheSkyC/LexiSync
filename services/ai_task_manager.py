@@ -36,7 +36,7 @@ class AITaskManager(QObject):
         self.semaphore = None
         self.context_provider = None
 
-    def start_batch(self, items, context_provider_func, concurrency_override=None, **worker_kwargs):
+    def start_batch(self, items, context_provider_func, operation_type=AIOperationType.BATCH_TRANSLATION, concurrency_override=None, **worker_kwargs):
         if self.is_running:
             return False
 
@@ -47,6 +47,7 @@ class AITaskManager(QObject):
         self.active_threads = 0
         self.successful_changes = []
         self.context_provider = context_provider_func
+        self.operation_type = operation_type
         self.worker_kwargs = worker_kwargs
         self.is_running = True
 
@@ -107,11 +108,12 @@ class AITaskManager(QObject):
             worker = AIWorker(
                 self.app,
                 ts_id=ts_obj.id,
-                operation_type=AIOperationType.BATCH_TRANSLATION,
+                operation_type=self.operation_type,
                 original_text=ts_obj.original_semantic,
                 target_lang=target_lang_name,
                 context_provider=self.context_provider,
                 plugin_placeholders=plugin_placeholders,
+                current_translation=ts_obj.translation,
                 **self.worker_kwargs
             )
 

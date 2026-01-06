@@ -78,3 +78,4 @@ class AIOperationType(Enum):
     TRANSLATION = auto()
     BATCH_TRANSLATION = auto()
     FIX = auto()
+    BATCH_FIX = auto()
