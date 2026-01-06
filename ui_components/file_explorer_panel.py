@@ -4,7 +4,7 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QTreeView, QFileSystemModel,
                                QMenu, QToolBar, QLineEdit, QCheckBox, QMessageBox,
                                QAbstractItemView, QApplication, QHeaderView,
-                               QHBoxLayout, QWidgetAction, QSizePolicy, QProgressBar)
+                               QHBoxLayout, QWidgetAction, QSizePolicy, QToolButton)
 from PySide6.QtCore import (Qt, QDir, QModelIndex, Signal, QUrl, QSortFilterProxyModel,
                             QSize, QTimer)
 from PySide6.QtGui import QAction, QDesktopServices, QIcon
@@ -201,6 +201,9 @@ class FileExplorerPanel(QWidget):
         self._create_navigation_toolbar()
         layout.addWidget(self.nav_toolbar)
 
+        self._create_filter_bar()
+        layout.addWidget(self.filter_bar)
+
         self._create_tree_view()
         layout.addWidget(self.tree_view)
 
@@ -220,6 +223,92 @@ class FileExplorerPanel(QWidget):
         except Exception as e:
             logger.error(f"Error creating navigation toolbar: {e}")
             self.nav_toolbar = QToolBar()
+
+    def _create_filter_menu(self):
+        try:
+            filter_icon_path = get_resource_path("icons/filter.svg")
+            filter_icon = QIcon(filter_icon_path) if os.path.exists(filter_icon_path) else QIcon()
+
+            self.filter_toggle_action = QAction(filter_icon, _("Toggle Filter"), self)
+            self.filter_toggle_action.setCheckable(True)
+            self.filter_toggle_action.triggered.connect(self._toggle_filter_bar)
+            self.nav_toolbar.addAction(self.filter_toggle_action)
+
+        except Exception as e:
+            logger.error(f"Error creating filter menu: {e}")
+
+    def _create_filter_bar(self):
+        self.filter_bar = QWidget()
+        self.filter_bar.setVisible(False)
+        self.filter_bar.setStyleSheet("""
+            QWidget {
+                background-color: #F8F9FA;
+                border-bottom: 1px solid #E0E0E0;
+            }
+            QLineEdit {
+                border: 1px solid #DCDFE6;
+                border-radius: 3px;
+                padding: 2px 5px;
+                background-color: #FFFFFF;
+            }
+            QLineEdit:focus {
+                border-color: #409EFF;
+            }
+            QToolButton {
+                border: none;
+                background: transparent;
+                padding: 2px;
+            }
+            QToolButton:hover {
+                background-color: #E0E0E0;
+                border-radius: 3px;
+            }
+            /* [ADD] Hide the menu indicator arrow */
+            QToolButton::menu-indicator {
+                image: none;
+            }
+        """)
+
+        layout = QHBoxLayout(self.filter_bar)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(5)
+
+        # Search Input
+        self.filter_edit = QLineEdit()
+        self.filter_edit.setPlaceholderText(_("Filter files..."))
+        self.filter_edit.setClearButtonEnabled(True)
+        # Connect signal
+        self.filter_edit.textChanged.connect(self.filter_changed)
+        layout.addWidget(self.filter_edit)
+
+        # Options Button
+        self.options_btn = QToolButton()
+        self.options_btn.setText("...")
+        self.options_btn.setToolTip(_("Filter Options"))
+        self.options_btn.setPopupMode(QToolButton.InstantPopup)
+
+        # Create the menu for checkboxes
+        self.options_menu = QMenu(self)
+
+        self.project_mode_checkbox = QAction(_("Project Mode"), self)
+        self.project_mode_checkbox.setCheckable(True)
+        self.project_mode_checkbox.setEnabled(False)
+        self.options_menu.addAction(self.project_mode_checkbox)
+
+        self.show_all_checkbox = QAction(_("Show All Files"), self)
+        self.show_all_checkbox.setCheckable(True)
+        self.options_menu.addAction(self.show_all_checkbox)
+
+        self.options_btn.setMenu(self.options_menu)
+        layout.addWidget(self.options_btn)
+
+    def _toggle_filter_bar(self, checked):
+        self.filter_bar.setVisible(checked)
+        if checked:
+            self.filter_edit.setFocus()
+            self.filter_edit.selectAll()
+        else:
+            self.filter_edit.clear()
 
     def _create_navigation_actions(self):
         action_configs = [
@@ -247,57 +336,6 @@ class FileExplorerPanel(QWidget):
                 action = QAction(text, self)
                 setattr(self, attr_name, action)
                 self.nav_toolbar.addAction(action)
-
-    def _create_filter_menu(self):
-        try:
-            filter_icon_path = get_resource_path("icons/filter.svg")
-            filter_icon = QIcon(filter_icon_path) if os.path.exists(filter_icon_path) else QIcon()
-
-            self.filter_settings_action = QAction(filter_icon, _("Filter Settings"), self)
-            self.nav_toolbar.addAction(self.filter_settings_action)
-            self.filter_menu = QMenu(self)
-
-            self._create_search_widget()
-
-            self._create_show_all_widget()
-
-        except Exception as e:
-            logger.error(f"Error creating filter menu: {e}")
-
-    def _create_search_widget(self):
-        try:
-            search_widget = QWidget()
-            search_layout = QHBoxLayout(search_widget)
-            search_layout.setContentsMargins(10, 5, 10, 5)
-            self.filter_edit = QLineEdit()
-            self.filter_edit.setPlaceholderText(_("Filter files..."))
-            search_layout.addWidget(self.filter_edit)
-
-            search_action = QWidgetAction(self.filter_menu)
-            search_action.setDefaultWidget(search_widget)
-            self.filter_menu.addAction(search_action)
-            self.filter_menu.addSeparator()
-        except Exception as e:
-            logger.error(f"Error creating search widget: {e}")
-
-    def _create_show_all_widget(self):
-        try:
-            filter_options_widget = QWidget()
-            filter_options_layout = QVBoxLayout(filter_options_widget)
-            filter_options_layout.setContentsMargins(10, 5, 10, 5)
-
-            self.project_mode_checkbox = QCheckBox(_("Project Mode"))
-            self.project_mode_checkbox.setEnabled(False)
-            filter_options_layout.addWidget(self.project_mode_checkbox)
-
-            self.show_all_checkbox = QCheckBox(_("Show All Files"))
-            filter_options_layout.addWidget(self.show_all_checkbox)
-
-            filter_action = QWidgetAction(self.filter_menu)
-            filter_action.setDefaultWidget(filter_options_widget)
-            self.filter_menu.addAction(filter_action)
-        except Exception as e:
-            logger.error(f"Error creating show all widget: {e}")
 
     def _create_tree_view(self):
         try:
@@ -356,7 +394,6 @@ class FileExplorerPanel(QWidget):
         connection_configs = [
             (self.tree_view.doubleClicked, self.on_double_clicked),
             (self.tree_view.customContextMenuRequested, self.show_context_menu),
-            (self.filter_settings_action.triggered, self.show_filter_menu),
             (self.back_action.triggered, self.go_back),
             (self.forward_action.triggered, self.go_forward),
             (self.up_action.triggered, self.go_up),
@@ -374,9 +411,10 @@ class FileExplorerPanel(QWidget):
             if hasattr(self, 'filter_edit'):
                 self.filter_edit.textChanged.connect(self.filter_changed)
             if hasattr(self, 'project_mode_checkbox'):
-                self.project_mode_checkbox.stateChanged.connect(self.toggle_project_mode)
+                self.project_mode_checkbox.toggled.connect(self.toggle_project_mode)
             if hasattr(self, 'show_all_checkbox'):
-                self.show_all_checkbox.stateChanged.connect(self.toggle_show_all)
+                self.show_all_checkbox.toggled.connect(self.toggle_show_all)
+
         except Exception as e:
             logger.error(f"Error connecting filter signals: {e}")
 
@@ -680,9 +718,8 @@ class FileExplorerPanel(QWidget):
              last_path = QDir.homePath()
         self.set_root_path(last_path)
 
-    def toggle_project_mode(self, state):
-        is_checked = (state == Qt.CheckState.Checked.value)
-        if is_checked:
+    def toggle_project_mode(self, checked):
+        if checked:
             source_files_info = self.app.project_config.get('source_files', [])
             project_root = self.app.current_project_path
             abs_source_paths = [os.path.join(project_root, f['project_path']) for f in source_files_info]
@@ -690,9 +727,9 @@ class FileExplorerPanel(QWidget):
         else:
             self.proxy_model.setProjectMode(False)
 
-    def toggle_show_all(self, state):
+    def toggle_show_all(self, checked):
         try:
-            is_checked = (state == Qt.CheckState.Checked.value)
+            is_checked = checked
             current_filter = QDir.AllDirs | QDir.Files | QDir.NoDotAndDotDot
 
             if is_checked:
@@ -744,7 +781,7 @@ class FileExplorerPanel(QWidget):
 
     def _populate_context_menu(self, menu, selected_paths, path_at_pos, proxy_index_at_pos, source_index_at_pos):
         try:
-            # Open action (single selection, file only)
+            # Open action
             if len(selected_paths) == 1:
                 path = selected_paths[0]
                 source_index = self.source_model.index(path)
@@ -752,12 +789,12 @@ class FileExplorerPanel(QWidget):
                     open_action = menu.addAction(_("Open"))
                     open_action.triggered.connect(lambda checked=False, p=path: self.file_double_clicked.emit(p))
 
-            # Rename action (single selection)
+            # Rename action
             if len(selected_paths) == 1:
                 rename_action = menu.addAction(_("Rename"))
                 rename_action.triggered.connect(lambda checked=False, idx=proxy_index_at_pos: self._safe_edit_item(idx))
 
-            # Set as root (directory only)
+            # Set as root
             if source_index_at_pos.isValid() and self.source_model.isDir(source_index_at_pos):
                 menu.addSeparator()
                 set_as_root_action = menu.addAction(_("Set as Root"))
