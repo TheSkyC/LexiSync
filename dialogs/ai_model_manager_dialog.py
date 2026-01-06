@@ -12,6 +12,7 @@ import copy
 from services.ai_translator import AITranslator
 from ui_components.help_button import HelpButton
 from ui_components.styled_button import StyledButton
+from ui_components.password_edit import PasswordEdit
 from utils.path_utils import get_resource_path
 from utils.constants import AI_PROVIDER_PRESETS
 from utils.localization import _
@@ -258,8 +259,7 @@ class AIModelManagerDialog(QDialog):
         conn_layout.addRow(url_label_container, self.base_url_edit)
 
         # -- API Key --
-        self.api_key_edit = QLineEdit()
-        self.api_key_edit.setEchoMode(QLineEdit.Password)
+        self.api_key_edit = PasswordEdit()
         self.api_key_edit.setPlaceholderText("sk-...")
         self.api_key_edit.textChanged.connect(self.save_current_form_to_buffer)
         conn_layout.addRow(_("API Key:"), self.api_key_edit)
