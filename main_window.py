@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QPushButton, QLineEdit, QTextEdit, QCheckBox, QFileDialog,
     QMessageBox, QInputDialog, QStatusBar, QProgressBar,
     QMenu, QTableView, QHeaderView, QDockWidget, QLabel,
-    QAbstractItemView, QFrame, QComboBox, QListWidgetItem
+    QAbstractItemView, QFrame, QComboBox, QSizePolicy
 )
 from PySide6.QtCore import (
     Qt, QModelIndex, Signal, QObject, QTimer, QByteArray, QEvent,
@@ -114,6 +114,18 @@ class LexiSyncApp(QMainWindow):
         else:
             self.setGeometry(100, 100, 1600, 900)
         self.setWindowTitle(_("LexiSync - v{version}").format(version=APP_VERSION))
+
+        self.SEARCH_ENTRY_STYLE = """
+            QLineEdit {
+                padding: 4px 8px;
+                border: 1px solid #DCDFE6;
+                border-radius: 3px;
+                min-height: 18px;
+            }
+            QLineEdit:focus {
+                border-color: #409EFF;
+            }
+        """
 
         # AI
         self.thread_signals = ThreadSafeSignals()
@@ -1030,10 +1042,15 @@ class LexiSyncApp(QMainWindow):
         self.search_entry.textChanged.connect(self.search_filter_changed)
         self.search_entry.returnPressed.connect(self.find_string_from_toolbar)
         self.search_entry.setFixedWidth(200)
+
+        self.search_entry.setStyleSheet(self.SEARCH_ENTRY_STYLE + "QLineEdit { color: black; }")
+
         self.search_entry.installEventFilter(self)
         toolbar_layout.addWidget(self.search_entry)
 
-        self.search_button = StyledButton(_("Find"), on_click=self.find_string_from_toolbar, btn_type="default", size="small")
+        self.search_button = StyledButton(_("Find"), on_click=self.find_string_from_toolbar, btn_type="default",
+                                          size="small")
+        self.search_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         toolbar_layout.addWidget(self.search_button)
         main_layout.addWidget(toolbar_frame)
 
@@ -1182,11 +1199,11 @@ class LexiSyncApp(QMainWindow):
             if event.type() == QEvent.FocusIn:
                 if self.search_entry.text() == _("Quick search..."):
                     self.search_entry.setText("")
-                    self.search_entry.setStyleSheet("color: black;")
+                    self.search_entry.setStyleSheet(self.SEARCH_ENTRY_STYLE + "QLineEdit { color: black; }")
             elif event.type() == QEvent.FocusOut:
                 if not self.search_entry.text():
                     self.search_entry.setText(_("Quick search..."))
-                    self.search_entry.setStyleSheet("color: grey;")
+                    self.search_entry.setStyleSheet(self.SEARCH_ENTRY_STYLE + "QLineEdit { color: grey; }")
         return super().eventFilter(obj, event)
 
     def _setup_dock_widgets(self):
@@ -2545,7 +2562,7 @@ class LexiSyncApp(QMainWindow):
 
         if not self.search_entry.text() and self.search_entry.placeholderText() != _("Quick search..."):
             self.search_entry.setPlaceholderText(_("Quick search..."))
-            self.search_entry.setStyleSheet("color: grey;")
+            self.search_entry.setStyleSheet(self.SEARCH_ENTRY_STYLE + "QLineEdit { color: grey; }")
 
     def rescan_source_file(self, file_info_to_rescan: dict):
         if not self.is_project_mode:
