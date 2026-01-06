@@ -155,7 +155,7 @@ class NewProjectDialog(QDialog):
 
         self.project_name_edit = QLineEdit()
         self.location_edit = QLineEdit()
-        self.browse_button = QPushButton("...")
+        self.browse_button = StyledButton("...", on_click=self.browse_location, size="small")
         self.browse_button.setFixedWidth(30)
         location_layout = QHBoxLayout()
         location_layout.addWidget(self.location_edit)
@@ -259,8 +259,6 @@ class NewProjectDialog(QDialog):
 
         main_layout.addLayout(button_layout)
 
-        # Connections
-        self.browse_button.clicked.connect(self.browse_location)
 
     def dragMoveEvent(self, event: QDragMoveEvent):
         pass
