@@ -518,62 +518,75 @@ class LexiSyncApp(QMainWindow):
         self.view_menu.addAction(self.action_restore_layout)
 
         # Tools Menu
-        self.action_apply_tm_to_untranslated = QAction(_("Apply TM to Untranslated"), self)
-        self.action_apply_tm_to_untranslated.triggered.connect(lambda: self.apply_tm_to_all_current_strings(only_if_empty=True, confirm=True))
-        self.action_apply_tm_to_untranslated.setEnabled(False)
-        self.tools_menu.addAction(self.action_apply_tm_to_untranslated)
-
-        self.action_ai_translate_selected = QAction(_("AI Translate Selected"), self)
-        self.action_ai_translate_selected.triggered.connect(self.cm_ai_translate_selected)
-        self.action_ai_translate_selected.setEnabled(False)
-        self.tools_menu.addAction(self.action_ai_translate_selected)
-
-        self.action_ai_translate_all_untranslated = QAction(_("AI Translate All Untranslated"), self)
-        self.action_ai_translate_all_untranslated.triggered.connect(self.ai_translate_all_untranslated)
-        self.action_ai_translate_all_untranslated.setEnabled(False)
-        self.tools_menu.addAction(self.action_ai_translate_all_untranslated)
-
-        self.action_stop_ai_batch_translation = QAction(_("Stop AI Batch Translation"), self)
-        self.action_stop_ai_batch_translation.triggered.connect(self.stop_batch_ai_translation)
-        self.action_stop_ai_batch_translation.setEnabled(False)
-        self.tools_menu.addAction(self.action_stop_ai_batch_translation)
+        self.ai_menu = self.tools_menu.addMenu(_("AI Translation"))
 
         self.action_smart_batch_translate = QAction(_("Intelligent Translation..."), self)
         self.action_smart_batch_translate.triggered.connect(self.show_smart_translation_dialog)
         self.action_smart_batch_translate.setEnabled(False)
-        self.tools_menu.addAction(self.action_smart_batch_translate)
+        self.ai_menu.addAction(self.action_smart_batch_translate)
 
-        self.tools_menu.addSeparator()
+        self.ai_menu.addSeparator()
+
+        self.action_ai_translate_selected = QAction(_("AI Translate Selected"), self)
+        self.action_ai_translate_selected.triggered.connect(self.cm_ai_translate_selected)
+        self.action_ai_translate_selected.setEnabled(False)
+        self.ai_menu.addAction(self.action_ai_translate_selected)
+
+        self.action_ai_translate_all_untranslated = QAction(_("AI Translate All Untranslated"), self)
+        self.action_ai_translate_all_untranslated.triggered.connect(self.ai_translate_all_untranslated)
+        self.action_ai_translate_all_untranslated.setEnabled(False)
+        self.ai_menu.addAction(self.action_ai_translate_all_untranslated)
+
+        self.action_stop_ai_batch_translation = QAction(_("Stop AI Batch Translation"), self)
+        self.action_stop_ai_batch_translation.triggered.connect(self.stop_batch_ai_translation)
+        self.action_stop_ai_batch_translation.setEnabled(False)
+        self.ai_menu.addAction(self.action_stop_ai_batch_translation)
+
+        self.ai_menu.addSeparator()
 
         self.action_ai_model_manager = QAction(_("AI Model Manager..."), self)
         self.action_ai_model_manager.triggered.connect(self.show_ai_model_manager)
-        self.tools_menu.addAction(self.action_ai_model_manager)
+        self.ai_menu.addAction(self.action_ai_model_manager)
 
-        self.action_resource_viewer = QAction(_("Resource Viewer..."), self)
-        self.action_resource_viewer.triggered.connect(self.show_resource_viewer)
-        self.tools_menu.addAction(self.action_resource_viewer)
+        # --- Quality Assurance (QA) Submenu ---
+        self.qa_menu = self.tools_menu.addMenu(_("Quality Assurance"))
 
-        self.tools_menu.addSeparator()
         self.action_run_validation_on_all = QAction(_("Re-validate All Entries"), self)
         self.action_run_validation_on_all.triggered.connect(self._run_and_refresh_with_validation)
         self.action_run_validation_on_all.setEnabled(False)
-        self.tools_menu.addAction(self.action_run_validation_on_all)
+        self.qa_menu.addAction(self.action_run_validation_on_all)
 
         self.action_auto_fix_all = QAction(_("Auto Fix All Issues"), self)
         self.action_auto_fix_all.triggered.connect(self.auto_fix_all_issues)
         self.action_auto_fix_all.setEnabled(False)
-        self.tools_menu.addAction(self.action_auto_fix_all)
+        self.qa_menu.addAction(self.action_auto_fix_all)
 
-        self.action_reload_translatable_text = QAction(_("Reload Translatable Text"), self)
-        self.action_reload_translatable_text.triggered.connect(self.reload_translatable_text)
-        self.action_reload_translatable_text.setEnabled(False)
-        self.tools_menu.addAction(self.action_reload_translatable_text)
-        self.tools_menu.addSeparator()
+        self.qa_menu.addSeparator()
 
         self.action_show_statistics = QAction(_("Project Statistics..."), self)
         self.action_show_statistics.triggered.connect(self.show_statistics_dialog)
         self.action_show_statistics.setEnabled(False)
-        self.tools_menu.addAction(self.action_show_statistics)
+        self.qa_menu.addAction(self.action_show_statistics)
+
+        # --- Data & Resources Submenu ---
+        self.data_menu = self.tools_menu.addMenu(_("Data && Resources"))
+
+        self.action_apply_tm_to_untranslated = QAction(_("Apply TM to Untranslated"), self)
+        self.action_apply_tm_to_untranslated.triggered.connect(
+            lambda: self.apply_tm_to_all_current_strings(only_if_empty=True, confirm=True))
+        self.action_apply_tm_to_untranslated.setEnabled(False)
+        self.data_menu.addAction(self.action_apply_tm_to_untranslated)
+
+        self.action_resource_viewer = QAction(_("Resource Viewer..."), self)
+        self.action_resource_viewer.triggered.connect(self.show_resource_viewer)
+        self.data_menu.addAction(self.action_resource_viewer)
+
+        self.data_menu.addSeparator()
+
+        self.action_reload_translatable_text = QAction(_("Reload Translatable Text"), self)
+        self.action_reload_translatable_text.triggered.connect(self.reload_translatable_text)
+        self.action_reload_translatable_text.setEnabled(False)
+        self.data_menu.addAction(self.action_reload_translatable_text)
 
         # Settings Menu
         self.action_show_settings = QAction(_("Settings..."), self)
