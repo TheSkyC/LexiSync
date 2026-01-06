@@ -188,7 +188,7 @@ class FileExplorerPanel(QWidget):
     def _apply_initial_settings(self):
         try:
             if hasattr(self, 'show_all_checkbox'):
-                self.toggle_show_all(self.show_all_checkbox.checkState())
+                self.toggle_show_all(self.show_all_checkbox.isChecked())
             self._update_nav_buttons_state()
         except Exception as e:
             logger.error(f"Error applying initial settings: {e}")
