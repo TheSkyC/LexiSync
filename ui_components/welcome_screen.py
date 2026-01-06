@@ -5,7 +5,7 @@ import os
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, \
     QApplication, QMessageBox, QLabel
 from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize
-from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QColor
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QColor, QPalette
 from utils.path_utils import get_resource_path
 from utils.localization import _
 
@@ -74,7 +74,6 @@ class ActionButton(QWidget):
         self.setCursor(Qt.PointingHandCursor)
         self.setMinimumHeight(80)
 
-        # 状态追踪
         self._is_pressed = False
         self._is_hovered = False
 
@@ -91,10 +90,10 @@ class ActionButton(QWidget):
         text_layout.setSpacing(2)
 
         self.title_label = QLabel(f"<b>{title}</b>")
-        self.title_label.setStyleSheet("font-size: 16px;")
+        self.title_label.setStyleSheet("font-size: 16px; background-color: transparent;")
 
         self.subtitle_label = QLabel(subtitle)
-        self.subtitle_label.setStyleSheet("color: #555;")
+        self.subtitle_label.setStyleSheet("color: #555; background-color: transparent;")
         self.subtitle_label.setWordWrap(True)
 
         text_layout.addWidget(self.title_label)
@@ -103,34 +102,23 @@ class ActionButton(QWidget):
 
         main_layout.addLayout(text_layout, 1)
 
-        self.setProperty("class", "action-button")
+        self.setStyleSheet("""
+            QWidget {
+                border-radius: 8px;
+            }
+        """)
+        self.setAutoFillBackground(True)
         self._update_style()
 
     def _update_style(self):
+        palette = self.palette()
         if self._is_pressed:
-            # 按下状态 - 深灰色
-            self.setStyleSheet("""
-                QWidget[class="action-button"] {
-                    background-color: #D0D0D0;
-                    border-radius: 8px;
-                }
-            """)
+            palette.setColor(self.backgroundRole(), QColor("#E0E0E0"))  # Darker grey for pressed
         elif self._is_hovered:
-            # 悬停状态 - 浅灰色
-            self.setStyleSheet("""
-                QWidget[class="action-button"] {
-                    background-color: #E5E5E5;
-                    border-radius: 8px;
-                }
-            """)
+            palette.setColor(self.backgroundRole(), QColor("#F0F0F0"))  # Lighter grey for hover
         else:
-            # 默认状态
-            self.setStyleSheet("""
-                QWidget[class="action-button"] {
-                    background-color: #F5F7FA;
-                    border-radius: 8px;
-                }
-            """)
+            palette.setColor(self.backgroundRole(), QColor("#F5F7FA"))  # Default background
+        self.setPalette(palette)
 
     def event(self, event):
         if event.type() == QEvent.Enter:
