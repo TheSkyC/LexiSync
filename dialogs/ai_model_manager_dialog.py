@@ -257,12 +257,6 @@ class AIModelManagerDialog(QDialog):
 
         conn_layout.addRow(url_label_container, self.base_url_edit)
 
-        # Preview Label
-        self.url_preview_label = QLabel()
-        self.url_preview_label.setStyleSheet("color: #909399; font-size: 11px; margin-left: 2px;")
-        self.url_preview_label.setWordWrap(True)
-        conn_layout.addRow("", self.url_preview_label)
-
         # -- API Key --
         self.api_key_edit = QLineEdit()
         self.api_key_edit.setEchoMode(QLineEdit.Password)
