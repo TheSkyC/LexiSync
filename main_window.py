@@ -3554,6 +3554,10 @@ class LexiSyncApp(QMainWindow):
             self.update_statusbar(_("Selected item(s) already have the desired warning status."))
 
         self._update_view_for_ids(changed_ids)
+        if self.current_selected_ts_id in changed_ids:
+            ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+            if ts_obj:
+                self.details_panel.update_warnings(ts_obj)
 
     def on_fuzzy_toggled(self, checked):
         if not self.current_selected_ts_id: return
