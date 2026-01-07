@@ -1,53 +1,86 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QToolButton
-from PySide6.QtCore import Signal, Qt, QSize
-from PySide6.QtGui import QIcon, QCursor
-from utils.path_utils import get_resource_path
+from PySide6.QtWidgets import QAbstractButton
+from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, Property, QRectF
+from PySide6.QtGui import QPainter, QColor, QBrush, QPen
 
 
-class ToggleButton(QToolButton):
-    toggled = Signal(bool)
-
+class ToggleButton(QAbstractButton):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setCursor(Qt.PointingHandCursor)
         self.setCheckable(True)
-        self.setAutoRaise(True)
-        self.setIconSize(QSize(24, 24))
+        self.setCursor(Qt.PointingHandCursor)
+        self.setFixedSize(32, 18)
+        # 颜色配置
+        self._bg_color_off = QColor("#E0E0E0")
+        self._bg_color_on = QColor("#F57C00")
+        self._circle_color = QColor("#FFFFFF")
 
-        # 加载图标
-        self.icon_on = QIcon(get_resource_path("icons/toggle-right.svg"))
-        self.icon_off = QIcon(get_resource_path("icons/toggle-left.svg"))
+        # 动画参数
+        self._circle_position = 0.0
+        self._anim = QPropertyAnimation(self, b"circle_position", self)
+        self._anim.setDuration(200)
+        self._anim.setEasingCurve(QEasingCurve.OutQuad)
 
-        self.update_icon(False)
-        self.clicked.connect(self._on_clicked)
+        # 状态切换连接
+        self.toggled.connect(self._start_animation)
 
-        # 无边框样式
-        self.setStyleSheet("""
-            QToolButton {
-                border: none;
-                background: transparent;
-                padding: 0px;
-                margin: 0px;
-            }
-            QToolButton:pressed {
-                padding: 0px; 
-                background: transparent;
-            }
-        """)
+    # 定义 Qt 属性供动画使用
+    @Property(float)
+    def circle_position(self):
+        return self._circle_position
 
-    def _on_clicked(self):
-        is_checked = self.isChecked()
-        self.update_icon(is_checked)
-        self.toggled.emit(is_checked)
+    @circle_position.setter
+    def circle_position(self, pos):
+        self._circle_position = pos
+        self.update()  # 触发重绘
 
-    def update_icon(self, is_checked):
-        self.setIcon(self.icon_on if is_checked else self.icon_off)
+    def _start_animation(self, checked):
+        self._anim.stop()
+        self._anim.setEndValue(1.0 if checked else 0.0)
+        self._anim.start()
 
     def set_checked_silent(self, checked):
+        """无动画设置状态"""
         self.blockSignals(True)
         self.setChecked(checked)
-        self.update_icon(checked)
+        self._circle_position = 1.0 if checked else 0.0
+        self.update()
         self.blockSignals(False)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        # 绘制背景
+        rect = self.rect()
+        radius = rect.height() / 2
+
+        current_bg = QColor(self._bg_color_off)
+        if self._circle_position > 0:
+            r = self._bg_color_off.red() + (self._bg_color_on.red() - self._bg_color_off.red()) * self._circle_position
+            g = self._bg_color_off.green() + (
+                        self._bg_color_on.green() - self._bg_color_off.green()) * self._circle_position
+            b = self._bg_color_off.blue() + (
+                        self._bg_color_on.blue() - self._bg_color_off.blue()) * self._circle_position
+            current_bg = QColor(int(r), int(g), int(b))
+
+        painter.setBrush(QBrush(current_bg))
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(rect, radius, radius)
+
+        # 绘制圆点
+        padding = 3
+        circle_dia = rect.height() - padding * 2
+
+        # 计算圆点 X 坐标
+        start_x = padding
+        end_x = rect.width() - padding - circle_dia
+        current_x = start_x + (end_x - start_x) * self._circle_position
+
+        painter.setBrush(QBrush(self._circle_color))
+        painter.drawEllipse(QRectF(current_x, padding, circle_dia, circle_dia))
+
+    def sizeHint(self):
+        return QSize(32, 18)
