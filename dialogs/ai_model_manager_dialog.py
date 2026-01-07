@@ -13,6 +13,7 @@ from services.ai_translator import AITranslator
 from ui_components.help_button import HelpButton
 from ui_components.styled_button import StyledButton
 from ui_components.password_edit import PasswordEdit
+from ui_components.capability_selector import CapabilitySelector
 from utils.path_utils import get_resource_path
 from utils.constants import AI_PROVIDER_PRESETS
 from utils.localization import _
@@ -194,7 +195,7 @@ class AIModelManagerDialog(QDialog):
         right_layout = QVBoxLayout(self.right_widget)
         right_layout.setContentsMargins(10, 0, 0, 0)
 
-        # 1. Header (Name & Active Status)
+        # Header (Name & Active Status)
         header_layout = QHBoxLayout()
         self.name_edit = QLineEdit()
         self.name_edit.setPlaceholderText(_("Profile Name (e.g. My DeepSeek)"))
@@ -212,7 +213,7 @@ class AIModelManagerDialog(QDialog):
         header_layout.addWidget(self.btn_set_active)
         right_layout.addLayout(header_layout)
 
-        # 2. Quick Fill
+        # Quick Fill
         preset_group = QGroupBox(_("Quick Setup"))
         preset_layout = QHBoxLayout(preset_group)
         self.preset_combo = QComboBox()
@@ -225,7 +226,7 @@ class AIModelManagerDialog(QDialog):
         preset_layout.addWidget(self.preset_combo)
         right_layout.addWidget(preset_group)
 
-        # 3. Connection Details
+        # Connection Details
         conn_group = QGroupBox(_("Connection Details"))
         conn_layout = QFormLayout(conn_group)
 
@@ -272,7 +273,13 @@ class AIModelManagerDialog(QDialog):
 
         right_layout.addWidget(conn_group)
 
-        # 4. Performance
+        self.cap_selector = CapabilitySelector()
+        self.cap_selector.selectionChanged.connect(self.save_current_form_to_buffer)
+
+        conn_layout.addRow(_("Capabilities:"), self.cap_selector)
+        right_layout.addWidget(conn_group)
+
+        # Performance
         perf_group = QGroupBox(_("Performance"))
         perf_layout = QHBoxLayout(perf_group)
 
@@ -293,7 +300,7 @@ class AIModelManagerDialog(QDialog):
         perf_layout.addWidget(self.timeout_spin)
         right_layout.addWidget(perf_group)
 
-        # 5. Test Button
+        # Test Button
         self.btn_test = QPushButton(_("Test Connection"))
         self.btn_test.clicked.connect(self.test_connection)
         right_layout.addWidget(self.btn_test)
@@ -361,6 +368,8 @@ class AIModelManagerDialog(QDialog):
             self.update_url_tooltip(self.base_url_edit.text())
             self.api_key_edit.setText(model_data.get("api_key", ""))
             self.model_name_edit.setText(model_data.get("model_name", ""))
+            caps = model_data.get("capabilities", [])
+            self.cap_selector.set_selection(caps)
             self.concurrency_spin.setValue(model_data.get("concurrency", 1))
             self.timeout_spin.setValue(model_data.get("timeout", 60))
 
@@ -382,6 +391,7 @@ class AIModelManagerDialog(QDialog):
         self.current_editing_item["api_base_url"] = self.base_url_edit.text()
         self.current_editing_item["api_key"] = self.api_key_edit.text()
         self.current_editing_item["model_name"] = self.model_name_edit.text()
+        self.current_editing_item["capabilities"] = self.cap_selector.get_selection()
         self.current_editing_item["concurrency"] = self.concurrency_spin.value()
         self.current_editing_item["timeout"] = self.timeout_spin.value()
 
@@ -429,6 +439,7 @@ class AIModelManagerDialog(QDialog):
             "api_base_url": "",
             "api_key": "",
             "model_name": "",
+            "capabilities": [],
             "concurrency": 1,
             "timeout": 60
         }
