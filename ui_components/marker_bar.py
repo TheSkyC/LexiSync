@@ -432,7 +432,7 @@ class MarkerBar(QWidget):
                         tooltip_parts.append(
                             f"<div style='color:#999; font-style:italic;'>{_('Warnings ignored')}</div>")
 
-                    self.tooltip.show_tooltip(event.globalPos(), "".join(tooltip_parts))
+                    self.tooltip.show_tooltip(event.globalPos(), "".join(tooltip_parts), delay=50)
                 else:
                     self.tooltip.hide()
         else:
