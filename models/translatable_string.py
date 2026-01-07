@@ -168,12 +168,14 @@ class TranslatableString:
         fuzzy_warning_tuple = (WarningType.FUZZY_TRANSLATION, _("Translation is marked as fuzzy and needs review."))
 
         has_fuzzy_in_minor_warnings = any(wt == WarningType.FUZZY_TRANSLATION for wt, _ in self.minor_warnings)
+
         should_have_fuzzy_warning = self.is_fuzzy and self.translation.strip()
+
         if should_have_fuzzy_warning and not has_fuzzy_in_minor_warnings:
             self.minor_warnings.append(fuzzy_warning_tuple)
         elif not should_have_fuzzy_warning and has_fuzzy_in_minor_warnings:
-            self.minor_warnings = [(wt, msg) for wt, msg in self.minor_warnings if
-                                   wt != WarningType.FUZZY_TRANSLATION]
+            self.minor_warnings = [(wt, msg) for wt, msg in self.minor_warnings if wt != WarningType.FUZZY_TRANSLATION]
+
         self.ui_style_cache = {}
 
         # 1. 最高优先级：已忽略

@@ -11,6 +11,7 @@ from PySide6.QtCore import Qt, Signal, QEvent
 from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor, QCursor
 from services import fix_service
 from .tooltip import Tooltip
+from .toggle_button import ToggleButton
 from .newline_text_edit import NewlineTextEdit
 from .elided_label import ElidedLabel
 from .syntax_highlighter import TranslationHighlighter
@@ -24,6 +25,8 @@ class DetailsPanel(QWidget):
     translation_text_changed_signal = Signal()
     translation_focus_out_signal = Signal()
     warning_ignored_signal = Signal()
+    fuzzy_toggled_signal = Signal(bool)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.app_instance = parent
@@ -245,6 +248,26 @@ class DetailsPanel(QWidget):
         self.apply_btn.setEnabled(False)
         trans_actions_layout.addWidget(self.apply_btn)
 
+        # Toggle Fuzzy
+        trans_actions_layout.addSpacing(30)
+
+        self.fuzzy_toggle = ToggleButton()
+        self.fuzzy_toggle.setToolTip(_("Mark as Fuzzy / Needs Work"))
+        self.fuzzy_toggle.toggled.connect(self._on_fuzzy_ui_toggled)
+        self.fuzzy_toggle.toggled.connect(self.fuzzy_toggled_signal.emit)
+        self.fuzzy_label = QLabel(_("Fuzzy"))
+        self.fuzzy_label.setStyleSheet("color: #666; font-size: 14px; margin-left: 2px; font-weight: normal;")
+
+        trans_actions_layout.addWidget(self.fuzzy_toggle)
+
+        fuzzy_container = QWidget()
+        fuzzy_layout = QHBoxLayout(fuzzy_container)
+        fuzzy_layout.setContentsMargins(0, 0, 0, 0)
+        fuzzy_layout.setSpacing(2)
+        fuzzy_layout.addWidget(self.fuzzy_toggle)
+        fuzzy_layout.addWidget(self.fuzzy_label)
+
+        trans_actions_layout.addWidget(fuzzy_container)
         trans_actions_layout.addStretch(1)
 
         self.ai_translate_current_btn = StyledButton(_("AI Translate Selected"), on_click=self.ai_translate_signal.emit, btn_type="primary", size="medium")
@@ -331,6 +354,10 @@ class DetailsPanel(QWidget):
         if hasattr(self, 'original_highlighter'):
             self.original_highlighter.update_data(original_placeholders, missing_in_translation)
 
+    def update_fuzzy_status(self, is_fuzzy):
+        self.fuzzy_toggle.set_checked_silent(is_fuzzy)
+        self._on_fuzzy_ui_toggled(is_fuzzy)
+
     def on_fix_all_clicked(self):
         if not self.current_ts_obj: return
         target_lang = self.app_instance.current_target_language if self.app_instance.is_project_mode else self.app_instance.target_language
@@ -346,6 +373,12 @@ class DetailsPanel(QWidget):
 
             self.app_instance._apply_translation_to_model(self.current_ts_obj, fixed_text, source="auto_fix")
             self.update_warnings(self.current_ts_obj)
+
+    def _on_fuzzy_ui_toggled(self, checked):
+        if checked:
+            self.fuzzy_label.setStyleSheet("color: #F57C00; font-size: 14px; margin-left: 2px; font-weight: normal;")
+        else:
+            self.fuzzy_label.setStyleSheet("color: #666; font-size: 14px; margin-left: 2px; font-weight: normal;")
 
     def update_warnings(self, ts_obj):
         self.current_ts_obj = ts_obj

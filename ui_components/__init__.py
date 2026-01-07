@@ -3,3 +3,4 @@
 
 from .styled_button import StyledButton
 from .password_edit import PasswordEdit
+from .toggle_button import ToggleButton

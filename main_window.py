@@ -1266,6 +1266,7 @@ class LexiSyncApp(QMainWindow):
         self.details_panel.translation_focus_out_signal.connect(self.apply_translation_focus_out)
         self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
         self.details_panel.warning_ignored_signal.connect(lambda: self.cm_set_warning_ignored_status(True))
+        self.details_panel.fuzzy_toggled_signal.connect(self.on_fuzzy_toggled)
 
         # CommentStatusPanel
         self.comment_status_panel.apply_comment_signal.connect(self.apply_comment_from_button)
@@ -3554,6 +3555,38 @@ class LexiSyncApp(QMainWindow):
 
         self._update_view_for_ids(changed_ids)
 
+    def on_fuzzy_toggled(self, checked):
+        if not self.current_selected_ts_id: return
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+        if not ts_obj: return
+
+        changes = []
+
+        if ts_obj.is_fuzzy != checked:
+            changes.append({
+                'string_id': ts_obj.id, 'field': 'is_fuzzy',
+                'old_value': ts_obj.is_fuzzy, 'new_value': checked
+            })
+            ts_obj.is_fuzzy = checked
+
+        if checked and ts_obj.is_reviewed:
+            changes.append({
+                'string_id': ts_obj.id, 'field': 'is_reviewed',
+                'old_value': True, 'new_value': False
+            })
+            ts_obj.is_reviewed = False
+
+        if changes:
+            action_name = 'bulk_change' if len(changes) > 1 else 'single_change'
+            payload = {'changes': changes} if len(changes) > 1 else changes[0]
+            self.add_to_undo_history(action_name, payload)
+
+            self.mark_project_modified()
+            self._update_view_for_ids({ts_obj.id})
+
+            if self.current_selected_ts_id == ts_obj.id:
+                self.details_panel.update_warnings(ts_obj)
+
     def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual",
                                     force_propagation_mode=None):
         processed_translation = self.plugin_manager.run_hook(
@@ -3569,6 +3602,14 @@ class LexiSyncApp(QMainWindow):
         # 如果新旧内容一样，则不执行任何操作
         if processed_translation == trigger_old_translation_internal:
             return processed_translation, False
+
+        is_fuzzy_changed = False
+        old_fuzzy_val = ts_obj.is_fuzzy
+
+        if ts_obj.is_fuzzy and source in ["manual", "manual_button", "manual_focus_out", "manual_paste",
+                                          "ai_batch_item", "tm_suggestion"]:
+            ts_obj.is_fuzzy = False
+            is_fuzzy_changed = True
 
         old_translation_for_undo = ts_obj.get_translation_for_storage_and_tm()
         ids_to_update = {ts_obj.id}
@@ -3588,6 +3629,12 @@ class LexiSyncApp(QMainWindow):
             'old_value': old_translation_for_undo, 'new_value': new_translation_for_tm_storage
         }
         all_changes_for_undo_list.append(primary_change_data)
+
+        if is_fuzzy_changed:
+            all_changes_for_undo_list.append({
+                'string_id': ts_obj.id, 'field': 'is_fuzzy',
+                'old_value': True, 'new_value': False
+            })
 
         # 更新 TM
         if new_translation_from_ui.strip():
@@ -3650,6 +3697,7 @@ class LexiSyncApp(QMainWindow):
         if self.current_selected_ts_id == ts_obj.id:
             if hasattr(self, 'details_panel'):
                 self.details_panel.update_warnings(ts_obj)
+                self.details_panel.update_fuzzy_status(ts_obj.is_fuzzy)
         return processed_translation, True
 
     def apply_translation_from_button(self):
@@ -5031,6 +5079,10 @@ class LexiSyncApp(QMainWindow):
                 bulk_changes.append(
                     {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_val, 'new_value': reviewed_flag})
                 changed_ids.add(ts_obj.id)
+            if reviewed_flag and ts_obj.is_fuzzy:
+                bulk_changes.append({'string_id': ts_obj.id, 'field': 'is_fuzzy', 'old_value': True, 'new_value': False})
+                ts_obj.is_fuzzy = False
+                changed_ids.add(ts_obj.id)
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
@@ -5493,6 +5545,7 @@ class LexiSyncApp(QMainWindow):
         if not ts_obj:
             self.clear_details_pane()
             return
+        self.details_panel.update_fuzzy_status(ts_obj.is_fuzzy)
         self.details_panel.original_text_display.blockSignals(True)
         self.details_panel.translation_edit_text.blockSignals(True)
         try:
