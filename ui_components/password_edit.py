@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import QLineEdit, QAbstractButton
-from PySide6.QtGui import QPainter, QColor, QPen, Qt
+from PySide6.QtGui import Qt, QPainter, QColor, QPen, QCursor
 from PySide6.QtCore import QSize, QPropertyAnimation, QEasingCurve, Property, QRectF, QPointF, Slot
+from .tooltip import Tooltip
 from utils.localization import _
 
 
@@ -30,6 +31,30 @@ class EyeButton(QAbstractButton):
         # 状态切换连接
         self.toggled.connect(self._start_animation)
 
+        # Tooltip
+        self._custom_tooltip = Tooltip(self)
+        self._tooltip_text = ""
+
+    def setToolTip(self, text):
+        self._tooltip_text = text
+
+    def enterEvent(self, event):
+        self._is_hovered = True
+        self.update()
+        if self._tooltip_text:
+            self._custom_tooltip.show_tooltip(QCursor.pos(), self._tooltip_text, delay=600)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._is_hovered = False
+        self.update()
+        self._custom_tooltip.hide()
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, event):
+        self._custom_tooltip.hide()
+        super().mousePressEvent(event)
+
     @Property(float)
     def anim_progress(self):
         return self._anim_progress
@@ -51,16 +76,6 @@ class EyeButton(QAbstractButton):
         self._anim_progress = 0.0 if checked else 1.0
         self.update()
         self.blockSignals(False)
-
-    def enterEvent(self, event):
-        self._is_hovered = True
-        self.update()
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        self._is_hovered = False
-        self.update()
-        super().leaveEvent(event)
 
     def paintEvent(self, event):
         painter = QPainter(self)

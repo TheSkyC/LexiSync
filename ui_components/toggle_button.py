@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import QAbstractButton
-from PySide6.QtCore import Qt, QSize, QPropertyAnimation, QEasingCurve, Property, QRectF
-from PySide6.QtGui import QPainter, QColor, QBrush, QPen
+from PySide6.QtCore import (Qt, QSize, QPropertyAnimation, QEasingCurve,
+                            Property, QRectF)
+from PySide6.QtGui import QPainter, QColor, QBrush, QPen, QCursor
+from .tooltip import Tooltip
 
 
 class ToggleButton(QAbstractButton):
@@ -25,6 +27,26 @@ class ToggleButton(QAbstractButton):
 
         # 状态切换连接
         self.toggled.connect(self._start_animation)
+
+        # 初始化自定义 Tooltip
+        self._custom_tooltip = Tooltip(self)
+        self._tooltip_text = ""
+
+    def setToolTip(self, text):
+        self._tooltip_text = text
+
+    def enterEvent(self, event):
+        if self._tooltip_text:
+            self._custom_tooltip.show_tooltip(QCursor.pos(), self._tooltip_text, delay=600)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._custom_tooltip.hide()
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, event):
+        self._custom_tooltip.hide()
+        super().mousePressEvent(event)
 
     # 定义 Qt 属性供动画使用
     @Property(float)

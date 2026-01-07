@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import QPushButton
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QCursor, QColor, QFont
+from .tooltip import Tooltip
 
 
 class StyledButton(QPushButton):
@@ -50,6 +51,9 @@ class StyledButton(QPushButton):
                  icon=None, tooltip=None, parent=None):
         super().__init__(text, parent)
 
+        self._custom_tooltip = Tooltip(self)
+        self._tooltip_text = ""
+
         if on_click:
             self.clicked.connect(on_click)
         if icon:
@@ -82,6 +86,20 @@ class StyledButton(QPushButton):
         }
 
         self._apply_css(palette, size_config, font_config)
+
+    def setToolTip(self, text):
+        self._tooltip_text = text
+
+    def event(self, event):
+        if event.type() == QEvent.Enter:
+            if self._tooltip_text:
+                self._custom_tooltip.show_tooltip(QCursor.pos(), self._tooltip_text, delay=500)
+        elif event.type() == QEvent.Leave:
+            self._custom_tooltip.hide()
+        elif event.type() == QEvent.MouseButtonPress:
+            self._custom_tooltip.hide()
+
+        return super().event(event)
 
     @staticmethod
     def generate_palette(base_hex: str) -> dict:
