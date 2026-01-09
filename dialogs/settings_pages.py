@@ -511,11 +511,27 @@ class AISettingsPage(BaseSettingsPage):
         content_layout.addWidget(context_group)
 
         # Prompts Group
+        prompt_group = QGroupBox(_("Prompts"))
+        prompt_layout = QVBoxLayout(prompt_group)
+
+        prompt_select_layout = QFormLayout()
+
+        self.trans_prompt_combo = QComboBox()
+        self.fix_prompt_combo = QComboBox()
+        self._populate_prompt_combos()
+
+        prompt_select_layout.addRow(_("Translation Prompt:"), self.trans_prompt_combo)
+        prompt_select_layout.addRow(_("Correction Prompt:"), self.fix_prompt_combo)
+
+        prompt_layout.addLayout(prompt_select_layout)
+        prompt_layout.addSpacing(15)
+
         self.prompt_button = QPushButton(_("Prompt Manager..."))
         self.prompt_button.clicked.connect(self.open_prompt_manager)
+        prompt_layout.addWidget(self.prompt_button)
 
-        context_layout.addWidget(self.prompt_button)
-        content_layout.addWidget(context_group)
+        content_layout.addWidget(prompt_group)
+
         content_layout.addStretch(1)
 
         scroll_area.setWidget(content_widget)
