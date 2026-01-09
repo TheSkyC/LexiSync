@@ -86,11 +86,6 @@ DEFAULT_VALIDATION_RULES = {
     "accelerator": {"enabled": True, "level": "error", "label": _("Accelerator Mismatch")},
 }
 
-# utils/constants.py
-
-# ... (Imports and other constants)
-
-# [CHANGED] Updated to English and optimized for clarity
 DEFAULT_CORRECTION_PROMPT_STRUCTURE = [
     {
         "id": str(uuid.uuid4()),
@@ -202,22 +197,37 @@ DEFAULT_PROMPT_STRUCTURE = [
 
 COT_INJECTION_PROMPT = """
 ================================================================================
-CRITICAL INSTRUCTION: CHAIN OF THOUGHT ENFORCEMENT
+CRITICAL INSTRUCTION: CHAIN OF THOUGHT FOR EXPERT-LEVEL LOCALIZATION
 ================================================================================
-Do NOT output the translation immediately. You must engage in a deep analysis first.
+Do NOT generate the final translation immediately. You MUST first engage in a multi-step deep analysis. Your entire reasoning process must be enclosed in <thinking>...</thinking> tags.
 
-1. **Analyze**: Identify the core meaning, tone, placeholders (%s, {var}), and formatting tags.
-2. **Consult**: Check the Glossary and Context provided above. Ensure consistency.
-3. **Reason**: Explain your translation choices for ambiguous terms or complex structures.
+**Step 1: Initial Analysis**
+   - **Core Meaning & Tone**: What is the fundamental message? Is the tone formal, casual, technical, or urgent?
+   - **Structural Elements**: Identify and list ALL technical elements that MUST be preserved exactly:
+     - Placeholders (e.g., %s, {variable}):
+     - HTML/XML Tags (e.g., <b>, <br/>):
+     - Escape Sequences (e.g., \\n, \\t):
+
+**Step 2: Resource Consultation**
+   - **Glossary Check**: Review the provided Glossary. List any matching terms and their required translations.
+   - **Context Review**: Examine the Semantic, Untranslated, and Translated Context. Note any style patterns or terms that influence the current translation.
+
+**Step 3: Translation Strategy & Draft**
+   - **Strategy**: Based on the analysis, outline your translation approach. How will you handle ambiguous words, cultural nuances, or complex structures?
+   - **Initial Draft**: Formulate a preliminary translation based on your strategy.
+
+**Step 4: Self-Correction and Refinement**
+   - **Review against Rules**: Critically review your draft. Does it perfectly preserve all structural elements from Step 1? Does it follow all glossary rules from Step 2?
+   - **Final Polish**: Refine the draft for natural fluency and adherence to the target language's conventions.
 
 **OUTPUT FORMAT (MANDATORY)**:
-You must strictly follow this XML-style format. Do not output anything else outside these tags.
+You must strictly follow this XML-style format. Output your step-by-step reasoning inside the <thinking> tags, then provide ONLY the final, polished translation inside the <translation> tags.
 
 <thinking>
-[Write your step-by-step analysis, glossary checks, and reasoning here]
+[Your detailed analysis and reasoning from Step 1 to Step 4 goes here]
 </thinking>
 <translation>
-[Write ONLY the final translation result here, preserving all formatting exactly]
+[Write ONLY the final, corrected, and polished translation here, preserving all formatting]
 </translation>
 """
 
