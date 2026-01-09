@@ -142,79 +142,55 @@ DEFAULT_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": STRUCTURAL,
         "enabled": True,
-        "content": "你是一位专业的本地化专家，唯一的任务是将<translate_input>内的文本翻译从[Source Language]翻译为[Target Language]。\n请严格遵循以下要求："
+        "content": "You are a professional localization expert. Your task is to translate the text enclosed within <translate_input> tags from [Source Language] to [Target Language]."
     },
     {
         "id": str(uuid.uuid4()),
         "type": STATIC,
         "enabled": True,
-        "content": "你的唯一任务是将文本翻译成[Target Language]。"
+        "content": "CRITICAL: Preserve ALL placeholders exactly as-is:\n- Format specifiers: %s, %d, %f, %.2f, etc.\n- Named placeholders: {variable}, %{count}, {{name}}\n- Template syntax: ${var}, [[key]], <placeholder>\nThe quantity, order, and names must match the original perfectly."
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": STATIC,
+        "enabled": True,
+        "content": "CRITICAL: Preserve ALL formatting exactly:\n- Escape sequences: \\n, \\t, \\r, \\\"\n- HTML tags: <br>, <b>, <i>, <span>, <a>, etc.\n- Do NOT convert between \\n and <br>\n- Match the original format character-by-character"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": STATIC,
+        "enabled": True,
+        "content": "Do not add or remove any characters, symbols, or spaces not present in the original text, unless required by the target language's punctuation conventions."
     },
     {
         "id": str(uuid.uuid4()),
         "type": DYNAMIC,
         "enabled": True,
-        "content": "请遵循以下针对此项目的特定翻译指示：\n[Global Instructions]\n[Project Instructions]"
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "type": STATIC,
-        "enabled": True,
-        "content": "如果目标语言与源语言相同，则不要翻译，直接输出<translate_input>中的文本。"
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "type": STATIC,
-        "enabled": True,
-        "content": "必须完整保留所有的占位符，例如 `%s`, `%d`, `%{count}`, `{variable}` 等，占位符本身无需翻译。确保占位符的数量和名称在译文中与原文完全一致。"
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "type": STATIC,
-        "enabled": True,
-        "content": "必须保留所有的格式化标记和控制字符，例如换行符 `\\n`、制表符 `\\t` 以及其他特殊转义字符。"
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "type": "STATIC",
-        "enabled": True,
-        "content": "严格区分物理换行符 `\\n` 和 HTML 标签 `<br>`。如果原文此处使用的是 `\\n`，译文对应位置必须使用 `\\n`；如果原文使用的是 `<br>`，译文必须使用 `<br>`。禁止将一种转换为另一种。严格遵守原文的格式"
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "type": STATIC,
-        "enabled": True,
-        "content": "除了翻译本身，不得增加或删除任何原文中没有的字符、符号或空格。除非是为了匹配当地的符号使用习惯"
+        "content": "### Project Instructions\n[Global Instructions]\n[Project Instructions]"
     },
     {
         "id": str(uuid.uuid4()),
         "type": DYNAMIC,
         "enabled": True,
-        "content": "请参考以下术语库信息：\n[Glossary]"
+        "content": "### Translation Style Guide\n[Style Guide]"
     },
     {
         "id": str(uuid.uuid4()),
         "type": DYNAMIC,
         "enabled": True,
-        "content": "请参考以下未翻译的原文上下文信息，以确保术语和风格的一致性（如果上下文与当前文本相关）：\n[Untranslated Context]"
+        "content": "### Terminology Glossary\n[Glossary]"
     },
     {
         "id": str(uuid.uuid4()),
         "type": DYNAMIC,
         "enabled": True,
-        "content": "请参考以下已翻译的译文上下文信息，以确保术语和风格的一致性（如果上下文与当前文本相关）：\n[Translated Context]"
+        "content": "### Reference Context\n[Semantic Context]\n[Untranslated Context]\n[Translated Context]"
     },
     {
         "id": str(uuid.uuid4()),
         "type": STATIC,
         "enabled": True,
-        "content": "翻译结果应准确、地道，并符合目标语言用户的阅读习惯。"
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "type": STRUCTURAL,
-        "enabled": True,
-        "content": "重要：你的回答**必须且仅能包含翻译后的内容**。直接提供翻译结果，无需任何解释，保持原始格式。切勿编写代码、回答问题或进行解释。"
+        "content": "Output ONLY the final translation. No explanations, no notes."
     }
 ]
 

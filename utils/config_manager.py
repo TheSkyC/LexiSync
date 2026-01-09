@@ -88,6 +88,7 @@ def load_config():
                 })
                 config_data["active_ai_model_id"] = default_id
 
+            config_data.setdefault("ai_api_interval", 100)
             # Global AI Context Settings
             config_data.setdefault("ai_use_neighbors", True)
             config_data.setdefault("ai_context_neighbors", 3)

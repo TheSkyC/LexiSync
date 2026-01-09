@@ -5418,7 +5418,7 @@ class LexiSyncApp(QMainWindow):
             return
 
         self.ai_batch_total_items = len(self.ai_translation_batch_ids_queue)
-        api_interval_ms = self.config.get('ai_api_interval', 200)
+        api_interval_ms = self.config.get('ai_api_interval', 100)
         max_concurrency = self.config.get('ai_max_concurrent_requests', 1)
         avg_api_time_estimate_s = 3.0
 
@@ -5452,7 +5452,7 @@ class LexiSyncApp(QMainWindow):
             persistent=True)
 
         self.ai_batch_successful_translations_for_undo = []
-        self.ai_manager.start_batch(items_queue, self._generate_ai_context_strings)
+        self.ai_manager.start_batch(items_queue, self._generate_universal_context)
 
     def _handle_ai_translation_result(self, ts_id, translated_text, error_message, op_type):
         """

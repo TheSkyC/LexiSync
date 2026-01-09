@@ -158,7 +158,6 @@ class AIWorker(QRunnable):
                 final_translated_text = ""
 
                 if self.stream:
-                    # --- STREAMING LOGIC WITH CoT SUPPORT ---
                     full_text_buffer = ""
                     cot_state = "WAITING"  # WAITING -> THINKING -> TRANSLATING
 

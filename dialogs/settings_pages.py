@@ -384,7 +384,7 @@ class AISettingsPage(BaseSettingsPage):
         self.interval_spinbox = QSpinBox()
         self.interval_spinbox.setRange(0, 10000)
         self.interval_spinbox.setSuffix(" ms")
-        self.interval_spinbox.setValue(self.app.config.get("ai_api_interval", 200))
+        self.interval_spinbox.setValue(self.app.config.get("ai_api_interval", 100))
         perf_layout.addRow(_("API Call Interval:"), self.interval_spinbox)
         content_layout.addWidget(perf_group)
 
@@ -571,6 +571,7 @@ class AISettingsPage(BaseSettingsPage):
         self._populate_prompt_combos()  # 刷新列表
 
     def save_settings(self):
+        self.app.config["ai_api_interval"] = self.interval_spinbox.value()
         # Content
         self.app.config["ai_use_neighbors"] = self.chk_neighbors.isChecked()
         self.app.config["ai_context_neighbors"] = self.spin_neighbors.value()

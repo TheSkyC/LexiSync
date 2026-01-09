@@ -133,7 +133,7 @@ class AITaskManager(QObject):
 
         if self.is_running:
             if self.next_index < self.total_items:
-                interval = self.app.config.get("ai_api_interval", 200)
+                interval = self.app.config.get("ai_api_interval", 100)
                 QTimer.singleShot(interval, self._dispatch_next)
             elif self.active_threads == 0:
                 self._finalize()

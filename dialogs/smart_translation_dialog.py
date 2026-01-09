@@ -20,7 +20,6 @@ from utils.localization import _
 from ui_components.tooltip import Tooltip
 from ui_components.styled_button import StyledButton
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from copy import deepcopy
 import os
 import re
 import json
@@ -1036,12 +1035,8 @@ class SmartTranslationDialog(QDialog):
         if self.chk_retrieval.isChecked() and self.retrieval_enabled:
             self._build_retrieval_index_async()
 
-        self._inject_smart_prompt_structure()
-
         dialog = TestTranslationDialog(self, self.app)
         dialog.exec()
-
-        self._restore_original_prompt_structure()
 
     def check_plugins(self):
         """检查可用插件"""
@@ -1542,9 +1537,6 @@ class SmartTranslationDialog(QDialog):
         self.progress_bar.setRange(0, len(self.target_items))
         self.progress_bar.setValue(0)
 
-        # 注入智能提示词结构
-        self._inject_smart_prompt_structure()
-
         # 连接AI管理器信号
         self._connect_ai_manager_signals()
 
@@ -1565,96 +1557,6 @@ class SmartTranslationDialog(QDialog):
             self_repair_limit=repair_limit,
             api_timeout=timeout
         )
-
-    def _inject_smart_prompt_structure(self):
-        """注入智能翻译专用提示词结构"""
-        # 保存原始配置
-        self._original_prompt_structure = deepcopy(
-            self.app.config.get("ai_prompt_structure")
-        )
-
-        # 创建智能提示词结构
-        smart_structure = self._create_smart_prompt_structure()
-
-        # 覆盖全局配置
-        self.app.config["ai_prompt_structure"] = smart_structure
-
-    def _create_smart_prompt_structure(self):
-        """创建智能提示词结构"""
-        src_lang = self.app.source_language
-        tgt_lang = self._get_target_language()
-
-        return [
-            {
-                "id": str(uuid.uuid4()),
-                "type": "Structural Content",
-                "enabled": True,
-                "content": (
-                    f"You are a professional localization expert. Your task is to translate the UI text enclosed with <translate_input> from {src_lang} to {tgt_lang}."
-                )
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "type": "Structural Content",
-                "enabled": True,
-                "content": (
-                    "CRITICAL: Preserve ALL placeholders exactly as-is:\n"
-                    "- Format specifiers: %s, %d, %f, %.2f, etc.\n"
-                    "- Named placeholders: {variable}, %{count}, {{name}}\n"
-                    "- Template syntax: ${var}, [[key]], <placeholder>\n"
-                    "The quantity, order, and names must match the original perfectly."
-                )
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "type": "Structural Content",
-                "enabled": True,
-                "content": (
-                    "CRITICAL: Preserve ALL formatting exactly:\n"
-                    "- Escape sequences: \\n, \\t, \\r, \\\"\n"
-                    "- HTML tags: <br>, <b>, <i>, <span>, <a>, etc.\n"
-                    "- Do NOT convert between \\n and <br>\n"
-                    "- Match the original format character-by-character"
-                )
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "type": "Structural Content",
-                "enabled": True,
-                "content": (
-                    "Do not add or remove any characters, symbols, or spaces not present in the original text, unless required by the target language's punctuation conventions."
-                )
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "type": "Dynamic Instruction",
-                "enabled": True,
-                "content": "### Translation Style Guide\n[Style Guide]"
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "type": "Dynamic Instruction",
-                "enabled": True,
-                "content": "### Terminology Glossary\n[Glossary]"
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "type": "Dynamic Instruction",
-                "enabled": True,
-                "content": (
-                    "### Reference Context\n"
-                    "[Semantic Context]\n"
-                    "[Untranslated Context]\n"
-                    "[Translated Context]"
-                )
-            },
-            {
-                "id": str(uuid.uuid4()),
-                "type": "Static Instruction",
-                "enabled": True,
-                "content": "Output ONLY the final translation. No explanations, no notes."
-            }
-        ]
 
     def _connect_ai_manager_signals(self):
         """连接AI管理器信号"""
@@ -1683,104 +1585,6 @@ class SmartTranslationDialog(QDialog):
             pass
         finally:
             self._signals_connected = False
-
-    def _get_semantic_context(self, ts_id, limit=5, mode="auto"):
-        # 获取语义检索上下文
-        try:
-            ts_obj = self.app._find_ts_obj_by_id(ts_id)
-            if not ts_obj:
-                return ""
-
-            # 调用插件进行检索
-            results = self.app.plugin_manager.run_hook(
-                'retrieve_context',
-                ts_obj.original_semantic,
-                limit=limit,
-                mode=mode
-            )
-
-            if not results:
-                return ""
-
-            # 格式化结果
-            lines = []
-            for r in results:
-                src = r.get('source', '')[:60]
-                tgt = r.get('target', '')[:60]
-                if src and tgt:
-                    lines.append(f"- {src}... → {tgt}...")
-
-            if lines:
-                return "Similar Translations:\n" + "\n".join(lines)
-
-            return ""
-
-        except Exception as e:
-            logger.warning(f"Semantic retrieval failed for {ts_id}: {e}")
-            return ""
-
-    def _fetch_tm_context(self, source_text, limit: int = 3, mode: str = "fuzzy", threshold: float = 0.75):
-        try:
-            source_lang = self.app.source_language
-            target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
-
-            lines = []
-
-            if mode == "exact":
-                # Exact Match
-                exact_match = self.app.tm_service.get_translation(source_text, source_lang, target_lang)
-                if exact_match:
-                    lines = ["TM Matches (Exact):"]
-                    tgt = exact_match.replace('\n', ' ')
-                    if len(tgt) > 50: tgt = tgt[:47] + "..."
-                    lines.append(f"- [100%] {tgt}")
-            else:
-                # Fuzzy Match
-                matches = self.app.tm_service.get_fuzzy_matches(
-                    source_text, source_lang, target_lang, limit=limit, threshold=threshold
-                )
-                if matches:
-                    lines = [f"TM Matches (Fuzzy > {int(threshold * 100)}%):"]
-                    for m in matches:
-                        score = int(m['score'] * 100)
-                        src = m['source_text'].replace('\n', ' ')
-                        tgt = m['target_text'].replace('\n', ' ')
-                        if len(src) > 50: src = src[:47] + "..."
-                        if len(tgt) > 50: tgt = tgt[:47] + "..."
-                        lines.append(f"- [{score}%] {src} -> {tgt}")
-
-            if not lines:
-                return ""
-
-            return "\n".join(lines)
-        except Exception as e:
-            logger.warning(f"Failed to fetch TM context: {e}")
-            return ""
-
-    def _fetch_static_glossary_context(self, source_text):
-        try:
-            # 分词
-            words = set(re.findall(r'\b\w+\b', source_text.lower()))
-            if not words: return []
-
-            source_lang = self.app.source_language
-            target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
-
-            # 批量查询
-            results = self.app.glossary_service.get_translations_batch(
-                list(words), source_lang, target_lang, include_reverse=False
-            )
-
-            lines = []
-            for term, info in results.items():
-                if re.search(r'\b' + re.escape(term) + r'\b', source_text, re.IGNORECASE):
-                    targets = ", ".join([t['target'] for t in info['translations']])
-                    lines.append(f"- {term}: {targets} (Database)")
-
-            return lines
-        except Exception as e:
-            logger.warning(f"Failed to fetch glossary context: {e}")
-            return []
 
     def on_batch_progress(self, current, total):
         """批量翻译进度回调"""
@@ -1813,9 +1617,6 @@ class SmartTranslationDialog(QDialog):
 
         self.btn_stop.clicked.connect(self.accept)
 
-        # 恢复原始提示词结构
-        self._restore_original_prompt_structure()
-
         # 断开AI管理器信号
         self._disconnect_ai_manager_signals()
 
@@ -1825,13 +1626,6 @@ class SmartTranslationDialog(QDialog):
             f"✓ Completed: {completed}/{total} ({success_rate:.1f}%)",
             "SUCCESS"
         )
-
-    def _restore_original_prompt_structure(self):
-        """恢复原始提示词结构"""
-        if self._original_prompt_structure:
-            self.app.config["ai_prompt_structure"] = self._original_prompt_structure
-            self.app.save_config()
-            self._original_prompt_structure = None
 
     def stop_translation(self):
         """停止操作 (分析、翻译)"""
@@ -1904,9 +1698,6 @@ class SmartTranslationDialog(QDialog):
         # 取消正在运行的分析
         if self.analysis_worker:
             self.analysis_worker.cancel()
-
-        # 恢复原始配置
-        self._restore_original_prompt_structure()
 
         # 断开信号
         self._disconnect_ai_manager_signals()
