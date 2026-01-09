@@ -3,9 +3,11 @@
 
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
 from PySide6.QtGui import QIcon, QColor, QCursor
-from PySide6.QtCore import Qt, Signal, QSize, QEvent
+from PySide6.QtCore import (Qt, Signal, QSize, QEvent, QPropertyAnimation, QEasingCurve,
+                            Property, QParallelAnimationGroup)
 from utils.path_utils import get_resource_path
 from ui_components.tooltip import Tooltip
+
 
 class OptionButton(QPushButton):
     def __init__(self, key, label, icon_name, color_hex="#409EFF", tooltip_text="", parent=None):
@@ -18,6 +20,13 @@ class OptionButton(QPushButton):
         self._tooltip_text = tooltip_text
         self._custom_tooltip = Tooltip(self)
 
+        # 背景色动画属性
+        self._bg_opacity = 0.0
+        self._border_opacity = 0.0
+
+        # 动画组
+        self._animation_group = None
+
         if icon_name:
             icon_path = get_resource_path(f"icons/{icon_name}")
             self.setIcon(QIcon(icon_path))
@@ -25,7 +34,7 @@ class OptionButton(QPushButton):
 
         self.setCursor(Qt.PointingHandCursor)
         self._update_style()
-        self.toggled.connect(self._update_style)
+        self.toggled.connect(self._on_toggled)
 
     def event(self, event):
         if event.type() == QEvent.Enter:
@@ -38,35 +47,88 @@ class OptionButton(QPushButton):
 
         return super().event(event)
 
+    def _on_toggled(self, checked):
+        """选中状态切换时的动画"""
+        # 停止之前的动画
+        if self._animation_group:
+            self._animation_group.stop()
+
+        self._animation_group = QParallelAnimationGroup(self)
+
+        # 背景透明度动画
+        bg_anim = QPropertyAnimation(self, b"bg_opacity")
+        bg_anim.setDuration(250)
+        bg_anim.setEasingCurve(QEasingCurve.OutCubic)
+        bg_anim.setStartValue(self._bg_opacity)
+        bg_anim.setEndValue(0.15 if checked else 0.0)
+
+        # 边框透明度动画
+        border_anim = QPropertyAnimation(self, b"border_opacity")
+        border_anim.setDuration(250)
+        border_anim.setEasingCurve(QEasingCurve.OutCubic)
+        border_anim.setStartValue(self._border_opacity)
+        border_anim.setEndValue(1.0 if checked else 0.0)
+
+        self._animation_group.addAnimation(bg_anim)
+        self._animation_group.addAnimation(border_anim)
+        self._animation_group.start()
+
+    def get_bg_opacity(self):
+        return self._bg_opacity
+
+    def set_bg_opacity(self, value):
+        self._bg_opacity = value
+        self._update_style()
+
+    bg_opacity = Property(float, get_bg_opacity, set_bg_opacity)
+
+    def get_border_opacity(self):
+        return self._border_opacity
+
+    def set_border_opacity(self, value):
+        self._border_opacity = value
+        self._update_style()
+
+    border_opacity = Property(float, get_border_opacity, set_border_opacity)
+
     def _update_style(self):
-        # 动态生成样式，根据选中状态和自定义颜色
+        """动态生成样式"""
         base_color = QColor(self.color_hex)
 
-        # 计算浅色背景
-        light_bg = QColor(base_color)
-        light_bg.setAlpha(30)  # 12% opacity roughly
-        light_bg_str = f"rgba({base_color.red()}, {base_color.green()}, {base_color.blue()}, 0.1)"
+        # 计算当前背景色
+        bg_alpha = self._bg_opacity
+        checked_bg_str = f"rgba({base_color.red()}, {base_color.green()}, {base_color.blue()}, {bg_alpha})"
 
-        # 选中时的背景
-        checked_bg_str = f"rgba({base_color.red()}, {base_color.green()}, {base_color.blue()}, 0.15)"
+        # 边框透明度
+        border_color = QColor(self.color_hex)
+        border_color.setAlphaF(self._border_opacity)
+        border_str = f"rgba({border_color.red()}, {border_color.green()}, {border_color.blue()}, {self._border_opacity})"
+
+        # 文字颜色根据选中状态插值
+        text_color = QColor("#606266")
+        if self.isChecked():
+            # 插值到主题色
+            target = QColor(self.color_hex)
+            factor = self._border_opacity
+            r = int(text_color.red() + (target.red() - text_color.red()) * factor)
+            g = int(text_color.green() + (target.green() - text_color.green()) * factor)
+            b = int(text_color.blue() + (target.blue() - text_color.blue()) * factor)
+            text_color = QColor(r, g, b)
+
+        text_color_str = text_color.name()
 
         css = f"""
             QPushButton {{
-                background-color: #F2F3F5;
-                border: 1px solid transparent;
+                background-color: {checked_bg_str if self.isChecked() else '#F2F3F5'};
+                border: 1px solid {border_str if self.isChecked() else 'transparent'};
                 border-radius: 12px;
                 padding: 4px 10px;
-                color: #606266;
+                color: {text_color_str};
                 font-size: 12px;
                 font-weight: 500;
             }}
             QPushButton:hover {{
-                background-color: #E5E6EB;
-            }}
-            QPushButton:checked {{
-                background-color: {checked_bg_str};
-                color: {self.color_hex};
-                border: 1px solid {self.color_hex};
+                background-color: {'#E5E6EB' if not self.isChecked() else checked_bg_str};
             }}
         """
         self.setStyleSheet(css)
