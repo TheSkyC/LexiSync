@@ -218,6 +218,27 @@ DEFAULT_PROMPT_STRUCTURE = [
     }
 ]
 
+COT_INJECTION_PROMPT = """
+================================================================================
+CRITICAL INSTRUCTION: CHAIN OF THOUGHT ENFORCEMENT
+================================================================================
+Do NOT output the translation immediately. You must engage in a deep analysis first.
+
+1. **Analyze**: Identify the core meaning, tone, placeholders (%s, {var}), and formatting tags.
+2. **Consult**: Check the Glossary and Context provided above. Ensure consistency.
+3. **Reason**: Explain your translation choices for ambiguous terms or complex structures.
+
+**OUTPUT FORMAT (MANDATORY)**:
+You must strictly follow this XML-style format. Do not output anything else outside these tags.
+
+<thinking>
+[Write your step-by-step analysis, glossary checks, and reasoning here]
+</thinking>
+<translation>
+[Write ONLY the final translation result here, preserving all formatting exactly]
+</translation>
+"""
+
 DEFAULT_EXTRACTION_PATTERNS = [
     {
         "id": str(uuid.uuid4()), "name": "Custom String (EN/CN)", "enabled": True,

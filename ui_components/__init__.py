@@ -4,4 +4,4 @@
 from .styled_button import StyledButton
 from .password_edit import PasswordEdit
 from .toggle_button import ToggleButton
-from .capability_selector import CapabilitySelector
+from .option_selector import OptionSelector

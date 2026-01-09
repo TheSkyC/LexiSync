@@ -13,7 +13,7 @@ from services.ai_translator import AITranslator
 from ui_components.help_button import HelpButton
 from ui_components.styled_button import StyledButton
 from ui_components.password_edit import PasswordEdit
-from ui_components.capability_selector import CapabilitySelector
+from ui_components.option_selector import OptionSelector
 from utils.path_utils import get_resource_path
 from utils.constants import AI_PROVIDER_PRESETS
 from utils.localization import _
@@ -271,12 +271,25 @@ class AIModelManagerDialog(QDialog):
         self.model_name_edit.textChanged.connect(self.save_current_form_to_buffer)
         conn_layout.addRow(_("Model Name:"), self.model_name_edit)
 
-        right_layout.addWidget(conn_group)
-
-        self.cap_selector = CapabilitySelector()
+        # 1. Capabilities
+        self.cap_options = [
+            ("vision", _("Vision"), "eye.svg", "#409EFF"),
+            ("reasoning", _("Reasoning"), "cpu.svg", "#409EFF"),
+            ("tools", _("Tools"), "tool.svg", "#409EFF")
+        ]
+        self.cap_selector = OptionSelector(self.cap_options)
+        self.cap_selector.selectionChanged.connect(self.on_capabilities_changed)
         self.cap_selector.selectionChanged.connect(self.save_current_form_to_buffer)
-
         conn_layout.addRow(_("Capabilities:"), self.cap_selector)
+
+        # 2. Enhancements
+        self.enhance_options = [
+            ("cot_injection", _("CoT Injection"), "pencil.svg", "#9C27B0", _("Injects 'Chain of Thought' instructions to force deep thinking for non-reasoning models."))
+        ]
+        self.enhance_selector = OptionSelector(self.enhance_options)
+        self.enhance_selector.selectionChanged.connect(self.save_current_form_to_buffer)
+        conn_layout.addRow(_("Enhancements:"), self.enhance_selector)
+
         right_layout.addWidget(conn_group)
 
         # Performance
@@ -368,8 +381,15 @@ class AIModelManagerDialog(QDialog):
             self.update_url_tooltip(self.base_url_edit.text())
             self.api_key_edit.setText(model_data.get("api_key", ""))
             self.model_name_edit.setText(model_data.get("model_name", ""))
+
+            # Load Capabilities
             caps = model_data.get("capabilities", [])
             self.cap_selector.set_selection(caps)
+            # Load Enhancements
+            enhancements = model_data.get("enhancements", [])
+            self.enhance_selector.set_selection(enhancements)
+            self.on_capabilities_changed(caps)
+
             self.concurrency_spin.setValue(model_data.get("concurrency", 1))
             self.timeout_spin.setValue(model_data.get("timeout", 60))
 
@@ -384,6 +404,12 @@ class AIModelManagerDialog(QDialog):
 
         self.is_loading_ui = False
 
+    def on_capabilities_changed(self, selected_caps):
+        """Handle mutual exclusion logic"""
+        is_native_reasoning = "reasoning" in selected_caps
+        self.enhance_selector.set_option_enabled("cot_injection", not is_native_reasoning)
+        self.save_current_form_to_buffer()
+
     def save_current_form_to_buffer(self):
         if self.is_loading_ui or not self.current_editing_item:
             return
@@ -392,6 +418,7 @@ class AIModelManagerDialog(QDialog):
         self.current_editing_item["api_key"] = self.api_key_edit.text()
         self.current_editing_item["model_name"] = self.model_name_edit.text()
         self.current_editing_item["capabilities"] = self.cap_selector.get_selection()
+        self.current_editing_item["enhancements"] = self.enhance_selector.get_selection()
         self.current_editing_item["concurrency"] = self.concurrency_spin.value()
         self.current_editing_item["timeout"] = self.timeout_spin.value()
 

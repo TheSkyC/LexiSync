@@ -320,6 +320,16 @@ class TestTranslationDialog(QDialog):
             self.output_view.clear()
             self._is_first_chunk = False
 
+        if chunk == "Thinking..." and "Thinking..." in self.output_view.toPlainText():
+            return
+
+        if chunk == "Thinking...":
+            self.output_view.setPlainText("Thinking...")
+            return
+
+        if self.output_view.toPlainText() == "Thinking..." and chunk != "Thinking...":
+            self.output_view.clear()
+
         cursor = self.output_view.textCursor()
         cursor.movePosition(QTextCursor.End)
         cursor.insertText(chunk)

@@ -10,7 +10,7 @@ from utils.localization import _
 from services.prompt_service import generate_prompt_from_structure
 from services.validation_service import validate_string
 from models.translatable_string import TranslatableString
-from utils.constants import DEFAULT_PROMPT_STRUCTURE, SUPPORTED_LANGUAGES, DEFAULT_CORRECTION_PROMPT_STRUCTURE
+from utils.constants import DEFAULT_PROMPT_STRUCTURE, SUPPORTED_LANGUAGES, DEFAULT_CORRECTION_PROMPT_STRUCTURE, COT_INJECTION_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,14 @@ class AIWorker(QRunnable):
                 except Exception as e:
                     logger.error(f"Error generating context for {self.ts_id}: {e}", exc_info=True)
 
+
+            active_model_id = app.config.get("active_ai_model_id")
+            models = app.config.get("ai_models", [])
+            current_model_config = next((m for m in models if m["id"] == active_model_id), {})
+
+            enhancements = current_model_config.get("enhancements", [])
+            use_cot = "cot_injection" in enhancements
+
             # --- 1. 准备 Prompt ---
             final_prompt = ""
             text_to_send = ""
@@ -105,7 +113,7 @@ class AIWorker(QRunnable):
                         f"Translate the above text enclosed with <translate_input> into {self.target_lang} without <translate_input>. "
                     )
 
-                # 通用占位符填充 (用于 System Prompt)
+                # 占位符填充
                 glossary_prompt_part = self._build_glossary_context(app)
                 placeholders = {
                     '[Source Language]': app.source_language,
@@ -128,11 +136,15 @@ class AIWorker(QRunnable):
 
                 final_prompt = generate_prompt_from_structure(prompt_structure, placeholders)
 
+            if use_cot:
+                final_prompt += "\n\n" + COT_INJECTION_PROMPT
+
             self.signals.final_prompt_ready.emit(final_prompt)
 
             # ============================================================
             logger.info(f"========== AI WORKER DEBUG ({self.ts_id}) ==========")
             logger.info(f"OP TYPE: {self.op_type}")
+            logger.info(f"CoT ENABLED: {use_cot}")
             logger.info(f"[SYSTEM PROMPT]:\n{final_prompt}")
             logger.info(f"[USER INPUT]:\n{text_to_send}")
             logger.info("====================================================")
@@ -141,30 +153,145 @@ class AIWorker(QRunnable):
             # --- 2. 执行翻译循环---
             current_attempt = 1
             max_attempts = 1 + self.self_repair_limit
-            last_translated_text = ""
 
             while current_attempt <= max_attempts:
+                final_translated_text = ""
+
                 if self.stream:
-                    # 流式输出
-                    full_text = ""
+                    # --- STREAMING LOGIC WITH CoT SUPPORT ---
+                    full_text_buffer = ""
+                    cot_state = "WAITING"  # WAITING -> THINKING -> TRANSLATING
+
+                    cot_emitted_len = 0
+
+                    is_first_translation_chunk = True
+
+                    CLOSE_TAG = "</translation>"
+
+                    if use_cot:
+                        self.signals.stream_chunk.emit("Thinking...")
+
                     for chunk in app.ai_translator.translate_stream(
                             text_to_send, final_prompt,
                             temperature=self.temperature,
                             timeout=self.api_timeout
                     ):
-                        full_text += chunk
-                        self.signals.stream_chunk.emit(chunk)
-                    translated_text = full_text
+                        if not use_cot:
+                            # Standard streaming
+                            final_translated_text += chunk
+                            self.signals.stream_chunk.emit(chunk)
+                        else:
+                            # CoT Streaming Logic
+                            full_text_buffer += chunk
+
+                            if cot_state == "WAITING":
+                                if "<thinking>" in full_text_buffer:
+                                    cot_state = "THINKING"
+                                    pass
+                                elif "<translation>" in full_text_buffer:
+                                    cot_state = "TRANSLATING"
+                                    self.signals.stream_chunk.emit("")  # Clear "Thinking..."
+
+                                    # 提取标签后的内容
+                                    parts = full_text_buffer.split("<translation>", 1)
+                                    # 重置 buffer 为翻译内容，方便后续基于索引处理
+                                    full_text_buffer = parts[1] if len(parts) > 1 else ""
+                                    cot_emitted_len = 0
+
+                            elif cot_state == "THINKING":
+                                if "<translation>" in full_text_buffer:
+                                    cot_state = "TRANSLATING"
+                                    self.signals.stream_chunk.emit("")  # Clear "Thinking..."
+
+                                    parts = full_text_buffer.split("<translation>", 1)
+                                    full_text_buffer = parts[1] if len(parts) > 1 else ""
+                                    cot_emitted_len = 0
+
+                            if cot_state == "TRANSLATING":
+                                tag_index = full_text_buffer.find(CLOSE_TAG)
+
+                                if tag_index != -1:
+                                    valid_content = full_text_buffer[:tag_index]
+
+                                    to_emit = valid_content[cot_emitted_len:]
+
+                                    if is_first_translation_chunk:
+                                        to_emit = to_emit.lstrip()  # 去除开头的 \n
+                                        is_first_translation_chunk = False
+
+                                    if to_emit:
+                                        final_translated_text += to_emit
+                                        self.signals.stream_chunk.emit(to_emit)
+
+                                    break
+
+                                current_len = len(full_text_buffer)
+                                safe_end_index = current_len
+
+                                # 检查末尾是否匹配 </translation> 的前缀
+                                for i in range(1, len(CLOSE_TAG)):
+                                    suffix = full_text_buffer[-i:]
+                                    if CLOSE_TAG.startswith(suffix):
+                                        safe_end_index = current_len - i
+                                        break
+
+                                if safe_end_index > cot_emitted_len:
+                                    to_emit = full_text_buffer[cot_emitted_len:safe_end_index]
+
+                                    if is_first_translation_chunk:
+                                        original_len = len(to_emit)
+                                        to_emit = to_emit.lstrip()
+                                        if len(to_emit) < original_len:
+                                            is_first_translation_chunk = False
+                                        if not to_emit and original_len > 0:
+                                            is_first_translation_chunk = True
+
+                                    if to_emit:
+                                        final_translated_text += to_emit
+                                        self.signals.stream_chunk.emit(to_emit)
+                                        cot_emitted_len = safe_end_index
+
+                    # Post-processing for CoT (Stream finished)
+                    if use_cot:
+                        if not final_translated_text:
+                            match = re.search(r'<translation>(.*?)</translation>', full_text_buffer, re.DOTALL)
+                            if match:
+                                final_translated_text = match.group(1).strip()
+                            else:
+                                parts = full_text_buffer.split("</thinking>")
+                                if len(parts) > 1:
+                                    temp = parts[1].replace("<translation>", "")
+                                    final_translated_text = temp.strip()
+                                else:
+                                    final_translated_text = full_text_buffer.replace("<translation>", "").strip()
+
                 else:
-                    translated_text = app.ai_translator.translate(
+                    # Non-streaming logic
+                    raw_response = app.ai_translator.translate(
                         text_to_send, final_prompt,
                         temperature=self.temperature,
                         timeout=self.api_timeout
                     )
-                last_translated_text = translated_text
+
+                    if use_cot:
+                        match = re.search(r'<translation>(.*?)</translation>', raw_response, re.DOTALL)
+                        if match:
+                            final_translated_text = match.group(1).strip()
+                        else:
+                            # Fallback logic
+                            parts = raw_response.split("</thinking>")
+                            if len(parts) > 1:
+                                final_translated_text = parts[1].strip()
+                            else:
+                                final_translated_text = raw_response.strip()
+                    else:
+                        final_translated_text = raw_response
+
+                # 修复首尾空格
+                last_translated_text = final_translated_text
                 final_translated_text = leading_ws + last_translated_text.strip() + trailing_ws
 
-                # 如果是修复模式或非翻译任务，不触发自修复 (避免死循环)
+                # 如果是修复模式或非翻译任务，不触发自修复
                 if self.op_type in [AIOperationType.FIX, AIOperationType.BATCH_FIX]:
                     break
 
@@ -185,11 +312,10 @@ class AIWorker(QRunnable):
                         self.signals.log_message.emit(log_msg, "WARNING")
 
                         # 构建自修复 Prompt
-                        final_prompt = self._build_self_repair_prompt(app, translated_text, error_details)
-                        # 自修复时，User Input 也要相应调整，明确指出是重试
+                        final_prompt = self._build_self_repair_prompt(app, last_translated_text, error_details)
                         text_to_send = (
                             f"Original: {text_to_translate_core}\n"
-                            f"Previous Attempt: {translated_text}\n"
+                            f"Previous Attempt: {last_translated_text}\n"
                             f"Errors: {error_details}\n"
                             "Please fix the errors and output only the translation."
                         )
@@ -206,7 +332,6 @@ class AIWorker(QRunnable):
             self.signals.finished.emit()
 
     def _build_self_repair_prompt(self, app, failed_translation, error_details):
-        # ... (保持原有逻辑不变) ...
         prompts = app.config.get("ai_prompts", [])
         active_fix_id = app.config.get("active_correction_prompt_id")
         prompt_data = next((p for p in prompts if p["id"] == active_fix_id), None)
@@ -237,7 +362,6 @@ class AIWorker(QRunnable):
         return base_prompt + strict_suffix
 
     def _build_glossary_context(self, app):
-        # ... (保持原有逻辑不变) ...
         original_words = set(re.findall(r'\b\w+\b', self.original_text.lower()))
         if not original_words: return ""
 
