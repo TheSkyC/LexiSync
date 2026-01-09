@@ -5505,7 +5505,6 @@ class LexiSyncApp(QMainWindow):
             self.add_to_undo_history('bulk_ai_translate',
                                      {'changes': self.ai_batch_successful_translations_for_undo})
             self.mark_project_modified()
-            self.check_batch_placeholder_mismatches()
 
         success_count = len(self.ai_batch_successful_translations_for_undo)
         changed_ids = {change['string_id'] for change in self.ai_batch_successful_translations_for_undo}
@@ -5633,41 +5632,6 @@ class LexiSyncApp(QMainWindow):
                     current=self.ai_batch_completed_count, total=self.ai_batch_total_items,
                     progress_percent=progress_percent),
                 persistent=True)
-
-    def check_batch_placeholder_mismatches(self):
-        mismatched_items = []
-        for change in self.ai_batch_successful_translations_for_undo:
-            ts_obj = self._find_ts_obj_by_id(change['string_id'])
-            if not ts_obj: continue
-
-            original_placeholders = set(self.placeholder_regex.findall(ts_obj.original_semantic))
-            translated_placeholders = set(self.placeholder_regex.findall(ts_obj.translation))
-
-            if original_placeholders != translated_placeholders:
-                mismatched_items.append(ts_obj)
-
-        if mismatched_items:
-            msg = _(
-                "After AI batch translation, {count} items were found with placeholder mismatches.\nDo you want to add the comment \"Placeholder Mismatch\" to these items in bulk?").format(
-                count=len(mismatched_items))
-            reply = QMessageBox.question(self, _("Placeholder Mismatch"), msg, QMessageBox.Yes | QMessageBox.No,
-                                         QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
-                bulk_comment_changes = []
-                for ts_obj in mismatched_items:
-                    old_comment = ts_obj.comment
-                    new_comment = (old_comment + " " + _("Placeholder Mismatch")).strip()
-                    if ts_obj.comment != new_comment:
-                        ts_obj.comment = new_comment
-                        bulk_comment_changes.append({
-                            'string_id': ts_obj.id, 'field': 'comment',
-                            'old_value': old_comment, 'new_value': new_comment
-                        })
-                if bulk_comment_changes:
-                    self.add_to_undo_history('bulk_context_menu', {'changes': bulk_comment_changes})
-                    self._run_and_refresh_with_validation()
-                    self.update_statusbar(_("Added comments to {count} placeholder mismatched items.").format(
-                        count=len(bulk_comment_changes)))
 
     def stop_batch_ai_translation(self, silent=False):
         if not self.ai_manager.is_running:
