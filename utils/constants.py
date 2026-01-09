@@ -86,56 +86,62 @@ DEFAULT_VALIDATION_RULES = {
     "accelerator": {"enabled": True, "level": "error", "label": _("Accelerator Mismatch")},
 }
 
+# utils/constants.py
+
+# ... (Imports and other constants)
+
+# [CHANGED] Updated to English and optimized for clarity
 DEFAULT_CORRECTION_PROMPT_STRUCTURE = [
     {
         "id": str(uuid.uuid4()),
         "type": "Structural Content",
         "enabled": True,
-        "content": "你是一位专业的本地化QA专家。你的任务是修复以下译文中的错误，使其符合目标语言的语法习惯和项目规则。"
+        "content": "You are a professional localization QA specialist. Your task is to fix the errors in the provided translation to match the source text and adhere to the project's rules."
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Static Instruction",
         "enabled": True,
-        "content": "目标语言：[Target Language]"
+        "content": "Target Language: [Target Language]"
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "参考术语表：\n[Glossary]"
+        "content": "Reference Glossary:\n[Glossary]"
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "检测到的错误：\n[Error List]"
+        "content": "Detected Errors to Fix:\n[Error List]"
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "原文：\n[Source Text]"
+        "content": "Source Text:\n[Source Text]"
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "当前有问题的译文：\n<translate_input>\n[Current Translation]\n</translate_input>"
+        "content": "Current Incorrect Translation:\n<translate_input>\n[Current Translation]\n</translate_input>"
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Static Instruction",
         "enabled": True,
-        "content": "重要：必须严格保留原文中的所有格式，包括：\n- XML/HTML 标签 (例如 <br>, <b>, <![CDATA[...]]>)\n- 转义字符 (\\n, \\t, \\r, \\\")\n- 占位符 (%s, {var})\n不要移除或解释包裹内容的标签。"
+        "content": "CRITICAL: You MUST strictly preserve all original formatting, including:\n- XML/HTML tags (e.g., <br>, <b>, <![CDATA[...]]>)\n- Escape sequences (\\n, \\t, \\r, \\\")\n- Placeholders (%s, {var})\nDo not remove or interpret tags wrapping the content."
     },
     {
         "id": str(uuid.uuid4()),
-        "type": "Static Instruction",
+        "type": "Structural Content",
         "enabled": True,
-        "content": "请根据原文和错误列表修复 <translate_input> 中的内容。仅输出修复后的译文，不要包含 <translate_input> 标签，不要包含任何解释。"
+        "content": "Based on the source text and the error list, correct the text within <translate_input>. Output ONLY the corrected translation. Do not include the <translate_input> tags or any explanations."
     }
 ]
+
 
 DEFAULT_PROMPT_STRUCTURE = [
     {
@@ -154,7 +160,7 @@ DEFAULT_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": STATIC,
         "enabled": True,
-        "content": "CRITICAL: Preserve ALL formatting exactly:\n- Escape sequences: \\n, \\t, \\r, \\\"\n- HTML tags: <br>, <b>, <i>, <span>, <a>, etc.\n- Do NOT convert between \\n and <br>\n- Match the original format character-by-character"
+        "content": "CRITICAL: Preserve ALL formatting exactly:\n- Escape sequences: \\n, \\t, \\r, \\\"\n- HTML tags: <br>, <b>, <i>, <span>, <a>, <![CDATA[...]]>, etc.\n- Do NOT convert between \\n and <br>\n- Match the original format character-by-character"
     },
     {
         "id": str(uuid.uuid4()),
