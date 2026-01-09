@@ -218,7 +218,7 @@ class TestTranslationDialog(QDialog):
         # 获取上下文
         if self.current_ts_obj:
             config_snapshot = self.parent_dialog._capture_context_config()
-            context_dict = self.parent_dialog._worker_context_provider(ts_id, config_snapshot)
+            context_dict = self.app._generate_universal_context(ts_id, config_snapshot)
         else:
             # 手动输入的模拟上下文
             context_dict = self._simulate_context(text)

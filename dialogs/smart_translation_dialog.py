@@ -1138,81 +1138,6 @@ class SmartTranslationDialog(QDialog):
             "cached_glossary": self._cached_glossary_dict.copy()
         }
 
-    def _worker_context_provider(self, ts_id, config):
-        try:
-            ts_obj = self.app._find_ts_obj_by_id(ts_id)
-            if not ts_obj:
-                return {}
-
-            original_text = ts_obj.original_semantic
-
-            # 1. 获取基础上下文 (Neighboring)
-            base_context = self._generate_local_neighbor_context(ts_id, config)
-
-            # 2. 构建 [Semantic Context]
-            semantic_context_parts = []
-            seen_semantic_content = set()
-
-            # 2.1 RAG (插件)
-            if config["use_retrieval"]:
-                rag_limit = config["retrieval_limit"]
-                mode = config["retrieval_mode"]
-                rag_result = self._get_semantic_context(ts_id, limit=rag_limit, mode=mode)
-                if rag_result:
-                    semantic_context_parts.append(rag_result)
-
-            # 2.2 TM
-            if config["use_tm"]:
-                tm_limit = config["tm_limit"]
-                tm_result = self._fetch_tm_context(
-                    original_text,
-                    limit=tm_limit,
-                    mode=config["tm_mode"],
-                    threshold=config["tm_threshold"]
-                )
-                if tm_result and tm_result not in seen_semantic_content:
-                    semantic_context_parts.append(tm_result)
-                    seen_semantic_content.add(tm_result)
-
-            semantic_context = "\n\n".join(semantic_context_parts)
-
-            # 3. Glossary
-            glossary_lines = []
-
-            # 3.1 AI 提取的术语 (Phase 1)
-            cached_glossary = config["cached_glossary"]
-            if cached_glossary:
-                for term_src, term_tgt in cached_glossary.items():
-                    if term_src.lower() in original_text.lower():
-                        glossary_lines.append(f"- {term_src}: {term_tgt}")
-
-            # 3.2 本地静态术语库 (Phase 2)
-            if config["use_glossary_db"]:
-                static_terms = self._fetch_static_glossary_context(original_text)
-                if static_terms:
-                    glossary_lines.extend(static_terms)
-
-            relevant_glossary = "\n".join(glossary_lines)
-
-            # 4. 组合所有上下文
-            return {
-                "original_context": base_context.get("original_context", ""),
-                "translation_context": base_context.get("translation_context", ""),
-                "[Style Guide]": config["style_guide_text"],
-                "[Glossary]": relevant_glossary,
-                "[Semantic Context]": semantic_context
-            }
-
-        except Exception as e:
-            logger.error(f"Error in worker context provider for {ts_id}: {e}", exc_info=True)
-            return {
-                "original_context": "",
-                "translation_context": "",
-                "[Style Guide]": config.get("style_guide_text", ""),
-                "[Glossary]": "",
-                "[Semantic Context]": ""
-            }
-
     def _generate_local_neighbor_context(self, current_ts_id, config=None):
         contexts = {"translation_context": "", "original_context": ""}
 
@@ -1508,7 +1433,7 @@ class SmartTranslationDialog(QDialog):
         config_snapshot = self._capture_context_config()
 
         # 创建 Context Provider
-        context_provider = lambda ts_id: self._worker_context_provider(ts_id, config_snapshot)
+        context_provider = lambda ts_id: self.app._generate_universal_context(ts_id, config_snapshot)
 
         # 启动对话框
         if not self.target_items:
@@ -1629,7 +1554,7 @@ class SmartTranslationDialog(QDialog):
         timeout = self.timeout_spinbox.value()
 
         config_snapshot = self._capture_context_config()
-        context_provider = lambda ts_id: self._worker_context_provider(ts_id, config_snapshot)
+        context_provider = lambda ts_id: self.app._generate_universal_context(ts_id, config_snapshot)
 
         # 开始批量翻译
         self.app.ai_manager.start_batch(

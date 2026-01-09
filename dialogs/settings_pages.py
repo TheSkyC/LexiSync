@@ -4,7 +4,8 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QCheckBox, QSpinBox,
     QPushButton, QGroupBox, QHBoxLayout, QLineEdit, QMessageBox, QLabel,
-    QApplication, QScrollArea, QFrame, QDoubleSpinBox
+    QApplication, QScrollArea, QFrame, QDoubleSpinBox, QGridLayout,
+    QButtonGroup, QRadioButton
 )
 from PySide6.QtGui import QColor, QPixmap, QPainter
 from PySide6.QtCore import Qt
@@ -402,44 +403,114 @@ class AISettingsPage(BaseSettingsPage):
         context_layout.addLayout(prompt_select_layout)
         context_layout.addSpacing(10)
 
-        self.use_original_context_check = QCheckBox(_("Use nearby original text as context"))
-        self.use_original_context_check.setChecked(self.app.config.get("ai_use_original_context", True))
-        context_layout.addWidget(self.use_original_context_check)
+        # Context Strategy Group
+        context_group = QGroupBox(_("Context Strategy"))
+        context_layout = QGridLayout(context_group)
+        context_layout.setVerticalSpacing(10)
+        context_layout.setColumnStretch(1, 1)
 
-        original_neighbor_layout = QHBoxLayout()
-        original_neighbor_layout.addSpacing(20)
-        original_neighbor_layout.addWidget(QLabel(_("Use nearby")))
-        self.original_neighbors_spinbox = QSpinBox()
-        self.original_neighbors_spinbox.setRange(0, 20)
-        self.original_neighbors_spinbox.setValue(self.app.config.get("ai_original_context_neighbors", 3))
-        self.original_neighbors_spinbox.setMinimumWidth(70)
-        original_neighbor_layout.addWidget(self.original_neighbors_spinbox)
-        original_neighbor_layout.addWidget(QLabel(_("original strings (0 for all)")))
-        original_neighbor_layout.addStretch()
-        context_layout.addLayout(original_neighbor_layout)
+        # 1. Neighboring Text
+        self.chk_neighbors = QCheckBox(_("Neighboring Text"))
+        self.chk_neighbors.setToolTip(_("Include nearby original and translated text."))
+        self.chk_neighbors.setChecked(self.app.config.get("ai_use_neighbors", True))
 
-        self.use_translation_context_check = QCheckBox(_("Use nearby translated text as context"))
-        self.use_translation_context_check.setChecked(self.app.config.get("ai_use_translation_context", False))
-        context_layout.addWidget(self.use_translation_context_check)
+        self.spin_neighbors = QSpinBox()
+        self.spin_neighbors.setRange(1, 20)
+        self.spin_neighbors.setValue(self.app.config.get("ai_context_neighbors", 3))
+        self.spin_neighbors.setSuffix(_(" lines"))
+        self.chk_neighbors.stateChanged.connect(self.spin_neighbors.setEnabled)
+        self.spin_neighbors.setEnabled(self.chk_neighbors.isChecked())
 
-        translation_neighbor_layout = QHBoxLayout()
-        translation_neighbor_layout.addSpacing(20)
-        translation_neighbor_layout.addWidget(QLabel(_("Use nearby")))
-        self.translation_neighbors_spinbox = QSpinBox()
-        self.translation_neighbors_spinbox.setRange(0, 20)
-        self.translation_neighbors_spinbox.setValue(self.app.config.get("ai_context_neighbors", 4))
-        self.translation_neighbors_spinbox.setMinimumWidth(70)
-        translation_neighbor_layout.addWidget(self.translation_neighbors_spinbox)
-        translation_neighbor_layout.addWidget(QLabel(_("translations (0 for all)")))
-        translation_neighbor_layout.addStretch()
-        context_layout.addLayout(translation_neighbor_layout)
+        context_layout.addWidget(self.chk_neighbors, 0, 0)
+        context_layout.addWidget(self.spin_neighbors, 0, 1)
 
-        self.use_original_context_check.stateChanged.connect(self.original_neighbors_spinbox.setEnabled)
-        self.use_translation_context_check.stateChanged.connect(self.translation_neighbors_spinbox.setEnabled)
-        self.original_neighbors_spinbox.setEnabled(self.use_original_context_check.isChecked())
-        self.translation_neighbors_spinbox.setEnabled(self.use_translation_context_check.isChecked())
+        # 2. Semantic Retrieval (RAG)
+        self.chk_retrieval = QCheckBox(_("Semantic Retrieval"))
+        self.chk_retrieval.setToolTip(_("Search for semantically similar texts (Requires Index)."))
+        self.chk_retrieval.setChecked(self.app.config.get("ai_use_retrieval", False))
 
-        context_layout.addSpacing(15)
+        rag_opts_layout = QHBoxLayout()
+        self.spin_retrieval = QSpinBox()
+        self.spin_retrieval.setRange(1, 10)
+        self.spin_retrieval.setValue(self.app.config.get("ai_retrieval_limit", 3))
+        self.spin_retrieval.setSuffix(_(" items"))
+
+        self.combo_retrieval_mode = QComboBox()
+        self.combo_retrieval_mode.addItem(_("Auto"), "auto")
+        self.combo_retrieval_mode.addItem("TF-IDF", "tfidf")
+        self.combo_retrieval_mode.addItem("Local LLM", "onnx")
+        current_rag_mode = self.app.config.get("ai_retrieval_mode", "auto")
+        idx = self.combo_retrieval_mode.findData(current_rag_mode)
+        if idx != -1: self.combo_retrieval_mode.setCurrentIndex(idx)
+
+        # Check plugin availability
+        if hasattr(self.app, 'plugin_manager'):
+            plugin = self.app.plugin_manager.get_plugin("com_theskyc_retrieval_enhancer")
+            if not plugin:
+                self.chk_retrieval.setEnabled(False)
+                self.chk_retrieval.setToolTip(_("Retrieval Enhancer plugin not found."))
+
+        self.chk_retrieval.stateChanged.connect(self.spin_retrieval.setEnabled)
+        self.chk_retrieval.stateChanged.connect(self.combo_retrieval_mode.setEnabled)
+        self.spin_retrieval.setEnabled(self.chk_retrieval.isChecked())
+        self.combo_retrieval_mode.setEnabled(self.chk_retrieval.isChecked())
+
+        rag_opts_layout.addWidget(self.spin_retrieval)
+        rag_opts_layout.addWidget(self.combo_retrieval_mode)
+        rag_opts_layout.addStretch()
+
+        context_layout.addWidget(self.chk_retrieval, 1, 0)
+        context_layout.addLayout(rag_opts_layout, 1, 1)
+
+        # 3. Translation Memory (TM)
+        self.chk_tm = QCheckBox(_("Translation Memory"))
+        self.chk_tm.setChecked(self.app.config.get("ai_use_tm", True))
+
+        tm_opts_layout = QHBoxLayout()
+        self.tm_mode_group = QButtonGroup(self)
+        self.rb_tm_exact = QRadioButton(_("Exact"))
+        self.rb_tm_fuzzy = QRadioButton(_("Fuzzy"))
+        self.tm_mode_group.addButton(self.rb_tm_exact)
+        self.tm_mode_group.addButton(self.rb_tm_fuzzy)
+
+        if self.app.config.get("ai_tm_mode", "fuzzy") == "exact":
+            self.rb_tm_exact.setChecked(True)
+        else:
+            self.rb_tm_fuzzy.setChecked(True)
+
+        self.spin_tm_threshold = QDoubleSpinBox()
+        self.spin_tm_threshold.setRange(0.1, 1.0)
+        self.spin_tm_threshold.setSingleStep(0.05)
+        self.spin_tm_threshold.setValue(self.app.config.get("ai_tm_threshold", 0.75))
+        self.spin_tm_threshold.setToolTip(_("Fuzzy Match Threshold"))
+
+        self.chk_tm.toggled.connect(self.rb_tm_exact.setEnabled)
+        self.chk_tm.toggled.connect(self.rb_tm_fuzzy.setEnabled)
+        self.chk_tm.toggled.connect(self.spin_tm_threshold.setEnabled)
+
+        # Initial state
+        is_tm_on = self.chk_tm.isChecked()
+        self.rb_tm_exact.setEnabled(is_tm_on)
+        self.rb_tm_fuzzy.setEnabled(is_tm_on)
+        self.spin_tm_threshold.setEnabled(is_tm_on)
+
+        tm_opts_layout.addWidget(self.rb_tm_exact)
+        tm_opts_layout.addWidget(self.rb_tm_fuzzy)
+        tm_opts_layout.addWidget(QLabel(_("Threshold:")))
+        tm_opts_layout.addWidget(self.spin_tm_threshold)
+        tm_opts_layout.addStretch()
+
+        context_layout.addWidget(self.chk_tm, 2, 0)
+        context_layout.addLayout(tm_opts_layout, 2, 1)
+
+        # 4. Glossary
+        self.chk_glossary = QCheckBox(_("Glossary Database"))
+        self.chk_glossary.setChecked(self.app.config.get("ai_use_glossary", True))
+        context_layout.addWidget(self.chk_glossary, 3, 0, 1, 2)
+
+        content_layout.addWidget(context_group)
+
+        # Prompts Group
         self.prompt_button = QPushButton(_("Prompt Manager..."))
         self.prompt_button.clicked.connect(self.open_prompt_manager)
 
@@ -500,11 +571,21 @@ class AISettingsPage(BaseSettingsPage):
         self._populate_prompt_combos()  # 刷新列表
 
     def save_settings(self):
-        self.app.config["ai_api_interval"] = self.interval_spinbox.value()
-        self.app.config["ai_use_original_context"] = self.use_original_context_check.isChecked()
-        self.app.config["ai_original_context_neighbors"] = self.original_neighbors_spinbox.value()
-        self.app.config["ai_use_translation_context"] = self.use_translation_context_check.isChecked()
-        self.app.config["ai_context_neighbors"] = self.translation_neighbors_spinbox.value()
+        # Content
+        self.app.config["ai_use_neighbors"] = self.chk_neighbors.isChecked()
+        self.app.config["ai_context_neighbors"] = self.spin_neighbors.value()
+
+        self.app.config["ai_use_retrieval"] = self.chk_retrieval.isChecked()
+        self.app.config["ai_retrieval_limit"] = self.spin_retrieval.value()
+        self.app.config["ai_retrieval_mode"] = self.combo_retrieval_mode.currentData()
+
+        self.app.config["ai_use_tm"] = self.chk_tm.isChecked()
+        self.app.config["ai_tm_mode"] = "exact" if self.rb_tm_exact.isChecked() else "fuzzy"
+        self.app.config["ai_tm_threshold"] = self.spin_tm_threshold.value()
+
+        self.app.config["ai_use_glossary"] = self.chk_glossary.isChecked()
+
+        # Other
         self.app.config["active_translation_prompt_id"] = self.trans_prompt_combo.currentData()
         self.app.config["active_correction_prompt_id"] = self.fix_prompt_combo.currentData()
         return False

@@ -4925,66 +4925,257 @@ class LexiSyncApp(QMainWindow):
             msg = _("No more {type} items found.").format(type=mode_names.get(behavior_mode, ""))
             self.update_statusbar(msg)
 
-    def _generate_ai_context_strings(self, current_ts_id_to_exclude):
-        contexts = {
-            "translation_context": "",
-            "original_context": ""
+    def _get_global_context_config(self):
+        return {
+            "use_neighbors": self.config.get("ai_use_neighbors", True),
+            "neighbors_count": self.config.get("ai_context_neighbors", 3),
+            "use_retrieval": self.config.get("ai_use_retrieval", False),
+            "retrieval_mode": self.config.get("ai_retrieval_mode", "auto"),
+            "retrieval_limit": self.config.get("ai_retrieval_limit", 3),
+            "use_tm": self.config.get("ai_use_tm", True),
+            "tm_mode": self.config.get("ai_tm_mode", "fuzzy"),
+            "tm_threshold": self.config.get("ai_tm_threshold", 0.75),
+            "tm_limit": 5,
+            "use_glossary_db": self.config.get("ai_use_glossary", True),
+            "style_guide_text": "",
+            "cached_glossary": {}
         }
 
-        try:
-            current_item_index = \
-                [i for i, ts in enumerate(self.translatable_objects) if ts.id == current_ts_id_to_exclude][0]
-        except IndexError:
+    def _generate_universal_context(self, ts_id, config=None):
+        if config is None:
+            config = self._get_global_context_config()
+
+        ts_obj = self._find_ts_obj_by_id(ts_id)
+        if not ts_obj: return {}
+
+        original_text = ts_obj.original_semantic
+
+        # 1. Neighboring Context
+        base_context = self._generate_local_neighbor_context(ts_id, config)
+
+        # 2. Semantic Context (RAG + TM)
+        semantic_context_parts = []
+        seen_semantic_content = set()
+
+        # 2.1 RAG
+        if config["use_retrieval"]:
+            rag_result = self._get_semantic_context(
+                ts_id,
+                limit=config["retrieval_limit"],
+                mode=config["retrieval_mode"]
+            )
+            if rag_result:
+                semantic_context_parts.append(rag_result)
+
+        # 2.2 TM
+        if config["use_tm"]:
+            tm_result = self._fetch_tm_context(
+                original_text,
+                limit=config.get("tm_limit", 3),
+                mode=config["tm_mode"],
+                threshold=config["tm_threshold"]
+            )
+            if tm_result and tm_result not in seen_semantic_content:
+                semantic_context_parts.append(tm_result)
+                seen_semantic_content.add(tm_result)
+
+        semantic_context = "\n\n".join(semantic_context_parts)
+
+        # 3. Glossary
+        glossary_lines = []
+
+        # 3.1 Cached/Analyzed Glossary
+        cached_glossary = config.get("cached_glossary", {})
+        if cached_glossary:
+            for term_src, term_tgt in cached_glossary.items():
+                if term_src.lower() in original_text.lower():
+                    glossary_lines.append(f"- {term_src}: {term_tgt}")
+
+        # 3.2 Static DB Glossary
+        if config["use_glossary_db"]:
+            static_terms = self._fetch_static_glossary_context(original_text)
+            if static_terms:
+                glossary_lines.extend(static_terms)
+
+        relevant_glossary = "\n".join(glossary_lines)
+
+        return {
+            "original_context": base_context.get("original_context", ""),
+            "translation_context": base_context.get("translation_context", ""),
+            "[Style Guide]": config.get("style_guide_text", ""),
+            "[Glossary]": relevant_glossary,
+            "[Semantic Context]": semantic_context,
+            "[Error List]": ""
+        }
+
+    def _generate_local_neighbor_context(self, current_ts_id, config):
+        contexts = {"translation_context": "", "original_context": ""}
+
+        if not config.get("use_neighbors", True):
             return contexts
 
-        # --- 处理 [Translated Context] ---
-        if self.config.get("ai_use_translation_context", True):
-            max_neighbors = self.config.get("ai_context_neighbors", 3)
-            context_pairs = []
-            count = 0
-            for i in range(current_item_index - 1, -1, -1):
-                if 0 < max_neighbors <= count: break
-                ts = self.translatable_objects[i]
-                if ts.translation.strip() and not ts.is_ignored:
-                    context_pairs.insert(0, (ts.original_semantic, ts.get_translation_for_ui()))
-                    count += 1
-            count = 0
-            for i in range(current_item_index + 1, len(self.translatable_objects)):
-                if 0 < max_neighbors <= count: break
-                ts = self.translatable_objects[i]
-                if ts.translation.strip() and not ts.is_ignored:
-                    context_pairs.append((ts.original_semantic, ts.get_translation_for_ui()))
-                    count += 1
-            if context_pairs:
-                header = f"| {_('Original')} | {_('Translation')} |\n|---|---|\n"
-                rows = [
-                    f"| {orig.replace('|', '\\|').replace(chr(10), ' ')} | {trans.replace('|', '\\|').replace(chr(10), ' ')} |"
-                    for orig, trans in context_pairs]
-                contexts["translation_context"] = header + "\n".join(rows)
+        max_neighbors = config.get("neighbors_count", 3)
+        if max_neighbors <= 0: return contexts
 
-        # --- [Untranslated Context] ---
-        if self.config.get("ai_use_original_context", True):
-            max_neighbors = self.config.get("ai_original_context_neighbors", 3)
+        try:
+            all_objs = self.translatable_objects
+            current_idx = -1
+            for i, ts in enumerate(all_objs):
+                if ts.id == current_ts_id:
+                    current_idx = i
+                    break
+            if current_idx == -1: return contexts
+
+            # 1. Original Context
             context_items = []
+            # Preceding
             count = 0
-            for i in range(current_item_index - 1, -1, -1):
-                if 0 < max_neighbors <= count: break
-                ts = self.translatable_objects[i]
+            for i in range(current_idx - 1, -1, -1):
+                if count >= max_neighbors: break
+                ts = all_objs[i]
                 if not ts.is_ignored:
                     context_items.insert(0, ts.original_semantic)
                     count += 1
+            # Succeeding
             count = 0
-            for i in range(current_item_index + 1, len(self.translatable_objects)):
-                if 0 < max_neighbors <= count: break
-                ts = self.translatable_objects[i]
+            for i in range(current_idx + 1, len(all_objs)):
+                if count >= max_neighbors: break
+                ts = all_objs[i]
                 if not ts.is_ignored:
                     context_items.append(ts.original_semantic)
                     count += 1
+
             if context_items:
-                formatted_items = [f"- \"{item.replace(chr(10), ' ').strip()}\"" for item in context_items]
-                contexts["original_context"] = "\n".join(formatted_items)
+                formatted = [f"- \"{item.replace(chr(10), ' ').strip()}\"" for item in context_items]
+                contexts["original_context"] = "\n".join(formatted)
+
+            # 2. Translation Context (Translated)
+            context_pairs = []
+            count = 0
+            for i in range(current_idx - 1, -1, -1):
+                if count >= max_neighbors: break
+                ts = all_objs[i]
+                if ts.translation.strip() and not ts.is_ignored:
+                    context_pairs.insert(0, (ts.original_semantic, ts.get_translation_for_ui()))
+                    count += 1
+            # Succeeding
+            count = 0
+            for i in range(current_idx + 1, len(all_objs)):
+                if count >= max_neighbors: break
+                ts = all_objs[i]
+                if ts.translation.strip() and not ts.is_ignored:
+                    context_pairs.append((ts.original_semantic, ts.get_translation_for_ui()))
+                    count += 1
+
+            if context_pairs:
+                header = f"| {_('Original')} | {_('Translation')} |\n|---|---|\n"
+                rows = [
+                    f"| {o.replace('|', '\\|').replace(chr(10), ' ')} | {t.replace('|', '\\|').replace(chr(10), ' ')} |"
+                    for o, t in context_pairs]
+                contexts["translation_context"] = header + "\n".join(rows)
+
+        except Exception as e:
+            logger.error(f"Error generating neighbor context: {e}")
 
         return contexts
+
+    def _get_semantic_context(self, ts_id, limit=5, mode="auto"):
+        # 获取语义检索上下文
+        try:
+            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+            if not ts_obj:
+                return ""
+
+            # 调用插件进行检索
+            results = self.app.plugin_manager.run_hook(
+                'retrieve_context',
+                ts_obj.original_semantic,
+                limit=limit,
+                mode=mode
+            )
+
+            if not results:
+                return ""
+
+            # 格式化结果
+            lines = []
+            for r in results:
+                src = r.get('source', '')[:60]
+                tgt = r.get('target', '')[:60]
+                if src and tgt:
+                    lines.append(f"- {src}... → {tgt}...")
+
+            if lines:
+                return "Similar Translations:\n" + "\n".join(lines)
+
+            return ""
+
+        except Exception as e:
+            logger.warning(f"Semantic retrieval failed for {ts_id}: {e}")
+            return ""
+
+    def _fetch_tm_context(self, source_text, limit: int = 3, mode: str = "fuzzy", threshold: float = 0.75):
+        try:
+            source_lang = self.app.source_language
+            target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+
+            lines = []
+
+            if mode == "exact":
+                # Exact Match
+                exact_match = self.app.tm_service.get_translation(source_text, source_lang, target_lang)
+                if exact_match:
+                    lines = ["TM Matches (Exact):"]
+                    tgt = exact_match.replace('\n', ' ')
+                    if len(tgt) > 50: tgt = tgt[:47] + "..."
+                    lines.append(f"- [100%] {tgt}")
+            else:
+                # Fuzzy Match
+                matches = self.app.tm_service.get_fuzzy_matches(
+                    source_text, source_lang, target_lang, limit=limit, threshold=threshold
+                )
+                if matches:
+                    lines = [f"TM Matches (Fuzzy > {int(threshold * 100)}%):"]
+                    for m in matches:
+                        score = int(m['score'] * 100)
+                        src = m['source_text'].replace('\n', ' ')
+                        tgt = m['target_text'].replace('\n', ' ')
+                        if len(src) > 50: src = src[:47] + "..."
+                        if len(tgt) > 50: tgt = tgt[:47] + "..."
+                        lines.append(f"- [{score}%] {src} -> {tgt}")
+
+            if not lines:
+                return ""
+
+            return "\n".join(lines)
+        except Exception as e:
+            logger.warning(f"Failed to fetch TM context: {e}")
+            return ""
+
+    def _fetch_static_glossary_context(self, source_text):
+        try:
+            # 分词
+            words = set(re.findall(r'\b\w+\b', source_text.lower()))
+            if not words: return []
+
+            source_lang = self.app.source_language
+            target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+
+            # 批量查询
+            results = self.app.glossary_service.get_translations_batch(
+                list(words), source_lang, target_lang, include_reverse=False
+            )
+
+            lines = []
+            for term, info in results.items():
+                if re.search(r'\b' + re.escape(term) + r'\b', source_text, re.IGNORECASE):
+                    targets = ", ".join([t['target'] for t in info['translations']])
+                    lines.append(f"- {term}: {targets} (Database)")
+
+            return lines
+        except Exception as e:
+            logger.warning(f"Failed to fetch glossary context: {e}")
+            return []
 
     def _initiate_single_ai_translation(self, ts_id_to_translate, called_from_cm=False):
         if not ts_id_to_translate:
@@ -5027,7 +5218,7 @@ class LexiSyncApp(QMainWindow):
                 _("AI is translating: \"{text}...\"").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
 
         # Prepare Data
-        context_dict = self._generate_ai_context_strings(ts_obj.id)
+        context_dict = self._generate_universal_context(ts_id_to_translate)
         plugin_placeholders = self.plugin_manager.run_hook('get_ai_translation_context') or {}
         target_lang_code = self.current_target_language if self.is_project_mode else self.target_language
         target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),

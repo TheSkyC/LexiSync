@@ -89,11 +89,18 @@ def load_config():
                 config_data["active_ai_model_id"] = default_id
 
             # Global AI Context Settings
-            config_data.setdefault("ai_api_interval", 200)
-            config_data.setdefault("ai_use_translation_context", False)
-            config_data.setdefault("ai_context_neighbors", 0)
-            config_data.setdefault("ai_use_original_context", True)
-            config_data.setdefault("ai_original_context_neighbors", 3)
+            config_data.setdefault("ai_use_neighbors", True)
+            config_data.setdefault("ai_context_neighbors", 3)
+
+            config_data.setdefault("ai_use_retrieval", False)
+            config_data.setdefault("ai_retrieval_limit", 3)
+            config_data.setdefault("ai_retrieval_mode", "auto")
+
+            config_data.setdefault("ai_use_tm", True)
+            config_data.setdefault("ai_tm_mode", "fuzzy")
+            config_data.setdefault("ai_tm_threshold", 0.75)
+
+            config_data.setdefault("ai_use_glossary", True)
 
             # Prompt structure
             if "ai_prompts" not in config_data:
