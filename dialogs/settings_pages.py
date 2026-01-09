@@ -568,7 +568,11 @@ class AISettingsPage(BaseSettingsPage):
 
     def open_prompt_manager(self):
         self.app.show_prompt_manager()
-        self._populate_prompt_combos()  # 刷新列表
+        try:
+            if self.trans_prompt_combo.parent() is not None:
+                self._populate_prompt_combos()
+        except RuntimeError:
+            pass
 
     def save_settings(self):
         self.app.config["ai_api_interval"] = self.interval_spinbox.value()

@@ -12,7 +12,7 @@ import json
 import uuid
 from copy import deepcopy
 from ui_components.tooltip import Tooltip
-from utils.constants import PROMPT_PRESET_EXTENSION, DEFAULT_PROMPT_STRUCTURE, STRUCTURAL, STATIC, DYNAMIC
+from utils.constants import PROMPT_PRESET_EXTENSION, DEFAULT_PROMPT_STRUCTURE, STRUCTURAL, STATIC, DYNAMIC, DEFAULT_CORRECTION_PROMPT_STRUCTURE
 from utils.localization import _
 
 
@@ -334,11 +334,20 @@ class PromptManagerDialog(QDialog):
             self.update_tree_item(item_id, dialog.result)
 
     def reset_to_defaults(self):
-        reply = QMessageBox.question(self, _("Confirm"),
-                                     _("Are you sure you want to reset the prompt to its default settings?\nAll current customizations will be lost."),
+        current_preset = self.prompts_data[self.current_prompt_index]
+        preset_type = current_preset.get("type", "translation")
+
+        if preset_type == "correction":
+            default_structure_to_use = deepcopy(DEFAULT_CORRECTION_PROMPT_STRUCTURE)
+            confirm_message = _("Are you sure you want to reset this Correction Prompt to its default settings?\nAll current customizations will be lost.")
+        else:
+            default_structure_to_use = deepcopy(DEFAULT_PROMPT_STRUCTURE)
+            confirm_message = _("Are you sure you want to reset this Translation Prompt to its default settings?\nAll current customizations will be lost.")
+
+        reply = QMessageBox.question(self, _("Confirm"), confirm_message,
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.prompt_structure = deepcopy(DEFAULT_PROMPT_STRUCTURE)
+            self.prompt_structure = default_structure_to_use
             self.populate_tree()
 
     def import_preset(self):
