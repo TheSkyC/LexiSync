@@ -90,9 +90,9 @@ def check_leading_whitespace(source, target):
     tgt_has = target.lstrip(whitespace_chars) != target
 
     if src_has and not tgt_has:
-        return _("Missing leading whitespace.")
+        return _("Translation should start with whitespace")
     if not src_has and tgt_has:
-        return _("Extra leading whitespace.")
+        return _("Translation should not start with whitespace")
     return None
 
 
@@ -109,9 +109,9 @@ def check_trailing_whitespace(source, target):
             full_width_puncts = {'：', '。', '？', '！', '，', '；'}
             if last_char in full_width_puncts:
                 return None
-        return _("Missing trailing whitespace.")
+        return _("Translation should end with whitespace")
     if not src_has and tgt_has:
-        return _("Extra trailing whitespace.")
+        return _("Translation should not end with whitespace")
     return None
 
 def check_starting_punctuation(source, target):
@@ -128,12 +128,16 @@ def check_starting_punctuation(source, target):
     t_is_punc = t_char in ALL_PUNC_KEYS or t_char in ALL_PUNC_VALUES
 
     if s_is_punc != t_is_punc:
-        return _("Starting punctuation presence differs.")
+        if s_is_punc:
+             expected_t = PUNCTUATION_MAP.get(s_char, s_char)
+             return _("Translation should start with '{char}'").format(char=expected_t)
+        else:
+             return _("Translation should not start with '{char}'").format(char=t_char)
 
     if s_is_punc:
         expected_t = PUNCTUATION_MAP.get(s_char, s_char)
         if t_char != expected_t and t_char != s_char:
-            return _("Starting punctuation differs: '{s_char}' vs '{t_char}'.").format(s_char=s_char, t_char=t_char)
+            return _("Translation should start with '{char}'").format(char=expected_t)
 
     return None
 
@@ -158,7 +162,7 @@ def check_ending_punctuation(source, target):
     if src_has_ellipsis and tgt_has_ellipsis:
         return None
     if src_has_ellipsis != tgt_has_ellipsis:
-        return _("Missing ending ellipsis.") if src_has_ellipsis else _("Extra ending ellipsis.")
+        return _("Translation should end with an ellipsis") if src_has_ellipsis else _("Translation should not end with an ellipsis")
 
     s_char = temp_s[-1]
     t_char = t_strip[-1]
@@ -183,15 +187,16 @@ def check_ending_punctuation(source, target):
                     if open_count > 0 and open_count == close_count:
                         return None
 
-            return _("Extra ending character: '{char}'").format(char=t_char)
+            return _("Translation should not end with '{char}'").format(char=t_char)
 
         if s_is_punc and not t_is_punc:
-            return _("Missing ending character: '{char}'").format(char=s_char)
+            expected_t = PUNCTUATION_MAP.get(s_char, s_char)
+            return _("Translation should end with '{char}'").format(char=expected_t)
 
     if s_is_punc:
         expected_t = PUNCTUATION_MAP.get(s_char, s_char)
         if t_char != expected_t and t_char != s_char:
-            return _("Ending punctuation differs: '{s_char}' vs '{t_char}'.").format(s_char=s_char, t_char=t_char)
+            return _("Translation should end with '{char}'").format(char=expected_t)
 
     return None
 
@@ -202,8 +207,10 @@ def check_capitalization(source, target):
     t_char = _get_starting_cased_char(target)
 
     if s_char and t_char:
-        if s_char.isupper() != t_char.isupper():
-            return _("Initial capitalization mismatch.")
+        if s_char.isupper() and t_char.islower():
+            return _("Translation should start with a capital letter")
+        elif s_char.islower() and t_char.isupper():
+            return _("Translation should start with a lowercase letter")
     return None
 
 
@@ -211,16 +218,16 @@ def check_repeated_words(source, target):
     """检查译文中是否有重复的单词，如 'the the'"""
     if RE_REPEATED_WORD.search(target):
         match = RE_REPEATED_WORD.search(target)
-        return _("Repeated word: '{word}'").format(word=match.group(1))
+        return _("Repeated word '{word}' in translation").format(word=match.group(1))
     return None
 
 
 def check_newline_count(source, target):
     """检查换行符数量是否一致"""
-    src_count = source.count('\n')
-    tgt_count = target.count('\n')
+    src_count = source.count('\n') + 1
+    tgt_count = target.count('\n') + 1
     if src_count != tgt_count:
-        return _("Newline count mismatch (source: {src_count}, target: {tgt_count}).").format(src_count=src_count, tgt_count=tgt_count)
+        return _("Translation has {tgt} Lines, expected {src} Lines").format(tgt=tgt_count, src=src_count)
     return None
 
 
@@ -254,7 +261,7 @@ def check_quotes(source, target, mode='flexible'):
         tgt_total_quotes = tgt_single_count + tgt_double_count
 
         if src_total_quotes != tgt_total_quotes:
-            return _("Total quote count mismatch (source: {src_total}, target: {tgt_total})").format(src_total=src_total_quotes, tgt_total=tgt_total_quotes)
+            return _("Quote count mismatch (source: {src_total}, target: {tgt_total})").format(src_total=src_total_quotes, tgt_total=tgt_total_quotes)
 
     return None
 
@@ -292,7 +299,7 @@ def check_accelerators(source, target, markers):
         tgt_count = len(pattern.findall(target))
 
         if src_count != tgt_count:
-            errors.append(_("Accelerator '{marker}' count mismatch (source: {src_count}, target: {tgt_count})").format(marker=marker, src_count=src_count, tgt_count=tgt_count))
+            errors.append(_("Mismatched accelerator '{marker}'").format(marker=marker))
 
     if errors:
         return " | ".join(errors)
@@ -313,6 +320,15 @@ def _compare_counts(src_list, tgt_list):
         elif diff < 0:
             extra.append(f"'{key}' (x{abs(diff)})")
     return missing, extra
+
+
+def _format_missing_extra(missing, extra, label):
+    parts = []
+    if missing:
+        parts.append(_("Missing {label}: {items}").format(label=label, items=', '.join(missing)))
+    if extra:
+        parts.append(_("Extra {label}: {items}").format(label=label, items=', '.join(extra)))
+    return " | ".join(parts)
 
 
 def check_printf(source, target, mode='loose'):
@@ -359,12 +375,7 @@ def check_printf(source, target, mode='loose'):
 
     missing, extra = _compare_counts(src_fmt, tgt_fmt)
     if missing or extra:
-        error_parts = []
-        if missing:
-            error_parts.append(_("Missing: {items}").format(items=', '.join(missing)))
-        if extra:
-            error_parts.append(_("Extra: {items}").format(items=', '.join(extra)))
-        return _("Printf mismatch ({details})").format(details=' | '.join(error_parts))
+        return _format_missing_extra(missing, extra, "printf")
     return None
 
 
@@ -375,7 +386,7 @@ def check_python_brace(source, target):
     tgt_fmt = RE_PYTHON_BRACE.findall(tgt_clean)
     missing, extra = _compare_counts(src_fmt, tgt_fmt)
     if missing or extra:
-        return _("Brace mismatch. Missing: {missing} | Extra: {extra}").format(missing=', '.join(missing), extra=', '.join(extra))
+        return _format_missing_extra(missing, extra, "brace")
     return None
 
 
@@ -391,12 +402,8 @@ def check_urls_emails(source, target):
         missing_urls = src_urls - tgt_urls
         extra_urls = tgt_urls - src_urls
 
-        error_parts = []
-        if missing_urls:
-            error_parts.append(_("Missing: {items}").format(items=', '.join(missing_urls)))
-        if extra_urls:
-            error_parts.append(_("Extra: {items}").format(items=', '.join(extra_urls)))
-        errors.append(_("URL mismatch ({details})").format(details=' | '.join(error_parts)))
+        if missing_urls or extra_urls:
+            errors.append(_format_missing_extra(missing_urls, extra_urls, "URL"))
 
     # --- Email 检查 ---
     src_emails = set(RE_EMAIL.findall(source))
@@ -406,12 +413,8 @@ def check_urls_emails(source, target):
         missing_emails = src_emails - tgt_emails
         extra_emails = tgt_emails - src_emails
 
-        error_parts = []
-        if missing_emails:
-            error_parts.append(_("Missing: {items}").format(items=', '.join(missing_emails)))
-        if extra_emails:
-            error_parts.append(_("Extra: {items}").format(items=', '.join(extra_emails)))
-        errors.append(_("Email mismatch ({details})").format(details=' | '.join(error_parts)))
+        if missing_emails or extra_emails:
+            errors.append(_format_missing_extra(missing_emails, extra_emails, "email"))
 
     return " | ".join(errors) if errors else None
 
@@ -480,13 +483,7 @@ def check_numbers(source, target, mode='loose'):
                 extra.extend([num] * abs(diff))
 
     if missing or extra:
-        error_parts = []
-        if missing:
-            error_parts.append(_("Missing: {items}").format(items=', '.join(missing)))
-        if extra:
-            error_parts.append(_("Extra: {items}").format(items=', '.join(extra)))
-        return _("Numbers mismatch ({details})").format(details=' | '.join(error_parts))
-
+        return _format_missing_extra(missing, extra, _("number"))
     return None
 
 
@@ -522,15 +519,9 @@ def check_brackets(source, target):
 
         # 4. 检查数量是否与原文一致
         if src_open_count != tgt_open_count:
-            if tgt_open_count > src_open_count:
-                pass
-            else:
-                errors.append(_("Count of {desc} differs: source {src_count}, target {tgt_count}").format(
-                    desc=_(desc), src_count=src_open_count, tgt_count=tgt_open_count
-                ))
+            errors.append(_("Mismatched {desc}").format(desc=_(desc)))
 
     return " | ".join(errors) if errors else None
-
 
 def check_double_space(source, target):
     if "  " in target and "  " not in source:
@@ -555,12 +546,6 @@ def check_html_tags(source, target):
     tgt_tags = get_valid_tags(target)
 
     missing, extra = _compare_counts(src_tags, tgt_tags)
-
     if missing or extra:
-        error_parts = []
-        if missing:
-            error_parts.append(_("Missing: {items}").format(items=', '.join(missing)))
-        if extra:
-            error_parts.append(_("Extra: {items}").format(items=', '.join(extra)))
-        return _("HTML Tag mismatch ({details})").format(details=' | '.join(error_parts))
+        return _format_missing_extra(missing, extra, "HTML tag")
     return None
