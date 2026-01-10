@@ -221,6 +221,23 @@ def load_from_po(filepath):
 
 def save_to_po(filepath, translatable_objects, metadata=None, original_file_name="source_code", app_instance=None):
     po_file = polib.POFile(wrapwidth=78)
+    if metadata:
+        po_file.metadata = metadata
+    else:
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M%z")
+        po_file.metadata = {
+            'Project-Id-Version': f'LexiSync {APP_VERSION}',
+            'Report-Msgid-Bugs-To': '',
+            'POT-Creation-Date': now,
+            'PO-Revision-Date': now,
+            'Last-Translator': 'LexiSync User',
+            'Language-Team': '',
+            'MIME-Version': '1.0',
+            'Content-Type': 'text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding': '8bit',
+            'X-Generator': f'LexiSync {APP_VERSION}'
+        }
+
     for ts_obj in translatable_objects:
         if not ts_obj.original_semantic or ts_obj.id == "##NEW_ENTRY##":
             continue
