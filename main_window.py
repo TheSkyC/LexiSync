@@ -488,31 +488,37 @@ class LexiSyncApp(QMainWindow):
         self.edit_menu.addAction(self.action_paste_translation)
 
         # View Menu
+        self.filter_menu = self.view_menu.addMenu(_("Filters"))
+        self.panels_menu = self.view_menu.addMenu(_("Panels"))
+        self.view_menu.addSeparator()
+
+        # 1. Filters Action
         self.action_show_ignored = QAction(_("Show Ignored"), self, checkable=True)
         self.action_show_ignored.setChecked(self.show_ignored_var)
         self.action_show_ignored.triggered.connect(lambda checked: self.set_filter_var('show_ignored', checked))
-        self.view_menu.addAction(self.action_show_ignored)
+        self.filter_menu.addAction(self.action_show_ignored)
         self.filter_actions['show_ignored'] = self.action_show_ignored
 
         self.action_show_untranslated = QAction(_("Show Untranslated"), self, checkable=True)
         self.action_show_untranslated.setChecked(self.show_untranslated_var)
-        self.action_show_untranslated.triggered.connect(lambda checked: self.set_filter_var('show_untranslated', checked))
-        self.view_menu.addAction(self.action_show_untranslated)
+        self.action_show_untranslated.triggered.connect(
+            lambda checked: self.set_filter_var('show_untranslated', checked))
+        self.filter_menu.addAction(self.action_show_untranslated)
         self.filter_actions['show_untranslated'] = self.action_show_untranslated
 
         self.action_show_translated = QAction(_("Show Translated"), self, checkable=True)
         self.action_show_translated.setChecked(self.show_translated_var)
         self.action_show_translated.triggered.connect(lambda checked: self.set_filter_var('show_translated', checked))
-        self.view_menu.addAction(self.action_show_translated)
+        self.filter_menu.addAction(self.action_show_translated)
         self.filter_actions['show_translated'] = self.action_show_translated
 
         self.action_show_unreviewed = QAction(_("Show Unreviewed"), self, checkable=True)
         self.action_show_unreviewed.setChecked(self.show_unreviewed_var)
         self.action_show_unreviewed.triggered.connect(lambda checked: self.set_filter_var('show_unreviewed', checked))
-        self.view_menu.addAction(self.action_show_unreviewed)
+        self.filter_menu.addAction(self.action_show_unreviewed)
         self.filter_actions['show_unreviewed'] = self.action_show_unreviewed
-        self.view_menu.addSeparator()
 
+        # 2. Panel Action
         self.action_restore_layout = QAction(_("Restore Default Layout"), self)
         self.action_restore_layout.triggered.connect(self.restore_default_layout)
         self.view_menu.addAction(self.action_restore_layout)
@@ -661,6 +667,10 @@ class LexiSyncApp(QMainWindow):
         self.file_menu.setTitle(_("&File"))
         self.edit_menu.setTitle(_("&Edit"))
         self.view_menu.setTitle(_("&View"))
+        if hasattr(self, 'filter_menu'):
+            self.filter_menu.setTitle(_("Filters"))
+        if hasattr(self, 'panels_menu'):
+            self.panels_menu.setTitle(_("Panels"))
         self.tools_menu.setTitle(_("&Tools"))
         self.settings_menu.setTitle(_("&Settings"))
         if hasattr(self, 'plugin_menu'):
@@ -1233,50 +1243,28 @@ class LexiSyncApp(QMainWindow):
         return super().eventFilter(obj, event)
 
     def _setup_dock_widgets(self):
+        # 1. Create Panels
         self.details_panel = DetailsPanel(self)
         self.context_panel = ContextPanel(self)
         self.tm_panel = TMPanel(self, app_instance=self)
         self.comment_status_panel = CommentStatusPanel(self)
         self.glossary_panel = GlossaryPanel(self)
-        self.glossary_panel.add_entry_requested.connect(self.add_glossary_entry)
-        self.glossary_panel.settings_requested.connect(self.show_glossary_settings)
-
-        #FileExplorerPanel
         self.file_explorer_panel = FileExplorerPanel(self, self)
+
+        # 2. Create Docks and Add to Window
+        # File Explorer
         self.file_explorer_dock = QDockWidget(_("File Explorer"), self)
         self.file_explorer_dock.setObjectName("fileExplorerDock")
         self.file_explorer_dock.setWidget(self.file_explorer_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.file_explorer_dock)
 
-        # GlossaryPanel
+        # Glossary
         self.glossary_dock = QDockWidget(_("Glossary"), self)
         self.glossary_dock.setObjectName("glossaryDock")
         self.glossary_dock.setWidget(self.glossary_panel)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.glossary_dock)
 
-        self.splitDockWidget(self.file_explorer_dock, self.glossary_dock, Qt.Vertical)
-        self.resizeDocks([self.file_explorer_dock, self.glossary_dock], [400, 200], Qt.Vertical)
-
-        # DetailsPanel
-        self.details_panel.apply_translation_signal.connect(self.apply_translation_from_button)
-        self.details_panel.translation_text_changed_signal.connect(self.schedule_placeholder_validation)
-        self.details_panel.translation_text_changed_signal.connect(self.schedule_details_panel_stats_update)
-        self.details_panel.translation_focus_out_signal.connect(self.apply_translation_focus_out)
-        self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
-        self.details_panel.warning_ignored_signal.connect(lambda: self.cm_set_warning_ignored_status(True))
-        self.details_panel.fuzzy_toggled_signal.connect(self.on_fuzzy_toggled)
-
-        # CommentStatusPanel
-        self.comment_status_panel.apply_comment_signal.connect(self.apply_comment_from_button)
-        self.comment_status_panel.comment_focus_out_signal.connect(self.apply_comment_focus_out)
-
-        # TMPanel
-        self.tm_panel.apply_tm_suggestion_signal.connect(self.apply_tm_suggestion_from_listbox)
-        self.tm_panel.update_tm_signal.connect(self.update_tm_for_selected_string)
-        self.tm_panel.clear_tm_signal.connect(self.clear_tm_for_selected_string)
-
-
-        # DetailsPanel
+        # Details
         self.details_dock = QDockWidget(_("Edit && Details"), self)
         self.details_dock.setObjectName("detailsDock")
         self.details_dock.setWidget(self.details_panel)
@@ -1285,7 +1273,7 @@ class LexiSyncApp(QMainWindow):
         self.details_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.details_dock)
 
-        # ContextPanel
+        # Context
         self.context_dock = QDockWidget(_("Context Preview"), self)
         self.context_dock.setObjectName("contextDock")
         self.context_dock.setWidget(self.context_panel)
@@ -1294,7 +1282,7 @@ class LexiSyncApp(QMainWindow):
         self.context_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.context_dock)
 
-        # TMPanel
+        # TM
         self.tm_dock = QDockWidget(_("Translation Memory Matches"), self)
         self.tm_dock.setObjectName("tmDock")
         self.tm_dock.setWidget(self.tm_panel)
@@ -1302,9 +1290,8 @@ class LexiSyncApp(QMainWindow):
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.tm_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.tm_dock)
-        self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)
 
-        # CommentStatusPanel
+        # Comment
         self.comment_status_dock = QDockWidget(_("Comment && Status"), self)
         self.comment_status_dock.setObjectName("commentDock")
         self.comment_status_dock.setWidget(self.comment_status_panel)
@@ -1312,38 +1299,63 @@ class LexiSyncApp(QMainWindow):
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.comment_status_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.comment_status_dock)
+
+        # 3. Layout Adjustments (Now safe because all docks exist)
+        self.splitDockWidget(self.file_explorer_dock, self.glossary_dock, Qt.Vertical)
+        self.resizeDocks([self.file_explorer_dock, self.glossary_dock], [400, 200], Qt.Vertical)
+
+        self.splitDockWidget(self.context_dock, self.tm_dock, Qt.Vertical)
         self.splitDockWidget(self.tm_dock, self.comment_status_dock, Qt.Vertical)
 
+        # 4. Signal Connections
+        self.glossary_panel.add_entry_requested.connect(self.add_glossary_entry)
+        self.glossary_panel.settings_requested.connect(self.show_glossary_settings)
+
+        self.details_panel.apply_translation_signal.connect(self.apply_translation_from_button)
+        self.details_panel.translation_text_changed_signal.connect(self.schedule_placeholder_validation)
+        self.details_panel.translation_text_changed_signal.connect(self.schedule_details_panel_stats_update)
+        self.details_panel.translation_focus_out_signal.connect(self.apply_translation_focus_out)
+        self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
+        self.details_panel.warning_ignored_signal.connect(lambda: self.cm_set_warning_ignored_status(True))
+        self.details_panel.fuzzy_toggled_signal.connect(self.on_fuzzy_toggled)
+
+        self.comment_status_panel.apply_comment_signal.connect(self.apply_comment_from_button)
+        self.comment_status_panel.comment_focus_out_signal.connect(self.apply_comment_focus_out)
+
+        self.tm_panel.apply_tm_suggestion_signal.connect(self.apply_tm_suggestion_from_listbox)
+        self.tm_panel.update_tm_signal.connect(self.update_tm_for_selected_string)
+        self.tm_panel.clear_tm_signal.connect(self.clear_tm_for_selected_string)
+
+        # 5. Create Actions (Using new panels_menu)
         # File Explorer Panel Action
         self.action_toggle_file_explorer = self.file_explorer_dock.toggleViewAction()
-        self.action_toggle_file_explorer.setText(_("File Explorer Panel"))
-
-        # Details Panel Action
-        self.action_toggle_details_panel = self.details_dock.toggleViewAction()
-        self.action_toggle_details_panel.setText(_("Edit && Details Panel"))
-
-        # Context Panel Action
-        self.action_toggle_context_panel = self.context_dock.toggleViewAction()
-        self.action_toggle_context_panel.setText(_("Context Preview Panel"))
-
-        # TM Panel Action
-        self.action_toggle_tm_panel = self.tm_dock.toggleViewAction()
-        self.action_toggle_tm_panel.setText(_("Translation Memory Panel"))
-
-        # Comment Status Panel Action
-        self.action_toggle_comment_status_panel = self.comment_status_dock.toggleViewAction()
-        self.action_toggle_comment_status_panel.setText(_("Comment && Status Panel"))
+        self.action_toggle_file_explorer.setText(_("File Explorer"))
+        self.panels_menu.addAction(self.action_toggle_file_explorer)
 
         # Glossary Panel Action
         self.action_toggle_glossary_panel = self.glossary_dock.toggleViewAction()
-        self.action_toggle_glossary_panel.setText(_("Glossary Panel"))
-        self.view_menu.addAction(self.action_toggle_glossary_panel)
+        self.action_toggle_glossary_panel.setText(_("Glossary"))
+        self.panels_menu.addAction(self.action_toggle_glossary_panel)
 
-        self.view_menu.addAction(self.action_toggle_file_explorer)
-        self.view_menu.addAction(self.action_toggle_details_panel)
-        self.view_menu.addAction(self.action_toggle_context_panel)
-        self.view_menu.addAction(self.action_toggle_tm_panel)
-        self.view_menu.addAction(self.action_toggle_comment_status_panel)
+        # Details Panel Action
+        self.action_toggle_details_panel = self.details_dock.toggleViewAction()
+        self.action_toggle_details_panel.setText(_("Edit && Details"))
+        self.panels_menu.addAction(self.action_toggle_details_panel)
+
+        # Context Panel Action
+        self.action_toggle_context_panel = self.context_dock.toggleViewAction()
+        self.action_toggle_context_panel.setText(_("Context Preview"))
+        self.panels_menu.addAction(self.action_toggle_context_panel)
+
+        # TM Panel Action
+        self.action_toggle_tm_panel = self.tm_dock.toggleViewAction()
+        self.action_toggle_tm_panel.setText(_("Translation Memory"))
+        self.panels_menu.addAction(self.action_toggle_tm_panel)
+
+        # Comment Status Panel Action
+        self.action_toggle_comment_status_panel = self.comment_status_dock.toggleViewAction()
+        self.action_toggle_comment_status_panel.setText(_("Comment && Status"))
+        self.panels_menu.addAction(self.action_toggle_comment_status_panel)
 
         if self.default_window_state is None:
             self.default_window_state = self.saveState()
@@ -1351,14 +1363,21 @@ class LexiSyncApp(QMainWindow):
         self._update_editor_fonts()
 
     def restore_default_layout(self):
+        if not hasattr(self, 'file_explorer_dock'):
+            return
+
         if self.default_window_state:
             self.restoreState(self.default_window_state)
+
         docks_to_show = [
             self.file_explorer_dock, self.glossary_dock, self.details_dock,
             self.context_dock, self.tm_dock, self.comment_status_dock
         ]
+
         for dock in docks_to_show:
-            dock.setVisible(True)
+            if dock:
+                dock.setVisible(True)
+
         main_width = self.size().width()
         main_height = self.size().height()
         left_width = max(200, int(main_width * 0.15))
