@@ -753,8 +753,6 @@ class LexiSyncApp(QMainWindow):
         self.search_entry.setText("")
         self.search_entry.textChanged.connect(self.search_filter_changed)
         self.search_entry.setPlaceholderText(_("Quick search..."))
-        self.on_search_focus_out()
-        self.on_search_focus_out()
 
         # Update Child Panels
         if hasattr(self, 'file_explorer_dock'):
@@ -2775,108 +2773,115 @@ class LexiSyncApp(QMainWindow):
         index = self.table_view.indexAt(pos)
         if not index.isValid():
             return
+
         if not self.table_view.selectionModel().isRowSelected(index.row(), index.parent()):
             self.table_view.selectionModel().clearSelection()
             self.table_view.selectionModel().select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
             self.on_sheet_select(index, index)
 
-        context_menu = QMenu(self)
-        context_menu.addAction(QAction(_("Copy Original"), self, triggered=self.cm_copy_original))
-        context_menu.addAction(QAction(_("Copy Translation"), self, triggered=self.cm_copy_translation))
-        context_menu.addSeparator()
         selected_objs = self._get_selected_ts_objects_from_sheet()
+        if not selected_objs: return
 
-        # Auto Fix
-        if selected_objs and len(selected_objs) == 1:
+        first_obj = selected_objs[0]
+        context_menu = QMenu(self)
+
+        # --- AI Translation ---
+        ai_action = QAction(_("AI Translate Selected"), self)
+        ai_action.setShortcut(QKeySequence(self.config['keybindings'].get('ai_translate_selected', '')))
+        ai_action.triggered.connect(self.cm_ai_translate_selected)
+        context_menu.addAction(ai_action)
+
+        # --- Auto Correct ---
+        if len(selected_objs) == 1:
             ts_obj = selected_objs[0]
             has_warnings = (ts_obj.warnings or ts_obj.minor_warnings or ts_obj.infos) and not ts_obj.is_warning_ignored
+
             if has_warnings:
-                target_lang = self.current_target_language if self.is_project_mode else self.target_language
+                fix_menu = self._create_auto_fix_menu(ts_obj)
+                if fix_menu:
+                    context_menu.addMenu(fix_menu)
 
-                # 获取所有警告类型
-                all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos]
-                fixable_actions = []
-
-                # 1. 收集基于规则的修复
-                for wt in all_warnings:
-                    suggestion = fix_service.get_fix_for_warning(ts_obj, wt, target_lang)
-                    if suggestion:
-                        def make_fix_slot(text):
-                            return lambda: self._apply_translation_to_model(ts_obj, text, source="quick_fix")
-
-                        readable_name = wt.name.replace('_', ' ').title()
-                        action_text = f"{_('Fix')}: {readable_name}"
-                        fixable_actions.append(QAction(action_text, self, triggered=make_fix_slot(suggestion)))
-
-                # 2. 创建菜单
-                if fixable_actions or self.config.get("ai_api_key"):  # 只要有可修复项或AI可用就显示
-                    fix_menu = context_menu.addMenu(_("Auto Correct"))
-
-                    # 添加规则修复项
-                    for action in fixable_actions:
-                        fix_menu.addAction(action)
-
-                    # 添加 "Fix All"
-                    if len(fixable_actions) > 1:
-                        fix_menu.addSeparator()
-
-                        def fix_all_slot():
-                            final_text = fix_service.apply_all_fixes(ts_obj, target_lang)
-                            if final_text:
-                                self._apply_translation_to_model(ts_obj, final_text, source="quick_fix_all")
-
-                        fix_menu.addAction(QAction(_("Fix All Rule-Based Issues"), self, triggered=fix_all_slot))
-
-                    # AI Fix
-                    if self.config.get("ai_api_key"):
-                        if fixable_actions:
-                            fix_menu.addSeparator()
-
-                        ai_fix_action = QAction(_("AI Fix This Issue..."), self)
-                        ai_fix_action.triggered.connect(self.ai_fix_current_item)
-                        fix_menu.addAction(ai_fix_action)
-
-                    context_menu.addSeparator()
-
-
-        if selected_objs:
-            first_obj = selected_objs[0]
-            action_ignore = QAction(_("Mark as Ignored"), self, triggered=lambda: self.cm_set_ignored_status(True))
-            action_unignore = QAction(_("Unmark as Ignored"), self, triggered=lambda: self.cm_set_ignored_status(False))
-            if first_obj.is_ignored:
-                context_menu.addAction(action_unignore)
-            else:
-                context_menu.addAction(action_ignore)
-            action_reviewed = QAction(_("Mark as Reviewed"), self, triggered=lambda: self.cm_set_reviewed_status(True))
-            action_unreviewed = QAction(_("Mark as Unreviewed"), self,
-                                        triggered=lambda: self.cm_set_reviewed_status(False))
-            if first_obj.is_reviewed:
-                context_menu.addAction(action_unreviewed)
-            else:
-                context_menu.addAction(action_reviewed)
-            action_ignore_warning = QAction(_("Ignore Warnings for Selected"), self,
-                                            triggered=lambda: self.cm_set_warning_ignored_status(True))
-            action_unignore_warning = QAction(_("Un-ignore Warnings for Selected"), self,
-                                              triggered=lambda: self.cm_set_warning_ignored_status(False))
-            if first_obj.is_warning_ignored:
-                context_menu.addAction(action_unignore_warning)
-            else:
-                context_menu.addAction(action_ignore_warning)
-            context_menu.addSeparator()
-
-        context_menu.addAction(QAction(_("Edit Comment..."), self, triggered=self.cm_edit_comment))
         context_menu.addSeparator()
-        context_menu.addAction(
-            QAction(_("Apply Memory to Selected Items"), self, triggered=self.cm_apply_tm_to_selected))
-        context_menu.addAction(
-            QAction(_("Apply Translation to All Identical Sources"), self, triggered=self.cm_propagate_to_identical)
-        )
-        context_menu.addAction(
-            QAction(_("Clear Selected Translations"), self, triggered=self.cm_clear_selected_translations))
-        context_menu.addSeparator()
-        context_menu.addAction(
-            QAction(_("Use AI to Translate Selected Items"), self, triggered=self.cm_ai_translate_selected))
 
+        # --- Copy Submenu ---
+        copy_menu = context_menu.addMenu(_("Copy"))
+
+        act_copy_orig = QAction(_("Copy Original"), self)
+        act_copy_orig.setShortcut(QKeySequence(self.config['keybindings'].get('copy_original', '')))
+        act_copy_orig.triggered.connect(self.cm_copy_original)
+        copy_menu.addAction(act_copy_orig)
+
+        act_copy_trans = QAction(_("Copy Translation"), self)
+        act_copy_trans.triggered.connect(self.cm_copy_translation)
+        copy_menu.addAction(act_copy_trans)
+
+        copy_menu.addSeparator()
+
+        act_copy_tsv = QAction(_("Copy as Table (Excel/TSV)"), self)
+        act_copy_tsv.triggered.connect(lambda: self.cm_copy_as_table("tsv"))
+        copy_menu.addAction(act_copy_tsv)
+
+        act_copy_md = QAction(_("Copy as Table (Markdown)"), self)
+        act_copy_md.triggered.connect(lambda: self.cm_copy_as_table("markdown"))
+        copy_menu.addAction(act_copy_md)
+
+        # --- Mark as Submenu ---
+        mark_menu = context_menu.addMenu(_("Mark as"))
+
+        # Reviewed
+        is_reviewed = first_obj.is_reviewed
+        text_reviewed = _("Unmark as Reviewed") if is_reviewed else _("Mark as Reviewed")
+        act_reviewed = QAction(text_reviewed, self)
+        act_reviewed.setShortcut(QKeySequence(self.config['keybindings'].get('toggle_reviewed', '')))
+        act_reviewed.triggered.connect(lambda: self.cm_set_reviewed_status(not is_reviewed))
+        mark_menu.addAction(act_reviewed)
+
+        # Ignored
+        is_ignored = first_obj.is_ignored
+        text_ignored = _("Unmark as Ignored") if is_ignored else _("Mark as Ignored")
+        act_ignored = QAction(text_ignored, self)
+        act_ignored.setShortcut(QKeySequence(self.config['keybindings'].get('toggle_ignored', '')))
+        act_ignored.triggered.connect(lambda: self.cm_set_ignored_status(not is_ignored))
+        mark_menu.addAction(act_ignored)
+
+        # Fuzzy
+        is_fuzzy = first_obj.is_fuzzy
+        text_fuzzy = _("Unmark as Fuzzy") if is_fuzzy else _("Mark as Fuzzy")
+        act_fuzzy = QAction(text_fuzzy, self)
+        act_fuzzy.triggered.connect(lambda: self.on_fuzzy_toggled(not is_fuzzy))
+        mark_menu.addAction(act_fuzzy)
+
+        # Warnings
+        is_warn_ignored = first_obj.is_warning_ignored
+        text_warn = _("Un-ignore Warnings") if is_warn_ignored else _("Ignore Warnings")
+        act_warn = QAction(text_warn, self)
+        act_warn.triggered.connect(lambda: self.cm_set_warning_ignored_status(not is_warn_ignored))
+        mark_menu.addAction(act_warn)
+
+        context_menu.addSeparator()
+
+        # --- Translation Actions Submenu ---
+        action_menu = context_menu.addMenu(_("Translation Actions"))
+
+        act_tm = QAction(_("Apply TM Match"), self)
+        act_tm.triggered.connect(self.cm_apply_tm_to_selected)
+        action_menu.addAction(act_tm)
+
+        act_propagate = QAction(_("Propagate to Identical"), self)
+        act_propagate.triggered.connect(self.cm_propagate_to_identical)
+        action_menu.addAction(act_propagate)
+
+        act_comment = QAction(_("Edit Comment..."), self)
+        act_comment.triggered.connect(self.cm_edit_comment)
+        action_menu.addAction(act_comment)
+
+        action_menu.addSeparator()
+
+        act_clear = QAction(_("Clear Translation"), self)
+        act_clear.triggered.connect(self.cm_clear_selected_translations)
+        action_menu.addAction(act_clear)
+
+        # --- Plugins ---
         if hasattr(self, 'plugin_manager'):
             plugin_menu_items = self.plugin_manager.run_hook('on_table_context_menu', selected_ts_objects=selected_objs)
             if plugin_menu_items:
@@ -2884,6 +2889,48 @@ class LexiSyncApp(QMainWindow):
                 self.plugin_manager._create_menu_from_structure(context_menu, plugin_menu_items)
 
         context_menu.exec(self.table_view.viewport().mapToGlobal(pos))
+
+    def _create_auto_fix_menu(self, ts_obj):
+        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos]
+        fixable_actions = []
+
+        for wt in all_warnings:
+            suggestion = fix_service.get_fix_for_warning(ts_obj, wt, target_lang)
+            if suggestion:
+                def make_fix_slot(text):
+                    return lambda: self._apply_translation_to_model(ts_obj, text, source="quick_fix")
+
+                readable_name = wt.name.replace('_', ' ').title()
+                action_text = f"{_('Fix')}: {readable_name}"
+                fixable_actions.append(QAction(action_text, self, triggered=make_fix_slot(suggestion)))
+
+        if not fixable_actions and not self.config.get("ai_api_key"):
+            return None
+
+        fix_menu = QMenu(_("Auto Correct"), self)
+
+        for action in fixable_actions:
+            fix_menu.addAction(action)
+
+        if len(fixable_actions) > 1:
+            fix_menu.addSeparator()
+
+            def fix_all_slot():
+                final_text = fix_service.apply_all_fixes(ts_obj, target_lang)
+                if final_text:
+                    self._apply_translation_to_model(ts_obj, final_text, source="quick_fix_all")
+
+            fix_menu.addAction(QAction(_("Fix All Rule-Based Issues"), self, triggered=fix_all_slot))
+
+        if self.config.get("ai_api_key"):
+            if fixable_actions:
+                fix_menu.addSeparator()
+            ai_fix_action = QAction(_("AI Fix This Issue..."), self)
+            ai_fix_action.triggered.connect(self.ai_fix_current_item)
+            fix_menu.addAction(ai_fix_action)
+
+        return fix_menu
 
     def on_sheet_double_click(self, index):
         if not index.isValid(): return
@@ -3590,6 +3637,7 @@ class LexiSyncApp(QMainWindow):
 
             if self.current_selected_ts_id == ts_obj.id:
                 self.details_panel.update_warnings(ts_obj)
+                self.details_panel.fuzzy_toggle.set_checked_silent(checked)
 
     def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual",
                                     force_propagation_mode=None):
@@ -4764,6 +4812,37 @@ class LexiSyncApp(QMainWindow):
         text_to_copy = "\n".join([ts.get_translation_for_ui() for ts in selected_objs])
         QApplication.clipboard().setText(text_to_copy)
         self.update_statusbar(_("Copied {count} translations to clipboard.").format(count=len(selected_objs)))
+
+    def cm_copy_as_table(self, fmt="tsv"):
+        selected_objs = self._get_selected_ts_objects_from_sheet()
+        if not selected_objs: return
+
+        text_to_copy = ""
+
+        if fmt == "tsv":
+            lines = []
+            for ts in selected_objs:
+                orig = ts.original_semantic.replace('\n', ' ').replace('\r', '')
+                trans = ts.get_translation_for_ui().replace('\n', ' ').replace('\r', '')
+                lines.append(f"{orig}\t{trans}")
+            text_to_copy = "\n".join(lines)
+
+        elif fmt == "markdown":
+            # Markdown table format
+            lines = [
+                "| Source | Target |",
+                "|---|---|"
+            ]
+            for ts in selected_objs:
+                orig = ts.original_semantic.replace('|', '\\|').replace('\n', '<br>')
+                trans = ts.get_translation_for_ui().replace('|', '\\|').replace('\n', '<br>')
+                lines.append(f"| {orig} | {trans} |")
+            text_to_copy = "\n".join(lines)
+
+        QApplication.clipboard().setText(text_to_copy)
+
+        fmt_name = "TSV" if fmt == "tsv" else "Markdown"
+        self.update_statusbar(_("Copied {count} items as {fmt} table.").format(count=len(selected_objs), fmt=fmt_name))
 
     def cm_paste_to_translation(self):
         if not self.current_selected_ts_id:
