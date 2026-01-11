@@ -2792,14 +2792,9 @@ class LexiSyncApp(QMainWindow):
         context_menu.addAction(ai_action)
 
         # --- Auto Correct ---
-        if len(selected_objs) == 1:
-            ts_obj = selected_objs[0]
-            has_warnings = (ts_obj.warnings or ts_obj.minor_warnings or ts_obj.infos) and not ts_obj.is_warning_ignored
-
-            if has_warnings:
-                fix_menu = self._create_auto_fix_menu(ts_obj)
-                if fix_menu:
-                    context_menu.addMenu(fix_menu)
+        fix_menu = self._create_auto_fix_menu(selected_objs)
+        if fix_menu:
+            context_menu.addMenu(fix_menu)
 
         context_menu.addSeparator()
 
@@ -2890,47 +2885,160 @@ class LexiSyncApp(QMainWindow):
 
         context_menu.exec(self.table_view.viewport().mapToGlobal(pos))
 
-    def _create_auto_fix_menu(self, ts_obj):
+    def _create_auto_fix_menu(self, selected_objs):
+        if not selected_objs: return None
+
         target_lang = self.current_target_language if self.is_project_mode else self.target_language
-        all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos]
-        fixable_actions = []
 
-        for wt in all_warnings:
-            suggestion = fix_service.get_fix_for_warning(ts_obj, wt, target_lang)
-            if suggestion:
-                def make_fix_slot(text):
-                    return lambda: self._apply_translation_to_model(ts_obj, text, source="quick_fix")
+        # Case A: Single Selection
+        if len(selected_objs) == 1:
+            ts_obj = selected_objs[0]
+            if not ((ts_obj.warnings or ts_obj.minor_warnings or ts_obj.infos) and not ts_obj.is_warning_ignored):
+                if not self.config.get("ai_api_key"): return None
+                return None
 
-                readable_name = wt.name.replace('_', ' ').title()
-                action_text = f"{_('Fix')}: {readable_name}"
-                fixable_actions.append(QAction(action_text, self, triggered=make_fix_slot(suggestion)))
+            all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos]
+            fixable_actions = []
 
-        if not fixable_actions and not self.config.get("ai_api_key"):
-            return None
+            for wt in all_warnings:
+                suggestion = fix_service.get_fix_for_warning(ts_obj, wt, target_lang)
+                if suggestion:
+                    def make_fix_slot(text):
+                        return lambda: self._apply_translation_to_model(ts_obj, text, source="quick_fix")
 
-        fix_menu = QMenu(_("Auto Correct"), self)
+                    readable_name = wt.name.replace('_', ' ').title()
+                    action_text = f"{_('Fix')}: {readable_name}"
+                    fixable_actions.append(QAction(action_text, self, triggered=make_fix_slot(suggestion)))
 
-        for action in fixable_actions:
-            fix_menu.addAction(action)
+            fix_menu = QMenu(_("Auto Fix"), self)
 
-        if len(fixable_actions) > 1:
-            fix_menu.addSeparator()
+            for action in fixable_actions:
+                fix_menu.addAction(action)
 
-            def fix_all_slot():
-                final_text = fix_service.apply_all_fixes(ts_obj, target_lang)
-                if final_text:
-                    self._apply_translation_to_model(ts_obj, final_text, source="quick_fix_all")
-
-            fix_menu.addAction(QAction(_("Fix All Rule-Based Issues"), self, triggered=fix_all_slot))
-
-        if self.config.get("ai_api_key"):
-            if fixable_actions:
+            if len(fixable_actions) > 1:
                 fix_menu.addSeparator()
-            ai_fix_action = QAction(_("AI Fix This Issue..."), self)
-            ai_fix_action.triggered.connect(self.ai_fix_current_item)
-            fix_menu.addAction(ai_fix_action)
 
-        return fix_menu
+                def fix_all_slot():
+                    final_text = fix_service.apply_all_fixes(ts_obj, target_lang)
+                    if final_text:
+                        self._apply_translation_to_model(ts_obj, final_text, source="quick_fix_all")
+
+                fix_menu.addAction(QAction(_("Fix with Rules"), self, triggered=fix_all_slot))
+
+            if self.config.get("ai_api_key"):
+                if fixable_actions:
+                    fix_menu.addSeparator()
+                ai_fix_action = QAction(_("Fix with AI"), self)
+                ai_fix_action.triggered.connect(self.ai_fix_current_item)
+                fix_menu.addAction(ai_fix_action)
+
+            return fix_menu
+
+        # Case B: Multi Selection
+        else:
+            items_with_issues = []
+            has_rule_fixable = False
+
+            for ts in selected_objs:
+                if (ts.warnings or ts.minor_warnings or ts.infos) and not ts.is_warning_ignored:
+                    items_with_issues.append(ts)
+                    if fix_service.apply_all_fixes(ts, target_lang):
+                        has_rule_fixable = True
+
+            if not items_with_issues:
+                return None
+
+            fix_menu = QMenu(_("Auto Fix"), self)
+            ai_ready = bool(self.config.get("ai_api_key"))
+
+            # --- Option 1: Smart Fix ---
+            if ai_ready:
+                def batch_smart_fix():
+                    # Apply rules
+                    rule_fixed_count = 0
+                    bulk_changes = []
+                    ids_to_update = set()
+
+                    for ts in selected_objs:
+                        fixed_text = fix_service.apply_all_fixes(ts, target_lang)
+                        if fixed_text and fixed_text != ts.translation:
+                            old_val = ts.get_translation_for_storage_and_tm()
+                            ts.set_translation_internal(fixed_text)
+                            bulk_changes.append({
+                                'string_id': ts.id, 'field': 'translation',
+                                'old_value': old_val, 'new_value': ts.get_translation_for_storage_and_tm()
+                            })
+                            ids_to_update.add(ts.id)
+                            rule_fixed_count += 1
+
+                    if bulk_changes:
+                        self.add_to_undo_history('bulk_change', {'changes': bulk_changes})
+                        self.mark_project_modified()
+                        self._update_view_for_ids(ids_to_update)
+
+                    # 2. Re-evaluate for AI
+                    remaining_issues = []
+                    for ts in items_with_issues:
+                        if (ts.warnings or ts.minor_warnings or ts.infos) and not ts.is_warning_ignored:
+                            remaining_issues.append(ts)
+
+                    if remaining_issues:
+                        msg = _(
+                            "Fixed {count} items with rules.\n\nProceed to fix {remaining} remaining items with AI?").format(
+                            count=rule_fixed_count, remaining=len(remaining_issues))
+                        if QMessageBox.question(self, _("Smart Fix"), msg,
+                                                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+                            self._start_ai_batch_fix(remaining_issues)
+                    else:
+                        self.update_statusbar(_("Smart Fix complete. All issues resolved by rules."))
+
+                action_smart = QAction(_("Smart Fix"), self)
+                action_smart.setToolTip(_("Apply rules first, then use AI for remaining issues."))
+                action_smart.triggered.connect(batch_smart_fix)
+                fix_menu.addAction(action_smart)
+
+            # --- Option 2: Fix with Rules ---
+            if has_rule_fixable:
+                def batch_rule_fix():
+                    bulk_changes = []
+                    ids_to_update = set()
+                    for ts in selected_objs:
+                        fixed_text = fix_service.apply_all_fixes(ts, target_lang)
+                        if fixed_text and fixed_text != ts.translation:
+                            old_val = ts.get_translation_for_storage_and_tm()
+                            ts.set_translation_internal(fixed_text)
+                            bulk_changes.append({
+                                'string_id': ts.id, 'field': 'translation',
+                                'old_value': old_val, 'new_value': ts.get_translation_for_storage_and_tm()
+                            })
+                            ids_to_update.add(ts.id)
+
+                    if bulk_changes:
+                        self.add_to_undo_history('bulk_change', {'changes': bulk_changes})
+                        self.mark_project_modified()
+                        self._update_view_for_ids(ids_to_update)
+                        self.update_statusbar(_("Fixed {count} items with rules.").format(count=len(bulk_changes)))
+
+                action_rule = QAction(_("Fix with Rules"), self)
+                action_rule.triggered.connect(batch_rule_fix)
+                fix_menu.addAction(action_rule)
+
+            # --- Option 3: Fix with AI ---
+            if ai_ready and items_with_issues:
+                def batch_ai_fix():
+                    reply = QMessageBox.question(
+                        self, _("Confirm AI Fix"),
+                        _("Use AI to fix {count} selected items?").format(count=len(items_with_issues)),
+                        QMessageBox.Yes | QMessageBox.No
+                    )
+                    if reply == QMessageBox.Yes:
+                        self._start_ai_batch_fix(items_with_issues)
+
+                action_ai = QAction(_("Fix with AI"), self)
+                action_ai.triggered.connect(batch_ai_fix)
+                fix_menu.addAction(action_ai)
+
+            return fix_menu
 
     def on_sheet_double_click(self, index):
         if not index.isValid(): return
