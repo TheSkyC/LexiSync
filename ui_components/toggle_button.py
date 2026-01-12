@@ -60,16 +60,23 @@ class ToggleButton(QAbstractButton):
 
     def _start_animation(self, checked):
         self._anim.stop()
+        start_val = 0.0 if checked else 1.0
+        self._circle_position = start_val
+        self._anim.setStartValue(start_val)
         self._anim.setEndValue(1.0 if checked else 0.0)
         self._anim.start()
 
     def set_checked_silent(self, checked):
         """无动画设置状态"""
+        if self.isChecked() == checked:
+            return
+
         self.blockSignals(True)
         self.setChecked(checked)
         self._circle_position = 1.0 if checked else 0.0
         self.update()
         self.blockSignals(False)
+
 
     def paintEvent(self, event):
         painter = QPainter(self)
