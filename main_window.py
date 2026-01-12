@@ -3,6 +3,7 @@
 
 import os
 import threading
+import datetime
 from copy import deepcopy
 from rapidfuzz import fuzz
 from openpyxl import Workbook, load_workbook
@@ -1892,14 +1893,45 @@ class LexiSyncApp(QMainWindow):
 
     def add_to_recent_files(self, filepath):
         if not filepath: return
+
         normalized_path = filepath.replace('\\', '/')
+
+        # Determine metadata
+        file_type = "code"
+        count = 0
+        count_label = "items"
+
+        if self.is_project_mode:
+            file_type = "project"
+            source_files = self.project_config.get("source_files", [])
+            count = len(source_files)
+            count_label = "files"
+        elif self.is_po_mode:
+            file_type = "po"
+            count = len(self.translatable_objects) if self.translatable_objects else 0
+        else:
+            # Single code file
+            count = len(self.translatable_objects) if self.translatable_objects else 0
+
+        # New entry structure
+        new_entry = {
+            "path": normalized_path,
+            "type": file_type,
+            "count": count,
+            "count_label": count_label,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+
         recent_files = self.config.get("recent_files", [])
-        if normalized_path in recent_files:
-            recent_files.remove(normalized_path)
-        unnormalized_path = filepath.replace('/', '\\')
-        if unnormalized_path in recent_files:
-            recent_files.remove(unnormalized_path)
-        recent_files.insert(0, normalized_path)
+
+        # Remove existing entry
+        recent_files = [
+            f for f in recent_files
+            if (isinstance(f, str) and f.replace('\\', '/') != normalized_path) or
+               (isinstance(f, dict) and f.get("path", "").replace('\\', '/') != normalized_path)
+        ]
+
+        recent_files.insert(0, new_entry)
         self.config["recent_files"] = recent_files[:10]
         self.update_recent_files_menu()
         self.save_config()
@@ -1913,11 +1945,19 @@ class LexiSyncApp(QMainWindow):
             return
         self.recent_files_menu.setEnabled(True)
 
-        for i, filepath in enumerate(recent_files):
-            label = f"{i + 1}: {os.path.basename(filepath)}"
+        for i, entry in enumerate(recent_files):
+            if isinstance(entry, str):
+                path = entry
+            else:
+                path = entry.get("path", "")
+
+            if not path: continue
+
+            label = f"{i + 1}: {os.path.basename(path)}"
             action = QAction(label, self)
-            action.triggered.connect(lambda checked, p=filepath: self.open_recent_file(p))
+            action.triggered.connect(lambda checked, p=path: self.open_recent_file(p))
             self.recent_files_menu.addAction(action)
+
         self.recent_files_menu.addSeparator()
         clear_action = QAction(_("Clear History"), self)
         clear_action.triggered.connect(self.clear_recent_files)
@@ -1926,12 +1966,17 @@ class LexiSyncApp(QMainWindow):
     def open_recent_file(self, filepath):
         if not os.path.exists(filepath):
             QMessageBox.critical(self, _("File not found"),
-                                 _("File '{filepath}' does not exist.").format(filepath=filepath))
+                                 _("File or project '{path}' does not exist.").format(path=filepath))
+
+            # Remove from config
             recent_files = self.config.get("recent_files", [])
-            if filepath in recent_files:
-                recent_files.remove(filepath)
-                self.config["recent_files"] = recent_files
-                self.update_recent_files_menu()
+            recent_files = [
+                f for f in recent_files
+                if (isinstance(f, str) and f != filepath) or
+                   (isinstance(f, dict) and f.get("path") != filepath)
+            ]
+            self.config["recent_files"] = recent_files
+            self.update_recent_files_menu()
             return False
 
         if not self.prompt_save_if_modified():

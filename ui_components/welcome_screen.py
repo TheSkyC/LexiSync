@@ -2,36 +2,140 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, \
-    QApplication, QMessageBox, QLabel
-from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize
-from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QColor, QPalette
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
+    QApplication, QMessageBox, QLabel, QMenu)
+from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize, QUrl
+from PySide6.QtGui import (
+    QDragEnterEvent, QDropEvent, QIcon, QColor, QAction, QDesktopServices)
 from utils.path_utils import get_resource_path
 from utils.localization import _
 
 
+class BadgeLabel(QLabel):
+    def __init__(self, text, color="#E0E0E0", text_color="#444444", parent=None):
+        super().__init__(text, parent)
+        self.setFixedHeight(18)
+        self.setAlignment(Qt.AlignCenter)
+        self.setStyleSheet(f"""
+            QLabel {{
+                background-color: {color};
+                color: {text_color};
+                border-radius: 4px;
+                padding: 0px 6px;
+                font-size: 10px;
+                font-weight: bold;
+                margin-left: 5px;
+            }}
+        """)
+
+
 class RecentFileWidget(QWidget):
-    def __init__(self, filename, dirpath, parent=None):
+    remove_requested = Signal()
+
+    def __init__(self, filename, dirpath, metadata=None, parent=None):
         super().__init__(parent)
         self.setCursor(Qt.PointingHandCursor)
         self._is_hovered = False
         self._is_pressed = False
+        self.full_path = os.path.join(dirpath, filename)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(2)
+        layout.setSpacing(4)
+
+        # Top Row: Filename + Badges
+        top_row = QHBoxLayout()
+        top_row.setSpacing(0)
 
         self.filename_label = QLabel(filename)
-        self.filename_label.setStyleSheet("font-weight: bold; background-color: transparent;")
+        self.filename_label.setStyleSheet("font-weight: bold; background-color: transparent; font-size: 14px;")
+        top_row.addWidget(self.filename_label)
+
+        # Badges
+        if metadata:
+            # Type Badge
+            ftype = metadata.get("type", "code")
+            if ftype == "project":
+                badge = BadgeLabel("Project", color="#E3F2FD", text_color="#0277BD")
+                top_row.addWidget(badge)
+            elif ftype == "po":
+                badge = BadgeLabel("PO", color="#F5F5F5", text_color="#666666")
+                top_row.addWidget(badge)
+            else:
+                ext = os.path.splitext(filename)[1].upper().replace('.', '')
+                if ext:
+                    badge = BadgeLabel(ext, color="#F5F5F5", text_color="#666666")
+                    top_row.addWidget(badge)
+
+            # Count Badge
+            count = metadata.get("count", 0)
+            if count > 0:
+                label_suffix = metadata.get("count_label", "files" if ftype == "project" else "items")
+
+                if label_suffix == "files":
+                    suffix_text = _("files")
+                else:
+                    suffix_text = _("items")
+
+                count_badge = BadgeLabel(f"{count} {suffix_text}", color="#F0F0F0", text_color="#888888")
+                top_row.addWidget(count_badge)
+
+        top_row.addStretch()
+        layout.addLayout(top_row)
 
         self.path_label = QLabel(dirpath)
-        self.path_label.setStyleSheet("color: #777; background-color: transparent;")
-
-        layout.addWidget(self.filename_label)
+        self.path_label.setStyleSheet("color: #777; background-color: transparent; font-size: 12px;")
         layout.addWidget(self.path_label)
 
         self.setAutoFillBackground(True)
         self._update_style()
+
+    def contextMenuEvent(self, event):
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #FFFFFF;
+                border: 1px solid #DCDFE6;
+                padding: 5px;
+            }
+            QMenu::item {
+                padding: 5px 20px;
+                color: #333333;
+            }
+            QMenu::item:selected {
+                background-color: #E6F7FF;
+                color: #409EFF;
+            }
+            QMenu::separator {
+                height: 1px;
+                background: #E0E0E0;
+                margin: 5px 0;
+            }
+        """)
+
+        open_action = QAction(_("Open"), self)
+        open_action.triggered.connect(self.mouseReleaseEvent)
+        menu.addAction(open_action)
+
+        reveal_action = QAction(_("Reveal in Explorer"), self)
+        reveal_action.triggered.connect(self.reveal_in_explorer)
+        menu.addAction(reveal_action)
+
+        menu.addSeparator()
+
+        remove_action = QAction(_("Remove from List"), self)
+        remove_action.triggered.connect(self.remove_requested.emit)
+        menu.addAction(remove_action)
+
+        menu.exec(event.globalPos())
+
+    def reveal_in_explorer(self):
+        if os.path.exists(self.full_path):
+            if os.path.isfile(self.full_path):
+                QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(self.full_path)))
+            else:
+                QDesktopServices.openUrl(QUrl.fromLocalFile(self.full_path))
 
     def _update_style(self):
         palette = self.palette()
@@ -61,10 +165,23 @@ class RecentFileWidget(QWidget):
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        button = event.button() if isinstance(event, QEvent) else Qt.LeftButton
+
+        if button == Qt.LeftButton:
             self._is_pressed = False
             self._update_style()
-        super().mouseReleaseEvent(event)
+            parent_list = self.parent().parent()
+            while parent_list and not isinstance(parent_list, QListWidget):
+                parent_list = parent_list.parent()
+
+            if parent_list:
+                for i in range(parent_list.count()):
+                    item = parent_list.item(i)
+                    if parent_list.itemWidget(item) == self:
+                        parent_list.itemClicked.emit(item)
+                        break
+        if isinstance(event, QEvent):
+            super().mouseReleaseEvent(event)
 
 class ActionButton(QWidget):
     clicked = Signal()
@@ -233,6 +350,8 @@ class WelcomeScreen(QWidget):
         """)
         self.recent_files_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.recent_files_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.recent_files_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.recent_files_list.customContextMenuRequested.connect(self.show_list_context_menu)
         self.populate_recent_files()
 
         recent_layout.addWidget(recent_title)
@@ -409,6 +528,7 @@ class WelcomeScreen(QWidget):
     def populate_recent_files(self):
         self.recent_files_list.clear()
         recent_files = self.config.get("recent_files", [])
+
         if not recent_files:
             item = QListWidgetItem(_("No recent files"))
             item.setForeground(Qt.gray)
@@ -416,14 +536,20 @@ class WelcomeScreen(QWidget):
             self.recent_files_list.addItem(item)
             return
 
-        for path in recent_files:
+        for entry in recent_files:
+            path = entry.get("path", "")
+            metadata = entry
+
+            if not path: continue
+
             filename = os.path.basename(path)
             dirpath = os.path.dirname(path)
 
             item = QListWidgetItem()
             item.setData(Qt.UserRole, path)
 
-            widget = RecentFileWidget(filename, dirpath)
+            widget = RecentFileWidget(filename, dirpath, metadata)
+            widget.remove_requested.connect(lambda p=path: self.remove_recent_file(p))
 
             item.setSizeHint(QSize(self.recent_files_list.viewport().width(), widget.sizeHint().height()))
             self.recent_files_list.addItem(item)
@@ -433,6 +559,80 @@ class WelcomeScreen(QWidget):
         path = item.data(Qt.UserRole)
         if path:
             self.on_action_triggered("open_specific_project", path)
+
+    def remove_recent_file(self, path_to_remove):
+        recent_files = self.config.get("recent_files", [])
+        new_list = [
+            f for f in recent_files
+            if (isinstance(f, str) and f != path_to_remove) or
+               (isinstance(f, dict) and f.get("path") != path_to_remove)
+        ]
+        self.config["recent_files"] = new_list
+        from utils.config_manager import save_config
+        class DummyApp:
+            def __init__(self, cfg): self.config = cfg
+
+            @property
+            def current_project_path(self): return None
+
+            @property
+            def current_code_file_path(self): return None
+
+            @property
+            def current_po_file_path(self): return None
+
+        save_config(DummyApp(self.config))
+        self.populate_recent_files()
+
+    def show_list_context_menu(self, pos):
+        if self.recent_files_list.itemAt(pos):
+            return
+
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #FFFFFF;
+                border: 1px solid #DCDFE6;
+                padding: 5px;
+            }
+            QMenu::item {
+                padding: 5px 20px;
+                color: #333333;
+            }
+            QMenu::item:selected {
+                background-color: #E6F7FF;
+                color: #409EFF;
+            }
+        """)
+        clear_action = QAction(_("Clear All History"), self)
+        clear_action.triggered.connect(self.clear_all_history)
+        menu.addAction(clear_action)
+        menu.exec(self.recent_files_list.mapToGlobal(pos))
+
+    def clear_all_history(self):
+        reply = QMessageBox.question(
+            self, _("Confirm"),
+            _("Are you sure you want to clear all recent file history?"),
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            self.config["recent_files"] = []
+
+            from utils.config_manager import save_config
+            class DummyApp:
+                def __init__(self, cfg): self.config = cfg
+
+                @property
+                def current_project_path(self): return None
+
+                @property
+                def current_code_file_path(self): return None
+
+                @property
+                def current_po_file_path(self): return None
+
+            save_config(DummyApp(self.config))
+            self.populate_recent_files()
 
     def closeEvent(self, event):
         if self.is_closed_by_user:

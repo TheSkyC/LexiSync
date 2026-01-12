@@ -802,7 +802,7 @@ class FileExplorerPanel(QWidget):
 
             # Reveal in file explorer
             first_path = selected_paths[0]
-            reveal_action = menu.addAction(_("Reveal in File Explorer"))
+            reveal_action = menu.addAction(_("Reveal in Explorer"))
             reveal_action.triggered.connect(lambda checked=False, p=first_path: self._reveal_in_explorer(p))
 
             # Delete action
