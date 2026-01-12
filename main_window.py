@@ -2173,6 +2173,9 @@ class LexiSyncApp(QMainWindow):
 
             self.is_project_mode = True
             self.current_project_path = project_path
+            self.project_manager.current_project_path = project_path
+            self.project_manager.project_config = project_config
+
             self.source_language = self.project_config.get("source_language", "en")
             self.target_languages = self.project_config.get("target_languages", [])
             self.current_target_language = self.project_config.get("current_target_language")
