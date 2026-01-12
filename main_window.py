@@ -350,6 +350,7 @@ class LexiSyncApp(QMainWindow):
         self.help_menu = self.menuBar().addMenu(_("&Help"))
 
         # File Menu
+        # 1. Open / New Group
         self.action_open_code_file = QAction(_("Open File..."), self)
         self.action_open_code_file.triggered.connect(self.open_code_file_dialog)
         self.file_menu.addAction(self.action_open_code_file)
@@ -362,18 +363,9 @@ class LexiSyncApp(QMainWindow):
         self.action_open_project.triggered.connect(self.open_project_dialog)
         self.file_menu.addAction(self.action_open_project)
 
-        self.action_build_project = QAction(_("Build Project..."), self)
-        self.action_build_project.triggered.connect(self.build_project)
-        self.action_build_project.setEnabled(False)
-        self.file_menu.addAction(self.action_build_project)
         self.file_menu.addSeparator()
 
-        self.action_compare_new_version = QAction(_("Compare/Import New Version..."), self)
-        self.action_compare_new_version.triggered.connect(self.compare_with_new_version)
-        self.action_compare_new_version.setEnabled(False)
-        self.file_menu.addAction(self.action_compare_new_version)
-        self.file_menu.addSeparator()
-
+        # 2. Save Group
         self.action_save_current_file = QAction(_("Save"), self)
         self.action_save_current_file.triggered.connect(self.save_current_file)
         self.action_save_current_file.setEnabled(False)
@@ -383,14 +375,23 @@ class LexiSyncApp(QMainWindow):
         self.action_save_current_file_as.triggered.connect(self.save_current_file_as)
         self.action_save_current_file_as.setEnabled(False)
         self.file_menu.addAction(self.action_save_current_file_as)
+
         self.file_menu.addSeparator()
 
-        self.action_save_code_file = QAction(_("Save Translation to New Code File"), self)
-        self.action_save_code_file.triggered.connect(self.save_code_file)
-        self.action_save_code_file.setEnabled(False)
-        self.file_menu.addAction(self.action_save_code_file)
+        # 3. Project Maintenance Group
+        self.action_build_project = QAction(_("Build Project..."), self)
+        self.action_build_project.triggered.connect(self.build_project)
+        self.action_build_project.setEnabled(False)
+        self.file_menu.addAction(self.action_build_project)
+
+        self.action_compare_new_version = QAction(_("Compare/Import New Version..."), self)
+        self.action_compare_new_version.triggered.connect(self.compare_with_new_version)
+        self.action_compare_new_version.setEnabled(False)
+        self.file_menu.addAction(self.action_compare_new_version)
+
         self.file_menu.addSeparator()
 
+        # 4. Import / Export Group
         # IMPORT MENU
         self.import_menu = QMenu(_("Import"), self)
         self.file_menu.addMenu(self.import_menu)
@@ -428,6 +429,17 @@ class LexiSyncApp(QMainWindow):
         self.action_export_po.setEnabled(False)
         self.export_menu.addAction(self.action_export_po)
 
+        self.action_extract_pot = QAction(_("Export to POT File..."), self)
+        self.action_extract_pot.triggered.connect(self.export_current_to_pot)
+        self.export_menu.addAction(self.action_extract_pot)
+
+        self.export_menu.addSeparator()
+
+        self.action_save_code_file = QAction(_("Export as Code File..."), self)
+        self.action_save_code_file.triggered.connect(self.save_code_file)
+        self.action_save_code_file.setEnabled(False)
+        self.export_menu.addAction(self.action_save_code_file)
+
         # PLUGINS IMPORTERS & EXPORTERS
         if hasattr(self, 'plugin_manager'):
             importers = self.plugin_manager.run_hook('register_importers')
@@ -446,23 +458,20 @@ class LexiSyncApp(QMainWindow):
                     action.triggered.connect(callback)
                     action.setEnabled(bool(self.translatable_objects))
                     self.export_menu.addAction(action)
+
         self.file_menu.addSeparator()
 
-        self.action_extract_pot = QAction(_("Extract POT Template from Code..."), self)
-        self.action_extract_pot.triggered.connect(self.extract_to_pot_dialog)
-        self.file_menu.addAction(self.action_extract_pot)
-        self.file_menu.addSeparator()
-
-
+        # 5. Recent / Exit
         self.recent_files_menu = QMenu(_("Recent Files"), self)
         self.file_menu.addMenu(self.recent_files_menu)
         self.file_menu.addSeparator()
 
-        # Edit Menu
+        # Edit Menu (unchanged)
         self.action_exit = QAction(_("Exit"), self)
         self.action_exit.triggered.connect(self.close)
         self.file_menu.addAction(self.action_exit)
 
+        # Edit Menu
         self.action_undo = QAction(_("Undo"), self)
         self.action_undo.triggered.connect(self.undo_action)
         self.action_undo.setEnabled(False)
@@ -693,7 +702,6 @@ class LexiSyncApp(QMainWindow):
         self.action_compare_new_version.setText(_("Compare/Import New Version..."))
         self.action_save_current_file.setText(_("Save"))
         self.action_save_current_file_as.setText(_("Save As..."))
-        self.action_save_code_file.setText(_("Save Translation to New Code File"))
 
         if hasattr(self, 'import_menu'):
             self.import_menu.setTitle(_("Import"))
@@ -704,7 +712,8 @@ class LexiSyncApp(QMainWindow):
         self.action_export_excel.setText(_("Export to Excel"))
         self.action_export_json.setText(_("Export to JSON"))
         self.action_export_yaml.setText(_("Export to YAML"))
-        self.action_extract_pot.setText(_("Extract POT Template from Code..."))
+        self.action_save_code_file.setText(_("Export as Code File..."))
+        self.action_extract_pot.setText(_("Export to POT File..."))
         self.action_import_po.setText(_("Import Translations from PO File..."))
         self.action_export_po.setText(_("Export to PO File..."))
         self.recent_files_menu.setTitle(_("Recent Files"))
@@ -4566,48 +4575,80 @@ class LexiSyncApp(QMainWindow):
             QMessageBox.critical(self, _("Export Error"),
                                  _("Could not export project translations to YAML: {error}").format(error=e))
 
-    def extract_to_pot_dialog(self):
-        code_filepath, selected_filter = QFileDialog.getOpenFileName(
-            self,
-            _("Select Code File to Extract POT From"),
-            self.config.get("last_dir", os.getcwd()),
-            _("Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)")
-        )
-        if not code_filepath: return
+    def export_current_to_pot(self):
+        if not self.translatable_objects:
+            QMessageBox.information(self, _("Info"), _("No content to export."))
+            return
 
-        pot_save_filepath, selected_filter = QFileDialog.getSaveFileName(
+        # Determine default filename
+        default_filename = "template.pot"
+        if self.current_project_path:
+            base = os.path.splitext(self.get_current_active_filename())[0]
+            default_filename = f"{base}.pot"
+        elif self.current_code_file_path:
+            base = os.path.splitext(os.path.basename(self.current_code_file_path))[0]
+            default_filename = f"{base}.pot"
+        elif self.current_po_file_path:
+            base = os.path.splitext(os.path.basename(self.current_po_file_path))[0]
+            default_filename = f"{base}.pot"
+
+        # Ask for save location
+        filepath, __ = QFileDialog.getSaveFileName(
             self,
-            _("Save POT Template File"),
-            os.path.splitext(os.path.basename(code_filepath))[0] + ".pot",
+            _("Export to POT File"),
+            os.path.join(self.config.get("last_dir", os.getcwd()), default_filename),
             _("PO Template files (*.pot);;All files (*.*)")
         )
-        if not pot_save_filepath: return
+        if not filepath: return
 
         try:
-            with open(code_filepath, 'r', encoding='utf-8', errors='replace') as f:
-                code_content = f.read()
+            project_name = "LexiSync Project"
+            if self.is_project_mode:
+                project_name = self.project_config.get('name', 'Project')
 
-            extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
-            extraction_patterns = self.plugin_manager.run_hook(
-                'process_extraction_patterns',
-                extraction_patterns,
-                filepath=code_filepath,
-                raw_content=code_content
-            )
+            pot_objects = []
+            for ts in self.translatable_objects:
+                new_ts = TranslatableString(
+                    original_raw=ts.original_raw,
+                    original_semantic=ts.original_semantic,
+                    line_num=ts.line_num_in_file,
+                    char_pos_start_in_file=0,
+                    char_pos_end_in_file=0,
+                    full_code_lines=[],
+                    string_type=ts.string_type,
+                    source_file_path=ts.source_file_path,
+                    occurrences=ts.occurrences
+                )
+                new_ts.context = ts.context
+                new_ts.comment = ts.comment
+                new_ts.po_comment = ts.po_comment
+                # Translation is left empty for POT
+                pot_objects.append(new_ts)
 
-            extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
-            project_name = os.path.basename(code_filepath)
+            # Generate Metadata
+            now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M%z")
+            metadata = {
+                'Project-Id-Version': f'{project_name} {APP_VERSION}',
+                'Report-Msgid-Bugs-To': '',
+                'POT-Creation-Date': now,
+                'PO-Revision-Date': '',
+                'Last-Translator': '',
+                'Language-Team': '',
+                'MIME-Version': '1.0',
+                'Content-Type': 'text/plain; charset=UTF-8',
+                'Content-Transfer-Encoding': '8bit',
+                'X-Generator': f'LexiSync {APP_VERSION}',
+            }
 
-            pot_object = po_file_service.extract_to_pot(code_content, extraction_patterns, project_name, APP_VERSION,
-                                                        os.path.basename(code_filepath))
-            pot_object.save(pot_save_filepath)
-            self.update_statusbar(
-                _("POT template saved to: {filename}").format(filename=os.path.basename(pot_save_filepath)))
-            self.config["last_dir"] = os.path.dirname(code_filepath)
+            po_file_service.save_to_po(filepath, pot_objects, metadata, "source_code")
+
+            self.update_statusbar(_("POT file exported to: {filename}").format(filename=os.path.basename(filepath)))
+            self.config["last_dir"] = os.path.dirname(filepath)
             self.save_config()
+
         except Exception as e:
-            QMessageBox.critical(self, _("POT Extraction Error"),
-                                 _("Error extracting POT file: {error}").format(error=e))
+            logger.error(f"Failed to export POT: {e}", exc_info=True)
+            QMessageBox.critical(self, _("Export Error"), _("Failed to export POT file: {error}").format(error=e))
 
     def import_po_file_dialog_with_path(self, po_filepath):
         self._reset_app_state()
