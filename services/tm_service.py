@@ -101,6 +101,57 @@ class TMService:
             logger.error(f"TM Schema creation failed: {e}")
             raise
 
+    def find_conflicts(self, db_path: str, source_texts: List[str], source_lang: str, target_lang: str) -> Dict[
+        str, dict]:
+        """
+        Batch check for existing TM entries.
+        Returns: { 'source_text': {'id': id, 'original_text': source_text, 'existing_targets': ['target_text']} }
+        Note: TM usually enforces unique (source, source_lang, target_lang), so existing_targets will have at most 1 item.
+        """
+        if not db_path or not os.path.exists(db_path):
+            return {}
+
+        conflicts = {}
+        unique_sources = list(set(source_texts))
+
+        try:
+            with self._get_db_connection(db_path) as conn:
+                cursor = conn.cursor()
+                chunk_size = 900
+                for i in range(0, len(unique_sources), chunk_size):
+                    chunk = unique_sources[i:i + chunk_size]
+                    placeholders = ','.join('?' for _ in chunk)
+
+                    query = f"""
+                        SELECT id, source_text, target_text
+                        FROM translation_units
+                        WHERE source_text IN ({placeholders})
+                          AND source_lang = ?
+                          AND target_lang = ?
+                    """
+                    cursor.execute(query, chunk + [source_lang, target_lang])
+
+                    rows = cursor.fetchall()
+                    for row in rows:
+                        term_id = row['id']
+                        src_text = row['source_text']
+                        tgt_text = row['target_text']
+
+                        # Use exact source text as key
+                        if src_text not in conflicts:
+                            conflicts[src_text] = {
+                                'id': term_id,
+                                'original_text': src_text,
+                                'existing_targets': []
+                            }
+
+                        conflicts[src_text]['existing_targets'].append(tgt_text)
+
+        except Exception as e:
+            logger.error(f"Failed to find TM conflicts: {e}")
+
+        return conflicts
+
     def delete_tm_entry(self, db_path: str, source_text: str, source_lang: str, target_lang: str) -> bool:
         if not source_text.strip() or not db_path:
             return False
@@ -473,6 +524,78 @@ class TMService:
                     return sorted(srcs), sorted(tgts)
             except Exception:
                 return [], []
+
+    def batch_update_tm(self, db_path: str, entries: List[Dict], source_lang: str, target_lang: str,
+                        source_key: str, display_name: str, strategy: str = 'overwrite') -> Tuple[bool, str]:
+        """
+        Batch update TM.
+        entries: List of {'source': str, 'target': str, 'action': 'new'|'overwrite'|'skip'}
+        strategy: Global strategy fallback ('overwrite' or 'skip')
+        """
+        if not db_path or not os.path.exists(db_path):
+            return False, _("Target database not found.")
+
+        if not entries:
+            return False, _("No entries to save.")
+
+        # Prepare data
+        data_to_insert = []
+
+        for e in entries:
+            action = e.get('action', strategy)
+            if action == 'skip':
+                continue
+
+            data_to_insert.append((
+                source_lang, target_lang, e['source'], e['target'], source_key
+            ))
+
+        if not data_to_insert:
+            return True, _("No entries to update (all skipped).")
+
+        with self._lock:
+            try:
+                with self._get_db_connection(db_path) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("BEGIN IMMEDIATE TRANSACTION")
+
+                    sql = """
+                        INSERT OR REPLACE INTO translation_units 
+                        (source_lang, target_lang, source_text, target_text, source_manifest_key)
+                        VALUES (?, ?, ?, ?, ?)
+                    """
+
+                    cursor.executemany(sql, data_to_insert)
+
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM translation_units WHERE source_manifest_key = ?",
+                        (source_key,)
+                    )
+                    actual_count = cursor.fetchone()[0]
+
+                    # Update manifest
+                    manifest_path = os.path.join(os.path.dirname(db_path), MANIFEST_FILE)
+                    manifest = self._read_manifest(manifest_path)
+
+                    manifest.setdefault("imported_sources", {})[source_key] = {
+                        "filepath": display_name,
+                        "filesize": 0,
+                        "last_modified": datetime.utcnow().isoformat() + "Z",
+                        "checksum": "batch_save",
+                        "import_date": datetime.utcnow().isoformat() + "Z",
+                        "tu_count": actual_count,
+                        "source_lang": source_lang,
+                        "target_lang": target_lang
+                    }
+
+                    self._write_manifest(manifest_path, manifest)
+
+                    cursor.execute("COMMIT")
+
+                return True, _("Successfully processed {count} entries.").format(count=len(data_to_insert))
+            except Exception as e:
+                logger.error(f"Batch TM update failed: {e}", exc_info=True)
+                return False, str(e)
 
     def _read_manifest(self, manifest_path: str) -> Dict:
         try:

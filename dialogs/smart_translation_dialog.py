@@ -11,7 +11,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QThread, Signal, QObject, QEvent
 from dialogs.test_translation_dialog import TestTranslationDialog
 from dialogs.interactive_review_dialog import InteractiveReviewDialog
-from dialogs.save_glossary_dialog import SaveGlossaryOptionsDialog, GlossaryConflictDialog
+from dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
+from dialogs.resource_conflict_dialog import ResourceConflictDialog
 from services.smart_translation_service import SmartTranslationService
 from services.ai_worker import AIWorker
 from utils.enums import AIOperationType
@@ -923,7 +924,7 @@ class SmartTranslationDialog(QDialog):
             self._next_progress_milestone += 25
 
     def on_save_glossary_clicked(self):
-        # 1. 收集选中的术语
+        # 1. Collect selected terms
         entries_to_save = []
         for row in range(self.table_glossary.rowCount()):
             check_item = self.table_glossary.item(row, 0)
@@ -941,25 +942,26 @@ class SmartTranslationDialog(QDialog):
             QMessageBox.warning(self, _("Warning"), _("No terms selected to save."))
             return
 
-        # 2. 弹出选项对话框
-        opt_dialog = SaveGlossaryOptionsDialog(self, self.app.is_project_mode)
+        # 2. Show Generic Options Dialog
+        opt_dialog = ResourceSaveOptionsDialog(self, resource_type='glossary', has_project=self.app.is_project_mode,
+                                               count=len(entries_to_save))
         if not opt_dialog.exec():
             return
 
         options = opt_dialog.get_data()
         target_db = options['target_db']
         strategy = options['strategy']
-        save_context = options['save_context']
+        save_context = options.get('save_context', False)
 
-        # 3. 确定数据库路径
+        # 3. Determine DB Path
         db_path = self.app.glossary_service.project_db_path if target_db == 'project' else self.app.glossary_service.global_db_path
         if not db_path:
             QMessageBox.critical(self, _("Error"), _("Target database not available."))
             return
 
         source_lang = self.app.source_language
-        target_lang = self.app._get_target_language() if hasattr(self.app,
-                                                                 '_get_target_language') else self.app.target_language
+        target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+
         current_filename = "Unknown File"
         if self.app.is_project_mode:
             current_filename = self.app.get_current_active_filename()
@@ -971,34 +973,48 @@ class SmartTranslationDialog(QDialog):
         source_key = f"smart_extract::{current_filename}"
         display_name = f"{current_filename} (Smart Extract)"
 
-        # 4. 检查冲突 (传入 target_lang)
+        # 4. Check Conflicts
         src_terms = [e['source'] for e in entries_to_save]
-        conflicts = self.app.glossary_service.find_conflicts(db_path, src_terms, source_lang, target_lang)
+        all_conflicts = self.app.glossary_service.find_conflicts(db_path, src_terms, source_lang, target_lang)
 
-        # 5. 准备最终保存列表
-        final_entries = []
+        real_conflicts = {}
+        for entry in entries_to_save:
+            src_key = entry['source'].strip().lower()
+            new_target = entry['target'].strip()
 
-        # 如果策略是手动，且有冲突，弹出解决对话框
+            if src_key in all_conflicts:
+                existing_targets = all_conflicts[src_key]['existing_targets']
+                is_identical = any(t.strip() == new_target for t in existing_targets)
+
+                if not is_identical:
+                    real_conflicts[src_key] = all_conflicts[src_key]
+
+        # 5. Resolve Conflicts
         resolutions = {}
-        if strategy == 'manual' and conflicts:
-            conflict_dialog = GlossaryConflictDialog(self, conflicts, entries_to_save)
+        if strategy == 'manual' and real_conflicts:
+            conflict_dialog = ResourceConflictDialog(self, real_conflicts, entries_to_save, resource_type='glossary')
             if not conflict_dialog.exec():
                 return
             resolutions = conflict_dialog.resolutions
 
+        # 6. Prepare Final List
+        final_entries = []
         for entry in entries_to_save:
-            src_lower = entry['source'].lower()
+            src_key = entry['source'].strip().lower()
             action = 'new'
             term_id = None
 
-            if src_lower in conflicts:
-                conflict_info = conflicts[src_lower]
+            if src_key in real_conflicts:
+                conflict_info = real_conflicts[src_key]
                 term_id = conflict_info['id']
-
                 if strategy == 'manual':
-                    action = resolutions.get(src_lower, 'skip')
+                    action = resolutions.get(src_key, 'skip')
                 else:
                     action = strategy
+            elif src_key in all_conflicts:
+                conflict_info = all_conflicts[src_key]
+                term_id = conflict_info['id']
+                action = 'overwrite'
 
             final_entries.append({
                 'source': entry['source'],
@@ -1008,15 +1024,13 @@ class SmartTranslationDialog(QDialog):
                 'term_id': term_id
             })
 
-        # 6. 执行保存
+        # 7. Execute Save
         success, msg = self.app.glossary_service.batch_save_entries(
             db_path, final_entries, source_lang, target_lang, source_key
         )
 
         if success:
             saved_count = len([e for e in final_entries if e['action'] != 'skip'])
-
-            # 获取当前该 Key 下的总数（累加）
             glossary_dir = os.path.dirname(db_path)
             total_count = self.app.glossary_service.get_entry_count_by_source(glossary_dir, source_key)
 

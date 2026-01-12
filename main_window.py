@@ -59,6 +59,8 @@ from dialogs.diff_dialog import DiffDialog
 from dialogs.statistics_dialog import StatisticsDialog
 from dialogs.settings_dialog import SettingsDialog
 from dialogs.project_settings_dialog import ProjectSettingsDialog
+from dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
+from dialogs.resource_conflict_dialog import ResourceConflictDialog
 from dialogs.search_dialog import AdvancedSearchDialog
 from dialogs.add_glossary_entry_dialog import AddGlossaryEntryDialog
 
@@ -597,6 +599,11 @@ class LexiSyncApp(QMainWindow):
             lambda: self.apply_tm_to_all_current_strings(only_if_empty=True, confirm=True))
         self.action_apply_tm_to_untranslated.setEnabled(False)
         self.data_menu.addAction(self.action_apply_tm_to_untranslated)
+
+        self.action_save_all_to_tm = QAction(_("Save All Translations to TM..."), self)
+        self.action_save_all_to_tm.triggered.connect(self.save_all_to_tm)
+        self.action_save_all_to_tm.setEnabled(False)
+        self.data_menu.addAction(self.action_save_all_to_tm)
 
         self.action_resource_viewer = QAction(_("Resource Viewer..."), self)
         self.action_resource_viewer.triggered.connect(self.show_resource_viewer)
@@ -1494,6 +1501,7 @@ class LexiSyncApp(QMainWindow):
         self.action_redo.setEnabled(bool(self.redo_history))
 
         self.action_apply_tm_to_untranslated.setEnabled(has_content)
+        self.action_save_all_to_tm.setEnabled(has_content)
         self.action_reload_translatable_text.setEnabled(
             bool(self.original_raw_code_content or self.current_code_file_path)
         )
@@ -4783,6 +4791,128 @@ class LexiSyncApp(QMainWindow):
     def select_sheet_row_by_id_and_scroll(self, ts_id):
         self.select_sheet_row_by_id(ts_id, see=True)
         self.activateWindow()
+
+    def save_all_to_tm(self):
+        if not self.translatable_objects:
+            return
+
+        # 1. Filter valid entries
+        valid_entries = []
+        for ts in self.translatable_objects:
+            if ts.translation.strip():
+                valid_entries.append({
+                    'source': ts.original_semantic,
+                    'target': ts.get_translation_for_storage_and_tm()
+                })
+
+        if not valid_entries:
+            QMessageBox.information(self, _("Info"), _("No valid translated entries found to save."))
+            return
+
+        # 2. Show Generic Options Dialog
+        dialog = ResourceSaveOptionsDialog(self, resource_type='tm', has_project=self.is_project_mode,
+                                           count=len(valid_entries))
+        if not dialog.exec():
+            return
+
+        data = dialog.get_data()
+        target_db = data['target_db']
+        strategy = data['strategy']
+
+        # 3. Determine DB Path
+        db_path = self.tm_service.project_db_path if target_db == 'project' else self.tm_service.global_db_path
+
+        if not db_path:
+            if target_db == 'global':
+                global_tm_dir = self._get_global_tm_path()
+                db_path = os.path.join(global_tm_dir, "tm.db")
+            else:
+                QMessageBox.critical(self, _("Error"), _("Target database is not available."))
+                return
+
+        current_filename = "Unknown File"
+        if self.is_project_mode:
+            current_filename = self.get_current_active_filename() or self.project_config.get('name', 'Project')
+        elif self.current_po_file_path:
+            current_filename = os.path.basename(self.current_po_file_path)
+        elif self.current_code_file_path:
+            current_filename = os.path.basename(self.current_code_file_path)
+
+        source_key = f"tm_save::{current_filename}"
+        display_name = f"{current_filename} (Batch Save)"
+
+        source_lang = self.source_language
+        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+
+        # 4. Check Conflicts
+        self.update_statusbar(_("Checking for TM conflicts..."), persistent=True)
+        QApplication.processEvents()
+
+        src_texts = [e['source'] for e in valid_entries]
+        all_conflicts = self.tm_service.find_conflicts(db_path, src_texts, source_lang, target_lang)
+
+        real_conflicts = {}
+        for entry in valid_entries:
+            src = entry['source']
+            new_target = entry['target'].strip()
+
+            if src in all_conflicts:
+                existing_targets = all_conflicts[src]['existing_targets']
+                is_identical = any(t.strip() == new_target for t in existing_targets)
+
+                if not is_identical:
+                    real_conflicts[src] = all_conflicts[src]
+
+        # 5. Resolve Conflicts
+        resolutions = {}
+        if strategy == 'manual' and real_conflicts:
+            # Use Generic Conflict Dialog with filtered conflicts
+            conflict_dialog = ResourceConflictDialog(self, real_conflicts, valid_entries, resource_type='tm')
+            if not conflict_dialog.exec():
+                self.update_statusbar(_("Save cancelled."))
+                return
+            resolutions = conflict_dialog.resolutions
+
+        # 6. Prepare Final List
+        final_entries = []
+        for entry in valid_entries:
+            src_text = entry['source']
+            action = 'new'
+
+            if src_text in real_conflicts:
+                if strategy == 'manual':
+                    action = resolutions.get(src_text, 'skip')
+                else:
+                    action = strategy
+            elif src_text in all_conflicts:
+                # Fake conflict (identical content): always overwrite (to update timestamp/metadata)
+                action = 'overwrite'
+
+            if action == 'merge': action = 'overwrite'
+
+            final_entries.append({
+                'source': entry['source'],
+                'target': entry['target'],
+                'action': action
+            })
+
+        # 7. Execute Save
+        self.update_statusbar(_("Saving translations to TM..."), persistent=True)
+        QApplication.processEvents()
+
+        success, msg = self.tm_service.batch_update_tm(
+            db_path, final_entries, source_lang, target_lang,
+            source_key, display_name, strategy
+        )
+
+        if success:
+            self.update_statusbar(_("Save complete."))
+            QMessageBox.information(self, _("Success"), msg)
+            if self.current_selected_ts_id:
+                self.perform_tm_update()
+        else:
+            self.update_statusbar(_("Save failed."))
+            QMessageBox.critical(self, _("Error"), _("Failed to save to TM: {error}").format(error=msg))
 
     def update_tm_for_selected_string(self):
         if not self.current_selected_ts_id:
