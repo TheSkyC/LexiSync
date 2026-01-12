@@ -179,7 +179,7 @@ class RecentFileWidget(QWidget):
                     item = parent_list.item(i)
                     if parent_list.itemWidget(item) == self:
                         parent_list.itemClicked.emit(item)
-                        break
+                        return
         if isinstance(event, QEvent):
             super().mouseReleaseEvent(event)
 
