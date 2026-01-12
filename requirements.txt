@@ -4,46 +4,62 @@
 #
 #    pip-compile requirements.in
 #
-certifi==2025.6.15
+--index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
+certifi==2026.1.4
     # via requests
-charset-normalizer==3.4.2
+charset-normalizer==3.4.4
     # via requests
 et-xmlfile==2.0.0
     # via openpyxl
-idna==3.10
+idna==3.11
     # via requests
+jaraco-classes==3.4.0
+    # via keyring
+jaraco-context==6.0.2
+    # via keyring
+jaraco-functools==4.4.0
+    # via keyring
+keyring==25.7.0
+    # via -r requirements.in
 langid==1.1.6
     # via -r requirements.in
-numpy==2.3.1
+more-itertools==10.8.0
+    # via
+    #   jaraco-classes
+    #   jaraco-functools
+numpy==2.4.1
     # via
     #   -r requirements.in
     #   langid
 openpyxl==3.1.5
     # via -r requirements.in
-packaging==23.2
+packaging==25.0
     # via -r requirements.in
 polib==1.2.0
     # via -r requirements.in
-pyside6==6.9.1
+pyside6==6.10.0
     # via -r requirements.in
-pyside6-addons==6.9.1
+pyside6-addons==6.10.0
     # via pyside6
-pyside6-essentials==6.9.1
+pyside6-essentials==6.10.0
     # via
     #   pyside6
     #   pyside6-addons
-pyyaml==6.0.2
+pywin32-ctypes==0.2.3
+    # via keyring
+pyyaml==6.0.3
     # via -r requirements.in
-rapidfuzz==3.13.0
+rapidfuzz==3.14.3
     # via -r requirements.in
-regex==2024.11.6
+regex==2025.11.3
     # via -r requirements.in
-requests==2.32.4
+requests==2.32.5
     # via -r requirements.in
-shiboken6==6.9.1
+shiboken6==6.10.0
     # via
     #   pyside6
     #   pyside6-addons
     #   pyside6-essentials
-urllib3==2.5.0
+urllib3==2.6.3
     # via requests
