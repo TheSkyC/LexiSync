@@ -35,12 +35,18 @@ class NewlineTextEdit(QTextEdit):
             self.tooltip.hide()
             return
 
+        # Get cursor from mouse position
         cursor = self.cursorForPosition(event.pos())
         pos = cursor.position()
         text = self.toPlainText()
 
-        found_match = None
+        cursor_rect = self.cursorRect(cursor)
+        if not (cursor_rect.top() <= event.pos().y() <= cursor_rect.bottom()):
+            self.tooltip.hide()
+            self._last_hovered_term = None
+            return
 
+        found_match = None
         sorted_matches = sorted(self.glossary_matches, key=lambda m: len(m['source']), reverse=True)
 
         for match in sorted_matches:
@@ -48,9 +54,22 @@ class NewlineTextEdit(QTextEdit):
             try:
                 pattern = re.compile(re.escape(term), re.IGNORECASE)
                 for m in pattern.finditer(text):
-                    if m.start() <= pos <= m.end():
-                        found_match = match
-                        break
+                    start, end = m.span()
+                    if start <= pos < end:
+                        # Get rect for the start and end of the match
+                        start_cursor = QTextCursor(self.document())
+                        start_cursor.setPosition(start)
+                        start_rect = self.cursorRect(start_cursor)
+
+                        end_cursor = QTextCursor(self.document())
+                        end_cursor.setPosition(end)
+                        end_rect = self.cursorRect(end_cursor)
+
+                        mouse_x = event.pos().x()
+                        if start_rect.top() <= event.pos().y() <= start_rect.bottom():  # Same line
+                            if start_rect.left() <= mouse_x <= end_rect.left():
+                                found_match = match
+                                break
             except Exception:
                 pass
 
