@@ -54,25 +54,27 @@ class RecentFileWidget(QWidget):
 
         # Badges
         if metadata:
-            # Type Badge
+            # Type Badge (Blue)
             ftype = metadata.get("type", "code")
+            badge_bg = "#E3F2FD"
+            badge_text = "#0277BD"
+
             if ftype == "project":
-                badge = BadgeLabel("Project", color="#E3F2FD", text_color="#0277BD")
+                badge = BadgeLabel("Project", color=badge_bg, text_color=badge_text)
                 top_row.addWidget(badge)
             elif ftype == "po":
-                badge = BadgeLabel("PO", color="#F5F5F5", text_color="#666666")
+                badge = BadgeLabel("PO", color=badge_bg, text_color=badge_text)
                 top_row.addWidget(badge)
             else:
                 ext = os.path.splitext(filename)[1].upper().replace('.', '')
                 if ext:
-                    badge = BadgeLabel(ext, color="#F5F5F5", text_color="#666666")
+                    badge = BadgeLabel(ext, color=badge_bg, text_color=badge_text)
                     top_row.addWidget(badge)
 
-            # Count Badge
+            # Count Badge (Grey)
             count = metadata.get("count", 0)
             if count > 0:
                 label_suffix = metadata.get("count_label", "files" if ftype == "project" else "items")
-
                 if label_suffix == "files":
                     suffix_text = _("files")
                 else:
