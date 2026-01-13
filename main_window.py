@@ -1,20 +1,21 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import os
-import threading
 import datetime
-from copy import deepcopy
-from rapidfuzz import fuzz
-from openpyxl import Workbook, load_workbook
-import shutil
-import polib
-import weakref
-import traceback
 import json
-import re
 import logging
-logger = logging.getLogger(__name__)
+import os
+import re
+import shutil
+import threading
+import time
+import traceback
+from copy import deepcopy
+
+
+import polib
+from openpyxl import Workbook, load_workbook
+from rapidfuzz import fuzz
 
 from PySide6.QtWidgets import (
     QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout,
@@ -89,6 +90,8 @@ from utils.enums import WarningType, AIOperationType
 from utils.localization import _, lang_manager
 from utils.text_utils import get_linguistic_length
 from utils.path_utils import get_app_data_path
+
+logger = logging.getLogger(__name__)
 
 try:
     import requests
@@ -2379,6 +2382,8 @@ class LexiSyncApp(QMainWindow):
                                 _("AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."))
             return
         self._reset_app_state()
+        t_start = time.perf_counter()
+
         try:
             with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
                 original_content = f.read()
@@ -2404,6 +2409,10 @@ class LexiSyncApp(QMainWindow):
             self.current_po_metadata = None
             self.add_to_recent_files(filepath)
             self.config["last_dir"] = os.path.dirname(filepath)
+
+            # Checkpoint 1: IO & Pre-process
+            t_io = time.perf_counter()
+
             self.update_statusbar(_("Extracting strings..."), persistent=True)
             QApplication.processEvents()
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
@@ -2417,17 +2426,40 @@ class LexiSyncApp(QMainWindow):
             self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
                                                                      extraction_patterns)
             self.plugin_manager.run_hook('on_project_loaded', self.translatable_objects)
-            detected_lang = language_service.detect_source_language([ts.original_semantic for ts in self.translatable_objects])
+            detected_lang = language_service.detect_source_language(
+                [ts.original_semantic for ts in self.translatable_objects])
             self.source_language = detected_lang
             self.target_language = self.config.get("default_target_language", "zh")
+
+            # Checkpoint 2: Extraction
+            t_extract = time.perf_counter()
+
             self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
+
+            # Checkpoint 3: TM Application
+            t_tm = time.perf_counter()
+
             self.undo_history.clear()
             self.redo_history.clear()
             self.current_selected_ts_id = None
             self.mark_project_modified(False)
             self.is_project_mode = False
             self.is_po_mode = False
+
             self._run_and_refresh_with_validation()
+
+            # Checkpoint 4: Validation & UI Render
+            t_end = time.perf_counter()
+            filename = os.path.basename(filepath)
+            count = len(self.translatable_objects)
+            logger.info(f"=== Performance Report: {filename} ({count} items) ===")
+            logger.info(f"  IO & Pre-process:   {t_io - t_start:.4f}s")
+            logger.info(f"  Extraction:         {t_extract - t_io:.4f}s")
+            logger.info(f"  TM Batch Apply:     {t_tm - t_extract:.4f}s")
+            logger.info(f"  Validation & Sort:  {t_end - t_tm:.4f}s")
+            logger.info(f"  TOTAL TIME:         {t_end - t_start:.4f}s")
+            logger.info("======================================================")
+
             self.update_statusbar(
                 _("Loaded {count} translatable strings from {filename}").format(count=len(self.translatable_objects),
                                                                                 filename=os.path.basename(filepath)),
@@ -4658,8 +4690,15 @@ class LexiSyncApp(QMainWindow):
 
     def import_po_file_dialog_with_path(self, po_filepath):
         self._reset_app_state()
+        t_start = time.perf_counter()
+
         try:
-            self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(po_filepath)
+            self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(
+                po_filepath)
+
+            # Checkpoint 1: Parsing
+            t_parse = time.perf_counter()
+
             self.original_raw_code_content = ""
             self.current_code_file_path = None
             self.source_language = language_service.detect_source_language(
@@ -4667,7 +4706,8 @@ class LexiSyncApp(QMainWindow):
             )
             target_lang_set = False
             if po_lang_full:
-                full_code_match = next((code for name, code in SUPPORTED_LANGUAGES.items() if code.lower() == po_lang_full.lower().replace('-', '_')), None)
+                full_code_match = next((code for name, code in SUPPORTED_LANGUAGES.items() if
+                                        code.lower() == po_lang_full.lower().replace('-', '_')), None)
                 if full_code_match:
                     self.target_language = full_code_match
                     target_lang_set = True
@@ -4700,6 +4740,17 @@ class LexiSyncApp(QMainWindow):
             self._update_file_explorer(po_filepath)
             self.current_po_file_path = po_filepath
             self._run_and_refresh_with_validation()
+
+            # Checkpoint 2: Validation & UI
+            t_end = time.perf_counter()
+            filename = os.path.basename(po_filepath)
+            count = len(self.translatable_objects)
+            logger.info(f"=== Performance Report: {filename} ({count} items) ===")
+            logger.info(f"  PO Parsing:         {t_parse - t_start:.4f}s")
+            logger.info(f"  Validation & Sort:  {t_end - t_parse:.4f}s")
+            logger.info(f"  TOTAL TIME:         {t_end - t_start:.4f}s")
+            logger.info("======================================================")
+
             self.update_statusbar(
                 _("Loaded {count} entries from PO file {filename}.").format(count=len(self.translatable_objects),
                                                                             filename=os.path.basename(po_filepath)),
