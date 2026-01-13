@@ -5088,23 +5088,42 @@ class LexiSyncApp(QMainWindow):
             if reply == QMessageBox.No:
                 return 0
 
+        # 1. Collect all source texts that need a lookup
+        texts_to_query = []
+        for ts_obj in self.translatable_objects:
+            if ts_obj.is_ignored: continue
+            if only_if_empty and ts_obj.translation.strip() != "": continue
+            texts_to_query.append(ts_obj.original_semantic)
+
+        if not texts_to_query:
+            if not silent:
+                QMessageBox.information(self, _("Info"), _("No applicable strings to check against TM."))
+            return 0
+
+        # 2. Perform a single batch query
+        source_lang = self.source_language
+        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+
+        tm_results = self.tm_service.get_translations_batch(texts_to_query, source_lang, target_lang)
+
+        if not tm_results:
+            if not silent:
+                QMessageBox.information(self, _("TM"), _("No applicable translations found in TM."))
+            return 0
+
+        # 3. Apply results from the in-memory dictionary
         applied_count = 0
         bulk_changes_for_undo = []
         ids_to_update = set()
 
-        source_lang = self.source_language
-        target_lang = self.current_target_language if self.is_project_mode else self.target_language
-
         for ts_obj in self.translatable_objects:
-            if ts_obj.is_ignored: continue
-            if only_if_empty and ts_obj.translation.strip() != "": continue
+            if ts_obj.original_semantic in tm_results:
+                # Check again if it should be applied
+                if only_if_empty and ts_obj.translation.strip() != "": continue
 
-            translation_from_tm = self.tm_service.get_translation(
-                ts_obj.original_semantic, source_lang, target_lang
-            )
-
-            if translation_from_tm:
+                translation_from_tm = tm_results[ts_obj.original_semantic]
                 tm_translation_ui = translation_from_tm.replace("\\n", "\n")
+
                 if ts_obj.translation != tm_translation_ui:
                     old_val = ts_obj.get_translation_for_storage_and_tm()
                     ts_obj.set_translation_internal(tm_translation_ui)
@@ -5115,6 +5134,7 @@ class LexiSyncApp(QMainWindow):
                     ids_to_update.add(ts_obj.id)
                     applied_count += 1
 
+        # 4. Finalize UI updates and undo history
         if applied_count > 0:
             if bulk_changes_for_undo:
                 self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})

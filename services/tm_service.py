@@ -215,6 +215,42 @@ class TMService:
             logger.error(f"Failed to get entry count: {e}")
             return 0
 
+    def get_translations_batch(self, words: List[str], source_lang: str, target_lang: str) -> Dict[str, str]:
+        """
+        Batch query for translations. Returns a dictionary mapping source_text to target_text.
+        """
+        if not words:
+            return {}
+
+        with self._lock:
+            all_matches = {}
+
+            # Deduplicate words to query
+            unique_words = list(set(words))
+
+            # Query project DB first
+            if self.project_db_path:
+                try:
+                    with self._get_db_connection(self.project_db_path) as conn:
+                        matches = self._query_translations_batch_in_db(conn, unique_words, source_lang, target_lang)
+                        all_matches.update(matches)
+                except Exception as e:
+                    logger.warning(f"Project TM batch query failed: {e}")
+
+            # Query global DB for remaining words
+            if self.global_db_path:
+                remaining_words = [w for w in unique_words if w not in all_matches]
+                if remaining_words:
+                    try:
+                        with self._get_db_connection(self.global_db_path) as conn:
+                            matches = self._query_translations_batch_in_db(conn, remaining_words, source_lang,
+                                                                           target_lang)
+                            all_matches.update(matches)
+                    except Exception as e:
+                        logger.warning(f"Global TM batch query failed: {e}")
+
+            return all_matches
+
     def _query_translation_in_db(self, conn: sqlite3.Connection, source_text: str, source_lang: str,
                                  target_lang: str) -> Optional[str]:
         cursor = conn.cursor()
@@ -224,6 +260,37 @@ class TMService:
         )
         row = cursor.fetchone()
         return row['target_text'] if row else None
+
+    def _query_translations_batch_in_db(self, conn: sqlite3.Connection, words: List[str], source_lang: str,
+                                        target_lang: str) -> Dict[str, str]:
+        """Helper for batch querying a single DB file."""
+        if not words:
+            return {}
+
+        matches = {}
+        chunk_size = 900
+
+        for i in range(0, len(words), chunk_size):
+            chunk = words[i:i + chunk_size]
+            placeholders = ','.join('?' for _ in chunk)
+
+            query = f"""
+                SELECT source_text, target_text 
+                FROM translation_units 
+                WHERE source_text IN ({placeholders}) 
+                  AND source_lang = ? 
+                  AND target_lang = ?
+            """
+
+            params = chunk + [source_lang, target_lang]
+
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+
+            for row in cursor.fetchall():
+                matches[row['source_text']] = row['target_text']
+
+        return matches
 
     def update_tm_entry(self, db_path: str, source_text: str, target_text: str, source_lang: str, target_lang: str,
                         source_key: str = "manual"):
