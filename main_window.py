@@ -3848,10 +3848,14 @@ class LexiSyncApp(QMainWindow):
             return processed_translation, False
 
         is_fuzzy_changed = False
-        old_fuzzy_val = ts_obj.is_fuzzy
 
-        if ts_obj.is_fuzzy and source in ["manual", "manual_button", "manual_focus_out", "manual_paste",
-                                          "ai_batch_item", "tm_suggestion"]:
+        sources_clearing_fuzzy = [
+            "manual", "manual_button", "manual_focus_out", "manual_paste",
+            "tm_suggestion", "replace_current", "auto_fix", "quick_fix",
+            "quick_fix_all", "ai_batch_item", "pre_single_ai_save"
+        ]
+
+        if ts_obj.is_fuzzy and source in sources_clearing_fuzzy:
             ts_obj.is_fuzzy = False
             is_fuzzy_changed = True
 
@@ -3921,10 +3925,12 @@ class LexiSyncApp(QMainWindow):
                         new_value=processed_translation,
                         old_value=old_other_translation_for_undo.replace("\\n", "\n")
                     )
-                    all_changes_for_undo_list.append({
-                        'string_id': other_ts_obj.id, 'field': 'translation',
-                        'old_value': old_other_translation_for_undo, 'new_value': new_translation_for_tm_storage
-                    })
+                    if other_ts_obj.is_fuzzy and source in sources_clearing_fuzzy:
+                        other_ts_obj.is_fuzzy = False
+                        all_changes_for_undo_list.append({
+                            'string_id': other_ts_obj.id, 'field': 'is_fuzzy',
+                            'old_value': True, 'new_value': False
+                        })
                     ids_to_update.add(other_ts_obj.id)
 
         undo_action_type = 'bulk_change' if len(all_changes_for_undo_list) > 1 else 'single_change'
@@ -5118,7 +5124,6 @@ class LexiSyncApp(QMainWindow):
 
         for ts_obj in self.translatable_objects:
             if ts_obj.original_semantic in tm_results:
-                # Check again if it should be applied
                 if only_if_empty and ts_obj.translation.strip() != "": continue
 
                 translation_from_tm = tm_results[ts_obj.original_semantic]
@@ -5127,10 +5132,21 @@ class LexiSyncApp(QMainWindow):
                 if ts_obj.translation != tm_translation_ui:
                     old_val = ts_obj.get_translation_for_storage_and_tm()
                     ts_obj.set_translation_internal(tm_translation_ui)
+
+                    # Record translation change
                     bulk_changes_for_undo.append({
                         'string_id': ts_obj.id, 'field': 'translation',
                         'old_value': old_val, 'new_value': translation_from_tm
                     })
+
+                    # Clear Fuzzy status if present
+                    if ts_obj.is_fuzzy:
+                        ts_obj.is_fuzzy = False
+                        bulk_changes_for_undo.append({
+                            'string_id': ts_obj.id, 'field': 'is_fuzzy',
+                            'old_value': True, 'new_value': False
+                        })
+
                     ids_to_update.add(ts_obj.id)
                     applied_count += 1
 
@@ -6008,19 +6024,39 @@ class LexiSyncApp(QMainWindow):
             old_val = ts_obj.get_translation_for_storage_and_tm()
             new_val = cleaned_translation.replace('\n', '\\n')
 
-            if old_val == new_val: continue
+            text_changed = (old_val != new_val)
+            fuzzy_changed = False
 
-            change_data = {
-                'string_id': ts_obj.id, 'field': 'translation',
-                'old_value': old_val, 'new_value': new_val
-            }
+            # Clear Fuzzy status
+            if ts_obj.is_fuzzy:
+                ts_obj.is_fuzzy = False
+                fuzzy_changed = True
 
-            if op_type in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX]:
-                self.ai_batch_successful_translations_for_undo.append(change_data)
-            else:
-                changes_for_undo.append(change_data)
+            if not text_changed and not fuzzy_changed:
+                continue
 
-            ts_obj.set_translation_internal(cleaned_translation)
+            if text_changed:
+                change_data = {
+                    'string_id': ts_obj.id, 'field': 'translation',
+                    'old_value': old_val, 'new_value': new_val
+                }
+                if op_type in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX]:
+                    self.ai_batch_successful_translations_for_undo.append(change_data)
+                else:
+                    changes_for_undo.append(change_data)
+
+                ts_obj.set_translation_internal(cleaned_translation)
+
+            if fuzzy_changed:
+                fuzzy_change_data = {
+                    'string_id': ts_obj.id, 'field': 'is_fuzzy',
+                    'old_value': True, 'new_value': False
+                }
+                if op_type in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX]:
+                    self.ai_batch_successful_translations_for_undo.append(fuzzy_change_data)
+                else:
+                    changes_for_undo.append(fuzzy_change_data)
+
             changed_ids.add(ts_obj.id)
 
         # Record Undo (for single ops)
