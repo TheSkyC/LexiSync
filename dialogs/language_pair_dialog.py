@@ -151,27 +151,25 @@ class LanguageListWidget(QListWidget):
         self.setSelectionMode(QListWidget.SingleSelection)
         self.setStyleSheet("""
             QListWidget {
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                padding: 5px;
-                background-color: #fdfdfd;
+                border: 1px solid #DCDFE6;
+                border-radius: 4px;
+                background-color: #FFFFFF;
+                outline: 0;
             }
             QListWidget::item {
-                padding: 6px;
-                border-radius: 3px;
+                padding: 6px 10px;
+                border-bottom: 1px solid #F0F0F0;
+                color: #333333;
+                border-radius: 2px;
+                margin: 1px 2px;
             }
-            QListWidget::item:selected:!active {
-                background-color: #dbeafe;
-                color: #1e40af;
-                font-weight: bold;
+            QListWidget::item:selected {
+                background-color: #E6F7FF;
+                color: #409EFF;
+                border: 1px solid #BAE7FF;
             }
-            QListWidget::item:selected:active {
-                background-color: #bfdbfe;
-                color: #1e3a8a;
-                font-weight: bold;
-            }
-            QListWidget::item:hover {
-                background-color: #eff6ff;
+            QListWidget::item:hover:!selected {
+                background-color: #F5F7FA;
             }
         """)
 

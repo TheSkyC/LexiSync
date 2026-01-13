@@ -32,8 +32,40 @@ class LanguageSelectionDialog(QDialog):
         self.setModal(True)
         self.selected_language = None
 
+        self.resize(400, 500)
+
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+
+        layout.addWidget(QLabel(_("Select a new target language to add to the project:")))
+
+        self.search_box = QLineEdit()
+        self.search_box.setPlaceholderText(_("Search languages..."))
+        self.search_box.textChanged.connect(self.filter_languages)
+        layout.addWidget(self.search_box)
+
         self.lang_list = QListWidget()
+        self.lang_list.setStyleSheet("""
+            QListWidget {
+                border: 1px solid #DCDFE6;
+                border-radius: 4px;
+                background-color: #FFFFFF;
+                outline: 0;
+            }
+            QListWidget::item {
+                padding: 8px 10px;
+                border-bottom: 1px solid #F0F0F0;
+                color: #333333;
+            }
+            QListWidget::item:selected {
+                background-color: #E6F7FF;
+                color: #409EFF;
+                border-bottom: 1px solid #BAE7FF;
+            }
+            QListWidget::item:hover:!selected {
+                background-color: #F5F7FA;
+            }
+        """)
 
         sorted_langs = sorted(SUPPORTED_LANGUAGES.items())
         for name, code in sorted_langs:
@@ -42,13 +74,17 @@ class LanguageSelectionDialog(QDialog):
                 item.setData(Qt.UserRole, code)
                 self.lang_list.addItem(item)
 
-        layout.addWidget(QLabel(_("Select a new target language to add to the project:")))
         layout.addWidget(self.lang_list)
 
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
+
+    def filter_languages(self, text):
+        for i in range(self.lang_list.count()):
+            item = self.lang_list.item(i)
+            item.setHidden(text.lower() not in item.text().lower())
 
     def accept(self):
         selected_item = self.lang_list.currentItem()
