@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import datetime
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
-    QApplication, QMessageBox, QLabel, QMenu)
+    QApplication, QMessageBox, QLabel, QMenu, QSizePolicy)
 from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize, QUrl
 from PySide6.QtGui import (
     QDragEnterEvent, QDropEvent, QIcon, QColor, QAction, QDesktopServices)
+from ui_components.elided_label import ElidedLabel
 from utils.path_utils import get_resource_path
 from utils.localization import _
 
@@ -30,6 +32,83 @@ class BadgeLabel(QLabel):
         """)
 
 
+def get_relative_time_string(iso_timestamp):
+    """
+    将 ISO 时间戳转换为相对时间字符串
+
+    Args:
+        iso_timestamp: ISO 格式的时间戳字符串
+
+    Returns:
+        str: 相对时间描述，如 "2 mins ago" 或具体日期
+    """
+    if not iso_timestamp:
+        return ""
+
+    try:
+        dt = datetime.datetime.fromisoformat(iso_timestamp)
+
+        if dt.tzinfo is None:
+            now = datetime.datetime.now()
+        else:
+            now = datetime.datetime.now(dt.tzinfo)
+
+        diff = now - dt
+        seconds = diff.total_seconds()
+
+        MINUTE = 60
+        HOUR = 3600
+        DAY = 86400
+        WEEK = 604800
+        MONTH = 2592000
+
+        if seconds < 0:
+            return _("Just now")
+
+        if seconds < MINUTE:
+            return _("Just now")
+        elif seconds < HOUR:
+            minutes = int(seconds / MINUTE)
+            if minutes == 1:
+                return _("1 min ago")
+            return _("{m} mins ago").format(m=minutes)
+        elif seconds < DAY:
+            hours = int(seconds / HOUR)
+            if hours == 1:
+                return _("1 hour ago")
+            return _("{h} hours ago").format(h=hours)
+        elif seconds < WEEK:
+            days = int(seconds / DAY)
+            if days == 1:
+                return _("Yesterday")
+            return _("{d} days ago").format(d=days)
+        elif seconds < MONTH:
+            weeks = int(seconds / WEEK)
+            if weeks == 1:
+                return _("1 week ago")
+            return _("{w} weeks ago").format(w=weeks)
+        else:
+            return dt.strftime("%Y/%m/%d")
+
+    except ValueError as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Invalid timestamp format: {iso_timestamp}, error: {e}")
+        return ""
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error parsing timestamp {iso_timestamp}: {e}")
+        return ""
+
+def get_progress_color(percentage):
+    if percentage >= 100:
+        return "#E8F5E9", "#2E7D32"  # Dark Green
+    elif percentage >= 70:
+        return "#F1F8E9", "#558B2F"  # Light Green
+    elif percentage >= 30:
+        return "#FFF8E1", "#FBC02D"  # Yellow/Amber
+    else:
+        return "#FFEBEE", "#C62828"  # Red
+
 class RecentFileWidget(QWidget):
     remove_requested = Signal()
 
@@ -46,49 +125,99 @@ class RecentFileWidget(QWidget):
 
         # Top Row: Filename + Badges
         top_row = QHBoxLayout()
-        top_row.setSpacing(0)
+        top_row.setSpacing(6)
 
         self.filename_label = QLabel(filename)
         self.filename_label.setStyleSheet("font-weight: bold; background-color: transparent; font-size: 14px;")
         top_row.addWidget(self.filename_label)
 
-        # Badges
         if metadata:
-            # Type Badge (Blue)
+            # 1. Type Badge
             ftype = metadata.get("type", "code")
             badge_bg = "#E3F2FD"
             badge_text = "#0277BD"
 
+            type_text = "Code"
             if ftype == "project":
-                badge = BadgeLabel("Project", color=badge_bg, text_color=badge_text)
-                top_row.addWidget(badge)
+                type_text = "Project"
             elif ftype == "po":
-                badge = BadgeLabel("PO", color=badge_bg, text_color=badge_text)
-                top_row.addWidget(badge)
+                type_text = "PO"
             else:
                 ext = os.path.splitext(filename)[1].upper().replace('.', '')
-                if ext:
-                    badge = BadgeLabel(ext, color=badge_bg, text_color=badge_text)
-                    top_row.addWidget(badge)
+                if ext: type_text = ext
 
-            # Count Badge (Grey)
+            top_row.addWidget(BadgeLabel(type_text, color=badge_bg, text_color=badge_text))
+
+            # 2. Lang Pair Badge
+            src = metadata.get("source_lang")
+            tgt = metadata.get("target_lang")
+            if src and tgt:
+                lang_text = f"{src} → {tgt}"
+                top_row.addWidget(BadgeLabel(lang_text, color="#F5F5F5", text_color="#666666"))
+
+            # 3. Progress Badge
+            total = metadata.get("progress_total", 0)
+            current = metadata.get("progress_current", 0)
+            if total > 0:
+                percent = int((current / total) * 100)
+                bg_col, txt_col = get_progress_color(percent)
+                top_row.addWidget(BadgeLabel(f"{percent}%", color=bg_col, text_color=txt_col))
+
+        top_row.addStretch()
+        layout.addLayout(top_row)
+
+        # Bottom Row: Path + Count + Time
+        bottom_row = QHBoxLayout()
+        bottom_row.setSpacing(10)
+
+        # Initialize ElidedLabel
+        self.path_label = ElidedLabel()
+        self.path_label.setText(dirpath)
+        self.path_label.setStyleSheet("color: #777; background-color: transparent; font-size: 12px;")
+
+        self.path_label.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Preferred
+        )
+        self.path_label.setMinimumWidth(100)
+        bottom_row.addWidget(self.path_label)
+        bottom_row.addStretch(1)
+
+        if metadata:
+            info_layout = QHBoxLayout()
+            info_layout.setSpacing(10)
+            info_layout.setContentsMargins(0, 0, 0, 0)
+
+            # 4. Count Badge
             count = metadata.get("count", 0)
             if count > 0:
-                label_suffix = metadata.get("count_label", "files" if ftype == "project" else "items")
+                label_suffix = metadata.get("count_label", "files" if metadata.get("type") == "project" else "items")
                 if label_suffix == "files":
                     suffix_text = _("files")
                 else:
                     suffix_text = _("items")
 
-                count_badge = BadgeLabel(f"{count} {suffix_text}", color="#F0F0F0", text_color="#888888")
-                top_row.addWidget(count_badge)
+                count_label = QLabel(f"{count} {suffix_text}")
+                count_label.setStyleSheet("color: #999; font-size: 11px; background-color: transparent;")
+                count_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+                info_layout.addWidget(count_label)
 
-        top_row.addStretch()
-        layout.addLayout(top_row)
+            # 5. Relative Time
+            timestamp = metadata.get("timestamp")
+            if timestamp:
+                time_str = get_relative_time_string(timestamp)
+                if time_str:
+                    time_label = QLabel(time_str)
+                    time_label.setStyleSheet("color: #999; font-size: 11px; background-color: transparent;")
+                    time_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+                    info_layout.addWidget(time_label)
+            info_widget = QWidget()
+            info_widget.setLayout(info_layout)
+            info_widget.setMinimumWidth(80)
+            info_widget.setStyleSheet("background-color: transparent;")
+            bottom_row.addWidget(info_widget)
 
-        self.path_label = QLabel(dirpath)
-        self.path_label.setStyleSheet("color: #777; background-color: transparent; font-size: 12px;")
-        layout.addWidget(self.path_label)
+        layout.addLayout(bottom_row)
 
         self.setAutoFillBackground(True)
         self._update_style()
@@ -236,7 +365,7 @@ class ActionButton(QWidget):
         elif self._is_hovered:
             palette.setColor(self.backgroundRole(), QColor("#F0F0F0"))  # Lighter grey for hover
         else:
-            palette.setColor(self.backgroundRole(), QColor("#F5F7FA"))  # Default background
+            palette.setColor(self.backgroundRole(), Qt.transparent)
         self.setPalette(palette)
 
     def event(self, event):
@@ -397,7 +526,7 @@ class WelcomeScreen(QWidget):
         self.market_button.clicked.connect(lambda: self.on_action_triggered("show_marketplace"))
         self.settings_button.clicked.connect(lambda: self.on_action_triggered("show_settings"))
         self.recent_files_list.itemClicked.connect(self.on_recent_file_selected)
-
+        QTimer.singleShot(0, self.recent_files_list.updateGeometries)
         self.start_prewarming()
 
     def set_status(self, text, status_type="loading"):
@@ -553,7 +682,7 @@ class WelcomeScreen(QWidget):
             widget = RecentFileWidget(filename, dirpath, metadata)
             widget.remove_requested.connect(lambda p=path: self.remove_recent_file(p))
 
-            item.setSizeHint(QSize(self.recent_files_list.viewport().width(), widget.sizeHint().height()))
+            item.setSizeHint(widget.sizeHint())
             self.recent_files_list.addItem(item)
             self.recent_files_list.setItemWidget(item, widget)
 

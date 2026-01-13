@@ -1911,19 +1911,44 @@ class LexiSyncApp(QMainWindow):
         # Determine metadata
         file_type = "code"
         count = 0
+        translated_count = 0
         count_label = "items"
+        source_lang = self.source_language
+        target_lang = self.target_language
 
         if self.is_project_mode:
             file_type = "project"
             source_files = self.project_config.get("source_files", [])
             count = len(source_files)
             count_label = "files"
+            if self.all_project_strings:
+                total_items = len(self.all_project_strings)
+                translated_items = len(
+                    [ts for ts in self.all_project_strings if ts.translation.strip() and not ts.is_ignored])
+                progress_total = total_items
+                progress_current = translated_items
+            else:
+                progress_total = 0
+                progress_current = 0
+
+            # Use project config languages
+            source_lang = self.project_config.get("source_language", "en")
+            target_lang = self.project_config.get("current_target_language", "zh")
+
         elif self.is_po_mode:
             file_type = "po"
             count = len(self.translatable_objects) if self.translatable_objects else 0
+            translated_count = len([ts for ts in self.translatable_objects if
+                                    ts.translation.strip() and not ts.is_ignored]) if self.translatable_objects else 0
+            progress_total = count
+            progress_current = translated_count
         else:
             # Single code file
             count = len(self.translatable_objects) if self.translatable_objects else 0
+            translated_count = len([ts for ts in self.translatable_objects if
+                                    ts.translation.strip() and not ts.is_ignored]) if self.translatable_objects else 0
+            progress_total = count
+            progress_current = translated_count
 
         # New entry structure
         new_entry = {
@@ -1931,6 +1956,10 @@ class LexiSyncApp(QMainWindow):
             "type": file_type,
             "count": count,
             "count_label": count_label,
+            "progress_total": progress_total,
+            "progress_current": progress_current,
+            "source_lang": source_lang,
+            "target_lang": target_lang,
             "timestamp": datetime.datetime.now().isoformat()
         }
 
