@@ -18,6 +18,8 @@ SECRET_FILE = "secret.key"
 KEYRING_SERVICE = "LexiSync"
 KEYRING_USER = "master_key"
 
+COLOR_WARN = "\033[93m"  # Yellow
+COLOR_RESET = "\033[0m"  # Reset
 
 def _get_or_create_master_key() -> bytes:
     """
@@ -76,8 +78,9 @@ def _get_or_create_master_key() -> bytes:
             # 设置文件权限 (仅限 Unix/Linux)
             if sys.platform != 'win32':
                 os.chmod(key_path, 0o600)
-
-            logger.warning(f"Master key saved to local file as fallback: {key_path}")
+            logger.warning(
+                f"{COLOR_WARN}[SECURITY WARNING] Master key saved to UNENCRYPTED local file (Keyring unavailable): {key_path}{COLOR_RESET}"
+            )
         except Exception as e:
             error_message = _(
                 "Critical Security Error: Could not save master key to Keyring OR local file.\n"
