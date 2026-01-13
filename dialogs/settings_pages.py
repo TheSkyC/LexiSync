@@ -5,10 +5,10 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QComboBox, QCheckBox, QSpinBox,
     QPushButton, QGroupBox, QHBoxLayout, QLineEdit, QMessageBox, QLabel,
     QApplication, QScrollArea, QFrame, QDoubleSpinBox, QGridLayout,
-    QButtonGroup, QRadioButton
+    QButtonGroup, QRadioButton, QAbstractSpinBox
 )
 from PySide6.QtGui import QColor, QPixmap, QPainter
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QEvent
 from utils.path_utils import get_resource_path
 from utils.constants import DEFAULT_API_URL, DEFAULT_VALIDATION_RULES
 from utils.localization import _, lang_manager
@@ -125,6 +125,25 @@ class BaseSettingsPage(QWidget):
         self.page_layout.setContentsMargins(20, 20, 20, 20)
         self.page_layout.setSpacing(15)
         self.page_layout.setAlignment(Qt.AlignTop)
+
+    def apply_widget_policies(self):
+        """
+        Applies standard policies to widgets on the page.
+        Disable mouse wheel on inputs UNLESS they have focus.
+        """
+        combos = self.findChildren(QComboBox)
+        spinboxes = self.findChildren(QAbstractSpinBox)
+
+        for widget in combos + spinboxes:
+            original_wheel_event = widget.wheelEvent
+
+            def smart_wheel_event(event, w=widget, original=original_wheel_event):
+                if w.hasFocus():
+                    original(event)
+                else:
+                    event.ignore()
+            widget.wheelEvent = smart_wheel_event
+            widget.setFocusPolicy(Qt.StrongFocus)
 
 
 class GeneralSettingsPage(BaseSettingsPage):
@@ -280,6 +299,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         content_layout.addStretch(1)
         scroll_area.setWidget(content_widget)
         self.page_layout.addWidget(scroll_area)
+        self.apply_widget_policies()
 
 
     def save_settings(self):
@@ -334,6 +354,7 @@ class AppearanceSettingsPage(BaseSettingsPage):
         form_layout.addRow(_("Keybindings:"), self.keybinding_button)
 
         self.page_layout.addLayout(form_layout)
+        self.apply_widget_policies()
 
     def save_settings(self):
         self.app.config['accelerator_marker'] = self.accelerator_marker_edit.text()
@@ -531,11 +552,11 @@ class AISettingsPage(BaseSettingsPage):
         prompt_layout.addWidget(self.prompt_button)
 
         content_layout.addWidget(prompt_group)
-
         content_layout.addStretch(1)
-
         scroll_area.setWidget(content_widget)
+
         self.page_layout.addWidget(scroll_area)
+        self.apply_widget_policies()
 
     def update_active_model_label(self):
         active_id = self.app.config.get("active_ai_model_id", "")
@@ -808,8 +829,9 @@ class ValidationSettingsPage(BaseSettingsPage):
 
         scroll_area.setWidget(content_widget)
         self.page_layout.addWidget(scroll_area)
-
         self._take_state_snapshot()
+
+        self.apply_widget_policies()
 
     def _take_state_snapshot(self):
         self._initial_rules_state = {}
