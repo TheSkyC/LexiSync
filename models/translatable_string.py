@@ -55,6 +55,44 @@ class TranslatableString:
         self._translation_edit_history = [self.translation]
         self._translation_history_pointer = 0
 
+    def update_sort_weight(self):
+        """
+        Pre-calculates the sort weight based on status.
+        Lower number = appears higher in the list when sorting by status.
+        Priority:
+        0: Error (Warnings present)
+        1: Warning (Minor warnings present)
+        2: Info
+        3: Untranslated
+        4: Translated
+        5: Reviewed
+        6: Ignored
+        """
+        if self.is_ignored:
+            self.sort_weight = 6
+            return
+
+        if self.is_reviewed:
+            self.sort_weight = 5
+            return
+
+        if not self.is_warning_ignored:
+            if self.warnings:
+                self.sort_weight = 0  # Error
+                return
+            if self.minor_warnings:
+                self.sort_weight = 1  # Warning
+                return
+            if self.infos:
+                self.sort_weight = 2  # Info
+                return
+
+        if not self.translation.strip():
+            self.sort_weight = 3  # Untranslated
+            return
+
+        self.sort_weight = 4  # Translated
+
     @property
     def line_num_in_file(self):
         try:
@@ -165,6 +203,8 @@ class TranslatableString:
         return ts
 
     def update_style_cache(self, all_strings_map=None):
+        self.update_sort_weight()
+
         fuzzy_warning_tuple = (WarningType.FUZZY_TRANSLATION, _("Translation is marked as fuzzy and needs review."))
 
         has_fuzzy_in_minor_warnings = any(wt == WarningType.FUZZY_TRANSLATION for wt, _ in self.minor_warnings)

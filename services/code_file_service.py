@@ -140,7 +140,7 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
                     if len(content_text_only) < 2:
                         ts.was_auto_ignored = True
                         ts.is_ignored = True
-
+            ts.update_sort_weight()
             strings.append(ts)
 
     strings.sort(key=lambda s: s.char_pos_start_in_file)

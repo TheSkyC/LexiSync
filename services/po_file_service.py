@@ -103,15 +103,14 @@ def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=No
     if flags:
         po_meta_comment_lines.append(f"#, {', '.join(flags)}")
 
-    # 5. 处理旧翻译 (Previous, #|) - polib 不直接支持 previous_msgid 的读写，通常作为注释存在
-    # 如果 polib 版本支持 previous_msgid/msgctxt，这里可以处理，否则可能在 entry.comment 中
+    # 5. 处理旧翻译 (Previous, #|)
     if hasattr(entry, 'previous_msgid') and entry.previous_msgid:
         po_meta_comment_lines.append(f"#| msgid \"{entry.previous_msgid}\"")
     ts.comment = "\n".join(user_comment_lines)
     ts.po_comment = "\n".join(po_meta_comment_lines)
     if 'fuzzy' in flags:
         ts.is_fuzzy = True
-
+    ts.update_sort_weight()
     return ts
 
 
