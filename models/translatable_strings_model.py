@@ -79,6 +79,32 @@ class TranslatableStringsModel(QAbstractTableModel):
 
         return None
 
+    def sort_data(self, column, order):
+        self.layoutAboutToBeChanged.emit()
+
+        reverse = (order == Qt.DescendingOrder)
+
+        if column == 1 or column == 5:  # Status / Reviewed
+            # Primary: Weight, Secondary: Line Number
+            key_func = lambda ts: (ts.sort_weight, ts.line_num_in_file)
+        elif column == 2:  # Original
+            key_func = lambda ts: ts.original_semantic.lower()
+        elif column == 3:  # Translation
+            key_func = lambda ts: ts.get_translation_for_ui().lower()
+        elif column == 4:  # Comment
+            key_func = lambda ts: ts.comment.lower()
+        elif column == 6:  # Line
+            key_func = lambda ts: ts.line_num_in_file
+        else:  # ID (0) or Default
+            key_func = lambda ts: ts.line_num_in_file
+
+        self._data.sort(key=key_func, reverse=reverse)
+
+        # Rebuild the ID map
+        self._id_to_index_map = {obj.id: i for i, obj in enumerate(self._data)}
+
+        self.layoutChanged.emit()
+
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             if section < len(self.headers):
@@ -133,15 +159,13 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
             sourceModel.dataChanged.connect(self._source_data_changed)
 
     def _source_data_changed(self, topLeft, bottomRight, roles=None):
-        # Custom handler to bypass QSortFilterProxyModel's default behavior
-        # which might re-filter rows even when dynamicSortFilter is False.
         if not topLeft.isValid() or not bottomRight.isValid():
             return
 
         start_proxy = self.mapFromSource(topLeft)
         end_proxy = self.mapFromSource(bottomRight)
 
-        # Only emit dataChanged for visible rows, do NOT trigger re-filtering
+        # Only emit dataChanged for visible rows
         if start_proxy.isValid() and end_proxy.isValid():
             self.dataChanged.emit(start_proxy, end_proxy, roles if roles is not None else [])
 
@@ -175,6 +199,12 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         if self.show_unreviewed and ts_obj.is_reviewed: return False
 
         return True
+
+    def sort(self, column, order=Qt.AscendingOrder):
+        source = self.sourceModel()
+        if source:
+            source.sort_data(column, order)
+            self.invalidate()
 
     def lessThan(self, left_index, right_index):
         source_model = self.sourceModel()
