@@ -12,6 +12,7 @@ from utils.localization import _
 import logging
 logger = logging.getLogger(__name__)
 
+
 def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None):
     # [CRITICAL ARCHITECTURE NOTE]
     # We MUST force the 'occurrences' to point to the PO file itself (e.g., 'source/zh.po'),
@@ -27,89 +28,78 @@ def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=No
     # The original occurrences are preserved in 'po_comment' for reference, but for
     # internal logic, the "source" of this string is the PO file.
     line_num = entry.linenum
+    msgctxt = entry.msgctxt or ""
+    msgid = entry.msgid
+    msgstr = entry.msgstr or ""
     occurrences = [(po_file_rel_path, str(line_num))]
-    if not occurrences:
-        occurrences = [(po_file_rel_path, str(line_num))]
-    msgctxt = entry.msgctxt if entry.msgctxt else ""
-    stable_name_for_uuid = f"{po_file_rel_path}::{msgctxt}::{entry.msgid}"
-    try:
-        if hasattr(entry, 'occurrences') and entry.occurrences:
-            first_occurrence = entry.occurrences[0]
 
-            if isinstance(first_occurrence, (tuple, list)) and len(first_occurrence) >= 2:
-                source_path = first_occurrence[0] or ""
-                lnum_str = first_occurrence[1] or ""
-                if lnum_str and str(lnum_str).isdigit():
-                    line_num = int(lnum_str)
-            elif isinstance(first_occurrence, str):
-                source_path = first_occurrence
-    except Exception as e:
-        logger.warning(f"Occurrences value was: {getattr(entry, 'occurrences', 'N/A')}")
+    # 生成 UUID
+    stable_name_for_uuid = f"{po_file_rel_path}::{msgctxt}::{msgid}"
 
     ts = TranslatableString(
-        original_raw=entry.msgid,
-        original_semantic=entry.msgid,
+        original_raw=msgid,
+        original_semantic=msgid,
         line_num=line_num,
         char_pos_start_in_file=0,
         char_pos_end_in_file=0,
-        full_code_lines=full_code_lines if full_code_lines else [],
+        full_code_lines=full_code_lines or [],
         string_type="PO Import",
         source_file_path=po_file_rel_path,
         occurrences=occurrences,
         occurrence_index=0
     )
+
     ts.id = str(uuid.uuid5(APP_NAMESPACE_UUID, stable_name_for_uuid))
-    ts.translation = entry.msgstr or ""
+    ts.translation = msgstr
 
-    if entry.msgctxt:
-        ts.context = entry.msgctxt
-
-    all_comment_lines = []
-    if entry.comment:
-        all_comment_lines.extend(entry.comment.splitlines())
-    if entry.tcomment:
-        all_comment_lines.extend(entry.tcomment.splitlines())
+    if msgctxt:
+        ts.context = msgctxt
 
     user_comment_lines = []
     po_meta_comment_lines = []
 
     # 1. 处理提取注释 (Extracted Comments, #.)
-    # polib 会去掉 '#.' 前缀，我们需要补回来，以便在 UI 中显示并在保存时识别
     if entry.tcomment:
+        # 优化：避免重复 splitlines，直接在迭代中处理
         for line in entry.tcomment.splitlines():
             po_meta_comment_lines.append(f"#. {line}")
 
     # 2. 处理翻译注释 (Translator Comments, #)
     if entry.comment:
         for line in entry.comment.splitlines():
-            stripped_line = line.strip()
+            stripped = line.strip()
             # 识别 LexiSync 的特殊标记
-            if stripped_line.startswith('LexiSync:'):
-                if 'reviewed' in stripped_line:
+            if stripped.startswith('LexiSync:'):
+                lower_stripped = stripped.lower()  # 只转换一次
+                if 'reviewed' in lower_stripped:
                     ts.is_reviewed = True
-                if 'ignored' in stripped_line:
+                if 'ignored' in lower_stripped:
                     ts.is_ignored = True
             else:
                 user_comment_lines.append(line)
 
     # 3. 处理引用 (References, #:)
-    if hasattr(entry, 'occurrences') and entry.occurrences:
-        # 格式化为 #: file:line
-        refs = [f"{p}:{l}" if l else p for p, l in entry.occurrences]
-        po_meta_comment_lines.append(f"#: {' '.join(refs)}")
+    entry_occurrences = getattr(entry, 'occurrences', None)
+    if entry_occurrences:
+        refs = ' '.join(f"{p}:{l}" if l else p for p, l in entry_occurrences)
+        po_meta_comment_lines.append(f"#: {refs}")
 
     # 4. 处理标志 (Flags, #,)
     flags = getattr(entry, 'flags', [])
     if flags:
         po_meta_comment_lines.append(f"#, {', '.join(flags)}")
+        # 优化：在这里检查 fuzzy，避免后面再次检查
+        if 'fuzzy' in flags:
+            ts.is_fuzzy = True
 
     # 5. 处理旧翻译 (Previous, #|)
-    if hasattr(entry, 'previous_msgid') and entry.previous_msgid:
-        po_meta_comment_lines.append(f"#| msgid \"{entry.previous_msgid}\"")
-    ts.comment = "\n".join(user_comment_lines)
-    ts.po_comment = "\n".join(po_meta_comment_lines)
-    if 'fuzzy' in flags:
-        ts.is_fuzzy = True
+    previous_msgid = getattr(entry, 'previous_msgid', None)
+    if previous_msgid:
+        po_meta_comment_lines.append(f'#| msgid "{previous_msgid}"')
+
+    ts.comment = "\n".join(user_comment_lines) if user_comment_lines else ""
+    ts.po_comment = "\n".join(po_meta_comment_lines) if po_meta_comment_lines else ""
+
     ts.update_sort_weight()
     return ts
 
