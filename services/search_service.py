@@ -158,7 +158,10 @@ class SearchService(QObject):
                 # Find first result after start_row
                 for i, res in enumerate(self.search_results):
                     if res["proxy_row"] >= start_row:
-                        self.current_result_index = i if res["proxy_row"] > start_row else i - 1
+                        if res["proxy_row"] > start_row:
+                            self.current_result_index = i - 1
+                        else:
+                            self.current_result_index = i
                         break
                 else:
                     self.current_result_index = -1  # Wrap around to 0 next step
@@ -166,7 +169,10 @@ class SearchService(QObject):
                 # Find last result before start_row
                 for i in range(len(self.search_results) - 1, -1, -1):
                     if self.search_results[i]["proxy_row"] <= start_row:
-                        self.current_result_index = i if self.search_results[i]["proxy_row"] < start_row else i + 1
+                        if self.search_results[i]["proxy_row"] < start_row:
+                            self.current_result_index = i + 1
+                        else:
+                            self.current_result_index = i
                         break
                 else:
                     self.current_result_index = len(self.search_results)  # Wrap around
