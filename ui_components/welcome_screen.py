@@ -184,10 +184,6 @@ class RecentFileWidget(QWidget):
         bottom_row.addStretch(1)
 
         if metadata:
-            info_layout = QHBoxLayout()
-            info_layout.setSpacing(10)
-            info_layout.setContentsMargins(0, 0, 0, 0)
-
             # 4. Count Badge
             count = metadata.get("count", 0)
             if count > 0:
@@ -200,7 +196,8 @@ class RecentFileWidget(QWidget):
                 count_label = QLabel(f"{count} {suffix_text}")
                 count_label.setStyleSheet("color: #999; font-size: 11px; background-color: transparent;")
                 count_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
-                info_layout.addWidget(count_label)
+                count_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                bottom_row.addWidget(count_label)
 
             # 5. Relative Time
             timestamp = metadata.get("timestamp")
@@ -210,12 +207,8 @@ class RecentFileWidget(QWidget):
                     time_label = QLabel(time_str)
                     time_label.setStyleSheet("color: #999; font-size: 11px; background-color: transparent;")
                     time_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
-                    info_layout.addWidget(time_label)
-            info_widget = QWidget()
-            info_widget.setLayout(info_layout)
-            info_widget.setMinimumWidth(80)
-            info_widget.setStyleSheet("background-color: transparent;")
-            bottom_row.addWidget(info_widget)
+                    time_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                    bottom_row.addWidget(time_label)
 
         layout.addLayout(bottom_row)
 
