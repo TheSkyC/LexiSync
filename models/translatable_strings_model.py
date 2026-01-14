@@ -169,17 +169,17 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         if start_proxy.isValid() and end_proxy.isValid():
             self.dataChanged.emit(start_proxy, end_proxy, roles if roles is not None else [])
 
-    def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term, is_po_mode):
-        current_sort_column = self.sortColumn()
-        current_sort_order = self.sortOrder()
+    def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term, is_po_mode,
+                    sort_column, sort_order):
         self.show_ignored = show_ignored
         self.show_untranslated = show_untranslated
         self.show_translated = show_translated
         self.show_unreviewed = show_unreviewed
         self.search_term = search_term.lower()
         self.is_po_mode = is_po_mode
+
         self.invalidateFilter()
-        self.sort(current_sort_column, current_sort_order)
+        self.sort(sort_column, sort_order)
 
     def filterAcceptsRow(self, source_row, source_parent):
         ts_obj = self.sourceModel()._data[source_row]

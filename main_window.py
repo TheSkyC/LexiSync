@@ -2678,15 +2678,21 @@ class LexiSyncApp(QMainWindow):
         old_selected_id = self.current_selected_ts_id
         if item_to_reselect_after:
             old_selected_id = item_to_reselect_after
+        header = self.table_view.horizontalHeader()
+        current_sort_col = header.sortIndicatorSection()
+        current_sort_order = header.sortIndicatorOrder()
         self.proxy_model.set_filters(
             show_ignored=self.show_ignored_var,
             show_untranslated=self.show_untranslated_var,
             show_translated=self.show_translated_var,
             show_unreviewed=self.show_unreviewed_var,
             search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
-            is_po_mode=self.is_po_mode
+            is_po_mode=self.is_po_mode,
+            sort_column = current_sort_col,
+            sort_order = current_sort_order
         )
         self.update_counts_display()
+        self.update_warning_markers()
         if preserve_selection and old_selected_id:
             self.select_sheet_row_by_id(old_selected_id, see=True)
         elif not self.current_selected_ts_id and self.proxy_model.rowCount() > 0:
@@ -2703,16 +2709,22 @@ class LexiSyncApp(QMainWindow):
 
     def _perform_delayed_search_filter(self):
         search_term_to_use = self._last_quick_search_text
+        header = self.table_view.horizontalHeader()
+        current_sort_col = header.sortIndicatorSection()
+        current_sort_order = header.sortIndicatorOrder()
         self.proxy_model.set_filters(
             show_ignored=self.ignored_checkbox.isChecked(),
             show_untranslated=self.untranslated_checkbox.isChecked(),
             show_translated=self.translated_checkbox.isChecked(),
             show_unreviewed=self.unreviewed_checkbox.isChecked(),
             search_term=search_term_to_use if search_term_to_use != _("Quick search...") else "",
-            is_po_mode=self.is_po_mode
+            is_po_mode=self.is_po_mode,
+            sort_column=current_sort_col,
+            sort_order=current_sort_order
         )
 
         self.update_counts_display()
+        self.update_warning_markers()
         if self.marker_bar:
             QTimer.singleShot(0, self.marker_bar.update)
 
@@ -4211,18 +4223,24 @@ class LexiSyncApp(QMainWindow):
 
     def force_full_refresh(self, id_to_reselect=None):
         self.sheet_model.set_translatable_objects(self.translatable_objects)
+        header = self.table_view.horizontalHeader()
+        current_sort_col = header.sortIndicatorSection()
+        current_sort_order = header.sortIndicatorOrder()
         self.proxy_model.set_filters(
             show_ignored=self.show_ignored_var,
             show_untranslated=self.show_untranslated_var,
             show_translated=self.show_translated_var,
             show_unreviewed=self.show_unreviewed_var,
             search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
-            is_po_mode=self.is_po_mode
+            is_po_mode=self.is_po_mode,
+            sort_column=current_sort_col,
+            sort_order=current_sort_order
         )
         if id_to_reselect:
             self.select_sheet_row_by_id(id_to_reselect, see=True)
         self.force_refresh_ui_for_current_selection()
         self.update_counts_display()
+        self.update_warning_markers()
 
     def save_code_file_content(self, filepath_to_save):
         if not self.original_raw_code_content:
