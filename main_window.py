@@ -143,7 +143,6 @@ class LexiSyncApp(QMainWindow):
         self.ai_translation_batch_ids_queue = []
         self.is_ai_translating_batch = False
         self.ai_thread_pool = QThreadPool.globalInstance()
-        self.is_finalizing_batch_translation = False
         self.ai_batch_successful_translations_for_undo = []
 
         # Search and replace
@@ -168,11 +167,8 @@ class LexiSyncApp(QMainWindow):
         self.current_project_modified = False
         self.is_po_mode = False
         self.current_po_metadata = None
-        self.source_comment = ""
         self.current_focused_ts_id = None
         self.default_window_state = None
-        self.neighbor_select_timer = QTimer(self)
-        self.neighbor_select_timer.setSingleShot(True)
 
         self.source_language = self.config.get("default_source_language", "en")
         self.target_language = self.config.get("default_target_language", "zh")
@@ -202,7 +198,6 @@ class LexiSyncApp(QMainWindow):
         self.glossary_service = GlossaryService()
         self.setup_glossary_service()
         self.glossary_analysis_cache = {}
-        self.original_highlighter = None
 
         self.build_thread = None
         self.build_worker = None
@@ -234,10 +229,6 @@ class LexiSyncApp(QMainWindow):
 
         self.placeholder_regex = placeholder_regex
         self._placeholder_validation_job = None
-
-        self.last_sort_column = "seq_id"
-        self.last_sort_reverse = False
-
 
         self.language_changed.connect(self.update_ui_texts)
         self.setAcceptDrops(True)
@@ -3262,8 +3253,6 @@ class LexiSyncApp(QMainWindow):
         return ranges
 
     def on_sheet_select(self, current_index, previous_index):
-        if self.neighbor_select_timer.isActive():
-            self.neighbor_select_timer.stop()
         if self.table_view.is_dragging:
             return
         old_focused_id = self.current_focused_ts_id
@@ -3301,8 +3290,6 @@ class LexiSyncApp(QMainWindow):
         if new_source_index.isValid():
             self.sheet_model.dataChanged.emit(new_source_index,
                                               new_source_index.siblingAtColumn(self.sheet_model.columnCount() - 1))
-        if self.is_finalizing_batch_translation:
-            return
         status_message = _("Selected: \"{text}...\" (Line: {line_num})").format(
             text=ts_obj.original_semantic[:30].replace(chr(10), '↵'),
             line_num=ts_obj.line_num_in_file

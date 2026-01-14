@@ -43,7 +43,6 @@ def load_config():
                 config_data = {}
 
             # General settings
-            config_data.setdefault("deduplicate", False)
             config_data.setdefault("show_ignored", True)
             config_data.setdefault("show_untranslated", False)
             config_data.setdefault("show_translated", False)
