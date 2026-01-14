@@ -956,11 +956,12 @@ class LexiSyncApp(QMainWindow):
     def _on_search_navigate(self, row, col):
         index = self.proxy_model.index(row, col)
         if index.isValid():
+            self.table_view.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
+
             self.table_view.selectionModel().clearSelection()
             self.table_view.selectionModel().setCurrentIndex(
                 index, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows
             )
-            self.table_view.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
 
     def refresh_sort(self):
         current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
