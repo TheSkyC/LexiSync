@@ -77,7 +77,7 @@ DEFAULT_VALIDATION_RULES = {
                 "description": _("Single and double quotes must match their types exactly.")
             },
             "loose": {
-                "name": _("loose"),
+                "name": _("Loose"),
                 "description": _("Allows converting single quotes to double quotes (e.g., '...' -> “...”) and vice versa.")
             }
         },

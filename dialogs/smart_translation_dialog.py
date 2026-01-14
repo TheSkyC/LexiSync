@@ -68,7 +68,8 @@ class AnalysisWorker(QObject):
 
     def __init__(self, app, samples, all_items, source_lang, target_lang,
                  term_mode="fast", max_threads=1, use_context=True,
-                 batch_size=50, orphan_ratio=0.2, inject_glossary=False):
+                 batch_size=50, orphan_ratio=0.2, inject_glossary=False,
+                 do_style_analysis=True, do_term_extraction=True):
         super().__init__()
         self.app = app
         self.samples = samples
@@ -83,6 +84,8 @@ class AnalysisWorker(QObject):
         self.inject_glossary = inject_glossary
         self._is_cancelled = False
         self.glossary_matcher = None
+        self.do_style_analysis = do_style_analysis
+        self.do_term_extraction = do_term_extraction
 
     def run(self):
         """执行分析任务"""
@@ -90,34 +93,41 @@ class AnalysisWorker(QObject):
             translator = self.app.ai_translator
             self._load_existing_glossary()
 
+            clean_style_guide = ""
+            rec_temp = 0.3
+            glossary_md = ""
+            terms_data = []
+
             # 步骤1: 风格分析
-            if self._is_cancelled: return
-            self.progress.emit(_("Analyzing style and tone..."))
-            raw_style_guide = self._analyze_style(translator)
-            clean_style_guide, rec_temp = self._parse_and_strip_temperature(raw_style_guide)
+            if self.do_style_analysis:
+                if self._is_cancelled: return
+                self.progress.emit(_("Analyzing style and tone..."))
+                raw_style_guide = self._analyze_style(translator)
+                clean_style_guide, rec_temp = self._parse_and_strip_temperature(raw_style_guide)
 
             # 步骤2: 术语提取
-            if self._is_cancelled: return
-            self.progress.emit(_("Extracting key terminology..."))
+            if self.do_term_extraction:
+                if self._is_cancelled: return
+                self.progress.emit(_("Extracting key terminology..."))
 
-            terms_data = self._extract_terms(translator)
-            logger.debug(f"[SmartTrans] Total terms extracted: {len(terms_data)}")
+                terms_data = self._extract_terms(translator)
+                logger.debug(f"[SmartTrans] Total terms extracted: {len(terms_data)}")
 
-            # 混合模式增强：如果是 Deep 模式且开启了上下文，追加原文例句
-            if self.term_mode == "deep" and self.use_context:
-                self.progress.emit(_("Augmenting AI explanations with source snippets..."))
-                total_c = len(terms_data)
-                for i, item in enumerate(terms_data):
-                    if self._is_cancelled: return
-                    # 查找原文例句
-                    snippet = SmartTranslationService.find_context_snippets(item['term'], self.all_items)
-                    if snippet:
-                        # 组合 AI 解释和原文例句
-                        ai_explanation = item.get('context', '')
-                        if ai_explanation:
-                            item['context'] = f"<b>[AI]:</b> {ai_explanation}<br><b>[Ref]:</b> {snippet}"
-                        else:
-                            item['context'] = snippet
+                # 混合模式增强：如果是 Deep 模式且开启了上下文，追加原文例句
+                if self.term_mode == "deep" and self.use_context:
+                    self.progress.emit(_("Augmenting AI explanations with source snippets..."))
+                    total_c = len(terms_data)
+                    for i, item in enumerate(terms_data):
+                        if self._is_cancelled: return
+                        # 查找原文例句
+                        snippet = SmartTranslationService.find_context_snippets(item['term'], self.all_items)
+                        if snippet:
+                            # 组合 AI 解释和原文例句
+                            ai_explanation = item.get('context', '')
+                            if ai_explanation:
+                                item['context'] = f"<b>[AI]:</b> {ai_explanation}<br><b>[Ref]:</b> {snippet}"
+                            else:
+                                item['context'] = snippet
 
             # 步骤3: 术语翻译
             if self._is_cancelled: return
@@ -147,7 +157,7 @@ class AnalysisWorker(QObject):
                 glossary_md = self._translate_terms(translator, terms_data, style_guide=clean_style_guide)
 
             elif self.term_mode == "deep":
-                self.progress.emit(f"Translating {len(terms_data)} unique terms...")
+                self.progress.emit(_("Translating {count} unique terms...").format(count=len(terms_data)))
                 glossary_md = self._translate_terms(translator, terms_data, style_guide=clean_style_guide)
 
             self.finished.emit(clean_style_guide, glossary_md, rec_temp, terms_data)
@@ -324,7 +334,8 @@ class AnalysisWorker(QObject):
                                             all_terms_dict[existing_key]['context'] = item['context']
 
                             completed_batches += 1
-                            self.progress.emit(f"Deep Scan: Batch {completed_batches}/{total_batches}...")
+                            self.progress.emit(
+                                _("Deep Scan: Batch {c}/{t}...").format(c=completed_batches, t=total_batches))
                     except Exception as e:
                         logger.error(f"Error processing batch result: {e}")
 
@@ -616,13 +627,18 @@ class SmartTranslationDialog(QDialog):
         analysis_layout = QVBoxLayout(analysis_box)
         analysis_layout.setContentsMargins(10, 15, 10, 10)
 
-        # Master Switch
-        self.chk_analyze = QCheckBox(_("Auto-analyze Style & Terminology"))
-        self.chk_analyze.setChecked(True)
-        self.chk_analyze.setStyleSheet("font-weight: bold;")
-        analysis_layout.addWidget(self.chk_analyze)
+        # Analyze Style
+        self.chk_analyze_style = QCheckBox(_("Analyze Style"))
+        self.chk_analyze_style.setChecked(True)
+        self.chk_analyze_style.setToolTip(_("Generate a style guide based on the source text."))
+        analysis_layout.addWidget(self.chk_analyze_style)
 
-        # Sub-options Container
+        self.chk_extract_terms = QCheckBox(_("Extract Terminology"))
+        self.chk_extract_terms.setChecked(True)
+        self.chk_extract_terms.setToolTip(_("Extract and translate key terms from the text."))
+        analysis_layout.addWidget(self.chk_extract_terms)
+
+        # Sub-options Container (Term extraction options)
         analysis_options_widget = QWidget()
         analysis_options_layout = QVBoxLayout(analysis_options_widget)
         analysis_options_layout.setContentsMargins(20, 0, 0, 0)  # Indent
@@ -662,7 +678,7 @@ class SmartTranslationDialog(QDialog):
         strat_layout.addWidget(analysis_box)
 
         # Logic: Disable sub-options if analysis is unchecked
-        self.chk_analyze.toggled.connect(analysis_options_widget.setEnabled)
+        self.chk_extract_terms.toggled.connect(analysis_options_widget.setEnabled)
 
         return strat_group
 
@@ -898,7 +914,7 @@ class SmartTranslationDialog(QDialog):
                                 f"<b style='color:#4CAF50;'>{_('Context / Usage')}:</b><br>"
                                 f"<div style='margin-top:4px; color:#DDD;'>{highlighted_context}</div>"
                             )
-                            self.tooltip.show_tooltip(event.globalPos(), html)
+                            self.tooltip.show_tooltip(event.globalPos(), html, delay=0)
                         else:
                             self.tooltip.hide()
                 else:
@@ -1088,8 +1104,10 @@ class SmartTranslationDialog(QDialog):
             self.target_items, 100
         )
 
-        # 3. 如果不需要分析，直接跳到预览页
-        if not self.chk_analyze.isChecked():
+        # 3. 如果都不需要分析，直接跳到预览页
+        analyze_style = self.chk_analyze_style.isChecked()
+        extract_terms = self.chk_extract_terms.isChecked()
+        if not analyze_style and not extract_terms:
             self.stack.setCurrentIndex(1)
             return
 
@@ -1237,6 +1255,11 @@ class SmartTranslationDialog(QDialog):
             except RuntimeError:
                 self.analysis_thread = None
 
+        analyze_style = self.chk_analyze_style.isChecked()
+        extract_terms = self.chk_extract_terms.isChecked()
+        if not analyze_style and not extract_terms:
+            self.stack.setCurrentIndex(1)
+            return
 
         self.stack.setCurrentIndex(2)
         self.lbl_status.setText(_("Phase 1/2: Analyzing Content..."))
@@ -1257,7 +1280,9 @@ class SmartTranslationDialog(QDialog):
             use_context=self.chk_term_context.isChecked(),
             batch_size=self.batch_size_spinbox.value(),
             orphan_ratio=self.orphan_ratio_spinbox.value(),
-           inject_glossary=self.chk_inject_glossary.isChecked()
+            inject_glossary=self.chk_inject_glossary.isChecked(),
+            do_style_analysis=analyze_style,
+            do_term_extraction=extract_terms
         )
         self.analysis_worker.moveToThread(self.analysis_thread)
 

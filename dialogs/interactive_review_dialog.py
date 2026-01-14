@@ -321,7 +321,7 @@ class InteractiveReviewDialog(QDialog):
         QShortcut(QKeySequence(Qt.Key_Enter), self, self.accept_current)
 
     def _update_buffer_indicator(self, buffer_size):
-        self.buffer_indicator.setText(f"Buffer: {buffer_size}")
+        self.buffer_indicator.setText(_("Buffer: {size}").format(size=buffer_size))
 
     def load_current_item(self):
         """加载当前项目"""
