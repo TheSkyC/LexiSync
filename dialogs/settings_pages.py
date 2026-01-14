@@ -788,7 +788,7 @@ class ValidationSettingsPage(BaseSettingsPage):
         groups = {
             _("Code Safety"): ["printf", "python_brace", "html_tags", "url_email", "accelerator"],
             _("Content Consistency"): ["numbers", "glossary", "fuzzy", "repeated_word"],
-            _("Formatting & Punctuation"): ["punctuation", "brackets", "whitespace", "double_space", "capitalization", "newline_count", "quotes"]
+            _("Formatting & Punctuation"): ["punctuation", "brackets", "whitespace", "double_space", "capitalization", "newline_count", "quotes", "pangu"]
         }
 
         for group_name, keys in groups.items():

@@ -85,6 +85,12 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
                 base_text = base_text[:-1]
 
             return base_text + expected_punct
+    # 6. 盘古之白修复
+    if warning_type == WarningType.PANGU_SPACING:
+        from services.validation_helpers import RE_CJK, RE_LATIN
+        new_text = re.sub(f'({RE_CJK})({RE_LATIN})', r'\1 \2', current_translation)
+        new_text = re.sub(f'({RE_LATIN})({RE_CJK})', r'\1 \2', new_text)
+        return new_text
 
     return None
 
@@ -100,6 +106,7 @@ def apply_all_fixes(ts_obj, target_lang):
         WarningType.LEADING_WHITESPACE_MISMATCH,
         WarningType.TRAILING_WHITESPACE_MISMATCH,
         WarningType.DOUBLE_SPACE,
+        WarningType.PANGU_SPACING,
         WarningType.PUNCTUATION_MISMATCH_END,
         WarningType.CAPITALIZATION_MISMATCH
     ]

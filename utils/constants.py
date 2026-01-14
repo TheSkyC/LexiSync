@@ -76,14 +76,15 @@ DEFAULT_VALIDATION_RULES = {
                 "name": _("Strict"),
                 "description": _("Single and double quotes must match their types exactly.")
             },
-            "flexible": {
-                "name": _("Flexible"),
+            "loose": {
+                "name": _("loose"),
                 "description": _("Allows converting single quotes to double quotes (e.g., '...' -> “...”) and vice versa.")
             }
         },
-        "default_mode": "flexible"
+        "default_mode": "loose"
     },
     "accelerator": {"enabled": True, "level": "error", "label": _("Accelerator Mismatch")},
+    "pangu": {"enabled": False, "level": "info", "label": _("Pangu Spacing")},
 }
 
 DEFAULT_CORRECTION_PROMPT_STRUCTURE = [

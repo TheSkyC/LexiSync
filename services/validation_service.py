@@ -122,6 +122,8 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
                     _report(ts_obj, config, "glossary", WarningType.GLOSSARY_MISMATCH, msg)
 
     # --- 3. 格式与标点 ---
+    if err := validation_helpers.check_pangu_spacing(translation):
+        _report(ts_obj, config, "pangu", WarningType.PANGU_SPACING, err)
     if err := validation_helpers.check_brackets(original_clean, translation_clean):
         _report(ts_obj, config, "brackets", WarningType.BRACKET_MISMATCH, err)
 

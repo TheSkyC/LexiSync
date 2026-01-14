@@ -25,6 +25,7 @@ class WarningType(Enum):
     PUNCTUATION_MISMATCH_END = auto()  # 结尾标点不匹配
     BRACKET_MISMATCH = auto()  # 括号不成对
     QUOTE_MISMATCH = auto() # 引号不成对
+    PANGU_SPACING = auto()
     ACCELERATOR_MISMATCH = auto() #加速键不匹配
 
     # --- 长度相关 ---
@@ -72,6 +73,8 @@ class WarningType(Enum):
             return _("Translated an Empty Original")
         if self == WarningType.FUZZY_TRANSLATION:
             return _("Fuzzy Translation")
+        if self == WarningType.PANGU_SPACING:
+            return _("Pangu Spacing")
         return self.name.replace('_', ' ').title()
 
 class AIOperationType(Enum):
