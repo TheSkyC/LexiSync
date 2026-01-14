@@ -226,9 +226,6 @@ class LexiSyncApp(QMainWindow):
         self.show_translated_var = self.config.get("show_translated", False)
         self.show_unreviewed_var = self.config.get("show_unreviewed", False)
 
-        self.search_term_var = self.config.get("ui_state", {}).get("search_term", "")
-
-
         self.auto_save_tm_var = self.config.get("auto_save_tm", False)
         self.auto_backup_tm_on_save_var = self.config.get("auto_backup_tm_on_save", True)
         self.auto_compile_mo_var = self.config.get("auto_compile_mo_on_save", True)
@@ -1095,7 +1092,6 @@ class LexiSyncApp(QMainWindow):
 
         self.search_entry = QLineEdit()
         self.search_entry.setPlaceholderText(_("Quick search..."))
-        self.search_entry.setText(self.search_term_var)
         self.search_entry.textChanged.connect(self.search_filter_changed)
         self.search_entry.returnPressed.connect(self.find_string_from_toolbar)
         self.search_entry.setFixedWidth(200)
@@ -1884,12 +1880,6 @@ class LexiSyncApp(QMainWindow):
         self.config["auto_backup_tm_on_save"] = self.auto_backup_tm_on_save_var
         self.config["auto_compile_mo_on_save"] = self.auto_compile_mo_var
         self.config["auto_save_interval_sec"] = self.auto_save_interval_sec
-        current_search_text = self.search_entry.text()
-        if current_search_text == _("Quick search..."):
-            self.config["ui_state"]["search_term"] = ""
-        else:
-            self.config["ui_state"]["search_term"] = current_search_text
-        self.config["ui_state"]["selected_ts_id"] = self.current_selected_ts_id or ""
 
         config_manager.save_config(self)
 
