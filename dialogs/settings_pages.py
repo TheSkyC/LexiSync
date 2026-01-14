@@ -246,11 +246,8 @@ class GeneralSettingsPage(BaseSettingsPage):
         # On Save Options Group
         on_save_group = QGroupBox(_("On File Save"))
         on_save_layout = QVBoxLayout(on_save_group)
-        self.backup_tm_checkbox = QCheckBox(_("Auto-backup Translation Memory"))
-        self.backup_tm_checkbox.setChecked(self.app.config.get('auto_backup_tm_on_save', True))
         self.compile_mo_checkbox = QCheckBox(_("Auto-compile .mo file when save .po file"))
         self.compile_mo_checkbox.setChecked(self.app.config.get('auto_compile_mo_on_save', True))
-        on_save_layout.addWidget(self.backup_tm_checkbox)
         on_save_layout.addWidget(self.compile_mo_checkbox)
         content_layout.addWidget(on_save_group)
 
@@ -315,8 +312,6 @@ class GeneralSettingsPage(BaseSettingsPage):
         self.app.config['auto_save_interval_sec'] = self.app.auto_save_interval_sec
         self.app.setup_auto_save_timer()
         self.app.config['load_all_files_on_project_open'] = self.load_all_files_checkbox.isChecked()
-        self.app.auto_backup_tm_on_save_var = self.backup_tm_checkbox.isChecked()
-        self.app.config['auto_backup_tm_on_save'] = self.app.auto_backup_tm_on_save_var
 
         self.app.auto_compile_mo_var = self.compile_mo_checkbox.isChecked()
         self.app.config['auto_compile_mo_on_save'] = self.app.auto_compile_mo_var

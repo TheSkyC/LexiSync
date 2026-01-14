@@ -226,8 +226,6 @@ class LexiSyncApp(QMainWindow):
         self.show_translated_var = self.config.get("show_translated", False)
         self.show_unreviewed_var = self.config.get("show_unreviewed", False)
 
-        self.auto_save_tm_var = self.config.get("auto_save_tm", False)
-        self.auto_backup_tm_on_save_var = self.config.get("auto_backup_tm_on_save", True)
         self.auto_compile_mo_var = self.config.get("auto_compile_mo_on_save", True)
         self.auto_save_interval_sec = self.config.get("auto_save_interval_sec", 0)
         self.auto_save_timer = QTimer(self)
@@ -1896,8 +1894,6 @@ class LexiSyncApp(QMainWindow):
         self.config["show_untranslated"] = self.untranslated_checkbox.isChecked()
         self.config["show_translated"] = self.translated_checkbox.isChecked()
         self.config["show_unreviewed"] = self.unreviewed_checkbox.isChecked()
-        self.config["auto_save_tm"] = self.auto_save_tm_var
-        self.config["auto_backup_tm_on_save"] = self.auto_backup_tm_on_save_var
         self.config["auto_compile_mo_on_save"] = self.auto_compile_mo_var
         self.config["auto_save_interval_sec"] = self.auto_save_interval_sec
 
