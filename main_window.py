@@ -970,6 +970,7 @@ class LexiSyncApp(QMainWindow):
         current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
         self.proxy_model.invalidate()
         self.proxy_model.sort(current_sort_column, current_sort_order)
+        self.update_warning_markers()
         self.update_statusbar(_("View refreshed."))
 
     def detect_language_from_data(self, text_type: str) -> str | None:
@@ -2911,6 +2912,7 @@ class LexiSyncApp(QMainWindow):
         current_order = self.table_view.horizontalHeader().sortIndicatorOrder()
         self.table_view.sortByColumn(logical_index, current_order)
         self.update_counts_display()
+        self.update_warning_markers()
         if self.marker_bar:
             QTimer.singleShot(0, self.marker_bar.update)
 
@@ -4798,6 +4800,8 @@ class LexiSyncApp(QMainWindow):
             current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
             current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
             self.proxy_model.sort(current_sort_column, current_sort_order)
+            self.update_warning_markers()
+
         self.update_counts_display()
 
     def import_po_file_dialog(self):
