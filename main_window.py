@@ -5711,11 +5711,11 @@ class LexiSyncApp(QMainWindow):
             words = set(re.findall(r'\b\w+\b', source_text.lower()))
             if not words: return []
 
-            source_lang = self.app.source_language
-            target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+            source_lang = self.source_language
+            target_lang = self.current_target_language if self.is_project_mode else self.target_language
 
             # 批量查询
-            results = self.app.glossary_service.get_translations_batch(
+            results = self.glossary_service.get_translations_batch(
                 list(words), source_lang, target_lang, include_reverse=False
             )
 
