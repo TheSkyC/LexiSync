@@ -159,7 +159,19 @@ class RecentFileWidget(QWidget):
             total = metadata.get("progress_total", 0)
             current = metadata.get("progress_current", 0)
             if total > 0:
-                percent = int((current / total) * 100)
+                if current == 0:
+                    percent = 0
+                elif current == total:
+                    percent = 100
+                else:
+                    percent = int((current / total) * 100)
+                    # Constraint: If started, at least 1%
+                    if percent == 0:
+                        percent = 1
+                    # Constraint: If not finished, at most 99%
+                    elif percent == 100:
+                        percent = 99
+
                 bg_col, txt_col = get_progress_color(percent)
                 top_row.addWidget(BadgeLabel(f"{percent}%", color=bg_col, text_color=txt_col))
 
