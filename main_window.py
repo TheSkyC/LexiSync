@@ -694,7 +694,7 @@ class LexiSyncApp(QMainWindow):
             self.plugin_menu.setTitle(_("&Plugins"))
         self.help_menu.setTitle(_("&Help"))
 
-        #File Menu
+        # File Menu
         self.action_open_code_file.setText(_("Open..."))
         self.action_new_project.setText(_("New Project..."))
         self.action_open_project.setText(_("Open Project..."))
@@ -719,14 +719,14 @@ class LexiSyncApp(QMainWindow):
         self.recent_files_menu.setTitle(_("Recent Files"))
         self.action_exit.setText(_("Exit"))
 
-        #Edit Menu
+        # Edit Menu
         self.action_undo.setText(_("Undo"))
         self.action_redo.setText(_("Redo"))
         self.action_find_replace.setText(_("Find/Replace..."))
         self.action_copy_original.setText(_("Copy Original"))
         self.action_paste_translation.setText(_("Paste to Translation"))
 
-        #View Menu
+        # View Menu
 
         self.action_show_ignored.setText(_("Show Ignored"))
         self.action_show_untranslated.setText(_("Show Untranslated"))
@@ -740,24 +740,43 @@ class LexiSyncApp(QMainWindow):
         self.action_toggle_tm_panel.setText(_("Translation Memory Panel"))
         self.action_restore_layout.setText(_("Restore Default Layout"))
 
-        #Tools Menu
-        self.action_apply_tm_to_untranslated.setText(_("Apply TM to Untranslated"))
+        # Tools Menu
+        self.ai_menu.setTitle(_("AI Translation"))
+        self.qa_menu.setTitle(_("Quality Assurance"))
+        self.data_menu.setTitle(_("Data && Resources"))
+
+        # AI Menu Actions
+        if hasattr(self, 'action_smart_batch_translate'):
+            self.action_smart_batch_translate.setText(_("Intelligent Translation..."))
         self.action_ai_translate_selected.setText(_("AI Translate Selected"))
         self.action_ai_translate_all_untranslated.setText(_("AI Translate All Untranslated"))
         self.action_stop_ai_batch_translation.setText(_("Stop AI Batch Translation"))
+        self.action_ai_model_manager.setText(_("AI Model Manager..."))
+
+        # QA Menu Actions
+        self.fix_all_menu.setTitle(_("Fix All Issues"))
+        self.action_smart_fix_all.setText(_("Smart Fix"))
+        self.action_rule_fix_all.setText(_("Fix with Rules"))
+        self.action_ai_fix_all.setText(_("Fix with AI"))
+
         self.action_run_validation_on_all.setText(_("Re-validate All Entries"))
-        self.action_reload_translatable_text.setText(_("Reload Translatable Text"))
         self.action_show_statistics.setText(_("Project Statistics..."))
 
-        #Settings Menu
+        # Data Menu Actions
+        self.action_apply_tm_to_untranslated.setText(_("Apply TM to Untranslated"))
+        self.action_save_all_to_tm.setText(_("Save All Translations to TM..."))  # [ADD]
+        self.action_resource_viewer.setText(_("Resource Viewer..."))  # [ADD]
+        self.action_reload_translatable_text.setText(_("Reload Translatable Text"))
+
+        # Settings Menu
         self.action_show_settings.setText(_("Settings..."))
         self.action_show_project_settings.setText(_("Project Settings..."))
         self.action_language_pair_settings.setText(_("Language Pair Settings..."))
 
-        #Help Menu
+        # Help Menu
         self.action_about.setText(_("About"))
 
-        #Toolbars
+        # Toolbars
         self.project_toolbar.setWindowTitle(_("Project"))
         self.target_lang_label.setText(_("Target Language:"))
 
