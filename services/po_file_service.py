@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None):
+def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None):
     # [CRITICAL ARCHITECTURE NOTE]
     # We MUST force the 'occurrences' to point to the PO file itself (e.g., 'source/zh.po'),
     # ignoring the actual occurrences listed inside the PO entry (e.g., '#: main.py:123').
@@ -199,7 +199,7 @@ def load_from_po(filepath):
             except Exception as e:
                 logger.warning(f"Warning: Could not load context file for entry '{entry.msgid[:20]}...': {e}")
 
-        ts = _po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines)
+        ts = po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines)
 
         translatable_objects.append(ts)
 

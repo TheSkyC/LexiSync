@@ -955,7 +955,8 @@ class LexiSyncApp(QMainWindow):
 
             self.ACTION_MAP_FOR_DIALOG[name] = action
 
-    def _get_global_tm_path(self):
+    @staticmethod
+    def _get_global_tm_path():
         app_data_dir = get_app_data_path()
         tm_dir = os.path.join(app_data_dir, "tm")
         os.makedirs(tm_dir, exist_ok=True)
@@ -6488,11 +6489,12 @@ class LexiSyncApp(QMainWindow):
                 pot_file = polib.pofile(new_filepath, encoding='utf-8')
                 old_strings_map = {s.original_semantic: s for s in self.translatable_objects}
                 used_old_strings_for_fuzzy_match = set()
+                pot_filename = os.path.basename(new_filepath)
 
                 for entry in pot_file:
                     if entry.obsolete:
                         continue
-                    new_obj = po_file_service._po_entry_to_translatable_string(entry)
+                    new_obj = po_file_service.po_entry_to_translatable_string(entry, pot_filename)
                     if new_obj.original_semantic in old_strings_map:
                         # 精确匹配
                         old_obj = old_strings_map[new_obj.original_semantic]
