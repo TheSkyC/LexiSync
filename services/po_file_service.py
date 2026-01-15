@@ -27,11 +27,22 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
     #
     # The original occurrences are preserved in 'po_comment' for reference, but for
     # internal logic, the "source" of this string is the PO file.
-    line_num = entry.linenum
+    po_line_num = entry.linenum
+    source_line_num = 0
+    if entry.occurrences:
+        try:
+            ref_lineno = entry.occurrences[0][1]
+            if ref_lineno:
+                source_line_num = int(ref_lineno)
+        except (ValueError, IndexError, TypeError):
+            pass
+    context_slice_line_num = source_line_num if source_line_num > 0 else po_line_num
+
     msgctxt = entry.msgctxt or ""
     msgid = entry.msgid
     msgstr = entry.msgstr or ""
-    occurrences = [(po_file_rel_path, str(line_num))]
+
+    occurrences = [(po_file_rel_path, str(po_line_num))]
 
     # 生成 UUID
     stable_name_for_uuid = f"{po_file_rel_path}::{msgctxt}::{msgid}"
@@ -39,7 +50,7 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
     ts = TranslatableString(
         original_raw=msgid,
         original_semantic=msgid,
-        line_num=line_num,
+        line_num=context_slice_line_num,
         char_pos_start_in_file=0,
         char_pos_end_in_file=0,
         full_code_lines=full_code_lines or [],
@@ -88,7 +99,6 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
     flags = getattr(entry, 'flags', [])
     if flags:
         po_meta_comment_lines.append(f"#, {', '.join(flags)}")
-        # 优化：在这里检查 fuzzy，避免后面再次检查
         if 'fuzzy' in flags:
             ts.is_fuzzy = True
 
