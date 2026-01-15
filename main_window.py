@@ -3000,7 +3000,7 @@ class LexiSyncApp(QMainWindow):
         is_fuzzy = first_obj.is_fuzzy
         text_fuzzy = _("Unmark as Fuzzy") if is_fuzzy else _("Mark as Fuzzy")
         act_fuzzy = QAction(text_fuzzy, self)
-        act_fuzzy.triggered.connect(lambda: self.on_fuzzy_toggled(not is_fuzzy))
+        act_fuzzy.triggered.connect(lambda: self.cm_set_fuzzy_status(not is_fuzzy))
         mark_menu.addAction(act_fuzzy)
 
         # Warnings
@@ -4165,14 +4165,14 @@ class LexiSyncApp(QMainWindow):
             return
 
         from services.validation_service import validate_string
+
+        # Batch marker updates
+        markers_to_add = {'error': [], 'warning': [], 'info': []}
+        markers_to_remove = {'error': [], 'warning': [], 'info': []}
+
         for ts_id in changed_ids:
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if ts_obj:
-                # 1. 记录旧状态
-                had_error = bool(ts_obj.warnings and not ts_obj.is_warning_ignored)
-                had_warning = bool(ts_obj.minor_warnings and not ts_obj.is_warning_ignored)
-                had_info = bool(ts_obj.infos and not ts_obj.is_warning_ignored)
-
                 # 2. 重新验证
                 validate_string(ts_obj, self.config, self)
                 ts_obj.update_style_cache()
@@ -4182,29 +4182,19 @@ class LexiSyncApp(QMainWindow):
                 has_warning = bool(ts_obj.minor_warnings and not ts_obj.is_warning_ignored)
                 has_info = bool(ts_obj.infos and not ts_obj.is_warning_ignored)
 
-                # 4. 更新 MarkerBar
+                # 4. 收集 Marker 变更
                 if self.marker_bar:
                     source_index = self.sheet_model.index_from_id(ts_obj.id)
                     if source_index.isValid():
                         source_row = source_index.row()
 
-                        # Error 处理
-                        if has_error and not had_error:
-                            self.marker_bar.add_marker('error', source_row)
-                        elif not has_error and had_error:
-                            self.marker_bar.remove_marker('error', source_row)
+                        markers_to_remove['error'].append(source_row)
+                        markers_to_remove['warning'].append(source_row)
+                        markers_to_remove['info'].append(source_row)
 
-                        # Warning 处理
-                        if has_warning and not had_warning:
-                            self.marker_bar.add_marker('warning', source_row)
-                        elif not has_warning and had_warning:
-                            self.marker_bar.remove_marker('warning', source_row)
-
-                        # Info 处理
-                        if has_info and not had_info:
-                            self.marker_bar.add_marker('info', source_row)
-                        elif not has_info and had_info:
-                            self.marker_bar.remove_marker('info', source_row)
+                        if has_error: markers_to_add['error'].append(source_row)
+                        if has_warning: markers_to_add['warning'].append(source_row)
+                        if has_info: markers_to_add['info'].append(source_row)
 
                 # 更新表格视图
                 source_index = self.sheet_model.index_from_id(ts_obj.id)
@@ -4213,7 +4203,16 @@ class LexiSyncApp(QMainWindow):
                     last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
                     self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
 
+        # 5. 批量应用 Marker 变更
+        if self.marker_bar:
+            for m_type, rows in markers_to_remove.items():
+                for r in rows: self.marker_bar.remove_marker(m_type, r)
+
+            for m_type, rows in markers_to_add.items():
+                for r in rows: self.marker_bar.add_marker(m_type, r)
+
         self.update_counts_display()
+
 
     def force_full_refresh(self, id_to_reselect=None):
         self.sheet_model.set_translatable_objects(self.translatable_objects)
@@ -5891,6 +5890,48 @@ class LexiSyncApp(QMainWindow):
 
             self._update_view_for_ids(changed_ids)
 
+    def cm_set_fuzzy_status(self, fuzzy_flag):
+        selected_objs = self._get_selected_ts_objects_from_sheet()
+        if not selected_objs: return
+
+        bulk_changes = []
+        changed_ids = set()
+
+        for ts_obj in selected_objs:
+            if ts_obj.is_fuzzy != fuzzy_flag:
+                old_val = ts_obj.is_fuzzy
+                ts_obj.is_fuzzy = fuzzy_flag
+
+                # If marking as fuzzy, usually unmark reviewed
+                if fuzzy_flag and ts_obj.is_reviewed:
+                    bulk_changes.append({
+                        'string_id': ts_obj.id, 'field': 'is_reviewed',
+                        'old_value': True, 'new_value': False
+                    })
+                    ts_obj.is_reviewed = False
+
+                ts_obj.update_style_cache()
+                bulk_changes.append({
+                    'string_id': ts_obj.id, 'field': 'is_fuzzy',
+                    'old_value': old_val, 'new_value': fuzzy_flag
+                })
+                changed_ids.add(ts_obj.id)
+
+        if bulk_changes:
+            self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
+            self.mark_project_modified()
+
+            action_text = _("marked as fuzzy") if fuzzy_flag else _("unmarked as fuzzy")
+            self.update_statusbar(_("{count} items {action}.").format(count=len(changed_ids), action=action_text))
+
+            self._update_view_for_ids(changed_ids)
+
+            # Update details panel if current item changed
+            if self.current_selected_ts_id in changed_ids:
+                ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+                if ts_obj:
+                    self.details_panel.update_fuzzy_status(ts_obj.is_fuzzy)
+                    self.details_panel.update_warnings(ts_obj)
 
     def ai_translate_selected_from_menu(self):
         self.cm_ai_translate_selected()

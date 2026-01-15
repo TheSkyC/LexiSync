@@ -209,7 +209,7 @@ class TranslatableString:
 
         has_fuzzy_in_minor_warnings = any(wt == WarningType.FUZZY_TRANSLATION for wt, _ in self.minor_warnings)
 
-        should_have_fuzzy_warning = self.is_fuzzy and self.translation.strip()
+        should_have_fuzzy_warning = self.is_fuzzy and self.translation.strip() and not self.is_ignored
 
         if should_have_fuzzy_warning and not has_fuzzy_in_minor_warnings:
             self.minor_warnings.append(fuzzy_warning_tuple)
