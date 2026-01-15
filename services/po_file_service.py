@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None):
+def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None, occurrence_index=0):
     # [CRITICAL ARCHITECTURE NOTE]
     # We MUST force the 'occurrences' to point to the PO file itself (e.g., 'source/zh.po'),
     # ignoring the actual occurrences listed inside the PO entry (e.g., '#: main.py:123').
@@ -32,10 +32,11 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
     if entry.occurrences:
         try:
             ref_lineno = entry.occurrences[0][1]
-            if ref_lineno:
+            if ref_lineno and str(ref_lineno).strip():
                 source_line_num = int(ref_lineno)
         except (ValueError, IndexError, TypeError):
             pass
+
     context_slice_line_num = source_line_num if source_line_num > 0 else po_line_num
 
     msgctxt = entry.msgctxt or ""
@@ -45,7 +46,8 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
     occurrences = [(po_file_rel_path, str(po_line_num))]
 
     # 生成 UUID
-    stable_name_for_uuid = f"{po_file_rel_path}::{msgctxt}::{msgid}"
+    context_key = msgctxt if msgctxt else 'NO_CTX'
+    stable_name_for_uuid = f"{po_file_rel_path}::{context_key}::{msgid}::{occurrence_index}"
 
     ts = TranslatableString(
         original_raw=msgid,
@@ -57,7 +59,7 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
         string_type="PO Import",
         source_file_path=po_file_rel_path,
         occurrences=occurrences,
-        occurrence_index=0
+        occurrence_index=occurrence_index
     )
 
     ts.id = str(uuid.uuid5(APP_NAMESPACE_UUID, stable_name_for_uuid))
@@ -71,7 +73,6 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
 
     # 1. 处理提取注释 (Extracted Comments, #.)
     if entry.tcomment:
-        # 优化：避免重复 splitlines，直接在迭代中处理
         for line in entry.tcomment.splitlines():
             po_meta_comment_lines.append(f"#. {line}")
 
@@ -79,9 +80,9 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
     if entry.comment:
         for line in entry.comment.splitlines():
             stripped = line.strip()
-            # 识别 LexiSync 的特殊标记
+            # 识别 LexiSync 的标记
             if stripped.startswith('LexiSync:'):
-                lower_stripped = stripped.lower()  # 只转换一次
+                lower_stripped = stripped.lower()
                 if 'reviewed' in lower_stripped:
                     ts.is_reviewed = True
                 if 'ignored' in lower_stripped:
@@ -156,6 +157,8 @@ def load_from_po(filepath):
     file_content_cache = {}
     path_exists_cache = {}
 
+    occurrence_counters = {}
+
     def cached_is_file(path_str):
         if path_str not in path_exists_cache:
             path_exists_cache[path_str] = os.path.isfile(path_str)
@@ -169,11 +172,14 @@ def load_from_po(filepath):
             po_file_rel_path = os.path.basename(filepath)
     else:
         po_file_rel_path = os.path.basename(filepath)
-    logger.debug(f"[load_from_po] Determined relative path for this PO file: {po_file_rel_path}")
 
     for entry in po_file:
         if entry.obsolete or (entry.msgid == "" and not translatable_objects):
             continue
+
+        key = (entry.msgid, entry.msgctxt or "")
+        current_index = occurrence_counters.get(key, 0)
+        occurrence_counters[key] = current_index + 1
 
         full_code_lines = []
         if entry.occurrences:
@@ -209,8 +215,8 @@ def load_from_po(filepath):
             except Exception as e:
                 logger.warning(f"Warning: Could not load context file for entry '{entry.msgid[:20]}...': {e}")
 
-        ts = po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines)
-
+        ts = po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines,
+                                             occurrence_index=current_index)
         translatable_objects.append(ts)
 
     po_lang = po_file.metadata.get('Language', None)
