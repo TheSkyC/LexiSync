@@ -27,6 +27,8 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
     #
     # The original occurrences are preserved in 'po_comment' for reference, but for
     # internal logic, the "source" of this string is the PO file.
+    if getattr(entry, 'obsolete', False):
+        return None
     po_line_num = entry.linenum
     source_line_num = 0
     if entry.occurrences:
@@ -104,9 +106,14 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
             ts.is_fuzzy = True
 
     # 5. 处理旧翻译 (Previous, #|)
-    previous_msgid = getattr(entry, 'previous_msgid', None)
-    if previous_msgid:
-        po_meta_comment_lines.append(f'#| msgid "{previous_msgid}"')
+    if hasattr(entry, 'previous_msgctxt') and entry.previous_msgctxt:
+        po_meta_comment_lines.append(f'#| msgctxt "{entry.previous_msgctxt}"')
+
+    if hasattr(entry, 'previous_msgid') and entry.previous_msgid:
+        po_meta_comment_lines.append(f'#| msgid "{entry.previous_msgid}"')
+
+    if hasattr(entry, 'previous_msgid_plural') and entry.previous_msgid_plural:
+        po_meta_comment_lines.append(f'#| msgid_plural "{entry.previous_msgid_plural}"')
 
     ts.comment = "\n".join(user_comment_lines) if user_comment_lines else ""
     ts.po_comment = "\n".join(po_meta_comment_lines) if po_meta_comment_lines else ""
@@ -215,9 +222,9 @@ def load_from_po(filepath):
             except Exception as e:
                 logger.warning(f"Warning: Could not load context file for entry '{entry.msgid[:20]}...': {e}")
 
-        ts = po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines,
-                                             occurrence_index=current_index)
-        translatable_objects.append(ts)
+        ts = po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines, occurrence_index=current_index)
+        if ts:
+            translatable_objects.append(ts)
 
     po_lang = po_file.metadata.get('Language', None)
     logger.debug(f"[load_from_po] Finished loading. Found {len(translatable_objects)} entries.")
