@@ -7,24 +7,22 @@ from PySide6.QtCore import Qt, Signal, QEvent, QTimer
 from PySide6.QtGui import QKeySequence, QAction
 from utils.constants import DEFAULT_KEYBINDINGS
 from utils.localization import _
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 class KeyCaptureEdit(QLineEdit):
     """
     快捷键捕获控件。
     """
-    # 请求开始录制 (发送自己)
+    # 请求开始录制
     activationRequested = Signal(object)
-    # 录制结束 (发送自己)
+    # 录制结束
     recordingFinished = Signal(object)
 
     def __init__(self, action_key, default_seq, parent=None):
         super().__init__(parent)
         self.action_key = action_key
         self.current_seq = default_seq
+        self.original_seq = default_seq  # 记录初始值
         self.setText(default_seq)
 
         self.setReadOnly(True)
@@ -36,26 +34,51 @@ class KeyCaptureEdit(QLineEdit):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         self._is_recording = False
+        self._is_pressing = False
 
+        # 普通状态（未修改）
         self.STYLE_NORMAL = """
             QLineEdit {
                 background-color: #FFFFFF;
-                border: 2px solid #DCDFE6; /* 统一边框宽度 */
+                border: 2px solid #DCDFE6;
                 border-radius: 4px;
                 color: #606266;
                 padding: 0 5px;
             }
         """
+        # 录制状态（蓝色）
         self.STYLE_RECORDING = """
             QLineEdit { 
                 background-color: #E1F5FE; 
-                border: 2px solid #03A9F4; /* 统一边框宽度 */
+                border: 2px solid #03A9F4;
                 border-radius: 4px;
                 color: #0277BD;
                 font-weight: bold;
                 padding: 0 5px;
             }
         """
+        # 按键按下状态（紫色）
+        self.STYLE_PRESSING = """
+            QLineEdit { 
+                background-color: #F3E5F5; 
+                border: 2px solid #9C27B0;
+                border-radius: 4px;
+                color: #6A1B9A;
+                font-weight: bold;
+                padding: 0 5px;
+            }
+        """
+        # 已修改状态（黑色边框）
+        self.STYLE_MODIFIED = """
+            QLineEdit {
+                background-color: #FFFFFF;
+                border: 2px solid #000000;
+                border-radius: 4px;
+                color: #606266;
+                padding: 0 5px;
+            }
+        """
+
         self.setStyleSheet(self.STYLE_NORMAL)
 
     def mousePressEvent(self, event):
@@ -76,13 +99,19 @@ class KeyCaptureEdit(QLineEdit):
             self.setFocus()
             self.style().unpolish(self)
             self.style().polish(self)
-            logger.info(f"[KeyBind] {self.action_key} ENTERED recording state")
         else:
-            self.setStyleSheet(self.STYLE_NORMAL)
+            self._is_pressing = False
+            self._update_style_after_recording()
             self.clearFocus()
             self.style().unpolish(self)
             self.style().polish(self)
-            logger.info(f"[KeyBind] {self.action_key} EXITED recording state")
+
+    def _update_style_after_recording(self):
+        """录制结束后更新样式"""
+        if self.current_seq != self.original_seq:
+            self.setStyleSheet(self.STYLE_MODIFIED)
+        else:
+            self.setStyleSheet(self.STYLE_NORMAL)
 
     def focusOutEvent(self, event):
         # 如果失去焦点，通知父窗口结束我的录制
@@ -99,23 +128,44 @@ class KeyCaptureEdit(QLineEdit):
 
         event.accept()
 
-        # 1. 忽略单独的修饰键
+        # 1. 忽略单独的修饰键，但实时显示
         if key in [Qt.Key_Control, Qt.Key_Shift, Qt.Key_Alt, Qt.Key_Meta]:
+            self._is_pressing = True
+            self.setStyleSheet(self.STYLE_PRESSING)
+            self.style().unpolish(self)
+            self.style().polish(self)
+
+            # 实时显示功能键
+            parts = []
+            if modifiers & Qt.ControlModifier: parts.append('Ctrl')
+            if modifiers & Qt.ShiftModifier: parts.append('Shift')
+            if modifiers & Qt.AltModifier: parts.append('Alt')
+            if modifiers & Qt.MetaModifier: parts.append('Meta')
+
+            if parts:
+                self.setText("+".join(parts) + "+")
             return
 
         # 2. ESC: 取消
         if key == Qt.Key_Escape:
+            self._is_pressing = False
             self.recordingFinished.emit(self)
             return
 
         # 3. Backspace/Delete: 清除
         if key in [Qt.Key_Backspace, Qt.Key_Delete]:
+            self._is_pressing = False
             self.current_seq = ""
             self.setText("")
             self.recordingFinished.emit(self)
             return
 
         # 4. 解析按键
+        self._is_pressing = True
+        self.setStyleSheet(self.STYLE_PRESSING)
+        self.style().unpolish(self)
+        self.style().polish(self)
+
         parts = []
         if modifiers & Qt.ControlModifier: parts.append('Ctrl')
         if modifiers & Qt.ShiftModifier: parts.append('Shift')
@@ -131,8 +181,40 @@ class KeyCaptureEdit(QLineEdit):
         self.current_seq = new_sequence
         self.setText(new_sequence)
 
-        # 完成录制
-        self.recordingFinished.emit(self)
+    def keyReleaseEvent(self, event):
+        """按键释放时完成录制"""
+        if not self._is_recording:
+            return super().keyReleaseEvent(event)
+
+        event.accept()
+
+        # 如果是修饰键释放，检查是否所有修饰键都已释放
+        if event.key() in [Qt.Key_Control, Qt.Key_Shift, Qt.Key_Alt, Qt.Key_Meta]:
+            modifiers = event.modifiers()
+            # 检查是否还有修饰键按下（注意：刚释放的键在modifiers中可能还存在）
+            if not (modifiers & (Qt.ControlModifier | Qt.ShiftModifier | Qt.AltModifier | Qt.MetaModifier)):
+                # 所有修饰键都已释放，恢复录制状态
+                if self._is_pressing:
+                    self._is_pressing = False
+                    self.setStyleSheet(self.STYLE_RECORDING)
+                    self.style().unpolish(self)
+                    self.style().polish(self)
+                    # 清除临时显示
+                    self.setText(self.current_seq)
+            return
+
+        # 普通按键释放，完成录制
+        if self._is_pressing:
+            self._is_pressing = False
+            self.recordingFinished.emit(self)
+
+    def reset_to_original(self):
+        """重置为初始值"""
+        self.current_seq = self.original_seq
+        self.setText(self.original_seq)
+        self.setStyleSheet(self.STYLE_NORMAL)
+        self.style().unpolish(self)
+        self.style().polish(self)
 
 
 class KeybindingDialog(QDialog):
@@ -233,11 +315,8 @@ class KeybindingDialog(QDialog):
         处理激活请求。
         确保同一时间只有一个 editor 处于录制状态。
         """
-        logger.info(f"[KeyBindDialog] Activation requested by: {editor.action_key}")
-
         # 如果有其他正在录制的，先强制停止它
         if self.current_active_editor and self.current_active_editor != editor:
-            logger.info(f"[KeyBindDialog] Stopping previous active: {self.current_active_editor.action_key}")
             self.current_active_editor.set_recording_state(False)
 
         # 激活新的
@@ -248,8 +327,6 @@ class KeybindingDialog(QDialog):
         """
         中央调度：处理结束请求。
         """
-        logger.info(f"[KeyBindDialog] Finished signal from: {editor.action_key}")
-
         # 只有当前激活的 editor 发出的结束信号才有效
         if self.current_active_editor == editor:
             editor.set_recording_state(False)
@@ -268,7 +345,11 @@ class KeybindingDialog(QDialog):
             for editor in self.editors:
                 default_val = DEFAULT_KEYBINDINGS.get(editor.action_key, "")
                 editor.current_seq = default_val
+                editor.original_seq = default_val
                 editor.setText(default_val)
+                editor.setStyleSheet(editor.STYLE_NORMAL)
+                editor.style().unpolish(editor)
+                editor.style().polish(editor)
 
     def accept(self):
         # 停止当前录制
