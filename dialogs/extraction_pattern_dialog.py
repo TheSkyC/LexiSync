@@ -4,7 +4,7 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QCheckBox, QTreeWidget, QTreeWidgetItem, QHeaderView, QMessageBox,
-    QFileDialog, QWidget, QTextEdit, QComboBox
+    QFileDialog, QWidget, QTextEdit, QComboBox, QSplitter, QTableWidget, QTableWidgetItem
 )
 from PySide6.QtCore import Qt, Signal
 import json
@@ -13,6 +13,80 @@ import re
 from copy import deepcopy
 from utils.constants import EXTRACTION_PATTERN_PRESET_EXTENSION, DEFAULT_EXTRACTION_PATTERNS
 from utils.localization import _
+from services.code_file_service import unescape_overwatch_string
+
+
+class ExtractionPatternTestDialog(QDialog):
+    def __init__(self, parent, left_delim, right_delim, is_multiline):
+        super().__init__(parent)
+        self.left_delim = left_delim
+        self.right_delim = right_delim
+        self.is_multiline = is_multiline
+        self.setWindowTitle(_("Extraction Rule Tester"))
+        self.resize(800, 600)
+        self.setup_ui()
+
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+
+        splitter = QSplitter(Qt.Vertical)
+
+        # Input
+        input_widget = QWidget()
+        input_layout = QVBoxLayout(input_widget)
+        input_layout.addWidget(QLabel(_("Sample Text:")))
+        self.input_edit = QTextEdit()
+        self.input_edit.setPlaceholderText(_("Paste your code content here..."))
+        input_layout.addWidget(self.input_edit)
+        splitter.addWidget(input_widget)
+
+        # Output
+        output_widget = QWidget()
+        output_layout = QVBoxLayout(output_widget)
+        output_layout.addWidget(QLabel(_("Extraction Results:")))
+        self.result_table = QTableWidget()
+        self.result_table.setColumnCount(3)
+        self.result_table.setHorizontalHeaderLabels(["#", _("Raw Match"), _("Processed Value")])
+        self.result_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.result_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.result_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        output_layout.addWidget(self.result_table)
+        splitter.addWidget(output_widget)
+
+        layout.addWidget(splitter)
+
+        btn_layout = QHBoxLayout()
+        self.btn_run = QPushButton(_("Run Test"))
+        self.btn_run.clicked.connect(self.run_test)
+        btn_layout.addStretch()
+        btn_layout.addWidget(self.btn_run)
+        layout.addLayout(btn_layout)
+
+    def run_test(self):
+        content = self.input_edit.toPlainText()
+        if not content: return
+
+        self.result_table.setRowCount(0)
+
+        try:
+            flags = re.DOTALL if self.is_multiline else 0
+            full_regex = f"({self.left_delim})(.*?)({self.right_delim})"
+            pattern = re.compile(full_regex, flags)
+
+            matches = list(pattern.finditer(content))
+            self.result_table.setRowCount(len(matches))
+
+            for i, match in enumerate(matches):
+                raw_content = match.group(2)
+                processed = unescape_overwatch_string(raw_content)
+
+                self.result_table.setItem(i, 0, QTableWidgetItem(str(i + 1)))
+                self.result_table.setItem(i, 1, QTableWidgetItem(repr(raw_content)))
+                self.result_table.setItem(i, 2, QTableWidgetItem(processed))
+
+        except re.error as e:
+            QMessageBox.critical(self, _("Regex Error"), str(e))
+
 
 class ExtractionPatternManagerDialog(QDialog):
     def __init__(self, parent, title, app_instance):
@@ -57,7 +131,8 @@ class ExtractionPatternManagerDialog(QDialog):
 
         # Tree View
         self.tree = QTreeWidget()
-        self.tree.setHeaderLabels([_("Enabled"), _("Rule Name"), _("String Type"), _("Left Delimiter (Regex)"), _("Right Delimiter (Regex)")])
+        self.tree.setHeaderLabels(
+            [_("Enabled"), _("Rule Name"), _("String Type"), _("Left Delimiter"), _("Right Delimiter")])
         self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.tree.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
@@ -113,7 +188,8 @@ class ExtractionPatternManagerDialog(QDialog):
             "enabled": True,
             "string_type": _("Custom"),
             "left_delimiter": "",
-            "right_delimiter": '"'
+            "right_delimiter": '"',
+            "multiline": True
         }
 
         dialog = ExtractionPatternItemEditor(self, _("Add Extraction Rule"), new_pattern)
@@ -150,8 +226,9 @@ class ExtractionPatternManagerDialog(QDialog):
             self.populate_tree()
 
     def reset_to_defaults(self):
-        reply = QMessageBox.question(self, _("Confirm"), _("Are you sure you want to reset extraction rules to their default settings?\nAll current custom rules will be lost."),
-                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(self, _("Confirm"),
+                                     _("Are you sure you want to reset extraction rules to their default settings?\nAll current custom rules will be lost."),
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.patterns_buffer = deepcopy(DEFAULT_EXTRACTION_PATTERNS)
             self.populate_tree()
@@ -220,7 +297,7 @@ class ExtractionPatternItemEditor(QDialog):
 
         self.setWindowTitle(title)
         self.setModal(True)
-        self.resize(700, 350)
+        self.resize(700, 450)
 
         self.setup_ui()
 
@@ -245,16 +322,26 @@ class ExtractionPatternItemEditor(QDialog):
         main_layout.addLayout(string_type_layout)
 
         # Left Delimiter
-        main_layout.addWidget(QLabel(_("Left Delimiter:")))
+        main_layout.addWidget(QLabel(_("Left Delimiter (Regex):")))
         self.left_text_edit = QTextEdit(self.initial_data.get("left_delimiter", ""))
-        self.left_text_edit.setFixedHeight(80)
+        self.left_text_edit.setFixedHeight(60)
         main_layout.addWidget(self.left_text_edit)
 
         # Right Delimiter
-        main_layout.addWidget(QLabel(_("Right Delimiter:")))
+        main_layout.addWidget(QLabel(_("Right Delimiter (Regex):")))
         self.right_text_edit = QTextEdit(self.initial_data.get("right_delimiter", ""))
-        self.right_text_edit.setFixedHeight(80)
+        self.right_text_edit.setFixedHeight(60)
         main_layout.addWidget(self.right_text_edit)
+
+        # Options
+        options_layout = QHBoxLayout()
+        self.multiline_checkbox = QCheckBox(_("Allow Multi-line Content"))
+        self.multiline_checkbox.setChecked(self.initial_data.get("multiline", True))
+        self.multiline_checkbox.setToolTip(
+            _("If unchecked, extraction will stop at the end of the line. Useful for INI files."))
+        options_layout.addWidget(self.multiline_checkbox)
+        options_layout.addStretch()
+        main_layout.addLayout(options_layout)
 
         # Regex Escape Buttons
         button_frame = QHBoxLayout()
@@ -265,6 +352,11 @@ class ExtractionPatternItemEditor(QDialog):
         escape_right_btn = QPushButton(_("Escape for Regex (Right)"))
         escape_right_btn.clicked.connect(lambda: self.convert_to_regex('right'))
         button_frame.addWidget(escape_right_btn)
+
+        test_btn = QPushButton(_("Test Rule..."))
+        test_btn.clicked.connect(self.open_tester)
+        button_frame.addWidget(test_btn)
+
         button_frame.addStretch(1)
         main_layout.addLayout(button_frame)
 
@@ -286,12 +378,22 @@ class ExtractionPatternItemEditor(QDialog):
         escaped_text = re.escape(current_text)
         text_edit.setPlainText(escaped_text)
 
+    def open_tester(self):
+        dialog = ExtractionPatternTestDialog(
+            self,
+            self.left_text_edit.toPlainText(),
+            self.right_text_edit.toPlainText(),
+            self.multiline_checkbox.isChecked()
+        )
+        dialog.exec()
+
     def accept(self):
         name = self.name_entry.text().strip()
         enabled = self.enabled_checkbox.isChecked()
         string_type = self.string_type_entry.text().strip() or _("Custom")
         left_delimiter = self.left_text_edit.toPlainText().strip()
         right_delimiter = self.right_text_edit.toPlainText().strip()
+        multiline = self.multiline_checkbox.isChecked()
 
         if not name:
             QMessageBox.critical(self, _("Error"), _("Rule name cannot be empty."))
@@ -306,7 +408,8 @@ class ExtractionPatternItemEditor(QDialog):
             "enabled": enabled,
             "string_type": string_type,
             "left_delimiter": left_delimiter,
-            "right_delimiter": right_delimiter
+            "right_delimiter": right_delimiter,
+            "multiline": multiline
         }
         super().accept()
 

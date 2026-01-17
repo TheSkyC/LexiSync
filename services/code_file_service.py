@@ -64,18 +64,22 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
         left_delimiter_str = pattern_config.get("left_delimiter")
         right_delimiter_str = pattern_config.get("right_delimiter")
         string_type_from_pattern = pattern_config.get("string_type", "Custom")
+        is_multiline = pattern_config.get("multiline", True)
 
         if not left_delimiter_str or not right_delimiter_str:
             continue
 
         try:
             full_regex_str = f"({left_delimiter_str})(.*?)({right_delimiter_str})"
-            compiled_pattern = re.compile(full_regex_str, re.DOTALL)
+            flags = re.DOTALL if is_multiline else 0
+            compiled_pattern = re.compile(full_regex_str, flags)
         except re.error as e:
             logger.warning(f"Warning: Invalid regex for pattern '{pattern_name}': {e}. Skipping.")
             continue
 
+        matches_found = 0
         for match in compiled_pattern.finditer(code_content):
+            matches_found += 1
             raw_content = match.group(2)
 
             semantic_content = unescape_overwatch_string(raw_content)
@@ -143,6 +147,8 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
             ts.update_sort_weight()
             strings.append(ts)
 
+        logger.debug(f"Pattern '{pattern_name}' extracted {matches_found} strings.")
+
     strings.sort(key=lambda s: s.char_pos_start_in_file)
     return strings
 
@@ -164,12 +170,14 @@ def save_translated_code(filepath_to_save, original_raw_code_content, translatab
         backup_path = filepath_to_save + ".bak." + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         try:
             shutil.copy2(filepath_to_save, backup_path)
-            app_instance.update_statusbar(_("Backup created: {filename}").format(filename=os.path.basename(backup_path)))
+            app_instance.update_statusbar(
+                _("Backup created: {filename}").format(filename=os.path.basename(backup_path)))
         except Exception as e_backup:
             from PySide6.QtWidgets import QMessageBox
             if app_instance and app_instance.isVisible():
                 QMessageBox.warning(app_instance, _("Backup Failed"),
-                                       _("Could not create code file backup '{filename}': {error}").format(filename=os.path.basename(backup_path), error=e_backup))
+                                    _("Could not create code file backup '{filename}': {error}").format(
+                                        filename=os.path.basename(backup_path), error=e_backup))
             else:
                 logger.warning(f"Backup Failed: {e_backup}")
 
