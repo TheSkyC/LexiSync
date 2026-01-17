@@ -728,6 +728,7 @@ class ExtractionPatternItemEditor(QDialog):
 
     def setup_ui(self):
         main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(8)
 
         # Rule Name
         name_layout = QHBoxLayout()
@@ -737,7 +738,7 @@ class ExtractionPatternItemEditor(QDialog):
         self.enabled_checkbox = QCheckBox(_("Enable this rule"))
         self.enabled_checkbox.setChecked(self.initial_data.get("enabled", True))
         name_layout.addWidget(self.enabled_checkbox)
-        main_layout.addLayout(name_layout)
+        main_layout.addLayout(name_layout, 0)
 
         # Category
         string_type_layout = QHBoxLayout()
@@ -745,7 +746,7 @@ class ExtractionPatternItemEditor(QDialog):
         self.string_type_entry = QLineEdit(self.initial_data.get("string_type", "General"))
         self.string_type_entry.setPlaceholderText(_("e.g. UI, Dialogue, System, UI"))
         string_type_layout.addWidget(self.string_type_entry)
-        main_layout.addLayout(string_type_layout)
+        main_layout.addLayout(string_type_layout, 0)
 
         # Generated Comment
         desc_layout = QHBoxLayout()
@@ -753,42 +754,48 @@ class ExtractionPatternItemEditor(QDialog):
         self.desc_entry = QLineEdit(self.initial_data.get("description", ""))
         self.desc_entry.setPlaceholderText(_("Comment shown to translators (e.g. 'Player Name')"))
         desc_layout.addWidget(self.desc_entry)
-        main_layout.addLayout(desc_layout)
+        main_layout.addLayout(desc_layout, 0)
 
-        # Left Delimiter
-        main_layout.addWidget(QLabel(_("Left Delimiter (Regex):")))
+        # --- Left Delimiter Section ---
+        left_header_layout = QHBoxLayout()
+        left_header_layout.addWidget(QLabel(_("Left Delimiter:")))
+        left_header_layout.addStretch()
+        escape_left_btn = QPushButton(_("Escape Special Chars"))
+        escape_left_btn.setToolTip(_("Automatically escape characters like ( ) [ ] . * ? for literal matching."))
+        escape_left_btn.clicked.connect(lambda: self.convert_to_regex('left'))
+        left_header_layout.addWidget(escape_left_btn)
+        main_layout.addLayout(left_header_layout, 0)
+
         self.left_text_edit = QPlainTextEdit(self.initial_data.get("left_delimiter", ""))
         self.left_text_edit.setFixedHeight(60)
-        main_layout.addWidget(self.left_text_edit)
+        main_layout.addWidget(self.left_text_edit, 1)
 
-        # Right Delimiter
-        main_layout.addWidget(QLabel(_("Right Delimiter (Regex):")))
+        # --- Right Delimiter Section ---
+        right_header_layout = QHBoxLayout()
+        right_header_layout.addWidget(QLabel(_("Right Delimiter:")))
+        right_header_layout.addStretch()
+        escape_right_btn = QPushButton(_("Escape Special Chars"))
+        escape_right_btn.setToolTip(_("Automatically escape characters like ( ) [ ] . * ? for literal matching."))
+        escape_right_btn.clicked.connect(lambda: self.convert_to_regex('right'))
+        right_header_layout.addWidget(escape_right_btn)
+        main_layout.addLayout(right_header_layout, 0)
+
         self.right_text_edit = QPlainTextEdit(self.initial_data.get("right_delimiter", ""))
         self.right_text_edit.setFixedHeight(60)
-        main_layout.addWidget(self.right_text_edit)
+        main_layout.addWidget(self.right_text_edit, 1)
 
         # Options
         options_layout = QHBoxLayout()
         self.multiline_checkbox = QCheckBox(_("Dot Matches Newline (DOTALL)"))
         self.multiline_checkbox.setChecked(self.initial_data.get("multiline", True))
         self.multiline_checkbox.setToolTip(
-            _("If unchecked, extraction will stop at the end of the line. Useful for INI files."))
+            _("If checked, the dot (.) in regex matches newline characters. Essential for multi-line content."))
         options_layout.addWidget(self.multiline_checkbox)
         options_layout.addStretch()
-        main_layout.addLayout(options_layout)
+        main_layout.addLayout(options_layout, 0)
 
-        # Regex Escape Buttons
+        # --- AI and Test Buttons ---
         button_frame = QHBoxLayout()
-        escape_left_btn = QPushButton(_("Escape Special Chars (Left)"))
-        escape_left_btn.setToolTip(_("Automatically escape characters like ( ) [ ] . * ? for literal matching."))
-        escape_left_btn.clicked.connect(lambda: self.convert_to_regex('left'))
-        button_frame.addWidget(escape_left_btn)
-
-        escape_right_btn = QPushButton(_("Escape Special Chars (Right)"))
-        escape_right_btn.setToolTip(_("Automatically escape characters like ( ) [ ] . * ? for literal matching."))
-        escape_right_btn.clicked.connect(lambda: self.convert_to_regex('right'))
-        button_frame.addWidget(escape_right_btn)
-
         ai_btn = QPushButton(_("✨ AI Generate"))
         ai_btn.setToolTip(_("Let AI analyze your text and generate regex for you."))
         ai_btn.clicked.connect(self.open_ai_generator)
@@ -799,7 +806,7 @@ class ExtractionPatternItemEditor(QDialog):
         button_frame.addWidget(test_btn)
 
         button_frame.addStretch(1)
-        main_layout.addLayout(button_frame)
+        main_layout.addLayout(button_frame, 0)
 
         # OK/Cancel Buttons
         dialog_buttons = QHBoxLayout()
@@ -811,7 +818,7 @@ class ExtractionPatternItemEditor(QDialog):
         cancel_btn = QPushButton(_("Cancel"))
         cancel_btn.clicked.connect(self.reject)
         dialog_buttons.addWidget(cancel_btn)
-        main_layout.addLayout(dialog_buttons)
+        main_layout.addLayout(dialog_buttons, 0)
 
     def convert_to_regex(self, target):
         text_edit = self.left_text_edit if target == 'left' else self.right_text_edit
