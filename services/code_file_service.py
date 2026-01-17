@@ -45,12 +45,12 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
     occurrence_counters = {}
 
     regex_all_digits = re.compile(r'^\d+$')
-    regex_ow_placeholder = re.compile(r'^\{\d+\}$')
+    regex_ow_placeholder = re.compile(r'^\{\d+}$')
     allowed_symbols_and_whitespace_chars = r".,?!|:;\-_+=*/%&#@$^~`<>(){}\[\]\s"
     regex_only_symbols_and_whitespace = re.compile(f"^[{re.escape(allowed_symbols_and_whitespace_chars)}]+$")
-    regex_placeholder_like = re.compile(r'\{\d+\}')
-    regex_repeating_char = re.compile(r"^(.)\1{1,}$")
-    regex_progress_bar_like = re.compile(r"^[\[\(\|\-=<>#\s]*[\]\s]*$")
+    regex_placeholder_like = re.compile(r'\{\d+}')
+    regex_repeating_char = re.compile(r"^(.)\1+$")
+    regex_progress_bar_like = re.compile(r"^[\[(|\-=<>#\s]*[]\s]*$")
     known_untranslatable_short_words = {
         "ID", "HP", "MP", "XP", "LV", "CD", "UI", "OK",
         "X", "Y", "Z", "A", "B", "C", "N/A"
@@ -63,7 +63,8 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
         pattern_name = pattern_config.get("name", "Unknown Pattern")
         left_delimiter_str = pattern_config.get("left_delimiter")
         right_delimiter_str = pattern_config.get("right_delimiter")
-        string_type_from_pattern = pattern_config.get("string_type", "Custom")
+        string_type_from_pattern = pattern_config.get("string_type")
+        description_from_pattern = pattern_config.get("description")
         is_multiline = pattern_config.get("multiline", True)
 
         if not left_delimiter_str or not right_delimiter_str:
@@ -105,9 +106,9 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
                 occurrences=[(source_file_rel_path, str(line_num))],
                 occurrence_index=current_index
             )
-
-            if string_type_from_pattern and string_type_from_pattern not in ["Custom String", "Custom", ""]:
-                ts.comment = string_type_from_pattern
+            description_from_pattern = pattern_config.get("description", "")
+            if description_from_pattern:
+                ts.comment = description_from_pattern
 
             s_semantic_stripped = semantic_content.strip()
             s_len_stripped = len(s_semantic_stripped)

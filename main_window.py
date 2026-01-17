@@ -753,8 +753,8 @@ class LexiSyncApp(QMainWindow):
 
         # Data Menu Actions
         self.action_apply_tm_to_untranslated.setText(_("Apply TM to Untranslated"))
-        self.action_save_all_to_tm.setText(_("Save All Translations to TM..."))  # [ADD]
-        self.action_resource_viewer.setText(_("Resource Viewer..."))  # [ADD]
+        self.action_save_all_to_tm.setText(_("Save All Translations to TM..."))
+        self.action_resource_viewer.setText(_("Resource Viewer..."))
         self.action_reload_translatable_text.setText(_("Reload Translatable Text"))
 
         # Settings Menu

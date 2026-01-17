@@ -235,24 +235,27 @@ You must strictly follow this XML-style format. Output your step-by-step reasoni
 DEFAULT_EXTRACTION_PATTERNS = [
     {
         "id": str(uuid.uuid4()), "name": "Custom String (EN/CN)", "enabled": True,
-        "left_delimiter": r'(?:自定义字符串|Custom String)\s*\(\s*"',
+        "left_delimiter": r'(?:Custom String|自定义字符串)\s*\(\s*"',
         "right_delimiter": r'(?<!\\)"',
-        "string_type": "Custom String",
-        "multiline": True  # Default to True for backward compatibility
+        "string_type": "OW Script",
+        "description": "",
+        "multiline": True
     },
     {
         "id": str(uuid.uuid4()), "name": "Description (EN/CN)", "enabled": True,
         "left_delimiter": r'(?:Description|描述)\s*:\s*"',
         "right_delimiter": r'(?<!\\)"',
-        "string_type": "Description",
-        "multiline": True
+        "string_type": "OW Script Metadata",
+        "description": "Mode Description",
+        "multiline": False
     },
     {
         "id": str(uuid.uuid4()), "name": "Mode Name (EN/CN)", "enabled": True,
         "left_delimiter": r'(?:Mode Name|模式名称)\s*:\s*"',
         "right_delimiter": r'(?<!\\)"',
-        "string_type": "Mode Name",
-        "multiline": True
+        "string_type": "OW Script Metadata",
+        "description": "Mode Name",
+        "multiline": False
     }
 ]
 
