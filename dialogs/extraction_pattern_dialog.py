@@ -19,6 +19,7 @@ from copy import deepcopy
 
 
 from ui_components.tooltip import Tooltip
+from dialogs.ai_regex_generator_dialog import AIRegexGeneratorDialog
 from utils.constants import EXTRACTION_PATTERN_PRESET_EXTENSION, DEFAULT_EXTRACTION_PATTERNS
 from utils.localization import _
 from services.code_file_service import unescape_overwatch_string
@@ -768,7 +769,7 @@ class ExtractionPatternItemEditor(QDialog):
 
         # Options
         options_layout = QHBoxLayout()
-        self.multiline_checkbox = QCheckBox(_("Allow Multi-line Content (Dot matches newline)"))
+        self.multiline_checkbox = QCheckBox(_("Dot Matches Newline (DOTALL)"))
         self.multiline_checkbox.setChecked(self.initial_data.get("multiline", True))
         self.multiline_checkbox.setToolTip(
             _("If unchecked, extraction will stop at the end of the line. Useful for INI files."))
@@ -787,6 +788,11 @@ class ExtractionPatternItemEditor(QDialog):
         escape_right_btn.setToolTip(_("Automatically escape characters like ( ) [ ] . * ? for literal matching."))
         escape_right_btn.clicked.connect(lambda: self.convert_to_regex('right'))
         button_frame.addWidget(escape_right_btn)
+
+        ai_btn = QPushButton(_("✨ AI Generate"))
+        ai_btn.setToolTip(_("Let AI analyze your text and generate regex for you."))
+        ai_btn.clicked.connect(self.open_ai_generator)
+        button_frame.addWidget(ai_btn)
 
         test_btn = QPushButton(_("Test Rule..."))
         test_btn.clicked.connect(self.open_tester)
@@ -825,6 +831,15 @@ class ExtractionPatternItemEditor(QDialog):
             "right_delimiter": self.right_text_edit.toPlainText().strip(),
             "multiline": self.multiline_checkbox.isChecked()
         }
+
+    def open_ai_generator(self):
+        dialog = AIRegexGeneratorDialog(self, self.parent().app) # Need app instance for AI
+        if dialog.exec():
+            data = dialog.result
+            if data:
+                self.left_text_edit.setPlainText(data["left"])
+                self.right_text_edit.setPlainText(data["right"])
+                self.multiline_checkbox.setChecked(data["multiline"])
 
     def open_tester(self):
         current_rule = self.get_current_rule_state()
