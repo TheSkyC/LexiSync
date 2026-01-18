@@ -355,7 +355,7 @@ def _format_missing_extra(missing, extra, label):
 
 
 def check_printf(source, target, mode='loose'):
-    def get_normalized_printf_matches(text, label="Text"):
+    def get_normalized_printf_matches(text, label=_("Text")):
         matches = []
         raw_matches = []  # For logging
 
@@ -393,8 +393,8 @@ def check_printf(source, target, mode='loose'):
             raw_matches.append(full_match)
         return matches
 
-    src_fmt = get_normalized_printf_matches(source, "Source")
-    tgt_fmt = get_normalized_printf_matches(target, "Target")
+    src_fmt = get_normalized_printf_matches(source, _("Source"))
+    tgt_fmt = get_normalized_printf_matches(target, _("Target"))
 
     missing, extra = _compare_counts(src_fmt, tgt_fmt)
     if missing or extra:
@@ -409,7 +409,7 @@ def check_python_brace(source, target):
     tgt_fmt = RE_PYTHON_BRACE.findall(tgt_clean)
     missing, extra = _compare_counts(src_fmt, tgt_fmt)
     if missing or extra:
-        return _format_missing_extra(missing, extra, "brace")
+        return _format_missing_extra(missing, extra, _("Python brace"))
     return None
 
 
@@ -426,7 +426,7 @@ def check_urls_emails(source, target):
         extra_urls = tgt_urls - src_urls
 
         if missing_urls or extra_urls:
-            errors.append(_format_missing_extra(missing_urls, extra_urls, "URL"))
+            errors.append(_format_missing_extra(missing_urls, extra_urls, _("URL")))
 
     # --- Email 检查 ---
     src_emails = set(RE_EMAIL.findall(source))
@@ -437,7 +437,7 @@ def check_urls_emails(source, target):
         extra_emails = tgt_emails - src_emails
 
         if missing_emails or extra_emails:
-            errors.append(_format_missing_extra(missing_emails, extra_emails, "email"))
+            errors.append(_format_missing_extra(missing_emails, extra_emails, _("email")))
 
     return " | ".join(errors) if errors else None
 
@@ -570,5 +570,5 @@ def check_html_tags(source, target):
 
     missing, extra = _compare_counts(src_tags, tgt_tags)
     if missing or extra:
-        return _format_missing_extra(missing, extra, "HTML tag")
+        return _format_missing_extra(missing, extra, _("HTML tag"))
     return None
