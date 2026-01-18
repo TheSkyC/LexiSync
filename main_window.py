@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QPushButton, QLineEdit, QTextEdit, QCheckBox, QFileDialog,
     QMessageBox, QInputDialog, QStatusBar, QProgressBar,
     QMenu, QTableView, QHeaderView, QDockWidget, QLabel,
-    QAbstractItemView, QFrame, QComboBox, QSizePolicy
+    QAbstractItemView, QFrame, QComboBox, QSizePolicy, QWidgetAction
 )
 from PySide6.QtCore import (
     Qt, QModelIndex, Signal, QObject, QTimer, QByteArray, QEvent,
@@ -49,6 +49,7 @@ from ui_components.glossary_panel import GlossaryPanel
 from ui_components.drop_overlay import DropOverlay
 from ui_components.marker_bar import MarkerBar
 from ui_components.styled_button import StyledButton
+from ui_components.scrollable_menu_list import ScrollableRecentFileList
 
 from dialogs.font_settings_dialog import FontSettingsDialog
 from dialogs.keybinding_dialog import KeybindingDialog
@@ -1981,24 +1982,23 @@ class LexiSyncApp(QMainWindow):
     def update_recent_files_menu(self):
         self.recent_files_menu.clear()
         recent_files = self.config.get("recent_files", [])
+
         if not recent_files:
             self.recent_files_menu.setEnabled(False)
             self.recent_files_menu.addAction(QAction(_("No History"), self, enabled=False))
             return
         self.recent_files_menu.setEnabled(True)
 
-        for i, entry in enumerate(recent_files):
-            if isinstance(entry, str):
-                path = entry
-            else:
-                path = entry.get("path", "")
+        scrollable_list = ScrollableRecentFileList(recent_files)
 
-            if not path: continue
+        scrollable_list.file_clicked.connect(self.open_recent_file, Qt.QueuedConnection)
+        scrollable_list.file_clicked.connect(self.recent_files_menu.close)
+        scrollable_list.file_clicked.connect(self.file_menu.close)
 
-            label = f"{i + 1}: {os.path.basename(path)}"
-            action = QAction(label, self)
-            action.triggered.connect(lambda checked, p=path: self.open_recent_file(p))
-            self.recent_files_menu.addAction(action)
+        list_action = QWidgetAction(self.recent_files_menu)
+        list_action.setDefaultWidget(scrollable_list)
+
+        self.recent_files_menu.addAction(list_action)
 
         self.recent_files_menu.addSeparator()
         clear_action = QAction(_("Clear History"), self)
