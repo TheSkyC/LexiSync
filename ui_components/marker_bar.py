@@ -209,6 +209,11 @@ class MarkerBar(QWidget):
         if not self.proxy_model or not self.proxy_model.sourceModel(): return 0
         return self.proxy_model.sourceModel().rowCount()
 
+    def _get_row_height(self):
+        total_rows = self._get_total_rows()
+        if total_rows == 0: return 0
+        return self.height() / total_rows
+
     def _row_to_y(self, source_row: int) -> int:
         total_rows = self._get_total_rows()
         if total_rows == 0: return 0
@@ -266,6 +271,9 @@ class MarkerBar(QWidget):
         self.range_track_width = self.width() - self.point_track_width
         self.range_track_x = self.point_track_width
 
+        visual_row_height = self.height() / total_rows
+        effective_row_height = max(1.0, visual_row_height)
+
         # 1. Draw Range Markers on the right track
         sorted_range_types = sorted(self._range_markers.keys(), key=lambda k: self._marker_configs[k]['priority'],
                                     reverse=True)
@@ -274,16 +282,23 @@ class MarkerBar(QWidget):
             config = self._marker_configs[range_type]
             for start_row, end_row in self._range_markers[range_type]:
                 y_start = self._row_to_y(start_row)
-                y_end = self._row_to_y(end_row)
+                # y_end = y_start of end_row + height of end_row
+                y_end = int(((end_row + 1) / total_rows) * self.height())
+
                 height = max(1, y_end - y_start)
+
                 painter.fillRect(self.range_track_x, y_start, self.range_track_width, height, config['color'])
 
         # 2. Draw Point Markers on the left track
         self._build_cache()
-        marker_height = 2
+
+        marker_height = max(2, int(visual_row_height))
+
         for marker in self._cached_points:
-            painter.fillRect(0, marker['y'] - marker_height // 2, self.point_track_width, marker_height,
-                             marker['color'])
+            row_top = marker['y']
+            draw_y = row_top + (int(visual_row_height) - marker_height) // 2
+
+            painter.fillRect(0, draw_y, self.point_track_width, marker_height, marker['color'])
 
         # 3. Draw Viewport Indicator over everything
         self._draw_viewport_indicator(painter)
