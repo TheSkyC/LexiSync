@@ -1972,7 +1972,9 @@ class LexiSyncApp(QMainWindow):
         ]
 
         recent_files.insert(0, new_entry)
-        self.config["recent_files"] = recent_files[:10]
+
+        limit = self.config.get('recent_files_limit', 25)
+        self.config["recent_files"] = recent_files[:limit]
         self.update_recent_files_menu()
         self.save_config()
 

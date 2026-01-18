@@ -178,6 +178,12 @@ class GeneralSettingsPage(BaseSettingsPage):
             self.lang_combo.setCurrentIndex(index)
         main_form_layout.addRow(_("UI Language:"), self.lang_combo)
 
+        # Recent Files Limit
+        self.recent_files_limit_spinbox = QSpinBox()
+        self.recent_files_limit_spinbox.setRange(5, 100)
+        self.recent_files_limit_spinbox.setValue(self.app.config.get('recent_files_limit', 25))
+        main_form_layout.addRow(_("Recent Files History Size:"), self.recent_files_limit_spinbox)
+
         # Auto-save
         auto_save_layout = QHBoxLayout()
         auto_save_layout.setContentsMargins(0, 0, 0, 0)
@@ -307,6 +313,7 @@ class GeneralSettingsPage(BaseSettingsPage):
             self.current_lang_on_open = new_lang_code
             lang_changed = True
 
+        self.app.config['recent_files_limit'] = self.recent_files_limit_spinbox.value()
         self.app.config['translation_propagation_mode'] = self.propagation_combo.currentData()
         self.app.auto_save_interval_sec = self.auto_save_spinbox.value()
         self.app.config['auto_save_interval_sec'] = self.app.auto_save_interval_sec
