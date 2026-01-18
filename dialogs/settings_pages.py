@@ -200,14 +200,18 @@ class GeneralSettingsPage(BaseSettingsPage):
         main_form_layout.addRow(_("Auto-save Interval:"), auto_save_layout)
 
         self.propagation_combo = QComboBox()
-        self.propagation_map = {
-            'smart': _("Smart (Update empty or identical translations)"),
-            'fill_blanks': _("Fill Blanks Only (Update empty translations)"),
-            'always': _("Always (Update all identical source strings)"),
-            'single': _("Single (Update only the selected item)")
-        }
-        for key, text in self.propagation_map.items():
+
+        self.propagation_options = [
+            ('smart', _("Smart"), _("Update empty translations or those identical to the current one.")),
+            ('fill_blanks', _("Fill Blanks Only"), _("Update only items that have no translation.")),
+            ('always', _("Always"), _("Update all items with the same source text.")),
+            ('single', _("Single"), _("Update only the currently selected item."))
+        ]
+
+        for key, text, tooltip in self.propagation_options:
             self.propagation_combo.addItem(text, key)
+            index = self.propagation_combo.count() - 1
+            self.propagation_combo.setItemData(index, tooltip, Qt.ToolTipRole)
 
         current_mode = self.app.config.get('translation_propagation_mode', 'smart')
         index = self.propagation_combo.findData(current_mode)
