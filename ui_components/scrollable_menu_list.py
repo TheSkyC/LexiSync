@@ -2,27 +2,60 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem,
-                               QLabel, QAbstractItemView, QSizePolicy, QFrame)
+                               QLabel, QAbstractItemView, QSizePolicy, QHBoxLayout)
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QColor, QFont, QCursor
 import os
 from utils.localization import _
 
+
 class RecentFileItemWidget(QWidget):
-    def __init__(self, filename, path, parent=None):
+    def __init__(self, filename, path, metadata=None, parent=None):
         super().__init__(parent)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 6, 10, 6)  # 稍微调整边距
+        layout.setContentsMargins(10, 6, 10, 6)
         layout.setSpacing(2)
+
+        # Top Row: Filename + Badge
+        top_row = QHBoxLayout()
+        top_row.setSpacing(8)
 
         self.name_label = QLabel(filename)
         self.name_label.setStyleSheet("font-weight: bold; font-size: 13px; color: #333;")
+        top_row.addWidget(self.name_label)
+
+        # Type Badge
+        if metadata:
+            ftype = metadata.get("type", "code")
+            if ftype == "project":
+                badge = QLabel("Project")
+                badge.setStyleSheet("""
+                    background-color: #E3F2FD; 
+                    color: #0277BD; 
+                    border-radius: 3px; 
+                    padding: 1px 4px; 
+                    font-size: 10px; 
+                    font-weight: bold;
+                """)
+                top_row.addWidget(badge)
+            elif ftype == "po":
+                badge = QLabel("PO")
+                badge.setStyleSheet("""
+                    background-color: #F3E5F5; 
+                    color: #7B1FA2; 
+                    border-radius: 3px; 
+                    padding: 1px 4px; 
+                    font-size: 10px; 
+                    font-weight: bold;
+                """)
+                top_row.addWidget(badge)
+
+        top_row.addStretch()
+        layout.addLayout(top_row)
 
         self.path_label = QLabel(path)
         self.path_label.setStyleSheet("color: #888; font-size: 11px;")
         self.path_label.setWordWrap(False)
-
-        layout.addWidget(self.name_label)
         layout.addWidget(self.path_label)
 
         self.setAttribute(Qt.WA_TransparentForMouseEvents)
@@ -40,8 +73,8 @@ class ScrollableRecentFileList(QWidget):
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)  # 0 边距
-        layout.setSpacing(0)  # 0 间距
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         self.list_widget = QListWidget()
         self.list_widget.setFrameShape(QListWidget.NoFrame)
@@ -95,7 +128,13 @@ class ScrollableRecentFileList(QWidget):
 
     def populate_list(self):
         for entry in self.recent_files:
-            path = entry if isinstance(entry, str) else entry.get("path", "")
+            if isinstance(entry, str):
+                path = entry
+                metadata = {}
+            else:
+                path = entry.get("path", "")
+                metadata = entry
+
             if not path: continue
 
             filename = os.path.basename(path)
@@ -104,7 +143,7 @@ class ScrollableRecentFileList(QWidget):
             item = QListWidgetItem(self.list_widget)
             item.setData(Qt.UserRole, path)
 
-            widget = RecentFileItemWidget(filename, dirpath)
+            widget = RecentFileItemWidget(filename, dirpath, metadata)
 
             item.setSizeHint(QSize(0, 50))
 
