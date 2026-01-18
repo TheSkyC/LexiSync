@@ -40,6 +40,7 @@ def unescape_overwatch_string(s):
 
 
 def extract_translatable_strings(code_content, extraction_patterns, source_file_rel_path=""):
+    occupied_ranges = []
     strings = []
     full_code_lines = code_content.splitlines()
     occurrence_counters = {}
@@ -88,8 +89,18 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
             content_start_pos = match.start(2)
             content_end_pos = match.end(2)
 
-            line_num = code_content.count('\n', 0, content_start_pos) + 1
+            # Overlap Check
+            is_overlapping = False
+            for occupied_start, occupied_end in occupied_ranges:
+                # Check if ranges overlap: max(start1, start2) < min(end1, end2)
+                if max(content_start_pos, occupied_start) < min(content_end_pos, occupied_end):
+                    is_overlapping = True
+                    break
+            if is_overlapping:
+                continue
+            occupied_ranges.append((content_start_pos, content_end_pos))
 
+            line_num = code_content.count('\n', 0, content_start_pos) + 1
             counter_key = (semantic_content, string_type_from_pattern)
             current_index = occurrence_counters.get(counter_key, 0)
             occurrence_counters[counter_key] = current_index + 1
