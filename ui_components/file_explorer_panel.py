@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QTreeView, QFileSystemModel
                                QHBoxLayout, QWidgetAction, QSizePolicy, QToolButton)
 from PySide6.QtCore import (Qt, QDir, QModelIndex, Signal, QUrl, QSortFilterProxyModel,
                             QSize, QTimer)
-from PySide6.QtGui import QAction, QDesktopServices, QIcon
+from PySide6.QtGui import QAction, QDesktopServices, QIcon, QColor, QFont
 import os
 from pathlib import Path
 from collections import deque
@@ -53,6 +53,7 @@ class FileFilterProxyModel(QSortFilterProxyModel):
         self._project_mode_enabled = False
         self._project_source_paths = set()
         self._project_source_parent_dirs = set()
+        self._project_folder_cache = {}
 
     def setProjectFilePatterns(self, patterns):
         try:
@@ -129,10 +130,36 @@ class FileFilterProxyModel(QSortFilterProxyModel):
             logger.error(f"Error in filterAcceptsRow: {e}")
             return True
 
+    def data(self, index, role=Qt.DisplayRole):
+        if role == Qt.ForegroundRole or role == Qt.FontRole:
+            source_index = self.mapToSource(index)
+            file_info = self.sourceModel().fileInfo(source_index)
+
+            if file_info.isDir():
+                path = file_info.absoluteFilePath()
+                is_project = self._is_project_folder(path)
+
+                if is_project:
+                    if role == Qt.ForegroundRole:
+                        return QColor("#0277BD")
+                    if role == Qt.FontRole:
+                        font = QFont()
+                        font.setBold(True)
+                        return font
+
+        return super().data(index, role)
+
+    def _is_project_folder(self, path):
+        if path not in self._project_folder_cache:
+            project_json = os.path.join(path, "project.json")
+            self._project_folder_cache[path] = os.path.exists(project_json)
+        return self._project_folder_cache[path]
+
 
 class FileExplorerPanel(QWidget):
     file_double_clicked = Signal(str)
     error_occurred = Signal(str, str)
+    open_project_requested = Signal(str)
 
     def __init__(self, parent, app_instance):
         super().__init__(parent)
@@ -140,8 +167,8 @@ class FileExplorerPanel(QWidget):
 
         self._initialize_navigation_history()
         self._initialize_models()
-        self._setup_ui_safely()
-        self._setup_connections_safely()
+        self._setup_ui()
+        self._setup_connections()
 
         self._apply_initial_settings()
 
@@ -171,14 +198,14 @@ class FileExplorerPanel(QWidget):
             logger.error(f"Error initializing models: {e}")
             self._show_error(_("Initialization Error"), _("Failed to initialize file system models."))
 
-    def _setup_ui_safely(self):
+    def _setup_ui(self):
         try:
             self.setup_ui()
         except Exception as e:
             logger.error(f"Error setting up UI: {e}")
             self._show_error(_("UI Setup Error"), _("Failed to initialize user interface."))
 
-    def _setup_connections_safely(self):
+    def _setup_connections(self):
         try:
             self.setup_connections()
         except Exception as e:
@@ -781,6 +808,15 @@ class FileExplorerPanel(QWidget):
 
     def _populate_context_menu(self, menu, selected_paths, path_at_pos, proxy_index_at_pos, source_index_at_pos):
         try:
+            if len(selected_paths) == 1:
+                path = selected_paths[0]
+                if os.path.isdir(path) and os.path.exists(os.path.join(path, "project.json")):
+                    open_proj_action = menu.addAction(_("Open Project"))
+                    font = open_proj_action.font()
+                    font.setBold(True)
+                    open_proj_action.setFont(font)
+                    open_proj_action.triggered.connect(lambda checked=False, p=path: self.open_project_requested.emit(p))
+                    menu.addSeparator()
             # Open action
             if len(selected_paths) == 1:
                 path = selected_paths[0]

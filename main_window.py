@@ -237,6 +237,7 @@ class LexiSyncApp(QMainWindow):
         self.plugin_manager = PluginManager(self)
         self.UI_initialization()
         self.file_explorer_panel.file_double_clicked.connect(self.open_file_from_explorer)
+        self.file_explorer_panel.open_project_requested.connect(self.open_project)
         last_path = self.config.get('last_file_explorer_path')
         if last_path and os.path.isdir(last_path):
             self.file_explorer_panel.set_root_path(last_path)
@@ -2406,7 +2407,38 @@ class LexiSyncApp(QMainWindow):
 
         return False
 
+    def _check_and_open_parent_project(self, filepath, max_depth=4):
+        current_dir = os.path.dirname(os.path.abspath(filepath))
+        filename = os.path.basename(filepath)  # 提前计算
+        depth = 0
+        while depth < max_depth:
+            project_json = os.path.join(current_dir, "project.json")
+            if os.path.exists(project_json):
+                project_name = os.path.basename(current_dir)  # 提前计算
+                reply = QMessageBox.question(
+                    self,
+                    _("Project Detected"),
+                    _("The file '{filename}' appears to be part of the project '{project}'.\n\nDo you want to open the entire project instead?").format(
+                        filename=filename,
+                        project=project_name
+                    ),
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.Yes
+                )
+                if reply == QMessageBox.Yes:
+                    self.open_project(current_dir)
+                    return True
+                return False
+            parent_dir = os.path.dirname(current_dir)
+            if parent_dir == current_dir:  # 到达根目录
+                break
+            current_dir = parent_dir
+            depth += 1
+        return False
+
     def open_code_file_path(self, filepath):
+        if self._check_and_open_parent_project(filepath):
+            return
         if self.is_ai_translating_batch:
             QMessageBox.warning(self, _("Operation Restricted"),
                                 _("AI batch translation is in progress. Please wait for it to complete or stop it before opening a new file."))
@@ -4733,6 +4765,8 @@ class LexiSyncApp(QMainWindow):
             QMessageBox.critical(self, _("Export Error"), _("Failed to export POT file: {error}").format(error=e))
 
     def import_po_file_dialog_with_path(self, po_filepath):
+        if self._check_and_open_parent_project(po_filepath):
+            return
         self._reset_app_state()
         t_start = time.perf_counter()
 
