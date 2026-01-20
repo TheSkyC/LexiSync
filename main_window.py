@@ -89,7 +89,7 @@ from utils import config_manager
 from utils.constants import *
 from utils.enums import WarningType, AIOperationType
 from utils.localization import _, lang_manager
-from utils.text_utils import get_linguistic_length
+from utils.text_utils import get_linguistic_length, generate_ngrams
 from utils.path_utils import get_app_data_path
 
 logger = logging.getLogger(__name__)
@@ -5747,15 +5747,15 @@ class LexiSyncApp(QMainWindow):
     def _fetch_static_glossary_context(self, source_text):
         try:
             # 分词
-            words = set(re.findall(r'\b\w+\b', source_text.lower()))
-            if not words: return []
+            candidates = generate_ngrams(source_text.lower(), min_n=1, max_n=5)
+            if not candidates: return []
 
             source_lang = self.source_language
             target_lang = self.current_target_language if self.is_project_mode else self.target_language
 
             # 批量查询
             results = self.glossary_service.get_translations_batch(
-                list(words), source_lang, target_lang, include_reverse=False
+                list(candidates), source_lang, target_lang, include_reverse=False
             )
 
             lines = []

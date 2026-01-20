@@ -6,6 +6,7 @@ import weakref
 import re
 import logging
 from utils.enums import AIOperationType
+from utils.text_utils import generate_ngrams
 from utils.localization import _
 from services.prompt_service import generate_prompt_from_structure
 from services.validation_service import validate_string
@@ -361,14 +362,15 @@ class AIWorker(QRunnable):
         return base_prompt + strict_suffix
 
     def _build_glossary_context(self, app):
-        original_words = set(re.findall(r'\b\w+\b', self.original_text.lower()))
-        if not original_words: return ""
+        candidates = generate_ngrams(self.original_text, min_n=1, max_n=5)
+        if not candidates: return ""
 
         source_lang = app.source_language
         target_lang_code = app.current_target_language if app.is_project_mode else app.target_language
 
+        # 批量查询数据库
         potential_terms = app.glossary_service.get_translations_batch(
-            words=list(original_words),
+            words=candidates,
             source_lang=source_lang,
             target_lang=target_lang_code,
             include_reverse=False
@@ -378,13 +380,27 @@ class AIWorker(QRunnable):
 
         placeholder_spans = [m.span() for m in app.placeholder_regex.finditer(self.original_text)]
         valid_terms = {}
+        sorted_terms = sorted(potential_terms.keys(), key=len, reverse=True)
+        matched_mask = [False] * len(self.original_text)
 
-        for word, term_info in potential_terms.items():
+        for word in sorted_terms:
+            term_info = potential_terms[word]
             try:
                 for match in re.finditer(r'\b' + re.escape(word) + r'\b', self.original_text, re.IGNORECASE):
-                    if not any(start <= match.start() < end for start, end in placeholder_spans):
-                        valid_terms[word] = term_info
-                        break
+                    start, end = match.start(), match.end()
+
+                    if any(p_start <= start < p_end for p_start, p_end in placeholder_spans):
+                        continue
+
+                    if any(matched_mask[i] for i in range(start, end)):
+                        continue
+
+                    for i in range(start, end):
+                        matched_mask[i] = True
+
+                    valid_terms[word] = term_info
+                    break
+
             except re.error:
                 continue
 

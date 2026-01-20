@@ -4,7 +4,7 @@
 import regex as re
 from utils.localization import _
 from utils.enums import WarningType
-from utils.text_utils import get_linguistic_length
+from utils.text_utils import get_linguistic_length, generate_ngrams
 from services import validation_helpers
 from services.expansion_ratio_service import ExpansionRatioService
 from utils.constants import DEFAULT_VALIDATION_RULES
@@ -110,16 +110,32 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
 
     # 术语库检查
     if term_cache:
-        original_words = set(re.findall(r'\b\w+\b', original.lower()))
+        original_lower = original.lower()
         translation_lower = translation.lower()
-        for word in original_words:
+
+        candidates = generate_ngrams(original_lower, min_n=1, max_n=5)
+        candidates.sort(key=len, reverse=True)
+
+        matched_substrings = []
+
+        for word in candidates:
             if word in term_cache:
-                term_info = term_cache[word]
-                required_targets = [t['target'].lower() for t in term_info['translations']]
-                if not any(target in translation_lower for target in required_targets):
-                    msg = _("Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'.").format(
-                        term=word, targets=" / ".join(required_targets))
-                    _report(ts_obj, config, "glossary", WarningType.GLOSSARY_MISMATCH, msg)
+                is_covered = False
+                for matched in matched_substrings:
+                    if word in matched:
+                        is_covered = True
+                        break
+
+                if is_covered:
+                    continue
+                if word in original_lower:
+                    term_info = term_cache[word]
+                    required_targets = [t['target'].lower() for t in term_info['translations']]
+                    if not any(target in translation_lower for target in required_targets):
+                        msg = _("Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'.").format(
+                            term=word, targets=" / ".join(required_targets))
+                        _report(ts_obj, config, "glossary", WarningType.GLOSSARY_MISMATCH, msg)
+                    matched_substrings.append(word)
 
     # --- 3. 格式与标点 ---
     if err := validation_helpers.check_pangu_spacing(translation):
@@ -205,15 +221,20 @@ def run_validation_on_all(translatable_objects, config, app_instance=None):
         all_words = set()
         for ts_obj in translatable_objects:
             if not ts_obj.is_ignored:
-                all_words.update(re.findall(r'\b\w+\b', ts_obj.original_semantic.lower()))
+                ngrams = generate_ngrams(ts_obj.original_semantic.lower(), min_n=1, max_n=5)
+                all_words.update(ngrams)
+
         if all_words:
             source_lang = app_instance.source_language
             target_lang = app_instance.current_target_language if app_instance.is_project_mode else app_instance.target_language
+
+            # 批量查询所有 N-gram
             term_cache = app_instance.glossary_service.get_translations_batch(
                 words=list(all_words),
                 source_lang=source_lang,
                 target_lang=target_lang,
                 include_reverse=False
             )
+
     for ts_obj in translatable_objects:
         validate_string(ts_obj, config, app_instance, term_cache)

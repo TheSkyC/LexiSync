@@ -4,6 +4,7 @@
 from PySide6.QtCore import QRunnable, Signal, QObject
 import weakref
 import re
+from utils.text_utils import generate_ngrams
 
 class GlossarySignals(QObject):
     finished = Signal(str, list)
@@ -23,27 +24,56 @@ class GlossaryAnalysisWorker(QRunnable):
             self.signals.finished.emit(self.ts_id, [])
             return
 
-        words = set(re.findall(r'\b\w+\b', self.text.lower()))
-        if not words:
+        # 生成 N-gram 候选项
+        candidates = generate_ngrams(self.text.lower(), min_n=1, max_n=5)
+
+        if not candidates:
             self.signals.finished.emit(self.ts_id, [])
             return
 
-        matches = []
         source_lang = app.source_language
         target_lang = app.current_target_language if app.is_project_mode else app.target_language
 
+        # 批量查询数据库
         term_results_map = app.glossary_service.get_translations_batch(
-            words=list(words),
+            words=candidates,
             source_lang=source_lang,
             target_lang=target_lang,
             include_reverse=False
         )
 
-        for word, term_info in term_results_map.items():
-            ui_translations = [{"target": t["target"], "comment": t["comment"]} for t in term_info['translations']]
-            matches.append({
-                "source": word,
-                "translations": ui_translations
-            })
+        matches = []
+
+        # 过滤
+        sorted_terms = sorted(term_results_map.keys(), key=len, reverse=True)
+
+        text_len = len(self.text)
+        covered_mask = [False] * text_len
+
+        for term in sorted_terms:
+            term_info = term_results_map[term]
+            is_valid_occurrence = False
+
+            try:
+                pattern = re.compile(r'\b' + re.escape(term) + r'\b', re.IGNORECASE)
+
+                for match in pattern.finditer(self.text):
+                    start, end = match.span()
+                    if any(covered_mask[i] for i in range(start, end)):
+                        continue
+
+                    for i in range(start, end):
+                        covered_mask[i] = True
+
+                    is_valid_occurrence = True
+            except re.error:
+                continue
+
+            if is_valid_occurrence:
+                ui_translations = [{"target": t["target"], "comment": t["comment"]} for t in term_info['translations']]
+                matches.append({
+                    "source": term,
+                    "translations": ui_translations
+                })
 
         self.signals.finished.emit(self.ts_id, matches)
