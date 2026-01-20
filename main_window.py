@@ -1339,6 +1339,7 @@ class LexiSyncApp(QMainWindow):
         # 4. Signal Connections
         self.glossary_panel.add_entry_requested.connect(self.add_glossary_entry)
         self.glossary_panel.settings_requested.connect(self.show_glossary_settings)
+        self.glossary_panel.refresh_requested.connect(self.force_refresh_current_glossary)
 
         self.details_panel.apply_translation_signal.connect(self.apply_translation_from_button)
         self.details_panel.translation_text_changed_signal.connect(self.schedule_placeholder_validation)
@@ -6384,6 +6385,21 @@ class LexiSyncApp(QMainWindow):
         self.context_panel.set_context(ts_obj)
         self.schedule_tm_update(ts_obj.original_semantic)
         self._update_all_highlights()
+
+    def force_refresh_current_glossary(self):
+        if not self.current_selected_ts_id:
+            return
+
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+        if not ts_obj:
+            return
+
+        if ts_obj.id in self.glossary_analysis_cache:
+            del self.glossary_analysis_cache[ts_obj.id]
+
+        self.update_statusbar(_("Refreshing glossary matches..."))
+
+        self.trigger_glossary_analysis(ts_obj)
 
     def schedule_tm_update(self, original_text):
         self.last_tm_query = original_text

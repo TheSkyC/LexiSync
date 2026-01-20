@@ -11,6 +11,7 @@ from utils.localization import _
 
 class GlossaryPanel(QWidget):
     add_entry_requested = Signal()
+    refresh_requested = Signal()
     settings_requested = Signal()
 
     def __init__(self, parent=None):
@@ -33,7 +34,14 @@ class GlossaryPanel(QWidget):
         self.add_action.triggered.connect(self.add_entry_requested.emit)
         toolbar.addAction(self.add_action)
 
-        # Spacer to push settings to the right
+        # Refresh Action
+        refresh_icon_path = get_resource_path("icons/refresh.svg")
+        self.refresh_action = QAction(QIcon(refresh_icon_path), _("Refresh Matches"), self)
+        self.refresh_action.setToolTip(_("Reload glossary matches for the current item"))
+        self.refresh_action.triggered.connect(self.refresh_requested.emit)
+        toolbar.addAction(self.refresh_action)
+
+        # Push settings to the right
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         toolbar.addWidget(spacer)
