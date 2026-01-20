@@ -637,9 +637,15 @@ class WelcomeScreen(QWidget):
         try:
             success = self.main_window_instance.execute_action(action, path)
             if success:
-                self.is_closed_by_user = False
-                self.main_window_instance.show()
-                self.close()
+                if action in ["show_marketplace", "show_settings"]:
+                    self.main_window_instance.hide() # 确保主窗口不显示
+                    self.show()
+                    self.setDisabled(False)
+                    self.set_status(_("Ready"), "ready")
+                else:
+                    self.is_closed_by_user = False
+                    self.main_window_instance.show()
+                    self.close()
             else:
                 self.main_window_instance.hide()
                 self.show()
