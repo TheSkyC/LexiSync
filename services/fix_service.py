@@ -66,6 +66,24 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
         if not src_strip or not tgt_strip:
             return None
 
+        ellipses = ["...", "…", "……", "。。。"]
+        src_has_ellipsis = any(src_strip.endswith(e) for e in ellipses)
+        tgt_has_ellipsis = any(tgt_strip.endswith(e) for e in ellipses)
+
+        if src_has_ellipsis and not tgt_has_ellipsis:
+            if target_lang.startswith('zh'):
+                ellipsis_to_add = "……"
+            else:
+                ellipsis_to_add = "..."
+            if tgt_strip[-1] in ALL_ENDING_PUNCTS:
+                return tgt_strip[:-1] + ellipsis_to_add
+            return tgt_strip + ellipsis_to_add
+
+        elif not src_has_ellipsis and tgt_has_ellipsis:
+            for e in ellipses:
+                if tgt_strip.endswith(e):
+                    return tgt_strip[:-len(e)]
+
         src_last = src_strip[-1]
         tgt_last = tgt_strip[-1]
 
@@ -75,7 +93,6 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
         if not is_src_punct and is_tgt_punct:
             return current_translation.rstrip()[:-1]
 
-        # 情况 2: 原文有标点 -> 修正或补充
         if is_src_punct:
             lang_map = PUNCTUATION_MAP.get(target_lang, {})
             expected_punct = lang_map.get(src_last, src_last)
