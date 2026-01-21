@@ -121,7 +121,24 @@ class MarkerBar(QWidget):
             self._selection_model.selectionChanged.connect(self._on_selection_changed_internal)
 
     def _on_selection_changed_internal(self, selected, deselected):
-        self._update_timer.start()
+        if not self._selection_model or not self.proxy_model:
+            self.clear_ranges('selection')
+            return
+
+        selection = self._selection_model.selection()
+        if selection.isEmpty():
+            self.clear_ranges('selection')
+            return
+
+        total_selected_rows = sum(r.height() for r in selection)
+        SELECTION_THRESHOLD = 1000
+
+        if total_selected_rows > SELECTION_THRESHOLD and total_selected_rows :
+            self.clear_ranges('selection')
+            if self._update_timer.isActive():
+                self._update_timer.stop()
+        else:
+            self._update_timer.start()
 
     def _update_selection_ranges_from_model(self):
         if not self._selection_model or not self.proxy_model:
@@ -133,16 +150,11 @@ class MarkerBar(QWidget):
             self.clear_ranges('selection')
             return
 
-        # 计算选中总行数
         total_selected_rows = sum(r.height() for r in selection)
-        total_source_rows = self._get_total_rows()
-
-        # 阈值设置
         SELECTION_THRESHOLD = 1000
 
-        # 全选
-        if total_selected_rows == total_source_rows and total_source_rows > 0:
-            self.set_ranges('selection', [(0, total_source_rows - 1)])
+        if total_selected_rows > SELECTION_THRESHOLD:
+            self.clear_ranges('selection')
             return
 
         # 选中过多
