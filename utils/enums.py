@@ -25,7 +25,7 @@ class WarningType(Enum):
     PUNCTUATION_MISMATCH_END = auto()  # 结尾标点不匹配
     BRACKET_MISMATCH = auto()  # 括号不成对
     QUOTE_MISMATCH = auto() # 引号不成对
-    PANGU_SPACING = auto()
+    PANGU_SPACING = auto() # 盘古之白
     ACCELERATOR_MISMATCH = auto() #加速键不匹配
 
     # --- 长度相关 ---
@@ -40,8 +40,8 @@ class WarningType(Enum):
     URL_MISMATCH = auto()  # URL 被错误翻译或丢失
     EMAIL_MISMATCH = auto()  # Email 被错误翻译或丢失
     NUMBER_MISMATCH = auto()  # 数字内容不一致
-    FUZZY_TRANSLATION = auto()
-    UNUSUAL_EXPANSION_RATIO = auto()
+    FUZZY_TRANSLATION = auto() # 模糊标记
+    UNUSUAL_EXPANSION_RATIO = auto() # 膨胀率差异大
 
     def get_display_text(self):
         from utils.localization import _
@@ -49,32 +49,61 @@ class WarningType(Enum):
             return _("Placeholder Missing")
         if self == WarningType.PLACEHOLDER_EXTRA:
             return _("Extra Placeholder")
+        if self == WarningType.PLACEHOLDER_NAME_MISMATCH:
+            return _("Placeholder Name Mismatch")
+        if self == WarningType.PRINTF_MISMATCH:
+            return _("Printf Format Mismatch")
+        if self == WarningType.PYTHON_BRACE_MISMATCH:
+            return _("Python Brace Mismatch")
+
         if self == WarningType.CAPITALIZATION_MISMATCH:
             return _("Capitalization Mismatch")
+        if self == WarningType.REPEATED_WORD:
+            return _("Repeated Word")
         if self == WarningType.LEADING_WHITESPACE_MISMATCH:
             return _("Leading Whitespace Mismatch")
         if self == WarningType.TRAILING_WHITESPACE_MISMATCH:
             return _("Trailing Whitespace Mismatch")
+        if self == WarningType.DOUBLE_SPACE:
+            return _("Double Spaces")
         if self == WarningType.NEWLINE_COUNT_MISMATCH:
             return _("Line Count Mismatch")
         if self == WarningType.PUNCTUATION_MISMATCH_START:
             return _("Starting Punctuation Mismatch")
         if self == WarningType.PUNCTUATION_MISMATCH_END:
             return _("Ending Punctuation Mismatch")
+        if self == WarningType.BRACKET_MISMATCH:
+            return _("Bracket Mismatch")
+        if self == WarningType.QUOTE_MISMATCH:
+            return _("Quote Mismatch")
+        if self == WarningType.PANGU_SPACING:
+            return _("Pangu Spacing")
+        if self == WarningType.ACCELERATOR_MISMATCH:
+            return _("Accelerator Mismatch")
+
         if self == WarningType.LENGTH_DEVIATION_MINOR:
             return _("Length Deviation (Minor)")
         if self == WarningType.LENGTH_DEVIATION_MAJOR:
             return _("Length Deviation (Major)")
-        if self == WarningType.GLOSSARY_MISMATCH:
-            return _("Glossary Mismatch")
         if self == WarningType.TRANSLATION_EMPTY_BUT_ORIGINAL_NOT:
             return _("Translation Empty")
         if self == WarningType.ORIGINAL_EMPTY_BUT_TRANSLATION_NOT:
             return _("Translated an Empty Original")
+
+        if self == WarningType.GLOSSARY_MISMATCH:
+            return _("Glossary Mismatch")
+        if self == WarningType.URL_MISMATCH:
+            return _("URL Mismatch")
+        if self == WarningType.EMAIL_MISMATCH:
+            return _("Email Mismatch")
+        if self == WarningType.NUMBER_MISMATCH:
+            return _("Number Mismatch")
         if self == WarningType.FUZZY_TRANSLATION:
             return _("Fuzzy Translation")
-        if self == WarningType.PANGU_SPACING:
-            return _("Pangu Spacing")
+        if self == WarningType.UNUSUAL_EXPANSION_RATIO:
+            return _("Unusual Expansion Ratio")
+
+        # Fallback
         return self.name.replace('_', ' ').title()
 
 class AIOperationType(Enum):
