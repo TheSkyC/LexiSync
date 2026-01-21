@@ -12,7 +12,7 @@ class CustomCellDelegate(QStyledItemDelegate):
         self.app = app_instance
 
         self.selection_border_pen = QPen(QColor(51, 153, 255, 145), 1)
-        self.focus_border_pen = QPen(QColor(255, 0, 0, 200), 1)
+        self.focus_border_pen = QPen(QColor(20, 100, 255, 255), 1)
         search_pen = QPen(QColor(255, 165, 0), 1)
         search_pen.setStyle(Qt.PenStyle.DotLine)
         self.search_highlight_pen = search_pen
