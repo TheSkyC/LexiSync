@@ -258,18 +258,24 @@ class TranslatableString:
         translation_has_newline = '\n' in self.translation
 
         # 换行符
+        orig_nl_count = self.original_semantic.count('\n')
+        trans_nl_count = self.translation.count('\n')
+
         self.ui_style_cache.pop('original_newline_color', None)
         self.ui_style_cache.pop('translation_newline_color', None)
 
-        if original_has_newline and translation_has_newline:
-            # 两者都有，都是绿色
-            green_color = QColor(34, 177, 76, 180)
-            self.ui_style_cache['original_newline_color'] = green_color
-            self.ui_style_cache['translation_newline_color'] = green_color
-        elif original_has_newline or translation_has_newline:
-            # 只有一个有，哪个有，哪个就是红色
-            red_color = QColor(237, 28, 36, 180)
-            if original_has_newline:
-                self.ui_style_cache['original_newline_color'] = red_color
-            if translation_has_newline:
-                self.ui_style_cache['translation_newline_color'] = red_color
+        if orig_nl_count > 0 or trans_nl_count > 0:
+            if orig_nl_count == trans_nl_count:
+                # 数量严致 -> 绿色
+                green_color = QColor(34, 177, 76, 180)
+                if orig_nl_count > 0:
+                    self.ui_style_cache['original_newline_color'] = green_color
+                if trans_nl_count > 0:
+                    self.ui_style_cache['translation_newline_color'] = green_color
+            else:
+                # 数量不一致 -> 红色
+                red_color = QColor(237, 28, 36, 180)
+                if orig_nl_count > 0:
+                    self.ui_style_cache['original_newline_color'] = red_color
+                if trans_nl_count > 0:
+                    self.ui_style_cache['translation_newline_color'] = red_color
