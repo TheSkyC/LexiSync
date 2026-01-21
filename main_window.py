@@ -79,6 +79,7 @@ from services.code_file_service import extract_translatable_strings, save_transl
 from services.project_service import create_project, load_project_data, save_project
 from services.project_manager import ProjectManager
 from services.prompt_service import generate_prompt_from_structure
+from services import validation_helpers
 from services.validation_service import run_validation_on_all, placeholder_regex
 from services.expansion_ratio_service import ExpansionRatioService
 from services.tm_service import TMService
@@ -3406,13 +3407,41 @@ class LexiSyncApp(QMainWindow):
         original_text_widget = self.details_panel.original_text_display
         translation_text_widget = self.details_panel.translation_edit_text
 
+        # 提取所有类型的 Token
+        def extract_all_tokens(text):
+            tokens = set()
+            if not text: return tokens
+
+            # 1. {} Placeholders
+            for m in re.finditer(r'\{[^{}]+\}', text):
+                tokens.add(m.group(0))
+
+            # 2. HTML Tags (Generic)
+            for m in re.finditer(r'</?[a-zA-Z0-9]+\b[^>]*>', text):
+                tokens.add(m.group(0))
+
+            # 3. Printf
+            for m in validation_helpers.RE_PRINTF.finditer(text):
+                tokens.add(m.group(0))
+
+            # 4. HTML Entities
+            for m in validation_helpers.RE_HTML_ENTITY_NUM.finditer(text):
+                tokens.add(m.group(0))
+
+            # 5. Accelerators (&F)
+            for m in re.finditer(r'&[a-zA-Z0-9]', text):
+                if not m.group(0).startswith('&#'):
+                    tokens.add(m.group(0))
+
+            return tokens
+
         translation_text_widget.blockSignals(True)
         try:
-            original_placeholders = set(self.placeholder_regex.findall(ts_obj.original_semantic))
-            translated_placeholders = set(self.placeholder_regex.findall(translation_text_widget.toPlainText()))
+            original_tokens = extract_all_tokens(ts_obj.original_semantic)
+            translated_tokens = extract_all_tokens(translation_text_widget.toPlainText())
 
             self.details_panel.apply_placeholder_highlights(original_text_widget, translation_text_widget,
-                                                            original_placeholders, translated_placeholders)
+                                                            original_tokens, translated_tokens)
         finally:
             translation_text_widget.blockSignals(False)
 

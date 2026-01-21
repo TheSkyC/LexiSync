@@ -32,6 +32,20 @@ class TranslationHighlighter(QSyntaxHighlighter):
         self.fmt_glossary.setUnderlineColor(QColor("teal"))
         self.fmt_glossary.setUnderlineStyle(QTextCharFormat.WaveUnderline)
 
+        # 提取 Token
+        self.token_patterns = [
+            # Python/General Brace {var}
+            QRegularExpression(r'\{[^{}]+\}'),
+            # HTML Tags (Generic)
+            QRegularExpression(r'</?[a-zA-Z0-9]+\b[^>]*>'),
+            # Printf (%s, %d, %1$s)
+            QRegularExpression(r'%%|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]|%\d+'),
+            # HTML Entities (&#123;, &#xAB;)
+            QRegularExpression(r'&#\d+;|&#x[0-9a-fA-F]+;'),
+            # Accelerators (&F)
+            QRegularExpression(r'&[a-zA-Z0-9]')
+        ]
+
     def update_data(self, valid_placeholders, missing_placeholders=None):
         missing = missing_placeholders or set()
         if self.valid_placeholders == valid_placeholders and self.missing_placeholders == missing:
@@ -72,16 +86,17 @@ class TranslationHighlighter(QSyntaxHighlighter):
         if trailing_match:
             self.setFormat(trailing_match.start(), len(text) - trailing_match.start(), self.fmt_whitespace)
 
-        # 3. 高亮占位符 {x}
-        expression = QRegularExpression(r'\{([^{}]+)\}')
-        it = expression.globalMatch(text)
-        while it.hasNext():
-            match = it.next()
-            content = match.captured(1)
+        # 3. 高亮所有 Token
+        for pattern in self.token_patterns:
+            it = pattern.globalMatch(text)
+            while it.hasNext():
+                match = it.next()
+                token_text = match.captured(0)
 
-            if content in self.missing_placeholders:
-                self.setFormat(match.capturedStart(), match.capturedLength(), self.fmt_placeholder_error)
-            elif content in self.valid_placeholders:
-                self.setFormat(match.capturedStart(), match.capturedLength(), self.fmt_placeholder_ok)
-            else:
-                self.setFormat(match.capturedStart(), match.capturedLength(), self.fmt_placeholder_error)
+                # 优先级：Missing (Red) > Valid (Orange) > Extra (Red)
+                if token_text in self.missing_placeholders:
+                    self.setFormat(match.capturedStart(), match.capturedLength(), self.fmt_placeholder_error)
+                elif token_text in self.valid_placeholders:
+                    self.setFormat(match.capturedStart(), match.capturedLength(), self.fmt_placeholder_ok)
+                else:
+                    self.setFormat(match.capturedStart(), match.capturedLength(), self.fmt_placeholder_error)
