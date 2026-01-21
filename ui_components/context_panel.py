@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextEdit, QSizePolicy
-from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor, QFont
+from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor, QFont, QFontMetricsF
 from PySide6.QtCore import Qt
 from utils.localization import _
 
@@ -27,12 +27,25 @@ class ContextPanel(QWidget):
         self.context_text_display = QTextEdit()
         self.context_text_display.setReadOnly(True)
         self.context_text_display.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
-        self.context_text_display.setFontFamily("Consolas")
-        self.context_text_display.setFontPointSize(9)
+
+        font = QFont("Consolas")
+        font.setPointSize(9)
+        self.context_text_display.setFont(font)
+
+        self._update_tab_width()
+
         self.context_text_display.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout.addWidget(self.context_text_display)
 
+    def _update_tab_width(self):
+        metrics = QFontMetricsF(self.context_text_display.font())
+        space_width = metrics.horizontalAdvance(' ')
+        self.context_text_display.setTabStopDistance(space_width * 4)
+
+
     def set_context(self, ts_obj):
+        self._update_tab_width()
+
         cursor = self.context_text_display.textCursor()
         cursor.select(QTextCursor.SelectionType.Document)
         cursor.setCharFormat(self.default_format)

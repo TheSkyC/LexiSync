@@ -3,7 +3,7 @@
 
 import re
 from PySide6.QtWidgets import QTextEdit, QMessageBox
-from PySide6.QtGui import QPainter, QColor, QFont, QTextCursor
+from PySide6.QtGui import QPainter, QColor, QFont, QTextCursor, QFontMetricsF
 from PySide6.QtCore import Qt, QPoint, QMimeData
 from .tooltip import Tooltip
 from utils.localization import _
@@ -24,6 +24,17 @@ class NewlineTextEdit(QTextEdit):
         self.glossary_matches = []
         self.tooltip = Tooltip(self)
         self._last_hovered_term = None
+
+        self._update_tab_width()
+
+    def _update_tab_width(self):
+        metrics = QFontMetricsF(self.font())
+        space_width = metrics.horizontalAdvance(' ')
+        self.setTabStopDistance(space_width * 4)
+
+    def setFont(self, font):
+        super().setFont(font)
+        self._update_tab_width()
 
     def set_glossary_matches(self, matches):
         self.glossary_matches = matches
