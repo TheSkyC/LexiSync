@@ -1330,7 +1330,48 @@ class LexiSyncApp(QMainWindow):
         self.comment_status_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.comment_status_dock)
 
-        # 3. Layout Adjustments (Now safe because all docks exist)
+        # Load Plugin Docks
+        if hasattr(self, 'plugin_manager'):
+            print("Load Plugin Docks")
+            dock_definitions = self.plugin_manager.run_hook('register_dock_widgets')
+            if dock_definitions:
+                flat_docks = [d for sublist in dock_definitions for d in sublist]
+
+                for dock_def in flat_docks:
+                    try:
+                        dock_id = dock_def.get('id')
+                        title = dock_def.get('title', 'Plugin Panel')
+                        widget = dock_def.get('widget')
+                        area_str = dock_def.get('area', 'right')
+                        visible = dock_def.get('default_visible', False)
+
+                        if not widget or not dock_id: continue
+
+                        dock = QDockWidget(title, self)
+                        dock.setObjectName(dock_id)
+                        dock.setWidget(widget)
+                        dock.setFeatures(
+                            QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
+
+                        area_map = {
+                            'left': Qt.LeftDockWidgetArea,
+                            'right': Qt.RightDockWidgetArea,
+                            'top': Qt.TopDockWidgetArea,
+                            'bottom': Qt.BottomDockWidgetArea
+                        }
+                        qt_area = area_map.get(area_str, Qt.RightDockWidgetArea)
+
+                        self.addDockWidget(qt_area, dock)
+                        dock.setVisible(visible)
+
+                        toggle_action = dock.toggleViewAction()
+                        toggle_action.setText(title)
+                        self.panels_menu.addAction(toggle_action)
+
+                    except Exception as e:
+                        logger.error(f"Failed to add plugin dock: {e}")
+
+        # 3. Layout Adjustments
         self.splitDockWidget(self.file_explorer_dock, self.glossary_dock, Qt.Vertical)
         self.resizeDocks([self.file_explorer_dock, self.glossary_dock], [400, 200], Qt.Vertical)
 
@@ -1357,7 +1398,7 @@ class LexiSyncApp(QMainWindow):
         self.tm_panel.update_tm_signal.connect(self.update_tm_for_selected_string)
         self.tm_panel.clear_tm_signal.connect(self.clear_tm_for_selected_string)
 
-        # 5. Create Actions (Using new panels_menu)
+        # 5. Create Actions
         # File Explorer Panel Action
         self.action_toggle_file_explorer = self.file_explorer_dock.toggleViewAction()
         self.action_toggle_file_explorer.setText(_("File Explorer"))
@@ -3563,24 +3604,26 @@ class LexiSyncApp(QMainWindow):
         worker_thread.start()
         progress_dialog.show()
 
-    def trigger_glossary_analysis(self, ts_obj):
+    def trigger_glossary_analysis(self, ts_obj, is_manual=False):
         if ts_obj.id in self.glossary_analysis_cache:
-            self._handle_glossary_analysis_result(ts_obj.id, self.glossary_analysis_cache[ts_obj.id])
+            self._handle_glossary_analysis_result(ts_obj.id, self.glossary_analysis_cache[ts_obj.id], is_manual)
             return
 
         self.glossary_panel.clear_matches()
-        worker = GlossaryAnalysisWorker(self, ts_obj.id, ts_obj.original_semantic)
+        worker = GlossaryAnalysisWorker(self, ts_obj.id, ts_obj.original_semantic, is_manual=is_manual)
         worker.signals.finished.connect(self._handle_glossary_analysis_result)
         self.ai_thread_pool.start(worker)
 
-    def _handle_glossary_analysis_result(self, ts_id, matches):
+    def _handle_glossary_analysis_result(self, ts_id, matches, is_manual):
         self.glossary_analysis_cache[ts_id] = matches
+
         if self.current_selected_ts_id == ts_id:
             self.glossary_panel.update_matches(matches)
             if hasattr(self, 'details_panel'):
                 self.details_panel.update_glossary_highlights(matches)
 
-            self.update_statusbar(_("Glossary matches updated."), persistent=False)
+            if is_manual:
+                self.update_statusbar(_("Glossary matches updated."), persistent=False)
 
     def clear_details_pane(self):
         # 清空 DetailsPanel
@@ -6430,7 +6473,7 @@ class LexiSyncApp(QMainWindow):
 
         self.update_statusbar(_("Refreshing glossary matches..."))
 
-        self.trigger_glossary_analysis(ts_obj)
+        self.trigger_glossary_analysis(ts_obj, is_manual=True)
 
     def schedule_tm_update(self, original_text):
         self.last_tm_query = original_text

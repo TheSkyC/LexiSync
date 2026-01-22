@@ -157,9 +157,14 @@ class AIModelManagerDialog(QDialog):
         self.models_buffer = copy.deepcopy(self.app.config.get("ai_models", []))
         self.active_model_id = self.app.config.get("active_ai_model_id", "")
 
-        # UI State
         self.current_editing_item = None
         self.is_loading_ui = False
+
+        self.merged_presets = AI_PROVIDER_PRESETS.copy()
+        if hasattr(self.app, 'plugin_manager'):
+            plugin_presets = self.app.plugin_manager.run_hook('register_ai_providers')
+            if plugin_presets and isinstance(plugin_presets, dict):
+                self.merged_presets.update(plugin_presets)
 
         self.setup_ui()
 
@@ -218,7 +223,7 @@ class AIModelManagerDialog(QDialog):
         preset_layout = QHBoxLayout(preset_group)
         self.preset_combo = QComboBox()
         self.preset_combo.addItem(_("Select a provider template..."), "")
-        for provider in AI_PROVIDER_PRESETS.keys():
+        for provider in self.merged_presets.keys():
             self.preset_combo.addItem(provider, provider)
         self.preset_combo.currentIndexChanged.connect(self.apply_preset)
 
@@ -448,7 +453,7 @@ class AIModelManagerDialog(QDialog):
     def apply_preset(self, index):
         if self.is_loading_ui or index <= 0: return
         provider_name = self.preset_combo.currentText()
-        preset = AI_PROVIDER_PRESETS.get(provider_name)
+        preset = self.merged_presets.get(provider_name)
         if preset:
             self.base_url_edit.setText(preset["api_base_url"])
             self.model_name_edit.setText(preset["model_name"])

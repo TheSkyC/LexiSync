@@ -151,6 +151,24 @@ class PluginBase(ABC):
         """
         return []
 
+    def register_dock_widgets(self) -> list[dict]:
+        """
+        (Collecting Hook) Register custom dock widgets (panels) to be added to the main window.
+
+        :return: A list of dictionaries defining the docks.
+        Example:
+        [
+            {
+                "id": "my_plugin_browser",  # Unique ID
+                "title": "Web Browser",
+                "widget": MyCustomWidget(), # The QWidget instance
+                "area": "right",            # 'left', 'right', 'top', 'bottom'
+                "default_visible": False
+            }
+        ]
+        """
+        return []
+
     def on_table_context_menu(self, selected_ts_objects: list['TranslatableString']) -> list:
         """
         (Collecting Hook) Called when the context menu for the main strings table is about to be shown.
@@ -292,6 +310,22 @@ class PluginBase(ABC):
         The 'provider' key will be added automatically by the PluginManager.
         """
         return []
+
+    def register_ai_providers(self) -> dict:
+        """
+        (Collecting Hook) Register custom AI provider presets.
+
+        :return: A dictionary of provider presets.
+        Example:
+        {
+            "My Corporate LLM": {
+                "api_base_url": "https://llm.corp.com/v1",
+                "model_name": "corp-v1",
+                "concurrency": 4
+            }
+        }
+        """
+        return {}
 
     def on_ui_setup_complete(self):
         """
