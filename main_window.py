@@ -1332,7 +1332,6 @@ class LexiSyncApp(QMainWindow):
 
         # Load Plugin Docks
         if hasattr(self, 'plugin_manager'):
-            print("Load Plugin Docks")
             dock_definitions = self.plugin_manager.run_hook('register_dock_widgets')
             if dock_definitions:
                 flat_docks = [d for sublist in dock_definitions for d in sublist]

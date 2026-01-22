@@ -129,36 +129,34 @@ class AnalysisWorker(QObject):
                             else:
                                 item['context'] = snippet
 
-            # 步骤3: 术语翻译
-            if self._is_cancelled: return
+                # 步骤3: 术语翻译
+                if self._is_cancelled: return
+                glossary_md = ""
+                if self.term_mode == "fast":
+                    self.progress.emit(_("Running frequency analysis (Fast Mode)..."))
+                    candidates = SmartTranslationService.extract_terms_frequency_based(self.all_items, 100)
 
-            glossary_md = ""
+                    if self.glossary_matcher:
+                        candidates = [c for c in candidates if not self.glossary_matcher.extract_keywords(c)]
 
-            if self.term_mode == "fast":
-                self.progress.emit(_("Running frequency analysis (Fast Mode)..."))
-                candidates = SmartTranslationService.extract_terms_frequency_based(self.all_items, 100)
+                    terms_data = [{"term": c, "context": ""} for c in candidates]
+                    if self.use_context:
+                        self.progress.emit(_("Scanning context snippets for terms..."))
+                        total_c = len(terms_data)
+                        for i, item in enumerate(terms_data):
+                            if self._is_cancelled: return
+                            if i % 10 == 0:
+                                self.progress.emit(_("Scanning context: {i}/{t}").format(i=i + 1, t=total_c))
 
-                if self.glossary_matcher:
-                    candidates = [c for c in candidates if not self.glossary_matcher.extract_keywords(c)]
+                            snippet = SmartTranslationService.find_context_snippets(item['term'], self.all_items)
+                            item['context'] = snippet
 
-                terms_data = [{"term": c, "context": ""} for c in candidates]
-                if self.use_context:
-                    self.progress.emit(_("Scanning context snippets for terms..."))
-                    total_c = len(terms_data)
-                    for i, item in enumerate(terms_data):
-                        if self._is_cancelled: return
-                        if i % 10 == 0:
-                            self.progress.emit(_("Scanning context: {i}/{t}").format(i=i + 1, t=total_c))
+                    self.progress.emit(_("Translating terms with context..."))
+                    glossary_md = self._translate_terms(translator, terms_data, style_guide=clean_style_guide)
 
-                        snippet = SmartTranslationService.find_context_snippets(item['term'], self.all_items)
-                        item['context'] = snippet
-
-                self.progress.emit(_("Translating terms with context..."))
-                glossary_md = self._translate_terms(translator, terms_data, style_guide=clean_style_guide)
-
-            elif self.term_mode == "deep":
-                self.progress.emit(_("Translating {count} unique terms...").format(count=len(terms_data)))
-                glossary_md = self._translate_terms(translator, terms_data, style_guide=clean_style_guide)
+                elif self.term_mode == "deep":
+                    self.progress.emit(_("Translating {count} unique terms...").format(count=len(terms_data)))
+                    glossary_md = self._translate_terms(translator, terms_data, style_guide=clean_style_guide)
 
             self.finished.emit(clean_style_guide, glossary_md, rec_temp, terms_data)
 
