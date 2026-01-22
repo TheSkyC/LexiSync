@@ -2732,7 +2732,42 @@ class LexiSyncApp(QMainWindow):
     def run_comparison_with_file(self, filepath):
         self._run_comparison_logic(filepath)
 
+    def _update_and_save_recent_entry(self, filepath_to_update):
+        if not filepath_to_update:
+            return
+
+        normalized_path = filepath_to_update.replace('\\', '/')
+        recent_files = self.config.get("recent_files", [])
+
+        entry_to_update = next(
+            (entry for entry in recent_files if entry.get("path", "").replace('\\', '/') == normalized_path), None)
+
+        if entry_to_update:
+            # 重新计算进度
+            total_items = len(self.translatable_objects)
+            if total_items > 0:
+                translated_items = len([
+                    ts for ts in self.translatable_objects
+                    if ts.translation.strip() and not ts.is_ignored
+                ])
+
+                # 更新进度和时间戳
+                entry_to_update["progress_total"] = total_items
+                entry_to_update["progress_current"] = translated_items
+
+            entry_to_update["timestamp"] = datetime.datetime.now().isoformat()
+
+            recent_files.remove(entry_to_update)
+            recent_files.insert(0, entry_to_update)
+
+            self.config["recent_files"] = recent_files
+            self.save_config()
+            self.update_recent_files_menu()
+
     def prompt_save_if_modified(self):
+        active_path = self.current_project_path or self.current_po_file_path or self.current_code_file_path
+        if active_path:
+            self._update_and_save_recent_entry(active_path)
         if self.current_project_modified:
             reply = QMessageBox.question(self, _("Unsaved Changes"),
                                          _("The current file or project has unsaved changes. Do you want to save them?"),
