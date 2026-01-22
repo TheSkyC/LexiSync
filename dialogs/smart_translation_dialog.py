@@ -480,7 +480,7 @@ class SmartTranslationDialog(QDialog):
 
         # 底部按钮
         btn_layout = QHBoxLayout()
-        btn_analyze = StyledButton(_("Analyze & Preview"), on_click=self.start_analysis, btn_type="success")
+        btn_analyze = StyledButton(_("Analyze && Preview"), on_click=self.start_analysis, btn_type="success")
         btn_layout.addStretch()
         btn_layout.addWidget(btn_analyze)
         layout.addLayout(btn_layout)
@@ -1566,11 +1566,11 @@ class SmartTranslationDialog(QDialog):
 
     def _on_index_build_complete(self):
         """索引构建完成的回调"""
-        self.log("✓ Knowledge base ready.", "SUCCESS")
+        self.log(_("✓ Knowledge base ready."), "SUCCESS")
         self._execute_batch_translation()
 
     def _execute_batch_translation(self):
-        """执行实际的批量翻译逻辑 (原 start_translation 的后半部分)"""
+        """执行实际的批量翻译逻辑"""
         self.lbl_status.setText(_("Phase 2b: Translating..."))
         self.progress_bar.setRange(0, len(self.target_items))
         self.progress_bar.setValue(0)
