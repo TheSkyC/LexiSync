@@ -3580,6 +3580,8 @@ class LexiSyncApp(QMainWindow):
             if hasattr(self, 'details_panel'):
                 self.details_panel.update_glossary_highlights(matches)
 
+            self.update_statusbar(_("Glossary matches updated."), persistent=False)
+
     def clear_details_pane(self):
         # 清空 DetailsPanel
         self.details_panel.original_text_display.setPlainText("")
