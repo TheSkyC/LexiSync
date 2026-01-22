@@ -934,7 +934,7 @@ class SmartTranslationDialog(QDialog):
 
     def _on_index_build_progress(self, percent):
         if percent >= self._next_progress_milestone:
-            self.log(f"Building index: {percent}%...", "INFO")
+            self.log(_("Building index: {percent}%...").format(percent=percent), "INFO")
             self._next_progress_milestone += 25
 
     def on_save_glossary_clicked(self):
@@ -1129,7 +1129,7 @@ class SmartTranslationDialog(QDialog):
 
         count = len(self._cached_glossary_dict)
         if count > 0:
-            self.log(f"Indexed {count} glossary terms for context injection.", "INFO")
+            self.log(_("Indexed {count} glossary terms for context injection.").format(count=count), "INFO")
 
     def _determine_scope(self):
         """根据用户选择确定翻译作用域"""
@@ -1324,14 +1324,14 @@ class SmartTranslationDialog(QDialog):
 
         # 设置温度值
         self.temp_spinbox.setValue(recommended_temp)
-        self.log(f"AI recommended temperature: {recommended_temp}", "INFO")
+        self.log(_("AI recommended temperature: {temp}").format(temp=recommended_temp), "INFO")
 
         # 切换到预览页
         self.stack.setCurrentIndex(1)
 
     def _on_analysis_error(self, error_msg):
         """分析错误回调"""
-        self.log(f"Analysis failed: {error_msg}", "ERROR")
+        self.log(_("Analysis failed: {error}").format(error=error_msg), "ERROR")
         QMessageBox.critical(
             self,
             _("Error"),
@@ -1502,7 +1502,7 @@ class SmartTranslationDialog(QDialog):
                     })
 
             if knowledge_base:
-                self.log(f"Building retrieval index with {len(knowledge_base)} items...", "INFO")
+                self.log(_("Building retrieval index with {count} items...").format(count=len(knowledge_base)), "INFO")
                 self._next_progress_milestone = 25
                 # 启动索引构建线程
                 self.index_thread = QThread()
@@ -1520,7 +1520,7 @@ class SmartTranslationDialog(QDialog):
                 return
 
             else:
-                self.log("No translated items found for index. Skipping RAG.", "WARNING")
+                self.log(_("No translated items found for index. Skipping RAG."), "WARNING")
 
         self._execute_batch_translation()
 
@@ -1547,7 +1547,8 @@ class SmartTranslationDialog(QDialog):
         if not knowledge_base:
             return
 
-        self.log(f"Background: Updating retrieval index with {len(knowledge_base)} items...", "INFO")
+        self.log(_("Background: Updating retrieval index with {count} items...").format(count=len(knowledge_base)),
+                 "INFO")
 
         # 启动后台线程
         self._bg_thread = QThread()
@@ -1559,7 +1560,7 @@ class SmartTranslationDialog(QDialog):
         self._bg_worker.finished.connect(self._bg_worker.deleteLater)
         self._bg_thread.finished.connect(self._bg_thread.deleteLater)
 
-        self._bg_worker.finished.connect(lambda: self.log("Background index update complete.", "INFO"))
+        self._bg_worker.finished.connect(lambda: self.log(_("Background index update complete."), "INFO"))
 
         self._bg_thread.start()
 
@@ -1637,9 +1638,9 @@ class SmartTranslationDialog(QDialog):
         preview = ts_obj.original_semantic[:30]
 
         if error:
-            self.log(f"✗ Failed: {preview}... - {error}", "ERROR")
+            self.log(_("✗ Failed: {preview}... - {error}").format(preview=preview, error=error), "ERROR")
         else:
-            self.log(f"✓ Translated: {preview}...", "SUCCESS")
+            self.log(_("✓ Translated: {preview}...").format(preview=preview), "SUCCESS")
 
     def on_batch_finished(self, results, completed, total):
         """批量翻译完成回调"""
@@ -1725,8 +1726,16 @@ class SmartTranslationDialog(QDialog):
             "WARNING": "#FFC107"
         }
 
+        display_map = {
+            "INFO": _("INFO"),
+            "SUCCESS": _("SUCCESS"),
+            "ERROR": _("ERROR"),
+            "WARNING": _("WARNING")
+        }
+
+        display_level = display_map.get(level, level)
         color = color_map.get(level, "#D4D4D4")
-        html = f'<span style="color: {color}">[{level}] {message}</span>'
+        html = f'<span style="color: {color}">[{display_level}] {message}</span>'
         self.log_view.append(html)
 
 
