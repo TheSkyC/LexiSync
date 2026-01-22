@@ -5519,13 +5519,18 @@ class LexiSyncApp(QMainWindow):
     def _check_ai_prerequisites(self, show_error=True):
         if not requests:
             if show_error:
-                QMessageBox.critical(self, _("AI Feature Unavailable"),
-                                     _("Python 'requests' library not found. Please install it (pip install requests) to use AI translation features."))
+                logger.warning("Python 'requests' library not found. Please install it (pip install requests) to use AI translation features.")
             return False
         if not self.config.get("ai_api_key"):
             if show_error:
+                tools_menu_text = self.tools_menu.title()
+                ai_menu_text = self.ai_menu.title()
+                ai_model_manager_text = self.action_ai_model_manager.text().replace('...', '')
+                menu_path = f"'{tools_menu_text} -> {ai_menu_text} -> {ai_model_manager_text}'"
+
                 QMessageBox.critical(self, _("API Key Missing"),
-                                     _("API Key is not set. Please configure it in 'Tools > AI Settings'."))
+                                     _("API Key is not set. Please configure it in {menu_path}.").format(
+                                         menu_path=menu_path))
             return False
         return True
 
