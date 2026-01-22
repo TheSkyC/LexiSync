@@ -499,6 +499,7 @@ class ExtractionPatternManagerDialog(QDialog):
         # Tree View
         self.tree = QTreeWidget()
         self.tree.setHeaderLabels([_("Enabled"), _("Rule Name"), _("Category"), _("Left Delimiter"), _("Right Delimiter")])
+        self.tree.setRootIsDecorated(False)
         self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.tree.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
@@ -539,6 +540,7 @@ class ExtractionPatternManagerDialog(QDialog):
                 pattern.get("right_delimiter", "")
             ])
             item.setData(0, Qt.UserRole, pattern["id"])
+            item.setFlags(item.flags() & ~Qt.ItemIsDropEnabled)
             if not pattern.get("enabled", True):
                 for i in range(5):
                     item.setForeground(i, QColor("gray"))

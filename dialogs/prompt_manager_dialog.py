@@ -125,6 +125,7 @@ class PromptManagerDialog(QDialog):
 
         # Tree View
         self.tree = QTreeWidget()
+        self.tree.setRootIsDecorated(False)
         self.tree.setHeaderLabels([_("Enabled"), _("Type"), _("Content")])
         self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
