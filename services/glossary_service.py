@@ -268,6 +268,45 @@ class GlossaryService:
             logger.error(f"Query translations failed: {e}")
             return None
 
+    def update_term_text(self, db_path: str, relation_id: int, is_source: bool, new_text: str) -> bool:
+        """
+        更新术语文本。
+        :param relation_id: term_translations 表的主键 ID
+        :param is_source: True 更新源术语，False 更新目标术语
+        :param new_text: 新的文本内容
+        """
+        if not db_path or not new_text.strip(): return False
+
+        column_to_query = "source_term_id" if is_source else "target_term_id"
+
+        with self._lock:
+            try:
+                with self._get_db_connection(db_path) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("BEGIN IMMEDIATE TRANSACTION")
+
+                    # 1. 找到对应的 term_id
+                    cursor.execute(f"SELECT {column_to_query} FROM term_translations WHERE id = ?", (relation_id,))
+                    row = cursor.fetchone()
+                    if not row:
+                        return False
+                    term_id = row[0]
+
+                    # 2. 更新 terms 表
+                    cursor.execute(
+                        "UPDATE terms SET term_text = ?, term_text_lower = ? WHERE id = ?",
+                        (new_text, new_text.lower(), term_id)
+                    )
+
+                    cursor.execute("COMMIT")
+                    return True
+            except sqlite3.IntegrityError:
+                logger.warning(f"Glossary update failed: Term '{new_text}' already exists in this language.")
+                return False
+            except Exception as e:
+                logger.error(f"Glossary update failed: {e}")
+                return False
+
     def import_from_tbx(self, tbx_filepath: str, glossary_dir_path: str,
                         source_lang: str, target_langs: List[str], is_bidirectional: bool,
                         lang_mapping: Dict[str, str], progress_callback=None) -> Tuple[bool, str]:

@@ -565,6 +565,22 @@ class TMService:
                 logger.error(f"TM update failed: {e}")
                 return False
 
+    def update_entry_source(self, db_path: str, entry_id: int, new_source: str) -> bool:
+        with self._lock:
+            try:
+                with self._get_db_connection(db_path) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("BEGIN IMMEDIATE TRANSACTION")
+                    cursor.execute("UPDATE translation_units SET source_text = ? WHERE id = ?", (new_source, entry_id))
+                    cursor.execute("COMMIT")
+                    return True
+            except sqlite3.IntegrityError:
+                logger.warning(f"TM update failed: Duplicate entry would result from changing source to '{new_source}'")
+                return False
+            except Exception as e:
+                logger.error(f"TM source update failed: {e}")
+                return False
+
     def delete_entry_by_id(self, db_path: str, entry_id: int) -> bool:
         with self._lock:
             try:

@@ -477,14 +477,11 @@ class ResourceViewerDialog(QDialog):
 
         # 源文本
         src_item = QTableWidgetItem(row_data['source_text'])
-        src_item.setFlags(src_item.flags() & ~Qt.ItemIsEditable)
         src_item.setToolTip(row_data['source_text'])
         self.table.setItem(row_index, self.COLUMN_SOURCE, src_item)
 
         # 目标文本
         tgt_item = QTableWidgetItem(row_data['target_text'])
-        if self.mode == 'glossary':
-            tgt_item.setFlags(tgt_item.flags() & ~Qt.ItemIsEditable)
         tgt_item.setToolTip(row_data['target_text'])
         self.table.setItem(row_index, self.COLUMN_TARGET, tgt_item)
 
@@ -509,40 +506,56 @@ class ResourceViewerDialog(QDialog):
 
         read_only_cols = [
             self.COLUMN_ID,
-            self.COLUMN_SOURCE,
             self.COLUMN_SRC_LANG,
             self.COLUMN_TGT_LANG,
             self.COLUMN_SOURCE_FILE
         ]
 
-        if self.mode == 'glossary':
-            read_only_cols.append(self.COLUMN_TARGET)
-
         for col in read_only_cols:
             item = self.table.item(row_index, col)
             if item:
                 item.setBackground(read_only_bg)
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
 
     def on_cell_changed(self, row, column):
-        if column != self.COLUMN_TARGET or self.mode != 'tm':
+        if column not in [self.COLUMN_SOURCE, self.COLUMN_TARGET]:
+            return
+
+        if not self.isVisible():
             return
 
         try:
-            new_text = self.table.item(row, column).text()
+            new_text = self.table.item(row, column).text().strip()
             entry_id = int(self.table.item(row, self.COLUMN_ID).text())
 
-            success = self.service.update_entry_target(self.db_path, entry_id, new_text)
+            if not new_text:
+                return
+
+            success = False
+
+            if self.mode == 'tm':
+                if column == self.COLUMN_TARGET:
+                    success = self.service.update_entry_target(self.db_path, entry_id, new_text)
+                elif column == self.COLUMN_SOURCE:
+                    success = self.service.update_entry_source(self.db_path, entry_id, new_text)
+
+            elif self.mode == 'glossary':
+                is_source_col = (column == self.COLUMN_SOURCE)
+                success = self.service.update_term_text(self.db_path, entry_id, is_source_col, new_text)
 
             if success:
                 self.data_updated.emit()
                 logger.info(f"Updated entry {entry_id} successfully")
+                self.table.item(row, column).setToolTip(new_text)
             else:
-                raise Exception("Service returned False")
+                raise Exception("Service returned False (possibly duplicate or locked)")
 
         except Exception as e:
             logger.error(f"Failed to update entry: {e}", exc_info=True)
-            QMessageBox.warning(self, _("Error"), _("Failed to update entry."))
-            self.load_data()  # 刷新回滚
+            QMessageBox.warning(self, _("Error"),
+                                _("Failed to update entry.\nIt might be a duplicate or database is locked."))
+            # 刷新回滚
+            self.load_data()
 
     def show_context_menu(self, pos):
         """右键菜单"""
