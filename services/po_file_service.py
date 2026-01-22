@@ -7,7 +7,7 @@ from pathlib import Path
 import uuid
 from models.translatable_string import TranslatableString
 from services.code_file_service import extract_translatable_strings
-from utils.constants import APP_VERSION, APP_NAMESPACE_UUID
+from utils.constants import APP_VERSION, APP_NAMESPACE_UUID, SUPPORTED_LANGUAGES
 from utils.localization import _
 import logging
 logger = logging.getLogger(__name__)
@@ -233,21 +233,40 @@ def load_from_po(filepath):
 
 def save_to_po(filepath, translatable_objects, metadata=None, original_file_name="source_code", app_instance=None):
     po_file = polib.POFile(wrapwidth=78)
+
     if metadata:
         po_file.metadata = metadata
+        now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M%z")
+        po_file.metadata['PO-Revision-Date'] = now
     else:
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M%z")
+        now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M%z")
+
+        # 获取语言信息
+        lang_code = 'en'
+        lang_name_full = 'English'
+        if app_instance:
+            lang_code = app_instance.current_target_language if app_instance.is_project_mode else app_instance.target_language
+            lang_name_full = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == lang_code), lang_code)
+
+        # 获取项目名称
+        project_name = "LexiSync Project"
+        if app_instance and app_instance.is_project_mode:
+            project_name = app_instance.project_config.get('name', 'LexiSync Project')
+        elif original_file_name:
+            project_name = os.path.splitext(original_file_name)[0]
+
         po_file.metadata = {
-            'Project-Id-Version': f'LexiSync {APP_VERSION}',
-            'Report-Msgid-Bugs-To': '',
+            'Project-Id-Version': f'{project_name}',
+            'Report-Msgid-Bugs-To': 'https://github.com/TheSkyC/lexisync/issues',
             'POT-Creation-Date': now,
             'PO-Revision-Date': now,
             'Last-Translator': 'LexiSync User',
-            'Language-Team': '',
+            'Language-Team': f'{lang_name_full} <{lang_code}@li.org>',
+            'Language': lang_code,
             'MIME-Version': '1.0',
             'Content-Type': 'text/plain; charset=UTF-8',
             'Content-Transfer-Encoding': '8bit',
-            'X-Generator': f'LexiSync {APP_VERSION}'
+            'X-Generator': f'LexiSync {APP_VERSION}',
         }
 
     for ts_obj in translatable_objects:
