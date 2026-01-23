@@ -31,7 +31,7 @@ jobs:
             python_arch: x86_64-unknown-linux-gnu
             asset_suffix: linux-x64.tar.gz
           - os_name: macos
-            os_image: macos-13
+            os_image: macos-15
             arch_display: universal
             python_arch_arm64: aarch64-apple-darwin
             python_arch_x64: x86_64-apple-darwin
