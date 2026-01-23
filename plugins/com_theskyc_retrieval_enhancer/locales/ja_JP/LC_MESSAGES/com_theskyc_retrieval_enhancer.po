@@ -1,0 +1,165 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Com TheSkyC Retrieval Enhancer Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2026-01-23 06:49+0000\n"
+"PO-Revision-Date: 2026-01-23 07:02+0000\n"
+"Last-Translator: TheSkyC\n"
+"Language-Team: none\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ui/settings_dialog.py:96
+msgid "Activate"
+msgstr "有効化"
+
+#: ui/settings_dialog.py:169 ui/settings_dialog.py:182
+msgid "Active"
+msgstr "有効"
+
+#: ui/settings_dialog.py:296
+msgid "Are you sure you want to delete the model files?"
+msgstr "モデルファイルを削除してもよろしいですか？"
+
+#: ui/settings_dialog.py:328
+msgid "Cache cleared."
+msgstr "キャッシュをクリアしました。"
+
+#: ui/settings_dialog.py:292
+msgid "Cannot delete the currently active model."
+msgstr "現在アクティブなモデルは削除できません。"
+
+#: ui/settings_dialog.py:146
+msgid "Clear Vector Cache"
+msgstr "ベクトルキャッシュをクリア"
+
+#: ui/settings_dialog.py:323
+msgid "Clear vector cache for ALL models?"
+msgstr "すべてのモデルのベクトルキャッシュをクリアしますか？"
+
+#: ui/settings_dialog.py:150
+msgid "Close"
+msgstr "閉じる"
+
+#: ui/settings_dialog.py:295 ui/settings_dialog.py:323
+msgid "Confirm"
+msgstr "確認"
+
+#: ui/settings_dialog.py:112
+msgid "Custom Model"
+msgstr "カスタムモデル"
+
+#: ui/settings_dialog.py:198
+msgid "Custom imported model."
+msgstr "カスタムインポートモデル。"
+
+#: ui/settings_dialog.py:100
+msgid "Delete Files"
+msgstr "ファイルを削除"
+
+#: ui/settings_dialog.py:98 ui/settings_dialog.py:215
+msgid "Download"
+msgstr "ダウンロード"
+
+#: ui/settings_dialog.py:121
+msgid "Download Settings"
+msgstr "ダウンロード設定"
+
+#: ui/settings_dialog.py:249
+msgid "Download failed: "
+msgstr "ダウンロードに失敗しました: "
+
+#: ui/settings_dialog.py:249 ui/settings_dialog.py:282
+#: ui/settings_dialog.py:330
+msgid "Error"
+msgstr "エラー"
+
+#: ui/settings_dialog.py:114
+msgid "Import Local ONNX Model..."
+msgstr "ローカルのONNXモデルをインポート..."
+
+#: ui/settings_dialog.py:256
+msgid "Importing and verifying model..."
+msgstr "モデルをインポートして検証中..."
+
+#: ui/settings_dialog.py:202
+msgid "Installed"
+msgstr "インストール済み"
+
+#: ui/settings_dialog.py:123
+msgid "Mirror Source:"
+msgstr "ミラーソース:"
+
+#: __init__.py:64
+msgid "Model Changed"
+msgstr "モデルが変更されました"
+
+#: ui/settings_dialog.py:81
+msgid "Model Selection"
+msgstr "モデル選択"
+
+#: ui/settings_dialog.py:320
+msgid "Model activated."
+msgstr "モデルがアクティブになりました。"
+
+#: ui/settings_dialog.py:242
+msgid "Model downloaded successfully."
+msgstr "モデルのダウンロードが完了しました。"
+
+#: ui/settings_dialog.py:280
+msgid "Model imported successfully."
+msgstr "モデルが正常にインポートされました。"
+
+#: ui/settings_dialog.py:202
+msgid "Not Installed"
+msgstr "未インストール"
+
+#: __init__.py:27
+msgid "Provides advanced semantic retrieval using TF-IDF or Local LLM (ONNX)."
+msgstr "TF-IDFまたはローカルLLM（ONNX）を使用した高度なセマンティック検索を提供します。"
+
+#: ui/settings_dialog.py:215
+msgid "Re-download"
+msgstr "再ダウンロード"
+
+#: __init__.py:78
+msgid "Retrieval Cache Viewer"
+msgstr "検索キャッシュビューアー"
+
+#: __init__.py:24
+msgid "Retrieval Enhancer"
+msgstr "検索エンハンサー"
+
+#: ui/settings_dialog.py:73
+msgid "Retrieval Enhancer Settings"
+msgstr "検索エンハンサー設定"
+
+#: ui/settings_dialog.py:252
+msgid "Select Model Folder"
+msgstr "モデルフォルダを選択"
+
+#: ui/settings_dialog.py:205
+msgid "Status"
+msgstr "ステータス"
+
+#: ui/settings_dialog.py:242 ui/settings_dialog.py:280
+#: ui/settings_dialog.py:320 ui/settings_dialog.py:328
+msgid "Success"
+msgstr "成功"
+
+#: __init__.py:65
+msgid ""
+"The active model has been changed.\n"
+"Please re-open the 'Smart Translation' dialog to rebuild the index with the new model."
+msgstr ""
+"アクティブなモデルが変更されました。\n"
+"新しいモデルでインデックスを再構築するには、「スマート翻訳」ダイアログを再度開いてください。"
+
+#: ui/settings_dialog.py:292
+msgid "Warning"
+msgstr "警告"

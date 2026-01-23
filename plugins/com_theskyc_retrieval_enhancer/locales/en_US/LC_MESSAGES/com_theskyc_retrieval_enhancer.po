@@ -1,0 +1,166 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Com TheSkyC Retrieval Enhancer Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2026-01-23 06:49+0000\n"
+"PO-Revision-Date: 2026-01-23 07:02+0000\n"
+"Last-Translator: TheSkyC\n"
+"Language-Team: none\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ui/settings_dialog.py:96
+msgid "Activate"
+msgstr "Activate"
+
+#: ui/settings_dialog.py:169 ui/settings_dialog.py:182
+msgid "Active"
+msgstr "Active"
+
+#: ui/settings_dialog.py:296
+msgid "Are you sure you want to delete the model files?"
+msgstr "Are you sure you want to delete the model files?"
+
+#: ui/settings_dialog.py:328
+msgid "Cache cleared."
+msgstr "Cache cleared."
+
+#: ui/settings_dialog.py:292
+msgid "Cannot delete the currently active model."
+msgstr "Cannot delete the currently active model."
+
+#: ui/settings_dialog.py:146
+msgid "Clear Vector Cache"
+msgstr "Clear Vector Cache"
+
+#: ui/settings_dialog.py:323
+msgid "Clear vector cache for ALL models?"
+msgstr "Clear vector cache for ALL models?"
+
+#: ui/settings_dialog.py:150
+msgid "Close"
+msgstr "Close"
+
+#: ui/settings_dialog.py:295 ui/settings_dialog.py:323
+msgid "Confirm"
+msgstr "Confirm"
+
+#: ui/settings_dialog.py:112
+msgid "Custom Model"
+msgstr "Custom Model"
+
+#: ui/settings_dialog.py:198
+msgid "Custom imported model."
+msgstr "Custom imported model."
+
+#: ui/settings_dialog.py:100
+msgid "Delete Files"
+msgstr "Delete Files"
+
+#: ui/settings_dialog.py:98 ui/settings_dialog.py:215
+msgid "Download"
+msgstr "Download"
+
+#: ui/settings_dialog.py:121
+msgid "Download Settings"
+msgstr "Download Settings"
+
+#: ui/settings_dialog.py:249
+msgid "Download failed: "
+msgstr "Download failed: "
+
+#: ui/settings_dialog.py:249 ui/settings_dialog.py:282
+#: ui/settings_dialog.py:330
+msgid "Error"
+msgstr "Error"
+
+#: ui/settings_dialog.py:114
+msgid "Import Local ONNX Model..."
+msgstr "Import Local ONNX Model..."
+
+#: ui/settings_dialog.py:256
+msgid "Importing and verifying model..."
+msgstr "Importing and verifying model..."
+
+#: ui/settings_dialog.py:202
+msgid "Installed"
+msgstr "Installed"
+
+#: ui/settings_dialog.py:123
+msgid "Mirror Source:"
+msgstr "Mirror Source:"
+
+#: __init__.py:64
+msgid "Model Changed"
+msgstr "Model Changed"
+
+#: ui/settings_dialog.py:81
+msgid "Model Selection"
+msgstr "Model Selection"
+
+#: ui/settings_dialog.py:320
+msgid "Model activated."
+msgstr "Model activated."
+
+#: ui/settings_dialog.py:242
+msgid "Model downloaded successfully."
+msgstr "Model downloaded successfully."
+
+#: ui/settings_dialog.py:280
+msgid "Model imported successfully."
+msgstr "Model imported successfully."
+
+#: ui/settings_dialog.py:202
+msgid "Not Installed"
+msgstr "Not Installed"
+
+#: __init__.py:27
+msgid "Provides advanced semantic retrieval using TF-IDF or Local LLM (ONNX)."
+msgstr ""
+"Provides advanced semantic retrieval using TF-IDF or Local LLM (ONNX)."
+
+#: ui/settings_dialog.py:215
+msgid "Re-download"
+msgstr "Re-download"
+
+#: __init__.py:78
+msgid "Retrieval Cache Viewer"
+msgstr "Retrieval Cache Viewer"
+
+#: __init__.py:24
+msgid "Retrieval Enhancer"
+msgstr "Retrieval Enhancer"
+
+#: ui/settings_dialog.py:73
+msgid "Retrieval Enhancer Settings"
+msgstr "Retrieval Enhancer Settings"
+
+#: ui/settings_dialog.py:252
+msgid "Select Model Folder"
+msgstr "Select Model Folder"
+
+#: ui/settings_dialog.py:205
+msgid "Status"
+msgstr "Status"
+
+#: ui/settings_dialog.py:242 ui/settings_dialog.py:280
+#: ui/settings_dialog.py:320 ui/settings_dialog.py:328
+msgid "Success"
+msgstr "Success"
+
+#: __init__.py:65
+msgid ""
+"The active model has been changed.\n"
+"Please re-open the 'Smart Translation' dialog to rebuild the index with the new model."
+msgstr ""
+"The active model has been changed.\n"
+"Please re-open the 'Smart Translation' dialog to rebuild the index with the new model."
+
+#: ui/settings_dialog.py:292
+msgid "Warning"
+msgstr "Warning"

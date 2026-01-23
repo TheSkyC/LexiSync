@@ -1,0 +1,165 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Com TheSkyC Retrieval Enhancer Project 1.0.4\n"
+"Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
+"POT-Creation-Date: 2026-01-23 06:49+0000\n"
+"PO-Revision-Date: 2026-01-23 07:02+0000\n"
+"Last-Translator: TheSkyC\n"
+"Language-Team: none\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ui/settings_dialog.py:96
+msgid "Activate"
+msgstr "활성화"
+
+#: ui/settings_dialog.py:169 ui/settings_dialog.py:182
+msgid "Active"
+msgstr "활성"
+
+#: ui/settings_dialog.py:296
+msgid "Are you sure you want to delete the model files?"
+msgstr "모델 파일을 삭제하시겠습니까?"
+
+#: ui/settings_dialog.py:328
+msgid "Cache cleared."
+msgstr "캐시가 지워졌습니다."
+
+#: ui/settings_dialog.py:292
+msgid "Cannot delete the currently active model."
+msgstr "현재 활성화된 모델은 삭제할 수 없습니다."
+
+#: ui/settings_dialog.py:146
+msgid "Clear Vector Cache"
+msgstr "벡터 캐시 지우기"
+
+#: ui/settings_dialog.py:323
+msgid "Clear vector cache for ALL models?"
+msgstr "모든 모델의 벡터 캐시를 지우시겠습니까?"
+
+#: ui/settings_dialog.py:150
+msgid "Close"
+msgstr "닫기"
+
+#: ui/settings_dialog.py:295 ui/settings_dialog.py:323
+msgid "Confirm"
+msgstr "확인"
+
+#: ui/settings_dialog.py:112
+msgid "Custom Model"
+msgstr "사용자 정의 모델"
+
+#: ui/settings_dialog.py:198
+msgid "Custom imported model."
+msgstr "사용자 정의 가져오기 모델입니다."
+
+#: ui/settings_dialog.py:100
+msgid "Delete Files"
+msgstr "파일 삭제"
+
+#: ui/settings_dialog.py:98 ui/settings_dialog.py:215
+msgid "Download"
+msgstr "다운로드"
+
+#: ui/settings_dialog.py:121
+msgid "Download Settings"
+msgstr "다운로드 설정"
+
+#: ui/settings_dialog.py:249
+msgid "Download failed: "
+msgstr "다운로드 실패: "
+
+#: ui/settings_dialog.py:249 ui/settings_dialog.py:282
+#: ui/settings_dialog.py:330
+msgid "Error"
+msgstr "오류"
+
+#: ui/settings_dialog.py:114
+msgid "Import Local ONNX Model..."
+msgstr "로컬 ONNX 모델 가져오기..."
+
+#: ui/settings_dialog.py:256
+msgid "Importing and verifying model..."
+msgstr "모델을 가져오고 확인하는 중..."
+
+#: ui/settings_dialog.py:202
+msgid "Installed"
+msgstr "설치됨"
+
+#: ui/settings_dialog.py:123
+msgid "Mirror Source:"
+msgstr "미러 소스:"
+
+#: __init__.py:64
+msgid "Model Changed"
+msgstr "모델이 변경됨"
+
+#: ui/settings_dialog.py:81
+msgid "Model Selection"
+msgstr "모델 선택"
+
+#: ui/settings_dialog.py:320
+msgid "Model activated."
+msgstr "모델이 활성화되었습니다."
+
+#: ui/settings_dialog.py:242
+msgid "Model downloaded successfully."
+msgstr "모델 다운로드 성공."
+
+#: ui/settings_dialog.py:280
+msgid "Model imported successfully."
+msgstr "모델을 성공적으로 가져왔습니다."
+
+#: ui/settings_dialog.py:202
+msgid "Not Installed"
+msgstr "설치되지 않음"
+
+#: __init__.py:27
+msgid "Provides advanced semantic retrieval using TF-IDF or Local LLM (ONNX)."
+msgstr "TF-IDF 또는 로컬 LLM(ONNX)을 사용한 고급 의미 검색을 제공합니다."
+
+#: ui/settings_dialog.py:215
+msgid "Re-download"
+msgstr "다시 다운로드"
+
+#: __init__.py:78
+msgid "Retrieval Cache Viewer"
+msgstr "검색 캐시 뷰어"
+
+#: __init__.py:24
+msgid "Retrieval Enhancer"
+msgstr "검색 강화 (RAG)"
+
+#: ui/settings_dialog.py:73
+msgid "Retrieval Enhancer Settings"
+msgstr "검색 강화 설정"
+
+#: ui/settings_dialog.py:252
+msgid "Select Model Folder"
+msgstr "모델 폴더 선택"
+
+#: ui/settings_dialog.py:205
+msgid "Status"
+msgstr "상태"
+
+#: ui/settings_dialog.py:242 ui/settings_dialog.py:280
+#: ui/settings_dialog.py:320 ui/settings_dialog.py:328
+msgid "Success"
+msgstr "성공"
+
+#: __init__.py:65
+msgid ""
+"The active model has been changed.\n"
+"Please re-open the 'Smart Translation' dialog to rebuild the index with the new model."
+msgstr ""
+"활성 모델이 변경되었습니다.\n"
+"새 모델로 인덱스를 다시 구축하려면 '스마트 번역' 대화 상자를 다시 여세요."
+
+#: ui/settings_dialog.py:292
+msgid "Warning"
+msgstr "경고"
