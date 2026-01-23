@@ -180,6 +180,30 @@ jobs:
           --optimize 2 \
           main.py
 
+    - name: Cleanup Translation Source Files (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $distPath = "dist/${{ env.APP_NAME }}"
+        Write-Host "Removing .po and .pot files from $distPath..."
+        Get-ChildItem -Path $distPath -Include "*.po", "*.pot" -Recurse | Remove-Item -Force
+        
+        $remaining = Get-ChildItem -Path $distPath -Include "*.po", "*.pot" -Recurse
+        if ($remaining) { Write-Error "Failed to clean up all source translation files." }
+
+    - name: Cleanup Translation Source Files (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        DIST_PATH="dist/${{ env.APP_NAME }}"
+        echo "Removing .po and .pot files from $DIST_PATH..."
+        find "$DIST_PATH" -type f \( -name "*.po" -o -name "*.pot" \) -delete
+        
+        if find "$DIST_PATH" -type f \( -name "*.po" -o -name "*.pot" \) | grep -q .; then
+          echo "Error: Failed to clean up all source translation files."
+          exit 1
+        fi
+
     - name: Bundle Python Runtime (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
