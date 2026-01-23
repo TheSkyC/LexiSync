@@ -30,7 +30,7 @@ class MODecompilerPlugin(PluginBase):
         return "TheSkyC"
 
     def compatible_app_version(self) -> str:
-        return "1.2"
+        return "1.3"
 
     def url(self) -> str:
         return "https://github.com/TheSkyC/lexisync/tree/master/plugins/com_theskyc_mo_decompiler"

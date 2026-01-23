@@ -27,9 +27,6 @@ class PersonalizedTranslationPlugin(PluginBase):
     def url(self) -> str:
         return "https://github.com/TheSkyC/lexisync/tree/master/plugins/com_theskyc_custom_instructions"
 
-    def compatible_app_version(self) -> str:
-        return "1.2"
-
     def has_settings_dialog(self) -> bool:
         return False
 

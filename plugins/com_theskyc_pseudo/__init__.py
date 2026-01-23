@@ -43,9 +43,6 @@ class PseudoLocalizationPlugin(PluginBase):
     def url(self) -> str:
         return "https://github.com/TheSkyC/lexisync/tree/master/plugins/com_theskyc_pseudo"
 
-    def compatible_app_version(self) -> str:
-        return "1.2"
-
     def add_menu_items(self) -> list:
         submenu_items = [
             (self._("Apply to Selected"), self.apply_to_selected),

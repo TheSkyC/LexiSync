@@ -9,7 +9,7 @@ APP_NAMESPACE_UUID = uuid.UUID('c2e02333-2f1d-48ba-bc8d-90d49da373af')
 EXPANSION_DATA_DIR = "expansion_data"
 MAX_UNDO_HISTORY = 30
 DEFAULT_API_URL = "https://api.deepseek.com/chat/completions"
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.3.0"
 PROMPT_PRESET_EXTENSION = ".prompt"
 EXTRACTION_PATTERN_PRESET_EXTENSION = ".extract"
 
