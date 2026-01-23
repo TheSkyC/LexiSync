@@ -534,6 +534,11 @@ class WelcomeScreen(QWidget):
         QTimer.singleShot(0, self.recent_files_list.updateGeometries)
         self.start_prewarming()
 
+    def bring_to_front(self):
+        self.showNormal()
+        self.activateWindow()
+        self.raise_()
+
     def set_status(self, text, status_type="loading"):
         """设置状态文本和图标颜色"""
         self.status_label.setText(text)

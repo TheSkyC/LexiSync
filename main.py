@@ -5,6 +5,8 @@ import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QObject
 from utils import debug_utils
+from utils.single_instance import raise_existing_instance, SingleInstanceServer
+
 debug_utils.setup_debug_mode()
 app_controller = None
 import logging
@@ -17,12 +19,28 @@ class AppController(QObject):
         self.config = config
         self.main_window = None
         self.welcome_screen = None
+        self.instance_server = SingleInstanceServer(self)
+        if self.instance_server.start():
+            self.instance_server.request_activation.connect(self.bring_to_front)
 
     def start(self):
         from ui_components.welcome_screen import WelcomeScreen
         self.welcome_screen = WelcomeScreen(self.config)
         self.welcome_screen.request_main_window.connect(self.handle_welcome_request)
         self.welcome_screen.show()
+
+    def bring_to_front(self):
+        logger.info("Activation requested from another instance.")
+        target = None
+        if self.main_window and self.main_window.isVisible():
+            target = self.main_window
+        elif self.welcome_screen and self.welcome_screen.isVisible():
+            target = self.welcome_screen
+
+        if target:
+            target.showNormal()
+            target.activateWindow()
+            target.raise_()
 
     def handle_welcome_request(self, action, path):
         logger.info(f"Welcome screen requested action: {action}, path: {path}")
@@ -36,6 +54,11 @@ if __name__ == "__main__":
         stream=sys.stdout,
     )
     app = QApplication(sys.argv)
+
+    if raise_existing_instance():
+        logger.info("Another instance is already running. Exiting.")
+        sys.exit(0)
+
     app.setStyleSheet("""
         QPushButton {
             background-color: #FFFFFF;

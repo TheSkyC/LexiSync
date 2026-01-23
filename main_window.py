@@ -277,6 +277,11 @@ class LexiSyncApp(QMainWindow):
         if hasattr(self, 'project_toolbar'):
             self.project_toolbar.setVisible(False)
 
+    def bring_to_front(self):
+        self.showNormal()
+        self.activateWindow()
+        self.raise_()
+
     def _apply_custom_fonts(self):
         font_settings = self.config.get("font_settings", {})
 
