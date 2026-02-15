@@ -4,7 +4,7 @@ import polib
 import os
 import datetime
 from pathlib import Path
-import uuid
+import xxhash
 from models.translatable_string import TranslatableString
 from services.code_file_service import extract_translatable_strings
 from utils.constants import APP_VERSION, APP_NAMESPACE_UUID, SUPPORTED_LANGUAGES
@@ -50,6 +50,7 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
     # 生成 UUID
     context_key = msgctxt if msgctxt else 'NO_CTX'
     stable_name_for_uuid = f"{po_file_rel_path}::{context_key}::{msgid}::{occurrence_index}"
+    obj_id = xxhash.xxh128(stable_name_for_uuid.encode('utf-8')).hexdigest()
 
     ts = TranslatableString(
         original_raw=msgid,
@@ -61,10 +62,10 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
         string_type="PO Import",
         source_file_path=po_file_rel_path,
         occurrences=occurrences,
-        occurrence_index=occurrence_index
+        occurrence_index=occurrence_index,
+        id=obj_id
     )
 
-    ts.id = str(uuid.uuid5(APP_NAMESPACE_UUID, stable_name_for_uuid))
     ts.translation = msgstr
 
     if msgctxt:

@@ -16,7 +16,7 @@ idna==3.11
     # via requests
 jaraco-classes==3.4.0
     # via keyring
-jaraco-context==6.0.2
+jaraco-context==6.1.0
     # via keyring
 jaraco-functools==4.4.0
     # via keyring
@@ -28,13 +28,13 @@ more-itertools==10.8.0
     # via
     #   jaraco-classes
     #   jaraco-functools
-numpy==2.4.1
+numpy==2.4.2
     # via
     #   -r requirements.in
     #   langid
 openpyxl==3.1.5
     # via -r requirements.in
-packaging==25.0
+packaging==26.0
     # via -r requirements.in
 polib==1.2.0
     # via -r requirements.in
@@ -52,7 +52,7 @@ pyyaml==6.0.3
     # via -r requirements.in
 rapidfuzz==3.14.3
     # via -r requirements.in
-regex==2025.11.3
+regex==2026.1.15
     # via -r requirements.in
 requests==2.32.5
     # via -r requirements.in
@@ -63,3 +63,5 @@ shiboken6==6.10.0
     #   pyside6-essentials
 urllib3==2.6.3
     # via requests
+xxhash==3.6.0
+    # via -r requirements.in
