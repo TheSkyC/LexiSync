@@ -4921,14 +4921,15 @@ class LexiSyncApp(QMainWindow):
                 self.target_language = self.config.get("default_target_language", "zh")
             self.current_project_path = None
 
+            self.is_project_mode = False
+            self.is_po_mode = True
+
             self.add_to_recent_files(po_filepath)
             self.config["last_dir"] = os.path.dirname(po_filepath)
 
             self.undo_history.clear()
             self.redo_history.clear()
             self.mark_project_modified(False)
-            self.is_project_mode = False
-            self.is_po_mode = True
             self._update_file_explorer(po_filepath)
             self.current_po_file_path = po_filepath
             self._run_and_refresh_with_validation()
