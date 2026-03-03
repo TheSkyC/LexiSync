@@ -364,7 +364,7 @@ class DetailsPanel(QWidget):
 
     def on_fix_all_clicked(self):
         if not self.current_ts_obj: return
-        target_lang = self.app_instance.current_target_language if self.app_instance.is_project_mode else self.app_instance.target_language
+        target_lang = self.app_instance.current_target_language
 
         fixed_text = fix_service.apply_all_fixes(self.current_ts_obj, target_lang)
         if fixed_text:
@@ -429,7 +429,7 @@ class DetailsPanel(QWidget):
             self.warning_icon_label.setPixmap(icon.pixmap(12, 12))
 
             # Auto Fix
-            target_lang = self.app_instance.current_target_language if self.app_instance.is_project_mode else self.app_instance.target_language
+            target_lang = self.app_instance.current_target_language
             fixed_text = fix_service.apply_all_fixes(ts_obj, target_lang)
             if fixed_text:
                 self.fix_all_btn.show()

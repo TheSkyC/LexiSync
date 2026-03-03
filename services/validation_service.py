@@ -229,8 +229,7 @@ def run_validation_on_all(translatable_objects, config, app_instance=None):
 
         if all_words:
             source_lang = app_instance.source_language
-            target_lang = app_instance.current_target_language if app_instance.is_project_mode else app_instance.target_language
-
+            target_lang = app_instance.current_target_language
             # 批量查询所有 N-gram
             term_cache = app_instance.glossary_service.get_translations_batch(
                 words=list(all_words),

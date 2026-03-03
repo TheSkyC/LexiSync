@@ -974,7 +974,7 @@ class SmartTranslationDialog(QDialog):
             return
 
         source_lang = self.app.source_language
-        target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+        target_lang = self.app.current_target_language
 
         current_filename = "Unknown File"
         if self.app.is_project_mode:
@@ -1271,7 +1271,7 @@ class SmartTranslationDialog(QDialog):
             self.app,
             self.analysis_samples,
             self.target_items,
-            self.app.source_language,
+            self.app.current_target_language,
             self._get_target_language(),
             self.term_mode_combo.currentData(),
             max_threads=max_threads,
@@ -1303,9 +1303,7 @@ class SmartTranslationDialog(QDialog):
 
     def _get_target_language(self):
         """获取目标语言"""
-        if self.app.is_project_mode:
-            return self.app.current_target_language
-        return self.app.target_language
+        return self.app.current_target_language
 
     def _on_analysis_progress(self, message):
         """分析进度回调"""

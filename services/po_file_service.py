@@ -248,7 +248,7 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         lang_code = 'en'
         lang_name_full = 'English'
         if app_instance:
-            lang_code = app_instance.current_target_language if app_instance.is_project_mode else app_instance.target_language
+            lang_code = app_instance.current_target_language
             lang_name_full = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == lang_code), lang_code)
 
         # 获取项目名称

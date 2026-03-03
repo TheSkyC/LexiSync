@@ -80,7 +80,7 @@ class ReviewController(QObject):
         context_dict = self.context_provider(ts_obj.id)
 
         # 获取目标语言名称
-        target_lang_code = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+        target_lang_code = self.app.current_target_language
         from utils.constants import SUPPORTED_LANGUAGES
         target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
                                 target_lang_code)

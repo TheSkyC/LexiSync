@@ -206,7 +206,7 @@ class TsFormatHandler(BaseFormatHandler):
 
         lang_code = 'en'
         if app_instance:
-            lang_code = app_instance.current_target_language if app_instance.is_project_mode else app_instance.target_language
+            lang_code = app_instance.current_target_language
         elif metadata and 'language' in metadata:
             lang_code = metadata['language']
 
@@ -1165,8 +1165,7 @@ class ArbFormatHandler(BaseFormatHandler):
         app = kwargs.get('app_instance')
         target_lang = None
         if app:
-            target_lang = (app.current_target_language
-                           if app.is_project_mode else app.target_language)
+            target_lang = (app.current_target_language)
 
         output = {}
 

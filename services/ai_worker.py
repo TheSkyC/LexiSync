@@ -366,7 +366,7 @@ class AIWorker(QRunnable):
         if not candidates: return ""
 
         source_lang = app.source_language
-        target_lang_code = app.current_target_language if app.is_project_mode else app.target_language
+        target_lang_code = app.current_target_language
 
         # 批量查询数据库
         potential_terms = app.glossary_service.get_translations_batch(

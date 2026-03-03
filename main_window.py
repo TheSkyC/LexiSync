@@ -178,7 +178,6 @@ class LexiSyncApp(QMainWindow):
 
         self.source_language = self.config.get("default_source_language", "en")
         self.current_target_language = self.config.get("default_target_language", "zh")
-        self.target_languages = []
 
         self.is_modified = False
         self.current_selected_ts_id = None
@@ -227,7 +226,7 @@ class LexiSyncApp(QMainWindow):
         self.filter_actions = {}
         self.filter_checkboxes = {}
         self.source_language = self.config.get("default_source_language", "en")
-        self.target_language = self.config.get("default_target_language", "zh")
+        self.current_target_language = self.config.get("default_target_language", "zh")
         self.show_ignored_var = self.config.get("show_ignored", True)
         self.show_untranslated_var = self.config.get("show_untranslated", False)
         self.show_translated_var = self.config.get("show_translated", False)
@@ -1023,14 +1022,14 @@ class LexiSyncApp(QMainWindow):
         return None
 
     def show_language_pair_dialog(self):
-        dialog = LanguagePairDialog(self, self.source_language, self.target_language, self)
+        dialog = LanguagePairDialog(self, self.source_language, self.current_target_language, self)
         if dialog.exec():
             if (self.source_language != dialog.source_lang or
-                    self.target_language != dialog.target_lang):
+                    self.current_target_language != dialog.target_lang):
                 self.source_language = dialog.source_lang
-                self.target_language = dialog.target_lang
+                self.current_target_language = dialog.target_lang
                 self.config["default_source_language"] = self.source_language
-                self.config["default_target_language"] = self.target_language
+                self.config["default_target_language"] = self.current_target_language
                 self.save_config()
                 if self.translatable_objects:
                     self.mark_modified()
@@ -1039,10 +1038,10 @@ class LexiSyncApp(QMainWindow):
                     self._run_and_refresh_with_validation()
                     self.update_statusbar(
                         _("Validation complete. Language pair set to {src} -> {tgt}.").format(src=self.source_language,
-                                                                                              tgt=self.target_language))
+                                                                                              tgt=self.current_target_language))
                 else:
                     self.update_statusbar(_("Language pair set to {src} -> {tgt}.").format(src=self.source_language,
-                                                                                           tgt=self.target_language))
+                                                                                           tgt=self.current_target_language))
 
     def show_keybinding_dialog(self):
         dialog = KeybindingDialog(self, _("Keybinding Settings"), self)
@@ -1647,7 +1646,7 @@ class LexiSyncApp(QMainWindow):
                 self._add_glossary_dialog = None
 
         source_lang = self.source_language
-        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
         self._add_glossary_dialog = AddGlossaryEntryDialog(self, default_source_lang=source_lang,
                                                            default_target_lang=target_lang)
@@ -1989,7 +1988,7 @@ class LexiSyncApp(QMainWindow):
         translated_count = 0
         count_label = "items"
         source_lang = self.source_language
-        target_lang = self.target_language
+        target_lang = self.current_target_language
 
         if self.is_project_mode:
             file_type = "project"
@@ -2296,9 +2295,8 @@ class LexiSyncApp(QMainWindow):
             self.project_manager.current_project_path = project_path
             self.project_manager.project_config = project_config
 
-            self.source_language = self.project_config.get("source_language", "en")
-            self.target_languages = self.project_config.get("target_languages", [])
-            self.current_target_language = self.project_config.get("current_target_language")
+            self.source_language = self.config.get("default_source_language", "en")
+            self.current_target_language = self.config.get("default_target_language", "zh")
 
             self.setup_tm_service()
             self.setup_glossary_service()
@@ -2441,7 +2439,7 @@ class LexiSyncApp(QMainWindow):
     def _update_language_switcher(self):
         self.target_lang_combo.blockSignals(True)
         self.target_lang_combo.clear()
-        for lang_code in self.target_languages:
+        for lang_code in self.current_target_language:
             lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == lang_code), lang_code)
             self.target_lang_combo.addItem(lang_name, lang_code)
 
@@ -2585,7 +2583,7 @@ class LexiSyncApp(QMainWindow):
             detected_lang = language_service.detect_source_language(
                 [ts.original_semantic for ts in self.translatable_objects])
             self.source_language = detected_lang
-            self.target_language = self.config.get("default_target_language", "zh")
+            self.current_target_language = self.config.get("default_target_language", "zh")
 
             # Checkpoint 2: Extraction
             t_extract = time.perf_counter()
@@ -3223,7 +3221,7 @@ class LexiSyncApp(QMainWindow):
     def _create_auto_fix_menu(self, selected_objs):
         if not selected_objs: return None
 
-        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
         # Case A: Single Selection
         if len(selected_objs) == 1:
@@ -3524,7 +3522,7 @@ class LexiSyncApp(QMainWindow):
         service = ExpansionRatioService.get_instance()
         expected_ratio = service.get_expected_ratio(
             self.source_language,
-            self.target_language,
+            self.current_target_language,
             ts_obj.original_semantic,
         )
         ratios = (actual_ratio, expected_ratio)
@@ -3766,7 +3764,7 @@ class LexiSyncApp(QMainWindow):
     def auto_fix_all_issues(self):
         if not self.translatable_objects:
             return
-        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
         # 1. 预扫描
         fixable_count = 0
@@ -3896,7 +3894,7 @@ class LexiSyncApp(QMainWindow):
 
     def _apply_rule_fixes_silently(self):
         """Helper for Smart Fix: applies rule-based fixes without user prompts."""
-        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
         preview_changes = []
         for ts_obj in self.translatable_objects:
@@ -4010,7 +4008,7 @@ class LexiSyncApp(QMainWindow):
 
         if not glossary_text and hasattr(self, 'glossary_service'):
             pass
-        target_lang_code = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang_code = self.current_target_language if self.is_project_mode else self.current_target_language
         from utils.constants import SUPPORTED_LANGUAGES
         target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
                                 target_lang_code)
@@ -4167,7 +4165,7 @@ class LexiSyncApp(QMainWindow):
         if new_translation_from_ui.strip():
             db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
             source_lang = self.source_language
-            target_lang = self.current_target_language if self.is_project_mode else self.target_language
+            target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
             if db_path_to_use:
                 self.tm_service.update_tm_entry(
@@ -4736,7 +4734,7 @@ class LexiSyncApp(QMainWindow):
                         if translation_for_model.strip():
                             db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
                             source_lang = self.source_language
-                            target_lang = self.current_target_language if self.is_project_mode else self.target_language
+                            target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
                             if db_path_to_use:
                                 self.tm_service.update_tm_entry(
                                     db_path_to_use, ts_obj.original_semantic,
@@ -4971,26 +4969,20 @@ class LexiSyncApp(QMainWindow):
             )
 
             # 自动检测源语言 (Source Language)
-            if self.translatable_objects:
+            sample_texts = [ts.original_semantic for ts in self.translatable_objects if ts.original_semantic.strip()]
+            if sample_texts:
                 from services import language_service
-                sample_texts = [ts.original_semantic for ts in self.translatable_objects if
-                                ts.original_semantic.strip()][:50]
-                if sample_texts:
-                    detected_src = language_service.detect_source_language(sample_texts)
-                    self.source_language = detected_src
+                self.source_language = language_service.detect_source_language(sample_texts)
 
-            # 设置目标语言 (Target Language)
             if lang_full and lang_full != 'en':
-                self.target_language = lang_full
+                self.current_target_language = lang_full
             else:
-                # 尝试从已有的译文中检测目标语言
-                sample_translations = [ts.translation for ts in self.translatable_objects if ts.translation.strip()][
-                    :50]
+                sample_translations = [ts.translation for ts in self.translatable_objects if ts.translation.strip()]
                 if sample_translations:
                     from services import language_service
-                    self.target_language = language_service.detect_source_language(sample_translations)
+                    self.current_target_language = language_service.detect_source_language(sample_translations)
                 else:
-                    self.target_language = self.config.get("default_target_language", "zh")
+                    self.current_target_language = self.config.get("default_target_language", "zh")
 
             if not self.translatable_objects:
                 self.update_statusbar(_("Import cancelled or no valid data found."))
@@ -5007,29 +4999,7 @@ class LexiSyncApp(QMainWindow):
             self.source_language = language_service.detect_source_language(
                 [ts.original_semantic for ts in self.translatable_objects if ts.original_semantic.strip()]
             )
-            target_lang_set = False
-            if lang_full:
-                full_code_match = next((code for name, code in SUPPORTED_LANGUAGES.items() if
-                                        code.lower() == lang_full.lower().replace('-', '_')), None)
-                if full_code_match:
-                    self.target_language = full_code_match
-                    target_lang_set = True
-                else:
-                    base_lang_code = lang_full.split('_')[0].split('-')[0].lower()
-                    if base_lang_code in SUPPORTED_LANGUAGES.values():
-                        self.target_language = base_lang_code
-                        target_lang_set = True
 
-            if not target_lang_set:
-                translated_strings = [ts.translation for ts in self.translatable_objects if ts.translation.strip()]
-                if translated_strings:
-                    detected_target_lang = language_service.detect_source_language(translated_strings)
-                    if detected_target_lang and detected_target_lang in SUPPORTED_LANGUAGES.values():
-                        self.target_language = detected_target_lang
-                        target_lang_set = True
-
-            if not target_lang_set:
-                self.target_language = self.config.get("default_target_language", "zh")
             self.current_project_path = None
 
             self.is_project_mode = False
@@ -5334,7 +5304,7 @@ class LexiSyncApp(QMainWindow):
         display_name = f"{current_filename} (Batch Save)"
 
         source_lang = self.source_language
-        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
         # 4. Check Conflicts
         self.update_statusbar(_("Checking for TM conflicts..."), persistent=True)
@@ -5418,7 +5388,7 @@ class LexiSyncApp(QMainWindow):
 
         db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
         source_lang = self.source_language
-        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
         self.tm_service.update_tm_entry(
             db_path_to_use,
@@ -5441,7 +5411,7 @@ class LexiSyncApp(QMainWindow):
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return
         source_lang = self.source_language
-        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
         db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
 
         if not db_path_to_use:
@@ -5505,7 +5475,7 @@ class LexiSyncApp(QMainWindow):
 
         # 2. Perform a single batch query
         source_lang = self.source_language
-        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
         tm_results = self.tm_service.get_translations_batch(texts_to_query, source_lang, target_lang)
 
@@ -5998,7 +5968,7 @@ class LexiSyncApp(QMainWindow):
     def _fetch_tm_context(self, source_text, limit: int = 3, mode: str = "fuzzy", threshold: float = 0.75):
         try:
             source_lang = self.app.source_language
-            target_lang = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+            target_lang = self.app.current_target_language
 
             lines = []
 
@@ -6040,7 +6010,7 @@ class LexiSyncApp(QMainWindow):
             if not candidates: return []
 
             source_lang = self.source_language
-            target_lang = self.current_target_language if self.is_project_mode else self.target_language
+            target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
             # 批量查询
             results = self.glossary_service.get_translations_batch(
@@ -6101,7 +6071,7 @@ class LexiSyncApp(QMainWindow):
         # Prepare Data
         context_dict = self._generate_universal_context(ts_id_to_translate)
         plugin_placeholders = self.plugin_manager.run_hook('get_ai_translation_context') or {}
-        target_lang_code = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang_code = self.current_target_language if self.is_project_mode else self.current_target_language
         target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
                                 target_lang_code)
 
@@ -6696,7 +6666,7 @@ class LexiSyncApp(QMainWindow):
     def perform_tm_update(self):
         if self.last_tm_query:
             source_lang = self.source_language
-            target_lang = self.current_target_language if self.is_project_mode else self.target_language
+            target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
             exact_match = self.tm_service.get_translation(self.last_tm_query, source_lang, target_lang)
             fuzzy_matches_from_plugin = None
             if hasattr(self, 'plugin_manager'):
@@ -6765,7 +6735,7 @@ class LexiSyncApp(QMainWindow):
         applied_count = 0
         bulk_changes = []
         source_lang = self.source_language
-        target_lang = self.current_target_language if self.is_project_mode else self.target_language
+        target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
         for ts_obj in selected_objs:
             if ts_obj.is_ignored: continue

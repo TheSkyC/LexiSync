@@ -101,7 +101,7 @@ class AITaskManager(QObject):
             if hasattr(self.app, 'plugin_manager'):
                 plugin_placeholders = self.app.plugin_manager.run_hook('get_ai_translation_context') or {}
 
-            target_lang_code = self.app.current_target_language if self.app.is_project_mode else self.app.target_language
+            target_lang_code = self.app.current_target_language
             target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
                                     target_lang_code)
 
