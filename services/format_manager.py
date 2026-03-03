@@ -2225,6 +2225,7 @@ class CsvFormatHandler(BaseFormatHandler):
     def save(self, filepath, translatable_objects, metadata, **kwargs):
         mapping = metadata.get('mapping', {})
         tgt_idx = mapping.get('target')
+        cmt_idx = mapping.get('comment')
 
         # 如果没有目标列，我们需要在末尾追加一列
         append_target = False
@@ -2251,6 +2252,7 @@ class CsvFormatHandler(BaseFormatHandler):
         for row_num, row in enumerate(rows[1:], start=2):
             ts = ts_map.get(row_num)
             if ts:
+                # 1. 回填译文
                 trans_text = ts.translation if ts.translation else ts.original_semantic
                 if append_target:
                     row.append(trans_text)
@@ -2260,6 +2262,9 @@ class CsvFormatHandler(BaseFormatHandler):
                     # 补齐长度
                     row.extend([""] * (tgt_idx - len(row) + 1))
                     row[tgt_idx] = trans_text
+                # 2. 回填注释
+                if cmt_idx is not None and cmt_idx < len(row):
+                    row[cmt_idx] = ts.comment
 
         # 写回
         with open(filepath, 'w', encoding='utf-8-sig', newline='') as f:
@@ -2365,6 +2370,7 @@ class XlsxFormatHandler(BaseFormatHandler):
         import openpyxl
         mapping = metadata.get('mapping', {})
         tgt_idx = mapping.get('target')
+        cmt_idx = mapping.get('comment')
 
         wb = openpyxl.load_workbook(filepath)
         ws = wb[metadata.get('sheet_name', wb.active.title)]
@@ -2380,10 +2386,13 @@ class XlsxFormatHandler(BaseFormatHandler):
         for row_num in range(2, ws.max_row + 1):
             ts = ts_map.get(row_num)
             if ts:
+                # 1. 回填译文 (openpyxl 是 1-based)
                 trans_text = ts.translation if ts.translation else ts.original_semantic
-                # openpyxl column index is 1-based
                 ws.cell(row=row_num, column=tgt_idx + 1, value=trans_text)
 
+                # 2. 回填注释
+                if cmt_idx is not None:
+                    ws.cell(row=row_num, column=cmt_idx + 1, value=ts.comment)
         wb.save(filepath)
 
 
