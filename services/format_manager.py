@@ -2129,12 +2129,12 @@ class CsvFormatHandler(BaseFormatHandler):
 
         for row_num, row in enumerate(data_rows, start=2):
             if src_idx >= len(row): continue
-            source_text = row[src_idx].strip()
-            if not source_text: continue
+            source_text = row[src_idx]
+            if not source_text.strip(): continue
 
-            target_text = row[tgt_idx].strip() if tgt_idx is not None and tgt_idx < len(row) else ""
-            key_text = row[key_idx].strip() if key_idx is not None and key_idx < len(row) else ""
-            comment_text = row[cmt_idx].strip() if cmt_idx is not None and cmt_idx < len(row) else ""
+            target_text = row[tgt_idx] if tgt_idx is not None and tgt_idx < len(row) else ""
+            key_text = row[key_idx] if key_idx is not None and key_idx < len(row) else ""
+            comment_text = row[cmt_idx] if cmt_idx is not None and cmt_idx < len(row) else ""
 
             context = key_text or f"row_{row_num}"
             counter_key = (source_text, context)
@@ -2269,15 +2269,12 @@ class XlsxFormatHandler(BaseFormatHandler):
 
         for row_num, row in enumerate(data_rows, start=2):
             if src_idx >= len(row) or row[src_idx] is None: continue
-            source_text = str(row[src_idx]).strip()
-            if not source_text: continue
+            source_text = str(row[src_idx])
+            if not source_text.strip(): continue
 
-            target_text = str(row[tgt_idx]).strip() if tgt_idx is not None and tgt_idx < len(row) and row[
-                tgt_idx] is not None else ""
-            key_text = str(row[key_idx]).strip() if key_idx is not None and key_idx < len(row) and row[
-                key_idx] is not None else ""
-            comment_text = str(row[cmt_idx]).strip() if cmt_idx is not None and cmt_idx < len(row) and row[
-                cmt_idx] is not None else ""
+            target_text = str(row[tgt_idx]) if tgt_idx is not None and tgt_idx < len(row) and row[tgt_idx] is not None else ""
+            key_text = str(row[key_idx]) if key_idx is not None and key_idx < len(row) and row[key_idx] is not None else ""
+            comment_text = str(row[cmt_idx]) if cmt_idx is not None and cmt_idx < len(row) and row[cmt_idx] is not None else ""
 
             context = key_text or f"row_{row_num}"
             counter_key = (source_text, context)
