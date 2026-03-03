@@ -1,8 +1,7 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import re
-import regex
+import regex as re
 from collections import Counter
 import html
 from utils.localization import _
@@ -24,6 +23,10 @@ RE_CJK = (
     r'\u3100-\u312f\u3200-\u32ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]'
 )
 RE_LATIN = r'[a-zA-Z0-9]'
+
+RE_PANGU_CJK_LATIN = re.compile(f'({RE_CJK})({RE_LATIN})')
+RE_PANGU_LATIN_CJK = re.compile(f'({RE_LATIN})({RE_CJK})')
+
 STRFTIME_EQUIVALENCE = {
     # 月份：全称(B)、缩写(b/h) -> 映射为 数字(m)
     'B': 'm', 'b': 'm', 'h': 'm',
@@ -236,25 +239,21 @@ def check_newline_count(source, target):
         return _("Translation has {tgt} Lines, expected {src} Lines").format(tgt=tgt_count, src=src_count)
     return None
 
-
 def check_pangu_spacing(target):
     """盘古之白：检查中文字符与拉丁字符之间是否缺少空格"""
-    # Case 1: CJK followed by Latin (e.g., "我A")
-    match_cjk_latin = re.search(f'({RE_CJK})({RE_LATIN})', target)
+    match_cjk_latin = RE_PANGU_CJK_LATIN.search(target)
     if match_cjk_latin:
         cjk_char = match_cjk_latin.group(1)
         latin_char = match_cjk_latin.group(2)
         return _("Missing space between '{c}' and '{l}'").format(c=cjk_char, l=latin_char)
 
-    # Case 2: Latin followed by CJK (e.g., "A我")
-    match_latin_cjk = re.search(f'({RE_LATIN})({RE_CJK})', target)
+    match_latin_cjk = RE_PANGU_LATIN_CJK.search(target)
     if match_latin_cjk:
         latin_char = match_latin_cjk.group(1)
         cjk_char = match_latin_cjk.group(2)
         return _("Missing space between '{l}' and '{c}'").format(l=latin_char, c=cjk_char)
 
     return None
-
 
 def check_quotes(source, target, mode='flexible'):
     """检查单引号和双引号"""
@@ -415,8 +414,7 @@ def check_python_brace(source, target):
 
 
 def check_icu_placeholders(source, target):
-    import regex
-    pattern = regex.compile(r'\{(?:[^{}]|(?R))*\}')
+    pattern = re.compile(r'\{(?:[^{}]|(?R))*\}')
 
     def extract_vars(text):
         vars_list = []
