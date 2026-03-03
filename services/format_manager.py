@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import regex as re
+import plistlib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import xxhash
@@ -1013,10 +1015,749 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
         logger.info(f"[AndroidStringsFormatHandler] Saved {len(translatable_objects)} strings to {filepath}")
 
 
+class IosStringsFormatHandler(BaseFormatHandler):
+    """
+    Apple iOS / macOS 本地化文件处理器
+
+    支持的格式与特性:
+    1. .strings 文件: 标准 "key" = "value"; 格式，完整保留行内注释和块注释
+    2. .stringsdict 文件: XML Plist 复数规则，支持 NSStringLocalizedFormatKey
+       以及所有 CLDR 复数类别 (zero/one/two/few/many/other)
+    3. 注释提取: 块注释 /* ... */ 和行注释 // 均可作为 translator comment 保留
+    4. 转义处理: 正确处理 \\n \\t \\\\ \\\" 等 Apple 转义序列的双向转换
+    5. 状态检测: 自动将 value == key 或 value 为空的条目标记为待审阅
+    6. 路径语言检测: 从 xx.lproj/Localizable.strings 路径自动解析语言代码
+    """
+    format_id = "ios_strings"
+    extensions = ['.strings', '.stringsdict']
+    format_type = "translation"
+    display_name = _("Apple .strings / .stringsdict")
+    badge_text = "iOS"
+    badge_bg_color = "#F9FBE7"
+    badge_text_color = "#558B2F"
+
+    def load(self, filepath, **kwargs):
+        ext = os.path.splitext(filepath)[1].lower()
+        relative_path = kwargs.get('relative_path') or self._get_relative_path(filepath)
+        language_code = self._detect_language_from_path(filepath)
+
+        if ext == '.stringsdict':
+            objects, meta = self._load_stringsdict(filepath, relative_path)
+        else:
+            objects, meta = self._load_strings(filepath, relative_path)
+
+        return objects, meta, language_code
+
+    def _load_strings(self, filepath, rel_path):
+        with open(filepath, 'r', encoding='utf-8-sig', errors='replace') as f:
+            content = f.read()
+
+        translatable_objects = []
+        occurrence_counters = {}
+
+        # 解析所有条目（带前置注释）
+        # 语法: (可选注释块/行) "key" = "value";
+        token_re = re.compile(
+            r'(?:(?P<block_comment>/\*.*?\*/)|(?P<line_comment>//[^\n]*\n))'
+            r'|"(?P<key>(?:[^"\\]|\\.)*)"\s*=\s*"(?P<value>(?:[^"\\]|\\.)*)"\s*;',
+            re.DOTALL
+        )
+
+        pending_comment = []
+        for m in token_re.finditer(content):
+            if m.group('block_comment'):
+                text = m.group('block_comment')[2:-2].strip()
+                pending_comment.append(text)
+            elif m.group('line_comment'):
+                text = m.group('line_comment')[2:].strip()
+                pending_comment.append(text)
+            else:
+                key = self._unescape(m.group('key'))
+                value = self._unescape(m.group('value'))
+                comment = '\n'.join(pending_comment).strip()
+                pending_comment.clear()
+
+                if not key:
+                    continue
+
+                counter_key = (key, rel_path)
+                idx = occurrence_counters.get(counter_key, 0)
+                occurrence_counters[counter_key] = idx + 1
+
+                stable = f"{rel_path}::{key}::{idx}"
+                obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+                ts = TranslatableString(
+                    original_raw=key, original_semantic=key,
+                    line_num=0,
+                    char_pos_start_in_file=0, char_pos_end_in_file=0,
+                    full_code_lines=[],
+                    string_type="iOS String",
+                    source_file_path=rel_path,
+                    occurrences=[(rel_path, key)],
+                    occurrence_index=idx,
+                    id=obj_id
+                )
+                ts.translation = value
+                ts.context = key
+                ts.comment = comment
+                ts.po_comment = f"#: Apple strings key: {key}"
+                # value == key 通常意味着尚未翻译（源语言文件）
+                ts.is_reviewed = bool(value and value != key)
+                ts.update_sort_weight()
+                translatable_objects.append(ts)
+
+        meta = {'format': 'strings', 'raw_content': content}
+        logger.info(f"[IosStringsFormatHandler] Loaded {len(translatable_objects)} entries from {filepath}")
+        return translatable_objects, meta
+
+    def _load_stringsdict(self, filepath, rel_path):
+        """
+        解析 .stringsdict (Binary / XML Plist)。
+        顶层结构:
+          {
+            "<key>": {
+              "NSStringLocalizedFormatKey": "%#@value@",
+              "value": {
+                "NSStringFormatSpecTypeKey": "NSStringPluralRuleType",
+                "NSStringFormatValueTypeKey": "d",
+                "zero": "...", "one": "...", "two": "...",
+                "few": "...", "many": "...", "other": "..."
+              }
+            }
+          }
+        """
+        with open(filepath, 'rb') as f:
+            try:
+                data = plistlib.load(f)
+            except Exception as e:
+                logger.error(f"Failed to parse stringsdict plist: {e}")
+                return [], {'format': 'stringsdict', 'original_data': {}}
+
+        translatable_objects = []
+        occurrence_counters = {}
+        plural_categories = ['zero', 'one', 'two', 'few', 'many', 'other']
+
+        for top_key, top_value in data.items():
+            if not isinstance(top_value, dict):
+                continue
+
+            format_key = top_value.get('NSStringLocalizedFormatKey', '')
+
+            # 遍历所有变量规则块
+            for var_name, var_dict in top_value.items():
+                if var_name == 'NSStringLocalizedFormatKey':
+                    continue
+                if not isinstance(var_dict, dict):
+                    continue
+                if var_dict.get('NSStringFormatSpecTypeKey') != 'NSStringPluralRuleType':
+                    continue
+
+                value_type = var_dict.get('NSStringFormatValueTypeKey', 'd')
+
+                for category in plural_categories:
+                    text = var_dict.get(category)
+                    if text is None:
+                        continue
+
+                    full_context = f"{top_key}.{var_name}.{category}"
+                    counter_key = (text, full_context)
+                    idx = occurrence_counters.get(counter_key, 0)
+                    occurrence_counters[counter_key] = idx + 1
+
+                    stable = f"{rel_path}::{full_context}::{text}::{idx}"
+                    obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+                    ts = TranslatableString(
+                        original_raw=text, original_semantic=text,
+                        line_num=0,
+                        char_pos_start_in_file=0, char_pos_end_in_file=0,
+                        full_code_lines=[],
+                        string_type="iOS Plural",
+                        source_file_path=rel_path,
+                        occurrences=[(rel_path, full_context)],
+                        occurrence_index=idx,
+                        id=obj_id
+                    )
+                    ts.translation = text
+                    ts.context = full_context
+                    ts.comment = (
+                        f"Plural category: {category}\n"
+                        f"Format variable: {var_name} (type: %{value_type})\n"
+                        f"Format key: {format_key}"
+                    )
+                    ts.po_comment = (
+                        f"#: stringsdict key: {top_key}, "
+                        f"variable: {var_name}, category: {category}"
+                    )
+                    ts.is_reviewed = False
+                    ts.update_sort_weight()
+                    translatable_objects.append(ts)
+
+        meta = {'format': 'stringsdict', 'original_data': data}
+        logger.info(f"[IosStringsFormatHandler] Loaded {len(translatable_objects)} plural entries from {filepath}")
+        return translatable_objects, meta
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        fmt = metadata.get('format', 'strings')
+        if fmt == 'stringsdict':
+            self._save_stringsdict(filepath, translatable_objects, metadata)
+        else:
+            self._save_strings(filepath, translatable_objects, metadata)
+
+    def _save_strings(self, filepath, translatable_objects, metadata):
+        lines = []
+        for ts in translatable_objects:
+            if not ts.original_semantic or ts.id == "##NEW_ENTRY##":
+                continue
+            if ts.comment:
+                # 多行注释写成块注释
+                lines.append(f"/* {ts.comment} */")
+            translation = ts.translation if ts.translation else ts.original_semantic
+            escaped_key = self._escape(ts.context or ts.original_semantic)
+            escaped_val = self._escape(translation)
+            lines.append(f'"{escaped_key}" = "{escaped_val}";')
+            lines.append('')
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+        logger.info(f"[IosStringsFormatHandler] Saved {len(translatable_objects)} strings to {filepath}")
+
+    def _save_stringsdict(self, filepath, translatable_objects, metadata):
+        """重建 plist 数据结构并写出。"""
+        original_data = metadata.get('original_data', {})
+
+        # 将翻译回填进原始结构的副本
+        import copy
+        new_data = copy.deepcopy(original_data)
+
+        # 建立 context -> translation 映射
+        trans_map = {
+            ts.context: ts.translation
+            for ts in translatable_objects
+            if ts.translation and not ts.is_ignored and ts.context
+        }
+
+        for top_key, top_value in new_data.items():
+            if not isinstance(top_value, dict):
+                continue
+            for var_name, var_dict in top_value.items():
+                if var_name == 'NSStringLocalizedFormatKey':
+                    continue
+                if not isinstance(var_dict, dict):
+                    continue
+                for category in ['zero', 'one', 'two', 'few', 'many', 'other']:
+                    if category not in var_dict:
+                        continue
+                    ctx = f"{top_key}.{var_name}.{category}"
+                    if ctx in trans_map:
+                        var_dict[category] = trans_map[ctx]
+
+        with open(filepath, 'wb') as f:
+            plistlib.dump(new_data, f, fmt=plistlib.FMT_XML)
+        logger.info(f"[IosStringsFormatHandler] Saved stringsdict to {filepath}")
+
+    def _unescape(self, s: str) -> str:
+        """将 .strings 转义序列还原为真实字符。"""
+        return (s
+                .replace('\\"', '"')
+                .replace("\\'", "'")
+                .replace('\\n', '\n')
+                .replace('\\r', '\r')
+                .replace('\\t', '\t')
+                .replace('\\\\', '\\'))
+
+    def _escape(self, s: str) -> str:
+        """将真实字符编码为 .strings 转义序列。"""
+        return (s
+                .replace('\\', '\\\\')
+                .replace('"', '\\"')
+                .replace('\n', '\\n')
+                .replace('\r', '\\r')
+                .replace('\t', '\\t'))
+
+    def _detect_language_from_path(self, filepath: str) -> str:
+        """
+        从 Xcode 项目的 lproj 路径提取语言代码。
+        例: en.lproj/Localizable.strings  →  'en'
+            zh-Hans.lproj/...             →  'zh-Hans'
+        """
+        for part in Path(filepath).parts:
+            if part.endswith('.lproj'):
+                return part[:-len('.lproj')]
+        return 'en'
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / 'project.json').is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
+
+class ArbFormatHandler(BaseFormatHandler):
+    """
+    Flutter / Dart ARB (Application Resource Bundle) 格式处理器
+
+    支持的特性:
+    1. 元数据保留: 完整读写 @@locale、@@last_modified 等文件级元数据
+    2. 条目描述符: 支持 @key 块中的 description、placeholders、plural 字段
+    3. 占位符解析: 自动识别 {name}、{count} 形式的插值占位符并记录到注释
+    4. 复数/性别: 识别 ICU MessageFormat 语法 (plural/select/gender) 并保留原样
+    5. 非翻译键过滤: 自动跳过以 @@ 开头的全局元数据键
+    6. 语言检测: 优先读取 @@locale 字段，其次从文件名 (app_en.arb) 推断
+    """
+    format_id = "arb"
+    extensions = ['.arb']
+    format_type = "translation"
+    display_name = _("Flutter ARB File")
+    badge_text = "ARB"
+    badge_bg_color = "#E8EAF6"
+    badge_text_color = "#283593"
+
+    def load(self, filepath, **kwargs):
+        logger.debug(f"[ArbFormatHandler] Loading ARB file: {filepath}")
+
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+            data = json.loads(content)
+
+        relative_path = kwargs.get('relative_path') or self._get_relative_path(filepath)
+        language_code = self._detect_language(data, os.path.basename(filepath))
+        indent = self._detect_indent(content)
+
+        translatable_objects = []
+        occurrence_counters = {}
+
+        # 全局元数据 (@@locale, @@last_modified …) — 保留但不翻译
+        global_metadata = {k: v for k, v in data.items() if k.startswith('@@')}
+
+        # 遍历所有翻译键
+        for key, value in data.items():
+            if key.startswith('@'):          # @key 描述符或 @@ 全局元数据 — 跳过
+                continue
+            if not isinstance(value, str):   # ARB 规范: 翻译值必须为字符串
+                continue
+            if not value.strip():
+                continue
+
+            # 获取对应的 @key 描述符
+            descriptor = data.get(f'@{key}', {})
+            description = descriptor.get('description', '') if isinstance(descriptor, dict) else ''
+            placeholders = descriptor.get('placeholders', {}) if isinstance(descriptor, dict) else {}
+
+            # 构建人类可读的占位符说明
+            ph_notes = []
+            for ph_name, ph_info in placeholders.items():
+                ph_type = ph_info.get('type', 'String') if isinstance(ph_info, dict) else 'String'
+                ph_example = ph_info.get('example', '') if isinstance(ph_info, dict) else ''
+                note = f"{{{ph_name}}}: {ph_type}"
+                if ph_example:
+                    note += f" (e.g. {ph_example})"
+                ph_notes.append(note)
+
+            counter_key = (value, key)
+            idx = occurrence_counters.get(counter_key, 0)
+            occurrence_counters[counter_key] = idx + 1
+
+            stable = f"{relative_path}::{key}::{value}::{idx}"
+            obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+            ts = TranslatableString(
+                original_raw=value, original_semantic=value,
+                line_num=0,
+                char_pos_start_in_file=0, char_pos_end_in_file=0,
+                full_code_lines=[],
+                string_type="ARB String",
+                source_file_path=relative_path,
+                occurrences=[(relative_path, key)],
+                occurrence_index=idx,
+                id=obj_id
+            )
+            ts.translation = value
+            ts.context = key
+            ts.comment = description
+            ts.po_comment = (
+                f"#: ARB key: {key}"
+                + (f"\n#. Placeholders: {', '.join(ph_notes)}" if ph_notes else "")
+            )
+            ts.is_reviewed = False
+            ts.update_sort_weight()
+            translatable_objects.append(ts)
+
+        metadata = {
+            'indent': indent,
+            'global_metadata': global_metadata,
+            'descriptors': {k[1:]: v for k, v in data.items()
+                            if k.startswith('@') and not k.startswith('@@')},
+        }
+
+        logger.info(f"[ArbFormatHandler] Loaded {len(translatable_objects)} strings from {filepath}")
+        return translatable_objects, metadata, language_code
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        logger.debug(f"[ArbFormatHandler] Saving ARB file: {filepath}")
+
+        indent = metadata.get('indent', 4)
+        global_metadata = metadata.get('global_metadata', {})
+        descriptors = metadata.get('descriptors', {})
+
+        app = kwargs.get('app_instance')
+        target_lang = None
+        if app:
+            target_lang = (app.current_target_language
+                           if app.is_project_mode else app.target_language)
+
+        output = {}
+
+        # 写入 @@locale
+        locale = target_lang or global_metadata.get('@@locale', 'en')
+        output['@@locale'] = locale
+
+        # 写入其他 @@ 全局元数据（排除 @@locale，已单独写）
+        for k, v in global_metadata.items():
+            if k != '@@locale':
+                output[k] = v
+
+        # 写入翻译条目 + 对应描述符
+        for ts in translatable_objects:
+            if not ts.original_semantic or ts.id == '##NEW_ENTRY##':
+                continue
+            key = ts.context or ts.original_semantic
+            translation = ts.translation if ts.translation else ts.original_semantic
+            output[key] = translation
+
+            # 还原 @key 描述符（保留原有占位符、描述等）
+            if key in descriptors:
+                output[f'@{key}'] = descriptors[key]
+            elif ts.comment:
+                # 若原本没有描述符但有 description，生成一个最简描述符
+                output[f'@{key}'] = {'description': ts.comment}
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(output, f, indent=indent, ensure_ascii=False)
+            f.write('\n')  # ARB 文件惯例以换行结尾
+
+        logger.info(f"[ArbFormatHandler] Saved {len(translatable_objects)} strings to {filepath}")
+
+    def _detect_indent(self, content: str) -> int:
+        for line in content.split('\n')[1:]:
+            stripped = line.lstrip()
+            if stripped and line != stripped:
+                indent = len(line) - len(stripped)
+                if indent > 0:
+                    return indent
+        return 4  # Flutter 官方工具默认 4 空格
+
+    def _detect_language(self, data: dict, filename: str) -> str:
+        # 优先读取 @@locale
+        if '@@locale' in data:
+            return data['@@locale']
+        # 从文件名推断: intl_en.arb / app_zh_CN.arb / en.arb
+        name = filename.lower().replace('.arb', '')
+        parts = re.split(r'[_\-]', name)
+        common = {'en', 'zh', 'ja', 'ko', 'fr', 'de', 'es', 'it', 'ru', 'pt', 'ar',
+                  'tr', 'pl', 'nl', 'sv', 'da', 'fi', 'nb', 'cs', 'sk', 'hu', 'ro'}
+        for part in reversed(parts):
+            if part in common:
+                return part
+        return 'en'
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / 'project.json').is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
+class JavaPropertiesFormatHandler(BaseFormatHandler):
+    """
+    Java / Kotlin .properties 资源文件处理器
+
+    支持的特性:
+    1. 多种分隔符: 正确解析 key=value、key: value、key value 三种赋值形式
+    2. 多行续行: 支持行尾反斜杠 \\ 的跨行字符串
+    3. Unicode 转义: 双向处理 \\uXXXX 编码，保留非 ASCII 可读性
+    4. 注释提取: # 和 ! 开头的行内注释均作为 translator comment 关联到下一条目
+    5. 顺序保留: 保存时严格按原始键顺序输出，保证 diff 友好
+    6. 语言检测: 从标准命名规范 messages_zh_CN.properties 自动推断语言代码
+    7. 空行保护: 保存时在每个条目间保留适当空行，贴近手写习惯
+    """
+    format_id = "java_properties"
+    extensions = ['.properties']
+    format_type = "translation"
+    display_name = _("Java .properties File")
+    badge_text = "Props"
+    badge_bg_color = "#FFF8E1"
+    badge_text_color = "#F57F17"
+
+    def load(self, filepath, **kwargs):
+        logger.debug(f"[JavaPropertiesFormatHandler] Loading .properties: {filepath}")
+
+        # Java .properties 官方编码为 ISO-8859-1，但现代项目多用 UTF-8
+        encoding = self._detect_encoding(filepath)
+        with open(filepath, 'r', encoding=encoding, errors='replace') as f:
+            lines = f.readlines()
+
+        relative_path = kwargs.get('relative_path') or self._get_relative_path(filepath)
+        language_code = self._detect_language(os.path.basename(filepath))
+
+        translatable_objects = []
+        occurrence_counters = {}
+
+        # --- 解析器状态 ---
+        pending_comments: List[str] = []
+        line_idx = 0
+
+        while line_idx < len(lines):
+            raw = lines[line_idx]
+            stripped = raw.strip()
+            line_idx += 1
+
+            # 空行 → 清空待关联注释（注释只关联紧随其后的条目）
+            if not stripped:
+                pending_comments.clear()
+                continue
+
+            # 注释行
+            if stripped.startswith('#') or stripped.startswith('!'):
+                pending_comments.append(stripped[1:].strip())
+                continue
+
+            # 键值行（可能带续行）
+            logical_line = raw.rstrip('\r\n')
+            while logical_line.endswith('\\'):
+                logical_line = logical_line[:-1]  # 去掉续行符
+                if line_idx < len(lines):
+                    logical_line += lines[line_idx].strip()
+                    line_idx += 1
+
+            key, value = self._split_key_value(logical_line.strip())
+            if key is None:
+                pending_comments.clear()
+                continue
+
+            # 解码 Unicode 转义
+            key = self._decode_unicode_escapes(key)
+            value = self._decode_unicode_escapes(value)
+
+            if not value.strip():
+                pending_comments.clear()
+                continue
+
+            comment = '\n'.join(pending_comments).strip()
+            pending_comments.clear()
+
+            counter_key = (value, key)
+            idx = occurrence_counters.get(counter_key, 0)
+            occurrence_counters[counter_key] = idx + 1
+
+            stable = f"{relative_path}::{key}::{value}::{idx}"
+            obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+            ts = TranslatableString(
+                original_raw=value, original_semantic=value,
+                line_num=0,
+                char_pos_start_in_file=0, char_pos_end_in_file=0,
+                full_code_lines=[],
+                string_type="Java Properties",
+                source_file_path=relative_path,
+                occurrences=[(relative_path, key)],
+                occurrence_index=idx,
+                id=obj_id
+            )
+            ts.translation = value
+            ts.context = key
+            ts.comment = comment
+            ts.po_comment = f"#: Properties key: {key}"
+            ts.is_reviewed = False
+            ts.update_sort_weight()
+            translatable_objects.append(ts)
+
+        metadata = {
+            'encoding': encoding,
+            'key_order': [ts.context for ts in translatable_objects],
+        }
+
+        logger.info(
+            f"[JavaPropertiesFormatHandler] Loaded {len(translatable_objects)} "
+            f"entries from {filepath} (encoding: {encoding})"
+        )
+        return translatable_objects, metadata, language_code
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        logger.debug(f"[JavaPropertiesFormatHandler] Saving .properties: {filepath}")
+
+        encoding = metadata.get('encoding', 'utf-8')
+        key_order = metadata.get('key_order', [])
+
+        # 建立 context -> ts 映射
+        ts_map = {ts.context: ts for ts in translatable_objects
+                  if ts.original_semantic and ts.id != '##NEW_ENTRY##'}
+
+        # 按原始顺序输出，末尾追加新增条目
+        ordered_keys = key_order + [k for k in ts_map if k not in key_order]
+
+        lines = []
+        for key in ordered_keys:
+            ts = ts_map.get(key)
+            if not ts:
+                continue
+
+            # 写注释
+            if ts.comment:
+                for comment_line in ts.comment.splitlines():
+                    lines.append(f'# {comment_line}')
+
+            translation = ts.translation if ts.translation else ts.original_semantic
+
+            # 决定是否需要 Unicode 转义 (仅在 latin-1 编码时必须转义非 ASCII)
+            needs_escape = encoding.lower() in ('iso-8859-1', 'latin-1', 'latin1')
+            escaped_key = self._encode_key(key, needs_escape)
+            escaped_val = self._encode_value(translation, needs_escape)
+
+            lines.append(f'{escaped_key}={escaped_val}')
+            lines.append('')  # 条目间空行
+
+        with open(filepath, 'w', encoding=encoding) as f:
+            f.write('\n'.join(lines))
+
+        logger.info(f"[JavaPropertiesFormatHandler] Saved {len(ts_map)} entries to {filepath}")
+
+    def _detect_encoding(self, filepath: str) -> str:
+        """
+        检测文件编码。
+        Java 规范是 ISO-8859-1，但 Spring Boot 等现代框架默认 UTF-8。
+        检查 BOM 或尝试 UTF-8 解码来区分。
+        """
+        with open(filepath, 'rb') as f:
+            raw = f.read(4)
+        if raw.startswith(b'\xef\xbb\xbf'):
+            return 'utf-8-sig'
+        # 尝试 UTF-8 解码前 4KB
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                f.read(4096)
+            return 'utf-8'
+        except UnicodeDecodeError:
+            return 'iso-8859-1'
+
+    def _split_key_value(self, line: str) -> Tuple[Optional[str], str]:
+        """
+        解析 key=value / key: value / key value 三种形式。
+        返回 (key, value)，解析失败返回 (None, '')。
+        """
+        # 跳过注释和空行（已在上层处理，这里做保险）
+        if not line or line[0] in ('#', '!'):
+            return None, ''
+
+        # 找到未转义的分隔符 (=, :, 或首个空格)
+        i = 0
+        while i < len(line):
+            ch = line[i]
+            if ch == '\\':
+                i += 2  # 跳过转义字符
+                continue
+            if ch in ('=', ':'):
+                return line[:i].strip(), line[i + 1:].lstrip()
+            if ch in (' ', '\t'):
+                key = line[:i].strip()
+                rest = line[i:].lstrip()
+                # 如果空格后面紧跟 = 或 :，那才是真正的分隔符
+                if rest and rest[0] in ('=', ':'):
+                    return key, rest[1:].lstrip()
+                return key, rest
+            i += 1
+
+        # 只有键没有值（空值）
+        return line.strip(), ''
+
+    def _decode_unicode_escapes(self, s: str) -> str:
+        """将 \\uXXXX 转义序列解码为 Unicode 字符。"""
+        return re.sub(
+            r'\\u([0-9a-fA-F]{4})',
+            lambda m: chr(int(m.group(1), 16)),
+            s
+        )
+
+    def _encode_unicode_escapes(self, s: str) -> str:
+        """将非 ASCII 字符编码为 \\uXXXX（仅用于 latin-1 编码文件）。"""
+        result = []
+        for ch in s:
+            if ord(ch) > 127:
+                result.append(f'\\u{ord(ch):04X}')
+            else:
+                result.append(ch)
+        return ''.join(result)
+
+    def _encode_key(self, key: str, unicode_escape: bool) -> str:
+        """对键中的特殊字符进行转义。"""
+        key = key.replace('\\', '\\\\')
+        key = key.replace(' ', '\\ ')
+        key = key.replace('=', '\\=')
+        key = key.replace(':', '\\:')
+        key = key.replace('#', '\\#')
+        key = key.replace('!', '\\!')
+        if unicode_escape:
+            key = self._encode_unicode_escapes(key)
+        return key
+
+    def _encode_value(self, value: str, unicode_escape: bool) -> str:
+        """对值进行转义，换行符转为 \\n 续行形式。"""
+        value = value.replace('\\', '\\\\')
+        value = value.replace('\n', '\\n\\\n    ')
+        value = value.replace('\t', '\\t')
+        if unicode_escape:
+            value = self._encode_unicode_escapes(value)
+        return value
+
+    def _detect_language(self, filename: str) -> str:
+        """
+        从标准 Java ResourceBundle 命名规范中提取语言代码。
+        例: messages_zh_CN.properties → zh_CN
+            strings_en.properties    → en
+            MyApp_fr_FR.properties   → fr_FR
+        """
+        name = filename.replace('.properties', '')
+        # 尝试匹配末尾的 _lang 或 _lang_COUNTRY
+        m = re.search(
+            r'_([a-z]{2,3})(?:_([A-Z]{2,3}))?$',
+            name
+        )
+        if m:
+            lang = m.group(1)
+            country = m.group(2)
+            return f"{lang}_{country}" if country else lang
+        return 'en'
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / 'project.json').is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
 # ============================================================================
 # FORMAT MANAGER
 # ============================================================================
-
 
 class FormatManager:
     _handlers = {}
@@ -1065,6 +1806,8 @@ class FormatManager:
         return filter_string
 
 
+
+
 # 注册内置处理器
 FormatManager.register_handler(PoFormatHandler)
 FormatManager.register_handler(TsFormatHandler)
@@ -1072,3 +1815,6 @@ FormatManager.register_handler(OwCodeFormatHandler)
 FormatManager.register_handler(JsonI18nFormatHandler)
 FormatManager.register_handler(XliffFormatHandler)
 FormatManager.register_handler(AndroidStringsFormatHandler)
+FormatManager.register_handler(IosStringsFormatHandler)
+FormatManager.register_handler(ArbFormatHandler)
+FormatManager.register_handler(JavaPropertiesFormatHandler)
