@@ -260,14 +260,14 @@ class DetailsPanel(QWidget):
 
         trans_actions_layout.addWidget(self.fuzzy_toggle)
 
-        fuzzy_container = QWidget()
-        fuzzy_layout = QHBoxLayout(fuzzy_container)
+        self.fuzzy_container = QWidget()
+        fuzzy_layout = QHBoxLayout(self.fuzzy_container)
         fuzzy_layout.setContentsMargins(0, 0, 0, 0)
         fuzzy_layout.setSpacing(2)
         fuzzy_layout.addWidget(self.fuzzy_toggle)
         fuzzy_layout.addWidget(self.fuzzy_label)
 
-        trans_actions_layout.addWidget(fuzzy_container)
+        trans_actions_layout.addWidget(self.fuzzy_container)
         trans_actions_layout.addStretch(1)
 
         self.ai_translate_current_btn = StyledButton(_("AI Translate Selected"), on_click=self.ai_translate_signal.emit, btn_type="primary", size="medium")
@@ -332,6 +332,10 @@ class DetailsPanel(QWidget):
                 self.tooltip.hide()
 
         return super().eventFilter(obj, event)
+
+    def set_fuzzy_controls_visible(self, visible: bool):
+        if hasattr(self, 'fuzzy_container'):
+            self.fuzzy_container.setVisible(visible)
 
     def _translation_focus_out_event(self, event):
         self.translation_focus_out_signal.emit()

@@ -11,6 +11,7 @@ from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDragMoveEvent
 import os
 from datetime import datetime
 from ui_components.styled_button import StyledButton
+from services.format_manager import FormatManager
 from utils.text_utils import format_file_size
 from utils.constants import SUPPORTED_LANGUAGES
 from utils.localization import _
@@ -60,9 +61,9 @@ class DropTreeWidget(QTreeWidget):
             item.setText(0, filename)
 
             if self.widget_type == 'source':
-                ext = os.path.splitext(filepath)[1].lower()
-                type_map = {'.po': 'PO', '.pot': 'POT', '.ow': 'Code', '.txt': 'Code'}
-                type_display = type_map.get(ext, 'Code')
+                handler = FormatManager.get_handler_by_extension(filepath)
+                type_display = handler.badge_text if handler else 'UNK'
+
                 item.setText(1, type_display)
                 item.setText(2, size_str)
                 item.setText(3, filepath)
@@ -86,9 +87,10 @@ class DropTreeWidget(QTreeWidget):
                 if url.isLocalFile():
                     filepath = url.toLocalFile()
                     ext = os.path.splitext(filepath)[1].lower()
-                    if self.widget_type == 'source' and ext in ['.ow', '.txt', '.po', '.pot']:
-                        can_accept = True
-                        break
+                    if self.widget_type == 'source':
+                        if FormatManager.get_handler_by_extension(filepath):
+                            can_accept = True
+                            break
                     elif self.widget_type == 'glossary' and ext == '.tbx':
                         can_accept = True
                         break
@@ -116,13 +118,14 @@ class DropTreeWidget(QTreeWidget):
         self.setStyleSheet("QTreeWidget { border: 1px solid #ccc; border-radius: 4px; }")
         if event.mimeData().hasUrls():
             urls = event.mimeData().urls()
-            valid_files = []
+            valid_files =[]
             for url in urls:
                 if url.isLocalFile():
                     filepath = url.toLocalFile()
                     ext = os.path.splitext(filepath)[1].lower()
-                    if self.widget_type == 'source' and ext in ['.ow', '.txt', '.po', '.pot']:
-                        valid_files.append(filepath)
+                    if self.widget_type == 'source':
+                        if FormatManager.get_handler_by_extension(filepath):
+                            valid_files.append(filepath)
                     elif self.widget_type == 'glossary' and ext == '.tbx':
                         valid_files.append(filepath)
                     elif self.widget_type == 'tm' and ext == '.xlsx':
@@ -284,9 +287,9 @@ class NewProjectDialog(QDialog):
             self.location_edit.setText(directory)
 
     def add_source_files(self):
+        file_filters = FormatManager.get_file_dialog_filters()
         filepaths, __ = QFileDialog.getOpenFileNames(
-            self, _("Select Source Files"), "",
-            _("All Supported Files (*.ow *.txt *.po *.pot);;All Files (*.*)")
+            self, _("Select Source Files"), "", file_filters
         )
         if filepaths:
             self._process_source_files(filepaths)
@@ -309,8 +312,15 @@ class NewProjectDialog(QDialog):
         for path in filepaths:
             if not any(f['path'] == path for f in self.source_files):
                 normalized_path = path.replace('\\', '/')
-                file_type = 'po' if normalized_path.lower().endswith(('.po', '.pot')) else 'code'
-                file_info = {'path': normalized_path, 'type': file_type}
+
+                from services.format_manager import FormatManager
+                handler = FormatManager.get_handler_by_extension(normalized_path)
+                if not handler: continue
+
+                file_info = {
+                    'path': normalized_path,
+                    'format_id': handler.format_id
+                }
                 if self.source_files_tree.add_file_item(path, file_info):
                     self.source_files.append(file_info)
 

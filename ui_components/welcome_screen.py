@@ -10,6 +10,7 @@ from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize, QUrl
 from PySide6.QtGui import (
     QDragEnterEvent, QDropEvent, QIcon, QColor, QAction, QDesktopServices)
 from ui_components.elided_label import ElidedLabel
+from services.format_manager import FormatManager
 from utils.path_utils import get_resource_path
 from utils.localization import _
 
@@ -133,20 +134,23 @@ class RecentFileWidget(QWidget):
 
         if metadata:
             # 1. Type Badge
-            ftype = metadata.get("type", "code")
-            badge_bg = "#E3F2FD"
-            badge_text = "#0277BD"
+            ftype = metadata.get("type", "source")
+            format_id = metadata.get("format_id")
 
-            type_text = "Code"
             if ftype == "project":
-                type_text = "Project"
-            elif ftype == "po":
-                type_text = "PO"
+                top_row.addWidget(BadgeLabel("Project", color="#E3F2FD", text_color="#0277BD"))
             else:
-                ext = os.path.splitext(filename)[1].upper().replace('.', '')
-                if ext: type_text = ext
+                handler = None
+                if format_id:
+                    handler = FormatManager.get_handler(format_id)
+                if not handler:
+                    handler = FormatManager.get_handler_by_extension(filename)
 
-            top_row.addWidget(BadgeLabel(type_text, color=badge_bg, text_color=badge_text))
+                if handler:
+                    top_row.addWidget(BadgeLabel(handler.badge_text, color=handler.badge_bg_color,
+                                                 text_color=handler.badge_text_color))
+                else:
+                    top_row.addWidget(BadgeLabel("UNK", color="#E0E0E0", text_color="#444444"))
 
             # 2. Lang Pair Badge
             src = metadata.get("source_lang")
@@ -590,7 +594,6 @@ class WelcomeScreen(QWidget):
             plugin_libs_path = get_plugin_libs_path()
             if plugin_libs_path not in sys.path:
                 sys.path.insert(0, plugin_libs_path)
-                logger.info(f"Plugin library path added: {plugin_libs_path}")
 
             self.set_status(_("Initializing main window and plugins..."), "loading")
             QApplication.processEvents()
@@ -723,10 +726,10 @@ class WelcomeScreen(QWidget):
             def current_project_path(self): return None
 
             @property
-            def current_code_file_path(self): return None
+            def current_file_path(self): return None
 
             @property
-            def current_po_file_path(self): return None
+            def current_file_path(self): return None
 
         save_config(DummyApp(self.config))
         self.populate_recent_files()
@@ -773,10 +776,10 @@ class WelcomeScreen(QWidget):
                 def current_project_path(self): return None
 
                 @property
-                def current_code_file_path(self): return None
+                def current_file_path(self): return None
 
                 @property
-                def current_po_file_path(self): return None
+                def current_file_path(self): return None
 
             save_config(DummyApp(self.config))
             self.populate_recent_files()

@@ -71,6 +71,7 @@ from services.ai_translator import AITranslator
 from services.ai_worker import AIWorker
 from services.ai_task_manager import AITaskManager
 from services.search_service import SearchService
+from services.format_manager import FormatManager
 from services import language_service
 from services import fix_service
 from services.build_service import BuildWorker
@@ -153,27 +154,34 @@ class LexiSyncApp(QMainWindow):
         self.search_service.navigate_to.connect(self._on_search_navigate)
 
         self.project_manager = ProjectManager(self)
+
         self.drop_target_widget = None
-        self.current_project_path = None
-        self.current_code_file_path = None
-        self.current_po_file_path = None
+
         self.is_project_mode = False
+        self.is_translation_mode = False
+
+        self.current_project_path = None
+        self.current_file_path = None
+
         self.project_config = {}
         self.all_project_strings = []
+        self._id_to_index_map = {}
         self.loaded_file_ids = set()
         self.current_active_source_file_id = None
-        self.source_language = self.config.get("default_source_language", "en")
-        self.target_languages = []
-        self.current_target_language = self.config.get("default_target_language", "zh")
+
+        self.current_format_handler = None
+        self.current_file_metadata = None
         self.original_raw_code_content = ""
-        self.current_project_modified = False
-        self.is_po_mode = False
-        self.current_po_metadata = None
-        self.current_focused_ts_id = None
-        self.default_window_state = None
+        self.current_active_source_file_content = ""
 
         self.source_language = self.config.get("default_source_language", "en")
-        self.target_language = self.config.get("default_target_language", "zh")
+        self.current_target_language = self.config.get("default_target_language", "zh")
+        self.target_languages = []
+
+        self.is_modified = False
+        self.current_selected_ts_id = None
+        self.current_focused_ts_id = None
+        self.default_window_state = None
 
         self.stats_update_timer = QTimer(self)
         self.stats_update_timer.setSingleShot(True)
@@ -398,9 +406,9 @@ class LexiSyncApp(QMainWindow):
         self.action_import_excel.setEnabled(False)
         self.import_menu.addAction(self.action_import_excel)
 
-        self.action_import_po = QAction(_("Import Translations from PO File..."), self)
-        self.action_import_po.triggered.connect(self.import_po_file_dialog)
-        self.import_menu.addAction(self.action_import_po)
+        self.action_import_translation = QAction(_("Import Translation File..."), self)
+        self.action_import_translation.triggered.connect(self.open_translation_file_dialog)
+        self.import_menu.addAction(self.action_import_translation)
 
         # EXPORT MENU
         self.export_menu = QMenu(_("Export"), self)
@@ -421,10 +429,10 @@ class LexiSyncApp(QMainWindow):
         self.action_export_yaml.setEnabled(False)
         self.export_menu.addAction(self.action_export_yaml)
 
-        self.action_export_po = QAction(_("Export to PO File..."), self)
-        self.action_export_po.triggered.connect(self.export_to_po_file_dialog)
-        self.action_export_po.setEnabled(False)
-        self.export_menu.addAction(self.action_export_po)
+        self.action_export_translation = QAction(_("Export Translation File..."), self)
+        self.action_export_translation.triggered.connect(self.save_translation_as_dialog)
+        self.action_export_translation.setEnabled(False)
+        self.export_menu.addAction(self.action_export_translation)
 
         self.action_extract_pot = QAction(_("Export to POT File..."), self)
         self.action_extract_pot.triggered.connect(self.export_current_to_pot)
@@ -711,8 +719,8 @@ class LexiSyncApp(QMainWindow):
         self.action_export_yaml.setText(_("Export to YAML"))
         self.action_save_code_file.setText(_("Export as Code File..."))
         self.action_extract_pot.setText(_("Export to POT File..."))
-        self.action_import_po.setText(_("Import Translations from PO File..."))
-        self.action_export_po.setText(_("Export to PO File..."))
+        self.action_import_translation.setText(_("Import Translation File..."))
+        self.action_export_translation.setText(_("Export Translation File..."))
         self.recent_files_menu.setTitle(_("Recent Files"))
         self.action_exit.setText(_("Exit"))
 
@@ -874,12 +882,12 @@ class LexiSyncApp(QMainWindow):
                 self.open_project(path)
                 return True
             elif os.path.isfile(path):
-                ext = os.path.splitext(path)[1].lower()
-                if ext in ['.ow', '.txt']:
-                    self.open_code_file_path(path)
-                    return True
-                elif ext in ['.po', '.pot']:
-                    self.import_po_file_dialog_with_path(path)
+                handler = FormatManager.get_handler_by_extension(path)
+                if handler:
+                    if handler.format_type == "source":
+                        self.open_code_file_path(path)
+                    elif handler.format_type == "translation":
+                        self.open_translation_file_with_path(path)
                     return True
             QMessageBox.warning(self, _("Unsupported Type"),
                                 _("Cannot open '{path}'. It is not a valid file or project.").format(path=path))
@@ -887,12 +895,12 @@ class LexiSyncApp(QMainWindow):
 
         if action_name == "open_specific_file":
             if path and os.path.isfile(path):
-                ext = os.path.splitext(path)[1].lower()
-                if ext in ['.ow', '.txt']:
-                    self.open_code_file_path(path)
-                    return True
-                elif ext in ['.po', '.pot']:
-                    self.import_po_file_dialog_with_path(path)
+                handler = FormatManager.get_handler_by_extension(path)
+                if handler:
+                    if handler.format_type == "source":
+                        self.open_code_file_path(path)
+                    elif handler.format_type == "translation":
+                        self.open_translation_file_with_path(path)
                     return True
             elif path and os.path.isdir(path):
                 if os.path.exists(os.path.join(path, "project.json")):
@@ -1012,7 +1020,7 @@ class LexiSyncApp(QMainWindow):
                 self.config["default_target_language"] = self.target_language
                 self.save_config()
                 if self.translatable_objects:
-                    self.mark_project_modified()
+                    self.mark_modified()
                     self.update_statusbar(_("Language pair updated. Re-validating all entries..."), persistent=True)
                     QApplication.processEvents()
                     self._run_and_refresh_with_validation()
@@ -1035,9 +1043,9 @@ class LexiSyncApp(QMainWindow):
                                     _("Font settings have been changed. Please restart the application for the changes to take effect."))
 
     def auto_save_project(self):
-        if not self.current_project_modified:
+        if not self.is_modified:
             return
-        if not (self.current_project_path or self.current_po_file_path or self.current_code_file_path):
+        if not (self.current_project_path or self.current_file_path or self.current_file_path):
             return
         focused_widget = QApplication.focusWidget()
         self.update_statusbar(_("Auto-saving..."), persistent=True)
@@ -1549,13 +1557,13 @@ class LexiSyncApp(QMainWindow):
         self.action_save_current_file_as.setEnabled(has_content)
         self.action_compare_new_version.setEnabled(has_content)
 
-        if self.is_po_mode:
+        if self.is_translation_mode:
             self.action_save_code_file.setEnabled(False)
-            self.action_export_po.setEnabled(has_content)
+            self.action_export_translation.setEnabled(has_content)
         else:
             can_save_to_code = bool(self.original_raw_code_content) and has_content
             self.action_save_code_file.setEnabled(can_save_to_code)
-            self.action_export_po.setEnabled(False)
+            self.action_export_translation.setEnabled(False)
 
         self.action_import_excel.setEnabled(has_content)
         self.action_export_excel.setEnabled(has_content)
@@ -1572,7 +1580,7 @@ class LexiSyncApp(QMainWindow):
         self.action_apply_tm_to_untranslated.setEnabled(has_content)
         self.action_save_all_to_tm.setEnabled(has_content)
         self.action_reload_translatable_text.setEnabled(
-            bool(self.original_raw_code_content or self.current_code_file_path)
+            bool(self.original_raw_code_content or self.current_file_path)
         )
         self.action_show_statistics.setEnabled(has_content)
         self.action_run_validation_on_all.setEnabled(has_content)
@@ -1700,9 +1708,9 @@ class LexiSyncApp(QMainWindow):
                             break
             dialog.exec()
 
-    def mark_project_modified(self, modified=True):
-        if self.current_project_modified != modified:
-            self.current_project_modified = modified
+    def mark_modified(self, modified=True):
+        if self.is_modified != modified:
+            self.is_modified = modified
             self.update_title()
 
     def add_to_undo_history(self, action_type, data):
@@ -1712,7 +1720,7 @@ class LexiSyncApp(QMainWindow):
         self.redo_history.clear()
         self.action_undo.setEnabled(True)
         self.action_redo.setEnabled(False)
-        self.mark_project_modified()
+        self.mark_modified()
 
     def _find_ts_obj_by_id(self, obj_id):
         for ts_obj in self.translatable_objects:
@@ -1808,7 +1816,7 @@ class LexiSyncApp(QMainWindow):
 
         self.action_undo.setEnabled(bool(self.undo_history))
         self.action_redo.setEnabled(bool(self.redo_history))
-        self.mark_project_modified()
+        self.mark_modified()
 
     def redo_action(self):
         if hasattr(self, 'details_panel'):
@@ -1900,7 +1908,7 @@ class LexiSyncApp(QMainWindow):
 
         self.action_redo.setEnabled(bool(self.redo_history))
         self.action_undo.setEnabled(bool(self.undo_history))
-        self.mark_project_modified()
+        self.mark_modified()
 
     def resizeEvent(self, event):
         if hasattr(self, 'drop_overlay'):
@@ -1957,7 +1965,8 @@ class LexiSyncApp(QMainWindow):
         normalized_path = filepath.replace('\\', '/')
 
         # Determine metadata
-        file_type = "code"
+        file_type = "source"
+        format_id = "unknown"
         count = 0
         translated_count = 0
         count_label = "items"
@@ -1966,7 +1975,8 @@ class LexiSyncApp(QMainWindow):
 
         if self.is_project_mode:
             file_type = "project"
-            source_files = self.project_config.get("source_files", [])
+            format_id = "project"
+            source_files = self.project_config.get("source_files",[])
             count = len(source_files)
             count_label = "files"
             if self.all_project_strings:
@@ -1983,18 +1993,17 @@ class LexiSyncApp(QMainWindow):
             source_lang = self.project_config.get("source_language", "en")
             target_lang = self.project_config.get("current_target_language", "zh")
 
-        elif self.is_po_mode:
-            file_type = "po"
+        elif self.is_translation_mode:
+            file_type = "translation"
+            format_id = self.current_format_handler.format_id if self.current_format_handler else "po"
             count = len(self.translatable_objects) if self.translatable_objects else 0
-            translated_count = len([ts for ts in self.translatable_objects if
-                                    ts.translation.strip() and not ts.is_ignored]) if self.translatable_objects else 0
             progress_total = count
             progress_current = translated_count
         else:
             # Single code file
+            file_type = "source"
+            format_id = self.current_format_handler.format_id if self.current_format_handler else "ow_code"
             count = len(self.translatable_objects) if self.translatable_objects else 0
-            translated_count = len([ts for ts in self.translatable_objects if
-                                    ts.translation.strip() and not ts.is_ignored]) if self.translatable_objects else 0
             progress_total = count
             progress_current = translated_count
 
@@ -2002,6 +2011,7 @@ class LexiSyncApp(QMainWindow):
         new_entry = {
             "path": normalized_path,
             "type": file_type,
+            "format_id": format_id,
             "count": count,
             "count_label": count_label,
             "progress_total": progress_total,
@@ -2081,10 +2091,12 @@ class LexiSyncApp(QMainWindow):
             if os.path.isdir(filepath) and os.path.exists(os.path.join(filepath, "project.json")):
                 self.open_project(filepath)
                 return True
-            if lower_path.endswith((".ow", ".txt")):
-                self.open_code_file_path(filepath)
-            elif lower_path.endswith((".po", ".pot")):
-                self.import_po_file_dialog_with_path(filepath)
+            handler = FormatManager.get_handler_by_extension(filepath)
+            if handler:
+                if handler.format_type == "source":
+                    self.open_code_file_path(filepath)
+                elif handler.format_type == "translation":
+                    self.open_translation_file_with_path(filepath)
             else:
                 if hasattr(self, 'plugin_manager'):
                     if self.plugin_manager.run_hook('on_file_dropped', filepath):
@@ -2296,7 +2308,7 @@ class LexiSyncApp(QMainWindow):
             self.config["last_dir"] = os.path.dirname(project_path)
 
             self._update_language_switcher()
-            self.mark_project_modified(False)
+            self.mark_modified(False)
 
             self.update_statusbar(_("Project '{name}' loaded.").format(name=self.project_config.get('name')),
                                   persistent=True)
@@ -2324,26 +2336,48 @@ class LexiSyncApp(QMainWindow):
             return
 
         active_file_abs_path = os.path.join(self.current_project_path, active_file_info['project_path'])
-        try:
-            with open(active_file_abs_path, 'r', encoding='utf-8', errors='replace') as f:
-                self.current_active_source_file_content = f.read()
-        except Exception as e:
-            logger.error(f"Failed to read active source file content from {active_file_abs_path}: {e}")
+        self.current_file_path = active_file_abs_path
+
+        format_id = active_file_info.get('format_id')
+
+        handler = FormatManager.get_handler(format_id)
+        self.current_format_handler = handler
+        self.is_translation_mode = (handler.format_type == "translation")
+
+        if hasattr(self, 'details_panel'):
+            is_ts = (format_id == 'ts')
+            self.details_panel.set_fuzzy_controls_visible(not is_ts)
+
+        if handler and handler.format_type == "source":
+            try:
+                with open(active_file_abs_path, 'r', encoding='utf-8', errors='replace') as f:
+                    self.current_active_source_file_content = f.read()
+            except Exception as e:
+                logger.error(f"Failed to read active source file content from {active_file_abs_path}: {e}")
+                self.current_active_source_file_content = ""
+        else:
+            # 翻译文件 (PO/TS)
             self.current_active_source_file_content = ""
 
         if file_id not in self.loaded_file_ids:
             self.update_statusbar(_("Loading file..."), persistent=True)
             QApplication.processEvents()
 
-            __, newly_loaded_strings = load_project_data(self.current_project_path, self.current_target_language,
-                                                        file_id_to_load=file_id)
+            from services.project_service import load_project_data
+            __, newly_loaded_strings = load_project_data(
+                self.current_project_path,
+                self.current_target_language,
+                file_id_to_load=file_id
+            )
+
             start_index = len(self.all_project_strings)
             self.all_project_strings.extend(newly_loaded_strings)
             for i in range(start_index, len(self.all_project_strings)):
                 self._id_to_index_map[self.all_project_strings[i].id] = i
 
-        self.current_active_source_file_id = file_id
+            self.loaded_file_ids.add(file_id)
 
+        self.current_active_source_file_id = file_id
         active_file_project_path = active_file_info['project_path']
 
         self.translatable_objects = [
@@ -2365,7 +2399,7 @@ class LexiSyncApp(QMainWindow):
     def update_title(self):
         base_title = f"LexiSync - v{APP_VERSION}"
         name_part = ""
-        modified_indicator = "*" if self.current_project_modified else ""
+        modified_indicator = "*" if self.is_modified else ""
 
         if self.is_project_mode:
             project_name = self.project_config.get('name', os.path.basename(self.current_project_path or ""))
@@ -2373,10 +2407,8 @@ class LexiSyncApp(QMainWindow):
             active_file = self.get_current_active_filename()
             name_part = f"{project_name} ({active_file}) - {lang_name}" if active_file else f"{project_name} - {lang_name}"
         else:
-            if self.current_po_file_path:
-                name_part = os.path.basename(self.current_po_file_path)
-            elif self.current_code_file_path:
-                name_part = os.path.basename(self.current_code_file_path)
+            if self.current_file_path:
+                name_part = os.path.basename(self.current_file_path)
 
         if name_part:
             self.setWindowTitle(f"{base_title} - {name_part}{modified_indicator}")
@@ -2406,7 +2438,7 @@ class LexiSyncApp(QMainWindow):
             self.target_lang_combo.setCurrentIndex(current_index)
             self.target_lang_combo.blockSignals(False)
             return
-        if self.current_project_modified:
+        if self.is_modified:
             save_project(self.current_project_path, self)
         self.current_target_language = new_lang
         self.open_project(self.current_project_path)
@@ -2414,24 +2446,16 @@ class LexiSyncApp(QMainWindow):
     def open_code_file_dialog(self):
         if not self.prompt_save_if_modified(): return False
         dialog_title = _("Open File for Quick Edit")
-        file_filters = (
-                _("All Supported Files (*.ow *.txt *.po *.pot);;") +
-                _("Overwatch Workshop Files (*.ow *.txt);;") +
-                _("PO Translation Files (*.po *.pot);;") +
-                _("All Files (*.*)")
-        )
+
+        file_filters = FormatManager.get_file_dialog_filters()
+
         filepath, selected_filter = QFileDialog.getOpenFileName(
-            self,
-            dialog_title,
-            self.config.get("last_dir", os.getcwd()),
-            file_filters
+            self, dialog_title, self.config.get("last_dir", os.getcwd()), file_filters
         )
         if filepath:
-            file_ext = os.path.splitext(filepath)[1].lower()
-            if file_ext in ['.ow', '.txt']:
-                self.open_code_file_path(filepath)
-            elif file_ext in ['.po', '.pot']:
-                self.import_po_file_dialog_with_path(filepath)
+            handler = FormatManager.get_handler_by_extension(filepath)
+            if handler and handler.format_type == "translation":
+                self.open_translation_file_with_path(filepath)
             else:
                 self.open_code_file_path(filepath)
             return True
@@ -2512,10 +2536,10 @@ class LexiSyncApp(QMainWindow):
 
             self.file_explorer_panel.exit_project_mode()
             self._update_file_explorer(filepath)
-            self.current_code_file_path = filepath
+            self.current_file_path = filepath
             self.current_project_path = None
-            self.current_po_file_path = None
-            self.current_po_metadata = None
+            self.current_file_path = None
+            self.current_file_metadata = None
             self.add_to_recent_files(filepath)
             self.config["last_dir"] = os.path.dirname(filepath)
 
@@ -2551,9 +2575,9 @@ class LexiSyncApp(QMainWindow):
             self.undo_history.clear()
             self.redo_history.clear()
             self.current_selected_ts_id = None
-            self.mark_project_modified(False)
+            self.mark_modified(False)
             self.is_project_mode = False
-            self.is_po_mode = False
+            self.is_translation_mode = False
 
             self._run_and_refresh_with_validation()
 
@@ -2625,10 +2649,10 @@ class LexiSyncApp(QMainWindow):
             QMessageBox.information(self, _("In Progress"), _("A build is already in progress."))
             return
 
-        if self.current_project_modified:
+        if self.is_modified:
             self._save_current_view_changes()
             save_project(self.current_project_path, self)
-            self.mark_project_modified(False)
+            self.mark_modified(False)
 
         self.progress_bar.setValue(0)
         self.progress_bar.setVisible(True)
@@ -2678,7 +2702,7 @@ class LexiSyncApp(QMainWindow):
         # 2. Append the current view's strings (which contain the latest edits) to the remaining strings.
         # This ensures that data from other files remains untouched and current edits are saved.
         # ---------------------------------------------------------------------------
-        if not self.is_project_mode or not self.current_project_modified:
+        if not self.is_project_mode or not self.is_modified:
             return
         for ts_in_view in self.translatable_objects:
             cache_index = self._id_to_index_map.get(ts_in_view.id)
@@ -2693,32 +2717,47 @@ class LexiSyncApp(QMainWindow):
     def _reset_app_state(self):
         if self.is_project_mode:
             self.file_explorer_panel.exit_project_mode()
-        self.current_code_file_path = None
-        self.project_manager.close_project()
-        self.current_project_path = None
+
+        # 重置模式
         self.is_project_mode = False
-        self.setup_tm_service()
-        self.setup_glossary_service()
+        self.is_translation_mode = False
+
+        # 重置路径
+        self.current_project_path = None
+        self.current_file_path = None
+
+        # 重置项目数据
         self.project_config = {}
-        self.current_po_file_path = None
-        self.current_po_metadata = None
-        self.original_raw_code_content = ""
-        self.translatable_objects = []
         self.all_project_strings = []
+        self._id_to_index_map = {}
         self.loaded_file_ids = set()
         self.current_active_source_file_id = None
+
+        # 重置文件数据
+        self.current_format_handler = None
+        self.current_file_metadata = None
+        self.original_raw_code_content = ""
         self.current_active_source_file_content = ""
-        self._id_to_index_map = {}
+        self.translatable_objects = []
+
+        # 重置状态
         self.undo_history.clear()
         self.redo_history.clear()
         self.current_selected_ts_id = None
-        self.mark_project_modified(False)
+        self.current_focused_ts_id = None
+        self.mark_modified(False)
+
+        # UI 更新
         self.refresh_sheet()
         self.clear_details_pane()
         self.update_ui_state_after_file_load(file_or_project_loaded=False)
         if hasattr(self, 'project_toolbar'):
             self.project_toolbar.setVisible(False)
         self.update_title()
+
+        # 资源服务重连
+        self.setup_tm_service()
+        self.setup_glossary_service()
 
     def handle_pot_file_drop(self, pot_filepath):
         if not self.translatable_objects:
@@ -2770,10 +2809,10 @@ class LexiSyncApp(QMainWindow):
             self.update_recent_files_menu()
 
     def prompt_save_if_modified(self):
-        active_path = self.current_project_path or self.current_po_file_path or self.current_code_file_path
+        active_path = self.current_project_path or self.current_file_path or self.current_file_path
         if active_path:
             self._update_and_save_recent_entry(active_path)
-        if self.current_project_modified:
+        if self.is_modified:
             reply = QMessageBox.question(self, _("Unsaved Changes"),
                                          _("The current file or project has unsaved changes. Do you want to save them?"),
                                          QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
@@ -2801,7 +2840,7 @@ class LexiSyncApp(QMainWindow):
             show_translated=self.show_translated_var,
             show_unreviewed=self.show_unreviewed_var,
             search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
-            is_po_mode=self.is_po_mode,
+            is_translation_mode=self.is_translation_mode,
             sort_column = current_sort_col,
             sort_order = current_sort_order
         )
@@ -2832,7 +2871,7 @@ class LexiSyncApp(QMainWindow):
             show_translated=self.translated_checkbox.isChecked(),
             show_unreviewed=self.unreviewed_checkbox.isChecked(),
             search_term=search_term_to_use if search_term_to_use != _("Quick search...") else "",
-            is_po_mode=self.is_po_mode,
+            is_translation_mode=self.is_translation_mode,
             sort_column=current_sort_col,
             sort_order=current_sort_order
         )
@@ -3010,7 +3049,7 @@ class LexiSyncApp(QMainWindow):
 
                 self._rebuild_string_cache_indexes()
                 self._switch_active_file(self.current_active_source_file_id)
-                self.mark_project_modified()
+                self.mark_modified()
                 self.update_statusbar(_("Source file re-scanned and updated successfully."), persistent=True)
             else:
                 self.update_statusbar(_("Re-scan operation cancelled."))
@@ -3246,7 +3285,7 @@ class LexiSyncApp(QMainWindow):
 
                     if bulk_changes:
                         self.add_to_undo_history('bulk_change', {'changes': bulk_changes})
-                        self.mark_project_modified()
+                        self.mark_modified()
                         self._update_view_for_ids(ids_to_update)
 
                     # 2. Re-evaluate for AI
@@ -3288,7 +3327,7 @@ class LexiSyncApp(QMainWindow):
 
                     if bulk_changes:
                         self.add_to_undo_history('bulk_change', {'changes': bulk_changes})
-                        self.mark_project_modified()
+                        self.mark_modified()
                         self._update_view_for_ids(ids_to_update)
                         self.update_statusbar(_("Fixed {count} items with rules.").format(count=len(bulk_changes)))
 
@@ -3765,7 +3804,7 @@ class LexiSyncApp(QMainWindow):
         # 4. 提交 Undo 记录并刷新 UI
         if bulk_changes_for_undo:
             self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})
-            self.mark_project_modified()
+            self.mark_modified()
             self._update_view_for_ids(ids_to_update)
 
             if self.current_selected_ts_id in ids_to_update:
@@ -3860,7 +3899,7 @@ class LexiSyncApp(QMainWindow):
 
         if bulk_changes_for_undo:
             self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})
-            self.mark_project_modified()
+            self.mark_modified()
             self._update_view_for_ids(ids_to_update)
 
         return len(bulk_changes_for_undo)
@@ -3999,7 +4038,7 @@ class LexiSyncApp(QMainWindow):
 
         if changes_for_undo:
             self.add_to_undo_history('bulk_context_menu', {'changes': changes_for_undo})
-            self.mark_project_modified()
+            self.mark_modified()
             count = len(changes_for_undo)
             if ignore_flag:
                 status_message = _("Ignored warnings for {count} item(s).").format(count=count)
@@ -4041,7 +4080,7 @@ class LexiSyncApp(QMainWindow):
             payload = {'changes': changes} if len(changes) > 1 else changes[0]
             self.add_to_undo_history(action_name, payload)
 
-            self.mark_project_modified()
+            self.mark_modified()
             self._update_view_for_ids({ts_obj.id})
 
             if self.current_selected_ts_id == ts_obj.id:
@@ -4160,7 +4199,7 @@ class LexiSyncApp(QMainWindow):
 
         self.update_statusbar(_("Translation applied: \"{original_semantic}...\"").format(
             original_semantic=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
-        self.mark_project_modified()
+        self.mark_modified()
         if self.current_selected_ts_id == ts_obj.id:
             if hasattr(self, 'details_panel'):
                 self.details_panel.update_warnings(ts_obj)
@@ -4187,7 +4226,7 @@ class LexiSyncApp(QMainWindow):
             new_ts.comment = self.comment_status_panel.comment_edit_text.toPlainText().strip()
 
             self.translatable_objects.append(new_ts)
-            self.mark_project_modified()
+            self.mark_modified()
             self._run_and_refresh_with_validation()
             self.select_sheet_row_by_id(new_ts.id, see=True)
             return
@@ -4280,7 +4319,7 @@ class LexiSyncApp(QMainWindow):
             first_col_index = source_index.siblingAtColumn(0)
             last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
             self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
-        self.mark_project_modified()
+        self.mark_modified()
         self.update_statusbar(_("Comment updated."))
         if hasattr(self.comment_status_panel, 'highlighter'):
             self.comment_status_panel.highlighter.rehighlight()
@@ -4305,7 +4344,7 @@ class LexiSyncApp(QMainWindow):
         })
         self._run_and_refresh_with_validation()
         self.update_statusbar(_("Comment updated for ID {id}...").format(id=str(ts_obj.id)[:8]))
-        self.mark_project_modified()
+        self.mark_modified()
         return True
 
     def _update_view_for_ids(self, changed_ids: set):
@@ -4373,7 +4412,7 @@ class LexiSyncApp(QMainWindow):
             show_translated=self.show_translated_var,
             show_unreviewed=self.show_unreviewed_var,
             search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
-            is_po_mode=self.is_po_mode,
+            is_translation_mode=self.is_translation_mode,
             sort_column=current_sort_col,
             sort_order=current_sort_order
         )
@@ -4401,7 +4440,7 @@ class LexiSyncApp(QMainWindow):
             return False
 
     def save_code_file(self):
-        if not self.current_code_file_path:
+        if not self.current_file_path:
             QMessageBox.critical(self, _("Error"), _("No original code file path."))
             return
 
@@ -4409,7 +4448,7 @@ class LexiSyncApp(QMainWindow):
             QMessageBox.critical(self, _("Error"), _("No original code content to save."))
             return
 
-        base, ext = os.path.splitext(self.current_code_file_path)
+        base, ext = os.path.splitext(self.current_file_path)
         new_filepath = f"{base}_translated{ext}"
 
         if os.path.exists(new_filepath):
@@ -4430,24 +4469,24 @@ class LexiSyncApp(QMainWindow):
             try:
                 self._save_current_view_changes()
                 if save_project(self.current_project_path, self):
-                    self.mark_project_modified(False)
+                    self.mark_modified(False)
                     self.update_statusbar(_("Project saved."), persistent=True)
                     return True
             except Exception as e:
                 QMessageBox.critical(self, _("Save Error"), str(e))
             return False
         else:
-            if self.is_po_mode:
-                if self.current_po_file_path:
-                    return self.save_po_file(self.current_po_file_path)
+            if self.is_translation_mode:
+                if self.current_file_path:
+                    return self.save_translation_file(self.current_file_path)
                 else:
-                    return self.save_po_as_dialog()
+                    return self.save_translation_as_dialog()
             else:
                 return self.save_project_as_dialog()
 
     def save_current_file_as(self):
-        if self.is_po_mode:
-            return self.save_po_as_dialog()
+        if self.is_translation_mode:
+            return self.save_translation_as_dialog()
         else:
             return self.save_project_as_dialog()
 
@@ -4466,14 +4505,15 @@ class LexiSyncApp(QMainWindow):
 
         dialog = NewProjectDialog(self, self)
 
-        source_path = self.current_code_file_path or self.current_po_file_path
+        source_path = self.current_file_path
         if source_path:
             project_name = os.path.splitext(os.path.basename(source_path))[0]
             dialog.project_name_edit.setText(project_name)
             dialog.location_edit.setText(os.path.dirname(source_path))
 
-            file_type = 'po' if self.is_po_mode else 'code'
-            file_info = {'path': source_path, 'type': file_type}
+            f_id = self.current_format_handler.format_id if self.current_format_handler else 'ow_code'
+            file_info = {'path': source_path, 'format_id': f_id}
+
             dialog.source_files = [file_info]
             dialog.source_files_tree.add_file_item(source_path, file_info)
 
@@ -4497,40 +4537,51 @@ class LexiSyncApp(QMainWindow):
                 QMessageBox.critical(self, _("Project Creation Failed"), str(e))
         return False
 
-    def save_po_file(self, filepath, compile_mo=True):
+    def save_translation_file(self, filepath, compile_mo=True):
         try:
-            original_file_name = os.path.basename(self.current_code_file_path or "source_code")
-            po_file_service.save_to_po(filepath, self.translatable_objects, self.current_po_metadata,
-                                       original_file_name, self)
+            handler = FormatManager.get_handler_by_extension(filepath)
+            if not handler:
+                handler = self.current_format_handler  # Fallback
 
-            self.current_po_file_path = filepath
-            self.mark_project_modified(False)
-            self.update_statusbar(_("PO file saved to: {filename}").format(filename=os.path.basename(filepath)),
+            original_file_name = os.path.basename(self.current_file_path or "source_code")
+
+            handler.save(filepath, self.translatable_objects, self.current_file_metadata,
+                         original_file_name=original_file_name, app_instance=self)
+
+            self.current_file_path = filepath
+            self.current_format_handler = handler
+            self.mark_modified(False)
+            self.update_statusbar(_("File saved to: {filename}").format(filename=os.path.basename(filepath)),
                                   persistent=True)
             self.update_title()
-            self.plugin_manager.run_hook('on_after_project_save', filepath=filepath, file_format='po')
-            if self.auto_compile_mo_var and compile_mo:
+
+            ext = os.path.splitext(filepath)[1].lower()
+            self.plugin_manager.run_hook('on_after_project_save', filepath=filepath, file_format=ext.replace('.', ''))
+
+            # MO Compilation logic (Specific to PO)
+            if self.auto_compile_mo_var and compile_mo and handler.format_id == 'po':
                 try:
+                    import polib
                     mo_filepath = os.path.splitext(filepath)[0] + ".mo"
                     po_file_to_compile = polib.pofile(filepath, encoding='utf-8')
                     po_file_to_compile.save_as_mofile(mo_filepath)
-                    self.update_statusbar(_("PO file saved and MO file compiled: {filename}").format(filename=os.path.basename(mo_filepath)))
+                    self.update_statusbar(
+                        _("File saved and MO compiled: {filename}").format(filename=os.path.basename(mo_filepath)))
                 except Exception as e_mo:
-                    QMessageBox.critical(self, _("MO Compilation Failed"), _("Could not compile MO file: {error}").format(error=e_mo))
+                    QMessageBox.critical(self, _("MO Compilation Failed"), str(e_mo))
             return True
         except Exception as e:
-            QMessageBox.critical(self, _("Save PO Error"), _("Failed to save PO file: {error}").format(error=e))
+            QMessageBox.critical(self, _("Save Error"), _("Failed to save file: {error}").format(error=e))
             return False
 
-    def save_po_as_dialog(self):
+    def save_translation_as_dialog(self):
+        file_filters = FormatManager.get_file_dialog_filters(format_type="translation")
         filepath, selected_filter = QFileDialog.getSaveFileName(
-            self,
-            _("Save PO File As"),
-            self.config.get("last_dir", os.getcwd()),
-            _("PO files (*.po);;All Files (*.*)")
+            self, _("Save Translation File As"),
+            self.config.get("last_dir", os.getcwd()), file_filters
         )
         if filepath:
-            return self.save_po_file(filepath)
+            return self.save_translation_file(filepath)
         return False
 
     def export_project_translations_to_excel(self):
@@ -4542,11 +4593,11 @@ class LexiSyncApp(QMainWindow):
         if self.current_project_path:
             base, _extension = os.path.splitext(os.path.basename(self.current_project_path))
             default_filename = f"{base}_translations.xlsx"
-        elif self.current_code_file_path:
-            base, _extension = os.path.splitext(os.path.basename(self.current_code_file_path))
+        elif self.current_file_path:
+            base, _extension = os.path.splitext(os.path.basename(self.current_file_path))
             default_filename = f"{base}_translations.xlsx"
-        elif self.current_po_file_path:
-            base, _extension = os.path.splitext(os.path.basename(self.current_po_file_path))
+        elif self.current_file_path:
+            base, _extension = os.path.splitext(os.path.basename(self.current_file_path))
             default_filename = f"{base}_translations.xlsx"
 
         filepath, selected_filter = QFileDialog.getSaveFileName(
@@ -4707,7 +4758,7 @@ class LexiSyncApp(QMainWindow):
 
             if changes_for_undo:
                 self.add_to_undo_history('bulk_excel_import', {'changes': changes_for_undo})
-                self.mark_project_modified()
+                self.mark_modified()
 
             self._run_and_refresh_with_validation()
             if self.current_selected_ts_id: self.force_refresh_ui_for_current_selection()
@@ -4732,11 +4783,11 @@ class LexiSyncApp(QMainWindow):
         if self.current_project_path:
             base, _extension = os.path.splitext(os.path.basename(self.current_project_path))
             default_filename = f"{base}_translations.json"
-        elif self.current_code_file_path:
-            base, __extension = os.path.splitext(os.path.basename(self.current_code_file_path))
+        elif self.current_file_path:
+            base, __extension = os.path.splitext(os.path.basename(self.current_file_path))
             default_filename = f"{base}_translations.json"
-        elif self.current_po_file_path:
-            base, __extension = os.path.splitext(os.path.basename(self.current_po_file_path))
+        elif self.current_file_path:
+            base, __extension = os.path.splitext(os.path.basename(self.current_file_path))
             default_filename = f"{base}_translations.json"
 
         filepath, selected_filter = QFileDialog.getSaveFileName(
@@ -4772,11 +4823,11 @@ class LexiSyncApp(QMainWindow):
         if self.current_project_path:
             base, _extension = os.path.splitext(os.path.basename(self.current_project_path))
             default_filename = f"{base}_translations.yaml"
-        elif self.current_code_file_path:
-            base, _extension = os.path.splitext(os.path.basename(self.current_code_file_path))
+        elif self.current_file_path:
+            base, _extension = os.path.splitext(os.path.basename(self.current_file_path))
             default_filename = f"{base}_translations.yaml"
-        elif self.current_po_file_path:
-            base, _extension = os.path.splitext(os.path.basename(self.current_po_file_path))
+        elif self.current_file_path:
+            base, _extension = os.path.splitext(os.path.basename(self.current_file_path))
             default_filename = f"{base}_translations.yaml"
 
         filepath, selected_filter = QFileDialog.getSaveFileName(
@@ -4813,11 +4864,11 @@ class LexiSyncApp(QMainWindow):
         if self.current_project_path:
             base = os.path.splitext(self.get_current_active_filename())[0]
             default_filename = f"{base}.pot"
-        elif self.current_code_file_path:
-            base = os.path.splitext(os.path.basename(self.current_code_file_path))[0]
+        elif self.current_file_path:
+            base = os.path.splitext(os.path.basename(self.current_file_path))[0]
             default_filename = f"{base}.pot"
-        elif self.current_po_file_path:
-            base = os.path.splitext(os.path.basename(self.current_po_file_path))[0]
+        elif self.current_file_path:
+            base = os.path.splitext(os.path.basename(self.current_file_path))[0]
             default_filename = f"{base}.pot"
 
         # Ask for save location
@@ -4878,33 +4929,38 @@ class LexiSyncApp(QMainWindow):
             logger.error(f"Failed to export POT: {e}", exc_info=True)
             QMessageBox.critical(self, _("Export Error"), _("Failed to export POT file: {error}").format(error=e))
 
-    def import_po_file_dialog_with_path(self, po_filepath):
-        if self._check_and_open_parent_project(po_filepath):
-            return
+    def open_translation_file_with_path(self, filepath):
+        if self._check_and_open_parent_project(filepath): return
         self._reset_app_state()
         t_start = time.perf_counter()
 
         try:
-            self.translatable_objects, self.current_po_metadata, po_lang_full = po_file_service.load_from_po(
-                po_filepath)
+            handler = FormatManager.get_handler_by_extension(filepath)
+            if not handler or handler.format_type != "translation":
+                raise ValueError(f"Unsupported translation format for {filepath}")
+
+            self.current_format_handler = handler
+            is_ts = (handler.format_id == 'ts')
+            self.details_panel.set_fuzzy_controls_visible(not is_ts)
+            self.translatable_objects, self.current_file_metadata, lang_full = handler.load(filepath)
 
             # Checkpoint 1: Parsing
             t_parse = time.perf_counter()
 
             self.original_raw_code_content = ""
-            self.current_code_file_path = None
+            self.current_file_path = None
             self.source_language = language_service.detect_source_language(
                 [ts.original_semantic for ts in self.translatable_objects if ts.original_semantic.strip()]
             )
             target_lang_set = False
-            if po_lang_full:
+            if lang_full:
                 full_code_match = next((code for name, code in SUPPORTED_LANGUAGES.items() if
-                                        code.lower() == po_lang_full.lower().replace('-', '_')), None)
+                                        code.lower() == lang_full.lower().replace('-', '_')), None)
                 if full_code_match:
                     self.target_language = full_code_match
                     target_lang_set = True
                 else:
-                    base_lang_code = po_lang_full.split('_')[0].split('-')[0].lower()
+                    base_lang_code = lang_full.split('_')[0].split('-')[0].lower()
                     if base_lang_code in SUPPORTED_LANGUAGES.values():
                         self.target_language = base_lang_code
                         target_lang_set = True
@@ -4922,42 +4978,41 @@ class LexiSyncApp(QMainWindow):
             self.current_project_path = None
 
             self.is_project_mode = False
-            self.is_po_mode = True
+            self.is_translation_mode = True
 
-            self.add_to_recent_files(po_filepath)
-            self.config["last_dir"] = os.path.dirname(po_filepath)
+            self.add_to_recent_files(filepath)
+            self.config["last_dir"] = os.path.dirname(filepath)
 
             self.undo_history.clear()
             self.redo_history.clear()
-            self.mark_project_modified(False)
-            self._update_file_explorer(po_filepath)
-            self.current_po_file_path = po_filepath
+            self.mark_modified(False)
+
+            self._update_file_explorer(filepath)
+            self.current_file_path = filepath
             self._run_and_refresh_with_validation()
 
             # Checkpoint 2: Validation & UI
             t_end = time.perf_counter()
-            filename = os.path.basename(po_filepath)
+            filename = os.path.basename(filepath)
             count = len(self.translatable_objects)
             logger.info(f"=== Performance Report: {filename} ({count} items) ===")
-            logger.info(f"  PO Parsing:         {t_parse - t_start:.4f}s")
+            logger.info(f"  File Parsing:       {t_parse - t_start:.4f}s")
             logger.info(f"  Validation & Sort:  {t_end - t_parse:.4f}s")
             logger.info(f"  TOTAL TIME:         {t_end - t_start:.4f}s")
             logger.info("======================================================")
 
             self.update_statusbar(
-                _("Loaded {count} entries from PO file {filename}.").format(count=len(self.translatable_objects),
-                                                                            filename=os.path.basename(po_filepath)),
+                _("Loaded {count} entries from {filename}.").format(count=len(self.translatable_objects),
+                                                                    filename=os.path.basename(filepath)),
                 persistent=True)
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
-            logger.error("--- AN EXCEPTION OCCURRED DURING PO IMPORT ---")
-            traceback.print_exc()
-            logger.error("---------------------------------------------")
-            QMessageBox.critical(self, _("PO Import Error"), _("Error importing PO file '{filename}': {error}").format(
-                filename=os.path.basename(po_filepath), error=e))
+            logger.error("--- AN EXCEPTION OCCURRED DURING TRANSLATION IMPORT ---", exc_info=True)
+            QMessageBox.critical(self, _("Import Error"), _("Error importing file '{filename}': {error}").format(
+                filename=os.path.basename(filepath), error=e))
             self._reset_app_state()
-            self.update_statusbar(_("PO file loading failed"), persistent=True)
+            self.update_statusbar(_("File loading failed"), persistent=True)
         finally:
             current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
             current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
@@ -4966,51 +5021,16 @@ class LexiSyncApp(QMainWindow):
 
         self.update_counts_display()
 
-    def import_po_file_dialog(self):
+    def open_translation_file_dialog(self):
         if not self.prompt_save_if_modified(): return
 
-        po_filepath, selected_filter = QFileDialog.getOpenFileName(
-            self,
-            _("Select PO File to Import"),
-            self.config.get("last_dir", os.getcwd()),
-            _("PO files (*.po);;POT files (*.pot);;All files (*.*)")
-        )
-        if not po_filepath: return
-        self.import_po_file_dialog_with_path(po_filepath)
-
-    def export_to_po_file_dialog(self):
-        if not self.translatable_objects:
-            QMessageBox.information(self, _("Info"), _("No data to export."))
-            return
-
-        default_filename = "translations.po"
-        if self.current_project_path:
-            base, _extension = os.path.splitext(os.path.basename(self.current_project_path))
-            default_filename = f"{base}.po"
-        elif self.current_code_file_path:
-            base, _extension = os.path.splitext(os.path.basename(self.current_code_file_path))
-            default_filename = f"{base}.po"
-        elif self.current_po_file_path:
-            default_filename = os.path.basename(self.current_po_file_path)
-
-        filepath, selected_filter = QFileDialog.getSaveFileName(
-            self,
-            _("Export to PO File..."),
-            default_filename,
-            _("PO files (*.po);;All Files (*.*)")
+        file_filters = FormatManager.get_file_dialog_filters(format_type="translation")
+        filepath, selected_filter = QFileDialog.getOpenFileName(
+            self, _("Select Translation File to Import"),
+            self.config.get("last_dir", os.getcwd()), file_filters
         )
         if not filepath: return
-
-        try:
-            original_file_name_for_po = os.path.basename(
-                self.current_code_file_path) if self.current_code_file_path else "source_code"
-            po_file_service.save_to_po(filepath, self.translatable_objects, self.current_po_metadata,
-                                       original_file_name_for_po)
-            self.update_statusbar(
-                _("Translations exported to PO file: {filename}").format(filename=os.path.basename(filepath)))
-            self.mark_project_modified(False)
-        except Exception as e:
-            QMessageBox.critical(self, _("Export Error"), _("Failed to export to PO file: {error}").format(error=e))
+        self.open_translation_file_with_path(filepath)
 
     def show_extraction_pattern_dialog(self):
         dialog = ExtractionPatternManagerDialog(self, _("Extraction Rule Manager"), self)
@@ -5023,21 +5043,21 @@ class LexiSyncApp(QMainWindow):
                     self.reload_translatable_text()
 
     def reload_translatable_text(self):
-        if not self.original_raw_code_content and not self.current_code_file_path:
+        if not self.original_raw_code_content and not self.current_file_path:
             QMessageBox.information(self, _("Info"), _("No code content loaded to reload."))
             return
 
         current_content_to_reextract = self.original_raw_code_content
         source_name = _("current in-memory code")
-        if self.current_code_file_path and os.path.exists(self.current_code_file_path):
+        if self.current_file_path and os.path.exists(self.current_file_path):
             try:
-                with open(self.current_code_file_path, 'r', encoding='utf-8', errors='replace') as f:
+                with open(self.current_file_path, 'r', encoding='utf-8', errors='replace') as f:
                     current_content_to_reextract = f.read()
-                source_name = _("file '{filename}'").format(filename=os.path.basename(self.current_code_file_path))
+                source_name = _("file '{filename}'").format(filename=os.path.basename(self.current_file_path))
             except Exception as e:
                 QMessageBox.warning(self, _("File Read Error"),
                                     _("Could not re-read {filepath} from disk.\nUsing in-memory version.\nError: {error}").format(
-                                        filepath=self.current_code_file_path, error=e))
+                                        filepath=self.current_file_path, error=e))
 
         if not current_content_to_reextract:
             QMessageBox.critical(self, _("Error"), _("Could not get code content for re-extraction."))
@@ -5051,7 +5071,7 @@ class LexiSyncApp(QMainWindow):
             'was_auto_ignored': ts.was_auto_ignored
         } for ts in self.translatable_objects}
 
-        if self.current_project_modified or old_translations_map:
+        if self.is_modified or old_translations_map:
             reply = QMessageBox.question(self, _("Confirm Reload"),
                                          _("This will re-extract strings from {source} using the new rules.\n"
                                            "Existing translations will be preserved where the original text matches, but unmatched translations and statuses may be lost.\n"
@@ -5068,7 +5088,7 @@ class LexiSyncApp(QMainWindow):
             extraction_patterns = self.plugin_manager.run_hook(
                 'process_extraction_patterns',
                 extraction_patterns,
-                filepath=self.current_code_file_path or "",
+                filepath=self.current_file_path or "",
                 raw_content=current_content_to_reextract
             )
             self.original_raw_code_content = current_content_to_reextract
@@ -5096,7 +5116,7 @@ class LexiSyncApp(QMainWindow):
             self.undo_history.clear()
             self.redo_history.clear()
             self.current_selected_ts_id = None
-            self.mark_project_modified(True)
+            self.mark_modified(True)
 
             self.refresh_sheet()
             self.update_statusbar(
@@ -5174,10 +5194,10 @@ class LexiSyncApp(QMainWindow):
         current_filename = "Unknown File"
         if self.is_project_mode:
             current_filename = self.get_current_active_filename() or self.project_config.get('name', 'Project')
-        elif self.current_po_file_path:
-            current_filename = os.path.basename(self.current_po_file_path)
-        elif self.current_code_file_path:
-            current_filename = os.path.basename(self.current_code_file_path)
+        elif self.current_file_path:
+            current_filename = os.path.basename(self.current_file_path)
+        elif self.current_file_path:
+            current_filename = os.path.basename(self.current_file_path)
 
         source_key = f"tm_save::{current_filename}"
         display_name = f"{current_filename} (Batch Save)"
@@ -5281,7 +5301,7 @@ class LexiSyncApp(QMainWindow):
             _("TM updated for original: '{text}...'").format(text=ts_obj.original_semantic[:30].replace(chr(10), '↵')))
 
         self.perform_tm_update()
-        self.mark_project_modified()
+        self.mark_modified()
 
     def clear_tm_for_selected_string(self):
         if not self.current_selected_ts_id:
@@ -5400,7 +5420,7 @@ class LexiSyncApp(QMainWindow):
         if applied_count > 0:
             if bulk_changes_for_undo:
                 self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})
-                self.mark_project_modified()
+                self.mark_modified()
             self._update_view_for_ids(ids_to_update)
 
             if self.current_selected_ts_id:
@@ -5967,7 +5987,7 @@ class LexiSyncApp(QMainWindow):
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.mark_project_modified()
+            self.mark_modified()
             self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
 
             self._update_view_for_ids(changed_ids)
@@ -5993,7 +6013,7 @@ class LexiSyncApp(QMainWindow):
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.mark_project_modified()
+            self.mark_modified()
             self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
 
             self._update_view_for_ids(changed_ids)
@@ -6016,7 +6036,7 @@ class LexiSyncApp(QMainWindow):
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.mark_project_modified()
+            self.mark_modified()
             self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
 
             self._update_view_for_ids(changed_ids)
@@ -6041,7 +6061,7 @@ class LexiSyncApp(QMainWindow):
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.mark_project_modified()
+            self.mark_modified()
             self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
 
             self._update_view_for_ids(changed_ids)
@@ -6075,7 +6095,7 @@ class LexiSyncApp(QMainWindow):
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-            self.mark_project_modified()
+            self.mark_modified()
 
             action_text = _("marked as fuzzy") if fuzzy_flag else _("unmarked as fuzzy")
             self.update_statusbar(_("{count} items {action}.").format(count=len(changed_ids), action=action_text))
@@ -6258,7 +6278,7 @@ class LexiSyncApp(QMainWindow):
         if self.ai_batch_successful_translations_for_undo:
             self.add_to_undo_history('bulk_ai_translate',
                                      {'changes': self.ai_batch_successful_translations_for_undo})
-            self.mark_project_modified()
+            self.mark_modified()
 
         success_count = len(self.ai_batch_successful_translations_for_undo)
         changed_ids = {change['string_id'] for change in self.ai_batch_successful_translations_for_undo}
@@ -6587,7 +6607,7 @@ class LexiSyncApp(QMainWindow):
                 if self.current_selected_ts_id in [c['string_id'] for c in bulk_changes]:
                     self.comment_status_panel.comment_edit_text.setPlainText(new_comment)
                 self.update_statusbar(_("Updated comments for {count} items.").format(count=len(bulk_changes)))
-                self.mark_project_modified()
+                self.mark_modified()
 
     def cm_apply_tm_to_selected(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()
@@ -6619,7 +6639,7 @@ class LexiSyncApp(QMainWindow):
             self._run_and_refresh_with_validation()
             self.force_refresh_ui_for_current_selection()
             self.update_statusbar(_("Applied TM to {count} selected items.").format(count=applied_count))
-            self.mark_project_modified()
+            self.mark_modified()
         elif selected_objs:
             QMessageBox.information(self, _("Info"),
                                     _("No matching TM entries or no changes needed for selected items."))
@@ -6668,7 +6688,7 @@ class LexiSyncApp(QMainWindow):
             self.update_statusbar(_("Translations for selected items are already empty, no clearing needed."))
             return
         self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
-        self.mark_project_modified()
+        self.mark_modified()
         if self.current_selected_ts_id in cleared_ids:
             self.details_panel.translation_edit_text.setPlainText("")
             self.details_panel.translation_edit_text.document().setModified(False)
@@ -6688,7 +6708,6 @@ class LexiSyncApp(QMainWindow):
 
     def _run_comparison_logic(self, new_filepath):
         try:
-            is_po_mode = self.is_po_mode
             self.progress_bar.setVisible(True)
             self.progress_bar.setValue(0)
             self.update_statusbar(_("Parsing new file..."), persistent=True)
@@ -6697,96 +6716,27 @@ class LexiSyncApp(QMainWindow):
             new_strings = []
             new_code_content = None
 
-            if is_po_mode:
-                pot_file = polib.pofile(new_filepath, encoding='utf-8')
-                old_strings_map = {s.original_semantic: s for s in self.translatable_objects}
-                used_old_strings_for_fuzzy_match = set()
-                pot_filename = os.path.basename(new_filepath)
-
-                for entry in pot_file:
-                    if entry.obsolete:
-                        continue
-                    new_obj = po_file_service.po_entry_to_translatable_string(entry, pot_filename)
-                    if new_obj.original_semantic in old_strings_map:
-                        # 精确匹配
-                        old_obj = old_strings_map[new_obj.original_semantic]
-                        new_obj.translation = old_obj.translation
-                        new_obj.comment = old_obj.comment
-                        new_obj.po_comment = old_obj.po_comment
-                        new_obj.is_fuzzy = old_obj.is_fuzzy
-                        new_obj.is_reviewed = old_obj.is_reviewed
-                        new_obj.is_ignored = old_obj.is_ignored
-                        used_old_strings_for_fuzzy_match.add(old_obj)
-                    else:
-                        # 模糊匹配
-                        best_match_score = 0
-                        best_match_old_s = None
-                        for old_s in self.translatable_objects:
-                            if old_s not in used_old_strings_for_fuzzy_match:
-                                score = fuzz.ratio(new_obj.original_semantic,old_s.original_semantic) / 100
-                                if score > best_match_score:
-                                    best_match_score = score
-                                    best_match_old_s = old_s
-
-                        if best_match_score >= 0.85 and best_match_old_s:
-                            new_obj.translation = best_match_old_s.translation
-                            new_obj.comment = best_match_old_s.comment
-                            new_obj.po_comment = best_match_old_s.po_comment
-                            new_obj.is_fuzzy = True
-                            new_obj.is_reviewed = False
-                            used_old_strings_for_fuzzy_match.add(best_match_old_s)
-
-                    new_strings.append(new_obj)
-                new_map = {s.original_semantic: s for s in new_strings}
-                diff_results = {'added': [], 'removed': [], 'modified': [], 'unchanged': []}
-
-                for new_obj in new_strings:
-                    if new_obj.original_semantic in old_strings_map:
-                        old_obj = old_strings_map[new_obj.original_semantic]
-                        if new_obj.is_fuzzy:
-                            diff_results['modified'].append({'old_obj': old_obj, 'new_obj': new_obj,
-                                                             'similarity': fuzz.ratio(new_obj.original_semantic,old_obj.original_semantic) / 100})
-                        else:
-                            diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': new_obj})
-                    else:
-                        diff_results['added'].append({'new_obj': new_obj})
-
-                for old_obj in self.translatable_objects:
-                    if old_obj.original_semantic not in new_map:
-                        diff_results['removed'].append({'old_obj': old_obj})
-                self.progress_bar.setValue(70)
-                summary = (_("Comparison complete. Found ") + _("{added} new items, ").format(
-                    added=len(diff_results['added'])) + _("{removed} removed items, ").format(
-                    removed=len(diff_results['removed'])) + _("and {modified} modified/inherited items.").format(
-                    modified=len(diff_results['modified'])))
-                diff_results['summary'] = summary
-
-                dialog = DiffDialog(self, _("Version Comparison Results"), diff_results)
-                self.progress_bar.setVisible(False)
-
-                if dialog.exec():
-                    self.update_statusbar(_("Applying updates..."), persistent=True)
-                    self.translatable_objects = new_strings
-                    self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
-                    self._run_and_refresh_with_validation()
-                    self.mark_project_modified()
-                    self.update_statusbar(_("Project updated to new version."), persistent=True)
-                else:
-                    self.update_statusbar(_("Version update cancelled."))
-                return
+            if self.is_translation_mode:
+                handler = FormatManager.get_handler_by_extension(new_filepath)
+                if not handler:
+                    raise ValueError(_("Unsupported file format for comparison."))
+                new_strings, __, ___ = handler.load(new_filepath)
             else:
                 with open(new_filepath, 'r', encoding='utf-8', errors='replace') as f:
                     new_code_content = f.read()
                 extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
                 new_strings = extract_translatable_strings(new_code_content, extraction_patterns)
+
             self.progress_bar.setValue(30)
             self.update_statusbar(_("Comparing versions..."), persistent=True)
             QApplication.processEvents()
+
             old_strings = self.translatable_objects
             old_map = {s.original_semantic: s for s in old_strings}
             new_map = {s.original_semantic: s for s in new_strings}
             diff_results = {'added': [], 'removed': [], 'modified': [], 'unchanged': []}
             used_old_strings_for_fuzzy_match = set()
+
             for new_obj in new_strings:
                 if new_obj.original_semantic in old_map:
                     old_obj = old_map[new_obj.original_semantic]
@@ -6832,16 +6782,10 @@ class LexiSyncApp(QMainWindow):
                         used_old_strings_for_fuzzy_match.add(best_match_old_s)
                     else:
                         diff_results['added'].append({'new_obj': new_obj})
+
             for old_obj in old_strings:
                 if old_obj.original_semantic not in new_map:
                     if old_obj not in used_old_strings_for_fuzzy_match:
-                        diff_results['removed'].append({'old_obj': old_obj})
-
-
-            for old_obj in old_strings:
-                if old_obj.original_semantic not in new_map:
-                    was_modified = any(res['old_obj'] is old_obj for res in diff_results['modified'])
-                    if not was_modified:
                         diff_results['removed'].append({'old_obj': old_obj})
 
             self.progress_bar.setValue(70)
@@ -6857,15 +6801,14 @@ class LexiSyncApp(QMainWindow):
             if dialog.exec():
                 self.update_statusbar(_("Applying updates..."), persistent=True)
                 self.translatable_objects = new_strings
-                if not is_po_mode and new_code_content is not None:
+                if not self.is_translation_mode and new_code_content is not None:
                     self.original_raw_code_content = new_code_content
-                    self.current_code_file_path = new_filepath
-                elif is_po_mode:
-                    # self.current_po_file_path = new_filepath
+                    self.current_file_path = new_filepath
+                elif self.is_translation_mode:
                     pass
                 self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
                 self._run_and_refresh_with_validation()
-                self.mark_project_modified()
+                self.mark_modified()
                 self.update_statusbar(_("Project updated to new version."), persistent=True)
             else:
                 self.update_statusbar(_("Version update cancelled."))
@@ -6880,18 +6823,14 @@ class LexiSyncApp(QMainWindow):
             QMessageBox.critical(self, _("Error"), _("Please open a project or file first."))
             return
 
-        is_po_mode = self.is_po_mode
-        if is_po_mode:
-            title = _("Select new POT template for comparison")
-            filetypes = _("PO Template Files (*.pot);;All Files (*.*)")
-            initial_dir = os.path.dirname(self.current_po_file_path) if self.current_po_file_path else self.config.get(
-                "last_dir", os.getcwd())
+        if self.is_translation_mode:
+            title = _("Select new translation file for comparison")
+            filetypes = FormatManager.get_file_dialog_filters(format_type="translation")
+            initial_dir = os.path.dirname(self.current_file_path) if self.current_file_path else self.config.get("last_dir", os.getcwd())
         else:
             title = _("Select new version code file for comparison")
-            filetypes = _("Overwatch Workshop Files (*.ow *.txt);;All Files (*.*)")
-            initial_dir = os.path.dirname(
-                self.current_code_file_path) if self.current_code_file_path else self.config.get("last_dir",
-                                                                                                 os.getcwd())
+            filetypes = FormatManager.get_file_dialog_filters(format_type="source")
+            initial_dir = os.path.dirname(self.current_file_path) if self.current_file_path else self.config.get("last_dir", os.getcwd())
 
         filepath, selected_filter = QFileDialog.getOpenFileName(self, title, initial_dir, filetypes)
         if filepath:

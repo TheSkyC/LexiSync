@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetIte
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QColor, QFont, QCursor
 import os
+from services.format_manager import FormatManager
 from utils.localization import _
 
 
@@ -26,7 +27,9 @@ class RecentFileItemWidget(QWidget):
 
         # Type Badge
         if metadata:
-            ftype = metadata.get("type", "code")
+            ftype = metadata.get("type", "source")
+            format_id = metadata.get("format_id")
+
             if ftype == "project":
                 badge = QLabel("Project")
                 badge.setStyleSheet("""
@@ -38,17 +41,24 @@ class RecentFileItemWidget(QWidget):
                     font-weight: bold;
                 """)
                 top_row.addWidget(badge)
-            elif ftype == "po":
-                badge = QLabel("PO")
-                badge.setStyleSheet("""
-                    background-color: #F3E5F5; 
-                    color: #7B1FA2; 
-                    border-radius: 3px; 
-                    padding: 1px 4px; 
-                    font-size: 10px; 
-                    font-weight: bold;
-                """)
-                top_row.addWidget(badge)
+            else:
+                handler = None
+                if format_id:
+                    handler = FormatManager.get_handler(format_id)
+                if not handler:
+                    handler = FormatManager.get_handler_by_extension(filename)
+
+                if handler:
+                    badge = QLabel(handler.badge_text)
+                    badge.setStyleSheet(f"""
+                        background-color: {handler.badge_bg_color}; 
+                        color: {handler.badge_text_color}; 
+                        border-radius: 3px; 
+                        padding: 1px 4px; 
+                        font-size: 10px; 
+                        font-weight: bold;
+                    """)
+                    top_row.addWidget(badge)
 
         top_row.addStretch()
         layout.addLayout(top_row)

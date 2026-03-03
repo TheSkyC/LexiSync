@@ -979,10 +979,10 @@ class SmartTranslationDialog(QDialog):
         current_filename = "Unknown File"
         if self.app.is_project_mode:
             current_filename = self.app.get_current_active_filename()
-        elif self.app.current_po_file_path:
-            current_filename = os.path.basename(self.app.current_po_file_path)
-        elif self.app.current_code_file_path:
-            current_filename = os.path.basename(self.app.current_code_file_path)
+        elif self.app.current_file_path:
+            current_filename = os.path.basename(self.app.current_file_path)
+        elif self.app.current_file_path:
+            current_filename = os.path.basename(self.app.current_file_path)
 
         source_key = f"smart_extract::{current_filename}"
         display_name = f"{current_filename} (Smart Extract)"

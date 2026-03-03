@@ -10,6 +10,8 @@ from typing import Tuple, List, Dict
 from . import project_service
 from utils.localization import _
 from services.code_file_service import extract_translatable_strings
+from services.format_manager import FormatManager
+
 
 class ProjectManager:
     def __init__(self, app_instance):
@@ -51,24 +53,29 @@ class ProjectManager:
         shutil.copy2(source_file, destination_path)
 
         relative_path = destination_path.relative_to(proj_path).as_posix()
-        file_type = 'po' if source_file.suffix.lower() in ['.po', '.pot'] else 'code'
+        handler = FormatManager.get_handler_by_extension(file_to_add_path)
+        if not handler:
+            return False, _("Unsupported file format.")
 
         new_file_entry = {
             "id": str(uuid.uuid4()),
             "original_path": str(source_file),
             "project_path": relative_path,
-            "type": file_type,
+            "format_id": handler.format_id,
             "linked": False
         }
         self.project_config['source_files'].append(new_file_entry)
         is_first_file = len(self.project_config['source_files']) == 1
         if is_first_file:
             try:
-                with open(destination_path, 'r', encoding='utf-8') as f:
-                    content = f.read().replace('\r\n', '\n').replace('\r', '\n')
+                if handler.format_type == "translation":
+                    initial_objects, __, ___ = handler.load(str(destination_path))
+                else:
+                    patterns = self.app.config.get("extraction_patterns", [])
+                    initial_objects, __, ___ = handler.load(str(destination_path),
+                                                         extraction_patterns=patterns,
+                                                         relative_path=relative_path)
 
-                patterns = self.app.config.get("extraction_patterns", [])
-                initial_objects = extract_translatable_strings(content, patterns)
                 initial_data = [ts.to_dict() for ts in initial_objects]
 
                 for lang in self.project_config['target_languages']:

@@ -7,6 +7,7 @@ import uuid
 import polib
 from pathlib import Path
 from services import po_file_service
+from services.format_manager import FormatManager
 from services.code_file_service import extract_translatable_strings
 from utils.constants import APP_VERSION, DEFAULT_EXTRACTION_PATTERNS
 from utils.localization import _
@@ -49,21 +50,26 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
             relative_path_obj = destination_path.relative_to(proj_path)
             relative_path_posix = relative_path_obj.as_posix()
 
+            f_id = file_info['format_id']
+
             processed_file_info = {
                 "id": str(uuid.uuid4()),
                 "original_path": str(original_path).replace('\\', '/'),
                 "project_path": relative_path_posix,
-                "type": file_info['type'],
+                "format_id": f_id,
                 "linked": False
             }
             processed_source_files.append(processed_file_info)
-
-            with open(destination_path, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
-
-            extraction_patterns = file_info.get('patterns', DEFAULT_EXTRACTION_PATTERNS)
-            extracted_strings = extract_translatable_strings(content, extraction_patterns, relative_path_posix)
-            all_translatable_objects.extend(extracted_strings)
+            handler = FormatManager.get_handler(f_id)
+            if handler:
+                if handler.format_type == "translation":
+                    extracted_strings, __, ___ = handler.load(str(destination_path), relative_path=relative_path_posix)
+                else:
+                    patterns = file_info.get('patterns', DEFAULT_EXTRACTION_PATTERNS)
+                    extracted_strings, __, ___ = handler.load(str(destination_path),
+                                                           extraction_patterns=patterns,
+                                                           relative_path=relative_path_posix)
+                all_translatable_objects.extend(extracted_strings)
 
         if glossary_files:
             for g_file in glossary_files:
@@ -80,9 +86,7 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
             "target_languages": target_langs,
             "current_target_language": target_langs[0] if target_langs else "",
             "source_files": processed_source_files,
-            "settings": {
-                "use_global_tm": use_global_tm
-            },
+            "settings": { "use_global_tm": use_global_tm },
             "ui_state": {}
         }
 
@@ -136,22 +140,29 @@ def load_project_data(project_path: str, target_language: str, file_id_to_load: 
             continue
 
         extracted_strings = []
-        file_type = file_info.get("type", "code")
-        relative_path = file_info["project_path"]
-        logger.debug(f"[load_project_data] Processing file: {relative_path}, type: {file_type}")
-        if file_type == 'po':
-            try:
-                extracted_strings, __, ___ = po_file_service.load_from_po(str(source_file_path_abs))
-                logger.debug(f"[load_project_data] Loaded {len(extracted_strings)} strings from PO file.")
-            except Exception as e:
-                logger.error(f"Failed to parse PO file {source_file_path_abs}: {e}", exc_info=True)
-        else:
-            with open(source_file_path_abs, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
 
-            extraction_patterns = file_info.get("patterns", DEFAULT_EXTRACTION_PATTERNS)
-            extracted_strings = extract_translatable_strings(content, extraction_patterns, relative_path)
-            logger.debug(f"[load_project_data] Extracted {len(extracted_strings)} strings from code file.")
+        format_id = file_info.get("format_id")
+        from services.format_manager import FormatManager
+        handler = FormatManager.get_handler(format_id)
+
+        if not handler:
+            logger.error(f"No handler found for format_id: {format_id}")
+            continue
+
+        logger.debug(f"[load_project_data] Processing file: {file_info['project_path']}, format: {format_id}")
+
+        try:
+            if handler.format_type == "translation":
+                extracted_strings, __, ___ = handler.load(str(source_file_path_abs), relative_path=file_info["project_path"])
+                logger.debug(f"[load_project_data] Loaded {len(extracted_strings)} strings from {handler.display_name}.")
+            elif handler.format_type == "source":
+                extraction_patterns = file_info.get("patterns", DEFAULT_EXTRACTION_PATTERNS)
+                extracted_strings, __, ___ = handler.load(str(source_file_path_abs),
+                                                          extraction_patterns=extraction_patterns,
+                                                          relative_path=file_info["project_path"])
+                logger.debug(f"[load_project_data] Extracted {len(extracted_strings)} strings from {handler.display_name}.")
+        except Exception as e:
+            logger.error(f"Failed to parse file {source_file_path_abs}: {e}", exc_info=True)
 
         for ts_obj in extracted_strings:
             if ts_obj.id in translation_map:
@@ -164,6 +175,7 @@ def load_project_data(project_path: str, target_language: str, file_id_to_load: 
                 ts_obj.po_comment = ts_data.get('po_comment', "")
                 ts_obj.is_warning_ignored = ts_data.get('is_warning_ignored', False)
             loaded_strings.append(ts_obj)
+
     logger.debug(f"[load_project_data] Total strings loaded in this call: {len(loaded_strings)}")
     return project_config, loaded_strings
 
@@ -237,26 +249,49 @@ def build_project_target_files(project_path: str, app_instance, progress_callbac
             if not source_path_abs.is_file():
                 logger.warning(f"Source file not found, skipping: {source_path_abs}")
                 continue
-            file_type = file_info.get("type", "code")
-            if file_type == 'po':
-                try:
-                    po_file = polib.pofile(str(source_path_abs), encoding='utf-8', wrapwidth=0)
-                    temp_ts_objects, __, ___ = po_file_service.load_from_po(str(source_path_abs))
-                    id_to_msgid_map = {ts.id: ts.original_semantic for ts in temp_ts_objects}
-                    for entry in po_file:
-                        entry_id = next((ts_id for ts_id, msgid in id_to_msgid_map.items() if msgid == entry.msgid),
-                                        None)
-                        if entry_id and entry_id in translation_map:
-                            translated_data = translation_map[entry_id]
+            format_id = file_info.get("format_id")
+            if not format_id:
+                format_id = "po" if file_info.get("type") == "po" else "ow_code"
+
+            handler = FormatManager.get_handler(format_id)
+            if not handler: continue
+
+            try:
+                if handler.format_type == "translation":
+                    temp_ts_objects, metadata, _ = handler.load(str(source_path_abs))
+                    for ts in temp_ts_objects:
+                        if ts.id in translation_map:
+                            translated_data = translation_map[ts.id]
                             translation_text = translated_data.get('translation', "").replace("\\n", "\n")
                             if not translated_data.get('is_ignored', False):
-                                entry.msgstr = translation_text
+                                ts.translation = translation_text
+                                ts.is_reviewed = translated_data.get('is_reviewed', False)
+                                ts.is_fuzzy = translated_data.get('is_fuzzy', False)
+                    handler.save(str(target_path_abs), temp_ts_objects, metadata, app_instance=app_instance)
 
-                    po_file.save(str(target_path_abs))
+                elif handler.format_type == "source":
+                    with open(source_path_abs, 'r', encoding='utf-8', errors='replace') as f:
+                        content = f.read()
+                    extraction_patterns = file_info.get("patterns", DEFAULT_EXTRACTION_PATTERNS)
+                    extracted_strings, __, ___ = handler.load(str(source_path_abs),
+                                                              extraction_patterns=extraction_patterns,
+                                                              relative_path=file_info['project_path'])
 
-                except Exception as e:
-                    logger.error(f"Failed to build PO file {source_path_abs}: {e}", exc_info=True)
+                    for ts_obj in sorted(extracted_strings, key=lambda x: x.char_pos_start_in_file, reverse=True):
+                        if ts_obj.id in translation_map:
+                            translated_data = translation_map[ts_obj.id]
+                            translation_text = translated_data.get('translation', "").replace("\\n", "\n")
+                            if translation_text.strip() and not translated_data.get('is_ignored', False):
+                                start = ts_obj.char_pos_start_in_file
+                                end = ts_obj.char_pos_end_in_file
+                                ts_obj.translation = translation_text
+                                replacement = ts_obj.get_raw_translated_for_code()
+                                content = content[:start] + replacement + content[end:]
 
+                    with open(target_path_abs, 'w', encoding='utf-8') as f:
+                        f.write(content)
+            except Exception as e:
+                logger.error(f"Failed to build file {source_path_abs}: {e}", exc_info=True)
             else:
                 with open(source_path_abs, 'r', encoding='utf-8', errors='replace') as f:
                     content = f.read()

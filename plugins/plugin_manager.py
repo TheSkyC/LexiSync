@@ -5,18 +5,22 @@ import os
 import importlib.util
 import inspect
 import gettext
+import shutil
+import zipfile
+import tempfile
+
 from PySide6.QtWidgets import QMessageBox
+
 from plugins.plugin_base import PluginBase
 from plugins.plugin_dialog import PluginManagerDialog
 from dialogs.marketplace_dialog import PluginMarketplaceDialog
+from services.dependency_service import DependencyManager
+from services.format_manager import FormatManager
 from utils.constants import APP_VERSION
 from utils.path_utils import get_app_data_path
 from utils.plugin_context import plugin_libs_context
 from utils.localization import _
-from services.dependency_service import DependencyManager
-import shutil
-import zipfile
-import tempfile
+
 import logging
 logger = logging.getLogger(__package__)
 
@@ -144,7 +148,11 @@ class PluginManager:
                     logger.warning(
                         f"Plugin '{instance.plugin_id()}' has missing/outdated external dependencies: {reason_text}")
                 logger.info(f"Successfully loaded plugin: {instance.name()} (ID: {instance.plugin_id()})")
-
+            handlers = self.run_hook('register_format_handlers')
+            if handlers:
+                for handler_class in handlers:
+                    FormatManager.register_handler(handler_class)
+            logger.info("Plugin format handlers registered.")
         except RuntimeError as e:
             logger.critical(f"Failed to sort plugins due to circular dependency: {e}", exc_info=True)
             QMessageBox.critical(self.main_window, _("Plugin Loading Error"), str(e))
@@ -355,7 +363,8 @@ class PluginManager:
                         if isinstance(res, list):
                             flat_list.extend(res)
                     return flat_list
-                if hook_name in ['on_file_tree_context_menu', 'on_table_context_menu', 'register_resource_viewers']:
+                if hook_name in ['on_file_tree_context_menu', 'on_table_context_menu', 'register_resource_viewers',
+                                 'register_format_handlers']:
                     flat_list = [item for sublist in all_results for item in sublist]
                     return flat_list
                 if hook_name in ['add_statusbar_widgets', 'register_settings_pages', 'register_ai_placeholders', 'register_dock_widgets']:

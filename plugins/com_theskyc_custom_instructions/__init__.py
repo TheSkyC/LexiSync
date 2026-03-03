@@ -50,10 +50,10 @@ class PersonalizedTranslationPlugin(PluginBase):
     def get_current_project_key(self):
         if self.main_window.current_project_path:
             return self.main_window.current_project_path
-        if self.main_window.current_po_file_path:
-            return self.main_window.current_po_file_path
-        if self.main_window.current_code_file_path:
-            return self.main_window.current_code_file_path
+        if self.main_window.current_file_path:
+            return self.main_window.current_file_path
+        if self.main_window.current_file_path:
+            return self.main_window.current_file_path
         return None
 
     def add_menu_items(self) -> list:

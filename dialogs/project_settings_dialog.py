@@ -19,6 +19,7 @@ from .settings_pages import BaseSettingsPage
 from .management_tabs import GlossaryManagementTab, TMManagementTab
 from utils.constants import SUPPORTED_LANGUAGES
 from services import project_service
+from services.format_manager import FormatManager
 from services.code_file_service import extract_translatable_strings
 import logging
 
@@ -332,7 +333,12 @@ class ProjectSourceFilesPage(BaseSettingsPage):
             filename = Path(file_info['project_path']).name if file_info['project_path'] else Path(
                 file_info['original_path']).name
             self.table.setItem(row_position, 0, QTableWidgetItem(filename))
-            self.table.setItem(row_position, 1, QTableWidgetItem(file_info['type']))
+
+            format_id = file_info.get('format_id')
+            handler = FormatManager.get_handler(format_id)
+            display_type = handler.badge_text if handler else file_info.get('type', 'UNK')
+
+            self.table.setItem(row_position, 1, QTableWidgetItem(display_type))
 
             size_str = "N/A"
             path_to_check = ""
@@ -354,9 +360,9 @@ class ProjectSourceFilesPage(BaseSettingsPage):
             self.table.item(row_position, 0).setData(Qt.UserRole, file_info['id'])
 
     def _add_file(self):
+        file_filters = FormatManager.get_file_dialog_filters()
         filepath, __ = QFileDialog.getOpenFileName(
-            self, _("Select Source File"), "",
-            _("All Supported Files (*.ow *.txt *.po *.pot);;All Files (*.*)")
+            self, _("Select Source File"), "", file_filters
         )
         if not filepath:
             return
@@ -365,12 +371,15 @@ class ProjectSourceFilesPage(BaseSettingsPage):
             QMessageBox.warning(self, _("File Exists"), _("A file with this name already exists in the project."))
             return
 
-        file_type = 'po' if Path(filepath).suffix.lower() in ['.po', '.pot'] else 'code'
+        handler = FormatManager.get_handler_by_extension(filepath)
+        if not handler: return
+
         new_file_entry = {
             "id": str(uuid.uuid4()),
             "original_path": filepath,
             "project_path": "",
-            "type": file_type,
+            "type": handler.format_type,
+            "format_id": handler.format_id,
             "linked": False
         }
         self.project_config['source_files'].append(new_file_entry)

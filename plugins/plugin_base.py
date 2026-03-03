@@ -384,6 +384,13 @@ class PluginBase(ABC):
         """
         return False
 
+    def register_format_handlers(self) -> list:
+        """
+        (Collecting Hook) Register custom file format handlers.
+        :return: A list of classes inheriting from BaseFormatHandler.
+        """
+        return []
+
     def register_importers(self) -> dict:
         """
         (Collecting Hook) Registers custom file importers to be added to the 'File > Import' menu.

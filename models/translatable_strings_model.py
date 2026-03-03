@@ -136,7 +136,7 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         self.show_unreviewed = False
         self.search_term = ""
         self.search_results_indices = set()
-        self.is_po_mode = False
+        self.is_translation_mode = False
         self._current_filter_seen_originals = set()
         self.new_entry_id = "##NEW_ENTRY##"
         super().setDynamicSortFilter(False)
@@ -169,15 +169,14 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         if start_proxy.isValid() and end_proxy.isValid():
             self.dataChanged.emit(start_proxy, end_proxy, roles if roles is not None else [])
 
-    def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term, is_po_mode,
+    def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term, is_translation_mode,
                     sort_column, sort_order):
         self.show_ignored = show_ignored
         self.show_untranslated = show_untranslated
         self.show_translated = show_translated
         self.show_unreviewed = show_unreviewed
         self.search_term = search_term.lower()
-        self.is_po_mode = is_po_mode
-
+        self.is_translation_mode = is_translation_mode
         self.invalidateFilter()
         self.sort(sort_column, sort_order)
 
@@ -185,7 +184,7 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         ts_obj = self.sourceModel()._data[source_row]
         if not ts_obj:
             return False
-        if self.is_po_mode and ts_obj.id == self.new_entry_id:
+        if self.is_translation_mode and ts_obj.id == self.new_entry_id:
             return True
         if self.search_term:
             if not (self.search_term in ts_obj.original_semantic.lower() or
@@ -214,7 +213,7 @@ class TranslatableStringsProxyModel(QSortFilterProxyModel):
         if not left_obj or not right_obj:
             return False
 
-        if self.is_po_mode:
+        if self.is_translation_mode:
             if left_obj.id == self.new_entry_id: return False
             if right_obj.id == self.new_entry_id: return True
 

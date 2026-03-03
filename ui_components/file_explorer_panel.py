@@ -11,10 +11,12 @@ from PySide6.QtGui import QAction, QDesktopServices, QIcon, QColor, QFont
 import os
 from pathlib import Path
 from collections import deque
+from services.format_manager import FormatManager
 from utils.localization import _
 from utils.path_utils import get_resource_path
 import logging
 logger = logging.getLogger(__name__)
+
 
 class CustomTreeView(QTreeView):
     def __init__(self, parent=None):
@@ -677,7 +679,10 @@ class FileExplorerPanel(QWidget):
 
     def _update_file_patterns(self):
         try:
-            base_patterns = ["*.ow", "*.txt", "*.po", "*.pot", "*.owproj"]
+            base_patterns = ["project.json"]
+            for handler in FormatManager._handlers.values():
+                base_patterns.extend([f"*{ext}" for ext in handler.extensions])
+
             plugin_patterns = []
 
             if hasattr(self.app, 'plugin_manager'):

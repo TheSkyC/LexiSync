@@ -223,10 +223,10 @@ def save_config(app_instance):
 
             if app_instance.current_project_path:
                 config_to_save["last_dir"] = os.path.dirname(app_instance.current_project_path)
-            elif app_instance.current_code_file_path:
-                config_to_save["last_dir"] = os.path.dirname(app_instance.current_code_file_path)
-            elif app_instance.current_po_file_path:
-                config_to_save["last_dir"] = os.path.dirname(app_instance.current_po_file_path)
+            elif app_instance.current_file_path:
+                config_to_save["last_dir"] = os.path.dirname(app_instance.current_file_path)
+            elif app_instance.current_file_path:
+                config_to_save["last_dir"] = os.path.dirname(app_instance.current_file_path)
 
             os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
 

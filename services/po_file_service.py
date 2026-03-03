@@ -157,10 +157,10 @@ def extract_to_pot(code_content, extraction_patterns, project_name="Untitled Pro
     return pot_file
 
 
-def load_from_po(filepath):
+def load_from_po(filepath, relative_path=None):
     logger.debug(f"[load_from_po] Starting to load PO file: {filepath}")
     po_file = polib.pofile(filepath, encoding='utf-8', wrapwidth=0)
-    translatable_objects = []
+    translatable_objects =[]
     project_root = _find_project_root(filepath)
     file_content_cache = {}
     path_exists_cache = {}
@@ -173,7 +173,9 @@ def load_from_po(filepath):
         return path_exists_cache[path_str]
 
     po_file_rel_path = ""
-    if project_root:
+    if relative_path:
+        po_file_rel_path = relative_path
+    elif project_root:
         try:
             po_file_rel_path = Path(filepath).relative_to(project_root).as_posix()
         except ValueError:
