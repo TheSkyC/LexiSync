@@ -55,19 +55,22 @@ class ColumnMapperDialog(QDialog):
 
         # 填充表头和下拉框
         for col_idx, header_text in enumerate(self.headers):
-            # 下拉框
             combo = QComboBox()
             combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
             combo.view().setMinimumWidth(150)
+
             for role_id, role_name in roles:
                 combo.addItem(role_name, role_id)
 
-            # 设置默认选中项
             for role_id, mapped_col in self.mapping.items():
                 if mapped_col == col_idx:
                     idx = combo.findData(role_id)
                     if idx >= 0: combo.setCurrentIndex(idx)
                     break
+
+            combo.currentIndexChanged.connect(lambda _, c=combo: self._update_combo_style(c))
+
+            self._update_combo_style(combo)
 
             self.table.setCellWidget(0, col_idx, combo)
             self.combos.append(combo)
@@ -128,3 +131,34 @@ class ColumnMapperDialog(QDialog):
         self.result_mapping = new_mapping
         self.remember_choices = self.chk_remember.isChecked()
         self.accept()
+
+    def _update_combo_style(self, combo):
+        role = combo.currentData()
+
+        if role == "ignore":
+            # 忽略状态：灰色背景，灰色文字
+            bg_color = "#F5F5F5"
+            text_color = "#9E9E9E"
+            border_color = "#DCDFE6"
+            font_weight = "normal"
+        else:
+            # 激活状态（源、译文、键、注释）：浅绿色背景，深绿色文字
+            bg_color = "#E8F5E9"
+            text_color = "#2E7D32"
+            border_color = "#A5D6A7"
+            font_weight = "bold"
+
+        combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {bg_color};
+                color: {text_color};
+                border: 1px solid {border_color};
+                border-radius: 4px;
+                padding: 2px 5px;
+                font-weight: {font_weight};
+            }}
+            QComboBox::drop-down {{
+                border: none;
+                background: transparent;
+            }}
+        """)
