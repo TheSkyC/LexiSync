@@ -31,12 +31,13 @@ class RecentFileItemWidget(QWidget):
             format_id = metadata.get("format_id")
 
             if ftype == "project":
-                badge = QLabel("Project")
+                badge = QLabel("📁 Project")
                 badge.setStyleSheet("""
                     background-color: #E3F2FD; 
                     color: #0277BD; 
+                    border: 1px solid #0277BD;
                     border-radius: 3px; 
-                    padding: 1px 4px; 
+                    padding: 0px 4px; 
                     font-size: 10px; 
                     font-weight: bold;
                 """)

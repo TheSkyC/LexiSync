@@ -16,10 +16,13 @@ from utils.localization import _
 
 
 class BadgeLabel(QLabel):
-    def __init__(self, text, color="#E0E0E0", text_color="#444444", parent=None):
+    def __init__(self, text, color="#E0E0E0", text_color="#444444", border_color=None, parent=None):
         super().__init__(text, parent)
         self.setFixedHeight(18)
         self.setAlignment(Qt.AlignCenter)
+
+        border_css = f"border: 1px solid {border_color};" if border_color else "border: none;"
+
         self.setStyleSheet(f"""
             QLabel {{
                 background-color: {color};
@@ -29,6 +32,7 @@ class BadgeLabel(QLabel):
                 font-size: 10px;
                 font-weight: bold;
                 margin-left: 5px;
+                {border_css}
             }}
         """)
 
@@ -138,7 +142,7 @@ class RecentFileWidget(QWidget):
             format_id = metadata.get("format_id")
 
             if ftype == "project":
-                top_row.addWidget(BadgeLabel("Project", color="#E3F2FD", text_color="#0277BD"))
+                top_row.addWidget(BadgeLabel("📁 Project", color="#E3F2FD", text_color="#0277BD", border_color="#0277BD"))
             else:
                 handler = None
                 if format_id:
