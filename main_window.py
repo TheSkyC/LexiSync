@@ -4962,7 +4962,6 @@ class LexiSyncApp(QMainWindow):
 
             is_ts = (handler.format_id == 'ts')
             self.details_panel.set_fuzzy_controls_visible(not is_ts)
-            self.translatable_objects, self.current_file_metadata, lang_full = handler.load(filepath)
 
             # Checkpoint 1: Parsing
             t_parse = time.perf_counter()

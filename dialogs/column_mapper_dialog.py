@@ -34,6 +34,8 @@ class ColumnMapperDialog(QDialog):
         self.table = QTableWidget()
         col_count = len(self.headers)
         self.table.setColumnCount(col_count)
+        header = self.table.horizontalHeader()
+        header.setMinimumSectionSize(100)
 
         # Row 0: Comboboxes, Row 1: Headers, Row 2+: Data
         self.table.setRowCount(len(self.sample_data) + 2)
@@ -45,7 +47,7 @@ class ColumnMapperDialog(QDialog):
         self.combos = []
         roles = [
             ("ignore", _("Ignore")),
-            ("source", _("Source (Required)")),
+            ("source", _("Source")),
             ("target", _("Target (Translation)")),
             ("key", _("Key / ID")),
             ("comment", _("Comment / Context"))
@@ -55,6 +57,8 @@ class ColumnMapperDialog(QDialog):
         for col_idx, header_text in enumerate(self.headers):
             # 下拉框
             combo = QComboBox()
+            combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+            combo.view().setMinimumWidth(150)
             for role_id, role_name in roles:
                 combo.addItem(role_name, role_id)
 
