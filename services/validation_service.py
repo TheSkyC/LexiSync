@@ -188,7 +188,7 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
                 service = ExpansionRatioService.get_instance()
                 expected_ratio = service.get_expected_ratio(
                     app_instance.source_language,
-                    app_instance.target_language,
+                    app_instance.current_target_language,
                     original,
                     "none"
                 )

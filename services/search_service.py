@@ -271,7 +271,7 @@ class SearchService(QObject):
 
         if bulk_changes:
             self.app.add_to_undo_history('bulk_replace_all', {'changes': bulk_changes})
-            self.app.mark_project_modified()
+            self.app.mark_modified()
             self.app.force_full_refresh(id_to_reselect=self.app.current_selected_ts_id)
 
             self.clear()

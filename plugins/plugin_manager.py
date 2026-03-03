@@ -499,7 +499,7 @@ class PluginManager:
 
     def setup_plugin_ui(self):
         if not hasattr(self.main_window, 'plugin_menu') or self.main_window.plugin_menu is None:
-            self.main_window.plugin_menu = self.main_window.menuBar().addMenu("Plugins")
+            self.main_window.plugin_menu = self.main_window.menuBar().addMenu(_("Plugins"))
         self.main_window.plugin_menu.clear()
 
         manage_action = self.main_window.plugin_menu.addAction(_("Manage Plugins..."))

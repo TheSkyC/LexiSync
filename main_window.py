@@ -2559,7 +2559,6 @@ class LexiSyncApp(QMainWindow):
             self._update_file_explorer(filepath)
             self.current_file_path = filepath
             self.current_project_path = None
-            self.current_file_path = None
             self.current_file_metadata = None
             self.add_to_recent_files(filepath)
             self.config["last_dir"] = os.path.dirname(filepath)
@@ -4617,9 +4616,6 @@ class LexiSyncApp(QMainWindow):
         elif self.current_file_path:
             base, _extension = os.path.splitext(os.path.basename(self.current_file_path))
             default_filename = f"{base}_translations.xlsx"
-        elif self.current_file_path:
-            base, _extension = os.path.splitext(os.path.basename(self.current_file_path))
-            default_filename = f"{base}_translations.xlsx"
 
         filepath, selected_filter = QFileDialog.getSaveFileName(
             self,
@@ -4807,9 +4803,6 @@ class LexiSyncApp(QMainWindow):
         elif self.current_file_path:
             base, __extension = os.path.splitext(os.path.basename(self.current_file_path))
             default_filename = f"{base}_translations.json"
-        elif self.current_file_path:
-            base, __extension = os.path.splitext(os.path.basename(self.current_file_path))
-            default_filename = f"{base}_translations.json"
 
         filepath, selected_filter = QFileDialog.getSaveFileName(
             self,
@@ -4843,9 +4836,6 @@ class LexiSyncApp(QMainWindow):
         default_filename = "project_translations.yaml"
         if self.current_project_path:
             base, _extension = os.path.splitext(os.path.basename(self.current_project_path))
-            default_filename = f"{base}_translations.yaml"
-        elif self.current_file_path:
-            base, _extension = os.path.splitext(os.path.basename(self.current_file_path))
             default_filename = f"{base}_translations.yaml"
         elif self.current_file_path:
             base, _extension = os.path.splitext(os.path.basename(self.current_file_path))
@@ -4884,9 +4874,6 @@ class LexiSyncApp(QMainWindow):
         default_filename = "template.pot"
         if self.current_project_path:
             base = os.path.splitext(self.get_current_active_filename())[0]
-            default_filename = f"{base}.pot"
-        elif self.current_file_path:
-            base = os.path.splitext(os.path.basename(self.current_file_path))[0]
             default_filename = f"{base}.pot"
         elif self.current_file_path:
             base = os.path.splitext(os.path.basename(self.current_file_path))[0]
@@ -5295,8 +5282,6 @@ class LexiSyncApp(QMainWindow):
         current_filename = "Unknown File"
         if self.is_project_mode:
             current_filename = self.get_current_active_filename() or self.project_config.get('name', 'Project')
-        elif self.current_file_path:
-            current_filename = os.path.basename(self.current_file_path)
         elif self.current_file_path:
             current_filename = os.path.basename(self.current_file_path)
 

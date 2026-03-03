@@ -771,9 +771,6 @@ class WelcomeScreen(QWidget):
             @property
             def current_file_path(self): return None
 
-            @property
-            def current_file_path(self): return None
-
         save_config(DummyApp(self.config))
         self.populate_recent_files()
 

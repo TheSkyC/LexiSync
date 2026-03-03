@@ -52,8 +52,6 @@ class PersonalizedTranslationPlugin(PluginBase):
             return self.main_window.current_project_path
         if self.main_window.current_file_path:
             return self.main_window.current_file_path
-        if self.main_window.current_file_path:
-            return self.main_window.current_file_path
         return None
 
     def add_menu_items(self) -> list:
