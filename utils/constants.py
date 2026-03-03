@@ -36,6 +36,7 @@ DEFAULT_VALIDATION_RULES = {
         "default_mode": "loose"
     },
     "python_brace": {"enabled": True, "level": "error", "label": _("Python Brace ({}, {name})")},
+    "icu_placeholder": {"enabled": True, "level": "error", "label": _("ICU MessageFormat ({var, plural, ...})")},
     "html_tags": {"enabled": True, "level": "error", "label": _("HTML/XML Tags")},
     "url_email": {"enabled": True, "level": "warning", "label": _("URL & Email")},
 

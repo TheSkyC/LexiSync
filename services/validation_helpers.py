@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
+import regex
 from collections import Counter
 import html
 from utils.localization import _
@@ -12,7 +13,7 @@ ALL_PUNC_VALUES = set(PUNCTUATION_MAP.values())
 
 # --- 正则表达式 ---
 RE_PRINTF = re.compile(r'%%|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]|%\d+')
-RE_PYTHON_BRACE = re.compile(r'\{([_a-zA-Z0-9\s\.\:\[\]]*)\}')
+RE_PYTHON_BRACE = re.compile(r'\{\s*([_a-zA-Z0-9.:\[\]]+)\s*}')
 RE_REPEATED_WORD = re.compile(r'\b(\w+)\s+\1\b', re.IGNORECASE)
 RE_URL = re.compile(r'(?:ht|f)tps?://[^"<> \t\n\r]+|www\.[^"<> \t\n\r]+|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/[^"<> \t\n\r]*')
 RE_EMAIL = re.compile(r'[\w\.-]+@[\w\.-]+')
@@ -413,6 +414,30 @@ def check_python_brace(source, target):
     return None
 
 
+def check_icu_placeholders(source, target):
+    import regex
+    pattern = regex.compile(r'\{(?:[^{}]|(?R))*\}')
+
+    def extract_vars(text):
+        vars_list = []
+        for match in pattern.finditer(text):
+            block = match.group(0)
+            inner = block[1:-1].strip()
+
+            if re.search(r'^[a-zA-Z0-9_]+\s*,\s*(plural|select|gender)\s*,', inner):
+                var_match = re.match(r'^([a-zA-Z0-9_]+)', inner)
+                if var_match:
+                    vars_list.append(var_match.group(1))
+        return vars_list
+
+    src_vars = extract_vars(source)
+    tgt_vars = extract_vars(target)
+
+    missing, extra = _compare_counts(src_vars, tgt_vars)
+    if missing or extra:
+        return _format_missing_extra(missing, extra, _("ICU placeholder"))
+    return None
+
 def check_urls_emails(source, target):
     """检查 URL 和 Email 是否匹配"""
     errors = []
@@ -444,11 +469,15 @@ def check_urls_emails(source, target):
 
 def check_numbers(source, target, mode='loose'):
     # 1. 预处理：清理干扰项
-    src_clean = RE_PYTHON_BRACE.sub('', source)
+    icu_selector_pattern = re.compile(r'=\d+\s*\{')
+    src_clean = icu_selector_pattern.sub('', source)
+    tgt_clean = icu_selector_pattern.sub('', target)
+
+    src_clean = RE_PYTHON_BRACE.sub('', src_clean)
     src_clean = RE_PRINTF.sub('', src_clean)
     src_clean = RE_HTML_ENTITY_NUM.sub('', src_clean)
 
-    tgt_clean = RE_PYTHON_BRACE.sub('', target)
+    tgt_clean = RE_PYTHON_BRACE.sub('', tgt_clean)
     tgt_clean = RE_PRINTF.sub('', tgt_clean)
     tgt_clean = RE_HTML_ENTITY_NUM.sub('', tgt_clean)
 

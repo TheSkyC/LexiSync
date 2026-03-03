@@ -792,7 +792,7 @@ class ValidationSettingsPage(BaseSettingsPage):
 
         # 分组定义
         groups = {
-            _("Code Safety"): ["printf", "python_brace", "html_tags", "url_email", "accelerator"],
+            _("Code Safety"):["printf", "python_brace", "icu_placeholder", "html_tags", "url_email", "accelerator"],
             _("Content Consistency"): ["numbers", "glossary", "fuzzy", "repeated_word"],
             _("Formatting & Punctuation"): ["punctuation", "brackets", "whitespace", "double_space", "capitalization", "newline_count", "quotes", "pangu"]
         }

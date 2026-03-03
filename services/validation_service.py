@@ -94,6 +94,9 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     if err := validation_helpers.check_python_brace(original, translation):
         _report(ts_obj, config, "python_brace", WarningType.PYTHON_BRACE_MISMATCH, err)
 
+    if err := validation_helpers.check_icu_placeholders(original, translation):
+        _report(ts_obj, config, "icu_placeholder", WarningType.ICU_PLACEHOLDER_MISMATCH, err)
+
     if err := validation_helpers.check_html_tags(original, translation):
         _report(ts_obj, config, "html_tags", WarningType.PLACEHOLDER_MISSING, err)
 
