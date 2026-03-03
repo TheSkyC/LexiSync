@@ -117,16 +117,41 @@ def get_progress_color(percentage):
 class RecentFileWidget(QWidget):
     remove_requested = Signal()
 
-    def __init__(self, filename, dirpath, metadata=None, parent=None):
+    def __init__(self, filename, dirpath, index, metadata=None, parent=None):
         super().__init__(parent)
         self.setCursor(Qt.PointingHandCursor)
         self._is_hovered = False
         self._is_pressed = False
         self.full_path = os.path.join(dirpath, filename)
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        # 主布局
+        self.main_hbox = QHBoxLayout(self)
+        self.main_hbox.setContentsMargins(12, 8, 12, 8)
+        self.main_hbox.setSpacing(12)
+
+        # 序号标签
+        self.number_label = QLabel(str(index))
+        self.number_label.setFixedSize(20, 20)
+        self.number_label.setAlignment(Qt.AlignCenter)
+        self.number_label.setStyleSheet("""
+            QLabel {
+                background-color: #F0F0F0;  /* 圆点背景色 */
+                color: #888;               /* 数字颜色 */
+                border-radius: 10px;       /* 半径设为高度的一半，变为纯圆 */
+                font-size: 10px;
+                font-weight: bold;
+                font-family: 'Segoe UI', sans-serif;
+                border: none;
+            }
+        """)
+        self.main_hbox.addWidget(self.number_label)
+
+        content_container = QWidget()
+        content_container.setStyleSheet("background-color: transparent; border: none;")
+        layout = QVBoxLayout(content_container)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
+        self.main_hbox.addWidget(content_container, 1)
 
         # Top Row: Filename + Badges
         top_row = QHBoxLayout()
@@ -622,6 +647,25 @@ class WelcomeScreen(QWidget):
         finally:
             self.is_prewarming = False
 
+    def keyPressEvent(self, event):
+        # 监听 Ctrl + 1~9
+        if event.modifiers() & Qt.ControlModifier:
+            key = event.key()
+            if Qt.Key_1 <= key <= Qt.Key_9:
+                index = key - Qt.Key_1
+                self._open_recent_by_index(index)
+                event.accept()
+                return
+        super().keyPressEvent(event)
+
+    def _open_recent_by_index(self, index):
+        if index < self.recent_files_list.count():
+            item = self.recent_files_list.item(index)
+            if item and item.flags() & Qt.ItemIsSelectable:
+                path = item.data(Qt.UserRole)
+                if path:
+                    self.on_recent_file_selected(item)
+
     def on_action_triggered(self, action, path=""):
         if self.is_loading:
             return
@@ -690,19 +734,14 @@ class WelcomeScreen(QWidget):
             self.recent_files_list.addItem(item)
             return
 
-        for entry in recent_files:
+        for i, entry in enumerate(recent_files):
             path = entry.get("path", "")
-            metadata = entry
-
             if not path: continue
-
-            filename = os.path.basename(path)
-            dirpath = os.path.dirname(path)
 
             item = QListWidgetItem()
             item.setData(Qt.UserRole, path)
 
-            widget = RecentFileWidget(filename, dirpath, metadata)
+            widget = RecentFileWidget(os.path.basename(path), os.path.dirname(path), i + 1, entry)
             widget.remove_requested.connect(lambda p=path: self.remove_recent_file(p))
 
             item.setSizeHint(widget.sizeHint())
