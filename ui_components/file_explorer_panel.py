@@ -1057,8 +1057,11 @@ class FileExplorerPanel(QWidget):
     def cleanup(self):
         try:
             if hasattr(self, 'tree_view') and self.tree_view:
-                self.tree_view.doubleClicked.disconnect()
-                self.tree_view.customContextMenuRequested.disconnect()
+                try:
+                    self.tree_view.doubleClicked.disconnect()
+                    self.tree_view.customContextMenuRequested.disconnect()
+                except (RuntimeError, TypeError):
+                    pass
 
             if hasattr(self, 'proxy_model') and self.proxy_model:
                 self.proxy_model.setSourceModel(None)

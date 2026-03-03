@@ -505,6 +505,12 @@ class LexiSyncApp(QMainWindow):
         self.action_paste_translation.triggered.connect(self.cm_paste_to_translation)
         self.action_paste_translation.setEnabled(False)
         self.edit_menu.addAction(self.action_paste_translation)
+        self.edit_menu.addSeparator()
+        
+        self.action_remap_columns = QAction(_("Remap Table Columns..."), self)
+        self.action_remap_columns.triggered.connect(self.remap_current_table_columns)
+        self.action_remap_columns.setEnabled(False)
+        self.edit_menu.addAction(self.action_remap_columns)
 
         # View Menu
         self.filter_menu = self.view_menu.addMenu(_("Filters"))
@@ -1583,6 +1589,10 @@ class LexiSyncApp(QMainWindow):
 
         self.action_undo.setEnabled(bool(self.undo_history))
         self.action_redo.setEnabled(bool(self.redo_history))
+
+        is_table = bool(self.current_format_handler and self.current_format_handler.format_id in ['csv', 'xlsx'])
+        if hasattr(self, 'action_remap_columns') and self.action_remap_columns:
+            self.action_remap_columns.setEnabled(is_table and file_or_project_loaded)
 
         self.action_apply_tm_to_untranslated.setEnabled(has_content)
         self.action_save_all_to_tm.setEnabled(has_content)
@@ -4942,7 +4952,7 @@ class LexiSyncApp(QMainWindow):
             logger.error(f"Failed to export POT: {e}", exc_info=True)
             QMessageBox.critical(self, _("Export Error"), _("Failed to export POT file: {error}").format(error=e))
 
-    def open_translation_file_with_path(self, filepath):
+    def open_translation_file_with_path(self, filepath, force_dialog=False):
         if self._check_and_open_parent_project(filepath): return
         self._reset_app_state()
         t_start = time.perf_counter()
@@ -4954,7 +4964,11 @@ class LexiSyncApp(QMainWindow):
 
             self.current_format_handler = handler
 
-            self.translatable_objects, self.current_file_metadata, lang_full = handler.load(filepath, app_instance=self)
+            self.translatable_objects, self.current_file_metadata, lang_full = handler.load(
+                filepath,
+                app_instance=self,
+                force_dialog=force_dialog
+            )
 
             if not self.translatable_objects:
                 self.update_statusbar(_("Import cancelled or no valid data found."))
@@ -5631,6 +5645,24 @@ class LexiSyncApp(QMainWindow):
             self.update_statusbar(_("Clipboard content pasted to translation."))
         else:
             self.update_statusbar(_("Paste failed: Clipboard content is not text."))
+
+    def remap_current_table_columns(self):
+        if not self.current_file_path or not self.current_format_handler:
+            return
+
+        if self.current_format_handler.format_id not in ['csv', 'xlsx']:
+            QMessageBox.information(self, _("Info"),
+                                    _("This feature is only available for table-based formats (CSV, Excel)."))
+            return
+
+        reply = QMessageBox.question(
+            self, _("Confirm Re-read"),
+            _("Re-mapping columns will reload the file and discard any unsaved changes in the current view. Continue?"),
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            self.open_translation_file_with_path(self.current_file_path, force_dialog=True)
 
     def show_prompt_manager(self):
         dialog = PromptManagerDialog(self, _("AI Prompt Manager"), self)

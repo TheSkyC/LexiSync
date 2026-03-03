@@ -3,6 +3,7 @@
 
 import os
 import regex as re
+from rapidfuzz import fuzz
 import xxhash
 import plistlib
 import xml.etree.ElementTree as ET
@@ -2025,31 +2026,83 @@ class ResxFormatHandler(BaseFormatHandler):
 
 # 表格类辅助函数
 def _guess_column_mapping(headers, config):
-    """根据配置中的关键词猜测列映射"""
     mapping = {}
+    is_fuzzy = False
     if not headers: return mapping
 
-    # 默认关键词池
+    # 关键词
     default_pool = {
-        'source': ['source', 'original', 'en', 'english', '原文', 'text', 'string', 'msgid'],
-        'target': ['target', 'translation', 'zh', 'chinese', '译文', 'msgstr', 'value'],
-        'key': ['key', 'id', 'name', '键', '标识'],
-        'comment': ['comment', 'note', 'description', '备注', 'context']
+        'source': [
+            'source', 'original', '原文', 'text', 'string', 'msgid',
+            'src', 'source_text', 'default', 'base', 'reference', 'master'
+        ],
+        'target': [
+            'target', 'translation', '译文', 'msgstr', 'value',
+            'tgt', 'translated_text', 'loc', 'localized', 'localization', 'result', 'dest',
+            'destination'
+        ],
+        'key': [
+            'key', 'id', 'name', '键', '标识',
+            'identifier', 'code', 'string_id', 'text_id', 'label', 'path', 'var', 'variable'
+        ],
+        'comment': [
+            'comment', 'note', 'description', '备注', 'context',
+            'desc', 'notes', 'instruction', 'info', 'information', '说明', 'reference_url'
+        ]
     }
 
-    # 合并用户学习到的关键词
     user_pool = config.get('column_keywords', {})
-    for role in default_pool:
-        pool = set(default_pool[role] + user_pool.get(role, []))
 
-        # 查找匹配的列
-        for idx, header in enumerate(headers):
-            if idx in mapping.values(): continue  # 已经被其他角色占用
-            h_lower = str(header).strip().lower()
-            if h_lower in pool:
+    def normalize(s):
+        return re.sub(r'[^a-z0-9\u4e00-\u9fa5]', '', str(s).lower())
+
+    processed_pools = {}
+    for role, words in default_pool.items():
+        combined = set(words + user_pool.get(role, []))
+        processed_pools[role] = [normalize(w) for w in combined if w]
+
+    assigned_indices = set()
+
+    # --- 第一阶段：精确匹配 ---
+    for role in ['source', 'target', 'key', 'comment']:
+        for idx, h in enumerate(headers):
+            if idx in assigned_indices: continue
+            if normalize(h) in processed_pools[role]:
                 mapping[role] = idx
+                assigned_indices.add(idx)
                 break
-    return mapping
+
+    # --- 第二阶段：包含匹配 ---
+    for role in ['source', 'target']:
+        if role in mapping: continue
+        for idx, h in enumerate(headers):
+            if idx in assigned_indices: continue
+            h_norm = normalize(h)
+            if any(word in h_norm for word in processed_pools[role] if len(word) > 3):
+                mapping[role] = idx
+                assigned_indices.add(idx)
+                break
+
+    # --- 第三阶段：Fuzzy 模糊匹配 ---
+    for role in ['source', 'target']:
+        if role in mapping: continue
+        best_score = 0
+        best_idx = -1
+        for idx, h in enumerate(headers):
+            if idx in assigned_indices: continue
+            h_norm = normalize(h)
+            for word in processed_pools[role]:
+                score = fuzz.ratio(h_norm, word)
+                if score > 85 and score > best_score:
+                    best_score = score
+                    best_idx = idx
+
+        if best_idx != -1:
+            mapping[role] = best_idx
+            assigned_indices.add(best_idx)
+            is_fuzzy = True
+
+    return mapping, is_fuzzy
 
 
 def _learn_column_mapping(headers, mapping, config):
@@ -2084,6 +2137,7 @@ class CsvFormatHandler(BaseFormatHandler):
 
     def load(self, filepath, **kwargs):
         app = kwargs.get('app_instance')
+        force_dialog = kwargs.get('force_dialog', False)
         if not app: raise ValueError("App instance required for CSV mapping.")
 
         with open(filepath, 'r', encoding='utf-8-sig', newline='') as f:
@@ -2103,20 +2157,19 @@ class CsvFormatHandler(BaseFormatHandler):
         data_rows = rows[1:]
 
         # 1. 尝试猜测映射
-        mapping = _guess_column_mapping(headers, app.config)
+        mapping, is_guessed_fuzzy = _guess_column_mapping(headers, app.config)
 
         # 2. 如果缺少原文列，或者强制交互，弹出对话框
-        if 'source' not in mapping:
+        if force_dialog or is_guessed_fuzzy or 'source' not in mapping:
             from dialogs.column_mapper_dialog import ColumnMapperDialog
-            dialog = ColumnMapperDialog(app.main_window if hasattr(app, 'main_window') else app, headers, data_rows[:5],
-                                        mapping)
+            dialog = ColumnMapperDialog(app.main_window if hasattr(app, 'main_window') else app, headers, data_rows[:5], mapping)
             if dialog.exec():
                 mapping = dialog.result_mapping
                 if dialog.remember_choices:
                     if _learn_column_mapping(headers, mapping, app.config):
                         app.save_config()
             else:
-                return [], {}, 'en'  # 用户取消
+                return [], {}, 'en'
 
         rel_path = kwargs.get('relative_path') or os.path.basename(filepath)
         translatable_objects = []
@@ -2233,6 +2286,7 @@ class XlsxFormatHandler(BaseFormatHandler):
                 _("The 'openpyxl' library is required to read Excel files. Please install it via 'pip install openpyxl'."))
 
         app = kwargs.get('app_instance')
+        force_dialog = kwargs.get('force_dialog', False)
         if not app: raise ValueError("App instance required.")
 
         wb = openpyxl.load_workbook(filepath, data_only=True)
@@ -2244,12 +2298,17 @@ class XlsxFormatHandler(BaseFormatHandler):
         headers = [str(c) if c is not None else "" for c in rows[0]]
         data_rows = rows[1:]
 
-        mapping = _guess_column_mapping(headers, app.config)
+        mapping, is_guessed_fuzzy = _guess_column_mapping(headers, app.config)
 
-        if 'source' not in mapping:
+        if force_dialog or is_guessed_fuzzy or 'source' not in mapping:
             from dialogs.column_mapper_dialog import ColumnMapperDialog
-            dialog = ColumnMapperDialog(app.main_window if hasattr(app, 'main_window') else app, headers, data_rows[:5],
-                                        mapping)
+            dialog = ColumnMapperDialog(
+                app.main_window if hasattr(app, 'main_window') else app,
+                headers,
+                data_rows[:5],
+                mapping
+            )
+
             if dialog.exec():
                 mapping = dialog.result_mapping
                 if dialog.remember_choices:
