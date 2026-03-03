@@ -40,6 +40,15 @@ class BaseFormatHandler:
         """保存文件"""
         raise NotImplementedError
 
+    def _detect_language_from_filename(self, filename: str) -> str:
+        """从文件名（如 data_zh_CN.csv）中尝试提取 BCP-47 语言代码"""
+        import regex as re
+        stem = os.path.splitext(filename)[0]
+        # 匹配常见的语言后缀，如 _zh, -en, .jp 等
+        m = re.search(r'[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$', stem)
+        if m:
+            return m.group(1).replace('-', '_')
+        return 'en'
 
 class PoFormatHandler(BaseFormatHandler):
     """
@@ -2125,7 +2134,6 @@ def _learn_column_mapping(headers, mapping, config):
 
     return changed
 
-
 class CsvFormatHandler(BaseFormatHandler):
     format_id = "csv"
     extensions = ['.csv']
@@ -2212,6 +2220,7 @@ class CsvFormatHandler(BaseFormatHandler):
             ts.update_sort_weight()
             translatable_objects.append(ts)
 
+        language_code = self._detect_language_from_filename(os.path.basename(filepath))
         metadata = {
             'mapping': mapping,
             'dialect': {
@@ -2220,7 +2229,7 @@ class CsvFormatHandler(BaseFormatHandler):
                 'lineterminator': dialect.lineterminator
             }
         }
-        return translatable_objects, metadata, 'en'
+        return translatable_objects, metadata, language_code
 
     def save(self, filepath, translatable_objects, metadata, **kwargs):
         mapping = metadata.get('mapping', {})
@@ -2363,8 +2372,9 @@ class XlsxFormatHandler(BaseFormatHandler):
             ts.update_sort_weight()
             translatable_objects.append(ts)
 
+        language_code = self._detect_language_from_filename(os.path.basename(filepath))
         metadata = {'mapping': mapping, 'sheet_name': ws.title}
-        return translatable_objects, metadata, 'en'
+        return translatable_objects, metadata, language_code
 
     def save(self, filepath, translatable_objects, metadata, **kwargs):
         import openpyxl

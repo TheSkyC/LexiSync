@@ -4970,6 +4970,28 @@ class LexiSyncApp(QMainWindow):
                 force_dialog=force_dialog
             )
 
+            # 自动检测源语言 (Source Language)
+            if self.translatable_objects:
+                from services import language_service
+                sample_texts = [ts.original_semantic for ts in self.translatable_objects if
+                                ts.original_semantic.strip()][:50]
+                if sample_texts:
+                    detected_src = language_service.detect_source_language(sample_texts)
+                    self.source_language = detected_src
+
+            # 设置目标语言 (Target Language)
+            if lang_full and lang_full != 'en':
+                self.target_language = lang_full
+            else:
+                # 尝试从已有的译文中检测目标语言
+                sample_translations = [ts.translation for ts in self.translatable_objects if ts.translation.strip()][
+                    :50]
+                if sample_translations:
+                    from services import language_service
+                    self.target_language = language_service.detect_source_language(sample_translations)
+                else:
+                    self.target_language = self.config.get("default_target_language", "zh")
+
             if not self.translatable_objects:
                 self.update_statusbar(_("Import cancelled or no valid data found."))
                 return
