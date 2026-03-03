@@ -57,6 +57,7 @@ from dialogs.language_pair_dialog import LanguagePairDialog
 from dialogs.new_project_dialog import NewProjectDialog
 from dialogs.pot_drop_dialog import POTDropDialog
 from dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
+from dialogs.export_qa_dialog import ExportQADialog
 from dialogs.prompt_manager_dialog import PromptManagerDialog
 from dialogs.diff_dialog import DiffDialog
 from dialogs.statistics_dialog import StatisticsDialog
@@ -80,6 +81,7 @@ from services.code_file_service import extract_translatable_strings, save_transl
 from services.project_service import create_project, load_project_data, save_project
 from services.project_manager import ProjectManager
 from services.prompt_service import generate_prompt_from_structure
+from services.export_service import export_qa_report
 from services import validation_helpers
 from services.validation_service import run_validation_on_all, placeholder_regex
 from services.expansion_ratio_service import ExpansionRatioService
@@ -598,6 +600,11 @@ class LexiSyncApp(QMainWindow):
         self.action_run_validation_on_all.triggered.connect(self._run_and_refresh_with_validation)
         self.action_run_validation_on_all.setEnabled(False)
         self.qa_menu.addAction(self.action_run_validation_on_all)
+
+        self.action_export_qa_report = QAction(_("Export QA Report..."), self)
+        self.action_export_qa_report.triggered.connect(self.show_export_qa_dialog)
+        self.action_export_qa_report.setEnabled(False)
+        self.qa_menu.addAction(self.action_export_qa_report)
 
         self.qa_menu.addSeparator()
 
@@ -1583,6 +1590,7 @@ class LexiSyncApp(QMainWindow):
             bool(self.original_raw_code_content or self.current_file_path)
         )
         self.action_show_statistics.setEnabled(has_content)
+        self.action_export_qa_report.setEnabled(has_content)
         self.action_run_validation_on_all.setEnabled(has_content)
         self.fix_all_menu.setEnabled(has_content)
         if hasattr(self, 'action_show_project_settings'):
@@ -5152,6 +5160,82 @@ class LexiSyncApp(QMainWindow):
         from dialogs.resource_viewer_dialog import ResourceViewerDialog
         dialog = ResourceViewerDialog(self, self, mode='tm')
         dialog.show()
+
+    def show_export_qa_dialog(self):
+        dialog = ExportQADialog(self, is_project_mode=self.is_project_mode)
+        if not dialog.exec(): return
+
+        config = dialog.get_config()
+
+        # 选择保存路径
+        default_name = f"QA_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        filepath, __ = QFileDialog.getSaveFileName(self, _("Save QA Report"), default_name, "Excel (*.xlsx)")
+        if not filepath: return
+
+        self.update_statusbar(_("Generating QA report..."), persistent=True)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        try:
+            issues_to_export = []
+
+            # 1. 收集数据
+            if config['scope'] == "project":
+                # 全项目扫描
+                from services.project_service import load_project_data
+                # 加载所有文件（这可能需要一点时间）
+                __, all_strings = load_project_data(self.current_project_path, self.current_target_language,
+                                                   app_instance=self, all_files=True)
+                # 运行全量验证
+                run_validation_on_all(all_strings, self.config, self)
+                source_pool = all_strings
+            else:
+                # 当前视图（已过滤）
+                source_pool = [self.proxy_model.data(self.proxy_model.index(r, 0), Qt.UserRole)
+                               for r in range(self.proxy_model.rowCount())]
+
+            # 2. 提取符合条件的 Issue
+            for ts in source_pool:
+                if not ts: continue
+
+                # 汇总所有警告
+                all_warnings = []
+                if config['levels']['error']:
+                    all_warnings.extend([('error', w) for w in ts.warnings])
+                if config['levels']['warning']:
+                    all_warnings.extend([('warning', w) for w in ts.minor_warnings])
+                if config['levels']['info']:
+                    all_warnings.extend([('info', w) for w in ts.infos])
+
+                for severity, (w_type, msg) in all_warnings:
+                    if not config['include_ignored'] and ts.is_warning_ignored:
+                        continue
+
+                    issues_to_export.append({
+                        'severity': severity,
+                        'file': ts.source_file_path,
+                        'line': ts.line_num_in_file or ts.context,
+                        'source': ts.original_semantic,
+                        'translation': ts.translation,
+                        'type': w_type.name,
+                        'message': msg,
+                        'ignored': ts.is_warning_ignored
+                    })
+
+            if not issues_to_export:
+                QMessageBox.information(self, _("QA Report"), _("No issues found with the current filter settings."))
+                return
+
+            # 3. 调用导出服务
+            export_qa_report(filepath, issues_to_export)
+            self.update_statusbar(_("QA report exported successfully."))
+            QMessageBox.information(self, _("Success"), _("QA report has been saved to:\n{path}").format(path=filepath))
+
+        except Exception as e:
+            logger.error(f"Failed to export QA report: {e}", exc_info=True)
+            QMessageBox.critical(self, _("Export Error"), str(e))
+        finally:
+            QApplication.restoreOverrideCursor()
+            self.update_statusbar(_("Ready"))
 
     def show_statistics_dialog(self):
         if not self.translatable_objects:
