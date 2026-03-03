@@ -264,263 +264,6 @@ class TsFormatHandler(BaseFormatHandler):
             f.write(xml_str)
 
 
-class OwCodeFormatHandler(BaseFormatHandler):
-    """
-    守望先锋工坊代码格式处理器
-    支持的特性:
-    1. 智能提取: 基于正则表达式从 .ow 或 .txt 源码中精准抠取待翻译文本
-    2. 结构回填: 保存时将译文精准替换回原始位置，确保代码逻辑和格式不受损
-    3. 多维识别: 支持提取自定义字符串 (Custom String)、模式名称及模式描述
-    4. 自动过滤: 智能跳过数字、纯占位符及已知的工坊技术关键字
-    """
-    format_id = "ow_code"
-    extensions = ['.ow', '.txt']
-    format_type = "source"
-    display_name = _("Overwatch Workshop Code")
-    badge_text = "Code"
-    badge_bg_color = "#E3F2FD"
-    badge_text_color = "#0277BD"
-
-    def load(self, filepath, **kwargs):
-        with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-            content = f.read()
-        extraction_patterns = kwargs.get('extraction_patterns', [])
-        relative_path = kwargs.get('relative_path', os.path.basename(filepath))
-        strings = code_file_service.extract_translatable_strings(content, extraction_patterns, relative_path)
-        return strings, {'raw_content': content}, 'en'
-
-    def save(self, filepath, translatable_objects, metadata, **kwargs):
-        app_instance = kwargs.get('app_instance', None)
-        raw_content = metadata.get('raw_content', '')
-        code_file_service.save_translated_code(filepath, raw_content, translatable_objects, app_instance)
-
-class JsonI18nFormatHandler(BaseFormatHandler):
-    """
-    JSON 国际化文件处理器
-    支持的格式:
-    1. 扁平结构: {"key1": "value1", "key2": "value2"}
-    2. 嵌套结构: {"menu": {"home": "Home", "about": "About"}}
-    3. 数组: {"items": ["Item 1", "Item 2"]}
-    4. 混合: {"user": {"messages": ["Welcome", "Goodbye"]}}
-    """
-    format_id = "json_i18n"
-    extensions = ['.json']
-    format_type = "translation"
-    display_name = _("JSON i18n File")
-    badge_text = "JSON"
-    badge_bg_color = "#FFF3E0"
-    badge_text_color = "#E65100"
-
-    def load(self, filepath, **kwargs):
-        logger.debug(f"[JsonI18nFormatHandler] Loading JSON file: {filepath}")
-
-        with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read()
-            data = json.loads(content)
-
-        # 检测 JSON 缩进
-        indent = self._detect_indent(content)
-
-        relative_path = kwargs.get('relative_path')
-        if relative_path:
-            json_file_rel_path = relative_path
-        else:
-            json_file_rel_path = self._get_relative_path(filepath)
-
-        translatable_objects = []
-        occurrence_counters = {}
-
-        # 递归提取所有可翻译字符串
-        self._extract_recursive(
-            data, [], translatable_objects, occurrence_counters,
-            json_file_rel_path, line_num=1
-        )
-
-        metadata = {
-            'original_structure': data,
-            'indent': indent,
-            'ensure_ascii': False  # 保留 Unicode 字符
-        }
-
-        # 尝试检测语言代码
-        language_code = self._detect_language(data, os.path.basename(filepath))
-
-        logger.info(f"[JsonI18nFormatHandler] Loaded {len(translatable_objects)} strings from {filepath}")
-        return translatable_objects, metadata, language_code
-
-    def _detect_indent(self, json_content: str) -> int:
-        """检测 JSON 文件的缩进空格数"""
-        lines = json_content.split('\n')
-        for line in lines[1:]:  # 跳过第一行
-            stripped = line.lstrip()
-            if stripped and line != stripped:
-                indent = len(line) - len(stripped)
-                if indent > 0:
-                    return indent
-        return 2  # 默认 2 空格
-
-    def _get_relative_path(self, filepath: str) -> str:
-        """获取文件相对于项目根目录的路径"""
-        current_path = Path(filepath).parent
-        while True:
-            if (current_path / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current_path).as_posix()
-                except ValueError:
-                    break
-            if current_path.parent == current_path:
-                break
-            current_path = current_path.parent
-        return os.path.basename(filepath)
-
-    def _detect_language(self, data: Dict, filename: str) -> str:
-        # 从文件名检测: en.json, zh-CN.json, messages_fr.json
-        name_lower = filename.lower().replace('.json', '')
-        common_langs = ['en', 'zh', 'ja', 'ko', 'fr', 'de', 'es', 'it', 'ru', 'pt', 'ar']
-        for lang in common_langs:
-            if lang in name_lower:
-                return lang
-
-        # 从数据结构检测: {"locale": "en", ...} 或 {"en": {...}}
-        if isinstance(data, dict):
-            if 'locale' in data or 'language' in data or 'lang' in data:
-                lang_value = data.get('locale') or data.get('language') or data.get('lang')
-                if isinstance(lang_value, str):
-                    return lang_value
-
-            # 检查顶层键是否为语言代码
-            top_keys = list(data.keys())
-            if len(top_keys) == 1 and top_keys[0] in common_langs:
-                return top_keys[0]
-
-        return 'en'  # 默认英语
-
-    def _extract_recursive(
-            self, obj: Any, key_path: List[str], results: List[TranslatableString],
-            occurrence_counters: Dict, file_rel_path: str, line_num: int
-    ):
-        """递归提取 JSON 中的所有可翻译字符串"""
-
-        if isinstance(obj, dict):
-            for key, value in obj.items():
-                self._extract_recursive(
-                    value, key_path + [key], results, occurrence_counters,
-                    file_rel_path, line_num
-                )
-
-        elif isinstance(obj, list):
-            for idx, item in enumerate(obj):
-                # 数组索引也作为路径的一部分
-                self._extract_recursive(
-                    item, key_path + [f"[{idx}]"], results, occurrence_counters,
-                    file_rel_path, line_num
-                )
-
-        elif isinstance(obj, str):
-            # 只提取非空字符串
-            if obj.strip():
-                self._create_translatable_string(
-                    obj, key_path, results, occurrence_counters,
-                    file_rel_path, line_num
-                )
-
-    def _create_translatable_string(self, text, key_path, results, occurrence_counters, file_rel_path, line_num):
-        """创建 TranslatableString 对象"""
-
-        # 生成完整键路径作为 context
-        full_key = ".".join(key_path)
-
-        # 生成唯一计数器键
-        counter_key = (text, full_key)
-        current_index = occurrence_counters.get(counter_key, 0)
-        occurrence_counters[counter_key] = current_index + 1
-
-        # 生成稳定的 UUID
-        stable_name = f"{file_rel_path}::{full_key}::{text}::{current_index}"
-        obj_id = xxhash.xxh128(stable_name.encode('utf-8')).hexdigest()
-
-        ts = TranslatableString(
-            original_raw=text,
-            original_semantic=text,
-            line_num=line_num,
-            char_pos_start_in_file=0,
-            char_pos_end_in_file=0,
-            full_code_lines=[],
-            string_type="JSON i18n",
-            source_file_path=file_rel_path,
-            occurrences=[(file_rel_path, str(line_num))],
-            occurrence_index=current_index,
-            id=obj_id
-        )
-
-        ts.context = full_key
-        ts.comment = ""
-        ts.po_comment = f"#: JSON key path: {full_key}"
-        ts.is_reviewed = False
-        ts.update_sort_weight()
-
-        results.append(ts)
-
-    def save(self, filepath, translatable_objects, metadata, **kwargs):
-        """保存翻译后的 JSON 文件"""
-        logger.debug(f"[JsonI18nFormatHandler] Saving JSON file: {filepath}")
-
-        # 获取原始结构
-        original_structure = metadata.get('original_structure', {})
-        indent = metadata.get('indent', 2)
-        ensure_ascii = metadata.get('ensure_ascii', False)
-
-        # 创建翻译映射: key_path -> translation
-        translation_map = {}
-        for ts in translatable_objects:
-            if ts.translation and not ts.is_ignored and ts.context:
-                translation_map[ts.context] = ts.translation
-
-        # 重建 JSON 结构
-        translated_structure = self._rebuild_structure(
-            original_structure, translation_map
-        )
-
-        # 保存文件
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(
-                translated_structure,
-                f,
-                indent=indent,
-                ensure_ascii=ensure_ascii,
-                sort_keys=False
-            )
-
-        logger.info(f"[JsonI18nFormatHandler] Saved {len(translation_map)} translations to {filepath}")
-
-    def _rebuild_structure(self, obj: Any, translation_map: Dict[str, str], key_path: List[str] = None) -> Any:
-        """递归重建 JSON 结构，应用翻译"""
-        if key_path is None:
-            key_path = []
-
-        if isinstance(obj, dict):
-            result = {}
-            for key, value in obj.items():
-                result[key] = self._rebuild_structure(value, translation_map, key_path + [key])
-            return result
-
-        elif isinstance(obj, list):
-            result = []
-            for idx, item in enumerate(obj):
-                result.append(
-                    self._rebuild_structure(item, translation_map, key_path + [f"[{idx}]"])
-                )
-            return result
-
-        elif isinstance(obj, str):
-            # 查找翻译
-            full_key = ".".join(key_path)
-            return translation_map.get(full_key, obj)
-
-        else:
-            return obj
-
-
 class XliffFormatHandler(BaseFormatHandler):
     """
     XLIFF (XML Localization Interchange File Format) 处理器
@@ -1482,6 +1225,699 @@ class ArbFormatHandler(BaseFormatHandler):
             current = current.parent
         return os.path.basename(filepath)
 
+
+class JsonI18nFormatHandler(BaseFormatHandler):
+    """
+    JSON 国际化文件处理器
+    支持的格式:
+    1. 扁平结构: {"key1": "value1", "key2": "value2"}
+    2. 嵌套结构: {"menu": {"home": "Home", "about": "About"}}
+    3. 数组: {"items": ["Item 1", "Item 2"]}
+    4. 混合: {"user": {"messages": ["Welcome", "Goodbye"]}}
+    """
+    format_id = "json_i18n"
+    extensions = ['.json']
+    format_type = "translation"
+    display_name = _("JSON i18n File")
+    badge_text = "JSON"
+    badge_bg_color = "#FFF3E0"
+    badge_text_color = "#E65100"
+
+    def load(self, filepath, **kwargs):
+        logger.debug(f"[JsonI18nFormatHandler] Loading JSON file: {filepath}")
+
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+            data = json.loads(content)
+
+        # 检测 JSON 缩进
+        indent = self._detect_indent(content)
+
+        relative_path = kwargs.get('relative_path')
+        if relative_path:
+            json_file_rel_path = relative_path
+        else:
+            json_file_rel_path = self._get_relative_path(filepath)
+
+        translatable_objects = []
+        occurrence_counters = {}
+
+        # 递归提取所有可翻译字符串
+        self._extract_recursive(
+            data, [], translatable_objects, occurrence_counters,
+            json_file_rel_path, line_num=1
+        )
+
+        metadata = {
+            'original_structure': data,
+            'indent': indent,
+            'ensure_ascii': False  # 保留 Unicode 字符
+        }
+
+        # 尝试检测语言代码
+        language_code = self._detect_language(data, os.path.basename(filepath))
+
+        logger.info(f"[JsonI18nFormatHandler] Loaded {len(translatable_objects)} strings from {filepath}")
+        return translatable_objects, metadata, language_code
+
+    def _detect_indent(self, json_content: str) -> int:
+        """检测 JSON 文件的缩进空格数"""
+        lines = json_content.split('\n')
+        for line in lines[1:]:  # 跳过第一行
+            stripped = line.lstrip()
+            if stripped and line != stripped:
+                indent = len(line) - len(stripped)
+                if indent > 0:
+                    return indent
+        return 2  # 默认 2 空格
+
+    def _get_relative_path(self, filepath: str) -> str:
+        """获取文件相对于项目根目录的路径"""
+        current_path = Path(filepath).parent
+        while True:
+            if (current_path / "project.json").is_file():
+                try:
+                    return Path(filepath).relative_to(current_path).as_posix()
+                except ValueError:
+                    break
+            if current_path.parent == current_path:
+                break
+            current_path = current_path.parent
+        return os.path.basename(filepath)
+
+    def _detect_language(self, data: Dict, filename: str) -> str:
+        # 从文件名检测: en.json, zh-CN.json, messages_fr.json
+        name_lower = filename.lower().replace('.json', '')
+        common_langs = ['en', 'zh', 'ja', 'ko', 'fr', 'de', 'es', 'it', 'ru', 'pt', 'ar']
+        for lang in common_langs:
+            if lang in name_lower:
+                return lang
+
+        # 从数据结构检测: {"locale": "en", ...} 或 {"en": {...}}
+        if isinstance(data, dict):
+            if 'locale' in data or 'language' in data or 'lang' in data:
+                lang_value = data.get('locale') or data.get('language') or data.get('lang')
+                if isinstance(lang_value, str):
+                    return lang_value
+
+            # 检查顶层键是否为语言代码
+            top_keys = list(data.keys())
+            if len(top_keys) == 1 and top_keys[0] in common_langs:
+                return top_keys[0]
+
+        return 'en'  # 默认英语
+
+    def _extract_recursive(
+            self, obj: Any, key_path: List[str], results: List[TranslatableString],
+            occurrence_counters: Dict, file_rel_path: str, line_num: int
+    ):
+        """递归提取 JSON 中的所有可翻译字符串"""
+
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                self._extract_recursive(
+                    value, key_path + [key], results, occurrence_counters,
+                    file_rel_path, line_num
+                )
+
+        elif isinstance(obj, list):
+            for idx, item in enumerate(obj):
+                # 数组索引也作为路径的一部分
+                self._extract_recursive(
+                    item, key_path + [f"[{idx}]"], results, occurrence_counters,
+                    file_rel_path, line_num
+                )
+
+        elif isinstance(obj, str):
+            # 只提取非空字符串
+            if obj.strip():
+                self._create_translatable_string(
+                    obj, key_path, results, occurrence_counters,
+                    file_rel_path, line_num
+                )
+
+    def _create_translatable_string(self, text, key_path, results, occurrence_counters, file_rel_path, line_num):
+        """创建 TranslatableString 对象"""
+
+        # 生成完整键路径作为 context
+        full_key = ".".join(key_path)
+
+        # 生成唯一计数器键
+        counter_key = (text, full_key)
+        current_index = occurrence_counters.get(counter_key, 0)
+        occurrence_counters[counter_key] = current_index + 1
+
+        # 生成稳定的 UUID
+        stable_name = f"{file_rel_path}::{full_key}::{text}::{current_index}"
+        obj_id = xxhash.xxh128(stable_name.encode('utf-8')).hexdigest()
+
+        ts = TranslatableString(
+            original_raw=text,
+            original_semantic=text,
+            line_num=line_num,
+            char_pos_start_in_file=0,
+            char_pos_end_in_file=0,
+            full_code_lines=[],
+            string_type="JSON i18n",
+            source_file_path=file_rel_path,
+            occurrences=[(file_rel_path, str(line_num))],
+            occurrence_index=current_index,
+            id=obj_id
+        )
+
+        ts.context = full_key
+        ts.comment = ""
+        ts.po_comment = f"#: JSON key path: {full_key}"
+        ts.is_reviewed = False
+        ts.update_sort_weight()
+
+        results.append(ts)
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        """保存翻译后的 JSON 文件"""
+        logger.debug(f"[JsonI18nFormatHandler] Saving JSON file: {filepath}")
+
+        # 获取原始结构
+        original_structure = metadata.get('original_structure', {})
+        indent = metadata.get('indent', 2)
+        ensure_ascii = metadata.get('ensure_ascii', False)
+
+        # 创建翻译映射: key_path -> translation
+        translation_map = {}
+        for ts in translatable_objects:
+            if ts.translation and not ts.is_ignored and ts.context:
+                translation_map[ts.context] = ts.translation
+
+        # 重建 JSON 结构
+        translated_structure = self._rebuild_structure(
+            original_structure, translation_map
+        )
+
+        # 保存文件
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(
+                translated_structure,
+                f,
+                indent=indent,
+                ensure_ascii=ensure_ascii,
+                sort_keys=False
+            )
+
+        logger.info(f"[JsonI18nFormatHandler] Saved {len(translation_map)} translations to {filepath}")
+
+    def _rebuild_structure(self, obj: Any, translation_map: Dict[str, str], key_path: List[str] = None) -> Any:
+        """递归重建 JSON 结构，应用翻译"""
+        if key_path is None:
+            key_path = []
+
+        if isinstance(obj, dict):
+            result = {}
+            for key, value in obj.items():
+                result[key] = self._rebuild_structure(value, translation_map, key_path + [key])
+            return result
+
+        elif isinstance(obj, list):
+            result = []
+            for idx, item in enumerate(obj):
+                result.append(
+                    self._rebuild_structure(item, translation_map, key_path + [f"[{idx}]"])
+                )
+            return result
+
+        elif isinstance(obj, str):
+            # 查找翻译
+            full_key = ".".join(key_path)
+            return translation_map.get(full_key, obj)
+
+        else:
+            return obj
+
+
+class YamlI18nFormatHandler(BaseFormatHandler):
+    """
+    YAML 国际化文件处理器
+
+    支持的框架与格式:
+    1. Ruby on Rails i18n: en:\n  key: value  (顶层语言键包装结构)
+    2. Vue i18n / react-i18next: 扁平或嵌套 YAML，无顶层语言键
+    3. 通用嵌套: 任意深度嵌套映射，键路径以 . 连接作为 context
+    4. 多行字面量块 (|) 与折叠块 (>): 正确提取完整文本，保存时
+       自动选择最合适的块标量风格
+
+    关键技术决策:
+    - 使用 ruamel.yaml 而非 PyYAML，以确保注释、键顺序、缩进风格
+      在加载/保存过程中完整保留（PyYAML 会丢失注释和 key 顺序）
+    - 若 ruamel.yaml 不可用则自动回退到 PyYAML（功能降级：注释丢失）
+    - Rails 顶层语言键 (如 `en:`) 自动识别并在保存时还原，不作为翻译条目
+    - 跳过非字符串叶节点（数字、布尔、null），防止误提取配置值
+    - 数组中的字符串元素以 key[0], key[1] 形式纳入翻译管理
+    """
+    format_id = "yaml_i18n"
+    extensions = ['.yml', '.yaml']
+    format_type = "translation"
+    display_name = _("YAML i18n File")
+    badge_text = "YAML"
+    badge_bg_color = "#F1F8E9"
+    badge_text_color = "#33691E"
+
+    # Rails 风格顶层语言键检测：单个符合 BCP-47 的顶层键
+    _LANG_CODE_RE = re.compile(
+        r'^[a-z]{2,3}(?:[_-][A-Za-z]{2,4})?$'
+    )
+
+    def load(self, filepath, **kwargs):
+        logger.debug(f"[YamlI18nFormatHandler] Loading YAML: {filepath}")
+
+        with open(filepath, 'r', encoding='utf-8') as f:
+            raw_content = f.read()
+
+        data, yaml_backend = self._yaml_load(raw_content)
+        if not isinstance(data, dict):
+            logger.warning(f"[YamlI18nFormatHandler] Root is not a mapping: {filepath}")
+            return [], {}, 'en'
+
+        rel_path = kwargs.get('relative_path') or self._get_relative_path(filepath)
+        language_code = self._detect_language(data, os.path.basename(filepath))
+
+        # Rails 顶层语言键解包
+        rails_lang_key, data_root = self._unwrap_rails_root(data)
+
+        translatable_objects = []
+        occurrence_counters = {}
+        self._extract_recursive(
+            data_root, [], translatable_objects, occurrence_counters, rel_path
+        )
+
+        metadata = {
+            'raw_content': raw_content,
+            'rails_lang_key': rails_lang_key,
+            'yaml_backend': yaml_backend,
+        }
+
+        logger.info(f"[YamlI18nFormatHandler] Loaded {len(translatable_objects)} strings from {filepath}")
+        return translatable_objects, metadata, language_code
+
+    def _yaml_load(self, content: str) -> Tuple[Any, str]:
+        """加载 YAML，返回 (data, backend_name)"""
+        try:
+            from ruamel.yaml import YAML
+            yaml = YAML()
+            yaml.preserve_quotes = True
+            import io
+            data = yaml.load(io.StringIO(content))
+            return data, 'ruamel'
+        except ImportError:
+            pass
+
+        try:
+            import yaml as pyyaml
+            data = pyyaml.safe_load(content)
+            return data, 'pyyaml'
+        except Exception as e:
+            logger.error(f"[YamlI18nFormatHandler] YAML parse error: {e}")
+            return {}, 'pyyaml'
+
+    def _yaml_dump(self, data: Any, backend: str, indent: int = 2) -> str:
+        """序列化 YAML，尽量保持原格式"""
+        if backend == 'ruamel':
+            try:
+                from ruamel.yaml import YAML
+                import io
+                yaml = YAML()
+                yaml.default_flow_style = False
+                yaml.allow_unicode = True
+                yaml.indent(mapping=indent, sequence=indent, offset=indent)
+                buf = io.StringIO()
+                yaml.dump(data, buf)
+                return buf.getvalue()
+            except ImportError:
+                pass
+
+        import yaml as pyyaml
+        return pyyaml.dump(
+            data, allow_unicode=True, default_flow_style=False,
+            indent=indent, sort_keys=False
+        )
+
+    def _unwrap_rails_root(self, data: Dict) -> Tuple[Optional[str], Any]:
+        """
+        如果数据只有一个顶层键且符合语言码格式，视为 Rails 风格并解包。
+        返回 (lang_key_or_None, inner_data)
+        """
+        keys = list(data.keys()) if isinstance(data, dict) else []
+        if len(keys) == 1:
+            key = str(keys[0])
+            if self._LANG_CODE_RE.match(key):
+                return key, data[key] if isinstance(data[key], dict) else data
+        return None, data
+
+    def _wrap_rails_root(self, data: Any, lang_key: Optional[str]) -> Any:
+        """将数据重新包装到 Rails 顶层语言键下"""
+        if lang_key:
+            return {lang_key: data}
+        return data
+
+    def _extract_recursive(
+        self, obj: Any, key_path: List[str],
+        results: List[TranslatableString], counters: Dict, rel_path: str
+    ):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                self._extract_recursive(v, key_path + [str(k)], results, counters, rel_path)
+
+        elif isinstance(obj, list):
+            for i, item in enumerate(obj):
+                self._extract_recursive(item, key_path + [f"[{i}]"], results, counters, rel_path)
+
+        elif isinstance(obj, str) and obj.strip():
+            self._make_ts(obj, key_path, results, counters, rel_path)
+
+    def _make_ts(
+        self, text: str, key_path: List[str],
+        results: List[TranslatableString], counters: Dict, rel_path: str
+    ):
+        full_key = '.'.join(
+            p if not p.startswith('[') else p
+            for p in key_path
+        )
+        # 美化：去掉 .[0] -> [0] 多余的点
+        full_key = re.sub(r'\.\[', '[', full_key)
+
+        counter_key = (text, full_key)
+        idx = counters.get(counter_key, 0)
+        counters[counter_key] = idx + 1
+
+        stable = f"{rel_path}::{full_key}::{text}::{idx}"
+        obj_id = xxhash.xxh128(stable.encode('utf-8')).hexdigest()
+
+        ts = TranslatableString(
+            original_raw=text, original_semantic=text,
+            line_num=0,
+            char_pos_start_in_file=0, char_pos_end_in_file=0,
+            full_code_lines=[],
+            string_type="YAML i18n",
+            source_file_path=rel_path,
+            occurrences=[(rel_path, full_key)],
+            occurrence_index=idx,
+            id=obj_id
+        )
+        ts.translation = text
+        ts.context = full_key
+        ts.comment = ""
+        ts.po_comment = f"#: YAML key: {full_key}"
+        ts.is_reviewed = False
+        ts.update_sort_weight()
+        results.append(ts)
+
+    def _rebuild_recursive(
+        self, obj: Any, key_path: List[str], translation_map: Dict[str, str]
+    ) -> Any:
+        """递归将原始 YAML 结构中的字符串替换为译文"""
+        if isinstance(obj, dict):
+            # ruamel.yaml CommentedMap 需要逐键更新而非整体替换
+            result = obj.__class__() if hasattr(obj, '__class__') and hasattr(obj, 'ca') else {}
+            for k, v in obj.items():
+                result[k] = self._rebuild_recursive(v, key_path + [str(k)], translation_map)
+            return result
+
+        elif isinstance(obj, list):
+            cls = obj.__class__ if hasattr(obj, 'ca') else list
+            result = cls()
+            for i, item in enumerate(obj):
+                rebuilt = self._rebuild_recursive(item, key_path + [f"[{i}]"], translation_map)
+                result.append(rebuilt)
+            return result
+
+        elif isinstance(obj, str):
+            full_key = re.sub(r'\.\[', '[', '.'.join(
+                p if not p.startswith('[') else p for p in key_path
+            ))
+            return translation_map.get(full_key, obj)
+
+        return obj
+
+    def _detect_language(self, data: Dict, filename: str) -> str:
+        # 优先从 Rails 顶层键检测
+        keys = list(data.keys()) if isinstance(data, dict) else []
+        if len(keys) == 1:
+            key = str(keys[0])
+            if self._LANG_CODE_RE.match(key):
+                return key
+
+        # 从文件名检测: zh-CN.yml / messages.fr.yml / i18n_de.yaml
+        stem = os.path.splitext(filename)[0]
+        m = re.search(r'(?:^|[_.-])([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)(?:[_.-]|$)', stem)
+        if m:
+            candidate = m.group(1)
+            if self._LANG_CODE_RE.match(candidate):
+                return candidate
+
+        return 'en'
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / 'project.json').is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        logger.debug(f"[YamlI18nFormatHandler] Saving YAML: {filepath}")
+
+        translation_map = {
+            ts.context: (ts.translation or ts.original_semantic)
+            for ts in translatable_objects
+            if ts.original_semantic and ts.id != "##NEW_ENTRY##"
+                and not ts.is_ignored and ts.context
+        }
+
+        raw_content = metadata.get('raw_content', '')
+        rails_lang_key = metadata.get('rails_lang_key')
+        backend = metadata.get('yaml_backend', 'pyyaml')
+
+        # 重新加载原始结构（保留注释，如果使用 ruamel）
+        original_data, _ = self._yaml_load(raw_content)
+        _, data_root = self._unwrap_rails_root(original_data)
+
+        # 递归替换
+        translated_root = self._rebuild_recursive(data_root, [], translation_map)
+
+        # 还原 Rails 顶层键包装
+        output_data = self._wrap_rails_root(translated_root, rails_lang_key)
+
+        yaml_str = self._yaml_dump(output_data, backend)
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(yaml_str)
+
+        logger.info(f"[YamlI18nFormatHandler] Saved {len(translation_map)} strings to {filepath}")
+
+
+class ResxFormatHandler(BaseFormatHandler):
+    """
+    .NET / C# RESX (XML Resource File) 格式处理器
+
+    支持的特性:
+    1. 数据类型过滤: 仅提取 type 属性缺失或为 System.String 的 <data> 节点，
+       自动跳过图片、图标、二进制嵌入资源等非文本条目，防止误翻译
+    2. 注释双通道: <comment> 子节点保存为 po_comment 供内部追踪；
+       xml:space="preserve" 属性被正确识别并在保存时还原
+    3. Designer 文件跳过: 自动检测 .Designer.resx 文件并拒绝加载，
+       避免将自动生成的资源键混入翻译工作流
+    4. ResX 头部保留: 加载时完整记录 <resheader> / <assembly> / <metadata>
+       节点，保存时原样写回，确保 Visual Studio 可正常打开并编译
+    5. 语言检测: 从 App.zh-CN.resx / Strings.fr.resx 等命名约定中
+       自动提取 BCP-47 语言代码
+    """
+    format_id = "resx"
+    extensions = ['.resx']
+    format_type = "translation"
+    display_name = _("RESX Resource File (.NET)")
+    badge_text = "RESX"
+    badge_bg_color = "#E8EAF6"
+    badge_text_color = "#283593"
+
+    # 需要跳过的已知非字符串类型前缀
+    _SKIP_TYPE_PREFIXES = (
+        'System.Drawing', 'System.Windows.Forms', 'System.Byte[]',
+        'System.Resources', 'Microsoft.',
+    )
+
+    def load(self, filepath, **kwargs):
+        logger.debug(f"[ResxFormatHandler] Loading RESX: {filepath}")
+
+        # 拒绝处理 .Designer.resx（自动生成文件）
+        if filepath.endswith('.Designer.resx'):
+            logger.info(f"[ResxFormatHandler] Skipping designer file: {filepath}")
+            return [], {}, 'en'
+
+        tree = ET.parse(filepath)
+        root = tree.getroot()
+
+        rel_path = kwargs.get('relative_path') or self._get_relative_path(filepath)
+        translatable_objects = []
+        occurrence_counters = {}
+
+        # 收集所有 <data> 节点
+        for data_elem in root.findall('data'):
+            name = data_elem.get('name', '')
+            if not name:
+                continue
+
+            # 跳过非字符串资源（图片、二进制等）
+            res_type = data_elem.get('type', '')
+            if res_type and not res_type.startswith('System.String'):
+                if any(res_type.startswith(p) for p in self._SKIP_TYPE_PREFIXES):
+                    continue
+
+            # 跳过 mimetype 属性（base64 嵌入数据）
+            if data_elem.get('mimetype'):
+                continue
+
+            value_elem = data_elem.find('value')
+            if value_elem is None or not (value_elem.text or '').strip():
+                continue
+
+            value = value_elem.text.strip()
+
+            comment_elem = data_elem.find('comment')
+            comment_text = comment_elem.text.strip() if comment_elem is not None and comment_elem.text else ''
+
+            counter_key = (value, name)
+            idx = occurrence_counters.get(counter_key, 0)
+            occurrence_counters[counter_key] = idx + 1
+
+            stable = f"{rel_path}::{name}::{idx}"
+            obj_id = xxhash.xxh128(stable.encode('utf-8')).hexdigest()
+
+            ts = TranslatableString(
+                original_raw=value, original_semantic=value,
+                line_num=0,
+                char_pos_start_in_file=0, char_pos_end_in_file=0,
+                full_code_lines=[],
+                string_type="RESX String",
+                source_file_path=rel_path,
+                occurrences=[(rel_path, name)],
+                occurrence_index=idx,
+                id=obj_id
+            )
+            ts.translation = value
+            ts.context = name
+            ts.comment = comment_text
+            ts.po_comment = f"#: RESX name: {name}"
+            ts.is_reviewed = False
+            ts.update_sort_weight()
+            translatable_objects.append(ts)
+
+        # 保存头部节点用于回写
+        header_nodes = self._collect_header_nodes(root)
+        language_code = self._detect_language(os.path.basename(filepath))
+
+        metadata = {
+            'header_nodes': header_nodes,
+            'xml_version': '1.0',
+            'encoding': 'utf-8',
+        }
+
+        logger.info(f"[ResxFormatHandler] Loaded {len(translatable_objects)} strings from {filepath}")
+        return translatable_objects, metadata, language_code
+
+    def _collect_header_nodes(self, root: ET.Element) -> List[Dict]:
+        """收集 resheader / assembly / metadata 节点，保存时原样还原"""
+        preserved = []
+        for tag in ('resheader', 'assembly', 'metadata'):
+            for elem in root.findall(tag):
+                preserved.append({
+                    'tag': tag,
+                    'attrib': dict(elem.attrib),
+                    'children': [
+                        {'tag': c.tag, 'text': c.text, 'attrib': dict(c.attrib)}
+                        for c in elem
+                    ]
+                })
+        return preserved
+
+    def _detect_language(self, filename: str) -> str:
+        """
+        从 Resource.zh-CN.resx / Strings.fr.resx / App.de.resx 中提取语言码。
+        中性区域文件 (Resource.resx) 视为源语言 (en)。
+        """
+        stem = os.path.splitext(filename)[0]  # 去掉 .resx
+        # BCP-47 语言标签: xx 或 xx-YY
+        m = re.search(r'\.([a-z]{2,3}(?:-[A-Za-z]{2,4})?)$', stem, re.IGNORECASE)
+        if m:
+            return m.group(1)
+        return 'en'
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / 'project.json').is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        logger.debug(f"[ResxFormatHandler] Saving RESX: {filepath}")
+
+        # 注册 .NET 标准命名空间
+        import xml.etree.ElementTree as ET
+        ET.register_namespace('xsd', 'http://www.w3.org/2001/XMLSchema')
+        ET.register_namespace('msdata', 'urn:schemas-microsoft-com:xml-msdata')
+
+        root = ET.Element('root')
+
+        # 写入架构声明
+        schema_elem = ET.SubElement(root, '{http://www.w3.org/2001/XMLSchema}schema')
+        schema_elem.set('id', 'root')
+
+        # 还原头部节点 (resheader, assembly 等)
+        for node_info in metadata.get('header_nodes', []):
+            elem = ET.SubElement(root, node_info['tag'], **node_info['attrib'])
+            for child in node_info['children']:
+                c = ET.SubElement(elem, child['tag'], **child.get('attrib', {}))
+                c.text = child.get('text', '')
+
+        # 写入翻译条目并计数
+        saved_count = 0
+        for ts in translatable_objects:
+            if not ts.original_semantic or ts.id == "##NEW_ENTRY##":
+                continue
+
+            data_elem = ET.SubElement(root, 'data')
+            data_elem.set('name', ts.context)
+            # 处理空格保留
+            data_elem.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
+
+            value_elem = ET.SubElement(data_elem, 'value')
+            # 如果有翻译则用翻译，否则回退到原文
+            value_elem.text = ts.translation if ts.translation else ts.original_semantic
+
+            if ts.comment:
+                comment_elem = ET.SubElement(data_elem, 'comment')
+                comment_elem.text = ts.comment
+
+            saved_count += 1
+
+        tree = ET.ElementTree(root)
+        if hasattr(ET, 'indent'):
+            ET.indent(tree, space='  ', level=0)
+
+        tree.write(filepath, encoding='utf-8', xml_declaration=True)
+        logger.info(f"[ResxFormatHandler] Saved {saved_count} strings to {filepath}")
+
+
 class JavaPropertiesFormatHandler(BaseFormatHandler):
     """
     Java / Kotlin .properties 资源文件处理器
@@ -1755,6 +2191,455 @@ class JavaPropertiesFormatHandler(BaseFormatHandler):
             current = current.parent
         return os.path.basename(filepath)
 
+
+class MarkdownFormatHandler(BaseFormatHandler):
+    """
+    Markdown / MDX 文档本地化处理器
+
+    支持的提取单元（按语义粒度从细到粗）:
+    1. Frontmatter 字段: 解析 YAML frontmatter (--- ... ---) 中的字符串字段，
+       如 title / description / keywords，跳过日期、布尔、数字等非文本字段
+    2. 标题 (ATX/Setext): 提取 # / ## / ### 等 ATX 风格标题；
+       同时支持 Setext 风格（下划线 === / ---）标题
+    3. 段落块: 将连续非空行合并为一个段落单元提取，保留行内 Markdown 标记
+       (**bold**, *italic*, `code`, [link](url), ![alt](src))，
+       仅替换文本内容，不破坏标记结构
+    4. 列表项: 有序列表 (1. 2. 3.) 和无序列表 (- * +) 的每个条目单独提取；
+       支持嵌套列表，子项以缩进层级区分
+    5. 表格单元: 解析 GFM (GitHub Flavored Markdown) 表格，提取表头和数据单元，
+       跳过分隔行 (| --- | --- |)
+    6. 块引用: 提取 > 引用块中的文字内容，多行引用合并为一个单元
+    7. 自定义 MDX 组件属性: 提取 JSX 风格属性中的字符串字面量，
+       如 <Button label="Click me"> 中的 "Click me"
+
+    刻意跳过的内容（保证代码结构不受损）:
+    - 围栏代码块 (``` 或 ~~~)
+    - 行内代码 (`code`)
+    - HTML 注释 (<!-- -->)
+    - import / export 语句 (MDX 专用)
+    - 纯 URL / 路径
+    - 数学公式 ($ ... $ 和 $$ ... $$)
+
+    保存策略:
+    - 基于 char_pos_start_in_file / char_pos_end_in_file 精准定位并替换，
+      文档其余部分（格式、空行、代码块）完全原样保留
+    - 若无 char 偏移信息则回退到行号替换
+    """
+    format_id = "markdown"
+    extensions = ['.md', '.mdx', '.markdown']
+    format_type = "translation"
+    display_name = _("Markdown / MDX Document")
+    badge_text = "MD"
+    badge_bg_color = "#ECEFF1"
+    badge_text_color = "#37474F"
+
+    # 跳过的 frontmatter 字段（通常是日期、布尔、路径等）
+    _FRONTMATTER_SKIP_KEYS = {
+        'date', 'updated', 'created', 'draft', 'published',
+        'order', 'weight', 'slug', 'permalink', 'url',
+        'layout', 'template', 'type', 'id', 'uuid',
+    }
+
+    # 纯 URL / 路径正则（不值得翻译）
+    _URL_RE = re.compile(
+        r'^(?:https?://|ftp://|/|\.{0,2}/)[\w./?=&%#@:+\-]*$'
+    )
+
+    def load(self, filepath, **kwargs):
+        logger.debug(f"[MarkdownFormatHandler] Loading Markdown: {filepath}")
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        rel_path = kwargs.get('relative_path') or self._get_relative_path(filepath)
+
+        full_lines = content.splitlines()
+
+        translatable_objects = []
+        occurrence_counters = {}
+        skip_ranges = self._find_skip_ranges(content)
+
+        fm_end = 0
+        _, fm_end = self._extract_frontmatter(
+            content, rel_path, translatable_objects, occurrence_counters, full_lines
+        )
+
+        self._extract_body(
+            content, fm_end, skip_ranges, rel_path,
+            translatable_objects, occurrence_counters, full_lines
+        )
+
+        language_code = self._detect_language(os.path.basename(filepath))
+        metadata = {
+            'original_content': content,
+            'skip_ranges': skip_ranges,
+        }
+
+        logger.info(f"[MarkdownFormatHandler] Loaded {len(translatable_objects)} segments from {filepath}")
+        return translatable_objects, metadata, language_code
+
+    def _find_skip_ranges(self, content: str) -> List[Tuple[int, int]]:
+        """
+        返回不应被提取或替换的字符区间列表 [(start, end), ...]。
+        涵盖: 围栏代码块、行内代码、HTML注释、数学公式、import/export
+        """
+        ranges = []
+
+        # 围栏代码块: ```...``` 或 ~~~...~~~
+        for m in re.finditer(r'(?m)^(```+|~~~+)[^\n]*\n.*?\n\1[ \t]*$', content, re.DOTALL):
+            ranges.append((m.start(), m.end()))
+
+        # HTML 注释
+        for m in re.finditer(r'<!--.*?-->', content, re.DOTALL):
+            ranges.append((m.start(), m.end()))
+
+        # 数学公式块 $$ ... $$
+        for m in re.finditer(r'\$\$.*?\$\$', content, re.DOTALL):
+            ranges.append((m.start(), m.end()))
+
+        # 行内数学 $ ... $（单行）
+        for m in re.finditer(r'\$[^\n$]+\$', content):
+            ranges.append((m.start(), m.end()))
+
+        # MDX import / export 语句
+        for m in re.finditer(r'(?m)^(?:import|export)\s+.+$', content):
+            ranges.append((m.start(), m.end()))
+
+        return sorted(ranges)
+
+    def _in_skip_range(self, pos: int, skip_ranges: List[Tuple[int, int]]) -> bool:
+        for s, e in skip_ranges:
+            if s <= pos < e:
+                return True
+            if s > pos:
+                break
+        return False
+
+    def _extract_frontmatter(
+        self, content: str, rel_path: str,
+        results: List, counters: Dict
+    ) -> Tuple[Dict, int]:
+        """提取 YAML frontmatter 中的可翻译字段，返回 (字段dict, frontmatter结束位置)"""
+        fm_end = 0
+        extracted = {}
+
+        m = re.match(r'^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*\r?\n', content, re.DOTALL)
+        if not m:
+            return extracted, fm_end
+
+        fm_text = m.group(1)
+        fm_end = m.end()
+
+        for fm_m in re.finditer(
+            r'^([ \t]*)(\w[\w-]*)[ \t]*:[ \t]*(["\']?)(.+?)\3[ \t]*$',
+            fm_text, re.MULTILINE
+        ):
+            indent_str, key, quote, value = fm_m.groups()
+            # 跳过已知非文本键
+            if key.lower() in self._FRONTMATTER_SKIP_KEYS:
+                continue
+            # 跳过 URL / 路径
+            if self._URL_RE.match(value.strip()):
+                continue
+            # 跳过数字和布尔值
+            if re.match(r'^(?:true|false|null|\d[\d.,]*)$', value.strip(), re.I):
+                continue
+            if value.strip():
+                self._make_ts(
+                    value.strip(), f"frontmatter.{key}", rel_path,
+                    results, counters,
+                    line_num=content[:m.start() + fm_m.start()].count('\n') + 1,
+                    char_start=m.start(1) + fm_m.start(4),
+                    char_end=m.start(1) + fm_m.end(4),
+                    string_type="MD Frontmatter",
+                )
+
+        return extracted, fm_end
+
+    def _extract_body(
+        self, content: str, body_start: int,
+        skip_ranges: List[Tuple[int, int]],
+        rel_path: str, results: List, counters: Dict
+    ):
+        """逐行扫描文档正文，按语义单元提取"""
+        lines = content[body_start:].split('\n')
+        abs_offset = body_start  # 当前行在整个文件中的字符偏移
+
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            line_abs_start = abs_offset
+            line_abs_end = abs_offset + len(line)
+            line_num = content[:abs_offset].count('\n') + 1
+
+            # 如果整行在禁区内，跳过
+            if self._in_skip_range(line_abs_start, skip_ranges):
+                abs_offset += len(line) + 1
+                i += 1
+                continue
+
+            stripped = line.strip()
+
+            # --- ATX 标题 ---
+            atx_m = re.match(r'^(#{1,6})\s+(.*?)(?:\s+#+\s*)?$', stripped)
+            if atx_m:
+                heading_text = atx_m.group(2).strip()
+                if heading_text:
+                    level = len(atx_m.group(1))
+                    hash_prefix = atx_m.group(1) + ' '
+                    text_start = line_abs_start + line.index(hash_prefix) + len(hash_prefix)
+                    self._make_ts(
+                        heading_text, f"heading.h{level}", rel_path, results, counters,
+                        line_num=line_num,
+                        char_start=text_start,
+                        char_end=text_start + len(heading_text),
+                        string_type="MD Heading",
+                    )
+                abs_offset += len(line) + 1
+                i += 1
+                continue
+
+            # --- Setext 标题（下一行是 === 或 ---）---
+            if i + 1 < len(lines):
+                next_stripped = lines[i + 1].strip()
+                if re.match(r'^=+$', next_stripped) or re.match(r'^-+$', next_stripped):
+                    level = 1 if next_stripped.startswith('=') else 2
+                    if stripped:
+                        self._make_ts(
+                            stripped, f"heading.h{level}", rel_path, results, counters,
+                            line_num=line_num,
+                            char_start=line_abs_start,
+                            char_end=line_abs_start + len(stripped),
+                            string_type="MD Heading",
+                        )
+                    # 跳过 Setext 下划线行
+                    abs_offset += len(line) + 1 + len(lines[i + 1]) + 1
+                    i += 2
+                    continue
+
+            # --- 列表项 ---
+            list_m = re.match(r'^([ \t]*)(?:[-*+]|\d+\.)\s+(.*)', line)
+            if list_m and stripped:
+                item_text = list_m.group(2).strip()
+                item_text_clean = self._strip_inline_code(item_text)
+                if item_text_clean and not self._URL_RE.match(item_text_clean):
+                    text_abs_start = line_abs_start + line.index(list_m.group(2))
+                    self._make_ts(
+                        item_text, f"list.item", rel_path, results, counters,
+                        line_num=line_num,
+                        char_start=text_abs_start,
+                        char_end=text_abs_start + len(item_text),
+                        string_type="MD List Item",
+                    )
+                abs_offset += len(line) + 1
+                i += 1
+                continue
+
+            # --- 块引用 ---
+            if stripped.startswith('>'):
+                # 收集连续引用行
+                quote_lines = []
+                quote_start_offset = abs_offset
+                while i < len(lines) and lines[i].strip().startswith('>'):
+                    quote_lines.append(re.sub(r'^[ \t]*>+[ \t]?', '', lines[i]))
+                    abs_offset += len(lines[i]) + 1
+                    i += 1
+                quote_text = '\n'.join(quote_lines).strip()
+                if quote_text and not self._URL_RE.match(quote_text):
+                    self._make_ts(
+                        quote_text, "blockquote", rel_path, results, counters,
+                        line_num=line_num,
+                        char_start=quote_start_offset,
+                        char_end=abs_offset - 1,
+                        string_type="MD Blockquote",
+                    )
+                continue
+
+            # --- GFM 表格行 ---
+            if '|' in stripped and not re.match(r'^\|?[ \t:|-]+\|', stripped):
+                cells = [c.strip() for c in stripped.strip('|').split('|')]
+                for cell in cells:
+                    cell_clean = self._strip_inline_code(cell)
+                    if cell_clean and not self._URL_RE.match(cell_clean) and len(cell_clean) > 1:
+                        self._make_ts(
+                            cell, "table.cell", rel_path, results, counters,
+                            line_num=line_num,
+                            char_start=line_abs_start,
+                            char_end=line_abs_end,
+                            string_type="MD Table",
+                        )
+                abs_offset += len(line) + 1
+                i += 1
+                continue
+
+            # --- 段落（连续非空行）---
+            if stripped and not stripped.startswith('#') and not stripped.startswith('```'):
+                para_lines = []
+                para_start_offset = abs_offset
+                para_start_line = line_num
+                while i < len(lines):
+                    cur_line = lines[i]
+                    cur_stripped = cur_line.strip()
+                    # 遇到空行、标题、代码块、列表、分隔线时结束段落
+                    if (not cur_stripped
+                            or cur_stripped.startswith('#')
+                            or cur_stripped.startswith('```')
+                            or cur_stripped.startswith('~~~')
+                            or re.match(r'^(?:[-*_]){3,}$', cur_stripped)
+                            or re.match(r'^(?:[-*+]|\d+\.)\s', cur_stripped)
+                            or cur_stripped.startswith('>')
+                            or self._in_skip_range(abs_offset, skip_ranges)):
+                        break
+                    para_lines.append(cur_line)
+                    abs_offset += len(cur_line) + 1
+                    i += 1
+
+                para_text = ' '.join(l.strip() for l in para_lines).strip()
+                para_text_clean = self._strip_inline_code(para_text)
+
+                if (para_text_clean and len(para_text_clean) > 2
+                        and not self._URL_RE.match(para_text_clean)):
+                    self._make_ts(
+                        para_text, "paragraph", rel_path, results, counters,
+                        line_num=para_start_line,
+                        char_start=para_start_offset,
+                        char_end=abs_offset - 1,
+                        string_type="MD Paragraph",
+                    )
+                continue
+
+            abs_offset += len(line) + 1
+            i += 1
+
+    def _strip_inline_code(self, text: str) -> str:
+        """去除行内反引号代码后返回纯文本，用于判断是否值得翻译"""
+        return re.sub(r'`[^`]*`', '', text).strip()
+
+    def _make_ts(self, text, context_hint, rel_path, results, counters,
+                 full_lines, line_num=0, char_start=0, char_end=0, string_type="MD Text"):
+        """统一创建 TranslatableString 对象"""
+        # 过滤过短或无意义的文本
+        clean = self._strip_inline_code(text)
+        if len(clean.strip()) < 2:
+            return
+
+        # context = hint::顺序计数，防止同文件同类型条目冲突
+        counter_key = (text, context_hint)
+        idx = counters.get(counter_key, 0)
+        counters[counter_key] = idx + 1
+
+        context = f"{context_hint}[{idx}]" if idx > 0 else context_hint
+
+        ts = TranslatableString(
+            original_raw=text, original_semantic=text,
+            line_num=line_num,
+            char_pos_start_in_file=char_start,
+            char_pos_end_in_file=char_end,
+            full_code_lines=full_lines, # [CHANGED]
+            string_type=string_type,
+            source_file_path=rel_path,
+            occurrences=[(rel_path, str(line_num))],
+            occurrence_index=counters.get((text, context_hint), 0),
+            id=xxhash.xxh128(f"{rel_path}::{context_hint}::{text}".encode()).hexdigest()
+        )
+        ts.translation = text
+        ts.context = context
+        ts.comment = f"Type: {string_type}"
+        ts.po_comment = f"#: {rel_path}:{line_num} ({string_type})"
+        ts.is_reviewed = False
+        ts.update_sort_weight()
+        results.append(ts)
+
+    def _detect_language(self, filename: str) -> str:
+        stem = os.path.splitext(filename)[0]
+        # docs.zh-CN.md / index.fr.mdx
+        m = re.search(r'\.([a-z]{2,3}(?:-[A-Za-z]{2,4})?)$', stem, re.IGNORECASE)
+        if m:
+            return m.group(1)
+        return 'en'
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / 'project.json').is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        logger.debug(f"[MarkdownFormatHandler] Saving Markdown: {filepath}")
+
+        original_content = metadata.get('original_content', '')
+
+        # 按 char_pos_start_in_file 降序排列，从后往前替换，避免偏移漂移
+        replace_ops = []
+        for ts in translatable_objects:
+            if not ts.original_semantic or ts.id == "##NEW_ENTRY##":
+                continue
+            translation = ts.translation or ts.original_semantic
+            if translation == ts.original_semantic:
+                continue  # 未翻译，跳过
+            if (ts.char_pos_start_in_file > 0 or ts.char_pos_end_in_file > 0):
+                replace_ops.append((
+                    ts.char_pos_start_in_file,
+                    ts.char_pos_end_in_file,
+                    ts.original_semantic,
+                    translation
+                ))
+
+        # 去重 + 降序
+        replace_ops.sort(key=lambda x: x[0], reverse=True)
+
+        content = original_content
+        for start, end, original, translation in replace_ops:
+            # 安全校验：确认位置内容与原文匹配
+            if content[start:end] == original:
+                content = content[:start] + translation + content[end:]
+            else:
+                # 偏移可能已漂移，回退到全文替换（只替换第一次出现）
+                content = content.replace(original, translation, 1)
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+        logger.info(f"[MarkdownFormatHandler] Saved translated document to {filepath}")
+
+
+class OwCodeFormatHandler(BaseFormatHandler):
+    """
+    守望先锋工坊代码格式处理器
+    支持的特性:
+    1. 智能提取: 基于正则表达式从 .ow 或 .txt 源码中精准抠取待翻译文本
+    2. 结构回填: 保存时将译文精准替换回原始位置，确保代码逻辑和格式不受损
+    3. 多维识别: 支持提取自定义字符串 (Custom String)、模式名称及模式描述
+    4. 自动过滤: 智能跳过数字、纯占位符及已知的工坊技术关键字
+    """
+    format_id = "ow_code"
+    extensions = ['.ow', '.txt']
+    format_type = "source"
+    display_name = _("Overwatch Workshop Code")
+    badge_text = "Code"
+    badge_bg_color = "#E3F2FD"
+    badge_text_color = "#0277BD"
+
+    def load(self, filepath, **kwargs):
+        with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+        extraction_patterns = kwargs.get('extraction_patterns', [])
+        relative_path = kwargs.get('relative_path', os.path.basename(filepath))
+        strings = code_file_service.extract_translatable_strings(content, extraction_patterns, relative_path)
+        return strings, {'raw_content': content}, 'en'
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        app_instance = kwargs.get('app_instance', None)
+        raw_content = metadata.get('raw_content', '')
+        code_file_service.save_translated_code(filepath, raw_content, translatable_objects, app_instance)
+
+
 # ============================================================================
 # FORMAT MANAGER
 # ============================================================================
@@ -1807,14 +2692,15 @@ class FormatManager:
 
 
 
-
-# 注册内置处理器
 FormatManager.register_handler(PoFormatHandler)
 FormatManager.register_handler(TsFormatHandler)
-FormatManager.register_handler(OwCodeFormatHandler)
-FormatManager.register_handler(JsonI18nFormatHandler)
 FormatManager.register_handler(XliffFormatHandler)
 FormatManager.register_handler(AndroidStringsFormatHandler)
 FormatManager.register_handler(IosStringsFormatHandler)
 FormatManager.register_handler(ArbFormatHandler)
+FormatManager.register_handler(JsonI18nFormatHandler)
+FormatManager.register_handler(YamlI18nFormatHandler)
 FormatManager.register_handler(JavaPropertiesFormatHandler)
+FormatManager.register_handler(ResxFormatHandler)
+FormatManager.register_handler(OwCodeFormatHandler)
+FormatManager.register_handler(MarkdownFormatHandler)
