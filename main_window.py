@@ -2270,7 +2270,7 @@ class LexiSyncApp(QMainWindow):
             if not target_language:
                 raise ValueError(_("Project configuration is missing a target language."))
 
-            project_config, __ = load_project_data(project_path, target_language)
+            project_config, __ = load_project_data(project_path, target_language, self)
             self.project_config = project_config
 
             self.is_project_mode = True
@@ -2294,8 +2294,12 @@ class LexiSyncApp(QMainWindow):
             if load_all_on_start:
                 self.update_statusbar(_("Loading all source files..."), persistent=True)
                 QApplication.processEvents()
-                __, self.all_project_strings = load_project_data(project_path, self.current_target_language,
-                                                                all_files=True)
+                __, self.all_project_strings = load_project_data(
+                    project_path,
+                    self.current_target_language,
+                    app_instance=self,
+                    all_files=True
+                )
                 self.loaded_file_ids = {f['id'] for f in source_files}
                 self._rebuild_string_cache_indexes()
 
@@ -2367,6 +2371,7 @@ class LexiSyncApp(QMainWindow):
             __, newly_loaded_strings = load_project_data(
                 self.current_project_path,
                 self.current_target_language,
+                app_instance=self,
                 file_id_to_load=file_id
             )
 
@@ -4940,6 +4945,13 @@ class LexiSyncApp(QMainWindow):
                 raise ValueError(f"Unsupported translation format for {filepath}")
 
             self.current_format_handler = handler
+
+            self.translatable_objects, self.current_file_metadata, lang_full = handler.load(filepath, app_instance=self)
+
+            if not self.translatable_objects:
+                self.update_statusbar(_("Import cancelled or no valid data found."))
+                return
+
             is_ts = (handler.format_id == 'ts')
             self.details_panel.set_fuzzy_controls_visible(not is_ts)
             self.translatable_objects, self.current_file_metadata, lang_full = handler.load(filepath)

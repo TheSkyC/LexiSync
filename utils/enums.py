@@ -12,7 +12,7 @@ class WarningType(Enum):
     PLACEHOLDER_NAME_MISMATCH = auto()  # 占位符名称不一致
     PRINTF_MISMATCH = auto()  # %s, %d 等 Printf 风格格式符不匹配
     PYTHON_BRACE_MISMATCH = auto()  # {}, {name} 等 Python 风格格式符不匹配
-    ICU_PLACEHOLDER_MISMATCH = auto()  # [ADD] ARB/ICU 复杂嵌套占位符不匹配
+    ICU_PLACEHOLDER_MISMATCH = auto()  # ARB/ICU 复杂嵌套占位符不匹配
 
     # --- 格式与结构 ---
     # 包含大小写、空格、换行、标点符号及括号的成对情况

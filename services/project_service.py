@@ -107,7 +107,7 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
         raise IOError(_("Failed to create project: {error}").format(error=str(e)))
 
 
-def load_project_data(project_path: str, target_language: str, file_id_to_load: str = None, all_files: bool = False):
+def load_project_data(project_path: str, target_language: str, app_instance, file_id_to_load: str = None, all_files: bool = False):
     proj_path = Path(project_path)
     config_path = proj_path / PROJECT_CONFIG_FILE
     if not config_path.is_file():
@@ -153,13 +153,20 @@ def load_project_data(project_path: str, target_language: str, file_id_to_load: 
 
         try:
             if handler.format_type == "translation":
-                extracted_strings, __, ___ = handler.load(str(source_file_path_abs), relative_path=file_info["project_path"])
+                extracted_strings, __, ___ = handler.load(
+                    str(source_file_path_abs),
+                    relative_path=file_info["project_path"],
+                    app_instance=app_instance
+                )
                 logger.debug(f"[load_project_data] Loaded {len(extracted_strings)} strings from {handler.display_name}.")
             elif handler.format_type == "source":
                 extraction_patterns = file_info.get("patterns", DEFAULT_EXTRACTION_PATTERNS)
-                extracted_strings, __, ___ = handler.load(str(source_file_path_abs),
-                                                          extraction_patterns=extraction_patterns,
-                                                          relative_path=file_info["project_path"])
+                extracted_strings, __, ___ = handler.load(
+                    str(source_file_path_abs),
+                    extraction_patterns=extraction_patterns,
+                    relative_path=file_info["project_path"],
+                    app_instance=app_instance
+                )
                 logger.debug(f"[load_project_data] Extracted {len(extracted_strings)} strings from {handler.display_name}.")
         except Exception as e:
             logger.error(f"Failed to parse file {source_file_path_abs}: {e}", exc_info=True)

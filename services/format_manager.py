@@ -3,12 +3,14 @@
 
 import os
 import regex as re
+import xxhash
 import plistlib
 import xml.etree.ElementTree as ET
 from pathlib import Path
-import xxhash
 import logging
 import json
+import csv
+import copy
 from typing import List, Dict, Any, Tuple, Optional
 from models.translatable_string import TranslatableString
 from services import po_file_service
@@ -1718,6 +1720,110 @@ class YamlI18nFormatHandler(BaseFormatHandler):
         logger.info(f"[YamlI18nFormatHandler] Saved {len(translation_map)} strings to {filepath}")
 
 
+class TomlFormatHandler(BaseFormatHandler):
+    """
+    TOML 配置文件处理器
+    使用 tomlkit 库以确保在保存时完美还原注释、空行和结构顺序。
+    """
+    format_id = "toml"
+    extensions = ['.toml']
+    format_type = "translation"
+    display_name = _("TOML Config File")
+    badge_text = "TOML"
+    badge_bg_color = "#FCE4EC"
+    badge_text_color = "#3F51B5"
+
+    def load(self, filepath, **kwargs):
+        try:
+            import tomlkit
+        except ImportError:
+            raise ImportError(
+                _("The 'tomlkit' library is required to read TOML files. Please install it via 'pip install tomlkit'."))
+
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+            doc = tomlkit.parse(content)
+
+        rel_path = kwargs.get('relative_path') or os.path.basename(filepath)
+        translatable_objects = []
+        occurrence_counters = {}
+
+        self._extract_recursive(doc, [], translatable_objects, occurrence_counters, rel_path)
+
+        metadata = {'raw_content': content}
+        return translatable_objects, metadata, 'en'
+
+    def _extract_recursive(self, obj, key_path, results, counters, rel_path):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                self._extract_recursive(v, key_path + [str(k)], results, counters, rel_path)
+        elif isinstance(obj, list):
+            for i, item in enumerate(obj):
+                self._extract_recursive(item, key_path + [f"[{i}]"], results, counters, rel_path)
+        elif isinstance(obj, str) and obj.strip():
+            # 过滤掉看起来像颜色、路径或纯数字的字符串
+            if re.match(r'^#[0-9a-fA-F]{3,8}$', obj): return
+            if re.match(r'^(?:https?://|/|\./)', obj): return
+
+            full_key = '.'.join(p if not p.startswith('[') else p for p in key_path)
+            full_key = re.sub(r'\.\[', '[', full_key)
+
+            counter_key = (obj, full_key)
+            idx = counters.get(counter_key, 0)
+            counters[counter_key] = idx + 1
+
+            stable = f"{rel_path}::{full_key}::{obj}::{idx}"
+            obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+            ts = TranslatableString(
+                original_raw=obj, original_semantic=obj,
+                line_num=0, char_pos_start_in_file=0, char_pos_end_in_file=0,
+                full_code_lines=[], string_type="TOML String",
+                source_file_path=rel_path, occurrences=[(rel_path, full_key)],
+                occurrence_index=idx, id=obj_id
+            )
+            ts.translation = obj
+            ts.context = full_key
+            ts.po_comment = f"#: TOML key: {full_key}"
+            ts.is_reviewed = False
+            ts.update_sort_weight()
+            results.append(ts)
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        import tomlkit
+        raw_content = metadata.get('raw_content', '')
+        doc = tomlkit.parse(raw_content)
+
+        translation_map = {
+            ts.context: (ts.translation or ts.original_semantic)
+            for ts in translatable_objects
+            if ts.original_semantic and ts.id != "##NEW_ENTRY##" and ts.context
+        }
+
+        self._rebuild_recursive(doc, [], translation_map)
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(tomlkit.dumps(doc))
+
+    def _rebuild_recursive(self, obj, key_path, translation_map):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, str):
+                    full_key = re.sub(r'\.\[', '[', '.'.join(key_path + [str(k)]))
+                    if full_key in translation_map:
+                        obj[k] = translation_map[full_key]
+                else:
+                    self._rebuild_recursive(v, key_path + [str(k)], translation_map)
+        elif isinstance(obj, list):
+            for i, item in enumerate(obj):
+                if isinstance(item, str):
+                    full_key = re.sub(r'\.\[', '[', '.'.join(key_path + [f"[{i}]"]))
+                    if full_key in translation_map:
+                        obj[i] = translation_map[full_key]
+                else:
+                    self._rebuild_recursive(item, key_path + [f"[{i}]"], translation_map)
+
+
 class ResxFormatHandler(BaseFormatHandler):
     """
     .NET / C# RESX (XML Resource File) 格式处理器
@@ -1915,6 +2021,314 @@ class ResxFormatHandler(BaseFormatHandler):
 
         tree.write(filepath, encoding='utf-8', xml_declaration=True)
         logger.info(f"[ResxFormatHandler] Saved {saved_count} strings to {filepath}")
+
+
+# 表格类辅助函数
+def _guess_column_mapping(headers, config):
+    """根据配置中的关键词猜测列映射"""
+    mapping = {}
+    if not headers: return mapping
+
+    # 默认关键词池
+    default_pool = {
+        'source': ['source', 'original', 'en', 'english', '原文', 'text', 'string', 'msgid'],
+        'target': ['target', 'translation', 'zh', 'chinese', '译文', 'msgstr', 'value'],
+        'key': ['key', 'id', 'name', '键', '标识'],
+        'comment': ['comment', 'note', 'description', '备注', 'context']
+    }
+
+    # 合并用户学习到的关键词
+    user_pool = config.get('column_keywords', {})
+    for role in default_pool:
+        pool = set(default_pool[role] + user_pool.get(role, []))
+
+        # 查找匹配的列
+        for idx, header in enumerate(headers):
+            if idx in mapping.values(): continue  # 已经被其他角色占用
+            h_lower = str(header).strip().lower()
+            if h_lower in pool:
+                mapping[role] = idx
+                break
+    return mapping
+
+
+def _learn_column_mapping(headers, mapping, config):
+    """将用户手动选择的表头加入关键词池"""
+    if 'column_keywords' not in config:
+        config['column_keywords'] = {}
+
+    pool = config['column_keywords']
+    changed = False
+
+    for role, col_idx in mapping.items():
+        if col_idx >= len(headers): continue
+        header_val = str(headers[col_idx]).strip().lower()
+        if not header_val: continue
+
+        if role not in pool: pool[role] = []
+        if header_val not in pool[role]:
+            pool[role].append(header_val)
+            changed = True
+
+    return changed
+
+
+class CsvFormatHandler(BaseFormatHandler):
+    format_id = "csv"
+    extensions = ['.csv']
+    format_type = "translation"
+    display_name = _("CSV Table File")
+    badge_text = "CSV"
+    badge_bg_color = "#E8F5E9"
+    badge_text_color = "#2E7D32"
+
+    def load(self, filepath, **kwargs):
+        app = kwargs.get('app_instance')
+        if not app: raise ValueError("App instance required for CSV mapping.")
+
+        with open(filepath, 'r', encoding='utf-8-sig', newline='') as f:
+            sample = f.read(4096)
+            f.seek(0)
+            try:
+                dialect = csv.Sniffer().sniff(sample)
+            except:
+                dialect = csv.excel
+
+            reader = csv.reader(f, dialect)
+            rows = list(reader)
+
+        if not rows: return [], {}, 'en'
+
+        headers = rows[0]
+        data_rows = rows[1:]
+
+        # 1. 尝试猜测映射
+        mapping = _guess_column_mapping(headers, app.config)
+
+        # 2. 如果缺少原文列，或者强制交互，弹出对话框
+        if 'source' not in mapping:
+            from dialogs.column_mapper_dialog import ColumnMapperDialog
+            dialog = ColumnMapperDialog(app.main_window if hasattr(app, 'main_window') else app, headers, data_rows[:5],
+                                        mapping)
+            if dialog.exec():
+                mapping = dialog.result_mapping
+                if dialog.remember_choices:
+                    if _learn_column_mapping(headers, mapping, app.config):
+                        app.save_config()
+            else:
+                return [], {}, 'en'  # 用户取消
+
+        rel_path = kwargs.get('relative_path') or os.path.basename(filepath)
+        translatable_objects = []
+        occurrence_counters = {}
+
+        src_idx = mapping.get('source')
+        tgt_idx = mapping.get('target')
+        key_idx = mapping.get('key')
+        cmt_idx = mapping.get('comment')
+
+        for row_num, row in enumerate(data_rows, start=2):
+            if src_idx >= len(row): continue
+            source_text = row[src_idx].strip()
+            if not source_text: continue
+
+            target_text = row[tgt_idx].strip() if tgt_idx is not None and tgt_idx < len(row) else ""
+            key_text = row[key_idx].strip() if key_idx is not None and key_idx < len(row) else ""
+            comment_text = row[cmt_idx].strip() if cmt_idx is not None and cmt_idx < len(row) else ""
+
+            context = key_text or f"row_{row_num}"
+            counter_key = (source_text, context)
+            idx = occurrence_counters.get(counter_key, 0)
+            occurrence_counters[counter_key] = idx + 1
+
+            stable = f"{rel_path}::{context}::{source_text}::{idx}"
+            obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+            ts = TranslatableString(
+                original_raw=source_text, original_semantic=source_text,
+                line_num=row_num, char_pos_start_in_file=0, char_pos_end_in_file=0,
+                full_code_lines=[], string_type="CSV Row",
+                source_file_path=rel_path, occurrences=[(rel_path, str(row_num))],
+                occurrence_index=idx, id=obj_id
+            )
+            ts.translation = target_text
+            ts.context = context
+            ts.comment = comment_text
+            ts.po_comment = f"#: Row {row_num}"
+            ts.is_reviewed = False
+            ts.update_sort_weight()
+            translatable_objects.append(ts)
+
+        metadata = {
+            'mapping': mapping,
+            'dialect': {
+                'delimiter': dialect.delimiter,
+                'quotechar': dialect.quotechar,
+                'lineterminator': dialect.lineterminator
+            }
+        }
+        return translatable_objects, metadata, 'en'
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        mapping = metadata.get('mapping', {})
+        tgt_idx = mapping.get('target')
+
+        # 如果没有目标列，我们需要在末尾追加一列
+        append_target = False
+        if tgt_idx is None:
+            append_target = True
+
+        dialect_info = metadata.get('dialect', {})
+
+        # 读取原始数据
+        with open(filepath, 'r', encoding='utf-8-sig', newline='') as f:
+            reader = csv.reader(f, delimiter=dialect_info.get('delimiter', ','),
+                                quotechar=dialect_info.get('quotechar', '"'))
+            rows = list(reader)
+
+        if not rows: return
+
+        if append_target:
+            tgt_idx = len(rows[0])
+            rows[0].append("Translation")  # 追加表头
+
+        # 建立行号映射
+        ts_map = {ts.line_num_in_file: ts for ts in translatable_objects if ts.id != "##NEW_ENTRY##"}
+
+        for row_num, row in enumerate(rows[1:], start=2):
+            ts = ts_map.get(row_num)
+            if ts:
+                trans_text = ts.translation if ts.translation else ts.original_semantic
+                if append_target:
+                    row.append(trans_text)
+                elif tgt_idx < len(row):
+                    row[tgt_idx] = trans_text
+                else:
+                    # 补齐长度
+                    row.extend([""] * (tgt_idx - len(row) + 1))
+                    row[tgt_idx] = trans_text
+
+        # 写回
+        with open(filepath, 'w', encoding='utf-8-sig', newline='') as f:
+            writer = csv.writer(f, delimiter=dialect_info.get('delimiter', ','),
+                                quotechar=dialect_info.get('quotechar', '"'),
+                                lineterminator=dialect_info.get('lineterminator', '\r\n'))
+            writer.writerows(rows)
+
+
+class XlsxFormatHandler(BaseFormatHandler):
+    format_id = "xlsx"
+    extensions = ['.xlsx']
+    format_type = "translation"
+    display_name = _("Excel Workbook")
+    badge_text = "XLSX"
+    badge_bg_color = "#E8F5E9"
+    badge_text_color = "#1B5E20"
+
+    def load(self, filepath, **kwargs):
+        try:
+            import openpyxl
+        except ImportError:
+            raise ImportError(
+                _("The 'openpyxl' library is required to read Excel files. Please install it via 'pip install openpyxl'."))
+
+        app = kwargs.get('app_instance')
+        if not app: raise ValueError("App instance required.")
+
+        wb = openpyxl.load_workbook(filepath, data_only=True)
+        ws = wb.active
+
+        rows = list(ws.iter_rows(values_only=True))
+        if not rows: return [], {}, 'en'
+
+        headers = [str(c) if c is not None else "" for c in rows[0]]
+        data_rows = rows[1:]
+
+        mapping = _guess_column_mapping(headers, app.config)
+
+        if 'source' not in mapping:
+            from dialogs.column_mapper_dialog import ColumnMapperDialog
+            dialog = ColumnMapperDialog(app.main_window if hasattr(app, 'main_window') else app, headers, data_rows[:5],
+                                        mapping)
+            if dialog.exec():
+                mapping = dialog.result_mapping
+                if dialog.remember_choices:
+                    if _learn_column_mapping(headers, mapping, app.config):
+                        app.save_config()
+            else:
+                return [], {}, 'en'
+
+        rel_path = kwargs.get('relative_path') or os.path.basename(filepath)
+        translatable_objects = []
+        occurrence_counters = {}
+
+        src_idx = mapping.get('source')
+        tgt_idx = mapping.get('target')
+        key_idx = mapping.get('key')
+        cmt_idx = mapping.get('comment')
+
+        for row_num, row in enumerate(data_rows, start=2):
+            if src_idx >= len(row) or row[src_idx] is None: continue
+            source_text = str(row[src_idx]).strip()
+            if not source_text: continue
+
+            target_text = str(row[tgt_idx]).strip() if tgt_idx is not None and tgt_idx < len(row) and row[
+                tgt_idx] is not None else ""
+            key_text = str(row[key_idx]).strip() if key_idx is not None and key_idx < len(row) and row[
+                key_idx] is not None else ""
+            comment_text = str(row[cmt_idx]).strip() if cmt_idx is not None and cmt_idx < len(row) and row[
+                cmt_idx] is not None else ""
+
+            context = key_text or f"row_{row_num}"
+            counter_key = (source_text, context)
+            idx = occurrence_counters.get(counter_key, 0)
+            occurrence_counters[counter_key] = idx + 1
+
+            stable = f"{rel_path}::{context}::{source_text}::{idx}"
+            obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+            ts = TranslatableString(
+                original_raw=source_text, original_semantic=source_text,
+                line_num=row_num, char_pos_start_in_file=0, char_pos_end_in_file=0,
+                full_code_lines=[], string_type="Excel Row",
+                source_file_path=rel_path, occurrences=[(rel_path, str(row_num))],
+                occurrence_index=idx, id=obj_id
+            )
+            ts.translation = target_text
+            ts.context = context
+            ts.comment = comment_text
+            ts.po_comment = f"#: Row {row_num}"
+            ts.is_reviewed = False
+            ts.update_sort_weight()
+            translatable_objects.append(ts)
+
+        metadata = {'mapping': mapping, 'sheet_name': ws.title}
+        return translatable_objects, metadata, 'en'
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        import openpyxl
+        mapping = metadata.get('mapping', {})
+        tgt_idx = mapping.get('target')
+
+        wb = openpyxl.load_workbook(filepath)
+        ws = wb[metadata.get('sheet_name', wb.active.title)]
+
+        append_target = False
+        if tgt_idx is None:
+            append_target = True
+            tgt_idx = ws.max_column
+            ws.cell(row=1, column=tgt_idx + 1, value="Translation")
+
+        ts_map = {ts.line_num_in_file: ts for ts in translatable_objects if ts.id != "##NEW_ENTRY##"}
+
+        for row_num in range(2, ws.max_row + 1):
+            ts = ts_map.get(row_num)
+            if ts:
+                trans_text = ts.translation if ts.translation else ts.original_semantic
+                # openpyxl column index is 1-based
+                ws.cell(row=row_num, column=tgt_idx + 1, value=trans_text)
+
+        wb.save(filepath)
 
 
 class JavaPropertiesFormatHandler(BaseFormatHandler):
@@ -2315,7 +2729,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
 
     def _extract_frontmatter(
         self, content: str, rel_path: str,
-        results: List, counters: Dict, full_lines: List[str] # [FIX] 增加了此参数
+        results: List, counters: Dict, full_lines: List[str]
     ) -> Tuple[Dict, int]:
         """提取 YAML frontmatter 中的可翻译字段，返回 (字段dict, frontmatter结束位置)"""
         fm_end = 0
@@ -2709,17 +3123,23 @@ class FormatManager:
         filter_string = f"{prefix} ({all_ext_str});;" + ";;".join(filters) + f";;{_('All Files')} (*.*)"
         return filter_string
 
-
-
 FormatManager.register_handler(PoFormatHandler)
 FormatManager.register_handler(TsFormatHandler)
 FormatManager.register_handler(XliffFormatHandler)
+
 FormatManager.register_handler(AndroidStringsFormatHandler)
 FormatManager.register_handler(IosStringsFormatHandler)
 FormatManager.register_handler(ArbFormatHandler)
+
 FormatManager.register_handler(JsonI18nFormatHandler)
 FormatManager.register_handler(YamlI18nFormatHandler)
+FormatManager.register_handler(TomlFormatHandler)
+
 FormatManager.register_handler(JavaPropertiesFormatHandler)
 FormatManager.register_handler(ResxFormatHandler)
+
+FormatManager.register_handler(CsvFormatHandler)
+FormatManager.register_handler(XlsxFormatHandler)
+
 FormatManager.register_handler(OwCodeFormatHandler)
 FormatManager.register_handler(MarkdownFormatHandler)
