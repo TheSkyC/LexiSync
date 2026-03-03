@@ -306,7 +306,6 @@ class XliffFormatHandler(BaseFormatHandler):
             target_lang = file_elem.get('target-language', '')
             original_file = file_elem.get('original', '')
 
-            # [FIX] 查找 trans-unit 也要带前缀
             trans_units = file_elem.findall(f'.//{prefix}trans-unit', ns)
             for trans_unit in trans_units:
                 self._process_trans_unit(
@@ -2316,7 +2315,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
 
     def _extract_frontmatter(
         self, content: str, rel_path: str,
-        results: List, counters: Dict
+        results: List, counters: Dict, full_lines: List[str] # [FIX] 增加了此参数
     ) -> Tuple[Dict, int]:
         """提取 YAML frontmatter 中的可翻译字段，返回 (字段dict, frontmatter结束位置)"""
         fm_end = 0
@@ -2334,19 +2333,17 @@ class MarkdownFormatHandler(BaseFormatHandler):
             fm_text, re.MULTILINE
         ):
             indent_str, key, quote, value = fm_m.groups()
-            # 跳过已知非文本键
             if key.lower() in self._FRONTMATTER_SKIP_KEYS:
                 continue
-            # 跳过 URL / 路径
             if self._URL_RE.match(value.strip()):
                 continue
-            # 跳过数字和布尔值
             if re.match(r'^(?:true|false|null|\d[\d.,]*)$', value.strip(), re.I):
                 continue
             if value.strip():
                 self._make_ts(
                     value.strip(), f"frontmatter.{key}", rel_path,
                     results, counters,
+                    full_lines,
                     line_num=content[:m.start() + fm_m.start()].count('\n') + 1,
                     char_start=m.start(1) + fm_m.start(4),
                     char_end=m.start(1) + fm_m.end(4),
@@ -2356,19 +2353,19 @@ class MarkdownFormatHandler(BaseFormatHandler):
         return extracted, fm_end
 
     def _extract_body(
-        self, content: str, body_start: int,
-        skip_ranges: List[Tuple[int, int]],
-        rel_path: str, results: List, counters: Dict
+            self, content: str, body_start: int,
+            skip_ranges: List[Tuple[int, int]],
+            rel_path: str, results: List, counters: Dict,
+            full_lines: List[str]
     ):
         """逐行扫描文档正文，按语义单元提取"""
         lines = content[body_start:].split('\n')
-        abs_offset = body_start  # 当前行在整个文件中的字符偏移
+        abs_offset = body_start
 
         i = 0
         while i < len(lines):
             line = lines[i]
             line_abs_start = abs_offset
-            line_abs_end = abs_offset + len(line)
             line_num = content[:abs_offset].count('\n') + 1
 
             # 如果整行在禁区内，跳过
@@ -2378,27 +2375,35 @@ class MarkdownFormatHandler(BaseFormatHandler):
                 continue
 
             stripped = line.strip()
+            if not stripped:
+                abs_offset += len(line) + 1
+                i += 1
+                continue
 
-            # --- ATX 标题 ---
+            # --- 1. ATX 标题 ---
             atx_m = re.match(r'^(#{1,6})\s+(.*?)(?:\s+#+\s*)?$', stripped)
             if atx_m:
                 heading_text = atx_m.group(2).strip()
                 if heading_text:
                     level = len(atx_m.group(1))
-                    hash_prefix = atx_m.group(1) + ' '
-                    text_start = line_abs_start + line.index(hash_prefix) + len(hash_prefix)
+                    # 计算文本在文件中的精确起始位置
+                    hash_prefix = atx_m.group(1)
+                    # 找到第一个非空字符的位置
+                    text_rel_start = re.search(re.escape(heading_text), line).start()
+                    text_abs_start = line_abs_start + text_rel_start
                     self._make_ts(
                         heading_text, f"heading.h{level}", rel_path, results, counters,
+                        full_lines,
                         line_num=line_num,
-                        char_start=text_start,
-                        char_end=text_start + len(heading_text),
+                        char_start=text_abs_start,
+                        char_end=text_abs_start + len(heading_text),
                         string_type="MD Heading",
                     )
                 abs_offset += len(line) + 1
                 i += 1
                 continue
 
-            # --- Setext 标题（下一行是 === 或 ---）---
+            # --- 2. Setext 标题 ---
             if i + 1 < len(lines):
                 next_stripped = lines[i + 1].strip()
                 if re.match(r'^=+$', next_stripped) or re.match(r'^-+$', next_stripped):
@@ -2406,25 +2411,27 @@ class MarkdownFormatHandler(BaseFormatHandler):
                     if stripped:
                         self._make_ts(
                             stripped, f"heading.h{level}", rel_path, results, counters,
+                            full_lines,
                             line_num=line_num,
-                            char_start=line_abs_start,
-                            char_end=line_abs_start + len(stripped),
+                            char_start=line_abs_start + line.find(stripped),
+                            char_end=line_abs_start + line.find(stripped) + len(stripped),
                             string_type="MD Heading",
                         )
-                    # 跳过 Setext 下划线行
                     abs_offset += len(line) + 1 + len(lines[i + 1]) + 1
                     i += 2
                     continue
 
-            # --- 列表项 ---
+            # --- 3. 列表项 ---
             list_m = re.match(r'^([ \t]*)(?:[-*+]|\d+\.)\s+(.*)', line)
-            if list_m and stripped:
+            if list_m:
                 item_text = list_m.group(2).strip()
                 item_text_clean = self._strip_inline_code(item_text)
                 if item_text_clean and not self._URL_RE.match(item_text_clean):
-                    text_abs_start = line_abs_start + line.index(list_m.group(2))
+                    text_rel_start = line.find(list_m.group(2))
+                    text_abs_start = line_abs_start + text_rel_start
                     self._make_ts(
-                        item_text, f"list.item", rel_path, results, counters,
+                        item_text, "list.item", rel_path, results, counters,
+                        full_lines,
                         line_num=line_num,
                         char_start=text_abs_start,
                         char_end=text_abs_start + len(item_text),
@@ -2434,19 +2441,23 @@ class MarkdownFormatHandler(BaseFormatHandler):
                 i += 1
                 continue
 
-            # --- 块引用 ---
+            # --- 4. 块引用 ---
             if stripped.startswith('>'):
-                # 收集连续引用行
                 quote_lines = []
                 quote_start_offset = abs_offset
+                start_i = i
                 while i < len(lines) and lines[i].strip().startswith('>'):
-                    quote_lines.append(re.sub(r'^[ \t]*>+[ \t]?', '', lines[i]))
+                    # 移除开头的 > 符号
+                    content_part = re.sub(r'^[ \t]*>+[ \t]?', '', lines[i])
+                    quote_lines.append(content_part)
                     abs_offset += len(lines[i]) + 1
                     i += 1
+
                 quote_text = '\n'.join(quote_lines).strip()
-                if quote_text and not self._URL_RE.match(quote_text):
+                if quote_text and not self._URL_RE.match(self._strip_inline_code(quote_text)):
                     self._make_ts(
                         quote_text, "blockquote", rel_path, results, counters,
+                        full_lines,
                         line_num=line_num,
                         char_start=quote_start_offset,
                         char_end=abs_offset - 1,
@@ -2454,45 +2465,52 @@ class MarkdownFormatHandler(BaseFormatHandler):
                     )
                 continue
 
-            # --- GFM 表格行 ---
+            # --- 5. GFM 表格行 ---
             if '|' in stripped and not re.match(r'^\|?[ \t:|-]+\|', stripped):
+                # 简单的表格单元提取
                 cells = [c.strip() for c in stripped.strip('|').split('|')]
                 for cell in cells:
+                    if not cell: continue
                     cell_clean = self._strip_inline_code(cell)
                     if cell_clean and not self._URL_RE.match(cell_clean) and len(cell_clean) > 1:
+                        # 定位单元格在行中的位置
+                        cell_rel_start = line.find(cell)
                         self._make_ts(
                             cell, "table.cell", rel_path, results, counters,
+                            full_lines,
                             line_num=line_num,
-                            char_start=line_abs_start,
-                            char_end=line_abs_end,
+                            char_start=line_abs_start + cell_rel_start,
+                            char_end=line_abs_start + cell_rel_start + len(cell),
                             string_type="MD Table",
                         )
                 abs_offset += len(line) + 1
                 i += 1
                 continue
 
-            # --- 段落（连续非空行）---
-            if stripped and not stripped.startswith('#') and not stripped.startswith('```'):
-                para_lines = []
-                para_start_offset = abs_offset
-                para_start_line = line_num
-                while i < len(lines):
-                    cur_line = lines[i]
-                    cur_stripped = cur_line.strip()
-                    # 遇到空行、标题、代码块、列表、分隔线时结束段落
-                    if (not cur_stripped
-                            or cur_stripped.startswith('#')
-                            or cur_stripped.startswith('```')
-                            or cur_stripped.startswith('~~~')
-                            or re.match(r'^(?:[-*_]){3,}$', cur_stripped)
-                            or re.match(r'^(?:[-*+]|\d+\.)\s', cur_stripped)
-                            or cur_stripped.startswith('>')
-                            or self._in_skip_range(abs_offset, skip_ranges)):
-                        break
-                    para_lines.append(cur_line)
-                    abs_offset += len(cur_line) + 1
-                    i += 1
+            # --- 6. 段落（连续非空行）---
+            # 只有不满足上述所有条件的非空行才进入段落解析
+            para_lines = []
+            para_start_offset = abs_offset
+            para_start_line = line_num
+            while i < len(lines):
+                cur_line = lines[i]
+                cur_stripped = cur_line.strip()
+                # 检查是否遇到其他块的起始标识
+                if (not cur_stripped
+                        or cur_stripped.startswith('#')
+                        or cur_stripped.startswith('```')
+                        or cur_stripped.startswith('~~~')
+                        or re.match(r'^(?:[-*_]){3,}$', cur_stripped)
+                        or re.match(r'^(?:[-*+]|\d+\.)\s', cur_stripped)
+                        or cur_stripped.startswith('>')
+                        or self._in_skip_range(abs_offset, skip_ranges)):
+                    break
+                para_lines.append(cur_line)
+                abs_offset += len(cur_line) + 1
+                i += 1
 
+            if para_lines:
+                # 合并多行段落为单行文本（Markdown 渲染特性）
                 para_text = ' '.join(l.strip() for l in para_lines).strip()
                 para_text_clean = self._strip_inline_code(para_text)
 
@@ -2500,6 +2518,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
                         and not self._URL_RE.match(para_text_clean)):
                     self._make_ts(
                         para_text, "paragraph", rel_path, results, counters,
+                        full_lines,
                         line_num=para_start_line,
                         char_start=para_start_offset,
                         char_end=abs_offset - 1,
@@ -2534,7 +2553,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
             line_num=line_num,
             char_pos_start_in_file=char_start,
             char_pos_end_in_file=char_end,
-            full_code_lines=full_lines, # [CHANGED]
+            full_code_lines=full_lines,
             string_type=string_type,
             source_file_path=rel_path,
             occurrences=[(rel_path, str(line_num))],
