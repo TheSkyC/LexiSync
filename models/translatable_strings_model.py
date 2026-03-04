@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QSortFilterProxyModel, Signal, QObject
+from PySide6.QtGui import QColor
 from utils.localization import _
 
 NewlineColorRole = Qt.UserRole + 1
@@ -60,7 +61,8 @@ class TranslatableStringsModel(QAbstractTableModel):
                 return ts_obj.line_num_in_file
 
         elif role == Qt.BackgroundRole:
-            return ts_obj.ui_style_cache.get('background')
+            bg = ts_obj.ui_style_cache.get('background')
+            return bg if bg else QColor(Qt.transparent)
 
         elif role == Qt.ForegroundRole:
             return ts_obj.ui_style_cache.get('foreground')

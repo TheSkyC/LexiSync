@@ -1167,20 +1167,18 @@ class LexiSyncApp(QMainWindow):
             QTableView {
                 gridline-color: transparent;
                 alternate-background-color: rgba(247, 247, 247, 211);
+                outline: 0;
             }
             /* 被选择行 */
             QTableView::item:selected {
-                background-color: rgba(51, 153, 255, 45); /* 半透明蓝色背景 */
-                border: 1px solid (51, 153, 255, 145); /* 细边框 */
+                background-color: rgba(51, 153, 255, 45);
+                border: 1px solid rgba(51, 153, 255, 145); 
                 border-right: none;
                 border-left: none;
             }
-            /* 焦点行 */
-            QTableView::item:selected:focus, QTableView::item:focus {
-                background-color: rgba(51, 153, 255, 255); /* 半透明蓝色 */
-                border: 1px solid rgba(255, 0, 0, 200); /* 红色边框 */
+            QTableView::item:selected:focus {
+                background-color: rgba(51, 153, 255, 45);
             }
-
         """)
         self.table_view.setAlternatingRowColors(True)
         self.sheet_model = TranslatableStringsModel(self.translatable_objects, self)

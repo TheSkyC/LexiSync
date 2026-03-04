@@ -1,7 +1,7 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QStyledItemDelegate, QStyleOptionViewItem
+from PySide6.QtWidgets import QStyledItemDelegate, QStyleOptionViewItem, QStyle
 from PySide6.QtGui import QPainter, QColor, QPen, QFont
 from PySide6.QtCore import Qt, QModelIndex
 
@@ -21,6 +21,7 @@ class CustomCellDelegate(QStyledItemDelegate):
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
         display_option = QStyleOptionViewItem(option)
+        display_option.state &= ~QStyle.State_HasFocus
         original_text = index.data(Qt.DisplayRole)
         text_to_draw = str(original_text) if original_text is not None else ""
         if index.column() in [2, 3] and '\n' in text_to_draw:
