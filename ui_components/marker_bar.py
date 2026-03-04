@@ -28,6 +28,10 @@ class MarkerBar(QWidget):
         self._point_markers = defaultdict(list)
         self._range_markers = defaultdict(list)
 
+        self.point_track_width = 0
+        self.range_track_width = 0
+        self.range_track_x = 0
+
         self._marker_configs = {
             # Point Markers (drawn on the left track)
             'error': {'color': QColor(237, 28, 36, 200), 'priority': 10, 'label': _("Error")},
@@ -53,6 +57,11 @@ class MarkerBar(QWidget):
         if self.table_view and self.table_view.verticalScrollBar():
             self.table_view.verticalScrollBar().valueChanged.connect(self.update)
             self.table_view.verticalScrollBar().rangeChanged.connect(self._invalidate_cache)
+
+    def _update_layout_metrics(self):
+        self.point_track_width = int(self.width() * 0.6)
+        self.range_track_width = self.width() - self.point_track_width
+        self.range_track_x = self.point_track_width
 
     def set_proxy_model(self, proxy_model):
         self.proxy_model = proxy_model
@@ -271,7 +280,13 @@ class MarkerBar(QWidget):
         self._cached_points = [{'y': y, **data} for y, data in pixel_map.items()]
         self._cache_valid = True
 
+    def resizeEvent(self, event):
+        self._update_layout_metrics()
+        super().resizeEvent(event)
+
     def paintEvent(self, event):
+        self._update_layout_metrics()
+
         painter = QPainter(self)
         painter.fillRect(self.rect(), self.palette().window())
 
