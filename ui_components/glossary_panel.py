@@ -60,13 +60,17 @@ class GlossaryPanel(QWidget):
         self.glossary_list.setStyleSheet("""
             QListWidget {
                 border: none;
+                outline: 0;
+            }
+            QListWidget::item {
+                padding: 2px 5px;
             }
             QListWidget::item:selected {
-                background-color: #E8E8E8; /* 淡灰色背景 */
-                color: black; /* 确保文字颜色是黑色 */
+                background-color: #E8E8E8;
+                color: black;
             }
             QListWidget::item:hover {
-                background-color: #F0F0F0; /* 悬停时更淡的灰色 */
+                background-color: #F0F0F0;
             }
         """)
 

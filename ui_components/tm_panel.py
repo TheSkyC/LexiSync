@@ -27,6 +27,14 @@ class TMPanel(QWidget):
         self.tm_suggestions_listbox.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.tm_suggestions_listbox.itemDoubleClicked.connect(self._on_tm_suggestion_double_click)
         self.tm_suggestions_listbox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.tm_suggestions_listbox.setStyleSheet("""
+            QListWidget {
+                outline: 0; 
+            }
+            QListWidget::item {
+                padding: 2px 5px;
+            }
+        """)
         layout.addWidget(self.tm_suggestions_listbox)
 
         tm_actions_frame = QWidget()
