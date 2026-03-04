@@ -4551,6 +4551,10 @@ class LexiSyncApp(QMainWindow):
         self.mark_modified()
         if self.current_selected_ts_id == ts_obj.id:
             if hasattr(self, 'details_panel'):
+                self.details_panel.translation_edit_text.blockSignals(True)
+                self.details_panel.translation_edit_text.setPlainText(processed_translation)
+                self.details_panel.translation_edit_text.blockSignals(False)
+
                 self.details_panel.update_warnings(ts_obj)
                 self.details_panel.update_fuzzy_status(ts_obj.is_fuzzy)
         return processed_translation, True
