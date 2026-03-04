@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QLineEdit,
                                QMessageBox, QApplication, QLabel, QWidget)
 from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QAction, QIcon
+from ui_components.banner_overlay import BannerOverlay
 from utils.localization import _
 from utils.constants import SUPPORTED_LANGUAGES
 from utils.path_utils import get_resource_path
@@ -112,35 +113,19 @@ class AddGlossaryEntryDialog(QDialog):
         self._picker_mode = 'source' if is_source else 'target'
 
         if not self._picker_banner:
-            self._picker_banner = QLabel(self.app.details_panel)
-            self._picker_banner.setStyleSheet("""
-                QLabel {
-                    background-color: rgba(255, 193, 7, 230);
-                    color: #333;
-                    font-weight: bold;
-                    padding: 8px;
-                    border-radius: 4px;
-                    border: 1px solid #E6A23C;
-                }
-            """)
-            self._picker_banner.setAlignment(Qt.AlignCenter)
+            self._picker_banner = BannerOverlay(self.app.details_panel)
 
         side_text = _("Original") if is_source else _("Translation")
-        self._picker_banner.setText(
-            _("Picker Mode: Select text in the {side} box... (Press ESC to cancel)").format(
-                side=side_text))
+        msg = _("Picker Mode: Select text in the {side} box... (Press ESC or click elsewhere to cancel)").format(
+            side=side_text)
 
-        dp = self.app.details_panel
-
-        banner_height = 40
-        margin = 5
-
-        self._picker_banner.resize(dp.width() - (margin * 2), banner_height)
-
-        self._picker_banner.move(margin, dp.height() - banner_height - margin)
-
-        self._picker_banner.show()
-        self._picker_banner.raise_()
+        self._picker_banner.show_message(
+            msg,
+            preset="warning",
+            layout_mode="bottom",
+            margin=5,
+            fixed_height=36
+        )
 
         QApplication.instance().installEventFilter(self)
 
@@ -177,12 +162,8 @@ class AddGlossaryEntryDialog(QDialog):
     def _exit_picker_mode(self):
         self._picker_mode = None
         if self._picker_banner:
-            self._picker_banner.hide()
+            self._picker_banner.hide_banner()
         QApplication.instance().removeEventFilter(self)
-
-    def closeEvent(self, event):
-        self._exit_picker_mode()
-        super().closeEvent(event)
 
     def _populate_lang_combos(self):
         for name, code in sorted(SUPPORTED_LANGUAGES.items()):
@@ -199,6 +180,8 @@ class AddGlossaryEntryDialog(QDialog):
         }
 
     def accept(self):
+        self._exit_picker_mode()
+
         data = self.get_data()
         if not data['source_term'] or not data['target_term']:
             QMessageBox.warning(self, _("Missing Information"), _("Source term and target term cannot be empty."))
@@ -207,3 +190,11 @@ class AddGlossaryEntryDialog(QDialog):
             QMessageBox.warning(self, _("Invalid Languages"), _("Source and target languages cannot be the same."))
             return
         super().accept()
+
+    def reject(self):
+        self._exit_picker_mode()
+        super().reject()
+
+    def closeEvent(self, event):
+        self._exit_picker_mode()
+        super().closeEvent(event)

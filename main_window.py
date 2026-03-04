@@ -46,7 +46,7 @@ from ui_components.elided_label import ElidedLabel
 from ui_components.file_explorer_panel import FileExplorerPanel
 from ui_components.tm_panel import TMPanel
 from ui_components.glossary_panel import GlossaryPanel
-from ui_components.drop_overlay import DropOverlay
+from ui_components.banner_overlay import BannerOverlay
 from ui_components.marker_bar import MarkerBar
 from ui_components.styled_button import StyledButton
 from ui_components.scrollable_menu_list import ScrollableRecentFileList
@@ -95,6 +95,7 @@ from utils.enums import WarningType, AIOperationType
 from utils.localization import _, lang_manager
 from utils.text_utils import get_linguistic_length, generate_ngrams
 from utils.path_utils import get_app_data_path
+
 
 logger = logging.getLogger(__name__)
 
@@ -333,7 +334,7 @@ class LexiSyncApp(QMainWindow):
         self._setup_statusbar()
         self._setup_dock_widgets()
         self._setup_keybindings()
-        self.drop_overlay = DropOverlay(self.centralWidget())
+        self.drop_overlay = BannerOverlay(self.centralWidget())
 
     def _setup_toolbars(self):
         self.project_toolbar = self.addToolBar(_("Project"))
@@ -2164,46 +2165,64 @@ class LexiSyncApp(QMainWindow):
         mime_data = event.mimeData()
         if mime_data.hasUrls() and all(url.isLocalFile() for url in mime_data.urls()):
             event.acceptProposedAction()
-            self.drop_overlay.show()  # 显示蒙版
+            self.drop_overlay.show()
         else:
             event.ignore()
 
-    def dragLeaveEvent(self, event):
-        self.drop_overlay.hide()
-
     def dragMoveEvent(self, event: QDragMoveEvent):
-        self.drop_target_widget = None
         pos = event.position().toPoint()
         global_pos = self.mapToGlobal(pos)
-        if self.table_view.rect().contains(self.table_view.mapFromGlobal(global_pos)):
-            self.drop_target_widget = self.table_view
-            message = _("Add as Source File") if self.is_project_mode else _("Open for Quick Edit")
-            self.drop_overlay.show_message(message)
-        elif self.glossary_dock.isVisible() and self.glossary_dock.rect().contains(self.glossary_dock.mapFromGlobal(global_pos)):
-            self.drop_target_widget = self.glossary_panel
-            message = _("Import to Project Glossary") if self.is_project_mode else _("Import to Global Glossary")
-            self.drop_overlay.show_message(message)
-        elif self.tm_dock.isVisible() and self.tm_dock.rect().contains(self.tm_dock.mapFromGlobal(global_pos)):
-            self.drop_target_widget = self.tm_panel
-            message = _("Import to Project TM") if self.is_project_mode else _("Import to Global TM")
-            self.drop_overlay.show_message(message)
-        elif self.file_explorer_dock.isVisible() and self.file_explorer_dock.rect().contains(self.file_explorer_dock.mapFromGlobal(global_pos)):
-            self.drop_target_widget = self.file_explorer_panel
-            message = _("Open or Set as Root")
-            self.drop_overlay.show_message(message)
-        else:
-            self.drop_overlay.show_message(_("Unsupported Area"))
 
-        event.accept()
+        target_widget = None
+        message = _("Unsupported Area")
+        preset = "drop"
+
+        if self.table_view.rect().contains(self.table_view.mapFromGlobal(global_pos)):
+            target_widget = self.table_view
+            message = _("Add as Source File") if self.is_project_mode else _("Open for Quick Edit")
+
+        elif self.glossary_dock.isVisible() and self.glossary_dock.rect().contains(
+                self.glossary_dock.mapFromGlobal(global_pos)):
+            target_widget = self.glossary_panel
+            message = _("Import to Project Glossary") if self.is_project_mode else _("Import to Global Glossary")
+
+        elif self.tm_dock.isVisible() and self.tm_dock.rect().contains(self.tm_dock.mapFromGlobal(global_pos)):
+            target_widget = self.tm_panel
+            message = _("Import to Project TM") if self.is_project_mode else _("Import to Global TM")
+
+        elif self.file_explorer_dock.isVisible() and self.file_explorer_dock.rect().contains(
+                self.file_explorer_dock.mapFromGlobal(global_pos)):
+            target_widget = self.file_explorer_panel
+            message = _("Open or Set as Root")
+
+        if target_widget:
+            if self.drop_overlay.parent() != target_widget:
+                self.drop_overlay.set_target(target_widget)
+
+            # 显示横幅
+            self.drop_overlay.show_message(
+                message,
+                preset=preset,
+                layout_mode="fill"
+            )
+            event.accept()
+        else:
+            self.drop_overlay.hide_banner()
+            event.ignore()
+
+    def dragLeaveEvent(self, event):
+        self.drop_overlay.hide_banner()
+        super().dragLeaveEvent(event)
 
     def dropEvent(self, event: QDropEvent):
-        self.drop_overlay.hide()
+        self.drop_overlay.hide_banner()
+        current_target = self.drop_overlay.parent()
 
         filepath = event.mimeData().urls()[0].toLocalFile()
         if not filepath:
             return
 
-        if self.drop_target_widget is self.table_view:
+        if current_target is self.table_view:
             if self.is_project_mode:
                 reply = QMessageBox.question(
                     self,
@@ -2224,13 +2243,13 @@ class LexiSyncApp(QMainWindow):
                 if self.prompt_save_if_modified():
                     self.open_file_by_path(filepath)
 
-        elif self.drop_target_widget is self.glossary_panel:
+        elif current_target is self.glossary_panel:
             if not filepath.lower().endswith('.tbx'):
                 QMessageBox.warning(self, _("Invalid File"), _("Only .tbx files can be imported into the glossary."))
                 return
             self._trigger_glossary_import(filepath, is_project_import=self.is_project_mode)
 
-        elif self.drop_target_widget is self.tm_panel:
+        elif current_target is self.tm_panel:
             if not filepath.lower().endswith('.xlsx'):
                 QMessageBox.warning(self, _("Invalid File"),
                                     _("Only .xlsx files can be imported into the TM."))
@@ -2238,7 +2257,8 @@ class LexiSyncApp(QMainWindow):
             self.settings_dialog_instance = SettingsDialog(self)
             tm_page = self.settings_dialog_instance.pages.get(_("Global Resources")).tm_tab
             tm_page.import_tm_file(filepath)
-        elif self.drop_target_widget is self.file_explorer_panel:
+
+        elif current_target is self.file_explorer_panel:
             if os.path.isdir(filepath):
                 if os.path.exists(os.path.join(filepath, "project.json")):
                     if self.prompt_save_if_modified():
