@@ -133,21 +133,23 @@ class FileFilterProxyModel(QSortFilterProxyModel):
             return True
 
     def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.ForegroundRole or role == Qt.FontRole:
-            source_index = self.mapToSource(index)
-            file_info = self.sourceModel().fileInfo(source_index)
+        if role != Qt.ForegroundRole and role != Qt.FontRole:
+            return super().data(index, role)
 
-            if file_info.isDir():
-                path = file_info.absoluteFilePath()
-                is_project = self._is_project_folder(path)
+        source_index = self.mapToSource(index)
+        file_info = self.sourceModel().fileInfo(source_index)
 
-                if is_project:
-                    if role == Qt.ForegroundRole:
-                        return QColor("#0277BD")
-                    if role == Qt.FontRole:
-                        font = QFont()
-                        font.setBold(True)
-                        return font
+        if file_info.isDir():
+            path = file_info.absoluteFilePath()
+            is_project = self._is_project_folder(path)
+
+            if is_project:
+                if role == Qt.ForegroundRole:
+                    return QColor("#0277BD")
+                if role == Qt.FontRole:
+                    font = QFont()
+                    font.setBold(True)
+                    return font
 
         return super().data(index, role)
 

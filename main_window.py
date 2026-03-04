@@ -251,6 +251,12 @@ class LexiSyncApp(QMainWindow):
         self.file_explorer_panel.file_double_clicked.connect(self.open_file_from_explorer)
         self.file_explorer_panel.open_project_requested.connect(self.open_project)
 
+        self._counts_cache = {
+            'displayed': 0, 'total': 0,
+            'translated': 0, 'untranslated': 0, 'ignored': 0
+        }
+        self._counts_dirty = True # 标记是否需要重新计算
+
         last_path = self.config.get('last_file_explorer_path')
         if last_path and os.path.isdir(last_path):
             self.file_explorer_panel.set_root_path(last_path)
@@ -1574,16 +1580,28 @@ class LexiSyncApp(QMainWindow):
         untranslated_visible = 0
         ignored_visible = 0
 
-        for i in range(self.proxy_model.rowCount()):
-            index = self.proxy_model.index(i, 0)
-            ts_obj = self.proxy_model.data(index, Qt.UserRole)
-            if ts_obj:
-                if ts_obj.is_ignored:
-                    ignored_visible += 1
-                elif ts_obj.translation.strip():
-                    translated_visible += 1
-                else:
-                    untranslated_visible += 1
+        source_model = self.proxy_model.sourceModel()
+        if source_model:
+            source_data = source_model._data
+
+            # 遍历代理模型的行
+            for i in range(displayed_count):
+                # 获取代理索引
+                proxy_index = self.proxy_model.index(i, 0)
+                # 映射到源索引
+                source_index = self.proxy_model.mapToSource(proxy_index)
+
+                if source_index.isValid():
+                    row = source_index.row()
+                    if 0 <= row < len(source_data):
+                        ts_obj = source_data[row]
+
+                        if ts_obj.is_ignored:
+                            ignored_visible += 1
+                        elif ts_obj.translation.strip():
+                            translated_visible += 1
+                        else:
+                            untranslated_visible += 1
 
         self.counts_label.setText(
             _("Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}").format(
@@ -4355,7 +4373,7 @@ class LexiSyncApp(QMainWindow):
         else:
             self.update_statusbar(_("Selected item(s) already have the desired warning status."))
 
-        self._update_view_for_ids(changed_ids)
+        self._update_view_for_ids(changed_ids, skip_validation=True)
         if self.current_selected_ts_id in changed_ids:
             ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
             if ts_obj:
@@ -4705,7 +4723,7 @@ class LexiSyncApp(QMainWindow):
         self.mark_modified()
         return True
 
-    def _update_view_for_ids(self, changed_ids: set):
+    def _update_view_for_ids(self, changed_ids: set, skip_validation=False):
         if not changed_ids:
             return
 
@@ -4718,16 +4736,18 @@ class LexiSyncApp(QMainWindow):
         for ts_id in changed_ids:
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if ts_obj:
-                # 2. 重新验证
-                validate_string(ts_obj, self.config, self)
+                # 重新验证
+                if not skip_validation:
+                    validate_string(ts_obj, self.config, self)
+
                 ts_obj.update_style_cache()
 
-                # 3. 记录新状态
+                # 记录新状态
                 has_error = bool(ts_obj.warnings and not ts_obj.is_warning_ignored)
                 has_warning = bool(ts_obj.minor_warnings and not ts_obj.is_warning_ignored)
                 has_info = bool(ts_obj.infos and not ts_obj.is_warning_ignored)
 
-                # 4. 收集 Marker 变更
+                # 收集 Marker 变更
                 if self.marker_bar:
                     source_index = self.sheet_model.index_from_id(ts_obj.id)
                     if source_index.isValid():
@@ -4748,7 +4768,7 @@ class LexiSyncApp(QMainWindow):
                     last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
                     self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
 
-        # 5. 批量应用 Marker 变更
+        # 批量应用 Marker 变更
         if self.marker_bar:
             for m_type, rows in markers_to_remove.items():
                 for r in rows: self.marker_bar.remove_marker(m_type, r)
@@ -6437,7 +6457,7 @@ class LexiSyncApp(QMainWindow):
             self.mark_modified()
             self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
 
-            self._update_view_for_ids(changed_ids)
+            self._update_view_for_ids(changed_ids, skip_validation=True)
 
     def cm_set_reviewed_status(self, reviewed_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()
@@ -6464,7 +6484,7 @@ class LexiSyncApp(QMainWindow):
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.mark_modified()
             self.update_statusbar(_("{count} items' review status updated.").format(count=len(changed_ids)))
-            self._update_view_for_ids(changed_ids)
+            self._update_view_for_ids(changed_ids, skip_validation=True)
 
             if self.current_selected_ts_id in changed_ids:
                 self.force_refresh_ui_for_current_selection()
@@ -6490,7 +6510,7 @@ class LexiSyncApp(QMainWindow):
             self.mark_modified()
             self.update_statusbar(_("{count} items' ignore status updated.").format(count=len(bulk_changes)))
 
-            self._update_view_for_ids(changed_ids)
+            self._update_view_for_ids(changed_ids, skip_validation=True)
 
     def cm_toggle_reviewed_status(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()
@@ -6516,7 +6536,8 @@ class LexiSyncApp(QMainWindow):
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.mark_modified()
-            self._update_view_for_ids(changed_ids)
+
+            self._update_view_for_ids(changed_ids, skip_validation=True)
 
             if self.current_selected_ts_id in changed_ids:
                 self.force_refresh_ui_for_current_selection()
@@ -6559,7 +6580,8 @@ class LexiSyncApp(QMainWindow):
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.mark_modified()
-            self._update_view_for_ids(changed_ids)
+
+            self._update_view_for_ids(changed_ids, skip_validation=True)
 
             if self.current_selected_ts_id in changed_ids:
                 self.force_refresh_ui_for_current_selection()
