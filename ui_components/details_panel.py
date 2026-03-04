@@ -298,6 +298,9 @@ class DetailsPanel(QWidget):
         self.tooltip = Tooltip(self)
         self._ui_initialized = True
 
+        self.original_text_display.add_to_glossary_requested.connect(lambda: self.app_instance.add_glossary_entry(from_editor=True))
+        self.translation_edit_text.add_to_glossary_requested.connect(lambda: self.app_instance.add_glossary_entry(from_editor=True))
+
     def eventFilter(self, obj, event):
         if obj == self.warning_text_label:
             if event.type() == QEvent.Enter:

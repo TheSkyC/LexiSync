@@ -1636,12 +1636,14 @@ class LexiSyncApp(QMainWindow):
         else:
             self.progress_bar.setVisible(False)
 
-    def add_glossary_entry(self):
+    def add_glossary_entry(self, from_editor=False):
         if hasattr(self, '_add_glossary_dialog') and self._add_glossary_dialog:
             try:
                 if self._add_glossary_dialog.isVisible():
                     self._add_glossary_dialog.raise_()
                     self._add_glossary_dialog.activateWindow()
+                    if from_editor:
+                        self._add_glossary_dialog.auto_fill_from_editors()
                     return
             except RuntimeError:
                 self._add_glossary_dialog = None
@@ -1649,12 +1651,25 @@ class LexiSyncApp(QMainWindow):
         source_lang = self.source_language
         target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
 
-        self._add_glossary_dialog = AddGlossaryEntryDialog(self, default_source_lang=source_lang,
+        self._add_glossary_dialog = AddGlossaryEntryDialog(self, app_instance=self, default_source_lang=source_lang,
                                                            default_target_lang=target_lang)
 
         self._add_glossary_dialog.accepted.connect(self._on_glossary_entry_added)
 
+        if from_editor:
+            self._add_glossary_dialog.auto_fill_from_editors()
+
         self._add_glossary_dialog.show()
+
+        if from_editor:
+            self._add_glossary_dialog.adjustSize()
+            from PySide6.QtCore import QPoint
+            details_global_pos = self.details_dock.mapToGlobal(QPoint(0, 0))
+            x = details_global_pos.x() + (self.details_dock.width() - self._add_glossary_dialog.width()) // 2
+            y = details_global_pos.y() - self._add_glossary_dialog.height()
+            if y < 0: y = 0
+            self._add_glossary_dialog.move(x, y)
+
 
     def _on_glossary_entry_added(self):
         if not hasattr(self, '_add_glossary_dialog') or not self._add_glossary_dialog:

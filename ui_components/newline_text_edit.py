@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
-from PySide6.QtWidgets import QTextEdit, QMessageBox
-from PySide6.QtGui import QPainter, QColor, QFont, QTextCursor, QFontMetricsF
-from PySide6.QtCore import Qt, QPoint, QMimeData
+from PySide6.QtWidgets import QTextEdit, QMessageBox, QMenu
+from PySide6.QtGui import QPainter, QColor, QFont, QTextCursor, QFontMetricsF, QAction
+from PySide6.QtCore import Qt, QPoint, QMimeData, Signal
 from .tooltip import Tooltip
 from utils.localization import _
 import logging
@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class NewlineTextEdit(QTextEdit):
+    add_to_glossary_requested = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.newline_symbol = "↵"
@@ -26,6 +28,17 @@ class NewlineTextEdit(QTextEdit):
         self._last_hovered_term = None
 
         self._update_tab_width()
+
+    def contextMenuEvent(self, event):
+        menu = self.createStandardContextMenu()
+        add_action = QAction(_("Add to Glossary..."), self)
+        add_action.triggered.connect(self.add_to_glossary_requested.emit)
+
+        first_action = menu.actions()[0] if menu.actions() else None
+        menu.insertAction(first_action, add_action)
+        menu.insertSeparator(first_action)
+
+        menu.exec(event.globalPos())
 
     def _update_tab_width(self):
         metrics = QFontMetricsF(self.font())
