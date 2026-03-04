@@ -46,6 +46,7 @@ from ui_components.elided_label import ElidedLabel
 from ui_components.file_explorer_panel import FileExplorerPanel
 from ui_components.tm_panel import TMPanel
 from ui_components.glossary_panel import GlossaryPanel
+from ui_components.history_panel import HistoryPanel
 from ui_components.banner_overlay import BannerOverlay
 from ui_components.marker_bar import MarkerBar
 from ui_components.styled_button import StyledButton
@@ -249,12 +250,17 @@ class LexiSyncApp(QMainWindow):
         self.UI_initialization()
         self.file_explorer_panel.file_double_clicked.connect(self.open_file_from_explorer)
         self.file_explorer_panel.open_project_requested.connect(self.open_project)
+
         last_path = self.config.get('last_file_explorer_path')
         if last_path and os.path.isdir(last_path):
             self.file_explorer_panel.set_root_path(last_path)
         ExpansionRatioService.initialize()
+
         if hasattr(self, 'details_panel'):
             self.details_panel.translation_edit_text.paste_protection_enabled = self.config.get('paste_protection_enabled', True)
+
+        self._state_restored = False
+
         QTimer.singleShot(100, self.prewarm_dependencies)
         if hasattr(self, 'plugin_manager'):
             QTimer.singleShot(0, lambda: self.plugin_manager.run_hook('on_app_ready'))
@@ -283,7 +289,7 @@ class LexiSyncApp(QMainWindow):
         self.update_ai_related_ui_state()
         self.update_counts_display()
         self.update_recent_files_menu()
-        self.restore_window_state()
+
         if hasattr(self, 'project_toolbar'):
             self.project_toolbar.setVisible(False)
 
@@ -1304,6 +1310,10 @@ class LexiSyncApp(QMainWindow):
         self.comment_status_panel = CommentStatusPanel(self)
         self.glossary_panel = GlossaryPanel(self)
         self.file_explorer_panel = FileExplorerPanel(self, self)
+        self.history_panel = HistoryPanel(self)
+        self.history_panel.jump_requested.connect(self._jump_history)
+        self.history_panel.clear_requested.connect(self._clear_history)
+        self.history_panel.revert_to_requested.connect(self._revert_history)
 
         # 2. Create Docks and Add to Window
         # File Explorer
@@ -1353,6 +1363,16 @@ class LexiSyncApp(QMainWindow):
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.comment_status_dock.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.addDockWidget(Qt.RightDockWidgetArea, self.comment_status_dock)
+
+        # History
+        self.history_dock = QDockWidget(_("History"), self)
+        self.history_dock.setObjectName("historyDock")
+        self.history_dock.setWidget(self.history_panel)
+        self.history_dock.setFloating(True)
+        self.history_dock.resize(300, 500)
+        self.history_dock.setVisible(False)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.history_dock)
+        self.history_dock.hide()
 
         # Load Plugin Docks
         if hasattr(self, 'plugin_manager'):
@@ -1453,6 +1473,11 @@ class LexiSyncApp(QMainWindow):
         self.action_toggle_comment_status_panel.setText(_("Comment && Status"))
         self.panels_menu.addAction(self.action_toggle_comment_status_panel)
 
+        # History Panel Action
+        self.action_toggle_history_panel = self.history_dock.toggleViewAction()
+        self.action_toggle_history_panel.setText(_("History Panel"))
+        self.panels_menu.addAction(self.action_toggle_history_panel)
+
         if self.default_window_state is None:
             self.default_window_state = self.saveState()
 
@@ -1465,7 +1490,7 @@ class LexiSyncApp(QMainWindow):
         if self.default_window_state:
             self.restoreState(self.default_window_state)
 
-        docks_to_show = [
+        docks_to_show =[
             self.file_explorer_dock, self.glossary_dock, self.details_dock,
             self.context_dock, self.tm_dock, self.comment_status_dock
         ]
@@ -1473,6 +1498,10 @@ class LexiSyncApp(QMainWindow):
         for dock in docks_to_show:
             if dock:
                 dock.setVisible(True)
+
+        if hasattr(self, 'history_dock'):
+            self.history_dock.hide()
+            self.history_dock.setFloating(True)
 
         main_width = self.size().width()
         main_height = self.size().height()
@@ -1745,28 +1774,233 @@ class LexiSyncApp(QMainWindow):
             self.is_modified = modified
             self.update_title()
 
-    def add_to_undo_history(self, action_type, data):
-        self.undo_history.append({'type': action_type, 'data': deepcopy(data)})
+    def _generate_history_meta(self, action_type, data):
+        desc = _("Unknown Action")
+        icon = "layers.svg"
+
+        if action_type == 'single_change':
+            field = data.get('field', '')
+            if field == 'translation':
+                desc = _("Manual Translation Edit")
+                icon = "pencil.svg"
+            elif field == 'comment':
+                desc = _("Edit Comment")
+                icon = "pencil.svg"
+            else:
+                desc = _("Edit {field}").format(field=field)
+                icon = "pencil.svg"
+        elif action_type == 'bulk_change':
+            count = len(data.get('changes', []))
+            desc = _("Batch Update ({count} items)").format(count=count)
+            icon = "layers.svg"
+        elif action_type == 'bulk_ai_translate':
+            count = len(data.get('changes', []))
+            desc = _("AI Translation ({count} items)").format(count=count)
+            icon = "feather.svg"
+        elif action_type == 'bulk_excel_import':
+            count = len(data.get('changes', []))
+            desc = _("Excel Import ({count} items)").format(count=count)
+            icon = "database.svg"
+        elif action_type == 'bulk_context_menu':
+            count = len(data.get('changes', []))
+            desc = _("Batch Status Change ({count} items)").format(count=count)
+            icon = "layers.svg"
+        elif action_type == 'bulk_replace_all':
+            count = len(data.get('changes', []))
+            desc = _("Replace All ({count} items)").format(count=count)
+            icon = "layers.svg"
+        return desc, icon
+
+    def add_to_undo_history(self, action_type, data, description=None, icon_type=None):
+        if not description or not icon_type:
+            gen_desc, gen_icon = self._generate_history_meta(action_type, data)
+            description = description or gen_desc
+            icon_type = icon_type or gen_icon
+
+        record = {
+            'type': action_type,
+            'data': deepcopy(data),
+            'timestamp': datetime.datetime.now().strftime("%H:%M:%S"),
+            'description': description,
+            'icon_type': icon_type,
+            'file_id': self.current_active_source_file_id
+        }
+
+        self.undo_history.append(record)
         if len(self.undo_history) > MAX_UNDO_HISTORY:
             self.undo_history.pop(0)
         self.redo_history.clear()
+
         self.action_undo.setEnabled(True)
         self.action_redo.setEnabled(False)
         self.mark_modified()
+        self._update_history_panel()
 
     def _find_ts_obj_by_id(self, obj_id):
-        for ts_obj in self.translatable_objects:
-            if ts_obj.id == obj_id:
-                return ts_obj
+        if self.is_project_mode:
+            # 项目模式下，数据源是 all_project_strings
+            index = self._id_to_index_map.get(obj_id)
+            if index is not None and index < len(self.all_project_strings):
+                return self.all_project_strings[index]
+        else:
+            # 单文件模式下，数据源是 translatable_objects
+            for ts_obj in self.translatable_objects:
+                if ts_obj.id == obj_id:
+                    return ts_obj
         return None
 
-    def undo_action(self):
+    def _do_undo_core(self):
+        if not self.undo_history:
+            return False, set()
+
+        action_log_peek = self.undo_history[-1]
+        target_file_id = action_log_peek.get('file_id')
+        if target_file_id and target_file_id != self.current_active_source_file_id:
+            self._switch_active_file(target_file_id)
+
+        action_to_undo = self.undo_history[-1]
+        was_handled_by_plugin = self.plugin_manager.run_hook(
+            'on_before_undo_redo',
+            action_type=action_to_undo['type'],
+            is_undo=True,
+            action_data=action_to_undo['data']
+        )
+        if was_handled_by_plugin:
+            return False, set()
+
+        action_log = self.undo_history.pop()
+        action_type, action_data = action_log['type'], action_log['data']
+        redo_payload_data = None
+        changed_ids = set()
+
+        if action_type == 'single_change':
+            obj_id = action_data['string_id']
+            field = action_data['field']
+            val_to_restore = action_data['old_value']
+
+            ts_obj = self._find_ts_obj_by_id(obj_id)
+            if ts_obj:
+                current_val_before_undo = getattr(ts_obj,
+                                                  field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
+                if field == 'translation':
+                    ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"))
+                else:
+                    setattr(ts_obj, field, val_to_restore)
+                redo_payload_data = {'string_id': obj_id, 'field': field, 'old_value': val_to_restore,
+                                     'new_value': current_val_before_undo}
+                changed_ids.add(obj_id)
+
+        elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu',
+                             'bulk_replace_all']:
+            temp_redo_changes = []
+            for item_change in action_data['changes']:
+                obj_id, field, val_to_restore = item_change['string_id'], item_change['field'], item_change['old_value']
+                ts_obj = self._find_ts_obj_by_id(obj_id)
+                if ts_obj:
+                    current_val_before_undo = getattr(ts_obj,
+                                                      field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
+                    if field == 'translation':
+                        ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"))
+                    else:
+                        setattr(ts_obj, field, val_to_restore)
+                    temp_redo_changes.append({'string_id': obj_id, 'field': field, 'old_value': val_to_restore,
+                                              'new_value': current_val_before_undo})
+                    changed_ids.add(obj_id)
+            redo_payload_data = {'changes': temp_redo_changes}
+
+        if redo_payload_data:
+            redo_record = {
+                'type': action_type,
+                'data': redo_payload_data,
+                'timestamp': action_log.get('timestamp'),
+                'description': action_log.get('description'),
+                'icon_type': action_log.get('icon_type'),
+                'file_id': action_log.get('file_id')
+            }
+            self.redo_history.append(redo_record)
+
+        return True, changed_ids
+
+    def _do_redo_core(self):
+        if not self.redo_history:
+            return False, set()
+
+        action_log_peek = self.redo_history[-1]
+        target_file_id = action_log_peek.get('file_id')
+        if target_file_id and target_file_id != self.current_active_source_file_id:
+            self._switch_active_file(target_file_id)
+
+        action_to_redo = self.redo_history[-1]
+        was_handled_by_plugin = self.plugin_manager.run_hook(
+            'on_before_undo_redo',
+            action_type=action_to_redo['type'],
+            is_undo=False,
+            action_data=action_to_redo['data']
+        )
+        if was_handled_by_plugin:
+            return False, set()
+
+        action_log = self.redo_history.pop()
+        action_type, action_data_to_apply = action_log['type'], action_log['data']
+        undo_payload_data = None
+        changed_ids = set()
+
+        if action_type == 'single_change':
+            obj_id = action_data_to_apply['string_id']
+            field = action_data_to_apply['field']
+            val_to_set = action_data_to_apply['new_value']
+
+            ts_obj = self._find_ts_obj_by_id(obj_id)
+            if ts_obj:
+                current_val_before_redo = getattr(ts_obj,
+                                                  field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
+                if field == 'translation':
+                    ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"))
+                else:
+                    setattr(ts_obj, field, val_to_set)
+                undo_payload_data = {'string_id': obj_id, 'field': field, 'old_value': current_val_before_redo,
+                                     'new_value': val_to_set}
+                changed_ids.add(obj_id)
+
+        elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu',
+                             'bulk_replace_all']:
+            temp_undo_changes = []
+            for item_change in action_data_to_apply['changes']:
+                obj_id, field, val_to_set = item_change['string_id'], item_change['field'], item_change['new_value']
+                ts_obj = self._find_ts_obj_by_id(obj_id)
+                if ts_obj:
+                    current_val_before_redo = getattr(ts_obj,
+                                                      field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
+                    if field == 'translation':
+                        ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"))
+                    else:
+                        setattr(ts_obj, field, val_to_set)
+                    temp_undo_changes.append({'string_id': obj_id, 'field': field, 'old_value': current_val_before_redo,
+                                              'new_value': val_to_set})
+                    changed_ids.add(obj_id)
+            undo_payload_data = {'changes': temp_undo_changes}
+
+        if undo_payload_data:
+            undo_record = {
+                'type': action_type,
+                'data': undo_payload_data,
+                'timestamp': action_log.get('timestamp'),
+                'description': action_log.get('description'),
+                'icon_type': action_log.get('icon_type'),
+                'file_id': action_log.get('file_id')
+            }
+            self.undo_history.append(undo_record)
+            if len(self.undo_history) > MAX_UNDO_HISTORY:
+                self.undo_history.pop(0)
+
+        return True, changed_ids
+
+    def undo_action(self, checked=False, update_history_ui=True):
         if hasattr(self, 'details_panel'):
             trans_edit = self.details_panel.translation_edit_text
             if trans_edit.hasFocus() and trans_edit.document().isUndoAvailable():
                 trans_edit.undo()
                 return
-
 
         if hasattr(self, 'comment_status_panel'):
             comment_edit = self.comment_status_panel.comment_edit_text
@@ -1785,72 +2019,26 @@ class LexiSyncApp(QMainWindow):
                     focused_widget.undo()
                     return
 
-        if not self.undo_history:
-            self.update_statusbar(_("No more actions to undo"))
-            return
-        action_to_undo = self.undo_history[-1]
-        was_handled_by_plugin = self.plugin_manager.run_hook(
-            'on_before_undo_redo',
-            action_type=action_to_undo['type'],
-            is_undo=True,
-            action_data=action_to_undo['data']
-        )
-        if was_handled_by_plugin:
-            return
-        action_log = self.undo_history.pop()
-        action_type, action_data = action_log['type'], action_log['data']
-        redo_payload_data = None
-        changed_ids = set()
-
-        if action_type == 'single_change':
-            obj_id = action_data['string_id']
-            field = action_data['field']
-            val_to_restore = action_data['old_value']
-
-            ts_obj = self._find_ts_obj_by_id(obj_id)
-            if ts_obj:
-                current_val_before_undo = getattr(ts_obj, field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
-                if field == 'translation':
-                    ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"))
-                else:
-                    setattr(ts_obj, field, val_to_restore)
-                redo_payload_data = {'string_id': obj_id, 'field': field, 'old_value': val_to_restore, 'new_value': current_val_before_undo}
-                self.update_statusbar(_("Undo: {field} for ID {id} -> '{value}'").format(field=field, id=str(obj_id)[:8] + "...", value=str(val_to_restore)[:30]))
-                changed_ids.add(obj_id)
-            else:
-                self.update_statusbar(_("Undo error: Object ID {obj_id} not found").format(obj_id=obj_id))
-                self.action_redo.setEnabled(bool(self.redo_history))
+        def do_undo():
+            success, changed_ids = self._do_undo_core()
+            if not success:
+                self.update_statusbar(_("No more actions to undo"))
                 return
 
-        elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu', 'bulk_replace_all']:
-            temp_redo_changes = []
-            for item_change in action_data['changes']:
-                obj_id, field, val_to_restore = item_change['string_id'], item_change['field'], item_change['old_value']
-                ts_obj = self._find_ts_obj_by_id(obj_id)
-                if ts_obj:
-                    current_val_before_undo = getattr(ts_obj, field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
-                    if field == 'translation':
-                        ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"))
-                    else:
-                        setattr(ts_obj, field, val_to_restore)
-                    temp_redo_changes.append({'string_id': obj_id, 'field': field, 'old_value': val_to_restore, 'new_value': current_val_before_undo})
-                    changed_ids.add(obj_id)
-            redo_payload_data = {'changes': temp_redo_changes}
-            self.update_statusbar(_("Undo: Bulk change ({count} items)").format(count=len(temp_redo_changes)))
+            self._update_view_for_ids(changed_ids)
+            if self.current_selected_ts_id in changed_ids:
+                self.force_refresh_ui_for_current_selection()
 
-        if redo_payload_data:
-            self.redo_history.append({'type': action_type, 'data': redo_payload_data})
+            self.action_undo.setEnabled(bool(self.undo_history))
+            self.action_redo.setEnabled(bool(self.redo_history))
+            self.mark_modified()
 
-        self._update_view_for_ids(changed_ids)
+            if update_history_ui:
+                self._update_history_panel()
 
-        if self.current_selected_ts_id in changed_ids:
-            self.force_refresh_ui_for_current_selection()
+        QTimer.singleShot(0, do_undo)
 
-        self.action_undo.setEnabled(bool(self.undo_history))
-        self.action_redo.setEnabled(bool(self.redo_history))
-        self.mark_modified()
-
-    def redo_action(self):
+    def redo_action(self, checked=False, update_history_ui=True):
         if hasattr(self, 'details_panel'):
             trans_edit = self.details_panel.translation_edit_text
             if trans_edit.hasFocus() and trans_edit.document().isRedoAvailable():
@@ -1874,78 +2062,36 @@ class LexiSyncApp(QMainWindow):
                     focused_widget.redo()
                     return
 
-        if not self.redo_history:
-            self.update_statusbar(_("No more actions to redo"))
-            return
-        action_to_redo = self.redo_history[-1]
-        was_handled_by_plugin = self.plugin_manager.run_hook(
-            'on_before_undo_redo',
-            action_type=action_to_redo['type'],
-            is_undo=False,
-            action_data=action_to_redo['data']
-        )
-        if was_handled_by_plugin:
-            return
-        action_log = self.redo_history.pop()
-        action_type, action_data_to_apply = action_log['type'], action_log['data']
-        undo_payload_data = None
-        changed_ids = set()
-
-        if action_type == 'single_change':
-            obj_id = action_data_to_apply['string_id']
-            field = action_data_to_apply['field']
-            val_to_set = action_data_to_apply['new_value']
-
-            ts_obj = self._find_ts_obj_by_id(obj_id)
-            if ts_obj:
-                current_val_before_redo = getattr(ts_obj, field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
-                if field == 'translation':
-                    ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"))
-                else:
-                    setattr(ts_obj, field, val_to_set)
-                undo_payload_data = {'string_id': obj_id, 'field': field, 'old_value': current_val_before_redo, 'new_value': val_to_set}
-                self.update_statusbar(_("Redo: {field} for ID {id} -> '{value}'").format(field=field, id=str(obj_id)[:8] + "...", value=str(val_to_set)[:30]))
-                changed_ids.add(obj_id)
-            else:
-                self.update_statusbar(_("Redo error: Object ID {obj_id} not found").format(obj_id=obj_id))
-                self.action_undo.setEnabled(bool(self.undo_history))
+        def do_redo():
+            success, changed_ids = self._do_redo_core()
+            if not success:
+                self.update_statusbar(_("No more actions to redo"))
                 return
 
-        elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu', 'bulk_replace_all']:
-            temp_undo_changes = []
-            for item_change in action_data_to_apply['changes']:
-                obj_id, field, val_to_set = item_change['string_id'], item_change['field'], item_change['new_value']
-                ts_obj = self._find_ts_obj_by_id(obj_id)
-                if ts_obj:
-                    current_val_before_redo = getattr(ts_obj, field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
-                    if field == 'translation':
-                        ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"))
-                    else:
-                        setattr(ts_obj, field, val_to_set)
-                    temp_undo_changes.append({'string_id': obj_id, 'field': field, 'old_value': current_val_before_redo, 'new_value': val_to_set})
-                    changed_ids.add(obj_id)
-            undo_payload_data = {'changes': temp_undo_changes}
-            self.update_statusbar(_("Redo: Bulk change ({count} items)").format(count=len(temp_undo_changes)))
+            self._update_view_for_ids(changed_ids)
+            if self.current_selected_ts_id in changed_ids:
+                self.force_refresh_ui_for_current_selection()
 
-        if undo_payload_data:
-            self.undo_history.append({'type': action_type, 'data': undo_payload_data})
-            if len(self.undo_history) > MAX_UNDO_HISTORY:
-                self.undo_history.pop(0)
+            self.action_redo.setEnabled(bool(self.redo_history))
+            self.action_undo.setEnabled(bool(self.undo_history))
+            self.mark_modified()
 
-        self._update_view_for_ids(changed_ids)
+            if update_history_ui:
+                self._update_history_panel()
 
-
-        if self.current_selected_ts_id in changed_ids:
-            self.force_refresh_ui_for_current_selection()
-
-        self.action_redo.setEnabled(bool(self.redo_history))
-        self.action_undo.setEnabled(bool(self.undo_history))
-        self.mark_modified()
+        QTimer.singleShot(0, do_redo)
 
     def resizeEvent(self, event):
         if hasattr(self, 'drop_overlay'):
             self.drop_overlay.resize(self.centralWidget().size())
         super().resizeEvent(event)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+
+        if not getattr(self, '_state_restored', False):
+            self.restore_window_state()
+            self._state_restored = True
 
     def closeEvent(self, event):
         if not self.prompt_save_if_modified():
@@ -3569,6 +3715,91 @@ class LexiSyncApp(QMainWindow):
 
         self.details_panel.update_stats_labels(char_counts, ratios)
 
+    def _update_history_panel(self):
+        if hasattr(self, 'history_panel'):
+            self.history_panel.refresh(self.undo_history, self.redo_history, self.current_active_source_file_id)
+
+    def _clear_history(self):
+        reply = QMessageBox.question(self, _("Clear History"), _("Are you sure you want to clear all undo/redo history?"), QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.undo_history.clear()
+            self.redo_history.clear()
+            self.action_undo.setEnabled(False)
+            self.action_redo.setEnabled(False)
+            self._update_history_panel()
+
+    def _jump_history(self, target_index):
+        current_state_index = len(self.redo_history)
+        if target_index == current_state_index:
+            return
+
+        self.table_view.blockSignals(True)
+        all_changed_ids = set()
+
+        try:
+            if target_index > current_state_index:
+                steps = target_index - current_state_index
+                for _ in range(steps):
+                    success, ids = self._do_undo_core()
+                    if success:
+                        all_changed_ids.update(ids)
+            elif target_index < current_state_index:
+                steps = current_state_index - target_index
+                for _ in range(steps):
+                    success, ids = self._do_redo_core()
+                    if success:
+                        all_changed_ids.update(ids)
+        finally:
+            self._update_view_for_ids(all_changed_ids)
+            if self.current_selected_ts_id in all_changed_ids:
+                self.force_refresh_ui_for_current_selection()
+
+            self.action_undo.setEnabled(bool(self.undo_history))
+            self.action_redo.setEnabled(bool(self.redo_history))
+            self.mark_modified()
+
+            self.table_view.blockSignals(False)
+            self._update_history_panel()
+            self.refresh_sheet_preserve_selection()
+
+    def _revert_history(self, target_index):
+        reply = QMessageBox.warning(
+            self,
+            _("Confirm Revert"),
+            _("This will permanently discard all changes made after this point. This action cannot be undone.\n\nAre you sure you want to continue?"),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        current_state_index = len(self.redo_history)
+        steps_to_undo = target_index - current_state_index + 1
+
+        if steps_to_undo <= 0:
+            return
+
+        all_changed_ids = set()
+        for __ in range(steps_to_undo):
+            success, ids = self._do_undo_core()
+            if success:
+                all_changed_ids.update(ids)
+
+        self.redo_history.clear()
+
+        self._update_view_for_ids(all_changed_ids)
+        if self.current_selected_ts_id in all_changed_ids:
+            self.force_refresh_ui_for_current_selection()
+
+        self.action_undo.setEnabled(bool(self.undo_history))
+        self.action_redo.setEnabled(bool(self.redo_history))
+        self.mark_modified()
+
+        self._update_history_panel()
+        self.refresh_sheet_preserve_selection()
+
+        self.update_statusbar(_("Reverted history, discarding {count} change(s).").format(count=steps_to_undo))
+
     def schedule_placeholder_validation(self):
         if self._placeholder_validation_job:
             self._placeholder_validation_job.stop()
@@ -4197,7 +4428,8 @@ class LexiSyncApp(QMainWindow):
         sources_clearing_fuzzy = [
             "manual", "manual_button", "manual_focus_out", "manual_paste",
             "tm_suggestion", "replace_current", "auto_fix", "quick_fix",
-            "quick_fix_all", "ai_batch_item", "pre_single_ai_save"
+            "quick_fix_all", "ai_batch_item", "pre_single_ai_save",
+            "ai_translation"
         ]
 
         if ts_obj.is_fuzzy and source in sources_clearing_fuzzy:
@@ -4288,21 +4520,21 @@ class LexiSyncApp(QMainWindow):
                         })
                     ids_to_update.add(other_ts_obj.id)
 
-        undo_action_type = 'bulk_change' if len(all_changes_for_undo_list) > 1 else 'single_change'
-        undo_data_payload = {'changes': all_changes_for_undo_list} if len(
-            all_changes_for_undo_list) > 1 else primary_change_data
-
-        if source not in ["ai_batch_item"]:
-            self.add_to_undo_history(undo_action_type, undo_data_payload)
-
         if collect_changes is not None:
             collect_changes.extend(all_changes_for_undo_list)
         else:
             undo_action_type = 'bulk_change' if len(all_changes_for_undo_list) > 1 else 'single_change'
             undo_data_payload = {'changes': all_changes_for_undo_list} if len(
                 all_changes_for_undo_list) > 1 else primary_change_data
+
             if source not in ["ai_batch_item"]:
-                self.add_to_undo_history(undo_action_type, undo_data_payload)
+                if source == "ai_translation":
+                    desc = _("AI Translation ({count} items)").format(count=len(all_changes_for_undo_list)) if len(
+                        all_changes_for_undo_list) > 1 else _("AI Translation")
+                    icon = "feather.svg"
+                    self.add_to_undo_history(undo_action_type, undo_data_payload, description=desc, icon_type=icon)
+                else:
+                    self.add_to_undo_history(undo_action_type, undo_data_payload)
         self._update_view_for_ids(ids_to_update)
         self.update_statusbar(_("Translation applied: \"{original_semantic}...\"").format(
             original_semantic=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
@@ -6515,6 +6747,7 @@ class LexiSyncApp(QMainWindow):
                 processed_text = re.sub(r'<\s*br\s*/?>', '\n', processed_text, flags=re.IGNORECASE)
 
         is_batch = op_type in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX]
+
         collector = self.ai_batch_successful_translations_for_undo if is_batch else None
 
         self._apply_translation_to_model(
@@ -6523,14 +6756,6 @@ class LexiSyncApp(QMainWindow):
             source="ai_translation",
             collect_changes=collector
         )
-
-        # Status Feedback
-        if op_type == AIOperationType.FIX:
-            self.update_statusbar(_("AI fix applied successfully."), persistent=False)
-        elif op_type == AIOperationType.TRANSLATION:
-            self.update_statusbar(_("AI translation successful: \"{text}...\"").format(
-                text=trigger_ts_obj.original_semantic[:20].replace('\n', '↵')))
-
 
     def _find_items_to_propagate(self, trigger_obj, mode):
         """Helper to find all TranslatableStrings that should be updated based on propagation mode."""
