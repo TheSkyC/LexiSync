@@ -2283,7 +2283,7 @@ class LexiSyncApp(QMainWindow):
                 sf['patterns'] = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
 
             try:
-                project_path = os.path.join(project_location, project_name)
+                project_path = str(os.path.join(project_location, project_name))
                 new_project_path = create_project(
                     project_path,
                     project_name,
@@ -2291,6 +2291,7 @@ class LexiSyncApp(QMainWindow):
                     data['target_langs'],
                     data['source_files'],
                     data['use_global_tm'],
+                    self,
                     glossary_files=data['glossary_files'],
                     tm_files=data['tm_files']
                 )
@@ -4621,10 +4622,15 @@ class LexiSyncApp(QMainWindow):
                 sf['patterns'] = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
 
             try:
-                project_path = os.path.join(project_location, project_name)
+                project_path = str(os.path.join(project_location, project_name))
                 new_project_path = create_project(
-                    project_path, project_name, data['source_lang'],
-                    data['target_langs'], data['source_files'], data['use_global_tm']
+                    project_path,
+                    project_name,
+                    data['source_lang'],
+                    data['target_langs'],
+                    data['source_files'],
+                    data['use_global_tm'],
+                    self
                 )
                 self.open_project(new_project_path)
                 return True

@@ -25,7 +25,7 @@ METADATA_DIR = "metadata"
 
 
 def create_project(project_path: str, project_name: str, source_lang: str, target_langs: list, source_files: list,
-                   use_global_tm: bool, glossary_files: list = None, tm_files: list = None):
+                   use_global_tm: bool, app_instance, glossary_files: list = None, tm_files: list = None):
     proj_path = Path(project_path)
     if proj_path.exists():
         raise FileExistsError(_("A file or directory with this name already exists."))
@@ -63,12 +63,16 @@ def create_project(project_path: str, project_name: str, source_lang: str, targe
             handler = FormatManager.get_handler(f_id)
             if handler:
                 if handler.format_type == "translation":
-                    extracted_strings, __, ___ = handler.load(str(destination_path), relative_path=relative_path_posix)
+                    extracted_strings, __, ___ = handler.load(str(destination_path),                         relative_path=relative_path_posix,
+                        app_instance=app_instance
+                    )
                 else:
                     patterns = file_info.get('patterns', DEFAULT_EXTRACTION_PATTERNS)
                     extracted_strings, __, ___ = handler.load(str(destination_path),
                                                            extraction_patterns=patterns,
-                                                           relative_path=relative_path_posix)
+                                                              relative_path=relative_path_posix,
+                                                              app_instance=app_instance
+                                                              )
                 all_translatable_objects.extend(extracted_strings)
 
         if glossary_files:
