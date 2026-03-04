@@ -2762,7 +2762,13 @@ class LexiSyncApp(QMainWindow):
             cache_index = self._id_to_index_map.get(ts_in_view.id)
 
             if cache_index is not None and cache_index < len(self.all_project_strings):
-                self.all_project_strings[cache_index] = ts_in_view
+                if self.all_project_strings[cache_index].id == ts_in_view.id:
+                    self.all_project_strings[cache_index] = ts_in_view
+                else:
+                    logger.error(f"Index mismatch detected for ID {ts_in_view.id}. Rebuilding index map.")
+                    self._rebuild_string_cache_indexes()
+                    self._save_current_view_changes()
+                    return
             else:
                 self.all_project_strings.append(ts_in_view)
                 self._id_to_index_map[ts_in_view.id] = len(self.all_project_strings) - 1
