@@ -4253,6 +4253,12 @@ class LexiSyncApp(QMainWindow):
                 if should_update and other_ts_obj.translation != processed_translation:
                     old_other_translation_for_undo = other_ts_obj.get_translation_for_storage_and_tm()
                     other_ts_obj.set_translation_internal(processed_translation)
+                    all_changes_for_undo_list.append({
+                        'string_id': other_ts_obj.id,
+                        'field': 'translation',
+                        'old_value': old_other_translation_for_undo,
+                        'new_value': new_translation_for_tm_storage
+                    })
                     self.plugin_manager.run_hook(
                         'on_string_saved',
                         ts_object=other_ts_obj,
@@ -4260,11 +4266,14 @@ class LexiSyncApp(QMainWindow):
                         new_value=processed_translation,
                         old_value=old_other_translation_for_undo.replace("\\n", "\n")
                     )
+
                     if other_ts_obj.is_fuzzy and source in sources_clearing_fuzzy:
                         other_ts_obj.is_fuzzy = False
                         all_changes_for_undo_list.append({
-                            'string_id': other_ts_obj.id, 'field': 'is_fuzzy',
-                            'old_value': True, 'new_value': False
+                            'string_id': other_ts_obj.id,
+                            'field': 'is_fuzzy',
+                            'old_value': True,
+                            'new_value': False
                         })
                     ids_to_update.add(other_ts_obj.id)
 
