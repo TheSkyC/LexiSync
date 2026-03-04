@@ -1812,6 +1812,12 @@ class LexiSyncApp(QMainWindow):
         return desc, icon
 
     def add_to_undo_history(self, action_type, data, description=None, icon_type=None):
+        if self.redo_history:
+            logger.info("[DEBUG_TRACE] New history branch created. Clearing redo stack.")
+            self.redo_history.clear()
+            self.action_redo.setEnabled(False)
+            self._update_history_panel()
+
         if not description or not icon_type:
             gen_desc, gen_icon = self._generate_history_meta(action_type, data)
             description = description or gen_desc
@@ -3774,7 +3780,11 @@ class LexiSyncApp(QMainWindow):
             return
 
         current_state_index = len(self.redo_history)
-        steps_to_undo = target_index - current_state_index + 1
+        if target_index >= current_state_index:
+            steps_to_undo = target_index - current_state_index + 1
+
+        else:
+            steps_to_undo = 0
 
         if steps_to_undo <= 0:
             return

@@ -170,7 +170,7 @@ class HistoryPanel(QWidget):
         current_state_index = -1
         for i in range(self.list_widget.count()):
             widget = self.list_widget.itemWidget(self.list_widget.item(i))
-            if widget.record.get('is_current'):
+            if widget and hasattr(widget, 'record') and widget.record.get('is_current'):
                 current_state_index = i
                 break
 
@@ -182,7 +182,9 @@ class HistoryPanel(QWidget):
         # 1. 还原更改
         revert_icon = QIcon(get_resource_path("icons/corner-up-left.svg"))
         revert_action = QAction(revert_icon, _("Revert Changes"), self)
-        revert_action.setEnabled(index != current_state_index)
+
+        revert_action.setEnabled(index >= current_state_index)
+
         revert_action.triggered.connect(lambda: self.revert_to_requested.emit(index))
         revert_action.hovered.connect(lambda: self.preview_revert(index, True))
         menu.aboutToHide.connect(lambda: self.preview_revert(index, False))
