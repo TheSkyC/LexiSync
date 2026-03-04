@@ -29,17 +29,25 @@ class BaseSettingsPage(QWidget):
                 padding: 15px;
                 font-weight: bold;
                 background-color: #FFFFFF;
+                color: #000000;
             }}
             QGroupBox::title {{
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
                 padding: 0 5px;
                 left: 10px;
-                color: #303133;
+                color: #000000;
             }}
             QLabel {{
                 font-size: 14px;
-                color: #606266;
+                color: ＃696969;
+            }}
+            QPushButton {{
+                padding: 5px 15px;
+                border: 1px solid #DCDFE6;
+                border-radius: 4px;
+                background-color: #FFFFFF;
+                color: #000000;
             }}
             QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {{
                 padding: 5px 8px;
@@ -47,7 +55,7 @@ class BaseSettingsPage(QWidget):
                 border-radius: 4px;
                 min-height: 22px;
                 background-color: #FFFFFF;
-                color: #606266;
+                color: #000000;
             }}
             QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {{
                 border-color: #409EFF;
