@@ -970,6 +970,7 @@ class LexiSyncApp(QMainWindow):
 
         global_actions = {
             'toggle_reviewed': self.cm_toggle_reviewed_status,
+            'toggle_fuzzy': self.cm_toggle_fuzzy_status,
             'toggle_ignored': self.cm_toggle_ignored_status,
             'apply_and_next': self.apply_and_navigate_next,
             'refresh_sort': self.refresh_sort,
@@ -3360,6 +3361,7 @@ class LexiSyncApp(QMainWindow):
         is_fuzzy = first_obj.is_fuzzy
         text_fuzzy = _("Unmark as Fuzzy") if is_fuzzy else _("Mark as Fuzzy")
         act_fuzzy = QAction(text_fuzzy, self)
+        act_fuzzy.setShortcut(QKeySequence(self.config['keybindings'].get('toggle_fuzzy', '')))
         act_fuzzy.triggered.connect(lambda: self.cm_set_fuzzy_status(not is_fuzzy))
         mark_menu.addAction(act_fuzzy)
 
@@ -6515,6 +6517,15 @@ class LexiSyncApp(QMainWindow):
 
             if self.current_selected_ts_id in changed_ids:
                 self.force_refresh_ui_for_current_selection()
+
+    def cm_toggle_fuzzy_status(self):
+        selected_objs = self._get_selected_ts_objects_from_sheet()
+        if not selected_objs:
+            self.update_statusbar(_("No items selected."))
+            return
+
+        new_fuzzy_state = not selected_objs[0].is_fuzzy
+        self.cm_set_fuzzy_status(new_fuzzy_state)
 
     def cm_set_fuzzy_status(self, fuzzy_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()

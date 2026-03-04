@@ -238,6 +238,7 @@ class KeybindingDialog(QDialog):
             'paste_translation': self.app.action_paste_translation,
             'ai_translate_selected': self.app.action_ai_translate_selected,
             'toggle_reviewed': {'text': _("Toggle Reviewed Status")},
+            'toggle_fuzzy': {'text': _("Toggle Fuzzy Status")},
             'toggle_ignored': {'text': _("Toggle Ignored Status")},
             'apply_and_next': {'text': _("Apply and Go to Next Untranslated")},
             'refresh_sort': {'text': _("Refresh View")},

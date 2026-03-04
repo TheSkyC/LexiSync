@@ -274,6 +274,7 @@ DEFAULT_KEYBINDINGS = {
     'paste_translation': 'Ctrl+Shift+V',
     'ai_translate_selected': 'Ctrl+T',
     'toggle_reviewed': 'Ctrl+R',
+    'toggle_fuzzy': 'Ctrl+F',
     'toggle_ignored': 'Ctrl+I',
     'apply_and_next': 'Ctrl+Return',
     'refresh_sort': 'F5',
