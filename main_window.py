@@ -4174,7 +4174,10 @@ class LexiSyncApp(QMainWindow):
             self._update_toggle_labels_style(ts_obj)
 
     def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual",
-                                    force_propagation_mode=None):
+                                    force_propagation_mode=None, collect_changes=None):
+        """
+        collect_changes: 如果传入一个 list，则将变更记录存入该 list 而不直接 add_to_undo_history
+        """
         processed_translation = self.plugin_manager.run_hook(
             'process_string_for_save',
             new_translation_from_ui,
@@ -4291,8 +4294,16 @@ class LexiSyncApp(QMainWindow):
 
         if source not in ["ai_batch_item"]:
             self.add_to_undo_history(undo_action_type, undo_data_payload)
-        self._update_view_for_ids(ids_to_update)
 
+        if collect_changes is not None:
+            collect_changes.extend(all_changes_for_undo_list)
+        else:
+            undo_action_type = 'bulk_change' if len(all_changes_for_undo_list) > 1 else 'single_change'
+            undo_data_payload = {'changes': all_changes_for_undo_list} if len(
+                all_changes_for_undo_list) > 1 else primary_change_data
+            if source not in ["ai_batch_item"]:
+                self.add_to_undo_history(undo_action_type, undo_data_payload)
+        self._update_view_for_ids(ids_to_update)
         self.update_statusbar(_("Translation applied: \"{original_semantic}...\"").format(
             original_semantic=ts_obj.original_semantic[:20].replace(chr(10), '↵')))
         self.mark_modified()
@@ -6503,70 +6514,15 @@ class LexiSyncApp(QMainWindow):
                 logger.info(f"Detected AI hallucinated <br> tags for ID {trigger_ts_obj.id}. Auto-converting to \\n.")
                 processed_text = re.sub(r'<\s*br\s*/?>', '\n', processed_text, flags=re.IGNORECASE)
 
-        final_translation = processed_text
-        cleaned_translation = final_translation
+        is_batch = op_type in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX]
+        collector = self.ai_batch_successful_translations_for_undo if is_batch else None
 
-        # Determine propagation strategy
-        propagation_mode = self.config.get('translation_propagation_mode', 'smart')
-
-        # Prepare Undo Data
-        changes_for_undo = []
-        changed_ids = set()
-
-        # Logic to find which items to update
-        items_to_update = self._find_items_to_propagate(trigger_ts_obj, propagation_mode)
-
-        # Apply Changes
-        for ts_obj in items_to_update:
-            old_val = ts_obj.get_translation_for_storage_and_tm()
-            new_val = cleaned_translation.replace('\n', '\\n')
-
-            text_changed = (old_val != new_val)
-            fuzzy_changed = False
-
-            # Clear Fuzzy status
-            if ts_obj.is_fuzzy:
-                ts_obj.is_fuzzy = False
-                fuzzy_changed = True
-
-            if not text_changed and not fuzzy_changed:
-                continue
-
-            if text_changed:
-                change_data = {
-                    'string_id': ts_obj.id, 'field': 'translation',
-                    'old_value': old_val, 'new_value': new_val
-                }
-                if op_type in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX]:
-                    self.ai_batch_successful_translations_for_undo.append(change_data)
-                else:
-                    changes_for_undo.append(change_data)
-
-                ts_obj.set_translation_internal(cleaned_translation)
-
-            if fuzzy_changed:
-                fuzzy_change_data = {
-                    'string_id': ts_obj.id, 'field': 'is_fuzzy',
-                    'old_value': True, 'new_value': False
-                }
-                if op_type in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX]:
-                    self.ai_batch_successful_translations_for_undo.append(fuzzy_change_data)
-                else:
-                    changes_for_undo.append(fuzzy_change_data)
-
-            changed_ids.add(ts_obj.id)
-
-        # Record Undo (for single ops)
-        if op_type not in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX] and changes_for_undo:
-            action_name = 'bulk_ai_translate' if len(changes_for_undo) > 1 else 'single_change'
-            payload = {'changes': changes_for_undo} if len(changes_for_undo) > 1 else changes_for_undo[0]
-            self.add_to_undo_history(action_name, payload)
-
-        # UI Updates
-        if changed_ids:
-            self._update_view_for_ids(changed_ids)
-            if self.current_selected_ts_id == trigger_ts_obj.id:
-                self.force_refresh_ui_for_current_selection()
+        self._apply_translation_to_model(
+            trigger_ts_obj,
+            processed_text,
+            source="ai_translation",
+            collect_changes=collector
+        )
 
         # Status Feedback
         if op_type == AIOperationType.FIX:
