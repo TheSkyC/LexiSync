@@ -1414,6 +1414,7 @@ class LexiSyncApp(QMainWindow):
         self.details_panel.ai_translate_signal.connect(self.ai_translate_selected_from_button)
         self.details_panel.warning_ignored_signal.connect(lambda: self.cm_set_warning_ignored_status(True))
         self.details_panel.fuzzy_toggled_signal.connect(self.on_fuzzy_toggled)
+        self.details_panel.reviewed_toggled_signal.connect(self.on_reviewed_toggled)
 
         self.comment_status_panel.apply_comment_signal.connect(self.apply_comment_from_button)
         self.comment_status_panel.comment_focus_out_signal.connect(self.apply_comment_focus_out)
@@ -3163,6 +3164,13 @@ class LexiSyncApp(QMainWindow):
         act_reviewed.triggered.connect(lambda: self.cm_set_reviewed_status(not is_reviewed))
         mark_menu.addAction(act_reviewed)
 
+        # Fuzzy
+        is_fuzzy = first_obj.is_fuzzy
+        text_fuzzy = _("Unmark as Fuzzy") if is_fuzzy else _("Mark as Fuzzy")
+        act_fuzzy = QAction(text_fuzzy, self)
+        act_fuzzy.triggered.connect(lambda: self.cm_set_fuzzy_status(not is_fuzzy))
+        mark_menu.addAction(act_fuzzy)
+
         # Ignored
         is_ignored = first_obj.is_ignored
         text_ignored = _("Unmark as Ignored") if is_ignored else _("Mark as Ignored")
@@ -3170,13 +3178,6 @@ class LexiSyncApp(QMainWindow):
         act_ignored.setShortcut(QKeySequence(self.config['keybindings'].get('toggle_ignored', '')))
         act_ignored.triggered.connect(lambda: self.cm_set_ignored_status(not is_ignored))
         mark_menu.addAction(act_ignored)
-
-        # Fuzzy
-        is_fuzzy = first_obj.is_fuzzy
-        text_fuzzy = _("Unmark as Fuzzy") if is_fuzzy else _("Mark as Fuzzy")
-        act_fuzzy = QAction(text_fuzzy, self)
-        act_fuzzy.triggered.connect(lambda: self.cm_set_fuzzy_status(not is_fuzzy))
-        mark_menu.addAction(act_fuzzy)
 
         # Warnings
         is_warn_ignored = first_obj.is_warning_ignored
@@ -4094,18 +4095,43 @@ class LexiSyncApp(QMainWindow):
                 'old_value': True, 'new_value': False
             })
             ts_obj.is_reviewed = False
+            self.details_panel.reviewed_toggle.set_checked_silent(False)
 
         if changes:
-            action_name = 'bulk_change' if len(changes) > 1 else 'single_change'
-            payload = {'changes': changes} if len(changes) > 1 else changes[0]
-            self.add_to_undo_history(action_name, payload)
-
+            self.add_to_undo_history('bulk_change', {'changes': changes})
             self.mark_modified()
             self._update_view_for_ids({ts_obj.id})
 
-            if self.current_selected_ts_id == ts_obj.id:
-                self.details_panel.update_warnings(ts_obj)
-                self.details_panel.fuzzy_toggle.set_checked_silent(checked)
+            self._update_toggle_labels_style(ts_obj)
+
+    def on_reviewed_toggled(self, checked):
+        if not self.current_selected_ts_id: return
+        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
+        if not ts_obj: return
+
+        changes = []
+
+        if ts_obj.is_reviewed != checked:
+            changes.append({
+                'string_id': ts_obj.id, 'field': 'is_reviewed',
+                'old_value': ts_obj.is_reviewed, 'new_value': checked
+            })
+            ts_obj.is_reviewed = checked
+
+        if checked and ts_obj.is_fuzzy:
+            changes.append({
+                'string_id': ts_obj.id, 'field': 'is_fuzzy',
+                'old_value': True, 'new_value': False
+            })
+            ts_obj.is_fuzzy = False
+            self.details_panel.fuzzy_toggle.set_checked_silent(False)
+
+        if changes:
+            self.add_to_undo_history('bulk_change', {'changes': changes})
+            self.mark_modified()
+            self._update_view_for_ids({ts_obj.id})
+
+            self._update_toggle_labels_style(ts_obj)
 
     def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual",
                                     force_propagation_mode=None):
@@ -6110,17 +6136,21 @@ class LexiSyncApp(QMainWindow):
                 bulk_changes.append(
                     {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_val, 'new_value': reviewed_flag})
                 changed_ids.add(ts_obj.id)
+
             if reviewed_flag and ts_obj.is_fuzzy:
-                bulk_changes.append({'string_id': ts_obj.id, 'field': 'is_fuzzy', 'old_value': True, 'new_value': False})
+                bulk_changes.append(
+                    {'string_id': ts_obj.id, 'field': 'is_fuzzy', 'old_value': True, 'new_value': False})
                 ts_obj.is_fuzzy = False
                 changed_ids.add(ts_obj.id)
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.mark_modified()
-            self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
-
+            self.update_statusbar(_("{count} items' review status updated.").format(count=len(changed_ids)))
             self._update_view_for_ids(changed_ids)
+
+            if self.current_selected_ts_id in changed_ids:
+                self.force_refresh_ui_for_current_selection()
 
     def cm_toggle_ignored_status(self):
         selected_objs = self._get_selected_ts_objects_from_sheet()
@@ -6149,15 +6179,18 @@ class LexiSyncApp(QMainWindow):
         selected_objs = self._get_selected_ts_objects_from_sheet()
         if not selected_objs: return
 
-        will_any_disappear = self.unreviewed_checkbox.isChecked() and any(
-            not ts_obj.is_reviewed for ts_obj in selected_objs)
-
         bulk_changes = []
         changed_ids = set()
         for ts_obj in selected_objs:
             old_val = ts_obj.is_reviewed
             new_val = not old_val
             ts_obj.is_reviewed = new_val
+
+            if new_val and ts_obj.is_fuzzy:
+                ts_obj.is_fuzzy = False
+                bulk_changes.append(
+                    {'string_id': ts_obj.id, 'field': 'is_fuzzy', 'old_value': True, 'new_value': False})
+
             ts_obj.update_style_cache()
             bulk_changes.append(
                 {'string_id': ts_obj.id, 'field': 'is_reviewed', 'old_value': old_val, 'new_value': new_val})
@@ -6166,9 +6199,10 @@ class LexiSyncApp(QMainWindow):
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.mark_modified()
-            self.update_statusbar(_("{count} items' review status updated.").format(count=len(bulk_changes)))
-
             self._update_view_for_ids(changed_ids)
+
+            if self.current_selected_ts_id in changed_ids:
+                self.force_refresh_ui_for_current_selection()
 
     def cm_set_fuzzy_status(self, fuzzy_flag):
         selected_objs = self._get_selected_ts_objects_from_sheet()
@@ -6182,7 +6216,6 @@ class LexiSyncApp(QMainWindow):
                 old_val = ts_obj.is_fuzzy
                 ts_obj.is_fuzzy = fuzzy_flag
 
-                # If marking as fuzzy, usually unmark reviewed
                 if fuzzy_flag and ts_obj.is_reviewed:
                     bulk_changes.append({
                         'string_id': ts_obj.id, 'field': 'is_reviewed',
@@ -6200,18 +6233,10 @@ class LexiSyncApp(QMainWindow):
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
             self.mark_modified()
-
-            action_text = _("marked as fuzzy") if fuzzy_flag else _("unmarked as fuzzy")
-            self.update_statusbar(_("{count} items {action}.").format(count=len(changed_ids), action=action_text))
-
             self._update_view_for_ids(changed_ids)
 
-            # Update details panel if current item changed
             if self.current_selected_ts_id in changed_ids:
-                ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-                if ts_obj:
-                    self.details_panel.update_fuzzy_status(ts_obj.is_fuzzy)
-                    self.details_panel.update_warnings(ts_obj)
+                self.force_refresh_ui_for_current_selection()
 
     def ai_translate_selected_from_menu(self):
         self.cm_ai_translate_selected()
@@ -6602,7 +6627,11 @@ class LexiSyncApp(QMainWindow):
         if not ts_obj:
             self.clear_details_pane()
             return
-        self.details_panel.update_fuzzy_status(ts_obj.is_fuzzy)
+
+        self.details_panel.fuzzy_toggle.set_checked_silent(ts_obj.is_fuzzy)
+        self.details_panel.reviewed_toggle.set_checked_silent(ts_obj.is_reviewed)
+        self._update_toggle_labels_style(ts_obj)
+
         self.details_panel.original_text_display.blockSignals(True)
         self.details_panel.translation_edit_text.blockSignals(True)
         try:
@@ -6628,6 +6657,12 @@ class LexiSyncApp(QMainWindow):
         self.context_panel.set_context(ts_obj)
         self.schedule_tm_update(ts_obj.original_semantic)
         self._update_all_highlights()
+
+    def _update_toggle_labels_style(self, ts_obj):
+        fuzzy_color = "#F57C00" if ts_obj.is_fuzzy else "#666"
+        rev_color = "#27AE60" if ts_obj.is_reviewed else "#666"
+        self.details_panel.fuzzy_label.setStyleSheet(f"color: {fuzzy_color}; font-size: 14px;")
+        self.details_panel.reviewed_label.setStyleSheet(f"color: {rev_color}; font-size: 14px;")
 
     def force_refresh_current_glossary(self):
         if not self.current_selected_ts_id:

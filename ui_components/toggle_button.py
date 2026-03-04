@@ -9,14 +9,14 @@ from .tooltip import Tooltip
 
 
 class ToggleButton(QAbstractButton):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, on_color="#F57C00"):
         super().__init__(parent)
         self.setCheckable(True)
         self.setCursor(Qt.PointingHandCursor)
         self.setFixedSize(32, 18)
-        # 颜色配置
+
         self._bg_color_off = QColor("#E0E0E0")
-        self._bg_color_on = QColor("#F57C00")
+        self._bg_color_on = QColor(on_color)
         self._circle_color = QColor("#FFFFFF")
 
         # 动画参数

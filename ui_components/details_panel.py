@@ -26,6 +26,7 @@ class DetailsPanel(QWidget):
     translation_focus_out_signal = Signal()
     warning_ignored_signal = Signal()
     fuzzy_toggled_signal = Signal(bool)
+    reviewed_toggled_signal = Signal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -248,26 +249,42 @@ class DetailsPanel(QWidget):
         self.apply_btn.setEnabled(False)
         trans_actions_layout.addWidget(self.apply_btn)
 
-        # Toggle Fuzzy
-        trans_actions_layout.addSpacing(30)
 
-        self.fuzzy_toggle = ToggleButton()
-        self.fuzzy_toggle.setToolTip(_("Mark as Fuzzy / Needs Work"))
-        self.fuzzy_toggle.toggled.connect(self._on_fuzzy_ui_toggled)
-        self.fuzzy_toggle.toggled.connect(self.fuzzy_toggled_signal.emit)
-        self.fuzzy_label = QLabel(_("Fuzzy"))
-        self.fuzzy_label.setStyleSheet("color: #666; font-size: 14px; margin-left: 2px; font-weight: normal;")
-
-        trans_actions_layout.addWidget(self.fuzzy_toggle)
-
+        trans_actions_layout.addSpacing(15)
+        # --- 模糊切换 (Fuzzy) ---
         self.fuzzy_container = QWidget()
         fuzzy_layout = QHBoxLayout(self.fuzzy_container)
         fuzzy_layout.setContentsMargins(0, 0, 0, 0)
         fuzzy_layout.setSpacing(2)
+
+        self.fuzzy_toggle = ToggleButton(on_color="#F57C00")  # 橙色
+        self.fuzzy_toggle.setToolTip(_("Mark as Fuzzy / Needs Work"))
+        self.fuzzy_toggle.toggled.connect(self.fuzzy_toggled_signal.emit)
+        self.fuzzy_label = QLabel(_("Fuzzy"))
+        self.fuzzy_label.setStyleSheet("color: #666; font-size: 14px;")
+
         fuzzy_layout.addWidget(self.fuzzy_toggle)
         fuzzy_layout.addWidget(self.fuzzy_label)
-
         trans_actions_layout.addWidget(self.fuzzy_container)
+
+        trans_actions_layout.addSpacing(15)  # 间距
+
+        # --- 审阅切换 (Reviewed) ---
+        self.reviewed_container = QWidget()
+        reviewed_layout = QHBoxLayout(self.reviewed_container)
+        reviewed_layout.setContentsMargins(0, 0, 0, 0)
+        reviewed_layout.setSpacing(2)
+
+        self.reviewed_toggle = ToggleButton(on_color="#27AE60") # 绿色
+        self.reviewed_toggle.setToolTip(_("Mark as Reviewed"))
+        self.reviewed_toggle.toggled.connect(self.reviewed_toggled_signal.emit)
+        self.reviewed_label = QLabel(_("Reviewed"))
+        self.reviewed_label.setStyleSheet("color: #666; font-size: 14px;")
+
+        reviewed_layout.addWidget(self.reviewed_toggle)
+        reviewed_layout.addWidget(self.reviewed_label)
+        trans_actions_layout.addWidget(self.reviewed_container)
+
         trans_actions_layout.addStretch(1)
 
         self.ai_translate_current_btn = StyledButton(_("AI Translate Selected"), on_click=self.ai_translate_signal.emit, btn_type="primary", size="medium")
