@@ -103,6 +103,9 @@ class HistoryPanel(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.undo_history = []
+        self.redo_history = []
+        self.current_file_id = None
         self.setup_ui()
 
     def setup_ui(self):
@@ -210,6 +213,10 @@ class HistoryPanel(QWidget):
                     widget._update_item_style(widget.record.get('is_current'), widget.record.get('is_redoable'))
 
     def refresh(self, undo_history, redo_history, current_file_id):
+        self.undo_history = undo_history
+        self.redo_history = redo_history
+        self.current_file_id = current_file_id
+
         self.list_widget.clear()
 
         chronological_list = list(undo_history) + list(reversed(redo_history))
@@ -234,6 +241,11 @@ class HistoryPanel(QWidget):
             self.list_widget.setItemWidget(item, widget)
 
         self._filter_list(self.search_edit.text())
+
+    def update_ui_texts(self):
+        self.clear_action.setText(_("Clear History"))
+        self.search_edit.setPlaceholderText(_("Filter history..."))
+        self.refresh(self.undo_history, self.redo_history, self.current_file_id)
 
     def _filter_list(self, text):
         text = text.lower()

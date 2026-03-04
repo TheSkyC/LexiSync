@@ -751,7 +751,6 @@ class LexiSyncApp(QMainWindow):
         self.action_paste_translation.setText(_("Paste to Translation"))
 
         # View Menu
-
         self.action_show_ignored.setText(_("Show Ignored"))
         self.action_show_untranslated.setText(_("Show Untranslated"))
         self.action_show_translated.setText(_("Show Translated"))
@@ -762,6 +761,7 @@ class LexiSyncApp(QMainWindow):
         self.action_toggle_comment_status_panel.setText(_("Comment && Status Panel"))
         self.action_toggle_context_panel.setText(_("Context Preview Panel"))
         self.action_toggle_tm_panel.setText(_("Translation Memory Panel"))
+        self.action_toggle_history_panel.setText(_("History Panel"))
         self.action_restore_layout.setText(_("Restore Default Layout"))
 
         # Tools Menu
@@ -837,6 +837,8 @@ class LexiSyncApp(QMainWindow):
             self.tm_dock.setWindowTitle(_("Translation Memory Matches"))
         if hasattr(self, 'comment_status_dock'):
             self.comment_status_dock.setWindowTitle(_("Comment && Status"))
+        if hasattr(self, 'history_dock'):
+            self.history_dock.setWindowTitle(_("History"))
 
         if hasattr(self, 'file_explorer_dock'):
             self.file_explorer_panel.update_ui_texts()
@@ -1315,6 +1317,7 @@ class LexiSyncApp(QMainWindow):
         self.history_panel.jump_requested.connect(self._jump_history)
         self.history_panel.clear_requested.connect(self._clear_history)
         self.history_panel.revert_to_requested.connect(self._revert_history)
+        self.language_changed.connect(self.history_panel.update_ui_texts)
 
         # 2. Create Docks and Add to Window
         # File Explorer
