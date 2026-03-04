@@ -18,6 +18,7 @@ class TranslatableString:
         else:
             name_string_for_uuid = f"{source_file_path}::{original_semantic}::{string_type}::{str(occurrence_index)}"
             self.id = xxhash.xxh128(name_string_for_uuid.encode('utf-8')).hexdigest()
+        self._search_cache = (original_semantic + " " + string_type).lower()
         self.context = ""
         self.original_raw = original_raw
         self.original_semantic = original_semantic
@@ -95,6 +96,9 @@ class TranslatableString:
             return
 
         self.sort_weight = 4  # Translated
+
+    def update_search_cache(self):
+        self._search_cache = (self.original_semantic + " " + (self.translation or "") + " " + (self.comment or "")).lower()
 
     @property
     def line_num_in_file(self):

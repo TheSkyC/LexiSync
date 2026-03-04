@@ -4199,6 +4199,7 @@ class LexiSyncApp(QMainWindow):
         all_changes_for_undo_list = []
 
         ts_obj.set_translation_internal(processed_translation)
+        ts_obj.update_search_cache()
         self.plugin_manager.run_hook(
             'on_string_saved',
             ts_object=ts_obj,

@@ -183,6 +183,7 @@ def load_from_po(filepath, relative_path=None):
     else:
         po_file_rel_path = os.path.basename(filepath)
 
+    occurrence_counters = {}
     for entry in po_file:
         if entry.obsolete or (entry.msgid == "" and not translatable_objects):
             continue
