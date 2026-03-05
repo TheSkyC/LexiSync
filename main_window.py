@@ -12,7 +12,6 @@ import time
 import traceback
 from copy import deepcopy
 
-
 import polib
 from openpyxl import Workbook, load_workbook
 from rapidfuzz import fuzz
@@ -96,7 +95,6 @@ from utils.enums import WarningType, AIOperationType
 from utils.localization import _, lang_manager
 from utils.text_utils import get_linguistic_length, generate_ngrams
 from utils.path_utils import get_app_data_path
-
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +255,7 @@ class LexiSyncApp(QMainWindow):
             'displayed': 0, 'total': 0,
             'translated': 0, 'untranslated': 0, 'ignored': 0
         }
-        self._counts_dirty = True # 标记是否需要重新计算
+        self._counts_dirty = True  # 标记是否需要重新计算
 
         last_path = self.config.get('last_file_explorer_path')
         if last_path and os.path.isdir(last_path):
@@ -519,7 +517,7 @@ class LexiSyncApp(QMainWindow):
         self.action_paste_translation.setEnabled(False)
         self.edit_menu.addAction(self.action_paste_translation)
         self.edit_menu.addSeparator()
-        
+
         self.action_remap_columns = QAction(_("Remap Table Columns..."), self)
         self.action_remap_columns.triggered.connect(self.remap_current_table_columns)
         self.action_remap_columns.setEnabled(False)
