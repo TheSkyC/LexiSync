@@ -19,12 +19,6 @@ class CustomCellDelegate(QStyledItemDelegate):
 
         self.newline_symbol = "↵"
 
-    def displayText(self, value, locale):
-        text = super().displayText(value, locale)
-        if '\n' in text:
-            return text.replace('\n', '↵')
-        return text
-
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
         display_option = QStyleOptionViewItem(option)
         display_option.state &= ~QStyle.State_HasFocus

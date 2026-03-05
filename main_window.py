@@ -1571,8 +1571,13 @@ class LexiSyncApp(QMainWindow):
             return
 
         total_count = len(self.translatable_objects)
-        ignored_visible = sum(1 for ts in self.translatable_objects if ts.is_ignored)
-        translated_visible = sum(1 for ts in self.translatable_objects if ts.translation.strip() and not ts.is_ignored)
+        ignored_visible = 0
+        translated_visible = 0
+        for ts in self.translatable_objects:
+            if ts.is_ignored:
+                ignored_visible += 1
+            elif ts.translation.strip():
+                translated_visible += 1
         untranslated_visible = total_count - ignored_visible - translated_visible
 
         displayed_count = self.sheet_model.rowCount()
