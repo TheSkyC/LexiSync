@@ -9,6 +9,7 @@ import hmac
 import logging
 import keyring
 import keyring.errors
+import platform
 from utils.path_utils import get_app_data_path
 from utils.localization import _
 
@@ -20,6 +21,21 @@ KEYRING_USER = "master_key"
 
 COLOR_WARN = "\033[93m"  # Yellow
 COLOR_RESET = "\033[0m"  # Reset
+
+def _init_keyring_backend():
+    """锁定平台特定的后端以加速启动，失败时回退至自动扫描"""
+    try:
+        system = platform.system()
+        if system == "Windows":
+            from keyring.backends.Windows import WinVaultKeyring
+            keyring.set_keyring(WinVaultKeyring())
+        elif system == "Darwin":
+            from keyring.backends.macOS import Keyring
+            keyring.set_keyring(Keyring())
+    except Exception as e:
+        logger.debug(f"Explicit keyring init failed, falling back to auto-scan: {e}")
+
+_init_keyring_backend()
 
 def _get_or_create_master_key() -> bytes:
     """
