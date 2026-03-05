@@ -160,12 +160,17 @@ class BannerOverlay(QWidget):
         self.anim.start()
 
     def hide_banner(self):
-        if not self.isVisible() or self.opacity_effect.opacity() == 0:
+        if not self.isVisible() or self.anim.endValue() == 0.0:
             return
         self.anim.stop()
         self.anim.setStartValue(self.opacity_effect.opacity())
         self.anim.setEndValue(0.0)
         self.anim.start()
+
+    def force_hide(self):
+        self.anim.stop()
+        self.opacity_effect.setOpacity(0.0)
+        self.hide()
 
     def show_over_widget(self, target_widget, text: str, preset="info", icon_path=None, **custom_styles):
         pos = target_widget.mapTo(self.parent(), QPoint(0, 0))

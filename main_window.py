@@ -2438,11 +2438,13 @@ class LexiSyncApp(QMainWindow):
             event.ignore()
 
     def dragLeaveEvent(self, event):
-        self.drop_overlay.hide_banner()
+        if hasattr(self, 'drop_overlay'):
+            self.drop_overlay.hide_banner()
         super().dragLeaveEvent(event)
 
     def dropEvent(self, event: QDropEvent):
-        self.drop_overlay.hide_banner()
+        if hasattr(self, 'drop_overlay'):
+            self.drop_overlay.force_hide()
         current_target = self.drop_overlay.parent()
 
         filepath = event.mimeData().urls()[0].toLocalFile()
