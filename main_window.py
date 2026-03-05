@@ -1449,6 +1449,8 @@ class LexiSyncApp(QMainWindow):
         self.tm_panel.update_tm_signal.connect(self.update_tm_for_selected_string)
         self.tm_panel.clear_tm_signal.connect(self.clear_tm_for_selected_string)
 
+        self.history_panel.locate_requested.connect(self._locate_history_item)
+
         # 5. Create Actions
         # File Explorer Panel Action
         self.action_toggle_file_explorer = self.file_explorer_dock.toggleViewAction()
@@ -3773,6 +3775,15 @@ class LexiSyncApp(QMainWindow):
             self.action_undo.setEnabled(False)
             self.action_redo.setEnabled(False)
             self._update_history_panel()
+
+    def _locate_history_item(self, string_id, file_id):
+        if file_id and file_id != self.current_active_source_file_id:
+            if self.prompt_save_if_modified():
+                self._switch_active_file(file_id)
+            else:
+                return
+        self.select_sheet_row_by_id(string_id, see=True)
+        self.activateWindow()
 
     def _jump_history(self, target_index):
         current_state_index = len(self.redo_history)

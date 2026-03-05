@@ -14,29 +14,29 @@ from ui_components.tooltip import Tooltip
 
 
 def get_relative_time_from_hms(time_str):
-    """
-    将 HH:MM:SS 转换为相对时间（如 "2 mins ago"）。
-    """
     if not time_str:
         return ""
     try:
         now = datetime.datetime.now()
-        t = datetime.datetime.strptime(time_str, "%H:%M:%S").time()
-        record_time = datetime.datetime.combine(now.date(), t)
+        t_struct = datetime.datetime.strptime(time_str, "%H:%M:%S")
+        record_time = now.replace(hour=t_struct.hour, minute=t_struct.minute,
+                                  second=t_struct.second, microsecond=0)
 
         if record_time > now:
             record_time -= datetime.timedelta(days=1)
 
         diff = now - record_time
-        seconds = diff.total_seconds()
+        seconds = int(diff.total_seconds())
 
-        if seconds < 60:
+        if seconds < 1:
             return _("Just now")
+        elif seconds < 60:
+            return _("{s} seconds ago").format(s=seconds)
         elif seconds < 3600:
-            minutes = int(seconds / 60)
+            minutes = seconds // 60
             return _("{m} mins ago").format(m=minutes) if minutes > 1 else _("1 min ago")
         else:
-            hours = int(seconds / 3600)
+            hours = seconds // 3600
             return _("{h} hours ago").format(h=hours) if hours > 1 else _("1 hour ago")
     except Exception:
         return time_str
@@ -51,7 +51,6 @@ class HistoryItemWidget(QWidget):
         self.is_redoable = is_redoable
 
         self._custom_tooltip = Tooltip(self)
-        self._tooltip_html = self._build_tooltip_html(record)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 8, 10, 8)
@@ -150,8 +149,9 @@ class HistoryItemWidget(QWidget):
 
     def event(self, event):
         if event.type() == QEvent.Enter:
-            if self._tooltip_html:
-                self._custom_tooltip.show_tooltip(QCursor.pos(), self._tooltip_html, delay=400)
+            tooltip_html = self._build_tooltip_html(self.record)
+            if tooltip_html:
+                self._custom_tooltip.show_tooltip(QCursor.pos(), tooltip_html, delay=400)
         elif event.type() == QEvent.Leave or event.type() == QEvent.MouseButtonPress:
             self._custom_tooltip.hide()
         return super().event(event)
@@ -185,6 +185,7 @@ class HistoryItemWidget(QWidget):
 
 
 class HistoryPanel(QWidget):
+    locate_requested = Signal(str, str)
     jump_requested = Signal(int)
     clear_requested = Signal()
     revert_to_requested = Signal(int)
@@ -247,6 +248,7 @@ class HistoryPanel(QWidget):
             }
         """)
         self.list_widget.itemClicked.connect(self._on_item_clicked)
+        self.list_widget.itemDoubleClicked.connect(self._on_item_double_clicked)
         layout.addWidget(self.list_widget)
 
     def _get_current_state_index(self):
@@ -256,6 +258,28 @@ class HistoryPanel(QWidget):
                 return i
         return -1
 
+    def _extract_target_id(self, record):
+        action_type = record.get('type', '')
+        data = record.get('data', {})
+        file_id = record.get('file_id')
+
+        target_id = None
+        if action_type == 'single_change':
+            target_id = data.get('string_id')
+        elif action_type in ['bulk_change', 'bulk_ai_translate', 'bulk_excel_import', 'bulk_context_menu',
+                             'bulk_replace_all']:
+            changes = data.get('changes', [])
+            if changes:
+                target_id = changes[0].get('string_id')
+        return target_id, file_id
+
+    def _on_item_double_clicked(self, item):
+        widget = self.list_widget.itemWidget(item)
+        if widget and hasattr(widget, 'record'):
+            target_id, file_id = self._extract_target_id(widget.record)
+            if target_id:
+                self.locate_requested.emit(target_id, file_id)
+
     def _show_context_menu(self, pos):
         item = self.list_widget.itemAt(pos)
         if not item: return
@@ -263,9 +287,21 @@ class HistoryPanel(QWidget):
         index = item.data(Qt.UserRole)
         current_state_index = self._get_current_state_index()
 
+        widget = self.list_widget.itemWidget(item)
+        record = widget.record if widget else {}
+
         menu = QMenu(self)
 
-        # 1. 移动指针操作 (Undo/Redo to here)
+        # 定位到条目 (Locate Item)
+        target_id, file_id = self._extract_target_id(record)
+        if target_id:
+            locate_icon = QIcon(get_resource_path("icons/crosshair.svg"))
+            locate_action = QAction(locate_icon, _("Locate Item"), self)
+            locate_action.triggered.connect(lambda: self.locate_requested.emit(target_id, file_id))
+            menu.addAction(locate_action)
+            menu.addSeparator()
+
+        # 移动指针操作 (Undo/Redo to here)
         if index > current_state_index:
             # 撤销至此 (向下跳)
             jump_icon = QIcon(get_resource_path("icons/corner-up-left.svg"))
@@ -288,7 +324,7 @@ class HistoryPanel(QWidget):
                 lambda: self.preview_jump(index, current_state_index, is_redo=True, is_previewing=False))
             menu.addAction(jump_action)
 
-        # 2. 破坏性还原操作 (Revert selected and subsequent)
+        # 破坏性还原操作 (Revert selected and subsequent)
         if index >= current_state_index:
             if menu.actions():
                 menu.addSeparator()
