@@ -121,7 +121,6 @@ class LexiSyncApp(QMainWindow):
     language_changed = Signal()
     def __init__(self, config):
         super().__init__()
-        self.setUpdatesEnabled(False)
         self.config = config
         if "window_geometry" in self.config and self.config["window_geometry"]:
             self.restoreGeometry(QByteArray.fromBase64(self.config["window_geometry"].encode('utf-8')))
@@ -231,8 +230,8 @@ class LexiSyncApp(QMainWindow):
         self.source_language = self.config.get("default_source_language", "en")
         self.current_target_language = self.config.get("default_target_language", "zh")
         self.show_ignored_var = self.config.get("show_ignored", True)
-        self.show_untranslated_var = self.config.get("show_untranslated", False)
-        self.show_translated_var = self.config.get("show_translated", False)
+        self.show_untranslated_var = self.config.get("show_untranslated", True)
+        self.show_translated_var = self.config.get("show_translated", True)
         self.show_unreviewed_var = self.config.get("show_unreviewed", False)
 
         self.auto_compile_mo_var = self.config.get("auto_compile_mo_on_save", True)
@@ -250,8 +249,6 @@ class LexiSyncApp(QMainWindow):
         self.plugin_manager = PluginManager(self)
 
         self.UI_initialization()
-
-        self.setUpdatesEnabled(True)
 
         self.file_explorer_panel.file_double_clicked.connect(self.open_file_from_explorer)
         self.file_explorer_panel.open_project_requested.connect(self.open_project)

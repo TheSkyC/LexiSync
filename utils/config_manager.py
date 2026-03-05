@@ -44,8 +44,8 @@ def load_config():
 
             # General settings
             config_data.setdefault("show_ignored", True)
-            config_data.setdefault("show_untranslated", False)
-            config_data.setdefault("show_translated", False)
+            config_data.setdefault("show_untranslated", True)
+            config_data.setdefault("show_translated", True)
             config_data.setdefault("show_unreviewed", False)
             config_data.setdefault("apply_and_next_behavior", "untranslated")
             config_data.setdefault("accelerator_marker", "&")
