@@ -3,225 +3,263 @@
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTreeView,
-    QHeaderView, QFrame, QTextEdit
+    QHeaderView, QFrame, QTextEdit, QStyledItemDelegate
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QStandardItemModel, QStandardItem, QColor, QFont, QIcon
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import (QStandardItemModel, QStandardItem, QColor,
+                           QFont, QIcon, QPainter, QBrush)
 from utils.localization import _
 import difflib
+
 
 class DiffDialog(QDialog):
     def __init__(self, parent, title, diff_results):
         super().__init__(parent)
         self.diff_results = diff_results
-        self.result = None
+        self.decisions = {}  # 存储最终决策结果
 
         self.setWindowTitle(title)
         self.setModal(True)
-        self.resize(1200, 700)
+        self.resize(1100, 750)
 
         self.setup_ui()
         self.populate_tree()
+
         self.setStyleSheet("""
             QDialog {
-                background-color: #FAFAFA;
+                background-color: #FFFFFF;
             }
             QTreeView {
-                border: 1px solid #E0E0E0;
-                border-radius: 8px;
+                border: none;
                 background-color: #FFFFFF;
-                alternate-background-color: #F8F9FA;
+                outline: 0;
+                color: #333333; /* 显式设置默认文字颜色 */
             }
             QTreeView::item {
-                padding: 6px 4px;
-                min-height: 20px;
+                min-height: 30px; /* 用高度代替 padding */
+                border-radius: 4px;
             }
-            QTreeView::item:selected:active {
-                background-color: #D4E6F1;
-                color: #1A5276;
+            QTreeView::item:selected {
+                background-color: #E3F2FD;
+                color: #000000;
             }
-            QTreeView::item:selected:!active {
-                background-color: #EAF2F8;
-                color: #2874A6;
-            }
-            QTreeView::item:hover {
-                background-color: #F8F9F9;
-            }
-            QTreeView::branch {
-                background: transparent;
+            QTreeView::item:hover:!selected {
+                background-color: #F5F5F5;
             }
             QHeaderView::section {
-                background-color: #F1F3F5;
-                padding: 6px;
+                background-color: #FFFFFF;
+                padding: 4px;
                 border: none;
-                border-bottom: 1px solid #E0E0E0;
+                border-bottom: 1px solid #EEEEEE;
                 font-weight: bold;
+                color: #555555;
+            }
+            QTextEdit {
+                border: 1px solid #EEEEEE;
+                border-radius: 6px;
+                background-color: #FAFAFA;
             }
             QPushButton {
-                font-size: 13px;
                 padding: 8px 16px;
-                border: 1px solid #CCCCCC;
-                border-radius: 6px;
-                background-color: #FFFFFF;
-            }
-            QPushButton:hover {
-                background-color: #F0F8FF;
-                border-color: #007BFF;
-            }
-            QPushButton#confirmButton {
-                background-color: #28A745;
-                color: white;
-                border: none;
-                font-weight: bold;
-            }
-            QPushButton#confirmButton:hover {
-                background-color: #218838;
+                border-radius: 4px;
+                font-weight: 500;
             }
         """)
 
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        from PySide6.QtCore import QTimer
-        QTimer.singleShot(0, self._adjust_column_widths)
-
-    def _adjust_column_widths(self):
-        header = self.tree.header()
-        if not header:
-            return
-        total_width = header.width()
-        first_col_width = int(total_width * 0.85)
-        header.setSectionResizeMode(0, QHeaderView.Interactive)
-        header.setSectionResizeMode(1, QHeaderView.Interactive)
-        self.tree.setColumnWidth(0, first_col_width)
-        header.setSectionResizeMode(1, QHeaderView.Stretch)
-
     def setup_ui(self):
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(12, 12, 12, 12)
-        main_layout.setSpacing(12)
+        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(15)
 
-        summary_text = self.diff_results.get('summary', _('Comparison Results Summary'))
+        # 顶部说明
+        summary_text = self.diff_results.get('summary', _('Comparison Results'))
         summary_label = QLabel(summary_text)
         summary_label.setWordWrap(True)
-        summary_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #333; margin-bottom: 5px;")
+        summary_label.setStyleSheet("font-size: 14px; color: #333; font-weight: bold;")
         main_layout.addWidget(summary_label)
 
-        # Main content area with two panels
-        content_frame = QFrame()
-        content_layout = QHBoxLayout(content_frame)
-        content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.setSpacing(10)
-        main_layout.addWidget(content_frame, 1)
+        # 提示语
+        hint_label = QLabel(
+            _("Uncheck items to reject changes. Rejected 'Modified' items will be split into 'Delete Old' + 'Add New'."))
+        hint_label.setStyleSheet("color: #666; font-style: italic; margin-bottom: 5px;")
+        main_layout.addWidget(hint_label)
 
-        # Left panel: Tree view
-        tree_container = QFrame()
-        tree_container_layout = QVBoxLayout(tree_container)
+        # 主内容区
+        content_layout = QHBoxLayout()
+
+        # 左侧树
         self.tree = QTreeView()
-        self.tree.setAlternatingRowColors(True)
-        self.tree.setRootIsDecorated(True)
+        self.tree.setAlternatingRowColors(False)
+        self.tree.setHeaderHidden(False)
         self.tree.setEditTriggers(QTreeView.NoEditTriggers)
+        self.model = QStandardItemModel()
+        self.model.setHorizontalHeaderLabels([_("Change"), _("Detail")])
+        self.tree.setModel(self.model)
 
-        tree_container_layout.addWidget(self.tree)
-        content_layout.addWidget(tree_container, 2)
+        # 联动复选框
+        self.model.itemChanged.connect(self.on_item_changed)
+        self.tree.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
-        # Right panel: Inline diff view
-        diff_view_container = QFrame()
-        diff_view_container_layout = QVBoxLayout(diff_view_container)
-        diff_view_container.setStyleSheet(
-            "QFrame { border: 1px solid #E0E0E0; border-radius: 8px; background-color: #FFFFFF; }")
-        diff_view_container_layout.addWidget(QLabel(_("Inline Differences")))
+        content_layout.addWidget(self.tree, 2)
+
+        # 右侧详情
+        right_panel = QVBoxLayout()
+        right_panel.setContentsMargins(0, 0, 0, 0)
+        right_panel.addWidget(QLabel(_("Diff Preview")))
+
         self.diff_view = QTextEdit()
         self.diff_view.setReadOnly(True)
         self.diff_view.setFont(QFont("Consolas", 10))
-        diff_view_container_layout.addWidget(self.diff_view)
-        content_layout.addWidget(diff_view_container, 1)
+        right_panel.addWidget(self.diff_view)
 
-        self.model = QStandardItemModel()
-        self.tree.setModel(self.model)
+        content_layout.addLayout(right_panel, 1)
+        main_layout.addLayout(content_layout)
 
-        self.tree.selectionModel().selectionChanged.connect(self.on_selection_changed)
+        # 底部按钮
+        btn_layout = QHBoxLayout()
 
-        # Buttons
-        button_box = QHBoxLayout()
-        confirm_btn = QPushButton(_("Confirm and Update Project"))
-        confirm_btn.setObjectName("confirmButton")
-        confirm_btn.clicked.connect(self.accept)
-        button_box.addWidget(confirm_btn)
+        self.btn_confirm = QPushButton(_("Apply Selected Changes"))
+        self.btn_confirm.setStyleSheet("background-color: #4CAF50; color: white; border: none;")
+        self.btn_confirm.clicked.connect(self.accept)
 
-        button_box.addStretch(1)
+        self.btn_cancel = QPushButton(_("Cancel"))
+        self.btn_cancel.setStyleSheet("background-color: #F5F5F5; border: 1px solid #DDD; color: #333;")
+        self.btn_cancel.clicked.connect(self.reject)
 
-        cancel_btn = QPushButton(_("Cancel"))
-        cancel_btn.clicked.connect(self.reject)
-        button_box.addWidget(cancel_btn)
-
-        main_layout.addLayout(button_box)
+        btn_layout.addStretch()
+        btn_layout.addWidget(self.btn_cancel)
+        btn_layout.addWidget(self.btn_confirm)
+        main_layout.addLayout(btn_layout)
 
     def populate_tree(self):
-        self.model.setHorizontalHeaderLabels([_("Original"), _("Similarity")])
+        # 1. 新增 (Added)
+        self._add_category_node(
+            _("Added"),
+            self.diff_results.get('added', []),
+            QColor("#4CAF50"),
+            "new_obj",
+            is_checkable=True
+        )
 
-        # 新增项目
-        added_items = self.diff_results.get('added', [])
-        if added_items:
-            added_root = QStandardItem(f"{_('Added')} ({len(added_items)})")
-            added_root.setForeground(QColor("#28A745"))
-            added_root.setFont(QFont("Segoe UI", 10, QFont.Bold))
-            self.model.appendRow(added_root)
-            for item_data in added_items:
-                item = QStandardItem(item_data['new_obj'].original_semantic)
-                item.setData(item_data, Qt.UserRole)
-                added_root.appendRow([item, QStandardItem("N/A")])
+        # 2. 修改 (Modified)
+        self._add_category_node(
+            _("Modified"),
+            self.diff_results.get('modified', []),
+            QColor("#FF9800"),
+            "new_obj",
+            is_checkable=True,
+            show_similarity=True
+        )
 
-        # 修改项目
-        modified_items = self.diff_results.get('modified', [])
-        if modified_items:
-            modified_root = QStandardItem(f"{_('Modified/Inherited')} ({len(modified_items)})")
-            modified_root.setForeground(QColor("#FFC107"))
-            modified_root.setFont(QFont("Segoe UI", 10, QFont.Bold))
-            self.model.appendRow(modified_root)
-            for item_data in modified_items:
-                sim_str = f"{item_data['similarity']:.1%}"
-                item = QStandardItem(item_data['new_obj'].original_semantic)
-                item.setData(item_data, Qt.UserRole)
-                modified_root.appendRow([item, QStandardItem(sim_str)])
+        # 3. 删除 (Removed)
+        self._add_category_node(
+            _("Removed"),
+            self.diff_results.get('removed', []),
+            QColor("#F44336"),
+            "old_obj",
+            is_checkable=True
+        )
 
-        # 移除项目
-        removed_items = self.diff_results.get('removed', [])
-        if removed_items:
-            removed_root = QStandardItem(f"{_('Removed')} ({len(removed_items)})")
-            removed_root.setForeground(QColor("#DC3545"))
-            removed_root.setFont(QFont("Segoe UI", 10, QFont.Bold))
-            self.model.appendRow(removed_root)
-            for item_data in removed_items:
-                item = QStandardItem(item_data['old_obj'].original_semantic)
-                item.setData(item_data, Qt.UserRole)
-                removed_root.appendRow([item, QStandardItem("N/A")])
+        # 4. 未变动 (Unchanged)
+        self._add_category_node(
+            _("Unchanged"),
+            self.diff_results.get('unchanged', []),
+            QColor("#9E9E9E"),
+            "new_obj",
+            is_checkable=False,  # 不可取消勾选，作为基准
+            default_expanded=False
+        )
 
-        # 未改变项目
-        unchanged_items = self.diff_results.get('unchanged', [])
-        if unchanged_items:
-            unchanged_root = QStandardItem(f"{_('Unchanged')} ({len(unchanged_items)})")
-            unchanged_root.setForeground(QColor("#6C757D"))
-            unchanged_root.setFont(QFont("Segoe UI", 10, QFont.Bold))
-            self.model.appendRow(unchanged_root)
-            for item_data in unchanged_items:
-                item = QStandardItem(item_data['new_obj'].original_semantic)
-                item.setData(item_data, Qt.UserRole)
-                unchanged_root.appendRow([item, QStandardItem("100%")])
-        self.tree.expandAll()
-        if unchanged_items:
-            for row in range(self.model.rowCount()):
-                item = self.model.item(row)
-                if item and item.text().startswith(_('Unchanged')):
-                    self.tree.collapse(item.index())
-                    break
+        self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.tree.header().setSectionResizeMode(1, QHeaderView.Stretch)
 
+    def _add_category_node(self, title, items, color, obj_key, is_checkable=True, show_similarity=False,
+                           default_expanded=True):
+        if not items: return
+
+        # 显式创建 Item
+        root_item = QStandardItem(str(title) + f" ({len(items)})")
+        root_item.setForeground(QBrush(color))
+        font = QFont()
+        font.setBold(True)
+        root_item.setFont(font)
+
+        if is_checkable:
+            root_item.setCheckable(True)
+            root_item.setCheckState(Qt.Checked)
+            root_item.setData("root", Qt.UserRole + 1)
+
+        for item_data in items:
+            ts_obj = item_data[obj_key]
+            text = str(ts_obj.original_semantic).replace('\n', ' ')
+            if len(text) > 80: text = text[:77] + "..."
+
+            child_item = QStandardItem(text)
+            child_item.setData(item_data, Qt.UserRole)
+
+            if is_checkable:
+                child_item.setCheckable(True)
+                child_item.setCheckState(Qt.Checked)
+
+            detail_text = ""
+            if show_similarity:
+                sim = item_data.get('similarity', 0)
+                detail_text = f"{sim:.0%} similarity"
+
+            detail_item = QStandardItem(detail_text)
+            detail_item.setForeground(QBrush(QColor("#888888")))
+
+            root_item.appendRow([child_item, detail_item])
+
+        self.model.appendRow([root_item, QStandardItem("")])
+        if default_expanded:
+            self.tree.expand(self.model.indexFromItem(root_item))
+
+    def on_item_changed(self, item):
+        """处理复选框联动逻辑"""
+        if item.isCheckable():
+            state = item.checkState()
+
+            # 如果是根节点，全选/全不选子节点
+            if item.data(Qt.UserRole + 1) == "root":
+                for i in range(item.rowCount()):
+                    child = item.child(i)
+                    if child.checkState() != state:
+                        child.setCheckState(state)
+
+            # 如果是子节点，更新根节点状态
+            elif item.parent():
+                parent = item.parent()
+                checked_count = 0
+                for i in range(parent.rowCount()):
+                    if parent.child(i).checkState() == Qt.Checked:
+                        checked_count += 1
+
+                if checked_count == parent.rowCount():
+                    new_state = Qt.Checked
+                elif checked_count == 0:
+                    new_state = Qt.Unchecked
+                else:
+                    new_state = Qt.PartiallyChecked
+
+                if parent.checkState() != new_state:
+                    # 阻止父节点变更再次触发子节点更新
+                    self.model.blockSignals(True)
+                    parent.setCheckState(new_state)
+                    self.model.blockSignals(False)
 
     def on_selection_changed(self, selected, deselected):
         indexes = selected.indexes()
         if not indexes:
             self.diff_view.clear()
             return
-        item = self.model.itemFromIndex(indexes[0])
+
+        # 只处理第一列
+        index = indexes[0]
+        if index.column() != 0:
+            index = index.siblingAtColumn(0)
+
+        item = self.model.itemFromIndex(index)
         item_data = item.data(Qt.UserRole)
 
         if not item_data:
@@ -231,33 +269,109 @@ class DiffDialog(QDialog):
         if 'old_obj' in item_data and 'new_obj' in item_data:  # Modified
             old_text = item_data['old_obj'].original_semantic
             new_text = item_data['new_obj'].original_semantic
-            self.display_inline_diff(old_text, new_text)
-        elif 'new_obj' in item_data:  # Added
+            self._display_inline_diff(old_text, new_text)
+        elif 'new_obj' in item_data:  # Added / Unchanged
             self.diff_view.setHtml(
-                f"<font color='green'><b>{_('New')}:</b><br>{item_data['new_obj'].original_semantic.replace('<', '<').replace('>', '>')}</font>")
+                f"<div style='color:#4CAF50; font-weight:bold;'>{_('New Content')}:</div>"
+                f"<div style='margin-top:5px;'>{self._escape(item_data['new_obj'].original_semantic)}</div>"
+            )
         elif 'old_obj' in item_data:  # Removed
             self.diff_view.setHtml(
-                f"<font color='red'><b>{_('Removed')}:</b><br>{item_data['old_obj'].original_semantic.replace('<', '<').replace('>', '>')}</font>")
+                f"<div style='color:#F44336; font-weight:bold;'>{_('Removed Content')}:</div>"
+                f"<div style='margin-top:5px; text-decoration:line-through; color:#888;'>"
+                f"{self._escape(item_data['old_obj'].original_semantic)}</div>"
+            )
 
-    def display_inline_diff(self, old_text, new_text):
+    def _display_inline_diff(self, old_text, new_text):
         diff = difflib.ndiff(old_text.split(), new_text.split())
-        html = ""
+        html = []
         for line in diff:
-            word = line[2:].replace('<', '<').replace('>', '>')
-            if line.startswith('+ '):
-                html += f"<span style='background-color: #D4EDDA; color: #155724; border-radius: 3px; padding: 1px 3px;'>{word}</span> "
-            elif line.startswith('- '):
-                html += f"<span style='background-color: #F8D7DA; color: #721C24; text-decoration: line-through; border-radius: 3px; padding: 1px 3px;'>{word}</span> "
-            elif line.startswith('? '):
-                pass
+            code = line[:2]
+            text = self._escape(line[2:])
+            if code == '+ ':
+                html.append(f"<span style='background:#E8F5E9; color:#2E7D32;'>{text}</span>")
+            elif code == '- ':
+                html.append(
+                    f"<span style='background:#FFEBEE; color:#C62828; text-decoration:line-through;'>{text}</span>")
+            elif code == '? ':
+                continue
             else:
-                html += f"{word} "
-        self.diff_view.setHtml(html)
+                html.append(text)
+        self.diff_view.setHtml(" ".join(html))
+
+    def _escape(self, text):
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+
+    def get_decisions(self):
+        """
+        根据用户勾选状态，生成最终的决策清单。
+        """
+        decisions = {
+            'added': [],
+            'removed': [],
+            'modified': [],
+            'unchanged': []  # 始终包含
+        }
+
+        # 1. 处理 Unchanged (始终保留)
+        decisions['unchanged'] = [item['new_obj'] for item in self.diff_results.get('unchanged', [])]
+
+        # 2. 遍历树节点获取决策
+        root = self.model.invisibleRootItem()
+        for i in range(root.rowCount()):
+            category_item = root.child(i)
+            title = category_item.text()
+
+            # 跳过 Unchanged 组
+            if "Unchanged" in title: continue
+
+            for j in range(category_item.rowCount()):
+                child = category_item.child(j)
+                item_data = child.data(Qt.UserRole)
+                is_checked = (child.checkState() == Qt.Checked)
+
+                if "Added" in title:
+                    if is_checked:
+                        decisions['added'].append(item_data['new_obj'])
+                    # Unchecked: 丢弃，不加入任何列表
+
+                elif "Removed" in title:
+                    if is_checked:
+                        # 确认删除，不加入任何列表（即在最终合并时消失）
+                        pass
+                    else:
+                        # 拒绝删除 -> 保留旧对象，并标记废弃
+                        old_obj = item_data['old_obj']
+                        old_obj.is_ignored = True
+                        old_obj.comment = f"[{_('Obsolete')}] {old_obj.comment}".strip()
+                        decisions['unchanged'].append(old_obj)
+
+                elif "Modified" in title:
+                    if is_checked:
+                        # 确认修改 -> 迁移属性
+                        old_obj = item_data['old_obj']
+                        new_obj = item_data['new_obj']
+
+                        # 迁移逻辑 (与之前相同)
+                        new_obj.set_translation_internal(old_obj.translation)
+                        new_obj.comment = old_obj.comment
+                        new_obj.is_reviewed = False  # 修改后需重审
+                        new_obj.is_fuzzy = True
+                        new_obj.po_comment = old_obj.po_comment
+
+                        decisions['modified'].append(new_obj)
+                    else:
+                        # 拒绝修改 -> 拆解为：保留旧的(废弃) + 新增新的
+                        old_obj = item_data['old_obj']
+                        old_obj.is_ignored = True
+                        old_obj.comment = f"[{_('Obsolete')}] {old_obj.comment}".strip()
+                        decisions['unchanged'].append(old_obj)
+
+                        new_obj = item_data['new_obj']
+                        decisions['added'].append(new_obj)
+
+        return decisions
 
     def accept(self):
-        self.result = True
+        self.decisions = self.get_decisions()
         super().accept()
-
-    def reject(self):
-        self.result = False
-        super().reject()

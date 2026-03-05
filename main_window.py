@@ -2990,57 +2990,147 @@ class LexiSyncApp(QMainWindow):
     def rebuild_current_project(self):
         if not self.is_project_mode: return
 
+        # 1. 静默读取当前配置中的规则
         new_patterns = self.config.get("extraction_patterns", [])
 
         self.update_statusbar(_("Rebuilding project structure..."), persistent=True)
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         try:
-            from services.project_service import rebuild_project_structure
+            from services.project_service import rebuild_project_structure, TRANSLATION_DIR
+            # 2. 调用服务层执行全量重构
             target_langs = self.project_config.get('target_languages', [])
+            # rebuild_data 结构: { 'zh': [ts_obj, ...], 'en': [ts_obj, ...] }
             rebuild_data = rebuild_project_structure(
                 self.current_project_path, target_langs, new_patterns, self
             )
 
-            # 准备差异对比
+            # 3. 准备当前语言的差异对比
             current_lang = self.current_target_language
-            new_list = rebuild_data.get(current_lang, [])
-            old_list = self.all_project_strings
+            raw_new_list = rebuild_data.get(current_lang, [])
+            old_list = self.all_project_strings  # 当前内存中的旧数据
 
-            # 计算 Diff 统计
+            # 计算 Diff
             old_ids = {ts.id for ts in old_list}
-            new_ids = {ts.id for ts in new_list}
+            new_ids = {ts.id for ts in raw_new_list}
 
-            diff_results = {
-                'added': [{'new_obj': ts} for ts in new_list if ts.id not in old_ids],
-                'removed': [{'old_obj': ts} for ts in old_list if ts.id not in new_ids],
-                'modified': [],  # 逻辑中已处理
-                'unchanged': [{'new_obj': ts} for ts in new_list if ts.id in old_ids],
-                'summary': _("Project rebuild complete. Found {new} new IDs, {rem} removed IDs.").format(
-                    new=len(new_ids - old_ids), rem=len(old_ids - new_ids))
-            }
+            # - Unchanged: ID 相同
+            # - Modified: ID 不同，但新对象有翻译（说明是模糊匹配迁移的）
+            # - Added: ID 不同，且无翻译
+            # - Removed: 旧 ID 不在新列表中
+
+            diff_results = {'added': [], 'removed': [], 'modified': [], 'unchanged': []}
+
+            # 建立 ID 索引
+            new_map = {ts.id: ts for ts in raw_new_list}
+            old_map = {ts.id: ts for ts in old_list}
+
+            # 处理新列表中的项
+            for ts in raw_new_list:
+                if ts.id in old_map:
+                    old_obj = old_map[ts.id]
+                    diff_results['unchanged'].append({'old_obj': old_obj, 'new_obj': ts})
+                elif ts.is_fuzzy and ts.translation:
+                    diff_results['added'].append({'new_obj': ts})
+                else:
+                    diff_results['added'].append({'new_obj': ts})
+
+            # 处理删除的项
+            for ts in old_list:
+                if ts.id not in new_map:
+                    diff_results['removed'].append({'old_obj': ts})
+
+            diff_results['summary'] = _("Project rebuild complete. Found {new} new IDs, {rem} removed IDs.").format(
+                new=len(new_ids - old_ids), rem=len(old_ids - new_ids))
 
             QApplication.restoreOverrideCursor()
 
-            # 弹出 Diff 对话框
+            # 4. 弹出 Diff 对话框
             from dialogs.diff_dialog import DiffDialog
             confirm_dialog = DiffDialog(self, _("Rebuild Results (Preview: {lang})").format(lang=current_lang),
                                         diff_results)
+
             if confirm_dialog.exec():
-                # 存所有语言的结果
-                for lang, strings in rebuild_data.items():
-                    from services.project_service import TRANSLATION_DIR
-                    trans_file = Path(self.current_project_path) / TRANSLATION_DIR / f"{lang}.json"
-                    data_to_save = [ts.to_dict() for ts in strings]
-                    with open(trans_file, 'w', encoding='utf-8') as f:
+                decisions = confirm_dialog.decisions
+
+                # A. 收集用户决策的 ID 集合
+                valid_new_ids = {ts.id for ts in decisions['unchanged']} | {ts.id for ts in decisions['added']} | {
+                    ts.id for ts in decisions['modified']}
+
+                retained_old_objs = [ts for ts in decisions['unchanged'] if ts.id not in new_map]
+                retained_old_ids = {ts.id for ts in retained_old_objs}
+
+                # B. 应用到所有语言
+                for lang in target_langs:
+                    # 1. 获取该语言的“原始重构结果”（全量新 ID）
+                    raw_lang_list = rebuild_data.get(lang, [])
+
+                    # 2. 获取该语言的“旧数据文件”（用于找回 Obsolete 项）
+                    old_lang_file = Path(
+                        self.current_project_path) / TRANSLATION_DIR / f"{lang}.json"
+                    old_lang_map = {}
+                    if old_lang_file.exists():
+                        try:
+                            with open(old_lang_file, 'r', encoding='utf-8') as f:
+                                old_data = json.load(f)
+                                for item in old_data:
+                                    old_lang_map[item['id']] = item
+                        except:
+                            pass
+
+                    # 3. 构建该语言的最终列表
+                    final_lang_list = []
+
+                    # 3.1 添加用户确认保留的“新”项
+                    for ts in raw_lang_list:
+                        if ts.id in valid_new_ids:
+                            final_lang_list.append(ts)
+
+                    # 3.2 添加用户强制保留的“旧”项 (Obsolete)
+                    for old_id in retained_old_ids:
+                        if old_id in old_lang_map:
+                            # 从旧文件中恢复数据，并转换为对象
+                            item_data = old_lang_map[old_id]
+                            # 必须标记为 Obsolete，与主语言保持一致
+                            if "[Obsolete]" not in item_data.get('comment', ''):
+                                item_data['comment'] = f"[{_('Obsolete')}] {item_data.get('comment', '')}".strip()
+                            item_data['is_ignored'] = True
+
+                            # 转换为 TranslatableString 对象
+                            ts_restored = TranslatableString.from_dict(item_data, [])
+                            final_lang_list.append(ts_restored)
+
+                    # 3.3 排序 (按行号)
+                    final_lang_list.sort(key=lambda x: x.line_num_in_file if x.line_num_in_file > 0 else 999999)
+
+                    # 4. 保存
+                    data_to_save = [ts.to_dict() for ts in final_lang_list]
+                    from utils.file_utils import atomic_open
+                    with atomic_open(str(old_lang_file), 'w', encoding='utf-8') as f:
                         json.dump(data_to_save, f, indent=4, ensure_ascii=False)
 
-                # 更新当前内存状态
-                self.all_project_strings = rebuild_data[current_lang]
+                self.update_statusbar(_("Synchronizing data..."), persistent=True)
+
+                # 1. 重新加载全量项目数据
+                from services import project_service
+                __, all_strings = project_service.load_project_data(
+                    self.current_project_path,
+                    self.current_target_language,
+                    self,
+                    all_files=True
+                )
+                self.all_project_strings = all_strings
+                self.loaded_file_ids = {f['id'] for f in self.project_config.get('source_files', [])}
+
+                # 2. 重建索引并刷新视图
                 self._rebuild_string_cache_indexes()
-                self._switch_active_file(self.current_active_source_file_id)
+                if self.current_active_source_file_id:
+                    self._switch_active_file(self.current_active_source_file_id)
+                else:
+                    self._run_and_refresh_with_validation()
+
                 self.mark_modified(False)
-                self.update_statusbar(_("Project rebuilt successfully."))
+                self.update_statusbar(_("Project rebuilt and synchronized successfully."))
             else:
                 self.update_statusbar(_("Rebuild cancelled."))
 
@@ -7352,12 +7442,24 @@ class LexiSyncApp(QMainWindow):
 
             if dialog.exec():
                 self.update_statusbar(_("Applying updates..."), persistent=True)
-                self.translatable_objects = new_strings
+
+                decisions = dialog.decisions
+
+                # 合并所有需要保留的对象
+                final_list = []
+                final_list.extend(decisions['unchanged'])  # 包含原生未变动的 + 用户拒绝删除的 + 用户拒绝修改拆分出的旧项
+                final_list.extend(decisions['added'])  # 包含原生新增的 + 用户拒绝修改拆分出的新项
+                final_list.extend(decisions['modified'])  # 用户确认迁移的项
+
+                # 按在文件中的出现顺序排序
+                final_list.sort(key=lambda x: x.line_num_in_file if x.line_num_in_file > 0 else 999999)
+
+                self.translatable_objects = final_list
+
                 if not self.is_translation_mode and new_code_content is not None:
                     self.original_raw_code_content = new_code_content
                     self.current_file_path = new_filepath
-                elif self.is_translation_mode:
-                    pass
+
                 self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True, record_history=False)
                 self._run_and_refresh_with_validation()
                 self.mark_modified()
