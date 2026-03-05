@@ -2822,7 +2822,7 @@ class LexiSyncApp(QMainWindow):
             # Checkpoint 2: Extraction
             t_extract = time.perf_counter()
 
-            self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
+            self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True, record_history=False)
 
             # Checkpoint 3: TM Application
             t_tm = time.perf_counter()
@@ -5495,7 +5495,7 @@ class LexiSyncApp(QMainWindow):
                     _("Attempted to restore {count} old translations/statuses.").format(count=restored_count),
                     persistent=False)
 
-            self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
+            self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True, record_history=False)
 
             self.undo_history.clear()
             self.redo_history.clear()
@@ -5806,7 +5806,7 @@ class LexiSyncApp(QMainWindow):
 
         self.update_statusbar(_("TM suggestion applied."))
 
-    def apply_tm_to_all_current_strings(self, silent=False, only_if_empty=False, confirm=False):
+    def apply_tm_to_all_current_strings(self, silent=False, only_if_empty=False, confirm=False, record_history=True):
         if not self.translatable_objects:
             if not silent: QMessageBox.information(self, _("Info"), _("No strings to apply TM to."))
             return 0
@@ -5876,7 +5876,7 @@ class LexiSyncApp(QMainWindow):
 
         # 4. Finalize UI updates and undo history
         if applied_count > 0:
-            if bulk_changes_for_undo:
+            if bulk_changes_for_undo and record_history:
                 self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})
                 self.mark_modified()
             self._update_view_for_ids(ids_to_update)
@@ -7248,7 +7248,7 @@ class LexiSyncApp(QMainWindow):
                     self.current_file_path = new_filepath
                 elif self.is_translation_mode:
                     pass
-                self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True)
+                self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True, record_history=False)
                 self._run_and_refresh_with_validation()
                 self.mark_modified()
                 self.update_statusbar(_("Project updated to new version."), persistent=True)

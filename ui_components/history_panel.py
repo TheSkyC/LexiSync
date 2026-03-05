@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetIte
                                QLabel, QToolBar, QLineEdit, QSizePolicy, QHBoxLayout,
                                QToolButton, QMenu)
 from PySide6.QtCore import Qt, Signal, QSize
-from PySide6.QtGui import QIcon, QColor, QFont, QAction, QAction, QCursor
+from PySide6.QtGui import QIcon, QColor, QFont, QAction, QCursor
 import os
 from utils.path_utils import get_resource_path
 from utils.localization import _
