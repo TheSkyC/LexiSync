@@ -261,6 +261,18 @@ class GeneralSettingsPage(BaseSettingsPage):
         project_layout.addRow(self.load_all_files_checkbox)
         content_layout.addWidget(project_group)
 
+        # Import Settings Group
+        import_group = QGroupBox(_("Import Settings"))
+        import_layout = QVBoxLayout(import_group)
+        self.fill_source_checkbox = QCheckBox(
+            _("Fill translation with source text for monolingual files"))
+        self.fill_source_checkbox.setToolTip(
+            _("If disabled, translations will be empty when loading monolingual files (MD, JSON, etc.), ensuring accurate statistics."))
+        self.fill_source_checkbox.setChecked(self.app.config.get('fill_translation_with_source', False))
+
+        import_layout.addWidget(self.fill_source_checkbox)
+        content_layout.addWidget(import_group)
+
         # On Save Options Group
         on_save_group = QGroupBox(_("On File Save"))
         on_save_layout = QVBoxLayout(on_save_group)
@@ -331,7 +343,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         self.app.config['auto_save_interval_sec'] = self.app.auto_save_interval_sec
         self.app.setup_auto_save_timer()
         self.app.config['load_all_files_on_project_open'] = self.load_all_files_checkbox.isChecked()
-
+        self.app.config['fill_translation_with_source'] = self.fill_source_checkbox.isChecked()
         self.app.auto_compile_mo_var = self.compile_mo_checkbox.isChecked()
         self.app.config['auto_compile_mo_on_save'] = self.app.auto_compile_mo_var
         self.app.config['apply_and_next_behavior'] = self.next_behavior_combo.currentData()

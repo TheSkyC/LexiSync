@@ -50,6 +50,7 @@ def load_config():
             config_data.setdefault("apply_and_next_behavior", "untranslated")
             config_data.setdefault("accelerator_marker", "&")
             config_data.setdefault("translation_propagation_mode", "smart")
+            config_data.setdefault("fill_translation_with_source", False)
 
             # Smart Paste Group
             config_data.setdefault('smart_paste_enabled', True)
