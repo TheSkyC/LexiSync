@@ -36,13 +36,12 @@ class SingleInstanceServer(QObject):
 
 
 def raise_existing_instance():
-    """新实例调用：尝试连接旧实例，成功则发送唤醒信号并返回 True"""
     socket = QTcpSocket()
     socket.connectToHost(QHostAddress.LocalHost, SINGLE_INSTANCE_PORT)
 
-    if socket.waitForConnected(500):
+    if socket.waitForConnected(50):
         socket.write(ACTIVATE_MSG)
-        socket.waitForBytesWritten(500)
+        socket.waitForBytesWritten(50)
         socket.disconnectFromHost()
         return True
     return False
