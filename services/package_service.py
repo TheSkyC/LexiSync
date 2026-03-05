@@ -37,8 +37,11 @@ class PackageWorker(QObject):
 
     def run(self):
         try:
-            self.progress.emit(5, "Calculating project statistics...")
-            pack_info = self._generate_pack_info()
+            self.progress.emit(5, "Collecting files...")
+            files_to_pack = self._collect_files()
+
+            self.progress.emit(10, "Calculating project statistics...")
+            pack_info = self._generate_pack_info(files_to_pack)
 
             if self._is_cancelled: return
 
@@ -60,9 +63,7 @@ class PackageWorker(QObject):
                     zf.setencryption(pyzipper.WZ_AES, nbits=256)
 
                 # 3. Collect files to pack
-                files_to_pack = self._collect_files()
                 total_files = len(files_to_pack)
-
                 for i, file_path in enumerate(files_to_pack):
                     if self._is_cancelled:
                         raise InterruptedError("Packaging cancelled by user.")
@@ -86,31 +87,89 @@ class PackageWorker(QObject):
                     pass
             self.finished.emit(False, str(e))
 
-    def _generate_pack_info(self):
+    def _generate_pack_info(self, files_to_pack):
+        """
+        Generates rich metadata for the package.
+        files_to_pack: List of Path objects that will be included in the zip.
+        """
         with open(self.project_path / "project.json", 'r', encoding='utf-8') as f:
             proj_config = json.load(f)
 
+        # 1. Calculate Languages Stats
         langs_stats = {}
         for lang in self.options['langs']:
             trans_file = self.project_path / "translation" / f"{lang}.json"
-            total, translated = 0, 0
+
+            stats = {
+                "total_strings": 0,
+                "translated_strings": 0,
+                "source_char_count": 0,
+                "translation_char_count": 0,
+                "progress_percent": 0.0
+            }
+
             if trans_file.exists():
-                with open(trans_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    total = len(data)
-                    translated = sum(
-                        1 for item in data if item.get('translation', '').strip() and not item.get('is_ignored', False))
-            langs_stats[lang] = {"total": total, "translated": translated}
+                try:
+                    with open(trans_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        stats["total_strings"] = len(data)
+
+                        for item in data:
+                            src_len = len(item.get('original_semantic', ''))
+                            trans_len = len(item.get('translation', ''))
+                            is_trans = bool(item.get('translation', '').strip()) and not item.get('is_ignored', False)
+
+                            stats["source_char_count"] += src_len
+                            if is_trans:
+                                stats["translated_strings"] += 1
+                                stats["translation_char_count"] += trans_len
+
+                        if stats["total_strings"] > 0:
+                            stats["progress_percent"] = round(
+                                (stats["translated_strings"] / stats["total_strings"]) * 100, 1)
+                except Exception as e:
+                    logger.error(f"Error calculating stats for {lang}: {e}")
+
+            langs_stats[lang] = stats
+
+        # 2. Calculate File Stats
+        total_size = 0
+        file_manifest = {
+            "source": [],
+            "tm": [],
+            "glossary": []
+        }
+
+        for p in files_to_pack:
+            try:
+                size = p.stat().st_size
+                total_size += size
+
+                # Categorize for manifest
+                rel = p.relative_to(self.project_path)
+                if str(rel).startswith('source'):
+                    file_manifest['source'].append(p.name)
+                elif str(rel).startswith('tm'):
+                    file_manifest['tm'].append(p.name)
+                elif str(rel).startswith('glossary'):
+                    file_manifest['glossary'].append(p.name)
+            except:
+                pass
 
         return {
-            "version": "1.0",
+            "version": "1.1",
             "project_name": proj_config.get('name', 'Unknown Project'),
             "created_at": datetime.now().isoformat(),
             "source_lang": proj_config.get('source_language', 'en'),
+            "overview": {
+                "total_files": len(files_to_pack),
+                "total_size_bytes": total_size,
+                "includes_tm": self.options['include_tm'],
+                "includes_glossary": self.options['include_glossary'],
+                "is_encrypted": bool(self.options.get('password'))
+            },
             "languages": langs_stats,
-            "includes_tm": self.options['include_tm'],
-            "includes_glossary": self.options['include_glossary'],
-            "is_encrypted": bool(self.options.get('password'))
+            "manifest": file_manifest
         }
 
     def _collect_files(self):
@@ -188,6 +247,41 @@ class ExtractWorker(QObject):
         except Exception as e:
             logger.error(f"Extraction failed: {e}", exc_info=True)
             self.finished.emit(False, str(e))
+
+    @staticmethod
+    def verify_password(package_path, password):
+        """
+        在不解压的情况下，通过尝试读取一个加密文件来校验密码。
+        """
+        try:
+            if HAS_PYZIPPER:
+                zf = pyzipper.AESZipFile(package_path, 'r')
+            else:
+                zf = pyzipper.ZipFile(package_path, 'r')
+
+            if password:
+                zf.setpassword(password.encode('utf-8'))
+
+            with zf:
+                try:
+                    zf.read('project.json')
+                except KeyError:
+                    files = zf.namelist()
+                    target_file = None
+                    for f in files:
+                        if f != 'pack_info.json':
+                            target_file = f
+                            break
+
+                    if target_file:
+                        zf.read(target_file)
+                    else:
+                        # 包里只有 pack_info.json？那密码其实无所谓了
+                        return True, None
+
+            return True, None
+        except Exception as e:
+            return False, str(e)
 
 
 def read_package_info(package_path):
