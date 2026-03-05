@@ -2707,7 +2707,13 @@ class LexiSyncApp(QMainWindow):
     def _update_language_switcher(self):
         self.target_lang_combo.blockSignals(True)
         self.target_lang_combo.clear()
-        for lang_code in self.current_target_language:
+
+        target_langs = self.project_config.get('target_languages', [])
+        if isinstance(target_langs, str):
+            target_langs = [target_langs]
+            self.project_config['target_languages'] = target_langs
+
+        for lang_code in target_langs:
             lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == lang_code), lang_code)
             self.target_lang_combo.addItem(lang_name, lang_code)
 
