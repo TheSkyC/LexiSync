@@ -174,32 +174,44 @@ class PackageWorker(QObject):
 
     def _collect_files(self):
         files = []
-        # Base files
+        # 基础文件
         files.append(self.project_path / "project.json")
 
-        # Source dir
-        src_dir = self.project_path / "source"
-        if src_dir.exists():
-            files.extend([p for p in src_dir.rglob('*') if p.is_file()])
+        # 垃圾文件黑名单
+        EXCLUDE_NAMES = {'pack_info.json', '.DS_Store', 'thumbs.db', 'desktop.ini', '.gitignore'}
+        EXCLUDE_EXTS = {'.tmp', '.bak', '.log', '.swp'}
 
-        # Translation dir (only selected langs)
+        def is_junk(path):
+            return (
+                    path.name in EXCLUDE_NAMES or
+                    path.suffix.lower() in EXCLUDE_EXTS or
+                    path.name.startswith('~$')
+            )
+
+        def scan_dir(directory):
+            if directory.exists():
+                for p in directory.rglob('*'):
+                    if p.is_file() and not is_junk(p):
+                        files.append(p)
+
+        # Source 目录
+        scan_dir(self.project_path / "source")
+
+        # Translation dir
         trans_dir = self.project_path / "translation"
         if trans_dir.exists():
             for lang in self.options['langs']:
                 f = trans_dir / f"{lang}.json"
-                if f.exists(): files.append(f)
+                if f.exists() and not is_junk(f):
+                    files.append(f)
 
         # TM
         if self.options['include_tm']:
-            tm_dir = self.project_path / "tm"
-            if tm_dir.exists():
-                files.extend([p for p in tm_dir.rglob('*') if p.is_file()])
+            scan_dir(self.project_path / "tm")
 
         # Glossary
-        if self.options['include_glossary']:
-            glos_dir = self.project_path / "glossary"
-            if glos_dir.exists():
-                files.extend([p for p in glos_dir.rglob('*') if p.is_file()])
+        if self.options.get('include_glossary'):
+            scan_dir(self.project_path / "glossary")
 
         return files
 
@@ -235,6 +247,13 @@ class ExtractWorker(QObject):
                     zf.extract(member, self.target_dir)
                     prog = 10 + int((i / total) * 90)
                     self.progress.emit(prog, f"Extracting: {member.filename}")
+
+            info_path = os.path.join(self.target_dir, 'pack_info.json')
+            if os.path.exists(info_path):
+                try:
+                    os.remove(info_path)
+                except Exception as e:
+                    logger.warning(f"Failed to remove pack_info.json: {e}")
 
             self.progress.emit(100, "Extraction complete.")
             self.finished.emit(True, self.target_dir)
