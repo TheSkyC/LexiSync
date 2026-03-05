@@ -178,7 +178,10 @@ def load_project_data(project_path: str, target_language: str, app_instance, fil
         for ts_obj in extracted_strings:
             if ts_obj.id in translation_map:
                 ts_data = translation_map[ts_obj.id]
-                ts_obj.translation = ts_data.get('translation', "").replace("\\n", "\n")
+                val = ts_data.get('translation', "").replace("\\n", "\n")
+                ts_obj.set_translation_internal(val)
+                ts_obj._translation_edit_history = [ts_obj.translation]
+                ts_obj._translation_history_pointer = 0
                 ts_obj.comment = ts_data.get('comment', "")
                 ts_obj.is_reviewed = ts_data.get('is_reviewed', False)
                 ts_obj.is_ignored = ts_data.get('is_ignored', False)
@@ -275,7 +278,7 @@ def build_project_target_files(project_path: str, app_instance, progress_callbac
                             translated_data = translation_map[ts.id]
                             translation_text = translated_data.get('translation', "").replace("\\n", "\n")
                             if not translated_data.get('is_ignored', False):
-                                ts.translation = translation_text
+                                ts.set_translation_internal(translation_text)
                                 ts.is_reviewed = translated_data.get('is_reviewed', False)
                                 ts.is_fuzzy = translated_data.get('is_fuzzy', False)
                     handler.save(str(target_path_abs), temp_ts_objects, metadata, app_instance=app_instance)
@@ -295,7 +298,7 @@ def build_project_target_files(project_path: str, app_instance, progress_callbac
                             if translation_text.strip() and not translated_data.get('is_ignored', False):
                                 start = ts_obj.char_pos_start_in_file
                                 end = ts_obj.char_pos_end_in_file
-                                ts_obj.translation = translation_text
+                                ts_obj.set_translation_internal(translation_text)
                                 replacement = ts_obj.get_raw_translated_for_code()
                                 content = content[:start] + replacement + content[end:]
 

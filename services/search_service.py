@@ -92,28 +92,21 @@ class SearchService(QObject):
         except re.error:
             return 0
 
-        proxy = self.app.proxy_model
-        source_model = proxy.sourceModel()
+        model = self.app.sheet_model
 
-        # Search Loop
-        for row in range(proxy.rowCount()):
-            proxy_index = proxy.index(row, 0)
-            source_index = proxy.mapToSource(proxy_index)
-            ts_obj = source_model.data(source_index, Qt.UserRole)
+        for row in range(model.rowCount()):
+            ts_obj = model.get_ts_object_by_visual_row(row)
             if not ts_obj: continue
 
             matched = False
-
             # Column 2: Original
             if options.get("in_orig") and pattern.search(ts_obj.original_semantic):
                 self._add_match(row, 2, ts_obj)
                 matched = True
-
             # Column 3: Translation
             if options.get("in_trans") and pattern.search(ts_obj.get_translation_for_ui()):
                 self._add_match(row, 3, ts_obj)
                 matched = True
-
             # Column 4: Comment
             if options.get("in_comment") and pattern.search(ts_obj.comment):
                 self._add_match(row, 4, ts_obj)
@@ -126,10 +119,10 @@ class SearchService(QObject):
         if hasattr(self.app, 'update_search_markers'):
             source_rows = []
             for res in self.search_results:
-                proxy_idx = self.app.proxy_model.index(res['proxy_row'], 0)
-                source_idx = self.app.proxy_model.mapToSource(proxy_idx)
-                if source_idx.isValid():
-                    source_rows.append(source_idx.row())
+                ts_obj = res['obj']
+                raw_row = model.get_raw_index_by_id(ts_obj.id)
+                if raw_row is not None:
+                    source_rows.append(raw_row)
 
             self.app.update_search_markers(source_rows)
 

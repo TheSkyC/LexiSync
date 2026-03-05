@@ -11,6 +11,17 @@ logger = logging.getLogger(__name__)
 
 
 class TranslatableString:
+    __slots__ = [
+        'id', '_search_cache', 'context', 'original_raw', 'original_semantic',
+        'translation', 'is_ignored', 'was_auto_ignored', 'occurrences',
+        'char_pos_start_in_file', 'char_pos_end_in_file', 'warnings',
+        'minor_warnings', 'infos', 'is_warning_ignored', 'string_type',
+        'comment', 'is_reviewed', 'is_fuzzy', 'po_comment',
+        'ui_style_cache', 'context_lines', 'current_line_in_context_idx',
+        '_translation_edit_history', '_translation_history_pointer',
+        'sort_weight', '_display_original', '_display_translation'
+    ]
+
     def __init__(self, original_raw, original_semantic, line_num, char_pos_start_in_file, char_pos_end_in_file,
                  full_code_lines, string_type="Custom String", source_file_path="", occurrences=None, occurrence_index=0, id=None):
         if id:
@@ -23,6 +34,8 @@ class TranslatableString:
         self.original_raw = original_raw
         self.original_semantic = original_semantic
         self.translation = ""
+        self._display_original = self.original_semantic.replace('\n', '↵')
+        self._display_translation = ""
         self.is_ignored = False
         self.was_auto_ignored = False
         if occurrences is not None:
@@ -114,16 +127,24 @@ class TranslatableString:
         except IndexError:
             return ""
 
-    def set_translation_internal(self, text_with_newlines):
-        if text_with_newlines == self.translation:
-            return
+    def set_translation_internal(self, text_with_newlines, is_initial=False):
+        """
+        设置译文并同步缓存。
+        is_initial: 如果为 True，则重置撤销栈，将其设为初始状态。
+        """
         self.translation = text_with_newlines
-        if self._translation_history_pointer < len(self._translation_edit_history) - 1:
-            self._translation_edit_history = self._translation_edit_history[:self._translation_history_pointer + 1]
-        self._translation_edit_history.append(self.translation)
-        if len(self._translation_edit_history) > MAX_UNDO_HISTORY * 2:
-            self._translation_edit_history.pop(0)
-        self._translation_history_pointer = len(self._translation_edit_history) - 1
+        self._display_translation = self.translation.replace('\n', '↵')
+
+        if is_initial:
+            self._translation_edit_history = [self.translation]
+            self._translation_history_pointer = 0
+        else:
+            if self._translation_history_pointer < len(self._translation_edit_history) - 1:
+                self._translation_edit_history = self._translation_edit_history[:self._translation_history_pointer + 1]
+            self._translation_edit_history.append(self.translation)
+            if len(self._translation_edit_history) > MAX_UNDO_HISTORY * 2:
+                self._translation_edit_history.pop(0)
+            self._translation_history_pointer = len(self._translation_edit_history) - 1
 
     def get_translation_for_ui(self):
         return self.translation
@@ -178,7 +199,7 @@ class TranslatableString:
         if not ts.occurrences and 'line_num_in_file' in data: # Backward compatible
             ts.occurrences = [(data.get('source_file_path', ''), str(data['line_num_in_file']))]
         ts.id = data['id']
-        ts.translation = data.get('translation', "")
+        ts.set_translation_internal(data.get('translation', ""), is_initial=True)
         ts.is_ignored = data.get('is_ignored', False)
         ts.was_auto_ignored = data.get('was_auto_ignored', False)
         ts.context = data.get('context', "")
@@ -225,44 +246,36 @@ class TranslatableString:
 
         self.ui_style_cache = {}
 
-        # 1. 最高优先级：已忽略
+        # 1. 已忽略
         if self.is_ignored:
-            # 被忽略，但仍有警告，则特殊显示
-            if self.warnings and not self.is_warning_ignored:
-                self.ui_style_cache['background'] = QColor(220, 220, 220, 200)
-                self.ui_style_cache['foreground'] = QColor(255, 0, 0, 150)
-                font = QFont()
-                font.setItalic(True)
-                self.ui_style_cache['font'] = font
-            else:
-                # 普通的忽略样式
-                self.ui_style_cache['background'] = QColor(220, 220, 220, 200)
-                self.ui_style_cache['foreground'] = QColor("#707070")
-                font = QFont()
-                font.setItalic(True)
-                self.ui_style_cache['font'] = font
+            self.ui_style_cache['background'] = QColor(220, 220, 220, 200)
+            self.ui_style_cache['foreground'] = QColor("#707070")
+            font = QFont()
+            font.setItalic(True)
+            self.ui_style_cache['font'] = font
 
-        # 2. 次高优先级：已审阅
+        # 2. 已审阅 (绿色背景，黑色字)
         elif self.is_reviewed:
-            self.ui_style_cache['foreground'] = QColor("darkgreen")
+            self.ui_style_cache['background'] = QColor("#E8F5E9")
+            self.ui_style_cache['foreground'] = QColor("#000000")
 
-        # 3. 严重警告
+        # 3. 严重错误 (红色背景，红色字)
         elif self.warnings and not self.is_warning_ignored:
-                self.ui_style_cache['background'] = QColor("#FFDDDD")  # 浅红色背景
-                self.ui_style_cache['foreground'] = QColor("red")  # 红色文字
+            self.ui_style_cache['background'] = QColor("#FFDDDD")
+            self.ui_style_cache['foreground'] = QColor("#D32F2F")
 
-        # 4. 次级警告
+        # 4. 次级警告 (黄色背景，黑色字)
         elif self.minor_warnings and not self.is_warning_ignored:
-            self.ui_style_cache['background'] = QColor("#FFFACD")  # 浅黄色背景
+            self.ui_style_cache['background'] = QColor("#FFFACD")
+            self.ui_style_cache['foreground'] = QColor("#000000")
 
-        # 5. 普通翻译状态
-        elif self.translation.strip():
-            self.ui_style_cache['foreground'] = QColor("darkblue")  # 已翻译 - 深蓝色
-        else:  # 未翻译
-            self.ui_style_cache['foreground'] = QColor("darkred")  # 未翻译 - 暗红色
+        # 5. 未翻译 (透明背景，暗红色字)
+        elif not self.translation.strip():
+            self.ui_style_cache['foreground'] = QColor("darkred")
 
-        original_has_newline = '\n' in self.original_semantic
-        translation_has_newline = '\n' in self.translation
+        # 6. 普通已翻译 (透明背景，黑色字)
+        else:
+            self.ui_style_cache['foreground'] = QColor("#000000")
 
         # 换行符
         orig_nl_count = self.original_semantic.count('\n')

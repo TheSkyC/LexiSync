@@ -12,7 +12,7 @@ def diff_and_merge_strings(old_strings, new_strings, similarity_threshold=0.95):
     for new_s in new_strings:
         if new_s.original_semantic in old_strings_map:
             old_s = old_strings_map[new_s.original_semantic]
-            new_s.translation = old_s.translation
+            new_s.set_translation_internal(old_s.translation)
             new_s.is_ignored = old_s.is_ignored
             new_s.is_reviewed = old_s.is_reviewed
             new_s.comment = old_s.comment
@@ -29,7 +29,7 @@ def diff_and_merge_strings(old_strings, new_strings, similarity_threshold=0.95):
                 best_match_old_s = old_s
 
         if best_match_score >= similarity_threshold and best_match_old_s:
-            new_s.translation = best_match_old_s.translation
+            new_s.set_translation_internal(best_match_old_s.translation)
             new_s.is_ignored = best_match_old_s.is_ignored
             new_s.is_reviewed = False
             new_s.comment = f"[{_('Inherited from old version')}] {best_match_old_s.comment}".strip()

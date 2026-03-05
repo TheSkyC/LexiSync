@@ -35,7 +35,7 @@ from PySide6.QtGui import (
     QDragMoveEvent, QDragEnterEvent, QDesktopServices)
 
 from models.translatable_string import TranslatableString
-from models.translatable_strings_model import TranslatableStringsModel, TranslatableStringsProxyModel
+from models.translatable_strings_model import TranslatableStringsModel
 from plugins.plugin_manager import PluginManager
 from ui_components.comment_status_panel import CommentStatusPanel
 from ui_components.context_panel import ContextPanel
@@ -290,7 +290,6 @@ class LexiSyncApp(QMainWindow):
     def UI_initialization(self):
         self._apply_custom_fonts()
         self._setup_ui()
-        self.proxy_model.setDynamicSortFilter(False)
         self.update_ui_state_after_file_load()
         self.update_ai_related_ui_state()
         self.update_counts_display()
@@ -1007,7 +1006,7 @@ class LexiSyncApp(QMainWindow):
         return tm_dir
 
     def _on_search_navigate(self, row, col):
-        index = self.proxy_model.index(row, col)
+        index = self.sheet_model.index(row, col)
         if index.isValid():
             self.table_view.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
 
@@ -1019,8 +1018,16 @@ class LexiSyncApp(QMainWindow):
     def refresh_sort(self):
         current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
         current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
-        self.proxy_model.invalidate()
-        self.proxy_model.sort(current_sort_column, current_sort_order)
+        self.sheet_model.apply_filter_and_sort(
+            search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
+            show_ignored=self.show_ignored_var,
+            show_untranslated=self.show_untranslated_var,
+            show_translated=self.show_translated_var,
+            show_unreviewed=self.show_unreviewed_var,
+            is_translation_mode=self.is_translation_mode,
+            sort_col=current_sort_column,
+            sort_order=current_sort_order
+        )
         self.update_warning_markers()
         self.update_statusbar(_("View refreshed."))
 
@@ -1168,6 +1175,9 @@ class LexiSyncApp(QMainWindow):
         table_layout.setSpacing(0)
 
         self.table_view = CustomTableView(self, self)
+        self.table_view.setWordWrap(False)
+        self.table_view.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        self.table_view.verticalHeader().setDefaultSectionSize(28)
         self.table_view.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
         self.table_view.setIconSize(QSize(32, 32))
         self.table_view.setAttribute(Qt.WA_Hover, False)
@@ -1197,9 +1207,7 @@ class LexiSyncApp(QMainWindow):
         """)
         self.table_view.setAlternatingRowColors(True)
         self.sheet_model = TranslatableStringsModel(self.translatable_objects, self)
-        self.proxy_model = TranslatableStringsProxyModel(self)
-        self.proxy_model.setSourceModel(self.sheet_model)
-        self.table_view.setModel(self.proxy_model)
+        self.table_view.setModel(self.sheet_model)
 
         self.table_view.setSelectionBehavior(QTableView.SelectRows)
         self.table_view.setSelectionMode(QTableView.ExtendedSelection)
@@ -1236,56 +1244,45 @@ class LexiSyncApp(QMainWindow):
 
         # Marker Bar
         self.marker_bar = MarkerBar(self.table_view, self)
-        self.marker_bar.set_proxy_model(self.proxy_model)
+        self.marker_bar.set_model(self.sheet_model)
         self.marker_bar.set_selection_model(self.table_view.selectionModel())
         self.marker_bar.marker_clicked.connect(self.on_marker_clicked)
         table_layout.addWidget(self.marker_bar)
 
         main_layout.addWidget(table_container)
 
-    def on_marker_clicked(self, source_row: int):
-        source_index = self.sheet_model.index(source_row, 0)
-        if not source_index.isValid():
+    def on_marker_clicked(self, visual_row: int):
+        index = self.sheet_model.index(visual_row, 0)
+        if not index.isValid():
             return
-        proxy_index = self.proxy_model.mapFromSource(source_index)
 
-        if proxy_index.isValid():
-            self.table_view.scrollTo(proxy_index, QTableView.PositionAtCenter)
-            self.table_view.selectionModel().setCurrentIndex(
-                proxy_index,
-                QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows
-            )
-        else:
-            self.update_statusbar(_("The selected item is currently hidden by filters."))
+        self.table_view.scrollTo(index, QAbstractItemView.PositionAtCenter)
+        self.table_view.selectionModel().clearSelection()
+        self.table_view.selectionModel().setCurrentIndex(
+            index,
+            QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows
+        )
 
     def update_warning_markers(self):
         if not self.marker_bar:
             return
 
-        errors = []
-        warnings = []
-        infos = []
-
-        source_model = self.proxy_model.sourceModel()
+        source_model = self.sheet_model
         if not source_model:
             return
 
         data_source = self.translatable_objects
-        id_to_index_map = source_model._id_to_index_map
+        id_to_index_map = source_model._id_to_raw_index_map
 
-        for ts_obj in data_source:
-            source_row = id_to_index_map.get(ts_obj.id)
-            if source_row is None:
-                continue
+        # 直接提取出有警告的对象的 ID
+        error_ids = [ts.id for ts in data_source if ts.warnings and not ts.is_warning_ignored]
+        warning_ids = [ts.id for ts in data_source if ts.minor_warnings and not ts.is_warning_ignored]
+        info_ids = [ts.id for ts in data_source if ts.infos and not ts.is_warning_ignored]
 
-            if ts_obj.warnings and not ts_obj.is_warning_ignored:
-                errors.append(source_row)
-
-            if ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
-                warnings.append(source_row)
-
-            if ts_obj.infos and not ts_obj.is_warning_ignored:
-                infos.append(source_row)
+        # 批量转换为 row 索引
+        errors = [id_to_index_map[tid] for tid in error_ids if tid in id_to_index_map]
+        warnings = [id_to_index_map[tid] for tid in warning_ids if tid in id_to_index_map]
+        infos = [id_to_index_map[tid] for tid in info_ids if tid in id_to_index_map]
 
         self.marker_bar.add_markers('error', errors)
         self.marker_bar.add_markers('warning', warnings)
@@ -1569,39 +1566,16 @@ class LexiSyncApp(QMainWindow):
             self.statusbar_label.setText(_("Ready"))
 
     def update_counts_display(self):
-        if not hasattr(self, 'translatable_objects') or not self.proxy_model:
+        if not hasattr(self, 'translatable_objects') or not self.translatable_objects:
             self.counts_label.setText(_("Displayed: 0/0 | Translated: 0 | Untranslated: 0 | Ignored: 0"))
             return
 
-        displayed_count = self.proxy_model.rowCount()
         total_count = len(self.translatable_objects)
+        ignored_visible = sum(1 for ts in self.translatable_objects if ts.is_ignored)
+        translated_visible = sum(1 for ts in self.translatable_objects if ts.translation.strip() and not ts.is_ignored)
+        untranslated_visible = total_count - ignored_visible - translated_visible
 
-        translated_visible = 0
-        untranslated_visible = 0
-        ignored_visible = 0
-
-        source_model = self.proxy_model.sourceModel()
-        if source_model:
-            source_data = source_model._data
-
-            # 遍历代理模型的行
-            for i in range(displayed_count):
-                # 获取代理索引
-                proxy_index = self.proxy_model.index(i, 0)
-                # 映射到源索引
-                source_index = self.proxy_model.mapToSource(proxy_index)
-
-                if source_index.isValid():
-                    row = source_index.row()
-                    if 0 <= row < len(source_data):
-                        ts_obj = source_data[row]
-
-                        if ts_obj.is_ignored:
-                            ignored_visible += 1
-                        elif ts_obj.translation.strip():
-                            translated_visible += 1
-                        else:
-                            untranslated_visible += 1
+        displayed_count = self.sheet_model.rowCount()
 
         self.counts_label.setText(
             _("Displayed: {displayed_count}/{total_count} | Translated: {translated_visible} | Untranslated: {untranslated_visible} | Ignored: {ignored_visible}").format(
@@ -1835,7 +1809,6 @@ class LexiSyncApp(QMainWindow):
 
     def add_to_undo_history(self, action_type, data, description=None, icon_type=None):
         if self.redo_history:
-            logger.info("[DEBUG_TRACE] New history branch created. Clearing redo stack.")
             self.redo_history.clear()
             self.action_redo.setEnabled(False)
             self._update_history_panel()
@@ -1947,7 +1920,7 @@ class LexiSyncApp(QMainWindow):
             }
             self.redo_history.append(redo_record)
 
-        return True, changed_ids
+        return True, changed_ids, action_log
 
     def _do_redo_core(self):
         if not self.redo_history:
@@ -2021,9 +1994,10 @@ class LexiSyncApp(QMainWindow):
             if len(self.undo_history) > MAX_UNDO_HISTORY:
                 self.undo_history.pop(0)
 
-        return True, changed_ids
+        return True, changed_ids, action_log
 
     def undo_action(self, checked=False, update_history_ui=True):
+        # 优先处理编辑器内部的撤销
         if hasattr(self, 'details_panel'):
             trans_edit = self.details_panel.translation_edit_text
             if trans_edit.hasFocus() and trans_edit.document().isUndoAvailable():
@@ -2048,11 +2022,33 @@ class LexiSyncApp(QMainWindow):
                     return
 
         def do_undo():
-            success, changed_ids = self._do_undo_core()
+            success, changed_ids, action_log = self._do_undo_core()
             if not success:
-                self.update_statusbar(_("No more actions to undo"))
+                if not self.undo_history:
+                    self.update_statusbar(_("No more actions to undo"))
+                else:
+                    self.update_statusbar(_("Undo error: Target object not found"))
                 return
 
+            # 显示提示信息
+            action_type = action_log['type']
+            action_data = action_log['data']
+
+            if action_type == 'single_change':
+                field = action_data['field']
+                obj_id = action_data['string_id']
+                val = action_data['old_value']
+                self.update_statusbar(_("Undo: {field} for ID {id} -> '{value}'").format(
+                    field=field,
+                    id=str(obj_id)[:8] + "...",
+                    value=str(val)[:30].replace('\n', ' ')
+                ))
+            elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu',
+                                 'bulk_replace_all']:
+                count = len(action_data.get('changes', []))
+                self.update_statusbar(_("Undo: Bulk change ({count} items)").format(count=count))
+
+            # 刷新逻辑
             self._update_view_for_ids(changed_ids)
             if self.current_selected_ts_id in changed_ids:
                 self.force_refresh_ui_for_current_selection()
@@ -2067,6 +2063,7 @@ class LexiSyncApp(QMainWindow):
         QTimer.singleShot(0, do_undo)
 
     def redo_action(self, checked=False, update_history_ui=True):
+        # 优先处理编辑器内部的撤销
         if hasattr(self, 'details_panel'):
             trans_edit = self.details_panel.translation_edit_text
             if trans_edit.hasFocus() and trans_edit.document().isRedoAvailable():
@@ -2091,11 +2088,33 @@ class LexiSyncApp(QMainWindow):
                     return
 
         def do_redo():
-            success, changed_ids = self._do_redo_core()
+            success, changed_ids, action_log = self._do_redo_core()
             if not success:
-                self.update_statusbar(_("No more actions to redo"))
+                if not self.redo_history:
+                    self.update_statusbar(_("No more actions to redo"))
+                else:
+                    self.update_statusbar(_("Redo error: Target object not found"))
                 return
 
+            # 显示提示信息
+            action_type = action_log['type']
+            action_data = action_log['data']
+
+            if action_type == 'single_change':
+                field = action_data['new_value']
+                obj_id = action_data['string_id']
+                val = action_data['new_value']
+                self.update_statusbar(_("Redo: {field} for ID {id} -> '{value}'").format(
+                    field=action_data['field'],
+                    id=str(obj_id)[:8] + "...",
+                    value=str(val)[:30].replace('\n', ' ')
+                ))
+            elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu',
+                                 'bulk_replace_all']:
+                count = len(action_data.get('changes', []))
+                self.update_statusbar(_("Redo: Bulk change ({count} items)").format(count=count))
+
+            # 刷新逻辑
             self._update_view_for_ids(changed_ids)
             if self.current_selected_ts_id in changed_ids:
                 self.force_refresh_ui_for_current_selection()
@@ -3069,24 +3088,29 @@ class LexiSyncApp(QMainWindow):
         header = self.table_view.horizontalHeader()
         current_sort_col = header.sortIndicatorSection()
         current_sort_order = header.sortIndicatorOrder()
-        self.proxy_model.set_filters(
+
+        self.sheet_model.apply_filter_and_sort(
+            search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
             show_ignored=self.show_ignored_var,
             show_untranslated=self.show_untranslated_var,
             show_translated=self.show_translated_var,
             show_unreviewed=self.show_unreviewed_var,
-            search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
             is_translation_mode=self.is_translation_mode,
-            sort_column = current_sort_col,
-            sort_order = current_sort_order
+            sort_col=current_sort_col,
+            sort_order=current_sort_order
         )
+
         self.update_counts_display()
         self.update_warning_markers()
+
         if preserve_selection and old_selected_id:
             self.select_sheet_row_by_id(old_selected_id, see=True)
-        elif not self.current_selected_ts_id and self.proxy_model.rowCount() > 0:
-            first_index = self.proxy_model.index(0, 0)
-            self.table_view.selectionModel().setCurrentIndex(first_index,
-                                                             QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
+        elif not self.current_selected_ts_id and self.sheet_model.rowCount() > 0:
+            first_index = self.sheet_model.index(0, 0)
+            self.table_view.selectionModel().setCurrentIndex(
+                first_index,
+                QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows
+            )
 
         if not self.current_selected_ts_id:
             self.clear_details_pane()
@@ -3098,17 +3122,16 @@ class LexiSyncApp(QMainWindow):
     def _perform_delayed_search_filter(self):
         search_term_to_use = self._last_quick_search_text
         header = self.table_view.horizontalHeader()
-        current_sort_col = header.sortIndicatorSection()
-        current_sort_order = header.sortIndicatorOrder()
-        self.proxy_model.set_filters(
+
+        self.sheet_model.apply_filter_and_sort(
+            search_term=search_term_to_use if search_term_to_use != _("Quick search...") else "",
             show_ignored=self.ignored_checkbox.isChecked(),
             show_untranslated=self.untranslated_checkbox.isChecked(),
             show_translated=self.translated_checkbox.isChecked(),
             show_unreviewed=self.unreviewed_checkbox.isChecked(),
-            search_term=search_term_to_use if search_term_to_use != _("Quick search...") else "",
             is_translation_mode=self.is_translation_mode,
-            sort_column=current_sort_col,
-            sort_order=current_sort_order
+            sort_col=header.sortIndicatorSection(),
+            sort_order=header.sortIndicatorOrder()
         )
 
         self.update_counts_display()
@@ -3119,10 +3142,10 @@ class LexiSyncApp(QMainWindow):
     def find_string_from_toolbar(self):
         if self.quick_search_timer.isActive():
             self.quick_search_timer.stop()
-        if self.search_entry.text().lower() != self.proxy_model.search_term:
+        if self.search_entry.text().lower() != self.sheet_model.current_search_term:
             self._perform_delayed_search_filter()
-        if self.proxy_model.rowCount() > 0:
-            first_index = self.proxy_model.index(0, 0)
+        if self.sheet_model.rowCount() > 0:
+            first_index = self.sheet_model.index(0, 0)
             self.table_view.selectionModel().setCurrentIndex(first_index,
                                                              QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
             self.table_view.scrollTo(first_index, QAbstractItemView.PositionAtTop)
@@ -3217,7 +3240,7 @@ class LexiSyncApp(QMainWindow):
             for new_id, new_obj in new_map_by_id.items():
                 if new_id in old_map_by_id:
                     old_obj = old_map_by_id[new_id]
-                    new_obj.translation = old_obj.translation
+                    new_obj.set_translation_internal(old_obj.translation)
                     new_obj.comment = old_obj.comment
                     new_obj.is_reviewed = old_obj.is_reviewed
                     new_obj.is_ignored = old_obj.is_ignored
@@ -3246,7 +3269,7 @@ class LexiSyncApp(QMainWindow):
                             best_match_old_s = old_s
 
                 if best_score >= 0.85:
-                    new_obj.translation = best_match_old_s.translation
+                    new_obj.set_translation_internal = best_match_old_s.translation
                     new_obj.comment = best_match_old_s.comment
                     new_obj.is_reviewed = False
                     new_obj.is_ignored = best_match_old_s.is_ignored
@@ -3302,7 +3325,9 @@ class LexiSyncApp(QMainWindow):
         ts_obj.warnings.extend(slow_warnings)
         ts_obj.minor_warnings.extend(slow_minor_warnings)
         ts_obj.update_style_cache()
-        source_index = self.sheet_model.index_from_id(ts_id)
+        visual_row = self.sheet_model.get_visual_row_by_id(ts_id)
+        if visual_row != -1:
+            source_index = self.sheet_model.index(visual_row, 0)
         if source_index.isValid():
             first_col = source_index.siblingAtColumn(0)
             last_col = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
@@ -3310,11 +3335,19 @@ class LexiSyncApp(QMainWindow):
 
     def _sort_sheet_column(self, logical_index):
         current_order = self.table_view.horizontalHeader().sortIndicatorOrder()
-        self.table_view.sortByColumn(logical_index, current_order)
-        self.update_counts_display()
+
+        self.sheet_model.apply_filter_and_sort(
+            search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
+            show_ignored=self.show_ignored_var,
+            show_untranslated=self.show_untranslated_var,
+            show_translated=self.show_translated_var,
+            show_unreviewed=self.show_unreviewed_var,
+            is_translation_mode=self.is_translation_mode,
+            sort_col=logical_index,
+            sort_order=current_order
+        )
+
         self.update_warning_markers()
-        if self.marker_bar:
-            QTimer.singleShot(0, self.marker_bar.update)
 
     def show_sheet_context_menu(self, pos):
         index = self.table_view.indexAt(pos)
@@ -3604,24 +3637,6 @@ class LexiSyncApp(QMainWindow):
             selected_objects = self._get_selected_ts_objects_from_sheet()
             self.plugin_manager.run_hook('on_selection_changed', selected_ts_objects=selected_objects)
 
-        if self.marker_bar:
-            selected_proxy_rows = self.table_view.selectionModel().selectedRows()
-            if not selected_proxy_rows:
-                self.marker_bar.clear_ranges('selection')
-                return
-
-            source_rows = []
-            for proxy_index in selected_proxy_rows:
-                source_index = self.proxy_model.mapToSource(proxy_index)
-                if source_index.isValid():
-                    source_rows.append(source_index.row())
-
-            if source_rows:
-                merged_ranges = self._merge_selection_ranges(sorted(source_rows))
-                self.marker_bar.set_ranges('selection', merged_ranges)
-            else:
-                self.marker_bar.clear_ranges('selection')
-
     def _merge_selection_ranges(self, sorted_source_rows: list) -> list:
         if not sorted_source_rows:
             return []
@@ -3647,7 +3662,6 @@ class LexiSyncApp(QMainWindow):
     def on_sheet_select(self, current_index, previous_index):
         if self.table_view.is_dragging:
             return
-        old_focused_id = self.current_focused_ts_id
 
         if not current_index.isValid():
             self.current_selected_ts_id = None
@@ -3655,33 +3669,31 @@ class LexiSyncApp(QMainWindow):
             self.clear_details_pane()
             self.update_ui_state_for_selection(None)
             return
-        else:
-            ts_obj = self.proxy_model.data(current_index, Qt.UserRole)
-            if not ts_obj:
-                self.current_selected_ts_id = None
-                self.current_focused_ts_id = None
-                self.clear_details_pane()
-                self.update_ui_state_for_selection(None)
-                return
 
-            newly_focused_id = ts_obj.id
-            self.current_focused_ts_id = newly_focused_id
-            if self.current_selected_ts_id != newly_focused_id:
-                self.current_selected_ts_id = newly_focused_id
-                self.force_refresh_ui_for_current_selection()
-                self.update_ui_state_for_selection(self.current_selected_ts_id)
-                self.trigger_glossary_analysis(ts_obj)
-                self._update_details_panel_stats()
+        ts_obj = current_index.data(Qt.UserRole)
+
+        if not ts_obj:
+            self.current_selected_ts_id = None
+            self.current_focused_ts_id = None
+            self.clear_details_pane()
+            self.update_ui_state_for_selection(None)
+            return
+
+        newly_focused_id = ts_obj.id
+        self.current_focused_ts_id = newly_focused_id
+
+        if self.current_selected_ts_id != newly_focused_id:
+            self.current_selected_ts_id = newly_focused_id
+            self.force_refresh_ui_for_current_selection()
+            self.update_ui_state_for_selection(self.current_selected_ts_id)
+            self.trigger_glossary_analysis(ts_obj)
+            self._update_details_panel_stats()
+
         self.tm_panel.clear_selected_tm_btn.setEnabled(True)
-        old_source_index = self.sheet_model.index_from_id(old_focused_id)
-        new_source_index = self.sheet_model.index_from_id(self.current_focused_ts_id)
 
-        if old_source_index.isValid():
-            self.sheet_model.dataChanged.emit(old_source_index,
-                                              old_source_index.siblingAtColumn(self.sheet_model.columnCount() - 1))
-        if new_source_index.isValid():
-            self.sheet_model.dataChanged.emit(new_source_index,
-                                              new_source_index.siblingAtColumn(self.sheet_model.columnCount() - 1))
+        # 刷新高亮边框
+        self.table_view.viewport().update()
+
         status_message = _("Selected: \"{text}...\" (Line: {line_num})").format(
             text=ts_obj.original_semantic[:30].replace(chr(10), '↵'),
             line_num=ts_obj.line_num_in_file
@@ -3769,13 +3781,13 @@ class LexiSyncApp(QMainWindow):
             if target_index > current_state_index:
                 steps = target_index - current_state_index
                 for _ in range(steps):
-                    success, ids = self._do_undo_core()
+                    success, ids, _ = self._do_undo_core()
                     if success:
                         all_changed_ids.update(ids)
             elif target_index < current_state_index:
                 steps = current_state_index - target_index
                 for _ in range(steps):
-                    success, ids = self._do_redo_core()
+                    success, ids, _ = self._do_redo_core()
                     if success:
                         all_changed_ids.update(ids)
         finally:
@@ -3814,7 +3826,7 @@ class LexiSyncApp(QMainWindow):
 
         all_changed_ids = set()
         for __ in range(steps_to_undo):
-            success, ids = self._do_undo_core()
+            success, ids, __ = self._do_undo_core()
             if success:
                 all_changed_ids.update(ids)
 
@@ -4049,7 +4061,7 @@ class LexiSyncApp(QMainWindow):
     def _run_and_refresh_with_validation(self):
         if not self.translatable_objects:
             self.sheet_model.set_translatable_objects([])
-            self.proxy_model.invalidate()
+            self.sheet_model.invalidate()
             if self.marker_bar:
                 self.marker_bar.clear_markers()
             return
@@ -4690,7 +4702,9 @@ class LexiSyncApp(QMainWindow):
                 old_value=old_po_comment_for_hook
             )
         ts_obj.update_style_cache()
-        source_index = self.sheet_model.index_from_id(ts_obj.id)
+        visual_row = self.sheet_model.get_visual_row_by_id(ts_obj,id)
+        if visual_row != -1:
+            source_index = self.sheet_model.index(visual_row, 0)
         if source_index.isValid():
             first_col_index = source_index.siblingAtColumn(0)
             last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
@@ -4724,78 +4738,66 @@ class LexiSyncApp(QMainWindow):
         return True
 
     def _update_view_for_ids(self, changed_ids: set, skip_validation=False):
-        if not changed_ids:
-            return
+        if not changed_ids: return
 
-        from services.validation_service import validate_string
-
-        # Batch marker updates
-        markers_to_add = {'error': [], 'warning': [], 'info': []}
-        markers_to_remove = {'error': [], 'warning': [], 'info': []}
-
+        # 1. 更新数据
         for ts_id in changed_ids:
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if ts_obj:
-                # 重新验证
                 if not skip_validation:
+                    from services.validation_service import validate_string
                     validate_string(ts_obj, self.config, self)
-
                 ts_obj.update_style_cache()
 
-                # 记录新状态
-                has_error = bool(ts_obj.warnings and not ts_obj.is_warning_ignored)
-                has_warning = bool(ts_obj.minor_warnings and not ts_obj.is_warning_ignored)
-                has_info = bool(ts_obj.infos and not ts_obj.is_warning_ignored)
+        # 2. UI 刷新逻辑
+        if len(changed_ids) > 200:
+            self.sheet_model.layoutChanged.emit()
+            if self.marker_bar:
+                self.update_warning_markers()
+            return
 
-                # 收集 Marker 变更
-                if self.marker_bar:
-                    source_index = self.sheet_model.index_from_id(ts_obj.id)
-                    if source_index.isValid():
-                        source_row = source_index.row()
+        # 收集受影响的视觉行
+        rows_to_update = []
+        for ts_id in changed_ids:
+            r = self.sheet_model.get_visual_row_by_id(ts_id)
+            if r != -1: rows_to_update.append(r)
 
-                        markers_to_remove['error'].append(source_row)
-                        markers_to_remove['warning'].append(source_row)
-                        markers_to_remove['info'].append(source_row)
+        if not rows_to_update: return
 
-                        if has_error: markers_to_add['error'].append(source_row)
-                        if has_warning: markers_to_add['warning'].append(source_row)
-                        if has_info: markers_to_add['info'].append(source_row)
+        min_row = min(rows_to_update)
+        max_row = max(rows_to_update)
 
-                # 更新表格视图
-                source_index = self.sheet_model.index_from_id(ts_obj.id)
-                if source_index.isValid():
-                    first_col_index = source_index.siblingAtColumn(0)
-                    last_col_index = source_index.siblingAtColumn(self.sheet_model.columnCount() - 1)
-                    self.sheet_model.dataChanged.emit(first_col_index, last_col_index)
+        top_left = self.sheet_model.index(min_row, 0)
+        bottom_right = self.sheet_model.index(max_row, self.sheet_model.columnCount() - 1)
 
-        # 批量应用 Marker 变更
-        if self.marker_bar:
-            for m_type, rows in markers_to_remove.items():
-                for r in rows: self.marker_bar.remove_marker(m_type, r)
-
-            for m_type, rows in markers_to_add.items():
-                for r in rows: self.marker_bar.add_marker(m_type, r)
+        self.sheet_model.dataChanged.emit(top_left, bottom_right)
 
         self.update_counts_display()
 
+        if self.marker_bar:
+            self.update_warning_markers()
 
     def force_full_refresh(self, id_to_reselect=None):
         self.sheet_model.set_translatable_objects(self.translatable_objects)
+
         header = self.table_view.horizontalHeader()
         current_sort_col = header.sortIndicatorSection()
         current_sort_order = header.sortIndicatorOrder()
-        self.proxy_model.set_filters(
+
+        self.sheet_model.apply_filter_and_sort(
+            search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
             show_ignored=self.show_ignored_var,
             show_untranslated=self.show_untranslated_var,
             show_translated=self.show_translated_var,
             show_unreviewed=self.show_unreviewed_var,
-            search_term=self.search_entry.text() if self.search_entry.text() != _("Quick search...") else "",
             is_translation_mode=self.is_translation_mode,
-            sort_column=current_sort_col,
+            sort_col=current_sort_col,
             sort_order=current_sort_order
         )
+
         if id_to_reselect:
             self.select_sheet_row_by_id(id_to_reselect, see=True)
+
         self.force_refresh_ui_for_current_selection()
         self.update_counts_display()
         self.update_warning_markers()
@@ -4996,9 +4998,9 @@ class LexiSyncApp(QMainWindow):
                    _("Original (Raw)")]
         ws.append(headers)
         items_to_export = []
-        for i in range(self.proxy_model.rowCount()):
-            index = self.proxy_model.index(i, 0)
-            ts_obj = self.proxy_model.data(index, Qt.UserRole)
+        for i in range(self.sheet_model.rowCount()):
+            index = self.sheet_model.index(i, 0)
+            ts_obj = self.sheet_model.data(index, Qt.UserRole)
             if ts_obj:
                 items_to_export.append(ts_obj)
 
@@ -5177,9 +5179,9 @@ class LexiSyncApp(QMainWindow):
 
         try:
             displayed_ids_order = []
-            for i in range(self.proxy_model.rowCount()):
-                index = self.proxy_model.index(i, 0)
-                ts_obj = self.proxy_model.data(index, Qt.UserRole)
+            for i in range(self.sheet_model.rowCount()):
+                index = self.sheet_model.index(i, 0)
+                ts_obj = self.sheet_model.data(index, Qt.UserRole)
                 if ts_obj:
                     displayed_ids_order.append(ts_obj.id)
 
@@ -5214,9 +5216,9 @@ class LexiSyncApp(QMainWindow):
 
         try:
             displayed_ids_order = []
-            for i in range(self.proxy_model.rowCount()):
-                index = self.proxy_model.index(i, 0)
-                ts_obj = self.proxy_model.data(index, Qt.UserRole)
+            for i in range(self.sheet_model.rowCount()):
+                index = self.sheet_model.index(i, 0)
+                ts_obj = self.sheet_model.data(index, Qt.UserRole)
                 if ts_obj:
                     displayed_ids_order.append(ts_obj.id)
 
@@ -5391,7 +5393,7 @@ class LexiSyncApp(QMainWindow):
         finally:
             current_sort_column = self.table_view.horizontalHeader().sortIndicatorSection()
             current_sort_order = self.table_view.horizontalHeader().sortIndicatorOrder()
-            self.proxy_model.sort(current_sort_column, current_sort_order)
+            self.sheet_model.sort(current_sort_column, current_sort_order)
             self.update_warning_markers()
 
         self.update_counts_display()
@@ -5545,8 +5547,8 @@ class LexiSyncApp(QMainWindow):
                 source_pool = all_strings
             else:
                 # 当前视图（已过滤）
-                source_pool = [self.proxy_model.data(self.proxy_model.index(r, 0), Qt.UserRole)
-                               for r in range(self.proxy_model.rowCount())]
+                source_pool = [self.sheet_model.data(self.sheet_model.index(r, 0), Qt.UserRole)
+                               for r in range(self.sheet_model.rowCount())]
 
             # 2. 提取符合条件的 Issue
             for ts in source_pool:
@@ -6063,13 +6065,13 @@ class LexiSyncApp(QMainWindow):
         return True
 
     def _find_next_item_index(self, start_row, mode):
-        rowCount = self.proxy_model.rowCount()
+        rowCount = self.sheet_model.rowCount()
         ranges = [range(start_row, rowCount), range(0, start_row)]
 
         for r_range in ranges:
             for i in r_range:
-                index = self.proxy_model.index(i, 0)
-                ts_obj = self.proxy_model.data(index, Qt.UserRole)
+                index = self.sheet_model.index(i, 0)
+                ts_obj = self.sheet_model.data(index, Qt.UserRole)
                 if not ts_obj: continue
 
                 if ts_obj.is_ignored and not self.show_ignored_var:
@@ -6098,12 +6100,14 @@ class LexiSyncApp(QMainWindow):
         if not self.current_selected_ts_id:
             return
         self.apply_translation_from_button()
-        current_source_index = self.sheet_model.index_from_id(self.current_selected_ts_id)
-        current_proxy_index = self.proxy_model.mapFromSource(current_source_index)
-        if not current_proxy_index.isValid():
+        visual_row = self.sheet_model.get_visual_row_by_id(self.current_selected_ts_id)
+        current_index = -1
+        if visual_row != -1:
+            current_index = self.sheet_model.index(visual_row, 0)
+        if not current_index.isValid():
             return
         behavior_mode = self.config.get("apply_and_next_behavior", "untranslated")
-        next_index = self._find_next_item_index(current_proxy_index.row() + 1, behavior_mode)
+        next_index = self._find_next_item_index(current_index.row() + 1, behavior_mode)
 
         if next_index.isValid():
             self.table_view.selectionModel().setCurrentIndex(
@@ -6882,26 +6886,32 @@ class LexiSyncApp(QMainWindow):
 
         added_ids = set()
         for index in selected_rows:
-            ts_obj = self.proxy_model.data(index, Qt.UserRole)
+            ts_obj = self.sheet_model.data(index, Qt.UserRole)
             if ts_obj and ts_obj.id not in added_ids:
                 selected_objs.append(ts_obj)
                 added_ids.add(ts_obj.id)
         return selected_objs
 
     def select_sheet_row_by_id(self, ts_id, see=False):
-        source_index = self.sheet_model.index_from_id(ts_id)
-        if source_index.isValid():
-            proxy_index = self.proxy_model.mapFromSource(source_index)
-            if proxy_index.isValid():
+        # 获取视觉行号
+        visual_row = self.sheet_model.get_visual_row_by_id(ts_id)
+
+        if visual_row != -1:
+            index = self.sheet_model.index(visual_row, 0)
+            if index.isValid():
                 self.table_view.selectionModel().clearSelection()
-                self.table_view.selectionModel().select(proxy_index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
-                self.table_view.setCurrentIndex(proxy_index)
+                self.table_view.selectionModel().select(
+                    index,
+                    QItemSelectionModel.Select | QItemSelectionModel.Rows
+                )
+                self.table_view.setCurrentIndex(index)
 
                 if see:
-                    self.table_view.scrollTo(proxy_index, QAbstractItemView.ScrollHint.EnsureVisible)
+                    self.table_view.scrollTo(index, QAbstractItemView.ScrollHint.PositionAtCenter)
             else:
                 self.table_view.clearSelection()
         else:
+            # 对象被过滤掉了
             self.table_view.clearSelection()
 
     def force_refresh_ui_for_current_selection(self):
@@ -7166,7 +7176,7 @@ class LexiSyncApp(QMainWindow):
                 if new_obj.original_semantic in old_map:
                     old_obj = old_map[new_obj.original_semantic]
 
-                    new_obj.translation = old_obj.translation
+                    new_obj.set_translation_internal(old_obj.translation)
                     new_obj.comment = old_obj.comment
                     new_obj.po_comment = old_obj.po_comment
                     new_obj.is_fuzzy = old_obj.is_fuzzy
@@ -7187,7 +7197,7 @@ class LexiSyncApp(QMainWindow):
                                 best_match_score = score
                                 best_match_old_s = old_s
                     if best_match_score >= 0.85 and best_match_old_s:
-                        new_obj.translation = best_match_old_s.translation
+                        new_obj.set_translation_internal(best_match_old_s.translation)
                         new_obj.comment = best_match_old_s.comment
                         new_obj.po_comment = best_match_old_s.po_comment
                         new_obj.is_fuzzy = True

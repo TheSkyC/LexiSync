@@ -91,11 +91,15 @@ class FileFilterProxyModel(QSortFilterProxyModel):
 
     def filterAcceptsRow(self, source_row, source_parent):
         try:
-            source_index = self.sourceModel().index(source_row, 0, source_parent)
+            source_model_instance = self.sourceModel()
+            if not source_model_instance:
+                return False
+
+            source_index = source_model_instance.index(source_row, 0, source_parent)
             if not source_index.isValid():
                 return False
 
-            file_info = self.sourceModel().fileInfo(source_index)
+            file_info = source_model_instance.fileInfo(source_index)
 
             if self._project_mode_enabled:
                 current_path = os.path.normpath(file_info.absoluteFilePath())
@@ -136,8 +140,15 @@ class FileFilterProxyModel(QSortFilterProxyModel):
         if role != Qt.ForegroundRole and role != Qt.FontRole:
             return super().data(index, role)
 
+        source_model = self.sourceModel()
+        if not source_model:
+            return None
+
         source_index = self.mapToSource(index)
-        file_info = self.sourceModel().fileInfo(source_index)
+        if not source_index.isValid():
+            return super().data(index, role)
+
+        file_info = source_model.fileInfo(source_index)
 
         if file_info.isDir():
             path = file_info.absoluteFilePath()
@@ -196,8 +207,8 @@ class FileExplorerPanel(QWidget):
             self.source_model.setReadOnly(False)
             self.source_model.setFilter(QDir.AllDirs | QDir.Files | QDir.NoDotAndDotDot)
 
-            self.proxy_model = FileFilterProxyModel(self)
-            self.proxy_model.setSourceModel(self.source_model)
+            self.sheet_model = FileFilterProxyModel(self)
+            self.sheet_model.setSourceModel(self.source_model)
         except Exception as e:
             logger.error(f"Error initializing models: {e}")
             self._show_error(_("Initialization Error"), _("Failed to initialize file system models."))
@@ -371,7 +382,7 @@ class FileExplorerPanel(QWidget):
     def _create_tree_view(self):
         try:
             self.tree_view = CustomTreeView()
-            self.tree_view.setModel(self.proxy_model)
+            self.tree_view.setModel(self.sheet_model)
             self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
             self.tree_view.setSelectionMode(QTreeView.SelectionMode.ExtendedSelection)
             self.tree_view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -506,7 +517,7 @@ class FileExplorerPanel(QWidget):
             try:
                 root_index = self.source_model.setRootPath(normalized_path)
                 if root_index.isValid():
-                    proxy_root_index = self.proxy_model.mapFromSource(root_index)
+                    proxy_root_index = self.sheet_model.mapFromSource(root_index)
                     self.tree_view.setRootIndex(proxy_root_index)
                 else:
                     logger.warning(f"Invalid root index for path: {normalized_path}")
@@ -593,7 +604,7 @@ class FileExplorerPanel(QWidget):
                 self.source_model.setRootPath("")
                 root_index = self.source_model.setRootPath(current_path)
                 if root_index.isValid():
-                    proxy_root_index = self.proxy_model.mapFromSource(root_index)
+                    proxy_root_index = self.sheet_model.mapFromSource(root_index)
                     self.tree_view.setRootIndex(proxy_root_index)
 
                     if hasattr(self.app, 'update_statusbar'):
@@ -639,7 +650,7 @@ class FileExplorerPanel(QWidget):
                 logger.warning(f"Invalid source index for path: {path}")
                 return False
 
-            proxy_index = self.proxy_model.mapFromSource(source_index)
+            proxy_index = self.sheet_model.mapFromSource(source_index)
             if not proxy_index.isValid():
                 logger.warning(f"Invalid proxy index for path: {path}")
                 return False
@@ -662,7 +673,7 @@ class FileExplorerPanel(QWidget):
             if not proxy_index.isValid():
                 return
 
-            source_index = self.proxy_model.mapToSource(proxy_index)
+            source_index = self.sheet_model.mapToSource(proxy_index)
             if not source_index.isValid():
                 return
 
@@ -697,7 +708,7 @@ class FileExplorerPanel(QWidget):
                     plugin_patterns = []
 
             all_patterns = list(set(base_patterns + plugin_patterns))
-            self.proxy_model.setProjectFilePatterns(all_patterns)
+            self.sheet_model.setProjectFilePatterns(all_patterns)
 
         except Exception as e:
             logger.error(f"Error updating file patterns: {e}")
@@ -734,7 +745,7 @@ class FileExplorerPanel(QWidget):
         project_root = self.app.current_project_path
         abs_source_paths = [os.path.join(project_root, f['project_path']) for f in source_files_info]
 
-        self.proxy_model.setProjectMode(True, abs_source_paths)
+        self.sheet_model.setProjectMode(True, abs_source_paths)
 
         source_dir_path = os.path.join(project_root, "source")
         if os.path.isdir(source_dir_path):
@@ -746,7 +757,7 @@ class FileExplorerPanel(QWidget):
     def exit_project_mode(self):
         self.project_mode_checkbox.setChecked(False)
         self.project_mode_checkbox.setEnabled(False)
-        self.proxy_model.setProjectMode(False)
+        self.sheet_model.setProjectMode(False)
         last_path = self.app.config.get('last_file_explorer_path', QDir.homePath())
         if self.app.current_project_path and last_path.startswith(self.app.current_project_path):
              last_path = QDir.homePath()
@@ -757,9 +768,9 @@ class FileExplorerPanel(QWidget):
             source_files_info = self.app.project_config.get('source_files', [])
             project_root = self.app.current_project_path
             abs_source_paths = [os.path.join(project_root, f['project_path']) for f in source_files_info]
-            self.proxy_model.setProjectMode(True, abs_source_paths)
+            self.sheet_model.setProjectMode(True, abs_source_paths)
         else:
-            self.proxy_model.setProjectMode(False)
+            self.sheet_model.setProjectMode(False)
 
     def toggle_show_all(self, checked):
         try:
@@ -773,7 +784,7 @@ class FileExplorerPanel(QWidget):
 
             if not is_checked:
                 self._update_file_patterns()
-            self.proxy_model.setShowAllTypes(is_checked)
+            self.sheet_model.setShowAllTypes(is_checked)
 
         except Exception as e:
             logger.error(f"Error in toggle_show_all: {e}")
@@ -789,8 +800,8 @@ class FileExplorerPanel(QWidget):
             if not selected_paths:
                 return
 
-            source_index_at_pos = self.proxy_model.mapToSource(proxy_index_at_pos)
-            path_at_pos = self.source_model.filePath(source_index_at_pos)
+            source_index_at_pos = self.sheet_model.mapToSource(proxy_index_at_pos)
+            path_at_pos = self.source_model.filePath(source_index_at_pos) if source_index_at_pos.isValid() else ""
 
             menu = QMenu()
             self._populate_context_menu(menu, selected_paths, path_at_pos, proxy_index_at_pos, source_index_at_pos)
@@ -804,7 +815,7 @@ class FileExplorerPanel(QWidget):
         try:
             for proxy_idx in proxy_indexes:
                 if proxy_idx.column() == 0:
-                    source_idx = self.proxy_model.mapToSource(proxy_idx)
+                    source_idx = self.sheet_model.mapToSource(proxy_idx)
                     if source_idx.isValid():
                         path = self.source_model.filePath(source_idx)
                         if path and os.path.exists(path):
@@ -1047,10 +1058,10 @@ class FileExplorerPanel(QWidget):
     def is_valid_state(self):
         try:
             return (hasattr(self, 'source_model') and
-                    hasattr(self, 'proxy_model') and
+                    hasattr(self, 'sheet_model') and
                     hasattr(self, 'tree_view') and
                     self.source_model is not None and
-                    self.proxy_model is not None and
+                    self.sheet_model is not None and
                     self.tree_view is not None)
         except Exception as e:
             logger.error(f"Error checking widget state: {e}")
@@ -1065,8 +1076,8 @@ class FileExplorerPanel(QWidget):
                 except (RuntimeError, TypeError):
                     pass
 
-            if hasattr(self, 'proxy_model') and self.proxy_model:
-                self.proxy_model.setSourceModel(None)
+            if hasattr(self, 'sheet_model') and self.sheet_model:
+                self.sheet_model.setSourceModel(None)
 
             if hasattr(self, 'source_model') and self.source_model:
                 self.source_model = None

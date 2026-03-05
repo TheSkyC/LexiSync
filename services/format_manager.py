@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 class BaseFormatHandler:
     """格式处理器的基类"""
     format_id = "unknown"
+    is_monolingual = False
     extensions = []
     format_type = "translation"
 
@@ -50,6 +51,14 @@ class BaseFormatHandler:
             return m.group(1).replace('-', '_')
         return 'en'
 
+    def get_initial_translation(self, value_from_file, app_instance):
+        if self.is_monolingual:
+            fill_enabled = False
+            if app_instance and hasattr(app_instance, 'config'):
+                fill_enabled = app_instance.config.get("fill_translation_with_source", False)
+            return value_from_file if fill_enabled else ""
+        return value_from_file
+
 class PoFormatHandler(BaseFormatHandler):
     """
     GNU Gettext PO/POT 格式处理器
@@ -60,6 +69,7 @@ class PoFormatHandler(BaseFormatHandler):
     4. 源码引用: 自动记录并还原条目在原始代码中的位置信息 (#:)
     """
     format_id = "po"
+    is_monolingual = False
     extensions = ['.po', '.pot']
     format_type = "translation"
     display_name = _("PO Translation File")
@@ -87,6 +97,7 @@ class TsFormatHandler(BaseFormatHandler):
     4. 扩展注释: 支持 extracomment (开发者) 和 translatorcomment (译员) 的读写
     """
     format_id = "ts"
+    is_monolingual = False
     extensions = ['.ts']
     format_type = "translation"
     display_name = _("Qt TS Translation File")
@@ -95,6 +106,7 @@ class TsFormatHandler(BaseFormatHandler):
     badge_text_color = "#2E7D32"
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         logger.debug(f"[TsFormatHandler] Loading TS file: {filepath}")
         tree = ET.parse(filepath)
         root = tree.getroot()
@@ -190,7 +202,7 @@ class TsFormatHandler(BaseFormatHandler):
                     occurrences=forced_occurrences,
                     occurrence_index=current_index, id=obj_id
                 )
-                ts.translation = translation
+                ts.set_translation_internal(translation, is_initial=True)
                 ts.context = context_name
                 ts.po_comment = extracomment
                 ts.comment = translatorcomment
@@ -284,6 +296,7 @@ class XliffFormatHandler(BaseFormatHandler):
     - XLIFF 2.0
     """
     format_id = "xliff"
+    is_monolingual = False
     extensions = ['.xlf', '.xliff']
     format_type = "translation"
     display_name = _("XLIFF Translation File")
@@ -366,7 +379,7 @@ class XliffFormatHandler(BaseFormatHandler):
             source_text, source_text, 0, 0, 0, [], "XLIFF Import",
             file_rel_path, [(file_rel_path, unit_id)], idx, obj_id
         )
-        ts.translation = target_text
+        ts.set_translation_internal(target_text, is_initial=True)
         ts.context = unit_id
         ts.comment = "\n".join(notes) if notes else ""
         ts.po_comment = f"#: XLIFF ID: {unit_id}"
@@ -419,6 +432,7 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
     - <string-array name="key">...</string-array>
     """
     format_id = "android_strings"
+    is_monolingual = True
     extensions = ['.xml']
     format_type = "translation"
     display_name = _("Android Strings XML")
@@ -427,6 +441,7 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
     badge_text_color = "#1B5E20"
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         logger.debug(f"[AndroidStringsFormatHandler] Loading Android strings.xml: {filepath}")
 
         tree = ET.parse(filepath)
@@ -447,7 +462,7 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
         # 处理 <string> 元素
         for string_elem in root.findall('string'):
             self._process_string_element(
-                string_elem, translatable_objects, occurrence_counters, xml_file_rel_path
+                string_elem, translatable_objects, occurrence_counters, xml_file_rel_path, app_instance
             )
 
         # 处理 <plurals> 元素
@@ -500,7 +515,7 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
 
     def _process_string_element(
             self, elem: ET.Element, results: List[TranslatableString],
-            occurrence_counters: Dict, file_rel_path: str
+            occurrence_counters: Dict, file_rel_path: str, app_instance=None
     ):
         """处理 <string> 元素"""
 
@@ -549,6 +564,7 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
         ts.context = name
         ts.comment = "\n".join(comment_parts) if comment_parts else ""
         ts.po_comment = f"#: Android string name: {name}"
+        ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
         ts.is_reviewed = False
         ts.update_sort_weight()
 
@@ -783,6 +799,7 @@ class IosStringsFormatHandler(BaseFormatHandler):
     6. 路径语言检测: 从 xx.lproj/Localizable.strings 路径自动解析语言代码
     """
     format_id = "ios_strings"
+    is_monolingual = True
     extensions = ['.strings', '.stringsdict']
     format_type = "translation"
     display_name = _("Apple .strings / .stringsdict")
@@ -791,18 +808,19 @@ class IosStringsFormatHandler(BaseFormatHandler):
     badge_text_color = "#558B2F"
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         ext = os.path.splitext(filepath)[1].lower()
         relative_path = kwargs.get('relative_path') or self._get_relative_path(filepath)
         language_code = self._detect_language_from_path(filepath)
 
         if ext == '.stringsdict':
-            objects, meta = self._load_stringsdict(filepath, relative_path)
+            objects, meta = self._load_stringsdict(filepath, relative_path, app_instance=app_instance)
         else:
-            objects, meta = self._load_strings(filepath, relative_path)
+            objects, meta = self._load_strings(filepath, relative_path, app_instance=app_instance)
 
         return objects, meta, language_code
 
-    def _load_strings(self, filepath, rel_path):
+    def _load_strings(self, filepath, rel_path, app_instance=None):
         with open(filepath, 'r', encoding='utf-8-sig', errors='replace') as f:
             content = f.read()
 
@@ -852,7 +870,7 @@ class IosStringsFormatHandler(BaseFormatHandler):
                     occurrence_index=idx,
                     id=obj_id
                 )
-                ts.translation = value
+                ts.set_translation_internal(self.get_initial_translation(value, app_instance), is_initial=True)
                 ts.context = key
                 ts.comment = comment
                 ts.po_comment = f"#: Apple strings key: {key}"
@@ -865,7 +883,7 @@ class IosStringsFormatHandler(BaseFormatHandler):
         logger.info(f"[IosStringsFormatHandler] Loaded {len(translatable_objects)} entries from {filepath}")
         return translatable_objects, meta
 
-    def _load_stringsdict(self, filepath, rel_path):
+    def _load_stringsdict(self, filepath, rel_path, app_instance=None):
         """
         解析 .stringsdict (Binary / XML Plist)。
         顶层结构:
@@ -933,7 +951,7 @@ class IosStringsFormatHandler(BaseFormatHandler):
                         occurrence_index=idx,
                         id=obj_id
                     )
-                    ts.translation = text
+                    ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
                     ts.context = full_context
                     ts.comment = (
                         f"Plural category: {category}\n"
@@ -1068,6 +1086,7 @@ class ArbFormatHandler(BaseFormatHandler):
     6. 语言检测: 优先读取 @@locale 字段，其次从文件名 (app_en.arb) 推断
     """
     format_id = "arb"
+    is_monolingual = True
     extensions = ['.arb']
     format_type = "translation"
     display_name = _("Flutter ARB File")
@@ -1076,6 +1095,7 @@ class ArbFormatHandler(BaseFormatHandler):
     badge_text_color = "#283593"
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         logger.debug(f"[ArbFormatHandler] Loading ARB file: {filepath}")
 
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -1134,7 +1154,7 @@ class ArbFormatHandler(BaseFormatHandler):
                 occurrence_index=idx,
                 id=obj_id
             )
-            ts.translation = value
+            ts.set_translation_internal(self.get_initial_translation(value, app_instance), is_initial=True)
             ts.context = key
             ts.comment = description
             ts.po_comment = (
@@ -1254,6 +1274,7 @@ class JsonI18nFormatHandler(BaseFormatHandler):
     badge_text_color = "#E65100"
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         logger.debug(f"[JsonI18nFormatHandler] Loading JSON file: {filepath}")
 
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -1483,6 +1504,7 @@ class YamlI18nFormatHandler(BaseFormatHandler):
     - 数组中的字符串元素以 key[0], key[1] 形式纳入翻译管理
     """
     format_id = "yaml_i18n"
+    is_monolingual = True
     extensions = ['.yml', '.yaml']
     format_type = "translation"
     display_name = _("YAML i18n File")
@@ -1496,6 +1518,7 @@ class YamlI18nFormatHandler(BaseFormatHandler):
     )
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         logger.debug(f"[YamlI18nFormatHandler] Loading YAML: {filepath}")
 
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -1515,7 +1538,7 @@ class YamlI18nFormatHandler(BaseFormatHandler):
         translatable_objects = []
         occurrence_counters = {}
         self._extract_recursive(
-            data_root, [], translatable_objects, occurrence_counters, rel_path
+            data_root, [], translatable_objects, occurrence_counters, rel_path, app_instance
         )
 
         metadata = {
@@ -1589,22 +1612,24 @@ class YamlI18nFormatHandler(BaseFormatHandler):
 
     def _extract_recursive(
         self, obj: Any, key_path: List[str],
-        results: List[TranslatableString], counters: Dict, rel_path: str
+        results: List[TranslatableString], counters: Dict, rel_path: str,
+        app_instance=None
     ):
         if isinstance(obj, dict):
             for k, v in obj.items():
-                self._extract_recursive(v, key_path + [str(k)], results, counters, rel_path)
+                self._extract_recursive(v, key_path + [str(k)], results, counters, rel_path, app_instance=app_instance)
 
         elif isinstance(obj, list):
             for i, item in enumerate(obj):
-                self._extract_recursive(item, key_path + [f"[{i}]"], results, counters, rel_path)
+                self._extract_recursive(item, key_path + [f"[{i}]"], results, counters, rel_path, app_instance=app_instance)
 
         elif isinstance(obj, str) and obj.strip():
-            self._make_ts(obj, key_path, results, counters, rel_path)
+            self._make_ts(obj, key_path, results, counters, rel_path, app_instance=app_instance)
 
     def _make_ts(
         self, text: str, key_path: List[str],
-        results: List[TranslatableString], counters: Dict, rel_path: str
+        results: List[TranslatableString], counters: Dict, rel_path: str,
+        app_instance=None
     ):
         full_key = '.'.join(
             p if not p.startswith('[') else p
@@ -1631,7 +1656,7 @@ class YamlI18nFormatHandler(BaseFormatHandler):
             occurrence_index=idx,
             id=obj_id
         )
-        ts.translation = text
+        ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
         ts.context = full_key
         ts.comment = ""
         ts.po_comment = f"#: YAML key: {full_key}"
@@ -1735,6 +1760,7 @@ class TomlFormatHandler(BaseFormatHandler):
     使用 tomlkit 库以确保在保存时完美还原注释、空行和结构顺序。
     """
     format_id = "toml"
+    is_monolingual = True
     extensions = ['.toml']
     format_type = "translation"
     display_name = _("TOML Config File")
@@ -1743,6 +1769,7 @@ class TomlFormatHandler(BaseFormatHandler):
     badge_text_color = "#3F51B5"
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         try:
             import tomlkit
         except ImportError:
@@ -1757,18 +1784,18 @@ class TomlFormatHandler(BaseFormatHandler):
         translatable_objects = []
         occurrence_counters = {}
 
-        self._extract_recursive(doc, [], translatable_objects, occurrence_counters, rel_path)
+        self._extract_recursive(doc, [], translatable_objects, occurrence_counters, rel_path, app_instance=app_instance)
 
         metadata = {'raw_content': content}
         return translatable_objects, metadata, 'en'
 
-    def _extract_recursive(self, obj, key_path, results, counters, rel_path):
+    def _extract_recursive(self, obj, key_path, results, counters, rel_path, app_instance=None):
         if isinstance(obj, dict):
             for k, v in obj.items():
-                self._extract_recursive(v, key_path + [str(k)], results, counters, rel_path)
+                self._extract_recursive(v, key_path + [str(k)], results, counters, rel_path, app_instance=app_instance)
         elif isinstance(obj, list):
             for i, item in enumerate(obj):
-                self._extract_recursive(item, key_path + [f"[{i}]"], results, counters, rel_path)
+                self._extract_recursive(item, key_path + [f"[{i}]"], results, counters, rel_path, app_instance=app_instance)
         elif isinstance(obj, str) and obj.strip():
             # 过滤掉看起来像颜色、路径或纯数字的字符串
             if re.match(r'^#[0-9a-fA-F]{3,8}$', obj): return
@@ -1791,7 +1818,7 @@ class TomlFormatHandler(BaseFormatHandler):
                 source_file_path=rel_path, occurrences=[(rel_path, full_key)],
                 occurrence_index=idx, id=obj_id
             )
-            ts.translation = obj
+            ts.set_translation_internal(self.get_initial_translation(obj, app_instance), is_initial=True)
             ts.context = full_key
             ts.po_comment = f"#: TOML key: {full_key}"
             ts.is_reviewed = False
@@ -1850,6 +1877,7 @@ class ResxFormatHandler(BaseFormatHandler):
        自动提取 BCP-47 语言代码
     """
     format_id = "resx"
+    is_monolingual = True
     extensions = ['.resx']
     format_type = "translation"
     display_name = _("RESX Resource File (.NET)")
@@ -1864,6 +1892,7 @@ class ResxFormatHandler(BaseFormatHandler):
     )
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         logger.debug(f"[ResxFormatHandler] Loading RESX: {filepath}")
 
         # 拒绝处理 .Designer.resx（自动生成文件）
@@ -1921,7 +1950,7 @@ class ResxFormatHandler(BaseFormatHandler):
                 occurrence_index=idx,
                 id=obj_id
             )
-            ts.translation = value
+            ts.set_translation_internal(self.get_initial_translation(value, app_instance), is_initial=True)
             ts.context = name
             ts.comment = comment_text
             ts.po_comment = f"#: RESX name: {name}"
@@ -2135,6 +2164,7 @@ def _learn_column_mapping(headers, mapping, config):
 
 class CsvFormatHandler(BaseFormatHandler):
     format_id = "csv"
+    is_monolingual = False
     extensions = ['.csv']
     format_type = "translation"
     display_name = _("CSV Table File")
@@ -2211,7 +2241,7 @@ class CsvFormatHandler(BaseFormatHandler):
                 source_file_path=rel_path, occurrences=[(rel_path, str(row_num))],
                 occurrence_index=idx, id=obj_id
             )
-            ts.translation = target_text
+            ts.set_translation_internal(target_text, is_initial=True)
             ts.context = context
             ts.comment = comment_text
             ts.po_comment = f"#: Row {row_num}"
@@ -2284,6 +2314,7 @@ class CsvFormatHandler(BaseFormatHandler):
 
 class XlsxFormatHandler(BaseFormatHandler):
     format_id = "xlsx"
+    is_monolingual = False
     extensions = ['.xlsx']
     format_type = "translation"
     display_name = _("Excel Workbook")
@@ -2363,7 +2394,7 @@ class XlsxFormatHandler(BaseFormatHandler):
                 source_file_path=rel_path, occurrences=[(rel_path, str(row_num))],
                 occurrence_index=idx, id=obj_id
             )
-            ts.translation = target_text
+            ts.set_translation_internal(target_text, is_initial=True)
             ts.context = context
             ts.comment = comment_text
             ts.po_comment = f"#: Row {row_num}"
@@ -2419,6 +2450,7 @@ class JavaPropertiesFormatHandler(BaseFormatHandler):
     7. 空行保护: 保存时在每个条目间保留适当空行，贴近手写习惯
     """
     format_id = "java_properties"
+    is_monolingual = True
     extensions = ['.properties']
     format_type = "translation"
     display_name = _("Java .properties File")
@@ -2427,6 +2459,7 @@ class JavaPropertiesFormatHandler(BaseFormatHandler):
     badge_text_color = "#F57F17"
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         logger.debug(f"[JavaPropertiesFormatHandler] Loading .properties: {filepath}")
 
         # Java .properties 官方编码为 ISO-8859-1，但现代项目多用 UTF-8
@@ -2501,7 +2534,7 @@ class JavaPropertiesFormatHandler(BaseFormatHandler):
                 occurrence_index=idx,
                 id=obj_id
             )
-            ts.translation = value
+            ts.set_translation_internal(self.get_initial_translation(value, app_instance), is_initial=True)
             ts.context = key
             ts.comment = comment
             ts.po_comment = f"#: Properties key: {key}"
@@ -2713,6 +2746,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
     - 若无 char 偏移信息则回退到行号替换
     """
     format_id = "markdown"
+    is_monolingual = True
     extensions = ['.md', '.mdx', '.markdown']
     format_type = "translation"
     display_name = _("Markdown / MDX Document")
@@ -2733,6 +2767,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
     )
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         logger.debug(f"[MarkdownFormatHandler] Loading Markdown: {filepath}")
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -2747,12 +2782,13 @@ class MarkdownFormatHandler(BaseFormatHandler):
 
         fm_end = 0
         _, fm_end = self._extract_frontmatter(
-            content, rel_path, translatable_objects, occurrence_counters, full_lines
+            content, rel_path, translatable_objects, occurrence_counters, full_lines, app_instance=app_instance
         )
 
         self._extract_body(
             content, fm_end, skip_ranges, rel_path,
-            translatable_objects, occurrence_counters, full_lines
+            translatable_objects, occurrence_counters, full_lines,
+            app_instance=app_instance
         )
 
         language_code = self._detect_language(os.path.basename(filepath))
@@ -2803,7 +2839,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
 
     def _extract_frontmatter(
         self, content: str, rel_path: str,
-        results: List, counters: Dict, full_lines: List[str]
+        results: List, counters: Dict, full_lines: List[str], app_instance=None
     ) -> Tuple[Dict, int]:
         """提取 YAML frontmatter 中的可翻译字段，返回 (字段dict, frontmatter结束位置)"""
         fm_end = 0
@@ -2836,6 +2872,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
                     char_start=m.start(1) + fm_m.start(4),
                     char_end=m.start(1) + fm_m.end(4),
                     string_type="MD Frontmatter",
+                    app_instance=app_instance
                 )
 
         return extracted, fm_end
@@ -2844,7 +2881,8 @@ class MarkdownFormatHandler(BaseFormatHandler):
             self, content: str, body_start: int,
             skip_ranges: List[Tuple[int, int]],
             rel_path: str, results: List, counters: Dict,
-            full_lines: List[str]
+            full_lines: List[str],
+            app_instance=None
     ):
         """逐行扫描文档正文，按语义单元提取"""
         lines = content[body_start:].split('\n')
@@ -2886,6 +2924,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
                         char_start=text_abs_start,
                         char_end=text_abs_start + len(heading_text),
                         string_type="MD Heading",
+                        app_instance=app_instance
                     )
                 abs_offset += len(line) + 1
                 i += 1
@@ -3022,7 +3061,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
         return re.sub(r'`[^`]*`', '', text).strip()
 
     def _make_ts(self, text, context_hint, rel_path, results, counters,
-                 full_lines, line_num=0, char_start=0, char_end=0, string_type="MD Text"):
+                 full_lines, line_num=0, char_start=0, char_end=0, string_type="MD Text", app_instance=None):
         """统一创建 TranslatableString 对象"""
         # 过滤过短或无意义的文本
         clean = self._strip_inline_code(text)
@@ -3048,7 +3087,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
             occurrence_index=counters.get((text, context_hint), 0),
             id=xxhash.xxh128(f"{rel_path}::{context_hint}::{text}".encode()).hexdigest()
         )
-        ts.translation = text
+        ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
         ts.context = context
         ts.comment = f"Type: {string_type}"
         ts.po_comment = f"#: {rel_path}:{line_num} ({string_type})"
@@ -3126,6 +3165,7 @@ class OwCodeFormatHandler(BaseFormatHandler):
     4. 自动过滤: 智能跳过数字、纯占位符及已知的工坊技术关键字
     """
     format_id = "ow_code"
+    is_monolingual = False
     extensions = ['.ow', '.txt']
     format_type = "source"
     display_name = _("Overwatch Workshop Code")

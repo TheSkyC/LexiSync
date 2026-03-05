@@ -1,253 +1,255 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QSortFilterProxyModel, Signal, QObject
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from PySide6.QtGui import QColor
 from utils.localization import _
 
 NewlineColorRole = Qt.UserRole + 1
 
+
 class TranslatableStringsModel(QAbstractTableModel):
     def __init__(self, data, parent=None):
         super().__init__(parent)
-        self._data = data
-        self._id_to_index_map = {obj.id: i for i, obj in enumerate(self._data)}
-        self.headers = ["#", "S", "Original", "Translation", "Comment", "✔", "Line"]
         self.app_instance = parent
+        self.headers = ["#", "S", "Original", "Translation", "Comment", "✔", "Line"]
+
+        self._all_data = data  # 所有数据 (List[TranslatableString])
+        self._visible_indices = list(range(len(data)))  # 可见行的索引映射 [0, 1, 5, 8...]
+        self._raw_to_visual_map = {i: i for i in range(len(data))}  # 反向映射表
+
+        # ID 映射表
+        self._id_to_raw_index_map = {obj.id: i for i, obj in enumerate(self._all_data)}
+        self._default_flags = Qt.ItemIsEnabled | Qt.ItemIsSelectable
+        self._colors = {
+            'transparent': QColor(Qt.transparent),
+            'bg_ignored': QColor(220, 220, 220, 200),
+            'fg_ignored': QColor("#707070"),
+            'bg_error': QColor("#FFDDDD"),
+            'fg_error': QColor("red"),
+            'bg_warning': QColor("#FFFACD"),
+            'fg_reviewed': QColor("darkgreen"),
+            'fg_translated': QColor("darkblue"),
+            'fg_untranslated': QColor("darkred"),
+            'bg_read_only': QColor("#EFEFEF")
+        }
+
+        self._colors = {
+            'transparent': QColor(Qt.transparent),
+            'bg_ignored': QColor(220, 220, 220, 200),
+            'fg_ignored': QColor("#707070"),
+            'bg_error': QColor("#FFDDDD"),
+            'fg_error': QColor("#D32F2F"), # 稍微深一点的红色，更易读
+            'bg_warning': QColor("#FFFACD"),
+            'bg_reviewed': QColor("#E8F5E9"), # 浅绿色背景 (Material Green 50)
+            'fg_reviewed': QColor("#000000"), # 字体回归黑色
+            'fg_translated': QColor("#000000"), # 字体回归黑色
+            'fg_untranslated': QColor("darkred"),
+            'fg_default': QColor("#000000"),
+            'bg_read_only': QColor("#EFEFEF")
+        }
+
+        self.current_search_term = ""
 
     def set_translatable_objects(self, new_data):
+        """重置整个模型的数据"""
         self.beginResetModel()
-        self._data = new_data
-        self._id_to_index_map = {obj.id: i for i, obj in enumerate(self._data)}
+        self._all_data = new_data
+        self._id_to_index_map = {obj.id: i for i, obj in enumerate(self._all_data)}  # 兼容旧代码命名习惯
+        self._id_to_raw_index_map = self._id_to_index_map
+        # 默认显示所有数据
+        self._visible_indices = list(range(len(new_data)))
         self.endResetModel()
 
     def rowCount(self, parent=QModelIndex()):
-        return len(self._data)
+        return len(self._visible_indices)
 
     def columnCount(self, parent=QModelIndex()):
         return len(self.headers)
 
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+            if section < len(self.headers):
+                try:
+                    return _(self.headers[section])
+                except:
+                    return self.headers[section]
+        return None
+
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.NoItemFlags
+        return self._default_flags
+
     def data(self, index, role=Qt.DisplayRole):
         if not index.isValid():
             return None
-        row, col = index.row(), index.column()
-        if row >= len(self._data):
+
+        row = index.row()
+        if row >= len(self._visible_indices):
             return None
-        ts_obj = self._data[row]
+
+        raw_index = self._visible_indices[row]
+        ts_obj = self._all_data[raw_index]
+        col = index.column()
 
         if role == Qt.DisplayRole:
-            if col == 0:
-                return row + 1
+            if col == 2:
+                return ts_obj._display_original
+            elif col == 3:
+                return ts_obj._display_translation
+            elif col == 4:
+                return ts_obj.comment.replace('\n', ' ')
             elif col == 1:
-                if ts_obj.warnings and not ts_obj.is_warning_ignored:
-                    return "⚠️"
-                elif ts_obj.is_ignored:
+                if ts_obj.is_ignored:
                     return "I"
+                elif ts_obj.is_reviewed:
+                    return "R" if ts_obj.translation.strip() else "U"
+                elif ts_obj.warnings and not ts_obj.is_warning_ignored:
+                    return "⚠️"
                 elif ts_obj.translation.strip():
-                    if ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
-                        return "*T"
-                    return "T"
+                    return "*T" if (ts_obj.minor_warnings and not ts_obj.is_warning_ignored) else "T"
                 else:
                     return "U"
-            elif col == 2:
-                return ts_obj.original_semantic
-            elif col == 3:
-                return ts_obj.get_translation_for_ui()
-            elif col == 4:
-                return ts_obj.comment
+            elif col == 0:
+                return row + 1
             elif col == 5:
                 return "✔" if ts_obj.is_reviewed else ""
             elif col == 6:
                 return ts_obj.line_num_in_file
 
         elif role == Qt.BackgroundRole:
-            bg = ts_obj.ui_style_cache.get('background')
-            return bg if bg else QColor(Qt.transparent)
+            # 1. 已忽略 (灰色)
+            if ts_obj.is_ignored:
+                if ts_obj.warnings and not ts_obj.is_warning_ignored:
+                    return self._colors['bg_error']
+                return self._colors['bg_ignored']
+            # 2. 已审阅 (绿色)
+            if ts_obj.is_reviewed:
+                return self._colors['bg_reviewed']
+            # 3. 错误 (红色)
+            elif ts_obj.warnings and not ts_obj.is_warning_ignored:
+                return self._colors['bg_error']
+            # 4. 警告 (黄色)
+            elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
+                return self._colors['bg_warning']
+            if col in [0, 3, 4, 6]:
+                pass
+
+            return self._colors['transparent']
 
         elif role == Qt.ForegroundRole:
-            return ts_obj.ui_style_cache.get('foreground')
+            # 1. 已忽略 (灰色)
+            if ts_obj.is_ignored:
+                return self._colors['fg_ignored']
+            # 2. 错误  (红色)
+            if ts_obj.warnings and not ts_obj.is_warning_ignored and not ts_obj.is_reviewed:
+                return self._colors['fg_error']
+            # 3. 未翻译 (暗红色)
+            if not ts_obj.translation.strip():
+                return self._colors['fg_untranslated']
+            # 4. 其他 （黑色）
+            return self._colors['fg_default']
 
         elif role == Qt.FontRole:
             return ts_obj.ui_style_cache.get('font')
 
         elif role == NewlineColorRole:
             if col in [2, 3]:
-                if ts_obj.ui_style_cache.get('original_newline_color') or ts_obj.ui_style_cache.get('translation_newline_color'):
-                     return ts_obj.ui_style_cache.get('original_newline_color') if col == 2 else ts_obj.ui_style_cache.get('translation_newline_color')
+                if ts_obj.ui_style_cache.get('original_newline_color') or ts_obj.ui_style_cache.get(
+                        'translation_newline_color'):
+                    return ts_obj.ui_style_cache.get(
+                        'original_newline_color') if col == 2 else ts_obj.ui_style_cache.get(
+                        'translation_newline_color')
             return None
 
         elif role == Qt.UserRole:
             return ts_obj
-
         return None
 
-    def sort_data(self, column, order):
-        self.layoutAboutToBeChanged.emit()
+    def apply_filter_and_sort(self, search_term, show_ignored, show_untranslated,
+                              show_translated, show_unreviewed, is_translation_mode,
+                              sort_col, sort_order):
+        self.current_search_term = search_term.lower().strip()
+        self.beginResetModel()
 
-        reverse = (order == Qt.DescendingOrder)
+        search_term = search_term.lower().strip()
+        new_entry_id = "##NEW_ENTRY##"
+        data = self._all_data
 
-        if column == 1 or column == 5:  # Status / Reviewed
-            # Primary: Weight, Secondary: Line Number
-            key_func = lambda ts: (ts.sort_weight, ts.line_num_in_file)
-        elif column == 2:  # Original
-            key_func = lambda ts: ts.original_semantic.lower()
-        elif column == 3:  # Translation
-            key_func = lambda ts: ts.get_translation_for_ui().lower()
-        elif column == 4:  # Comment
-            key_func = lambda ts: ts.comment.lower()
-        elif column == 6:  # Line
-            key_func = lambda ts: ts.line_num_in_file
-        else:  # ID (0) or Default
-            key_func = lambda ts: ts.line_num_in_file
+        if not search_term and show_ignored and show_untranslated and show_translated and not show_unreviewed:
+            self._visible_indices = list(range(len(data)))
+        else:
+            filtered_indices = []
+            for i, ts in enumerate(data):
+                if is_translation_mode and ts.id == new_entry_id:
+                    filtered_indices.append(i)
+                    continue
 
-        self._data.sort(key=key_func, reverse=reverse)
+                if search_term and search_term not in ts._search_cache:
+                    continue
 
-        # Rebuild the ID map
-        self._id_to_index_map = {obj.id: i for i, obj in enumerate(self._data)}
+                if ts.is_ignored:
+                    if not show_ignored: continue
+                else:
+                    has_trans = bool(ts.translation.strip())
+                    if not has_trans and not show_untranslated: continue
+                    if has_trans and not show_translated: continue
 
-        self.layoutChanged.emit()
+                if show_unreviewed and ts.is_reviewed:
+                    continue
 
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            if section < len(self.headers):
-                header_text = self.headers[section]
-                try:
-                    return _(header_text)
-                except:
-                    return header_text
+                filtered_indices.append(i)
+
+            self._visible_indices = filtered_indices
+
+        # 排序
+        if sort_col != -1:
+            reverse = (sort_order == Qt.DescendingOrder)
+
+            key_func = None
+
+            if sort_col == 1 or sort_col == 5:  # Status / Reviewed
+                # 优先按权重排序，次级按行号
+                key_func = lambda i: (data[i].sort_weight, data[i].line_num_in_file)
+            elif sort_col == 2:  # Original
+                key_func = lambda i: data[i].original_semantic.lower()
+            elif sort_col == 3:  # Translation
+                key_func = lambda i: data[i].translation.lower()
+            elif sort_col == 4:  # Comment
+                key_func = lambda i: data[i].comment.lower()
+            elif sort_col == 6:  # Line
+                key_func = lambda i: data[i].line_num_in_file
+            else:  # ID (0)
+                key_func = lambda i: data[i].line_num_in_file
+
+            if key_func:
+                self._visible_indices.sort(key=key_func, reverse=reverse)
+
+        self._raw_to_visual_map = {raw_idx: visual_idx for visual_idx, raw_idx in enumerate(self._visible_indices)}
+        self.endResetModel()
+
+    # --- 辅助方法 ---
+
+    def get_ts_object_by_visual_row(self, row):
+        """获取当前视图第 row 行对应的对象"""
+        if 0 <= row < len(self._visible_indices):
+            raw_index = self._visible_indices[row]
+            return self._all_data[raw_index]
         return None
 
-    def flags(self, index):
-        if not index.isValid():
-            return Qt.NoItemFlags
-        return Qt.ItemIsEnabled | Qt.ItemIsSelectable
+    def get_visual_row_by_id(self, ts_id):
+        raw_index = self._id_to_raw_index_map.get(ts_id)
+        if raw_index is None:
+            return -1
 
-    def index_from_id(self, ts_id):
-        if ts_id in self._id_to_index_map:
-            row = self._id_to_index_map[ts_id]
-            return self.index(row, 0)
-        return QModelIndex()
+        try:
+            return self._visible_indices.index(raw_index)
+        except ValueError:
+            return -1
 
+    def get_visual_row_by_raw_index(self, raw_index):
+        return self._raw_to_visual_map.get(raw_index, -1)
 
-class TranslatableStringsProxyModel(QSortFilterProxyModel):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.show_ignored = True
-        self.show_untranslated = False
-        self.show_translated = False
-        self.show_unreviewed = False
-        self.search_term = ""
-        self.search_results_indices = set()
-        self.is_translation_mode = False
-        self._current_filter_seen_originals = set()
-        self.new_entry_id = "##NEW_ENTRY##"
-        super().setDynamicSortFilter(False)
-
-    def setDynamicSortFilter(self, enable):
-        super().setDynamicSortFilter(False)
-
-    def setSourceModel(self, sourceModel):
-        # Disconnect previous model if exists
-        if self.sourceModel():
-            try:
-                self.sourceModel().dataChanged.disconnect(self._source_data_changed)
-            except RuntimeError:
-                pass
-
-        super().setSourceModel(sourceModel)
-
-        # Connect new model to custom handler
-        if sourceModel:
-            sourceModel.dataChanged.connect(self._source_data_changed)
-
-    def _source_data_changed(self, topLeft, bottomRight, roles=None):
-        if not topLeft.isValid() or not bottomRight.isValid():
-            return
-
-        start_proxy = self.mapFromSource(topLeft)
-        end_proxy = self.mapFromSource(bottomRight)
-
-        # Only emit dataChanged for visible rows
-        if start_proxy.isValid() and end_proxy.isValid():
-            self.dataChanged.emit(start_proxy, end_proxy, roles if roles is not None else [])
-
-    def set_filters(self, show_ignored, show_untranslated, show_translated, show_unreviewed, search_term, is_translation_mode,
-                    sort_column, sort_order):
-        self.show_ignored = show_ignored
-        self.show_untranslated = show_untranslated
-        self.show_translated = show_translated
-        self.show_unreviewed = show_unreviewed
-        self.search_term = search_term.lower()
-        self.is_translation_mode = is_translation_mode
-        self.invalidateFilter()
-        self.sort(sort_column, sort_order)
-
-    def filterAcceptsRow(self, source_row, source_parent):
-        ts_obj = self.sourceModel()._data[source_row]
-        if not ts_obj:
-            return False
-        if self.is_translation_mode and ts_obj.id == self.new_entry_id:
-            return True
-        if self.search_term:
-            if self.search_term not in ts_obj._search_cache:
-                return False
-        has_translation = bool(ts_obj.translation.strip())
-        if not self.show_ignored and ts_obj.is_ignored: return False
-        if self.show_untranslated and has_translation and not ts_obj.is_ignored: return False
-        if self.show_translated and not has_translation and not ts_obj.is_ignored: return False
-        if self.show_unreviewed and ts_obj.is_reviewed: return False
-
-        return True
-
-    def sort(self, column, order=Qt.AscendingOrder):
-        source = self.sourceModel()
-        if source:
-            source.sort_data(column, order)
-            self.invalidate()
-
-    def lessThan(self, left_index, right_index):
-        source_model = self.sourceModel()
-        left_obj = source_model._data[left_index.row()]
-        right_obj = source_model._data[right_index.row()]
-
-        if not left_obj or not right_obj:
-            return False
-
-        if self.is_translation_mode:
-            if left_obj.id == self.new_entry_id: return False
-            if right_obj.id == self.new_entry_id: return True
-
-        column = self.sortColumn()
-
-        # Column 1 (Status Icon) or Column 5 (Reviewed Checkmark)
-        if column == 1 or column == 5:
-            # Use pre-calculated sort_weight
-            if left_obj.sort_weight != right_obj.sort_weight:
-                return left_obj.sort_weight < right_obj.sort_weight
-            else:
-                # Secondary sort by line number
-                return left_obj.line_num_in_file < right_obj.line_num_in_file
-
-        elif column == 0:  # ID / Row Num
-            return left_index.row() < right_index.row()
-        elif column == 2:  # Original
-            return left_obj.original_semantic.lower() < right_obj.original_semantic.lower()
-        elif column == 3:  # Translation
-            return left_obj.get_translation_for_ui().lower() < right_obj.get_translation_for_ui().lower()
-        elif column == 4:  # Comment
-            return left_obj.comment.lower() < right_obj.comment.lower()
-        elif column == 6:  # Line Num
-            return left_obj.line_num_in_file < right_obj.line_num_in_file
-
-        return False
-
-    def invalidateFilter(self):
-        self._current_filter_seen_originals.clear()
-        super().invalidateFilter()
-
-    def id_in_filtered_data(self, ts_id):
-        source_index = self.sourceModel().index_from_id(ts_id)
-        if source_index.isValid():
-            proxy_index = self.mapFromSource(source_index)
-            return proxy_index.isValid()
-        return False
+    def get_raw_index_by_id(self, ts_id):
+        return self._id_to_raw_index_map.get(ts_id)

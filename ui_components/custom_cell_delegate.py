@@ -19,25 +19,34 @@ class CustomCellDelegate(QStyledItemDelegate):
 
         self.newline_symbol = "↵"
 
+    def displayText(self, value, locale):
+        text = super().displayText(value, locale)
+        if '\n' in text:
+            return text.replace('\n', '↵')
+        return text
+
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
         display_option = QStyleOptionViewItem(option)
         display_option.state &= ~QStyle.State_HasFocus
+
         original_text = index.data(Qt.DisplayRole)
-        text_to_draw = str(original_text) if original_text is not None else ""
-        if index.column() in [2, 3] and '\n' in text_to_draw:
-            text_to_draw = text_to_draw.replace('\n', '↵')
-        display_option.text = text_to_draw
+        display_option.text = str(original_text) if original_text is not None else ""
+
         if index.column() == 1:
             display_option.displayAlignment = Qt.AlignCenter
+
+        # 绘制背景色
         background_color = index.data(Qt.BackgroundRole)
         if background_color and isinstance(background_color, QColor):
             painter.save()
             painter.fillRect(display_option.rect, background_color)
             painter.restore()
+
         super().paint(painter, display_option, index)
+
+        # 绘制边框和高亮
         painter.save()
         current_proxy_index_tuple = (index.row(), index.column())
-
         is_find_match = False
         is_current_find_focus = False
 
@@ -49,9 +58,7 @@ class CustomCellDelegate(QStyledItemDelegate):
             painter.fillRect(display_option.rect, QColor(144, 238, 144, 150))
         elif is_find_match:
             painter.fillRect(display_option.rect, QColor(147, 112, 219, 110))
-        painter.restore()
 
-        painter.save()
         ts_obj = index.data(Qt.UserRole)
         if ts_obj:
             is_selected = display_option.state & self.parent().style().StateFlag.State_Selected
@@ -77,12 +84,15 @@ class CustomCellDelegate(QStyledItemDelegate):
                 if index.column() == index.model().columnCount() - 1:
                     painter.drawLine(rect.topRight().x(), rect.topRight().y(), rect.bottomRight().x(),
                                      rect.bottomRight().y() - 1)
-        if index.column() in [2, 3]:
+
+        # 绘制换行符颜色标识
+        if index.column() in [2, 3] and ts_obj:
             symbol_color = None
-            if index.column() == 2:  # 原文列
+            if index.column() == 2:
                 symbol_color = ts_obj.ui_style_cache.get('original_newline_color')
-            elif index.column() == 3:  # 译文列
+            elif index.column() == 3:
                 symbol_color = ts_obj.ui_style_cache.get('translation_newline_color')
+
             if symbol_color and isinstance(symbol_color, QColor):
                 symbol_font = QFont(display_option.font)
                 symbol_font.setPointSize(int(display_option.font.pointSize() * 0.9))

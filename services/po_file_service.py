@@ -67,6 +67,7 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
     )
 
     ts.translation = msgstr
+    ts._display_translation = msgstr.replace('\n', '↵')
 
     if msgctxt:
         ts.context = msgctxt
