@@ -6,6 +6,8 @@ import shutil
 import uuid
 import polib
 from pathlib import Path
+from copy import deepcopy
+from rapidfuzz import fuzz
 from services import po_file_service
 from services.format_manager import FormatManager
 from services.code_file_service import extract_translatable_strings
@@ -340,3 +342,102 @@ def build_project_target_files(project_path: str, app_instance, progress_callbac
         total_files=total_files_built
     )
     return True, success_message
+
+
+def rebuild_project_structure(project_path: str, target_langs: list, new_patterns: list, app_instance):
+    """
+    重新构建项目结构：通过 FormatManager 重新加载所有源文件并合并现有翻译。
+    """
+    proj_path = Path(project_path)
+    config_path = proj_path / PROJECT_CONFIG_FILE
+
+    with open(config_path, 'r', encoding='utf-8') as f:
+        project_config = json.load(f)
+
+    source_files = project_config.get("source_files", [])
+    all_new_strings = []
+
+    # 统一使用 FormatManager 加载所有源文件
+    from services.format_manager import FormatManager
+    for file_info in source_files:
+        file_abs_path = proj_path / file_info["project_path"]
+        if not file_abs_path.is_file():
+            logger.warning(f"Source file missing during rebuild: {file_abs_path}")
+            continue
+
+        handler = FormatManager.get_handler(file_info.get("format_id"))
+        if not handler:
+            logger.error(f"No handler found for format_id: {file_info.get('format_id')}")
+            continue
+
+        try:
+            extracted, __, ___ = handler.load(
+                str(file_abs_path),
+                extraction_patterns=new_patterns,
+                relative_path=file_info["project_path"],
+                app_instance=app_instance
+            )
+            all_new_strings.extend(extracted)
+        except Exception as e:
+            logger.error(f"Failed to load file during rebuild: {file_abs_path}, error: {e}")
+
+    # 针对每个目标语言进行数据合并
+    rebuild_results = {}  # {lang: [new_objects]}
+
+    for lang in target_langs:
+        trans_file = proj_path / TRANSLATION_DIR / f"{lang}.json"
+        old_data_map = {}
+        if trans_file.is_file():
+            with open(trans_file, 'r', encoding='utf-8') as f:
+                old_data_list = json.load(f)
+                # 以原文语义为 Key 建立映射，方便找回翻译
+                for item in old_data_list:
+                    old_data_map[item['id']] = item
+
+        final_lang_strings = []
+        current_new_strings = deepcopy(all_new_strings)
+
+        # 建立一个基于原文的旧池子，用于模糊匹配
+        old_pool_by_text = {v['original_semantic']: v for v in old_data_map.values()}
+        used_old_ids = set()
+
+        for ts in current_new_strings:
+            # 策略 A: ID 精确匹配
+            if ts.id in old_data_map:
+                old_item = old_data_map[ts.id]
+                ts.set_translation_internal(old_item.get('translation', ""))
+                ts.comment = old_item.get('comment', "")
+                ts.is_reviewed = old_item.get('is_reviewed', False)
+                ts.is_ignored = old_item.get('is_ignored', False)
+                ts.is_fuzzy = old_item.get('is_fuzzy', False)
+                used_old_ids.add(ts.id)
+
+            # 策略 B: 原文内容匹配
+            elif ts.original_semantic in old_pool_by_text:
+                old_item = old_pool_by_text[ts.original_semantic]
+                ts.set_translation_internal(old_item.get('translation', ""))
+                ts.comment = old_item.get('comment', "")
+                ts.is_fuzzy = True  # 标记为模糊，因为位置变了
+                used_old_ids.add(old_item['id'])
+
+            # 策略 C: 模糊匹配
+            else:
+                best_score = 0
+                best_match = None
+                for old_id, old_item in old_data_map.items():
+                    if old_id in used_old_ids: continue
+                    score = fuzz.ratio(ts.original_semantic, old_item['original_semantic']) / 100.0
+                    if score > best_score:
+                        best_score = score
+                        best_match = old_item
+
+                if best_score >= 0.85:
+                    ts.set_translation_internal(best_match.get('translation', ""))
+                    ts.is_fuzzy = True
+                    used_old_ids.add(best_match['id'])
+
+            final_lang_strings.append(ts)
+
+        rebuild_results[lang] = final_lang_strings
+
+    return rebuild_results

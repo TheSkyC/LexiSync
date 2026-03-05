@@ -9,10 +9,9 @@ import re
 import shutil
 import threading
 import time
-import traceback
 from copy import deepcopy
 
-import polib
+from pathlib import Path
 from openpyxl import Workbook, load_workbook
 from rapidfuzz import fuzz
 
@@ -78,7 +77,7 @@ from services import fix_service
 from services.build_service import BuildWorker
 from services import export_service, po_file_service
 from services.code_file_service import extract_translatable_strings, save_translated_code
-from services.project_service import create_project, load_project_data, save_project
+from services.project_service import create_project, load_project_data, save_project, rebuild_project_structure
 from services.project_manager import ProjectManager
 from services.prompt_service import generate_prompt_from_structure
 from services.export_service import export_qa_report
@@ -451,6 +450,12 @@ class LexiSyncApp(QMainWindow):
         self.action_extract_pot.triggered.connect(self.export_current_to_pot)
         self.export_menu.addAction(self.action_extract_pot)
 
+        self.export_menu.addSeparator()
+
+        self.action_export_package = QAction(_("Export Project Package (.lexipack)..."), self)
+        self.action_export_package.triggered.connect(self.show_export_package_wizard)
+        self.action_export_package.setEnabled(False)
+        self.export_menu.addAction(self.action_export_package)
         self.export_menu.addSeparator()
 
         self.action_save_code_file = QAction(_("Export as Code File..."), self)
@@ -1600,7 +1605,8 @@ class LexiSyncApp(QMainWindow):
         self.action_save_current_file.setEnabled(has_content)
         self.action_save_current_file_as.setEnabled(has_content)
         self.action_compare_new_version.setEnabled(has_content)
-
+        if hasattr(self, 'action_export_package'):
+            self.action_export_package.setEnabled(self.is_project_mode)
         if self.is_translation_mode:
             self.action_save_code_file.setEnabled(False)
             self.action_export_translation.setEnabled(has_content)
@@ -1647,6 +1653,29 @@ class LexiSyncApp(QMainWindow):
             return
         dialog = ProjectSettingsDialog(self)
         dialog.exec()
+
+    def show_export_package_wizard(self):
+        if not self.is_project_mode: return
+        if not self.prompt_save_if_modified(): return
+
+        from dialogs.export_package_dialog import ExportPackageDialog
+        wizard = ExportPackageDialog(self, self)
+        wizard.exec()
+
+    def handle_lexipack_drop(self, filepath):
+        from services.package_service import read_package_info
+        from dialogs.import_package_dialog import ImportPackageDialog
+
+        pack_info = read_package_info(filepath)
+        if not pack_info:
+            QMessageBox.critical(self, _("Error"), _("Invalid or corrupted package file."))
+            return
+
+        dialog = ImportPackageDialog(self, filepath, pack_info)
+        if dialog.exec():
+            if dialog.extracted_path:
+                if self.prompt_save_if_modified():
+                    self.open_project(dialog.extracted_path)
 
     def update_ai_related_ui_state(self):
         ai_available = requests is not None
@@ -2420,6 +2449,10 @@ class LexiSyncApp(QMainWindow):
         if not filepath:
             return
 
+        if filepath.lower().endswith('.lexipack'):
+            self.handle_lexipack_drop(filepath)
+            return
+
         if current_target is self.table_view:
             if self.is_project_mode:
                 reply = QMessageBox.question(
@@ -2947,6 +2980,68 @@ class LexiSyncApp(QMainWindow):
             QMessageBox.critical(self, _("Build Failed"), message)
         self.build_thread = None
         self.build_worker = None
+
+    def rebuild_current_project(self):
+        if not self.is_project_mode: return
+
+        new_patterns = self.config.get("extraction_patterns", [])
+
+        self.update_statusbar(_("Rebuilding project structure..."), persistent=True)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        try:
+            from services.project_service import rebuild_project_structure
+            target_langs = self.project_config.get('target_languages', [])
+            rebuild_data = rebuild_project_structure(
+                self.current_project_path, target_langs, new_patterns, self
+            )
+
+            # 准备差异对比
+            current_lang = self.current_target_language
+            new_list = rebuild_data.get(current_lang, [])
+            old_list = self.all_project_strings
+
+            # 计算 Diff 统计
+            old_ids = {ts.id for ts in old_list}
+            new_ids = {ts.id for ts in new_list}
+
+            diff_results = {
+                'added': [{'new_obj': ts} for ts in new_list if ts.id not in old_ids],
+                'removed': [{'old_obj': ts} for ts in old_list if ts.id not in new_ids],
+                'modified': [],  # 逻辑中已处理
+                'unchanged': [{'new_obj': ts} for ts in new_list if ts.id in old_ids],
+                'summary': _("Project rebuild complete. Found {new} new IDs, {rem} removed IDs.").format(
+                    new=len(new_ids - old_ids), rem=len(old_ids - new_ids))
+            }
+
+            QApplication.restoreOverrideCursor()
+
+            # 弹出 Diff 对话框
+            from dialogs.diff_dialog import DiffDialog
+            confirm_dialog = DiffDialog(self, _("Rebuild Results (Preview: {lang})").format(lang=current_lang),
+                                        diff_results)
+            if confirm_dialog.exec():
+                # 存所有语言的结果
+                for lang, strings in rebuild_data.items():
+                    from services.project_service import TRANSLATION_DIR
+                    trans_file = Path(self.current_project_path) / TRANSLATION_DIR / f"{lang}.json"
+                    data_to_save = [ts.to_dict() for ts in strings]
+                    with open(trans_file, 'w', encoding='utf-8') as f:
+                        json.dump(data_to_save, f, indent=4, ensure_ascii=False)
+
+                # 更新当前内存状态
+                self.all_project_strings = rebuild_data[current_lang]
+                self._rebuild_string_cache_indexes()
+                self._switch_active_file(self.current_active_source_file_id)
+                self.mark_modified(False)
+                self.update_statusbar(_("Project rebuilt successfully."))
+            else:
+                self.update_statusbar(_("Rebuild cancelled."))
+
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            logger.error(f"Rebuild failed: {e}", exc_info=True)
+            QMessageBox.critical(self, _("Error"), _("Project rebuild failed: {error}").format(error=str(e)))
 
     def _save_current_view_changes(self):
         # [CRITICAL DATA INTEGRITY NOTE]
@@ -4078,7 +4173,6 @@ class LexiSyncApp(QMainWindow):
     def _run_and_refresh_with_validation(self):
         if not self.translatable_objects:
             self.sheet_model.set_translatable_objects([])
-            self.sheet_model.invalidate()
             if self.marker_bar:
                 self.marker_bar.clear_markers()
             return

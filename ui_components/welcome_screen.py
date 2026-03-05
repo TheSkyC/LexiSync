@@ -597,8 +597,28 @@ class WelcomeScreen(QWidget):
         urls = event.mimeData().urls()
         if urls and urls[0].isLocalFile():
             filepath = urls[0].toLocalFile()
+
+            if filepath.lower().endswith('.lexipack'):
+                self.handle_lexipack_drop(filepath)
+                event.acceptProposedAction()
+                return
+
             self.on_action_triggered("open_specific_file", path=filepath)
             event.acceptProposedAction()
+
+    def handle_lexipack_drop(self, filepath):
+        from services.package_service import read_package_info
+        from dialogs.import_package_dialog import ImportPackageDialog
+
+        pack_info = read_package_info(filepath)
+        if not pack_info:
+            QMessageBox.critical(self, _("Error"), _("Invalid or corrupted package file."))
+            return
+
+        dialog = ImportPackageDialog(self, filepath, pack_info)
+        if dialog.exec():
+            if dialog.extracted_path:
+                self.on_action_triggered("open_specific_project", path=dialog.extracted_path)
 
     def start_prewarming(self):
         if self.is_prewarming:

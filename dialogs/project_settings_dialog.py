@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (QDialog, QHBoxLayout, QListWidget, QStackedWidget
                                QDialogButtonBox, QListWidgetItem, QVBoxLayout, QLabel,
                                QTabWidget, QFormLayout, QLineEdit, QPushButton,
                                QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView,
-                               QFileDialog, QWidget)
+                               QFileDialog, QWidget, QGroupBox)
 from PySide6.QtCore import Qt
 import uuid
 import os
@@ -197,6 +197,19 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
         form_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
 
         self.page_layout.addLayout(form_layout)
+        self.page_layout.addStretch()
+
+        maint_group = QGroupBox(_("Project Maintenance"))
+        maint_layout = QVBoxLayout(maint_group)
+
+        self.rebuild_btn = QPushButton(_("Rebuild Project..."))
+        self.rebuild_btn.setToolTip(
+            _("Re-scan all source files and fix broken IDs. Use this after changing extraction rules."))
+        self.rebuild_btn.clicked.connect(self.app.rebuild_current_project)
+
+        maint_layout.addWidget(self.rebuild_btn)
+        self.page_layout.addWidget(maint_group)
+
         self.page_layout.addStretch()
 
     def _populate_target_langs(self):
@@ -587,8 +600,9 @@ class ProjectSettingsDialog(QDialog):
 
         if needs_ui_update:
             __, all_strings = project_service.load_project_data(
-                project_path=self.app.current_project_path,
-                target_language=self.app.current_target_language,
+                self.app.current_project_path,
+                self.app.current_target_language,
+                self.app,
                 all_files=True
             )
             self.app.all_project_strings = all_strings

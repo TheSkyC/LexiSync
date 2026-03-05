@@ -38,6 +38,8 @@ packaging==26.0
     # via -r requirements.in
 polib==1.2.0
     # via -r requirements.in
+pycryptodomex==3.23.0
+    # via pyzipper
 pyside6==6.10.2
     # via -r requirements.in
 pyside6-addons==6.10.2
@@ -49,6 +51,8 @@ pyside6-essentials==6.10.2
 pywin32-ctypes==0.2.3
     # via keyring
 pyyaml==6.0.3
+    # via -r requirements.in
+pyzipper==0.3.6
     # via -r requirements.in
 rapidfuzz==3.14.3
     # via -r requirements.in
