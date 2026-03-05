@@ -2230,14 +2230,14 @@ class LexiSyncApp(QMainWindow):
             format_id = self.current_format_handler.format_id if self.current_format_handler else "po"
             count = len(self.translatable_objects) if self.translatable_objects else 0
             progress_total = count
-            progress_current = translated_count
+            progress_current = len([ts for ts in self.translatable_objects if ts.translation.strip() and not ts.is_ignored]) if self.translatable_objects else 0
         else:
             # Single code file
             file_type = "source"
             format_id = self.current_format_handler.format_id if self.current_format_handler else "ow_code"
             count = len(self.translatable_objects) if self.translatable_objects else 0
             progress_total = count
-            progress_current = translated_count
+            progress_current = len([ts for ts in self.translatable_objects if ts.translation.strip() and not ts.is_ignored]) if self.translatable_objects else 0
 
         # New entry structure
         new_entry = {
@@ -2795,7 +2795,6 @@ class LexiSyncApp(QMainWindow):
             self.current_file_path = filepath
             self.current_project_path = None
             self.current_file_metadata = None
-            self.add_to_recent_files(filepath)
             self.config["last_dir"] = os.path.dirname(filepath)
 
             # Checkpoint 1: IO & Pre-process
@@ -2835,6 +2834,8 @@ class LexiSyncApp(QMainWindow):
             self.is_translation_mode = False
 
             self._run_and_refresh_with_validation()
+
+            self.add_to_recent_files(filepath)
 
             # Checkpoint 4: Validation & UI Render
             t_end = time.perf_counter()
