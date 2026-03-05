@@ -121,6 +121,7 @@ class LexiSyncApp(QMainWindow):
     language_changed = Signal()
     def __init__(self, config):
         super().__init__()
+        self.setUpdatesEnabled(False)
         self.config = config
         if "window_geometry" in self.config and self.config["window_geometry"]:
             self.restoreGeometry(QByteArray.fromBase64(self.config["window_geometry"].encode('utf-8')))
@@ -247,7 +248,11 @@ class LexiSyncApp(QMainWindow):
         self.setAcceptDrops(True)
         self.setStyleSheet("QPushButton:focus { outline: none; }")
         self.plugin_manager = PluginManager(self)
+
         self.UI_initialization()
+
+        self.setUpdatesEnabled(True)
+
         self.file_explorer_panel.file_double_clicked.connect(self.open_file_from_explorer)
         self.file_explorer_panel.open_project_requested.connect(self.open_project)
 
