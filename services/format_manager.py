@@ -16,6 +16,7 @@ from typing import List, Dict, Any, Tuple, Optional
 from models.translatable_string import TranslatableString
 from services import po_file_service
 from services import code_file_service
+from utils.file_utils import atomic_open
 from utils.localization import _
 
 logger = logging.getLogger(__name__)
@@ -225,9 +226,11 @@ class TsFormatHandler(BaseFormatHandler):
         root.set('language', lang_code)
         contexts = {}
         for ts in translatable_objects:
-            if not ts.original_semantic or ts.id == "##NEW_ENTRY##": continue
+            if not ts.original_semantic or ts.id == "##NEW_ENTRY##":
+                continue
             ctx = ts.context or "Default"
-            if ctx not in contexts: contexts[ctx] = []
+            if ctx not in contexts:
+                contexts[ctx] = []
             contexts[ctx].append(ts)
 
         for ctx_name, items in contexts.items():
@@ -240,6 +243,7 @@ class TsFormatHandler(BaseFormatHandler):
 
                 entry_occurrences = []
                 clean_extracomment_lines = []
+
                 if ts.po_comment:
                     for line in ts.po_comment.splitlines():
                         if line.strip().startswith('#:'):
@@ -257,19 +261,23 @@ class TsFormatHandler(BaseFormatHandler):
                 if not entry_occurrences:
                     entry_occurrences = [("unknown", "0")]
 
+                # 添加位置信息
                 for loc_file, loc_line in entry_occurrences:
                     loc_node = ET.SubElement(msg_node, 'location')
                     loc_node.set('filename', loc_file)
                     loc_node.set('line', str(loc_line))
 
+                # 添加源文本
                 source_node = ET.SubElement(msg_node, 'source')
                 source_node.text = ts.original_semantic
 
+                # 添加 extracomment（不包含位置信息）
                 clean_extracomment = "\n".join(clean_extracomment_lines).strip()
                 if clean_extracomment:
                     extracomment_node = ET.SubElement(msg_node, 'extracomment')
                     extracomment_node.text = clean_extracomment
 
+                # 添加译者注释
                 if ts.comment:
                     translatorcomment_node = ET.SubElement(msg_node, 'translatorcomment')
                     translatorcomment_node.text = ts.comment
@@ -281,10 +289,13 @@ class TsFormatHandler(BaseFormatHandler):
                     trans_node.set('type', 'unfinished')
 
         tree = ET.ElementTree(root)
-        if hasattr(ET, 'indent'): ET.indent(tree, space="    ", level=0)
+        if hasattr(ET, 'indent'):
+            ET.indent(tree, space="    ", level=0)
+
         xml_str = ET.tostring(root, encoding='utf-8', xml_declaration=True).decode('utf-8')
         xml_str = xml_str.replace('?>', '?>\n<!DOCTYPE TS>')
-        with open(filepath, 'w', encoding='utf-8') as f:
+
+        with atomic_open(filepath, 'w', encoding='utf-8') as f:
             f.write(xml_str)
 
 
@@ -418,7 +429,8 @@ class XliffFormatHandler(BaseFormatHandler):
 
         tree = ET.ElementTree(root)
         if hasattr(ET, 'indent'): ET.indent(tree, space="  ")
-        tree.write(filepath, encoding='utf-8', xml_declaration=True)
+        with atomic_open(filepath, 'wb') as f:
+            tree.write(f, encoding='utf-8', xml_declaration=True)
 
 
 class AndroidStringsFormatHandler(BaseFormatHandler):
@@ -780,7 +792,8 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
         if hasattr(ET, 'indent'):
             ET.indent(tree, space="    ", level=0)
 
-        tree.write(filepath, encoding='utf-8', xml_declaration=True)
+        with atomic_open(filepath, 'wb') as f:
+            tree.write(f, encoding='utf-8', xml_declaration=True)
 
         logger.info(f"[AndroidStringsFormatHandler] Saved {len(translatable_objects)} strings to {filepath}")
 
@@ -991,8 +1004,9 @@ class IosStringsFormatHandler(BaseFormatHandler):
             lines.append(f'"{escaped_key}" = "{escaped_val}";')
             lines.append('')
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with atomic_open(filepath, 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines))
+            f.write('\n')
         logger.info(f"[IosStringsFormatHandler] Saved {len(translatable_objects)} strings to {filepath}")
 
     def _save_stringsdict(self, filepath, translatable_objects, metadata):
@@ -1025,7 +1039,7 @@ class IosStringsFormatHandler(BaseFormatHandler):
                     if ctx in trans_map:
                         var_dict[category] = trans_map[ctx]
 
-        with open(filepath, 'wb') as f:
+        with atomic_open(filepath, 'wb') as f:
             plistlib.dump(new_data, f, fmt=plistlib.FMT_XML)
         logger.info(f"[IosStringsFormatHandler] Saved stringsdict to {filepath}")
 
@@ -1213,7 +1227,7 @@ class ArbFormatHandler(BaseFormatHandler):
                 # 若原本没有描述符但有 description，生成一个最简描述符
                 output[f'@{key}'] = {'description': ts.comment}
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with atomic_open(filepath, 'w', encoding='utf-8') as f:
             json.dump(output, f, indent=indent, ensure_ascii=False)
             f.write('\n')  # ARB 文件惯例以换行结尾
 
@@ -1296,7 +1310,7 @@ class JsonI18nFormatHandler(BaseFormatHandler):
         # 递归提取所有可翻译字符串
         self._extract_recursive(
             data, [], translatable_objects, occurrence_counters,
-            json_file_rel_path, line_num=1
+            json_file_rel_path, line_num=1, app_instance=app_instance
         )
 
         metadata = {
@@ -1360,34 +1374,30 @@ class JsonI18nFormatHandler(BaseFormatHandler):
 
     def _extract_recursive(
             self, obj: Any, key_path: List[str], results: List[TranslatableString],
-            occurrence_counters: Dict, file_rel_path: str, line_num: int
+            occurrence_counters: Dict, file_rel_path: str, line_num: int, app_instance=None
     ):
         """递归提取 JSON 中的所有可翻译字符串"""
-
         if isinstance(obj, dict):
             for key, value in obj.items():
                 self._extract_recursive(
                     value, key_path + [key], results, occurrence_counters,
-                    file_rel_path, line_num
+                    file_rel_path, line_num, app_instance=app_instance
                 )
 
         elif isinstance(obj, list):
             for idx, item in enumerate(obj):
-                # 数组索引也作为路径的一部分
                 self._extract_recursive(
                     item, key_path + [f"[{idx}]"], results, occurrence_counters,
-                    file_rel_path, line_num
+                    file_rel_path, line_num, app_instance=app_instance
                 )
 
         elif isinstance(obj, str):
-            # 只提取非空字符串
             if obj.strip():
                 self._create_translatable_string(
                     obj, key_path, results, occurrence_counters,
-                    file_rel_path, line_num
+                    file_rel_path, line_num, app_instance=app_instance
                 )
-
-    def _create_translatable_string(self, text, key_path, results, occurrence_counters, file_rel_path, line_num):
+    def _create_translatable_string(self, text, key_path, results, occurrence_counters, file_rel_path, line_num, app_instance=None):
         """创建 TranslatableString 对象"""
 
         # 生成完整键路径作为 context
@@ -1415,7 +1425,7 @@ class JsonI18nFormatHandler(BaseFormatHandler):
             occurrence_index=current_index,
             id=obj_id
         )
-
+        ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
         ts.context = full_key
         ts.comment = ""
         ts.po_comment = f"#: JSON key path: {full_key}"
@@ -1434,10 +1444,11 @@ class JsonI18nFormatHandler(BaseFormatHandler):
         ensure_ascii = metadata.get('ensure_ascii', False)
 
         # 创建翻译映射: key_path -> translation
-        translation_map = {}
-        for ts in translatable_objects:
-            if ts.translation and not ts.is_ignored and ts.context:
-                translation_map[ts.context] = ts.translation
+        translation_map = {
+            ts.context: ts.translation
+            for ts in translatable_objects
+            if ts.id != "##NEW_ENTRY##" and ts.context and ts.translation is not None
+        }
 
         # 重建 JSON 结构
         translated_structure = self._rebuild_structure(
@@ -1445,7 +1456,7 @@ class JsonI18nFormatHandler(BaseFormatHandler):
         )
 
         # 保存文件
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with atomic_open(filepath, 'w', encoding='utf-8') as f:
             json.dump(
                 translated_structure,
                 f,
@@ -1748,7 +1759,7 @@ class YamlI18nFormatHandler(BaseFormatHandler):
 
         yaml_str = self._yaml_dump(output_data, backend)
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with atomic_open(filepath, 'w', encoding='utf-8') as f:
             f.write(yaml_str)
 
         logger.info(f"[YamlI18nFormatHandler] Saved {len(translation_map)} strings to {filepath}")
@@ -1838,7 +1849,7 @@ class TomlFormatHandler(BaseFormatHandler):
 
         self._rebuild_recursive(doc, [], translation_map)
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with atomic_open(filepath, 'w', encoding='utf-8') as f:
             f.write(tomlkit.dumps(doc))
 
     def _rebuild_recursive(self, obj, key_path, translation_map):
@@ -2057,7 +2068,8 @@ class ResxFormatHandler(BaseFormatHandler):
         if hasattr(ET, 'indent'):
             ET.indent(tree, space='  ', level=0)
 
-        tree.write(filepath, encoding='utf-8', xml_declaration=True)
+        with atomic_open(filepath, 'wb') as f:
+            tree.write(f, encoding='utf-8', xml_declaration=True)
         logger.info(f"[ResxFormatHandler] Saved {saved_count} strings to {filepath}")
 
 
@@ -2305,7 +2317,7 @@ class CsvFormatHandler(BaseFormatHandler):
                     row[cmt_idx] = ts.comment
 
         # 写回
-        with open(filepath, 'w', encoding='utf-8-sig', newline='') as f:
+        with atomic_open(filepath, 'w', encoding='utf-8-sig', newline='') as f:
             writer = csv.writer(f, delimiter=dialect_info.get('delimiter', ','),
                                 quotechar=dialect_info.get('quotechar', '"'),
                                 lineterminator=dialect_info.get('lineterminator', '\r\n'))
@@ -2433,7 +2445,20 @@ class XlsxFormatHandler(BaseFormatHandler):
                 # 2. 回填注释
                 if cmt_idx is not None:
                     ws.cell(row=row_num, column=cmt_idx + 1, value=ts.comment)
-        wb.save(filepath)
+        temp_filepath = filepath + ".tmp"
+
+        try:
+            wb.save(temp_filepath)
+            os.replace(temp_filepath, filepath)
+        except Exception as e:
+            logger.error(f"Failed to save Excel file to {filepath}: {e}")
+            raise e
+        finally:
+            if os.path.exists(temp_filepath):
+                try:
+                    os.remove(temp_filepath)
+                except OSError:
+                    pass
 
 
 class JavaPropertiesFormatHandler(BaseFormatHandler):
@@ -2587,7 +2612,7 @@ class JavaPropertiesFormatHandler(BaseFormatHandler):
             lines.append(f'{escaped_key}={escaped_val}')
             lines.append('')  # 条目间空行
 
-        with open(filepath, 'w', encoding=encoding) as f:
+        with atomic_open(filepath, 'w', encoding=encoding) as f:
             f.write('\n'.join(lines))
 
         logger.info(f"[JavaPropertiesFormatHandler] Saved {len(ts_map)} entries to {filepath}")
@@ -3149,7 +3174,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
                 # 偏移可能已漂移，回退到全文替换（只替换第一次出现）
                 content = content.replace(original, translation, 1)
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with atomic_open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)
 
         logger.info(f"[MarkdownFormatHandler] Saved translated document to {filepath}")

@@ -6,6 +6,7 @@ import os
 import shutil
 import datetime
 from models.translatable_string import TranslatableString
+from utils.file_utils import atomic_open
 from utils.localization import _
 import logging
 logger = logging.getLogger(__name__)
@@ -193,5 +194,5 @@ def save_translated_code(filepath_to_save, original_raw_code_content, translatab
             else:
                 logger.warning(f"Backup Failed: {e_backup}")
 
-    with open(filepath_to_save, 'w', encoding='utf-8') as f:
+    with atomic_open(filepath_to_save, 'w', encoding='utf-8') as f:
         f.write(final_content)

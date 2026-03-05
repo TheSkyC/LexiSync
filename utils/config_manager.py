@@ -11,6 +11,7 @@ from utils.constants import (
     DEFAULT_PROMPT_STRUCTURE, DEFAULT_CORRECTION_PROMPT_STRUCTURE, DEFAULT_KEYBINDINGS,
     DEFAULT_EXTRACTION_PATTERNS, DEFAULT_VALIDATION_RULES
 )
+from utils.file_utils import atomic_open
 from utils.security_utils import encrypt_text, decrypt_text
 from utils.path_utils import get_app_data_path
 from utils.localization import _
@@ -18,6 +19,26 @@ import logging
 
 logger = logging.getLogger(__name__)
 CONFIG_FILE = os.path.join(get_app_data_path(), "config.json")
+
+
+def atomic_write_json(data, target_file):
+    temp_file = target_file + ".tmp"
+    try:
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+
+        os.replace(temp_file, target_file)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to write to {target_file}: {e}")
+        return False
+    finally:
+        try:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+        except Exception:
+            pass
+
 
 def get_default_font_settings():
     return {
@@ -231,8 +252,7 @@ def save_config(app_instance):
 
             os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
 
-            # Perform the actual save
-            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            with atomic_open(CONFIG_FILE, 'w') as f:
                 json.dump(config_to_save, f, indent=4, ensure_ascii=False)
 
             return True
@@ -258,13 +278,13 @@ def save_config(app_instance):
                 continue
             elif clicked_button == plaintext_button:
                 try:
-                    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-                        json.dump(app_instance.config, f, indent=4, ensure_ascii=False)
-
-                    QMessageBox.warning(app_instance, _("Security Warning"),
-                                        _("Configuration was saved with API keys in plaintext. "
-                                          "Please resolve the file permission issue and save again to re-enable encryption."))
-                    return True
+                    if atomic_write_json(app_instance.config, CONFIG_FILE):
+                        QMessageBox.warning(app_instance, _("Security Warning"),
+                                            _("Configuration was saved with API keys in plaintext. "
+                                              "Please resolve the file permission issue and save again to re-enable encryption."))
+                        return True
+                    else:
+                        raise IOError("Failed to write config file in plaintext mode")
                 except Exception as plain_e:
                     QMessageBox.critical(app_instance, _("Save Failed"),
                                          _("Failed to save even in plaintext mode. Error: {error}").format(
