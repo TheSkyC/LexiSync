@@ -1,21 +1,24 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
+import csv
+import json
+import logging
 import os
-import regex as re
-from rapidfuzz import fuzz
-import xxhash
 import plistlib
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
-import logging
-import json
-import csv
-import copy
-from typing import List, Dict, Any, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+from rapidfuzz import fuzz
+import regex as re
+import xxhash
+
 from models.translatable_string import TranslatableString
-from services import po_file_service
 from services import code_file_service
+from services import po_file_service
 from utils.file_utils import atomic_open
 from utils.localization import _
 
@@ -316,10 +319,17 @@ class XliffFormatHandler(BaseFormatHandler):
     badge_text_color = "#01579B"
 
     def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
         logger.debug(f"[XliffFormatHandler] Loading XLIFF file: {filepath}")
-        tree = ET.parse(filepath)
-        root = tree.getroot()
 
+        try:
+            tree = ET.parse(filepath)
+            root = tree.getroot()
+        except ET.ParseError as e:
+            logger.error(f"XML Parse Error: {e}")
+            raise ValueError(f"Invalid XML file: {e}")
+
+        # 提取命名空间
         namespace = ""
         if root.tag.startswith("{"):
             namespace = root.tag[1:].split("}")[0]
@@ -333,34 +343,62 @@ class XliffFormatHandler(BaseFormatHandler):
         translatable_objects = []
         occurrence_counters = {}
 
+        # 查找所有 file 节点
         files = root.findall(f'.//{prefix}file', ns)
+        # 如果根节点本身就是 file (某些非标文件)，则把它作为唯一的文件节点
         if not files and (self._strip_ns(root.tag) == 'file'):
             files = [root]
 
+        target_lang_global = root.get('trgLang')  # XLIFF 2.0 根节点属性
+
         for file_elem in files:
-            source_lang = file_elem.get('source-language', 'en')
-            target_lang = file_elem.get('target-language', '')
+            # XLIFF 1.2 属性
+            source_lang = file_elem.get('source-language')
+            target_lang = file_elem.get('target-language')
             original_file = file_elem.get('original', '')
 
-            trans_units = file_elem.findall(f'.//{prefix}trans-unit', ns)
-            for trans_unit in trans_units:
-                self._process_trans_unit(
-                    trans_unit, translatable_objects, occurrence_counters,
-                    rel_path, original_file, ns, prefix
-                )
+            # XLIFF 2.0 属性 (srcLang, trgLang)
+            if not source_lang: source_lang = file_elem.get('srcLang')
+            if not target_lang: target_lang = file_elem.get('trgLang')
+
+            # 如果 file 节点没写，回退到根节点属性 (2.0)
+            if not source_lang: source_lang = root.get('srcLang', 'en')
+            if not target_lang: target_lang = target_lang_global or 'en'
+
+            # 根据版本分发处理逻辑
+            if version.startswith('2'):
+                # XLIFF 2.0: <unit> -> <segment> -> <source>/<target>
+                units = file_elem.findall(f'.//{prefix}unit', ns)
+                for unit in units:
+                    self._process_unit_v2(
+                        unit, translatable_objects, occurrence_counters,
+                        rel_path, original_file, ns, prefix, app_instance
+                    )
+            else:
+                # XLIFF 1.2: <trans-unit> -> <source>/<target>
+                trans_units = file_elem.findall(f'.//{prefix}trans-unit', ns)
+                for trans_unit in trans_units:
+                    self._process_trans_unit(
+                        trans_unit, translatable_objects, occurrence_counters,
+                        rel_path, original_file, ns, prefix, app_instance
+                    )
 
         metadata = {
             'version': version,
-            'source_language': source_lang if 'source_lang' in locals() else 'en',
-            'target_language': target_lang if target_lang else 'en',
+            'source_language': source_lang,
+            'target_language': target_lang,
             'namespace_uri': namespace
         }
+
+        logger.info(f"[XliffFormatHandler] Loaded {len(translatable_objects)} strings. Version: {version}")
         return translatable_objects, metadata, metadata['target_language']
 
     def _strip_ns(self, tag):
         return tag.split('}', 1)[1] if '}' in tag else tag
 
-    def _process_trans_unit(self, trans_unit, results, occurrence_counters, file_rel_path, original_file, ns, prefix):
+    def _process_trans_unit(self, trans_unit, results, occurrence_counters, file_rel_path, original_file, ns,
+                            prefix, app_instance):
+        """处理 XLIFF 1.2 的 trans-unit"""
         unit_id = trans_unit.get('id', 'unknown')
 
         source_elem = trans_unit.find(f'{prefix}source', ns)
@@ -373,64 +411,139 @@ class XliffFormatHandler(BaseFormatHandler):
         target_text = target_elem.text if target_elem is not None and target_elem.text else ''
 
         state = target_elem.get('state', 'needs-translation') if target_elem is not None else 'needs-translation'
-        # 映射状态：translated 和 final 视为已审阅
         is_reviewed = state in ['translated', 'final', 'signed-off']
 
         note_elems = trans_unit.findall(f'{prefix}note', ns)
         notes = [note.text for note in note_elems if note.text]
 
-        counter_key = (source_text, unit_id)
-        idx = occurrence_counters.get(counter_key, 0)
-        occurrence_counters[counter_key] = idx + 1
+        self._create_ts(
+            source_text, target_text, unit_id, notes, is_reviewed,
+            file_rel_path, results, occurrence_counters, "XLIFF 1.2", app_instance
+        )
 
-        stable_name = f"{file_rel_path}::{unit_id}::{source_text}::{idx}"
+    def _process_unit_v2(self, unit, results, occurrence_counters, file_rel_path, original_file, ns, prefix,
+                         app_instance):
+        """处理 XLIFF 2.0 的 unit"""
+        unit_id = unit.get('id', 'unknown')
+
+        # 提取 Notes (2.0 的 notes 在 unit 级别)
+        notes = []
+        notes_elem = unit.find(f'{prefix}notes', ns)
+        if notes_elem is not None:
+            for n in notes_elem.findall(f'{prefix}note', ns):
+                if n.text: notes.append(n.text)
+
+        # 遍历所有 segment
+        segments = unit.findall(f'.//{prefix}segment', ns)
+        for i, seg in enumerate(segments):
+            source_elem = seg.find(f'{prefix}source', ns)
+            target_elem = seg.find(f'{prefix}target', ns)
+
+            if source_elem is None or source_elem.text is None: continue
+
+            source_text = source_elem.text
+            target_text = target_elem.text if target_elem is not None and target_elem.text else ''
+
+            state = seg.get('state', 'initial')
+            is_reviewed = state in ['translated', 'final', 'reviewed']
+
+            # 如果一个 unit 有多个 segment，ID 需要区分
+            current_id = unit_id if len(segments) == 1 else f"{unit_id}_{i}"
+
+            self._create_ts(
+                source_text, target_text, current_id, notes, is_reviewed,
+                file_rel_path, results, occurrence_counters, "XLIFF 2.0", app_instance
+            )
+
+    def _create_ts(self, source, target, uid, notes, is_reviewed, rel_path, results, counters, type_str,
+                   app_instance):
+        """通用的 TranslatableString 创建逻辑"""
+        counter_key = (source, uid)
+        idx = counters.get(counter_key, 0)
+        counters[counter_key] = idx + 1
+
+        stable_name = f"{rel_path}::{uid}::{source}::{idx}"
         obj_id = xxhash.xxh128(stable_name.encode('utf-8')).hexdigest()
 
         ts = TranslatableString(
-            source_text, source_text, 0, 0, 0, [], "XLIFF Import",
-            file_rel_path, [(file_rel_path, unit_id)], idx, obj_id
+            source, source, 0, 0, 0, [], f"{type_str} Import",
+            rel_path, [(rel_path, uid)], idx, obj_id
         )
-        ts.set_translation_internal(target_text, is_initial=True)
-        ts.context = unit_id
+        # 使用基类方法填充译文
+        initial_trans = target if target else self.get_initial_translation(source, app_instance)
+        ts.set_translation_internal(initial_trans, is_initial=True)
+
+        ts.context = uid
         ts.comment = "\n".join(notes) if notes else ""
-        ts.po_comment = f"#: XLIFF ID: {unit_id}"
+        ts.po_comment = f"#: XLIFF ID: {uid}"
         ts.is_reviewed = is_reviewed
         ts.update_sort_weight()
         results.append(ts)
 
     def save(self, filepath, translatable_objects, metadata, **kwargs):
+        version = metadata.get('version', '1.2')
         uri = metadata.get('namespace_uri', 'urn:oasis:names:tc:xliff:document:1.2')
-        ET.register_namespace('', uri)  # 注册为默认命名空间
 
-        root = ET.Element(f'{{{uri}}}xliff', version=metadata.get('version', '1.2'))
-        file_elem = ET.SubElement(root, f'{{{uri}}}file')
-        file_elem.set('source-language', metadata.get('source_language', 'en'))
+        # 注册命名空间，防止输出 ns0: 前缀
+        ET.register_namespace('', uri)
 
-        app = kwargs.get('app_instance')
-        target_lang = app.current_target_language if app else metadata.get('target_language', 'en')
-        file_elem.set('target-language', target_lang)
-        file_elem.set('datatype', 'plaintext')
+        root = ET.Element(f'{{{uri}}}xliff', version=version)
 
-        body_elem = ET.SubElement(file_elem, f'{{{uri}}}body')
+        # 根据版本构建结构
+        if version.startswith('2'):
+            root.set('srcLang', metadata.get('source_language', 'en'))
+            root.set('trgLang', metadata.get('target_language', 'en'))
+            file_elem = ET.SubElement(root, f'{{{uri}}}file', id='f1')
+        else:
+            file_elem = ET.SubElement(root, f'{{{uri}}}file')
+            file_elem.set('source-language', metadata.get('source_language', 'en'))
+            file_elem.set('target-language', metadata.get('target_language', 'en'))
+            file_elem.set('datatype', 'plaintext')
+            body_elem = ET.SubElement(file_elem, f'{{{uri}}}body')
 
         for ts in translatable_objects:
             if not ts.original_semantic or ts.id == "##NEW_ENTRY##": continue
-            unit = ET.SubElement(body_elem, f'{{{uri}}}trans-unit', id=ts.context or f"u{ts.id[:8]}")
-            ET.SubElement(unit, f'{{{uri}}}source').text = ts.original_semantic
-            target = ET.SubElement(unit, f'{{{uri}}}target')
-            target.text = ts.translation
-            if ts.is_reviewed:
-                target.set('state', 'translated')
-            else:
-                target.set('state', 'needs-translation')
 
-            if ts.comment:
-                ET.SubElement(unit, f'{{{uri}}}note').text = ts.comment
+            unit_id = ts.context or f"u{ts.id[:8]}"
+
+            if version.startswith('2'):
+                # XLIFF 2.0 Save
+                unit = ET.SubElement(file_elem, f'{{{uri}}}unit', id=unit_id)
+                if ts.comment:
+                    notes = ET.SubElement(unit, f'{{{uri}}}notes')
+                    ET.SubElement(notes, f'{{{uri}}}note').text = ts.comment
+
+                segment = ET.SubElement(unit, f'{{{uri}}}segment')
+                if ts.is_reviewed:
+                    segment.set('state', 'translated')
+
+                ET.SubElement(segment, f'{{{uri}}}source').text = ts.original_semantic
+                ET.SubElement(segment, f'{{{uri}}}target').text = ts.translation
+            else:
+                # XLIFF 1.2 Save
+                unit = ET.SubElement(body_elem, f'{{{uri}}}trans-unit', id=unit_id)
+                ET.SubElement(unit, f'{{{uri}}}source').text = ts.original_semantic
+                target = ET.SubElement(unit, f'{{{uri}}}target')
+                target.text = ts.translation
+
+                if ts.is_reviewed:
+                    target.set('state', 'translated')
+                else:
+                    target.set('state', 'needs-translation')
+
+                if ts.comment:
+                    ET.SubElement(unit, f'{{{uri}}}note').text = ts.comment
 
         tree = ET.ElementTree(root)
         if hasattr(ET, 'indent'): ET.indent(tree, space="  ")
-        with atomic_open(filepath, 'wb') as f:
-            tree.write(f, encoding='utf-8', xml_declaration=True)
+
+        import io
+        buffer = io.BytesIO()
+        tree.write(buffer, encoding='utf-8', xml_declaration=True)
+        xml_content = buffer.getvalue().decode('utf-8')
+
+        with atomic_open(filepath, 'w', encoding='utf-8') as f:
+            f.write(xml_content)
 
 
 class AndroidStringsFormatHandler(BaseFormatHandler):
@@ -480,13 +593,13 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
         # 处理 <plurals> 元素
         for plurals_elem in root.findall('plurals'):
             self._process_plurals_element(
-                plurals_elem, translatable_objects, occurrence_counters, xml_file_rel_path
+                plurals_elem, translatable_objects, occurrence_counters, xml_file_rel_path, app_instance
             )
 
         # 处理 <string-array> 元素
         for array_elem in root.findall('string-array'):
             self._process_array_element(
-                array_elem, translatable_objects, occurrence_counters, xml_file_rel_path
+                array_elem, translatable_objects, occurrence_counters, xml_file_rel_path, app_instance
             )
 
         # 尝试从文件名检测语言
@@ -584,7 +697,7 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
 
     def _process_plurals_element(
             self, elem: ET.Element, results: List[TranslatableString],
-            occurrence_counters: Dict, file_rel_path: str
+            occurrence_counters: Dict, file_rel_path: str, app_instance=None
     ):
         """处理 <plurals> 元素"""
 
@@ -634,12 +747,13 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
             ts.po_comment = f"#: Android plurals name: {name}, quantity: {quantity}"
             ts.is_reviewed = False
             ts.update_sort_weight()
+            ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
 
             results.append(ts)
 
     def _process_array_element(
             self, elem: ET.Element, results: List[TranslatableString],
-            occurrence_counters: Dict, file_rel_path: str
+            occurrence_counters: Dict, file_rel_path: str, app_instance=None
     ):
         """处理 <string-array> 元素"""
 
@@ -683,6 +797,7 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
             ts.po_comment = f"#: Android string-array name: {name}, index: {idx}"
             ts.is_reviewed = False
             ts.update_sort_weight()
+            ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
 
             results.append(ts)
 
@@ -887,8 +1002,18 @@ class IosStringsFormatHandler(BaseFormatHandler):
                 ts.context = key
                 ts.comment = comment
                 ts.po_comment = f"#: Apple strings key: {key}"
+
+                # 审阅状态处理
                 # value == key 通常意味着尚未翻译（源语言文件）
-                ts.is_reviewed = bool(value and value != key)
+                if '@reviewed' in comment:
+                    ts.is_reviewed = True
+                elif '@unreviewed' in comment:
+                    ts.is_reviewed = False
+                else:
+                    ts.is_reviewed = bool(value and value != key)
+                # 清理掉内部标记
+                ts.comment = comment.replace('@reviewed', '').replace('@unreviewed', '').strip()
+
                 ts.update_sort_weight()
                 translatable_objects.append(ts)
 
@@ -995,9 +1120,14 @@ class IosStringsFormatHandler(BaseFormatHandler):
         for ts in translatable_objects:
             if not ts.original_semantic or ts.id == "##NEW_ENTRY##":
                 continue
-            if ts.comment:
-                # 多行注释写成块注释
-                lines.append(f"/* {ts.comment} */")
+            comment_to_write = ts.comment
+            if ts.is_reviewed:
+                comment_to_write = f"{comment_to_write} @reviewed".strip()
+            else:
+                comment_to_write = f"{comment_to_write} @unreviewed".strip()
+
+            if comment_to_write:
+                lines.append(f"/* {comment_to_write} */")
             translation = ts.translation if ts.translation else ts.original_semantic
             escaped_key = self._escape(ts.context or ts.original_semantic)
             escaped_val = self._escape(translation)
@@ -1077,6 +1207,303 @@ class IosStringsFormatHandler(BaseFormatHandler):
         current = Path(filepath).parent
         while True:
             if (current / 'project.json').is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
+
+class XCStringsFormatHandler(BaseFormatHandler):
+    """
+    Apple Xcode String Catalog (.xcstrings) 格式处理器
+    .xcstrings 是 Xcode 15+ 引入的 JSON 格式，将所有语言的翻译合并为一个文件。
+    顶层结构:
+    {
+      "sourceLanguage": "en",
+      "strings": {
+        "<key>": {
+          "comment": "...",
+          "localizations": {
+            "en": { "stringUnit": { "state": "translated", "value": "Hello" } },
+            "zh-Hans": { "stringUnit": { "state": "new", "value": "" } },
+            // 复数形式使用 "variations" -> "plural"
+          }
+        }
+      },
+      "version": "1.0"
+    }
+
+    支持的特性:
+    1. 多语言单文件: 按目标语言筛选/写入对应 localization 块
+    2. 复数形式: 完整支持 variations.plural (zero/one/two/few/many/other)
+    3. 设备变体: 识别 variations.device (iPhone/iPad/mac/…) 并展平提取
+    4. 状态映射: Xcode state ("new"/"translated"/"needs_review") <-> is_reviewed
+    5. 注释保留: 顶层 comment 字段完整读写
+    6. 源语言检测: 自动读取 sourceLanguage 字段
+    """
+
+    format_id = "xcstrings"
+    is_monolingual = False
+    extensions = [".xcstrings"]
+    format_type = "translation"
+    display_name = _("Xcode String Catalog (.xcstrings)")
+    badge_text = "XCS"
+    badge_bg_color = "#E3F2FD"
+    badge_text_color = "#1565C0"
+
+    # Xcode 复数类别顺序
+    PLURAL_CATEGORIES = ["zero", "one", "two", "few", "many", "other"]
+    # 支持的 device 变体键
+    DEVICE_KEYS = ["iPhone", "iPad", "mac", "appleWatch", "appleTV",
+                   "appleVision", "iPod", "other"]
+
+    def load(self, filepath: str, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or self._get_relative_path(filepath)
+
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        source_language = data.get("sourceLanguage", "en")
+        strings_dict: dict = data.get("strings", {})
+
+        # 确定目标语言 —— 优先用 app 当前目标语言，其次源语言
+        target_lang = source_language
+        if app_instance and hasattr(app_instance, "current_target_language"):
+            target_lang = app_instance.current_target_language or source_language
+
+        translatable_objects: List[TranslatableString] = []
+        occurrence_counters: Dict = {}
+
+        for key, entry in strings_dict.items():
+            if not isinstance(entry, dict):
+                continue
+
+            comment = entry.get("comment", "")
+            localizations: dict = entry.get("localizations", {})
+            # 取目标语言的本地化块，若无则视为空（待翻译）
+            loc_block = localizations.get(target_lang, {})
+            # 取源语言文本（用于 original_semantic）
+            src_block = localizations.get(source_language, {})
+            source_value = self._extract_string_unit_value(src_block) or key
+
+            # 判断是否有复数变体
+            if "variations" in loc_block and "plural" in loc_block["variations"]:
+                self._extract_plural_entries(
+                    key, comment, source_value,
+                    loc_block["variations"]["plural"],
+                    localizations, source_language,
+                    translatable_objects, occurrence_counters, relative_path, app_instance
+                )
+            elif "variations" in loc_block and "device" in loc_block["variations"]:
+                self._extract_device_entries(
+                    key, comment, source_value,
+                    loc_block["variations"]["device"],
+                    translatable_objects, occurrence_counters, relative_path, app_instance
+                )
+            else:
+                # 普通 stringUnit
+                translation_value = self._extract_string_unit_value(loc_block)
+                xcode_state = self._extract_state(loc_block)
+                is_reviewed = xcode_state == "translated"
+
+                ts = self._make_ts(
+                    key=key,
+                    context=key,
+                    source_value=source_value,
+                    translation_value=translation_value,
+                    comment=comment,
+                    xcode_state=xcode_state,
+                    is_reviewed=is_reviewed,
+                    relative_path=relative_path,
+                    occurrence_counters=occurrence_counters,
+                    string_type="XCString",
+                    app_instance=app_instance,
+                )
+                translatable_objects.append(ts)
+
+        metadata = {
+            "raw_data": data,
+            "source_language": source_language,
+            "target_language": target_lang,
+        }
+        logger.info(
+            f"[XCStringsFormatHandler] Loaded {len(translatable_objects)} entries "
+            f"(lang={target_lang}) from {filepath}"
+        )
+        return translatable_objects, metadata, target_lang
+
+    def save(self, filepath: str, translatable_objects, metadata: dict, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        raw_data: dict = copy.deepcopy(metadata.get("raw_data", {}))
+        source_language: str = metadata.get("source_language", "en")
+
+        target_lang = metadata.get("target_language", source_language)
+        if app_instance and hasattr(app_instance, "current_target_language"):
+            target_lang = app_instance.current_target_language or target_lang
+
+        strings_dict: dict = raw_data.setdefault("strings", {})
+
+        # 建立 context -> ts 映射（处理复数时 context 带 category 后缀）
+        ts_map: Dict[str, TranslatableString] = {}
+        for ts in translatable_objects:
+            if ts.id == "##NEW_ENTRY##" or not ts.context:
+                continue
+            ts_map[ts.context] = ts
+
+        for key, entry in strings_dict.items():
+            if not isinstance(entry, dict):
+                continue
+            localizations: dict = entry.setdefault("localizations", {})
+            loc_block: dict = localizations.setdefault(target_lang, {})
+
+            # 尝试复数
+            has_plural = (
+                "variations" in loc_block
+                and "plural" in loc_block["variations"]
+            )
+            if has_plural:
+                plural_dict = loc_block["variations"]["plural"]
+                for cat in self.PLURAL_CATEGORIES:
+                    ctx = f"{key}:plural:{cat}"
+                    ts = ts_map.get(ctx)
+                    if ts and cat in plural_dict:
+                        unit = plural_dict[cat].setdefault("stringUnit", {})
+                        unit["value"] = ts.translation or ts.original_semantic
+                        unit["state"] = "translated" if ts.is_reviewed else "needs_review"
+            else:
+                ctx = key
+                ts = ts_map.get(ctx)
+                if ts:
+                    su = loc_block.setdefault("stringUnit", {})
+                    su["value"] = ts.translation or ts.original_semantic
+                    su["state"] = "translated" if ts.is_reviewed else "needs_review"
+
+        with atomic_open(filepath, "w", encoding="utf-8") as f:
+            json.dump(raw_data, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+
+        logger.info(f"[XCStringsFormatHandler] Saved to {filepath} (lang={target_lang})")
+
+    def _extract_string_unit_value(self, loc_block: dict) -> str:
+        if not loc_block:
+            return ""
+        su = loc_block.get("stringUnit", {})
+        return su.get("value", "") if isinstance(su, dict) else ""
+
+    def _extract_state(self, loc_block: dict) -> str:
+        if not loc_block:
+            return "new"
+        su = loc_block.get("stringUnit", {})
+        return su.get("state", "new") if isinstance(su, dict) else "new"
+
+    def _extract_plural_entries(
+        self, key, comment, source_value, plural_dict,
+        localizations, source_language,
+        results, occurrence_counters, rel_path, app_instance
+    ):
+        for cat in self.PLURAL_CATEGORIES:
+            cat_block = plural_dict.get(cat)
+            if cat_block is None:
+                continue
+            su = cat_block.get("stringUnit", {})
+            translation_value = su.get("value", "")
+            xcode_state = su.get("state", "new")
+
+            # 源语言同类别文本
+            src_loc = localizations.get(source_language, {})
+            src_plural = (
+                src_loc.get("variations", {}).get("plural", {})
+                .get(cat, {}).get("stringUnit", {}).get("value", "")
+            ) or source_value
+
+            ts = self._make_ts(
+                key=key,
+                context=f"{key}:plural:{cat}",
+                source_value=src_plural,
+                translation_value=translation_value,
+                comment=f"{comment}\nPlural category: {cat}".strip(),
+                xcode_state=xcode_state,
+                is_reviewed=(xcode_state == "translated"),
+                relative_path=rel_path,
+                occurrence_counters=occurrence_counters,
+                string_type="XCString Plural",
+                app_instance=app_instance,
+            )
+            results.append(ts)
+
+    def _extract_device_entries(
+        self, key, comment, source_value, device_dict,
+        results, occurrence_counters, rel_path, app_instance
+    ):
+        for device_key in self.DEVICE_KEYS:
+            dev_block = device_dict.get(device_key)
+            if dev_block is None:
+                continue
+            su = dev_block.get("stringUnit", {})
+            translation_value = su.get("value", "")
+            xcode_state = su.get("state", "new")
+
+            ts = self._make_ts(
+                key=key,
+                context=f"{key}:device:{device_key}",
+                source_value=source_value,
+                translation_value=translation_value,
+                comment=f"{comment}\nDevice variant: {device_key}".strip(),
+                xcode_state=xcode_state,
+                is_reviewed=(xcode_state == "translated"),
+                relative_path=rel_path,
+                occurrence_counters=occurrence_counters,
+                string_type="XCString Device",
+                app_instance=app_instance,
+            )
+            results.append(ts)
+
+    def _make_ts(
+        self, key, context, source_value, translation_value,
+        comment, xcode_state, is_reviewed,
+        relative_path, occurrence_counters, string_type, app_instance
+    ) -> TranslatableString:
+        counter_key = (source_value, context)
+        idx = occurrence_counters.get(counter_key, 0)
+        occurrence_counters[counter_key] = idx + 1
+
+        stable = f"{relative_path}::{context}::{source_value}::{idx}"
+        obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+        ts = TranslatableString(
+            original_raw=source_value, original_semantic=source_value,
+            line_num=0,
+            char_pos_start_in_file=0, char_pos_end_in_file=0,
+            full_code_lines=[],
+            string_type=string_type,
+            source_file_path=relative_path,
+            occurrences=[(relative_path, key)],
+            occurrence_index=idx,
+            id=obj_id,
+        )
+        # 单语模式: 初始翻译用文件中读到的目标语言值
+        initial = translation_value
+        if app_instance:
+            fill = getattr(app_instance, "config", {}).get("fill_translation_with_source", False)
+            if not initial and fill:
+                initial = source_value
+        ts.set_translation_internal(initial or "", is_initial=True)
+        ts.context = context
+        ts.comment = comment
+        ts.po_comment = f"#: xcstrings key: {key}"
+        ts.is_reviewed = is_reviewed
+        ts.update_sort_weight()
+        return ts
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / "project.json").is_file():
                 try:
                     return Path(filepath).relative_to(current).as_posix()
                 except ValueError:
@@ -1871,6 +2298,472 @@ class TomlFormatHandler(BaseFormatHandler):
                     self._rebuild_recursive(item, key_path + [f"[{i}]"], translation_map)
 
 
+class IniFormatHandler(BaseFormatHandler):
+    """
+    INI 配置文件格式处理器
+
+    支持的格式特性:
+    1. 节 (Section): [SectionName] 分组，context 写成 "Section.Key"
+    2. 注释: ; 和 # 开头均视为注释行，附加到下一个键值对的 comment
+    3. 多种分隔符: = 和 : 均支持
+    4. 行内注释: key = value  ; inline comment 正确剥离
+    5. 多行续行: 行尾 \\ 续行（部分 INI 方言）
+    6. 无节键值: 位于任何 [section] 之前的键值放入虚拟节 "__global__"
+    7. 空值过滤: value 为空的键跳过（通常是配置开关而非翻译文本）
+    8. 结构保留: 保存时还原原始 section 结构，原始注释写回文件
+    """
+
+    format_id = "ini"
+    is_monolingual = True
+    extensions = [".ini", ".cfg", ".conf"]
+    format_type = "translation"
+    display_name = _("INI Config / i18n File")
+    badge_text = "INI"
+    badge_bg_color = "#ECEFF1"
+    badge_text_color = "#37474F"
+
+    _SECTION_RE = re.compile(r"^\[([^\]]+)\]\s*$")
+    _KV_RE = re.compile(r"^([^=:\n#;][^=:\n]*?)\s*[=:]\s*(.*?)(?:\s*[;#].*)?$")
+
+    def load(self, filepath: str, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or self._get_relative_path(filepath)
+
+        with open(filepath, "r", encoding="utf-8-sig", errors="replace") as f:
+            content = f.read()
+
+        language_code = self._detect_language_from_filename(os.path.basename(filepath))
+        translatable_objects: List[TranslatableString] = []
+        occurrence_counters: Dict = {}
+
+        current_section = "__global__"
+        pending_comments: List[str] = []
+        # 用于保存 raw_lines 以便 save 时重建
+        raw_lines: List[Dict] = []   # {"type": "section"/"kv"/"comment"/"blank", ...}
+
+        lines = content.splitlines()
+        line_num = 0
+
+        for raw_line in lines:
+            line_num += 1
+            stripped = raw_line.strip()
+
+            # 空行
+            if not stripped:
+                if pending_comments:
+                    # 孤立注释块之间有空行，保留到下一键
+                    pass
+                raw_lines.append({"type": "blank"})
+                continue
+
+            # 注释行
+            if stripped.startswith(";") or stripped.startswith("#"):
+                comment_text = stripped[1:].strip()
+                pending_comments.append(comment_text)
+                raw_lines.append({"type": "comment", "text": raw_line})
+                continue
+
+            # 节标题
+            sec_m = self._SECTION_RE.match(stripped)
+            if sec_m:
+                current_section = sec_m.group(1).strip()
+                pending_comments.clear()
+                raw_lines.append({"type": "section", "name": current_section, "text": raw_line})
+                continue
+
+            # 键值对
+            kv_m = self._KV_RE.match(stripped)
+            if kv_m:
+                key = kv_m.group(1).strip()
+                value = kv_m.group(2).strip()
+                # 去除行内注释后的尾随空格
+                value = re.sub(r"\s+[;#].*$", "", value).strip()
+                # 过滤空值
+                if not value:
+                    pending_comments.clear()
+                    raw_lines.append({"type": "kv", "section": current_section,
+                                      "key": key, "value": value, "translatable": False})
+                    continue
+
+                context = f"{current_section}.{key}" if current_section != "__global__" else key
+                comment = "\n".join(pending_comments).strip()
+                pending_comments.clear()
+
+                counter_key = (value, context)
+                idx = occurrence_counters.get(counter_key, 0)
+                occurrence_counters[counter_key] = idx + 1
+
+                stable = f"{relative_path}::{context}::{value}::{idx}"
+                obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+                ts = TranslatableString(
+                    original_raw=value, original_semantic=value,
+                    line_num=line_num,
+                    char_pos_start_in_file=0, char_pos_end_in_file=0,
+                    full_code_lines=[],
+                    string_type="INI Value",
+                    source_file_path=relative_path,
+                    occurrences=[(relative_path, context)],
+                    occurrence_index=idx,
+                    id=obj_id,
+                )
+                ts.set_translation_internal(self.get_initial_translation(value, app_instance), is_initial=True)
+                ts.context = context
+                ts.comment = comment
+                ts.po_comment = f"#: INI [{current_section}] {key}"
+                ts.is_reviewed = False
+                ts.update_sort_weight()
+                translatable_objects.append(ts)
+
+                raw_lines.append({
+                    "type": "kv", "section": current_section, "key": key,
+                    "value": value, "translatable": True,
+                    "separator": "=" if "=" in raw_line else ":",
+                    "context": context,
+                })
+            else:
+                # 无法解析的行（如续行，原样保留）
+                raw_lines.append({"type": "raw", "text": raw_line})
+
+        metadata = {
+            "raw_lines": raw_lines,
+            "encoding": "utf-8",
+        }
+        logger.info(
+            f"[IniFormatHandler] Loaded {len(translatable_objects)} values from {filepath}"
+        )
+        return translatable_objects, metadata, language_code
+
+    def save(self, filepath: str, translatable_objects, metadata: dict, **kwargs):
+        raw_lines: List[Dict] = metadata.get("raw_lines", [])
+        # 建立 context -> translation 映射
+        trans_map: Dict[str, str] = {
+            ts.context: (ts.translation or ts.original_semantic)
+            for ts in translatable_objects
+            if ts.id != "##NEW_ENTRY##" and ts.context
+        }
+
+        out_lines: List[str] = []
+        for item in raw_lines:
+            t = item["type"]
+            if t in ("blank",):
+                out_lines.append("")
+            elif t in ("comment", "section", "raw"):
+                out_lines.append(item["text"])
+            elif t == "kv":
+                if not item.get("translatable", False):
+                    # 还原原始行（value 为空的配置项）
+                    sep = item.get("separator", "=")
+                    out_lines.append(f"{item['key']} {sep} {item['value']}")
+                else:
+                    translation = trans_map.get(item["context"], item["value"])
+                    sep = item.get("separator", "=")
+                    out_lines.append(f"{item['key']} {sep} {translation}")
+            else:
+                out_lines.append(item.get("text", ""))
+
+        with atomic_open(filepath, "w", encoding="utf-8") as f:
+            f.write("\n".join(out_lines))
+            f.write("\n")
+
+        logger.info(f"[IniFormatHandler] Saved to {filepath}")
+
+    @staticmethod
+    def _detect_language_from_filename(filename: str) -> str:
+        stem = os.path.splitext(filename)[0]
+        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
+        return m.group(1).replace("-", "_") if m else "en"
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / "project.json").is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
+
+class JavaPropertiesFormatHandler(BaseFormatHandler):
+    """
+    Java / Kotlin .properties 资源文件处理器
+
+    支持的特性:
+    1. 多种分隔符: 正确解析 key=value、key: value、key value 三种赋值形式
+    2. 多行续行: 支持行尾反斜杠 \\ 的跨行字符串
+    3. Unicode 转义: 双向处理 \\uXXXX 编码，保留非 ASCII 可读性
+    4. 注释提取: # 和 ! 开头的行内注释均作为 translator comment 关联到下一条目
+    5. 顺序保留: 保存时严格按原始键顺序输出，保证 diff 友好
+    6. 语言检测: 从标准命名规范 messages_zh_CN.properties 自动推断语言代码
+    7. 空行保护: 保存时在每个条目间保留适当空行，贴近手写习惯
+    """
+    format_id = "java_properties"
+    is_monolingual = True
+    extensions = ['.properties']
+    format_type = "translation"
+    display_name = _("Java .properties File")
+    badge_text = "Props"
+    badge_bg_color = "#FFF8E1"
+    badge_text_color = "#F57F17"
+
+    def load(self, filepath, **kwargs):
+        app_instance = kwargs.get('app_instance')
+        logger.debug(f"[JavaPropertiesFormatHandler] Loading .properties: {filepath}")
+
+        # Java .properties 官方编码为 ISO-8859-1，但现代项目多用 UTF-8
+        encoding = self._detect_encoding(filepath)
+        with open(filepath, 'r', encoding=encoding, errors='replace') as f:
+            lines = f.readlines()
+
+        relative_path = kwargs.get('relative_path') or self._get_relative_path(filepath)
+        language_code = self._detect_language(os.path.basename(filepath))
+
+        translatable_objects = []
+        occurrence_counters = {}
+
+        # --- 解析器状态 ---
+        pending_comments: List[str] = []
+        line_idx = 0
+
+        while line_idx < len(lines):
+            raw = lines[line_idx]
+            stripped = raw.strip()
+            line_idx += 1
+
+            # 空行 → 清空待关联注释（注释只关联紧随其后的条目）
+            if not stripped:
+                pending_comments.clear()
+                continue
+
+            # 注释行
+            if stripped.startswith('#') or stripped.startswith('!'):
+                pending_comments.append(stripped[1:].strip())
+                continue
+
+            # 键值行（可能带续行）
+            logical_line = raw.rstrip('\r\n')
+            while logical_line.endswith('\\'):
+                logical_line = logical_line[:-1]  # 去掉续行符
+                if line_idx < len(lines):
+                    logical_line += lines[line_idx].strip()
+                    line_idx += 1
+
+            key, value = self._split_key_value(logical_line.strip())
+            if key is None:
+                pending_comments.clear()
+                continue
+
+            # 解码 Unicode 转义
+            key = self._decode_unicode_escapes(key)
+            value = self._decode_unicode_escapes(value)
+
+            if not value.strip():
+                pending_comments.clear()
+                continue
+
+            comment = '\n'.join(pending_comments).strip()
+            pending_comments.clear()
+
+            counter_key = (value, key)
+            idx = occurrence_counters.get(counter_key, 0)
+            occurrence_counters[counter_key] = idx + 1
+
+            stable = f"{relative_path}::{key}::{value}::{idx}"
+            obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+            ts = TranslatableString(
+                original_raw=value, original_semantic=value,
+                line_num=0,
+                char_pos_start_in_file=0, char_pos_end_in_file=0,
+                full_code_lines=[],
+                string_type="Java Properties",
+                source_file_path=relative_path,
+                occurrences=[(relative_path, key)],
+                occurrence_index=idx,
+                id=obj_id
+            )
+            ts.set_translation_internal(self.get_initial_translation(value, app_instance), is_initial=True)
+            ts.context = key
+            ts.comment = comment
+            ts.po_comment = f"#: Properties key: {key}"
+            ts.is_reviewed = False
+            ts.update_sort_weight()
+            translatable_objects.append(ts)
+
+        metadata = {
+            'encoding': encoding,
+            'key_order': [ts.context for ts in translatable_objects],
+        }
+
+        logger.info(
+            f"[JavaPropertiesFormatHandler] Loaded {len(translatable_objects)} "
+            f"entries from {filepath} (encoding: {encoding})"
+        )
+        return translatable_objects, metadata, language_code
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        logger.debug(f"[JavaPropertiesFormatHandler] Saving .properties: {filepath}")
+
+        encoding = metadata.get('encoding', 'utf-8')
+        key_order = metadata.get('key_order', [])
+
+        # 建立 context -> ts 映射
+        ts_map = {ts.context: ts for ts in translatable_objects
+                  if ts.original_semantic and ts.id != '##NEW_ENTRY##'}
+
+        # 按原始顺序输出，末尾追加新增条目
+        ordered_keys = key_order + [k for k in ts_map if k not in key_order]
+
+        lines = []
+        for key in ordered_keys:
+            ts = ts_map.get(key)
+            if not ts:
+                continue
+
+            # 写注释
+            if ts.comment:
+                for comment_line in ts.comment.splitlines():
+                    lines.append(f'# {comment_line}')
+
+            translation = ts.translation if ts.translation else ts.original_semantic
+
+            # 决定是否需要 Unicode 转义 (仅在 latin-1 编码时必须转义非 ASCII)
+            needs_escape = encoding.lower() in ('iso-8859-1', 'latin-1', 'latin1')
+            escaped_key = self._encode_key(key, needs_escape)
+            escaped_val = self._encode_value(translation, needs_escape)
+
+            lines.append(f'{escaped_key}={escaped_val}')
+            lines.append('')  # 条目间空行
+
+        with atomic_open(filepath, 'w', encoding=encoding) as f:
+            f.write('\n'.join(lines))
+
+        logger.info(f"[JavaPropertiesFormatHandler] Saved {len(ts_map)} entries to {filepath}")
+
+    def _detect_encoding(self, filepath: str) -> str:
+        """
+        检测文件编码。
+        Java 规范是 ISO-8859-1，但 Spring Boot 等现代框架默认 UTF-8。
+        检查 BOM 或尝试 UTF-8 解码来区分。
+        """
+        with open(filepath, 'rb') as f:
+            raw = f.read(4)
+        if raw.startswith(b'\xef\xbb\xbf'):
+            return 'utf-8-sig'
+        # 尝试 UTF-8 解码前 4KB
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                f.read(4096)
+            return 'utf-8'
+        except UnicodeDecodeError:
+            return 'iso-8859-1'
+
+    def _split_key_value(self, line: str) -> Tuple[Optional[str], str]:
+        """
+        解析 key=value / key: value / key value 三种形式。
+        返回 (key, value)，解析失败返回 (None, '')。
+        """
+        # 跳过注释和空行（已在上层处理，这里做保险）
+        if not line or line[0] in ('#', '!'):
+            return None, ''
+
+        # 找到未转义的分隔符 (=, :, 或首个空格)
+        i = 0
+        while i < len(line):
+            ch = line[i]
+            if ch == '\\':
+                i += 2  # 跳过转义字符
+                continue
+            if ch in ('=', ':'):
+                return line[:i].strip(), line[i + 1:].lstrip()
+            if ch in (' ', '\t'):
+                key = line[:i].strip()
+                rest = line[i:].lstrip()
+                # 如果空格后面紧跟 = 或 :，那才是真正的分隔符
+                if rest and rest[0] in ('=', ':'):
+                    return key, rest[1:].lstrip()
+                return key, rest
+            i += 1
+
+        # 只有键没有值（空值）
+        return line.strip(), ''
+
+    def _decode_unicode_escapes(self, s: str) -> str:
+        """将 \\uXXXX 转义序列解码为 Unicode 字符。"""
+        return re.sub(
+            r'\\u([0-9a-fA-F]{4})',
+            lambda m: chr(int(m.group(1), 16)),
+            s
+        )
+
+    def _encode_unicode_escapes(self, s: str) -> str:
+        """将非 ASCII 字符编码为 \\uXXXX（仅用于 latin-1 编码文件）。"""
+        result = []
+        for ch in s:
+            if ord(ch) > 127:
+                result.append(f'\\u{ord(ch):04X}')
+            else:
+                result.append(ch)
+        return ''.join(result)
+
+    def _encode_key(self, key: str, unicode_escape: bool) -> str:
+        """对键中的特殊字符进行转义。"""
+        key = key.replace('\\', '\\\\')
+        key = key.replace(' ', '\\ ')
+        key = key.replace('=', '\\=')
+        key = key.replace(':', '\\:')
+        key = key.replace('#', '\\#')
+        key = key.replace('!', '\\!')
+        if unicode_escape:
+            key = self._encode_unicode_escapes(key)
+        return key
+
+    def _encode_value(self, value: str, unicode_escape: bool) -> str:
+        """对值进行转义，换行符转为 \\n 续行形式。"""
+        value = value.replace('\\', '\\\\')
+        value = value.replace('\n', '\\n\\\n    ')
+        value = value.replace('\t', '\\t')
+        if unicode_escape:
+            value = self._encode_unicode_escapes(value)
+        return value
+
+    def _detect_language(self, filename: str) -> str:
+        """
+        从标准 Java ResourceBundle 命名规范中提取语言代码。
+        例: messages_zh_CN.properties → zh_CN
+            strings_en.properties    → en
+            MyApp_fr_FR.properties   → fr_FR
+        """
+        name = filename.replace('.properties', '')
+        # 尝试匹配末尾的 _lang 或 _lang_COUNTRY
+        m = re.search(
+            r'_([a-z]{2,3})(?:_([A-Z]{2,3}))?$',
+            name
+        )
+        if m:
+            lang = m.group(1)
+            country = m.group(2)
+            return f"{lang}_{country}" if country else lang
+        return 'en'
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / 'project.json').is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
+
 class ResxFormatHandler(BaseFormatHandler):
     """
     .NET / C# RESX (XML Resource File) 格式处理器
@@ -2071,6 +2964,637 @@ class ResxFormatHandler(BaseFormatHandler):
         with atomic_open(filepath, 'wb') as f:
             tree.write(f, encoding='utf-8', xml_declaration=True)
         logger.info(f"[ResxFormatHandler] Saved {saved_count} strings to {filepath}")
+
+
+class PhpArrayFormatHandler(BaseFormatHandler):
+    """
+    PHP 数组翻译文件处理器
+
+    支持 Laravel / Symfony / CodeIgniter 等主流 PHP 框架的翻译文件格式:
+
+    格式示例（Laravel）:
+        <?php
+        return [
+            'welcome' => 'Welcome to our application!',
+            'auth' => [
+                'failed' => 'These credentials do not match.',
+                'throttle' => 'Too many login attempts.',
+            ],
+            // 行注释
+            /* 块注释 */
+            'items_count' => ':count items',
+        ];
+
+    支持的特性:
+    1. 嵌套数组: 键路径用点号连接，如 "auth.failed"，最多支持 8 层嵌套
+    2. 占位符识别: 自动识别 Laravel :param 和 Symfony %param% 风格占位符
+    3. 注释提取: 行注释(//)和块注释(/* */)附加到下一条目
+    4. 字符串引号: 单引号与双引号均支持，转义序列正确处理
+    5. PHP 标签感知: 自动跳过 <?php / return / ?> 等非翻译行
+    6. 结构还原: 按原始嵌套层级重建输出文件，保留 <?php return [...]; 框架
+
+    限制:
+    - 不支持 define() / const 形式（使用 INI 处理器替代）
+    - 不支持变量插值 "$var" 形式的动态键
+    - heredoc / nowdoc 语法暂不支持
+    """
+
+    format_id = "php_array"
+    is_monolingual = True
+    extensions = [".php"]
+    format_type = "translation"
+    display_name = _("PHP Array Translation File")
+    badge_text = "PHP"
+    badge_bg_color = "#EDE7F6"
+    badge_text_color = "#4527A0"
+
+    # 匹配单引号或双引号字符串（简化，不处理 heredoc）
+    _STR_RE = re.compile(
+        r"""(?P<q>['"])(?P<val>(?:[^\\]|\\.)*?)(?P=q)"""
+    )
+    # Laravel 占位符: :param_name
+    _PH_LARAVEL = re.compile(r":[a-zA-Z_]\w*")
+    # Symfony/generic 占位符: %param_name%
+    _PH_SYMFONY = re.compile(r"%[a-zA-Z_]\w*%")
+
+    def load(self, filepath: str, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or self._get_relative_path(filepath)
+
+        with open(filepath, "r", encoding="utf-8-sig", errors="replace") as f:
+            content = f.read()
+
+        language_code = self._detect_language_from_filename(os.path.basename(filepath))
+        translatable_objects: List[TranslatableString] = []
+        occurrence_counters: Dict = {}
+
+        # 提取 return [...] / return array(...) 中的内容
+        # 使用简化的行扫描解析器，不依赖完整 PHP 解析器
+        entries = self._parse_php_array(content)
+
+        for entry in entries:
+            key_path: str = entry["key_path"]
+            value: str = entry["value"]
+            comment: str = entry.get("comment", "")
+            line_num: int = entry.get("line_num", 0)
+
+            if not value.strip():
+                continue
+
+            # 占位符注释
+            ph_notes = self._detect_placeholders(value)
+
+            counter_key = (value, key_path)
+            idx = occurrence_counters.get(counter_key, 0)
+            occurrence_counters[counter_key] = idx + 1
+
+            stable = f"{relative_path}::{key_path}::{value}::{idx}"
+            obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+            full_comment = comment
+            if ph_notes:
+                ph_str = ", ".join(ph_notes)
+                full_comment = (f"{comment}\nPlaceholders: {ph_str}".strip()
+                                if comment else f"Placeholders: {ph_str}")
+
+            ts = TranslatableString(
+                original_raw=value, original_semantic=value,
+                line_num=line_num,
+                char_pos_start_in_file=0, char_pos_end_in_file=0,
+                full_code_lines=[],
+                string_type="PHP String",
+                source_file_path=relative_path,
+                occurrences=[(relative_path, key_path)],
+                occurrence_index=idx,
+                id=obj_id,
+            )
+            ts.set_translation_internal(self.get_initial_translation(value, app_instance), is_initial=True)
+            ts.context = key_path
+            ts.comment = full_comment
+            ts.po_comment = f"#: PHP key: {key_path}"
+            ts.is_reviewed = False
+            ts.update_sort_weight()
+            translatable_objects.append(ts)
+
+        metadata = {
+            "raw_content": content,
+            "entries": entries,       # 保存解析结果用于重建
+        }
+        logger.info(
+            f"[PhpArrayFormatHandler] Loaded {len(translatable_objects)} strings from {filepath}"
+        )
+        return translatable_objects, metadata, language_code
+
+    def save(self, filepath: str, translatable_objects, metadata: dict, **kwargs):
+        raw_content: str = metadata.get("raw_content", "")
+        entries: List[Dict] = metadata.get("entries", [])
+
+        # 建立 key_path -> translation 映射
+        trans_map: Dict[str, str] = {
+            ts.context: (ts.translation or ts.original_semantic)
+            for ts in translatable_objects
+            if ts.id != "##NEW_ENTRY##" and ts.context
+        }
+
+        # 逐条替换: 在 raw_content 中定位原始值并替换为译文
+        # 策略: 按行号从后往前替换，避免偏移量变化
+        result = self._replace_translations(raw_content, entries, trans_map)
+
+        with atomic_open(filepath, "w", encoding="utf-8") as f:
+            f.write(result)
+
+        logger.info(f"[PhpArrayFormatHandler] Saved to {filepath}")
+
+    def _parse_php_array(self, content: str) -> List[Dict]:
+        """
+        扫描 PHP 文件，提取所有 'key' => 'value' 对。
+        支持任意嵌套深度，不执行 PHP 代码。
+        返回 [{"key_path": "a.b.c", "value": "...", "comment": "...", "line_num": N}, ...]
+        """
+        lines = content.splitlines()
+        entries = []
+        section_stack: List[str] = []   # 当前嵌套键路径
+        pending_comment: List[str] = []
+
+        # 匹配: 'key' => 'value', 或 "key" => "value",
+        kv_re = re.compile(
+            r"""(?P<q1>['"])(?P<key>(?:[^\\]|\\.)*?)(?P=q1)\s*=>\s*(?P<q2>['"])(?P<val>(?:[^\\]|\\.)*?)(?P=q2)\s*,?\s*(?://.*|/\*.*?\*/)?$"""
+        )
+        # 匹配数组开始: 'key' => [ 或 'key' => array(
+        arr_start_re = re.compile(
+            r"""(?P<q>['"])(?P<key>(?:[^\\]|\\.)*?)(?P=q)\s*=>\s*(?:\[|array\s*\()"""
+        )
+        # 注释行
+        line_comment_re = re.compile(r"^\s*//\s*(.*)")
+        block_comment_re = re.compile(r"/\*(.*?)\*/", re.DOTALL)
+        # 数组结束
+        arr_end_re = re.compile(r"^\s*[\]\)],?\s*$")
+
+        i = 0
+        while i < len(lines):
+            raw = lines[i]
+            stripped = raw.strip()
+            line_num = i + 1
+
+            # 跳过 PHP 标签和 return 语句
+            if re.match(r"^<\?php|^\?>|^return\s*[\[\(]|^return\s*array", stripped):
+                i += 1
+                continue
+
+            # 块注释（可能跨行）
+            if "/*" in stripped:
+                block_text = stripped
+                j = i
+                while "*/" not in block_text and j < len(lines) - 1:
+                    j += 1
+                    block_text += "\n" + lines[j]
+                m = block_comment_re.search(block_text)
+                if m:
+                    pending_comment.append(m.group(1).strip())
+                i = j + 1
+                continue
+
+            # 行注释
+            lc_m = line_comment_re.match(stripped)
+            if lc_m:
+                pending_comment.append(lc_m.group(1).strip())
+                i += 1
+                continue
+
+            # 数组起始（嵌套）
+            as_m = arr_start_re.match(stripped)
+            if as_m:
+                section_stack.append(as_m.group("key"))
+                pending_comment.clear()
+                i += 1
+                continue
+
+            # 数组结束
+            if arr_end_re.match(stripped):
+                if section_stack:
+                    section_stack.pop()
+                i += 1
+                continue
+
+            # 键值对
+            kv_m = kv_re.match(stripped)
+            if kv_m:
+                key = self._unescape_php(kv_m.group("key"))
+                value = self._unescape_php(kv_m.group("val"))
+                key_path = ".".join(section_stack + [key])
+                comment = "\n".join(pending_comment).strip()
+                pending_comment.clear()
+
+                entries.append({
+                    "key_path": key_path,
+                    "value": value,
+                    "comment": comment,
+                    "line_num": line_num,
+                    "raw_key": kv_m.group("key"),
+                    "raw_val": kv_m.group("val"),
+                    "quote_key": kv_m.group("q1"),
+                    "quote_val": kv_m.group("q2"),
+                })
+            else:
+                pending_comment.clear()
+
+            i += 1
+
+        return entries
+
+    def _replace_translations(
+        self, content: str, entries: List[Dict], trans_map: Dict[str, str]
+    ) -> str:
+        """
+        在原始内容中定位并替换每个条目的值字符串。
+        从后往前按行号替换，确保行偏移不漂移。
+        """
+        lines = content.splitlines(keepends=True)
+
+        # 按行号降序排列
+        sorted_entries = sorted(entries, key=lambda e: e["line_num"], reverse=True)
+
+        for entry in sorted_entries:
+            key_path = entry["key_path"]
+            if key_path not in trans_map:
+                continue
+            translation = trans_map[key_path]
+            line_idx = entry["line_num"] - 1
+            if line_idx >= len(lines):
+                continue
+
+            raw_val = entry["raw_val"]
+            quote_val = entry["quote_val"]
+            escaped_translation = self._escape_php(translation, quote_val)
+
+            old_quoted = f"{quote_val}{raw_val}{quote_val}"
+            new_quoted = f"{quote_val}{escaped_translation}{quote_val}"
+
+            # 只替换值部分（=> 右侧的引号字符串）
+            # 找到 => 后的第一个引号字符串
+            line = lines[line_idx]
+            arrow_pos = line.find("=>")
+            if arrow_pos == -1:
+                continue
+            after_arrow = line[arrow_pos:]
+            new_after = after_arrow.replace(old_quoted, new_quoted, 1)
+            lines[line_idx] = line[:arrow_pos] + new_after
+
+        return "".join(lines)
+
+    @staticmethod
+    def _unescape_php(s: str) -> str:
+        return (s
+                .replace("\\'", "'")
+                .replace('\\"', '"')
+                .replace("\\n", "\n")
+                .replace("\\r", "\r")
+                .replace("\\t", "\t")
+                .replace("\\\\", "\\"))
+
+    @staticmethod
+    def _escape_php(s: str, quote: str = "'") -> str:
+        s = s.replace("\\", "\\\\")
+        if quote == "'":
+            s = s.replace("'", "\\'")
+        else:
+            s = s.replace('"', '\\"')
+        s = s.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+        return s
+
+    def _detect_placeholders(self, text: str) -> List[str]:
+        found = []
+        found += self._PH_LARAVEL.findall(text)
+        found += self._PH_SYMFONY.findall(text)
+        return list(dict.fromkeys(found))  # 去重保序
+
+    @staticmethod
+    def _detect_language_from_filename(filename: str) -> str:
+        stem = os.path.splitext(filename)[0]
+        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
+        return m.group(1).replace("-", "_") if m else "en"
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / "project.json").is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
+
+class RcFormatHandler(BaseFormatHandler):
+    """
+    Windows Resource Script (.rc) 处理器
+
+    支持提取的资源块类型:
+    ┌──────────────────────────────────────────────────────────────────────┐
+    │ STRINGTABLE    最常见的翻译目标，IDS_XXX 对应字符串                  │
+    │ MENU / POPUP   菜单项的 MENUITEM / POPUP 标题                        │
+    │ DIALOG / DIALOGEX  控件 CAPTION、LTEXT、RTEXT、CTEXT、PUSHBUTTON 等 │
+    │ VERSIONINFO    FileDescription、ProductName、LegalCopyright 等        │
+    │ CAPTION / GROUPBOX 独立控件标题行                                    │
+    └──────────────────────────────────────────────────────────────────────┘
+
+    支持的特性:
+    1. 多编码检测: 优先 UTF-16LE（MSVC 默认），回退 UTF-8 / CP1252
+    2. 注释提取: // 和 /* */ 注释附加到紧随其后的条目
+    3. 忽略规则: 自动过滤纯空串、纯数字串及内部技术关键字
+    4. 上下文分组: STRINGTABLE 条目以 "STRINGTABLE.ID" 为 context；
+                   DIALOG 控件以 "DIALOG.ControlType[caption]" 为 context
+    5. 结构还原: 保存时直接在原始字节流中做字符串替换，不破坏非翻译内容
+    6. BOM 保留: 检测到 UTF-16LE BOM 时保存也输出 UTF-16LE
+
+    限制:
+    - 不执行 #include / #define 宏展开
+    - ACCELERATORS / BITMAP / ICON 等二进制资源块跳过
+    """
+
+    format_id = "rc"
+    is_monolingual = True
+    extensions = [".rc", ".rc2"]
+    format_type = "translation"
+    display_name = _("Windows Resource Script (.rc)")
+    badge_text = "RC"
+    badge_bg_color = "#E8EAF6"
+    badge_text_color = "#283593"
+
+    # 技术关键字（不翻译）
+    _SKIP_VALUES = frozenset({
+        "", "\\n", "\\t", "...", "OK", "Cancel", "Yes", "No",
+        "&OK", "&Cancel", "&Yes", "&No",
+    })
+    # 跳过纯数字 / 纯符号串
+    _SKIP_RE = re.compile(r"^[\d\s\.\,\-\+\%\$\#\@\!\?\:\;\/\\\|\*\&\^]+$")
+
+    # 块类型关键字
+    _BLOCK_START_RE = re.compile(
+        r"^\s*(STRINGTABLE|MENU|DIALOG(?:EX)?|VERSIONINFO)\b", re.I
+    )
+    _BLOCK_END_RE = re.compile(r"^\s*END\b")
+
+    # STRINGTABLE 条目: ID "value"
+    _ST_ENTRY_RE = re.compile(
+        r"""^\s*(\w+)\s+(?:L?)\"((?:[^\"\\]|\\.)*)\""""
+    )
+    # DIALOG 控件行: LTEXT/RTEXT/… "caption", id, x, y, w, h
+    _CTRL_RE = re.compile(
+        r"""^\s*(LTEXT|RTEXT|CTEXT|PUSHBUTTON|DEFPUSHBUTTON|CHECKBOX|RADIOBUTTON|GROUPBOX|CAPTION)\s+(?:L?)\"((?:[^\"\\]|\\.)*)\"""",
+        re.I,
+    )
+    # MENU MENUITEM
+    _MENU_RE = re.compile(
+        r"""^\s*(?:MENUITEM|POPUP)\s+(?:L?)\"((?:[^\"\\]|\\.)*)\"""", re.I
+    )
+    # VERSIONINFO VALUE
+    _VER_RE = re.compile(
+        r"""^\s*VALUE\s+\"(FileDescription|ProductName|LegalCopyright|Comments|CompanyName|InternalName|OriginalFilename|ProductVersion|FileVersion)\"\s*,\s*\"((?:[^\"\\]|\\.)*)\"""",
+        re.I,
+    )
+    # 行注释
+    _LINE_CMT_RE = re.compile(r"//\s*(.*)")
+    # 块注释（单行内）
+    _BLOCK_CMT_RE = re.compile(r"/\*(.*?)\*/", re.DOTALL)
+
+    def load(self, filepath: str, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or os.path.basename(filepath)
+
+        raw_bytes, encoding = self._read_rc_file(filepath)
+        content = raw_bytes.decode(encoding, errors="replace").lstrip('\ufeff')
+
+        language_code = self._detect_language(filepath, content)
+        translatable_objects: List[TranslatableString] = []
+        occurrence_counters: Dict = {}
+
+        lines = content.splitlines()
+        in_stringtable = False
+        in_dialog = False
+        in_menu = False
+        in_versioninfo = False
+        dialog_name = ""
+        pending_comment: List[str] = []
+        block_depth = 0   # 用 BEGIN/END 或 { } 计数
+
+        for line_num, raw_line in enumerate(lines, start=1):
+            stripped = raw_line.strip()
+
+            # 注释收集
+            lc = self._LINE_CMT_RE.search(stripped)
+            if lc and not stripped.startswith('"'):
+                pending_comment.append(lc.group(1).strip())
+                continue
+            bc = self._BLOCK_CMT_RE.search(stripped)
+            if bc:
+                pending_comment.append(bc.group(1).strip())
+                # 块注释可能在同一行，继续解析其余内容
+
+            # 块边界
+            if re.match(r"^\s*(BEGIN|\{)\s*$", stripped, re.I):
+                block_depth += 1
+                continue
+            if re.match(r"^\s*(END|\})\s*$", stripped, re.I):
+                block_depth -= 1
+                if block_depth <= 0:
+                    in_stringtable = in_dialog = in_menu = in_versioninfo = False
+                    block_depth = 0
+                continue
+
+            # 块类型检测
+            blk = self._BLOCK_START_RE.match(stripped)
+            if blk:
+                btype = blk.group(1).upper()
+                in_stringtable = btype == "STRINGTABLE"
+                in_dialog = btype in ("DIALOG", "DIALOGEX")
+                in_menu = btype == "MENU"
+                in_versioninfo = btype == "VERSIONINFO"
+                if in_dialog:
+                    # 尝试提取 dialog 名称（前一个标记）
+                    dm = re.match(r"^\s*(\w+)\s+DIALOG", stripped, re.I)
+                    dialog_name = dm.group(1) if dm else f"DIALOG_{line_num}"
+                pending_comment.clear()
+                continue
+
+            # CAPTION（DIALOG 顶级标题）
+            cap_m = re.match(r"""^\s*CAPTION\s+(?:L?)\"((?:[^\"\\]|\\.)*)\" """, stripped)
+            if cap_m and in_dialog:
+                self._add_entry(
+                    cap_m.group(1), f"{dialog_name}.CAPTION", "RC Dialog Caption",
+                    pending_comment, line_num, relative_path,
+                    translatable_objects, occurrence_counters, app_instance
+                )
+                pending_comment.clear()
+                continue
+
+            # STRINGTABLE 条目
+            if in_stringtable:
+                st_m = self._ST_ENTRY_RE.match(stripped)
+                if st_m:
+                    self._add_entry(
+                        st_m.group(2), f"STRINGTABLE.{st_m.group(1)}", "RC StringTable",
+                        pending_comment, line_num, relative_path,
+                        translatable_objects, occurrence_counters, app_instance
+                    )
+                    pending_comment.clear()
+                continue
+
+            # DIALOG 控件
+            if in_dialog:
+                ctrl_m = self._CTRL_RE.match(stripped)
+                if ctrl_m:
+                    ctrl_type = ctrl_m.group(1).upper()
+                    self._add_entry(
+                        ctrl_m.group(2), f"{dialog_name}.{ctrl_type}", "RC Dialog Control",
+                        pending_comment, line_num, relative_path,
+                        translatable_objects, occurrence_counters, app_instance
+                    )
+                    pending_comment.clear()
+                continue
+
+            # MENU 条目
+            if in_menu:
+                menu_m = self._MENU_RE.match(stripped)
+                if menu_m:
+                    self._add_entry(
+                        menu_m.group(1), "MENU", "RC Menu",
+                        pending_comment, line_num, relative_path,
+                        translatable_objects, occurrence_counters, app_instance
+                    )
+                    pending_comment.clear()
+                continue
+
+            # VERSIONINFO VALUE
+            if in_versioninfo:
+                ver_m = self._VER_RE.match(stripped)
+                if ver_m:
+                    self._add_entry(
+                        ver_m.group(2), f"VERSIONINFO.{ver_m.group(1)}", "RC VersionInfo",
+                        pending_comment, line_num, relative_path,
+                        translatable_objects, occurrence_counters, app_instance
+                    )
+                    pending_comment.clear()
+                continue
+
+            # 非块内容也清空悬挂注释
+            if stripped and not stripped.startswith("//"):
+                pending_comment.clear()
+
+        metadata = {
+            "raw_bytes": raw_bytes,
+            "encoding": encoding,
+        }
+        logger.info(f"[RcFormatHandler] Loaded {len(translatable_objects)} strings from {filepath}")
+        return translatable_objects, metadata, language_code
+
+    def _add_entry(
+        self, raw_value: str, context: str, string_type: str,
+        pending_comment: List[str], line_num: int, rel_path: str,
+        results: List, counters: Dict, app_instance
+    ):
+        # 反转义 RC 转义序列
+        value = self._unescape_rc(raw_value)
+        if not value or value in self._SKIP_VALUES or self._SKIP_RE.match(value):
+            return
+
+        comment = "\n".join(pending_comment).strip()
+        counter_key = (value, context)
+        idx = counters.get(counter_key, 0)
+        counters[counter_key] = idx + 1
+
+        stable = f"{rel_path}::{context}::{value}::{idx}"
+        obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+        ts = TranslatableString(
+            original_raw=value, original_semantic=value,
+            line_num=line_num,
+            char_pos_start_in_file=0, char_pos_end_in_file=0,
+            full_code_lines=[],
+            string_type=string_type,
+            source_file_path=rel_path,
+            occurrences=[(rel_path, context)],
+            occurrence_index=idx,
+            id=obj_id,
+        )
+        ts.set_translation_internal(self.get_initial_translation(value, app_instance), is_initial=True)
+        ts.context = context
+        ts.comment = comment
+        ts.po_comment = f"#: RC {context} (line {line_num})"
+        ts.is_reviewed = False
+        ts.update_sort_weight()
+        results.append(ts)
+
+    def save(self, filepath: str, translatable_objects, metadata: dict, **kwargs):
+        raw_bytes: bytes = metadata["raw_bytes"]
+        encoding: str = metadata["encoding"]
+        content = raw_bytes.decode(encoding, errors="replace")
+
+        trans_map: Dict[str, str] = {
+            ts.context: (ts.translation or ts.original_semantic)
+            for ts in translatable_objects
+            if ts.id != "##NEW_ENTRY##" and ts.context
+        }
+        # original_semantic -> translation 直接字符串替换
+        # 为防止误替换，从最长串开始替换
+        for ts in sorted(translatable_objects, key=lambda t: -len(t.original_semantic)):
+            if ts.id == "##NEW_ENTRY##" or not ts.translation:
+                continue
+            if ts.original_semantic == ts.translation:
+                continue
+            escaped_orig = self._escape_rc(ts.original_semantic)
+            escaped_trans = self._escape_rc(ts.translation)
+            content = content.replace(f'"{escaped_orig}"', f'"{escaped_trans}"', 1)
+
+        out_bytes = content.encode(encoding, errors="replace")
+        # 保留 BOM
+        if encoding.lower().replace("-", "") == "utf16le":
+            out_bytes = b"\xff\xfe" + out_bytes
+
+        with atomic_open(filepath, "wb") as f:
+            f.write(out_bytes)
+
+        logger.info(f"[RcFormatHandler] Saved to {filepath}")
+
+    @staticmethod
+    def _read_rc_file(filepath: str) -> Tuple[bytes, str]:
+        raw = open(filepath, "rb").read()
+        if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+            return raw[2:], "utf-16-le" if raw[:2] == b"\xff\xfe" else "utf-16-be"
+        try:
+            raw.decode("utf-8")
+            return raw, "utf-8"
+        except UnicodeDecodeError:
+            return raw, "cp1252"
+
+    @staticmethod
+    def _unescape_rc(s: str) -> str:
+        return (s.replace("\\n", "\n").replace("\\t", "\t")
+                 .replace("\\\"", '"').replace("\\\\", "\\"))
+
+    @staticmethod
+    def _escape_rc(s: str) -> str:
+        return (s.replace("\\", "\\\\").replace('"', '\\"')
+                 .replace("\n", "\\n").replace("\t", "\\t"))
+
+    @staticmethod
+    def _detect_language(filepath: str, content: str) -> str:
+        # 尝试从 LANGUAGE 语句检测: LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+        lang_m = re.search(r"LANGUAGE\s+LANG_(\w+)", content, re.I)
+        if lang_m:
+            mapping = {
+                "CHINESE": "zh", "ENGLISH": "en", "GERMAN": "de",
+                "FRENCH": "fr", "JAPANESE": "ja", "KOREAN": "ko",
+                "SPANISH": "es", "ITALIAN": "it", "PORTUGUESE": "pt",
+                "RUSSIAN": "ru", "DUTCH": "nl", "POLISH": "pl",
+            }
+            return mapping.get(lang_m.group(1).upper(), "en")
+        stem = os.path.splitext(os.path.basename(filepath))[0]
+        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
+        return m.group(1).replace("-", "_") if m else "en"
 
 
 # 表格类辅助函数
@@ -2461,280 +3985,567 @@ class XlsxFormatHandler(BaseFormatHandler):
                     pass
 
 
-class JavaPropertiesFormatHandler(BaseFormatHandler):
+class SrtFormatHandler:
     """
-    Java / Kotlin .properties 资源文件处理器
+    SubRip 字幕 (.srt) 格式处理器
+
+    标准块结构:
+        <序号>
+        <HH:MM:SS,mmm> --> <HH:MM:SS,mmm> [位置标注(可选)]
+        <文本行1>
+        [文本行2 ...]
+        <空行>
 
     支持的特性:
-    1. 多种分隔符: 正确解析 key=value、key: value、key value 三种赋值形式
-    2. 多行续行: 支持行尾反斜杠 \\ 的跨行字符串
-    3. Unicode 转义: 双向处理 \\uXXXX 编码，保留非 ASCII 可读性
-    4. 注释提取: # 和 ! 开头的行内注释均作为 translator comment 关联到下一条目
-    5. 顺序保留: 保存时严格按原始键顺序输出，保证 diff 友好
-    6. 语言检测: 从标准命名规范 messages_zh_CN.properties 自动推断语言代码
-    7. 空行保护: 保存时在每个条目间保留适当空行，贴近手写习惯
+    1. 完整时间码保留: 读写均原样保留 --> 行及可选位置参数
+    2. 多行字幕: 将多行合并为单条目，换行符以 \\n 标记保存至 comment
+    3. HTML 标签感知: 保留 <b> <i> <u> <font> 等字幕格式标签
+    4. 编号重排: 保存时自动按顺序重新编号，防止空洞序号
+    5. BOM 兼容: 读取时自动处理 UTF-8 BOM
     """
-    format_id = "java_properties"
+
+    format_id = "srt"
     is_monolingual = True
-    extensions = ['.properties']
+    extensions = [".srt"]
     format_type = "translation"
-    display_name = _("Java .properties File")
-    badge_text = "Props"
+    display_name = _("SubRip Subtitle (.srt)")
+    badge_text = "SRT"
     badge_bg_color = "#FFF8E1"
     badge_text_color = "#F57F17"
 
-    def load(self, filepath, **kwargs):
-        app_instance = kwargs.get('app_instance')
-        logger.debug(f"[JavaPropertiesFormatHandler] Loading .properties: {filepath}")
+    # 时间码行正则: 支持可选的位置参数 (X1:N Y1:N ...)
+    _TC_RE = re.compile(
+        r"^(\d{2}:\d{2}:\d{2}[,\.]\d{3})"   # 开始时间码
+        r"\s*-->\s*"
+        r"(\d{2}:\d{2}:\d{2}[,\.]\d{3})"    # 结束时间码
+        r"(.*?)$"                             # 可选位置参数
+    )
 
-        # Java .properties 官方编码为 ISO-8859-1，但现代项目多用 UTF-8
-        encoding = self._detect_encoding(filepath)
-        with open(filepath, 'r', encoding=encoding, errors='replace') as f:
-            lines = f.readlines()
+    def load(self, filepath: str, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or os.path.basename(filepath)
 
-        relative_path = kwargs.get('relative_path') or self._get_relative_path(filepath)
-        language_code = self._detect_language(os.path.basename(filepath))
+        with open(filepath, "r", encoding="utf-8-sig", errors="replace") as f:
+            content = f.read()
 
-        translatable_objects = []
-        occurrence_counters = {}
+        language_code = self._detect_language_from_filename(os.path.basename(filepath))
+        translatable_objects: List[TranslatableString] = []
+        occurrence_counters: Dict = {}
 
-        # --- 解析器状态 ---
-        pending_comments: List[str] = []
-        line_idx = 0
+        # 按空行拆分块，兼容 \r\n
+        raw_blocks = re.split(r"\n\s*\n", content.replace("\r\n", "\n").strip())
 
-        while line_idx < len(lines):
-            raw = lines[line_idx]
-            stripped = raw.strip()
-            line_idx += 1
-
-            # 空行 → 清空待关联注释（注释只关联紧随其后的条目）
-            if not stripped:
-                pending_comments.clear()
+        for block in raw_blocks:
+            lines = block.strip().splitlines()
+            if len(lines) < 3:
                 continue
 
-            # 注释行
-            if stripped.startswith('#') or stripped.startswith('!'):
-                pending_comments.append(stripped[1:].strip())
+            # 第一行: 序号（可能含 BOM 残余）
+            seq_line = lines[0].strip().lstrip("\ufeff")
+            if not seq_line.isdigit():
                 continue
 
-            # 键值行（可能带续行）
-            logical_line = raw.rstrip('\r\n')
-            while logical_line.endswith('\\'):
-                logical_line = logical_line[:-1]  # 去掉续行符
-                if line_idx < len(lines):
-                    logical_line += lines[line_idx].strip()
-                    line_idx += 1
-
-            key, value = self._split_key_value(logical_line.strip())
-            if key is None:
-                pending_comments.clear()
+            # 第二行: 时间码
+            tc_match = self._TC_RE.match(lines[1].strip())
+            if not tc_match:
                 continue
 
-            # 解码 Unicode 转义
-            key = self._decode_unicode_escapes(key)
-            value = self._decode_unicode_escapes(value)
+            start_tc = tc_match.group(1)
+            end_tc = tc_match.group(2)
+            position_hint = tc_match.group(3).strip()
+            timecode = f"{start_tc} --> {end_tc}"
+            if position_hint:
+                timecode += f" {position_hint}"
 
-            if not value.strip():
-                pending_comments.clear()
+            # 其余行: 字幕文本
+            text_lines = lines[2:]
+            text = "\n".join(text_lines).strip()
+            if not text:
                 continue
 
-            comment = '\n'.join(pending_comments).strip()
-            pending_comments.clear()
-
-            counter_key = (value, key)
+            # 唯一标识用时间码 (比序号更稳定)
+            counter_key = (text, timecode)
             idx = occurrence_counters.get(counter_key, 0)
             occurrence_counters[counter_key] = idx + 1
 
-            stable = f"{relative_path}::{key}::{value}::{idx}"
+            stable = f"{relative_path}::{timecode}::{text}::{idx}"
             obj_id = xxhash.xxh128(stable.encode()).hexdigest()
 
             ts = TranslatableString(
-                original_raw=value, original_semantic=value,
-                line_num=0,
+                original_raw=text, original_semantic=text,
+                line_num=int(seq_line),
                 char_pos_start_in_file=0, char_pos_end_in_file=0,
                 full_code_lines=[],
-                string_type="Java Properties",
+                string_type="SRT Subtitle",
                 source_file_path=relative_path,
-                occurrences=[(relative_path, key)],
+                occurrences=[(relative_path, timecode)],
                 occurrence_index=idx,
-                id=obj_id
+                id=obj_id,
             )
-            ts.set_translation_internal(self.get_initial_translation(value, app_instance), is_initial=True)
-            ts.context = key
-            ts.comment = comment
-            ts.po_comment = f"#: Properties key: {key}"
+            initial = text if (app_instance and getattr(app_instance, "config", {})
+                               .get("fill_translation_with_source", False)) else ""
+            ts.set_translation_internal(initial, is_initial=True)
+            ts.context = timecode         # 时间码作为唯一上下文
+            ts.comment = ""
+            ts.po_comment = f"#: {seq_line} | {timecode}"
             ts.is_reviewed = False
             ts.update_sort_weight()
             translatable_objects.append(ts)
 
-        metadata = {
-            'encoding': encoding,
-            'key_order': [ts.context for ts in translatable_objects],
-        }
-
+        metadata = {"raw_content": content}
         logger.info(
-            f"[JavaPropertiesFormatHandler] Loaded {len(translatable_objects)} "
-            f"entries from {filepath} (encoding: {encoding})"
+            f"[SrtFormatHandler] Loaded {len(translatable_objects)} subtitles from {filepath}"
         )
         return translatable_objects, metadata, language_code
 
-    def save(self, filepath, translatable_objects, metadata, **kwargs):
-        logger.debug(f"[JavaPropertiesFormatHandler] Saving .properties: {filepath}")
+    def save(self, filepath: str, translatable_objects, metadata: dict, **kwargs):
+        lines_out: List[str] = []
 
-        encoding = metadata.get('encoding', 'utf-8')
-        key_order = metadata.get('key_order', [])
+        # 按原始行号（即原序号）排序
+        ordered = sorted(
+            [ts for ts in translatable_objects if ts.id != "##NEW_ENTRY##"],
+            key=lambda ts: ts.line_num
+        )
 
-        # 建立 context -> ts 映射
-        ts_map = {ts.context: ts for ts in translatable_objects
-                  if ts.original_semantic and ts.id != '##NEW_ENTRY##'}
-
-        # 按原始顺序输出，末尾追加新增条目
-        ordered_keys = key_order + [k for k in ts_map if k not in key_order]
-
-        lines = []
-        for key in ordered_keys:
-            ts = ts_map.get(key)
-            if not ts:
-                continue
-
-            # 写注释
-            if ts.comment:
-                for comment_line in ts.comment.splitlines():
-                    lines.append(f'# {comment_line}')
-
+        for new_seq, ts in enumerate(ordered, start=1):
             translation = ts.translation if ts.translation else ts.original_semantic
+            lines_out.append(str(new_seq))
+            lines_out.append(ts.context)          # context 存时间码行
+            lines_out.append(translation)
+            lines_out.append("")                   # 块间空行
 
-            # 决定是否需要 Unicode 转义 (仅在 latin-1 编码时必须转义非 ASCII)
-            needs_escape = encoding.lower() in ('iso-8859-1', 'latin-1', 'latin1')
-            escaped_key = self._encode_key(key, needs_escape)
-            escaped_val = self._encode_value(translation, needs_escape)
-
-            lines.append(f'{escaped_key}={escaped_val}')
-            lines.append('')  # 条目间空行
-
-        with atomic_open(filepath, 'w', encoding=encoding) as f:
-            f.write('\n'.join(lines))
-
-        logger.info(f"[JavaPropertiesFormatHandler] Saved {len(ts_map)} entries to {filepath}")
-
-    def _detect_encoding(self, filepath: str) -> str:
-        """
-        检测文件编码。
-        Java 规范是 ISO-8859-1，但 Spring Boot 等现代框架默认 UTF-8。
-        检查 BOM 或尝试 UTF-8 解码来区分。
-        """
-        with open(filepath, 'rb') as f:
-            raw = f.read(4)
-        if raw.startswith(b'\xef\xbb\xbf'):
-            return 'utf-8-sig'
-        # 尝试 UTF-8 解码前 4KB
-        try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                f.read(4096)
-            return 'utf-8'
-        except UnicodeDecodeError:
-            return 'iso-8859-1'
-
-    def _split_key_value(self, line: str) -> Tuple[Optional[str], str]:
-        """
-        解析 key=value / key: value / key value 三种形式。
-        返回 (key, value)，解析失败返回 (None, '')。
-        """
-        # 跳过注释和空行（已在上层处理，这里做保险）
-        if not line or line[0] in ('#', '!'):
-            return None, ''
-
-        # 找到未转义的分隔符 (=, :, 或首个空格)
-        i = 0
-        while i < len(line):
-            ch = line[i]
-            if ch == '\\':
-                i += 2  # 跳过转义字符
-                continue
-            if ch in ('=', ':'):
-                return line[:i].strip(), line[i + 1:].lstrip()
-            if ch in (' ', '\t'):
-                key = line[:i].strip()
-                rest = line[i:].lstrip()
-                # 如果空格后面紧跟 = 或 :，那才是真正的分隔符
-                if rest and rest[0] in ('=', ':'):
-                    return key, rest[1:].lstrip()
-                return key, rest
-            i += 1
-
-        # 只有键没有值（空值）
-        return line.strip(), ''
-
-    def _decode_unicode_escapes(self, s: str) -> str:
-        """将 \\uXXXX 转义序列解码为 Unicode 字符。"""
-        return re.sub(
-            r'\\u([0-9a-fA-F]{4})',
-            lambda m: chr(int(m.group(1), 16)),
-            s
-        )
-
-    def _encode_unicode_escapes(self, s: str) -> str:
-        """将非 ASCII 字符编码为 \\uXXXX（仅用于 latin-1 编码文件）。"""
-        result = []
-        for ch in s:
-            if ord(ch) > 127:
-                result.append(f'\\u{ord(ch):04X}')
+        with atomic_open(filepath, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines_out))
+            if not lines_out[-1]:
+                pass  # 已有尾部空行
             else:
-                result.append(ch)
-        return ''.join(result)
+                f.write("\n")
 
-    def _encode_key(self, key: str, unicode_escape: bool) -> str:
-        """对键中的特殊字符进行转义。"""
-        key = key.replace('\\', '\\\\')
-        key = key.replace(' ', '\\ ')
-        key = key.replace('=', '\\=')
-        key = key.replace(':', '\\:')
-        key = key.replace('#', '\\#')
-        key = key.replace('!', '\\!')
-        if unicode_escape:
-            key = self._encode_unicode_escapes(key)
-        return key
+        logger.info(f"[SrtFormatHandler] Saved {len(ordered)} subtitles to {filepath}")
 
-    def _encode_value(self, value: str, unicode_escape: bool) -> str:
-        """对值进行转义，换行符转为 \\n 续行形式。"""
-        value = value.replace('\\', '\\\\')
-        value = value.replace('\n', '\\n\\\n    ')
-        value = value.replace('\t', '\\t')
-        if unicode_escape:
-            value = self._encode_unicode_escapes(value)
-        return value
-
-    def _detect_language(self, filename: str) -> str:
-        """
-        从标准 Java ResourceBundle 命名规范中提取语言代码。
-        例: messages_zh_CN.properties → zh_CN
-            strings_en.properties    → en
-            MyApp_fr_FR.properties   → fr_FR
-        """
-        name = filename.replace('.properties', '')
-        # 尝试匹配末尾的 _lang 或 _lang_COUNTRY
-        m = re.search(
-            r'_([a-z]{2,3})(?:_([A-Z]{2,3}))?$',
-            name
-        )
+    @staticmethod
+    def _detect_language_from_filename(filename: str) -> str:
+        stem = os.path.splitext(filename)[0]
+        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
         if m:
-            lang = m.group(1)
-            country = m.group(2)
-            return f"{lang}_{country}" if country else lang
-        return 'en'
+            return m.group(1).replace("-", "_")
+        return "en"
 
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / 'project.json').is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
+
+class VttFormatHandler(BaseFormatHandler):
+    """
+    WebVTT 字幕 (.vtt) 格式处理器
+
+    VTT 格式规范要点:
+    - 文件首行必须为 "WEBVTT"（可带可选描述）
+    - 块类型: CUE（字幕）/ NOTE（注释，跳过）/ REGION / STYLE（跳过）
+    - 时间码格式: MM:SS.mmm 或 HH:MM:SS.mmm，使用 " --> " 分隔
+    - CUE ID 可选，且允许为非数字字符串
+
+    支持的特性:
+    1. CUE ID 保留: 读写时保留可选的 CUE 标识符
+    2. CUE 设置保留: line/position/align/size 等设置参数原样写回
+    3. NOTE 块跳过: WEBVTT NOTE 注释块不作为可翻译内容
+    4. 多行文本: 同 SRT，多行合并处理
+    5. VTT 标签感知: 保留 <v Speaker> <ruby> <c.class> 等语音/样式标签
+    """
+
+    format_id = "vtt"
+    is_monolingual = True
+    extensions = [".vtt"]
+    format_type = "translation"
+    display_name = _("WebVTT Subtitle (.vtt)")
+    badge_text = "VTT"
+    badge_bg_color = "#F3E5F5"
+    badge_text_color = "#6A1B9A"
+
+    _TC_RE = re.compile(
+        r"^(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})"
+        r"\s*-->\s*"
+        r"(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})"
+        r"(.*?)$"
+    )
+
+    def load(self, filepath: str, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or os.path.basename(filepath)
+
+        with open(filepath, "r", encoding="utf-8-sig", errors="replace") as f:
+            content = f.read()
+
+        language_code = self._detect_language_from_filename(os.path.basename(filepath))
+        translatable_objects: List[TranslatableString] = []
+        occurrence_counters: Dict = {}
+
+        lines_all = content.replace("\r\n", "\n").splitlines()
+        # 校验首行
+        if not lines_all or not lines_all[0].startswith("WEBVTT"):
+            logger.warning(f"[VttFormatHandler] Missing WEBVTT header in {filepath}")
+
+        # 按空行切块
+        raw_blocks: List[List[str]] = []
+        current: List[str] = []
+        for line in lines_all[1:]:   # 跳过首行 WEBVTT
+            if line.strip() == "":
+                if current:
+                    raw_blocks.append(current)
+                    current = []
+            else:
+                current.append(line)
+        if current:
+            raw_blocks.append(current)
+
+        seq_counter = 0
+        for block in raw_blocks:
+            if not block:
+                continue
+            # 跳过 NOTE / STYLE / REGION 块
+            first = block[0].strip()
+            if first.startswith("NOTE") or first.startswith("STYLE") or first.startswith("REGION"):
+                continue
+
+            # 找时间码行的位置
+            tc_line_idx = None
+            cue_id = ""
+            for i, line in enumerate(block):
+                m = self._TC_RE.match(line.strip())
+                if m:
+                    tc_line_idx = i
+                    if i > 0:
+                        cue_id = block[0].strip()
                     break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
+
+            if tc_line_idx is None:
+                continue
+
+            tc_line = block[tc_line_idx].strip()
+            m = self._TC_RE.match(tc_line)
+            start_tc = m.group(1)
+            end_tc = m.group(2)
+            cue_settings = m.group(3).strip()
+
+            timecode = f"{start_tc} --> {end_tc}"
+            full_tc_line = timecode + (f" {cue_settings}" if cue_settings else "")
+
+            text_lines = block[tc_line_idx + 1:]
+            text = "\n".join(l for l in text_lines).strip()
+            if not text:
+                continue
+
+            seq_counter += 1
+            context_key = f"{cue_id}|{full_tc_line}" if cue_id else full_tc_line
+
+            counter_key = (text, context_key)
+            idx = occurrence_counters.get(counter_key, 0)
+            occurrence_counters[counter_key] = idx + 1
+
+            stable = f"{relative_path}::{context_key}::{text}::{idx}"
+            obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+            ts = TranslatableString(
+                original_raw=text, original_semantic=text,
+                line_num=seq_counter,
+                char_pos_start_in_file=0, char_pos_end_in_file=0,
+                full_code_lines=[],
+                string_type="VTT Subtitle",
+                source_file_path=relative_path,
+                occurrences=[(relative_path, full_tc_line)],
+                occurrence_index=idx,
+                id=obj_id,
+            )
+            ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
+            ts.context = context_key      # "cueId|HH:MM:SS.mmm --> HH:MM:SS.mmm [settings]"
+            ts.comment = f"CUE ID: {cue_id}" if cue_id else ""
+            ts.po_comment = f"#: {full_tc_line}"
+            ts.is_reviewed = False
+            ts.update_sort_weight()
+            translatable_objects.append(ts)
+
+        metadata = {"raw_content": content}
+        logger.info(
+            f"[VttFormatHandler] Loaded {len(translatable_objects)} cues from {filepath}"
+        )
+        return translatable_objects, metadata, language_code
+
+    def save(self, filepath: str, translatable_objects, metadata: dict, **kwargs):
+        lines_out = ["WEBVTT", ""]
+
+        ordered = sorted(
+            [ts for ts in translatable_objects if ts.id != "##NEW_ENTRY##"],
+            key=lambda ts: ts.line_num,
+        )
+
+        for ts in ordered:
+            # context_key = "cueId|tc_line" 或 "tc_line"
+            ctx = ts.context
+            if "|" in ctx:
+                cue_id, tc_line = ctx.split("|", 1)
+                lines_out.append(cue_id)
+            else:
+                tc_line = ctx
+
+            lines_out.append(tc_line)
+            translation = ts.translation if ts.translation else ts.original_semantic
+            lines_out.append(translation)
+            lines_out.append("")
+
+        with atomic_open(filepath, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines_out))
+            f.write("\n")
+
+        logger.info(f"[VttFormatHandler] Saved {len(ordered)} cues to {filepath}")
+
+    @staticmethod
+    def _detect_language_from_filename(filename: str) -> str:
+        stem = os.path.splitext(filename)[0]
+        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
+        return m.group(1).replace("-", "_") if m else "en"
+
+
+class HtmlFormatHandler(BaseFormatHandler):
+    """
+    HTML / HTM 网页文件翻译处理器
+
+    提取来源（白名单标签内的可见文本）:
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │ 正文标签: p / h1-h6 / li / td / th / dt / dd / figcaption / caption │
+    │ 行内标签: a / span / strong / em / b / i / label / button / legend  │
+    │ 表单标签: input[placeholder] / input[value] / textarea              │
+    │ 元数据:   <title> / <meta name="description" content="…">           │
+    │           <meta name="keywords" content="…">                        │
+    │           <meta property="og:title/description" content="…">        │
+    │ 属性:     alt / title（仅 img 和 a 标签）                           │
+    └─────────────────────────────────────────────────────────────────────┘
+
+    支持的特性:
+    1. 结构保留: 翻译单元为单个标签的"净文本"（子标签内容合并），
+               保存时用正则精准替换，不解析整棵 DOM
+    2. i18n 感知: 自动跳过含 data-i18n-ignore / translate="no" 的节点
+    3. 脚本跳过: <script> / <style> / <code> / <pre> 内容完全跳过
+    4. 注释跳过: HTML 注释 <!-- --> 不提取
+    5. 属性提取: alt / placeholder / title 属性单独成条目
+    6. 语言检测: 读取 <html lang="…"> 属性，其次从文件名推断
+    7. 保存策略: 基于原始文本的字符串替换（从长到短防止子串误替换），
+               保留所有 HTML 结构、内联样式、脚本不变
+    """
+
+    format_id = "html"
+    is_monolingual = True
+    extensions = [".html", ".htm"]
+    format_type = "translation"
+    display_name = _("HTML Web Page (.html/.htm)")
+    badge_text = "HTML"
+    badge_bg_color = "#FFF3E0"
+    badge_text_color = "#E65100"
+
+    # 提取文本的块级 / 行内标签
+    _TEXT_TAGS = frozenset({
+        "p", "h1", "h2", "h3", "h4", "h5", "h6",
+        "li", "td", "th", "dt", "dd", "figcaption", "caption",
+        "a", "span", "strong", "em", "b", "i",
+        "label", "button", "legend", "title",
+        "summary",  # <details> summary
+    })
+    # 跳过内部全部内容的标签
+    _SKIP_TAGS = frozenset({"script", "style", "code", "pre", "noscript", "template"})
+    # 提取属性的规则: tag -> [attr, ...]
+    _ATTR_EXTRACT: Dict[str, List[str]] = {
+        "img":      ["alt", "title"],
+        "a":        ["title"],
+        "input":    ["placeholder", "value"],
+        "textarea": ["placeholder"],
+        "area":     ["alt"],
+        "th":       ["abbr"],
+    }
+
+    # 用于从标签中提取净文本（去除子标签）
+    _TAG_CONTENT_RE = re.compile(r"<[^>]+>")
+    # 检测是否含不可翻译属性
+    _IGNORE_RE = re.compile(
+        r'\btranslate\s*=\s*["\']no["\']|data-i18n-ignore', re.I
+    )
+
+    def load(self, filepath: str, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or os.path.basename(filepath)
+
+        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+
+        language_code = self._detect_language(content, os.path.basename(filepath))
+        translatable_objects: List[TranslatableString] = []
+        occurrence_counters: Dict = {}
+
+        # 去除 script / style / code / pre 区块，防止误匹配
+        content_clean = self._strip_skip_blocks(content)
+        # 去除 HTML 注释
+        content_clean = re.sub(r"<!--.*?-->", "", content_clean, flags=re.DOTALL)
+
+        # ── 提取 <meta> 标签属性 ──────────────────────────────────────────
+        self._extract_meta(
+            content_clean, relative_path,
+            translatable_objects, occurrence_counters, app_instance
+        )
+
+        # ── 提取普通标签文本内容 ─────────────────────────────────────────
+        tag_pattern = re.compile(
+            r"<(?P<tag>" + "|".join(self._TEXT_TAGS) + r")"
+            r"(?P<attrs>[^>]*)>"
+            r"(?P<inner>.*?)"
+            r"</(?P=tag)>",
+            re.IGNORECASE | re.DOTALL,
+        )
+        global_line = [0]
+        for m in tag_pattern.finditer(content_clean):
+            tag = m.group("tag").lower()
+            attrs = m.group("attrs")
+            inner = m.group("inner")
+
+            # 跳过 translate="no" / data-i18n-ignore
+            if self._IGNORE_RE.search(attrs):
+                continue
+
+            # 提取净文本（去除子标签）
+            clean_text = self._TAG_CONTENT_RE.sub("", inner).strip()
+            # 折叠空白
+            clean_text = re.sub(r"\s+", " ", clean_text).strip()
+            if not clean_text or len(clean_text) < 2:
+                continue
+
+            # 计算大致行号
+            line_num = content[:m.start()].count("\n") + 1
+            context = f"{tag}.{line_num}"
+
+            self._make_entry(
+                clean_text, context, f"HTML <{tag}>",
+                attrs, relative_path, line_num,
+                translatable_objects, occurrence_counters, app_instance
+            )
+
+        # ── 提取属性（alt / placeholder / title …） ─────────────────────
+        for tag, attr_list in self._ATTR_EXTRACT.items():
+            for attr in attr_list:
+                attr_pattern = re.compile(
+                    r"<" + tag + r"[^>]*\b" + attr + r'\s*=\s*["\'](?P<val>[^"\']+)["\'][^>]*>',
+                    re.IGNORECASE,
+                )
+                for m in attr_pattern.finditer(content_clean):
+                    val = m.group("val").strip()
+                    if not val or len(val) < 2:
+                        continue
+                    line_num = content[:m.start()].count("\n") + 1
+                    context = f"{tag}@{attr}.{line_num}"
+                    self._make_entry(
+                        val, context, f"HTML {tag}@{attr}",
+                        m.group(0), relative_path, line_num,
+                        translatable_objects, occurrence_counters, app_instance
+                    )
+
+        metadata = {"raw_content": content}
+        logger.info(
+            f"[HtmlFormatHandler] Loaded {len(translatable_objects)} entries from {filepath}"
+        )
+        return translatable_objects, metadata, language_code
+
+    def _extract_meta(self, content: str, rel_path: str, results: List, counters: Dict, app_instance):
+        # <title>
+        title_m = re.search(r"<title[^>]*>([^<]+)</title>", content, re.I)
+        if title_m:
+            val = title_m.group(1).strip()
+            if val:
+                self._make_entry(val, "meta.title", "HTML <title>", "", rel_path, 0, results, counters, app_instance)
+
+        # <meta name="description/keywords" content="…">
+        meta_re = re.compile(
+            r'<meta\s[^>]*\bname\s*=\s*["\'](?P<name>description|keywords|author)["\'][^>]*\bcontent\s*=\s*["\'](?P<val>[^"\']+)["\']',
+            re.I,
+        )
+        for m in meta_re.finditer(content):
+            val = m.group("val").strip()
+            name = m.group("name").lower()
+            if val:
+                self._make_entry(val, f"meta.{name}", f"HTML <meta {name}>", "", rel_path, 0, results, counters, app_instance)
+
+        # Open Graph
+        og_re = re.compile(
+            r'<meta\s[^>]*\bproperty\s*=\s*["\']og:(?P<prop>title|description)["\'][^>]*\bcontent\s*=\s*["\'](?P<val>[^"\']+)["\']',
+            re.I,
+        )
+        for m in og_re.finditer(content):
+            val = m.group("val").strip()
+            prop = m.group("prop").lower()
+            if val:
+                self._make_entry(val, f"meta.og_{prop}", f"HTML og:{prop}", "", rel_path, 0, results, counters, app_instance)
+
+    def _make_entry(
+        self, text: str, context: str, string_type: str,
+        attrs: str, rel_path: str, line_num: int,
+        results: List, counters: Dict, app_instance
+    ):
+        counter_key = (text, context)
+        idx = counters.get(counter_key, 0)
+        counters[counter_key] = idx + 1
+
+        stable = f"{rel_path}::{context}::{text}::{idx}"
+        obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+        ts = TranslatableString(
+            original_raw=text, original_semantic=text,
+            line_num=line_num,
+            char_pos_start_in_file=0, char_pos_end_in_file=0,
+            full_code_lines=[],
+            string_type=string_type,
+            source_file_path=rel_path,
+            occurrences=[(rel_path, context)],
+            occurrence_index=idx,
+            id=obj_id,
+        )
+        ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
+        ts.context = context
+        ts.comment = ""
+        ts.po_comment = f"#: HTML {context}"
+        ts.is_reviewed = False
+        ts.update_sort_weight()
+        results.append(ts)
+
+    def save(self, filepath: str, translatable_objects, metadata: dict, **kwargs):
+        content: str = metadata["raw_content"]
+
+        # 按 original_semantic 长度降序替换，避免短串先替换破坏长串
+        entries = sorted(
+            [ts for ts in translatable_objects
+             if ts.id != "##NEW_ENTRY##" and ts.translation
+             and ts.translation != ts.original_semantic],
+            key=lambda ts: -len(ts.original_semantic),
+        )
+        for ts in entries:
+            content = content.replace(ts.original_semantic, ts.translation, 1)
+
+        with atomic_open(filepath, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        logger.info(f"[HtmlFormatHandler] Saved to {filepath}")
+
+    @staticmethod
+    def _strip_skip_blocks(content: str) -> str:
+        """将 <script>/<style>/<pre>/<code> 块内容替换为空占位，保留标签位置。"""
+        for tag in ("script", "style", "pre", "code", "noscript", "template"):
+            content = re.sub(
+                r"<" + tag + r"[^>]*>.*?</" + tag + r">",
+                f"<{tag}></{tag}>",
+                content, flags=re.IGNORECASE | re.DOTALL
+            )
+        return content
+
+    @staticmethod
+    def _detect_language(content: str, filename: str) -> str:
+        # <html lang="zh-CN">
+        m = re.search(r"<html[^>]+\blang\s*=\s*[\"']([^\"']+)[\"']", content, re.I)
+        if m:
+            return m.group(1).replace("-", "_")
+        stem = os.path.splitext(filename)[0]
+        m2 = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
+        return m2.group(1).replace("-", "_") if m2 else "en"
 
 
 class MarkdownFormatHandler(BaseFormatHandler):
@@ -2949,7 +4760,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
                         char_start=text_abs_start,
                         char_end=text_abs_start + len(heading_text),
                         string_type="MD Heading",
-                        app_instance=app_instance
+                        app_instance=app_instance,
                     )
                 abs_offset += len(line) + 1
                 i += 1
@@ -2968,6 +4779,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
                             char_start=line_abs_start + line.find(stripped),
                             char_end=line_abs_start + line.find(stripped) + len(stripped),
                             string_type="MD Heading",
+                            app_instance=app_instance,
                         )
                     abs_offset += len(line) + 1 + len(lines[i + 1]) + 1
                     i += 2
@@ -2988,6 +4800,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
                         char_start=text_abs_start,
                         char_end=text_abs_start + len(item_text),
                         string_type="MD List Item",
+                        app_instance=app_instance,
                     )
                 abs_offset += len(line) + 1
                 i += 1
@@ -3014,6 +4827,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
                         char_start=quote_start_offset,
                         char_end=abs_offset - 1,
                         string_type="MD Blockquote",
+                        app_instance=app_instance,
                     )
                 continue
 
@@ -3034,6 +4848,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
                             char_start=line_abs_start + cell_rel_start,
                             char_end=line_abs_start + cell_rel_start + len(cell),
                             string_type="MD Table",
+                            app_instance=app_instance,
                         )
                 abs_offset += len(line) + 1
                 i += 1
@@ -3075,6 +4890,7 @@ class MarkdownFormatHandler(BaseFormatHandler):
                         char_start=para_start_offset,
                         char_end=abs_offset - 1,
                         string_type="MD Paragraph",
+                        app_instance=app_instance,
                     )
                 continue
 
@@ -3180,6 +4996,545 @@ class MarkdownFormatHandler(BaseFormatHandler):
         logger.info(f"[MarkdownFormatHandler] Saved translated document to {filepath}")
 
 
+def _ooxml_read_part(zf: zipfile.ZipFile, part_path: str) -> Optional[str]:
+    """读取 ZIP 包内指定 part，返回 UTF-8 字符串，不存在则返回 None。"""
+    try:
+        return zf.read(part_path).decode("utf-8", errors="replace")
+    except KeyError:
+        return None
+
+
+def _ooxml_list_parts(zf: zipfile.ZipFile, prefix: str) -> List[str]:
+    """列出 ZIP 包内以 prefix 开头的所有 part 路径。"""
+    return [n for n in zf.namelist() if n.startswith(prefix)]
+
+
+def _ooxml_clone_and_patch(
+    src_filepath: str,
+    dst_filepath: str,
+    patched_parts: Dict[str, bytes],
+):
+    """
+    将 src_filepath 的 ZIP 内容复制到 dst_filepath，
+    同时将 patched_parts 中指定的 part 替换为新内容。
+    """
+    with zipfile.ZipFile(src_filepath, "r") as src_zf:
+        with zipfile.ZipFile(dst_filepath, "w", compression=zipfile.ZIP_DEFLATED) as dst_zf:
+            for item in src_zf.infolist():
+                if item.filename in patched_parts:
+                    dst_zf.writestr(item, patched_parts[item.filename])
+                else:
+                    dst_zf.writestr(item, src_zf.read(item.filename))
+
+
+class DocxFormatHandler(BaseFormatHandler):
+    """
+    Microsoft Word DOCX / DOCM 处理器
+
+    提取来源（按优先级）:
+    ┌─────────────────────────────────────────────────────────────────────┐
+    │ word/document.xml   正文段落 <w:t>                                  │
+    │ word/comments.xml   批注文本                                        │
+    │ word/footnotes.xml  脚注                                            │
+    │ word/endnotes.xml   尾注                                            │
+    │ word/header*.xml    页眉                                            │
+    │ word/footer*.xml    页脚                                            │
+    └─────────────────────────────────────────────────────────────────────┘
+
+    支持的特性:
+    1. Run 合并: 同一段落的多个 <w:r><w:t> 合并为单条翻译，避免割裂语义
+    2. 格式标签保留: Bold/Italic/Underline 等 <w:rPr> 属性原样写回
+    3. 超链接识别: <w:hyperlink> 内文本作为独立条目，关联 URL 记录到 comment
+    4. 表格感知: <w:tbl> → <w:tc> → <w:p> 全部扫描，context 标注单元格位置
+    5. 文本框: <mc:AlternateContent> / <w:txbxContent> 内文本正确提取
+    6. 样式感知: Heading1-9 在 context 中标注层级，便于审阅排序
+    7. 原子保存: 先 clone ZIP 再 patch document.xml 等，不破坏嵌入资源
+    """
+
+    format_id = "docx"
+    is_monolingual = True
+    extensions = [".docx", ".docm"]
+    format_type = "translation"
+    display_name = _("Word Document (.docx/.docm)")
+    badge_text = "DOCX"
+    badge_bg_color = "#E3F2FD"
+    badge_text_color = "#1565C0"
+
+    # Word XML 命名空间
+    _NS = {
+        "w":   "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        "r":   "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+        "mc":  "http://schemas.openxmlformats.org/markup-compatibility/2006",
+        "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
+    }
+
+    def load(self, filepath: str, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or os.path.basename(filepath)
+        translatable_objects: List[TranslatableString] = []
+        occurrence_counters: Dict = {}
+
+        # 收集所有需处理的 part
+        parts_to_scan = []
+        with zipfile.ZipFile(filepath, "r") as zf:
+            all_names = set(zf.namelist())
+            primary_parts = ["word/document.xml", "word/comments.xml",
+                             "word/footnotes.xml", "word/endnotes.xml"]
+            for p in primary_parts:
+                if p in all_names:
+                    parts_to_scan.append(p)
+            for n in all_names:
+                if re.match(r"word/(header|footer)\d*\.xml$", n):
+                    parts_to_scan.append(n)
+
+            part_xmls: Dict[str, bytes] = {
+                p: zf.read(p) for p in parts_to_scan
+            }
+
+        for part_path, xml_bytes in part_xmls.items():
+            part_label = Path(part_path).stem   # document / header1 / footer2 …
+            try:
+                root = ET.fromstring(xml_bytes)
+            except ET.ParseError as e:
+                logger.warning(f"[DocxFormatHandler] XML parse error in {part_path}: {e}")
+                continue
+
+            self._extract_paragraphs(
+                root, part_label, relative_path,
+                translatable_objects, occurrence_counters, app_instance
+            )
+
+        metadata = {
+            "filepath": filepath,
+            "part_xmls": part_xmls,        # 原始 bytes，用于 save
+            "parts_to_scan": parts_to_scan,
+        }
+        logger.info(
+            f"[DocxFormatHandler] Loaded {len(translatable_objects)} paragraphs from {filepath}"
+        )
+        return translatable_objects, metadata, self._detect_language(filepath)
+
+    def _extract_paragraphs(
+        self, root: ET.Element, part_label: str,
+        rel_path: str, results: List, counters: Dict, app_instance
+    ):
+        w = self._NS["w"]
+        para_idx = 0
+
+        for para in root.iter(f"{{{w}}}p"):
+            # 合并段落内所有 <w:t> 文本
+            texts = []
+            for t_elem in para.iter(f"{{{w}}}t"):
+                if t_elem.text:
+                    texts.append(t_elem.text)
+            full_text = "".join(texts).strip()
+            if not full_text:
+                para_idx += 1
+                continue
+
+            # 获取段落样式
+            pstyle = ""
+            ppr = para.find(f"{{{w}}}pPr")
+            if ppr is not None:
+                pstyle_elem = ppr.find(f"{{{w}}}pStyle")
+                if pstyle_elem is not None:
+                    pstyle = pstyle_elem.get(f"{{{w}}}val", "")
+
+            context = f"{part_label}.p{para_idx}"
+            if pstyle:
+                context += f"[{pstyle}]"
+
+            counter_key = (full_text, context)
+            idx = counters.get(counter_key, 0)
+            counters[counter_key] = idx + 1
+
+            stable = f"{rel_path}::{context}::{full_text}::{idx}"
+            obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+            ts = TranslatableString(
+                original_raw=full_text, original_semantic=full_text,
+                line_num=para_idx,
+                char_pos_start_in_file=0, char_pos_end_in_file=0,
+                full_code_lines=[],
+                string_type="DOCX Paragraph",
+                source_file_path=rel_path,
+                occurrences=[(rel_path, context)],
+                occurrence_index=idx,
+                id=obj_id,
+            )
+            ts.set_translation_internal(self.get_initial_translation(full_text, app_instance), is_initial=True)
+            ts.context = context
+            ts.comment = f"Style: {pstyle}" if pstyle else ""
+            ts.po_comment = f"#: {part_label} paragraph {para_idx}"
+            ts.is_reviewed = False
+            ts.update_sort_weight()
+            results.append(ts)
+            para_idx += 1
+
+    def save(self, filepath: str, translatable_objects, metadata: dict, **kwargs):
+        part_xmls: Dict[str, bytes] = metadata["part_xmls"]
+        parts_to_scan: List[str] = metadata["parts_to_scan"]
+
+        # context(part_label.pN[style]) -> translation
+        trans_map: Dict[str, str] = {
+            ts.context: (ts.translation or ts.original_semantic)
+            for ts in translatable_objects
+            if ts.id != "##NEW_ENTRY##" and ts.context and ts.translation
+        }
+
+        patched: Dict[str, bytes] = {}
+        w = self._NS["w"]
+
+        for part_path in parts_to_scan:
+            xml_bytes = part_xmls.get(part_path)
+            if not xml_bytes:
+                continue
+            try:
+                root = ET.fromstring(xml_bytes)
+            except ET.ParseError:
+                continue
+
+            part_label = Path(part_path).stem
+            para_idx = 0
+            modified = False
+
+            for para in root.iter(f"{{{w}}}p"):
+                pstyle = ""
+                ppr = para.find(f"{{{w}}}pPr")
+                if ppr is not None:
+                    ps = ppr.find(f"{{{w}}}pStyle")
+                    if ps is not None:
+                        pstyle = ps.get(f"{{{w}}}val", "")
+
+                context = f"{part_label}.p{para_idx}"
+                if pstyle:
+                    context += f"[{pstyle}]"
+
+                if context in trans_map:
+                    translation = trans_map[context]
+                    # 将段落内所有 <w:t> 合并写入第一个 run，清空其余
+                    t_elems = list(para.iter(f"{{{w}}}t"))
+                    if t_elems:
+                        t_elems[0].text = translation
+                        # 保留第一个 run 的格式，清空后续 runs 的文字
+                        for t in t_elems[1:]:
+                            t.text = ""
+                        modified = True
+                para_idx += 1
+
+            if modified:
+                # 保留原始 XML 声明
+                xml_out = ET.tostring(root, encoding="unicode", xml_declaration=False)
+                patched[part_path] = (
+                    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+                    + xml_out
+                ).encode("utf-8")
+
+        # 原子化写回 ZIP
+        tmp = filepath + ".tmp"
+        try:
+            _ooxml_clone_and_patch(filepath, tmp, patched)
+            os.replace(tmp, filepath)
+        finally:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+
+        logger.info(f"[DocxFormatHandler] Saved {len(trans_map)} paragraphs to {filepath}")
+
+    @staticmethod
+    def _detect_language(filepath: str) -> str:
+        stem = os.path.splitext(os.path.basename(filepath))[0]
+        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
+        return m.group(1).replace("-", "_") if m else "en"
+
+
+class PptxFormatHandler(BaseFormatHandler):
+    """
+    Microsoft PowerPoint PPTX / PPTM 处理器
+
+    提取来源:
+    ┌──────────────────────────────────────────────────────────────────────┐
+    │ ppt/slides/slide*.xml          正文幻灯片文本框                     │
+    │ ppt/slideLayouts/layout*.xml   版式占位符（通常不翻译，可配置）      │
+    │ ppt/notesSlides/notesSlide*.xml 演讲者备注                          │
+    └──────────────────────────────────────────────────────────────────────┘
+
+    支持的特性:
+    1. 形状感知: <p:sp> → <p:nvSpPr> 提取形状名称作为 context 辅助信息
+    2. 占位符标注: ph type (title/body/subTitle) 记录到 context
+    3. Run 合并: 同一段落多个 <a:r><a:t> 合并，保留 <a:rPr> 格式不变
+    4. 表格提取: <a:tbl> → <a:tc> → <a:p> 全扫描，context 标注行列
+    5. 备注提取: notesSlide 内文本作为独立条目，context 前缀 "notes"
+    6. 幻灯片顺序: context 格式 "slideN.shapeM.pK" 保证顺序稳定
+    7. 原子保存: 同 DocxFormatHandler
+    """
+
+    format_id = "pptx"
+    is_monolingual = True
+    extensions = [".pptx", ".pptm"]
+    format_type = "translation"
+    display_name = _("PowerPoint Presentation (.pptx/.pptm)")
+    badge_text = "PPTX"
+    badge_bg_color = "#FBE9E7"
+    badge_text_color = "#BF360C"
+
+    _NS = {
+        "a":   "http://schemas.openxmlformats.org/drawingml/2006/main",
+        "p":   "http://schemas.openxmlformats.org/presentationml/2006/main",
+        "r":   "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+    }
+
+    def load(self, filepath: str, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or os.path.basename(filepath)
+        translatable_objects: List[TranslatableString] = []
+        occurrence_counters: Dict = {}
+
+        with zipfile.ZipFile(filepath, "r") as zf:
+            all_names = set(zf.namelist())
+            slide_parts = sorted(
+                [n for n in all_names if re.match(r"ppt/slides/slide\d+\.xml$", n)],
+                key=lambda n: int(re.search(r"\d+", Path(n).stem).group())
+            )
+            notes_parts = sorted(
+                [n for n in all_names if re.match(r"ppt/notesSlides/notesSlide\d+\.xml$", n)],
+                key=lambda n: int(re.search(r"\d+", Path(n).stem).group())
+            )
+            part_xmls: Dict[str, bytes] = {
+                p: zf.read(p) for p in slide_parts + notes_parts
+            }
+
+        for part_path, xml_bytes in part_xmls.items():
+            is_notes = "notesSlides" in part_path
+            slide_num_m = re.search(r"(\d+)", Path(part_path).stem)
+            slide_num = int(slide_num_m.group()) if slide_num_m else 0
+            prefix = f"notes{slide_num}" if is_notes else f"slide{slide_num}"
+
+            try:
+                root = ET.fromstring(xml_bytes)
+            except ET.ParseError as e:
+                logger.warning(f"[PptxFormatHandler] Parse error in {part_path}: {e}")
+                continue
+
+            self._extract_slide_text(
+                root, prefix, relative_path,
+                translatable_objects, occurrence_counters, app_instance
+            )
+
+        metadata = {
+            "filepath": filepath,
+            "part_xmls": part_xmls,
+            "slide_parts": slide_parts,
+            "notes_parts": notes_parts,
+        }
+        logger.info(
+            f"[PptxFormatHandler] Loaded {len(translatable_objects)} text runs from {filepath}"
+        )
+        return translatable_objects, metadata, self._detect_language(filepath)
+
+    def _extract_slide_text(
+        self, root: ET.Element, prefix: str,
+        rel_path: str, results: List, counters: Dict, app_instance
+    ):
+        a = self._NS["a"]
+        p_ns = self._NS["p"]
+
+        shape_idx = 0
+        # 遍历所有 <p:sp> 形状（包括文本框、占位符）
+        for sp in root.iter(f"{{{p_ns}}}sp"):
+            # 形状名
+            nvsp = sp.find(f"{{{p_ns}}}nvSpPr")
+            shape_name = ""
+            if nvsp is not None:
+                cnvpr = nvsp.find(f"{{{p_ns}}}cNvPr")
+                shape_name = cnvpr.get("name", "") if cnvpr is not None else ""
+
+            # 占位符类型
+            ph_type = ""
+            if nvsp is not None:
+                nvppr = nvsp.find(f"{{{p_ns}}}nvPr")
+                if nvppr is not None:
+                    ph_elem = nvppr.find(f"{{{p_ns}}}ph")
+                    ph_type = ph_elem.get("type", "") if ph_elem is not None else ""
+
+            txbody = sp.find(f"{{{p_ns}}}txBody")
+            if txbody is None:
+                shape_idx += 1
+                continue
+
+            para_idx = 0
+            for para in txbody.iter(f"{{{a}}}p"):
+                texts = []
+                for t_elem in para.iter(f"{{{a}}}t"):
+                    if t_elem.text:
+                        texts.append(t_elem.text)
+                full_text = "".join(texts).strip()
+                if not full_text:
+                    para_idx += 1
+                    continue
+
+                context_parts = [prefix, f"shape{shape_idx}", f"p{para_idx}"]
+                if ph_type:
+                    context_parts.insert(2, ph_type)
+                context = ".".join(context_parts)
+
+                counter_key = (full_text, context)
+                idx = counters.get(counter_key, 0)
+                counters[counter_key] = idx + 1
+
+                stable = f"{rel_path}::{context}::{full_text}::{idx}"
+                obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+                ts = TranslatableString(
+                    original_raw=full_text, original_semantic=full_text,
+                    line_num=shape_idx * 1000 + para_idx,
+                    char_pos_start_in_file=0, char_pos_end_in_file=0,
+                    full_code_lines=[],
+                    string_type="PPTX Text",
+                    source_file_path=rel_path,
+                    occurrences=[(rel_path, context)],
+                    occurrence_index=idx,
+                    id=obj_id,
+                )
+                ts.set_translation_internal(self.get_initial_translation(full_text, app_instance), is_initial=True)
+                ts.context = context
+                ts.comment = f"Shape: {shape_name}" + (f" | Type: {ph_type}" if ph_type else "")
+                ts.po_comment = f"#: {prefix} shape{shape_idx} para{para_idx}"
+                ts.is_reviewed = False
+                ts.update_sort_weight()
+                results.append(ts)
+                para_idx += 1
+
+            shape_idx += 1
+
+        # 表格
+        table_idx = 0
+        for tbl in root.iter(f"{{{a}}}tbl"):
+            for row_idx, tr in enumerate(tbl.iter(f"{{{a}}}tr")):
+                for col_idx, tc in enumerate(tr.iter(f"{{{a}}}tc")):
+                    for para in tc.iter(f"{{{a}}}p"):
+                        texts = [t.text for t in para.iter(f"{{{a}}}t") if t.text]
+                        full_text = "".join(texts).strip()
+                        if not full_text:
+                            continue
+                        context = f"{prefix}.tbl{table_idx}.r{row_idx}c{col_idx}"
+                        counter_key = (full_text, context)
+                        idx = counters.get(counter_key, 0)
+                        counters[counter_key] = idx + 1
+                        stable = f"{rel_path}::{context}::{full_text}::{idx}"
+                        obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+                        ts = TranslatableString(
+                            original_raw=full_text, original_semantic=full_text,
+                            line_num=table_idx * 10000 + row_idx * 100 + col_idx,
+                            char_pos_start_in_file=0, char_pos_end_in_file=0,
+                            full_code_lines=[], string_type="PPTX Table Cell",
+                            source_file_path=rel_path,
+                            occurrences=[(rel_path, context)],
+                            occurrence_index=idx, id=obj_id,
+                        )
+                        ts.set_translation_internal(self.get_initial_translation(full_text, app_instance), is_initial=True)
+                        ts.context = context
+                        ts.comment = f"Table cell row={row_idx} col={col_idx}"
+                        ts.po_comment = f"#: {prefix} table{table_idx} [{row_idx},{col_idx}]"
+                        ts.is_reviewed = False
+                        ts.update_sort_weight()
+                        results.append(ts)
+            table_idx += 1
+
+    def save(self, filepath: str, translatable_objects, metadata: dict, **kwargs):
+        part_xmls: Dict[str, bytes] = metadata["part_xmls"]
+
+        trans_map: Dict[str, str] = {
+            ts.context: (ts.translation or ts.original_semantic)
+            for ts in translatable_objects
+            if ts.id != "##NEW_ENTRY##" and ts.context and ts.translation
+        }
+
+        patched: Dict[str, bytes] = {}
+        a = self._NS["a"]
+        p_ns = self._NS["p"]
+
+        for part_path, xml_bytes in part_xmls.items():
+            is_notes = "notesSlides" in part_path
+            slide_num_m = re.search(r"(\d+)", Path(part_path).stem)
+            slide_num = int(slide_num_m.group()) if slide_num_m else 0
+            prefix = f"notes{slide_num}" if is_notes else f"slide{slide_num}"
+
+            try:
+                root = ET.fromstring(xml_bytes)
+            except ET.ParseError:
+                continue
+
+            modified = False
+            shape_idx = 0
+
+            for sp in root.iter(f"{{{p_ns}}}sp"):
+                nvsp = sp.find(f"{{{p_ns}}}nvSpPr")
+                ph_type = ""
+                if nvsp is not None:
+                    nvppr = nvsp.find(f"{{{p_ns}}}nvPr")
+                    if nvppr is not None:
+                        ph_elem = nvppr.find(f"{{{p_ns}}}ph")
+                        ph_type = ph_elem.get("type", "") if ph_elem is not None else ""
+                txbody = sp.find(f"{{{p_ns}}}txBody")
+                if txbody is None:
+                    shape_idx += 1
+                    continue
+                para_idx = 0
+                for para in txbody.iter(f"{{{a}}}p"):
+                    context_parts = [prefix, f"shape{shape_idx}", f"p{para_idx}"]
+                    if ph_type:
+                        context_parts.insert(2, ph_type)
+                    context = ".".join(context_parts)
+                    if context in trans_map:
+                        t_elems = list(para.iter(f"{{{a}}}t"))
+                        if t_elems:
+                            t_elems[0].text = trans_map[context]
+                            for t in t_elems[1:]:
+                                t.text = ""
+                            modified = True
+                    para_idx += 1
+                shape_idx += 1
+
+            # 表格
+            table_idx = 0
+            for tbl in root.iter(f"{{{a}}}tbl"):
+                for row_idx, tr in enumerate(tbl.iter(f"{{{a}}}tr")):
+                    for col_idx, tc in enumerate(tr.iter(f"{{{a}}}tc")):
+                        for para in tc.iter(f"{{{a}}}p"):
+                            context = f"{prefix}.tbl{table_idx}.r{row_idx}c{col_idx}"
+                            if context in trans_map:
+                                t_elems = list(para.iter(f"{{{a}}}t"))
+                                if t_elems:
+                                    t_elems[0].text = trans_map[context]
+                                    for t in t_elems[1:]:
+                                        t.text = ""
+                                    modified = True
+                table_idx += 1
+
+            if modified:
+                xml_out = ET.tostring(root, encoding="unicode")
+                patched[part_path] = (
+                    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + xml_out
+                ).encode("utf-8")
+
+        tmp = filepath + ".tmp"
+        try:
+            _ooxml_clone_and_patch(filepath, tmp, patched)
+            os.replace(tmp, filepath)
+        finally:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+
+        logger.info(f"[PptxFormatHandler] Saved {len(trans_map)} items to {filepath}")
+
+    @staticmethod
+    def _detect_language(filepath: str) -> str:
+        stem = os.path.splitext(os.path.basename(filepath))[0]
+        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
+        return m.group(1).replace("-", "_") if m else "en"
+
+
 class OwCodeFormatHandler(BaseFormatHandler):
     """
     守望先锋工坊代码格式处理器
@@ -3262,23 +5617,42 @@ class FormatManager:
         filter_string = f"{prefix} ({all_ext_str});;" + ";;".join(filters) + f";;{_('All Files')} (*.*)"
         return filter_string
 
+# 1. 行业标准翻译与桌面端 UI 格式 (Standard Translation & Desktop)
 FormatManager.register_handler(PoFormatHandler)
 FormatManager.register_handler(TsFormatHandler)
 FormatManager.register_handler(XliffFormatHandler)
 
+# 2. 移动端与跨平台开发生态 (Mobile & Cross-platform)
 FormatManager.register_handler(AndroidStringsFormatHandler)
 FormatManager.register_handler(IosStringsFormatHandler)
+FormatManager.register_handler(XCStringsFormatHandler)
 FormatManager.register_handler(ArbFormatHandler)
 
+# 3. 数据序列化与通用配置格式 (Data Serialization & Configs)
 FormatManager.register_handler(JsonI18nFormatHandler)
 FormatManager.register_handler(YamlI18nFormatHandler)
 FormatManager.register_handler(TomlFormatHandler)
+FormatManager.register_handler(IniFormatHandler)
 
+# 4. 传统桌面、后端与特定语言资源 (Desktop, Backend & Language Specific)
 FormatManager.register_handler(JavaPropertiesFormatHandler)
 FormatManager.register_handler(ResxFormatHandler)
+FormatManager.register_handler(PhpArrayFormatHandler)
+FormatManager.register_handler(RcFormatHandler)
 
+# 5. 表格与批量处理格式 (Tabular & Spreadsheets)
 FormatManager.register_handler(CsvFormatHandler)
 FormatManager.register_handler(XlsxFormatHandler)
 
-FormatManager.register_handler(OwCodeFormatHandler)
+# 6. 多媒体与字幕格式 (Media & Subtitles)
+FormatManager.register_handler(SrtFormatHandler)
+FormatManager.register_handler(VttFormatHandler)
+
+# 7. 网页与富文本办公文档 (Web & Rich Office Documents)
+FormatManager.register_handler(HtmlFormatHandler)
 FormatManager.register_handler(MarkdownFormatHandler)
+FormatManager.register_handler(DocxFormatHandler)
+FormatManager.register_handler(PptxFormatHandler)
+
+# 8. 自定义代码与特殊格式 (Custom Code & Special)
+FormatManager.register_handler(OwCodeFormatHandler)

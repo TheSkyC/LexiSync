@@ -43,7 +43,13 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
 
     msgctxt = entry.msgctxt or ""
     msgid = entry.msgid
-    msgstr = entry.msgstr or ""
+    if entry.msgstr_plural:
+        # 这里简化处理：取第一个复数形式作为译文展示
+        # 更好的做法是把所有复数形式合并显示，或者只支持单数形式的编辑
+        # 对于中文目标语言（只有一种复数形式），取索引 0 是正确的
+        msgstr = entry.msgstr_plural.get(0) or entry.msgstr_plural.get('0') or ""
+    else:
+        msgstr = entry.msgstr or ""
 
     occurrences = [(po_file_rel_path, str(po_line_num))]
 
