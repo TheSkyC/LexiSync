@@ -1,5 +1,6 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
+
 import polib
 import os
 import datetime

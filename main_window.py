@@ -2851,8 +2851,11 @@ class LexiSyncApp(QMainWindow):
                 raw_content=self.original_raw_code_content
             )
             extraction_patterns = self.config.get("extraction_patterns", DEFAULT_EXTRACTION_PATTERNS)
-            self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
-                                                                     extraction_patterns)
+            self.translatable_objects = extract_translatable_strings(
+                self.original_raw_code_content,
+                extraction_patterns,
+                app_instance=self
+            )
             self.plugin_manager.run_hook('on_project_loaded', self.translatable_objects)
             detected_lang = language_service.detect_source_language(
                 [ts.original_semantic for ts in self.translatable_objects])
@@ -5678,8 +5681,11 @@ class LexiSyncApp(QMainWindow):
                 raw_content=current_content_to_reextract
             )
             self.original_raw_code_content = current_content_to_reextract
-            self.translatable_objects = extract_translatable_strings(self.original_raw_code_content,
-                                                                     extraction_patterns)
+            self.translatable_objects = extract_translatable_strings(
+                self.original_raw_code_content,
+                extraction_patterns,
+                app_instance=self
+            )
             restored_count = 0
             for ts_obj in self.translatable_objects:
                 if ts_obj.original_semantic in old_translations_map:

@@ -40,7 +40,7 @@ def unescape_overwatch_string(s):
     return "".join(res)
 
 
-def extract_translatable_strings(code_content, extraction_patterns, source_file_rel_path=""):
+def extract_translatable_strings(code_content, extraction_patterns, source_file_rel_path="", app_instance=None):
     occupied_ranges = []
     strings = []
     full_code_lines = code_content.splitlines()
@@ -118,6 +118,12 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
                 occurrences=[(source_file_rel_path, str(line_num))],
                 occurrence_index=current_index
             )
+            fill_enabled = False
+            if app_instance and hasattr(app_instance, 'config'):
+                fill_enabled = app_instance.config.get("fill_translation_with_source", False)
+            if fill_enabled:
+                ts.set_translation_internal(semantic_content, is_initial=True)
+
             description_from_pattern = pattern_config.get("description", "")
             if description_from_pattern:
                 ts.comment = description_from_pattern

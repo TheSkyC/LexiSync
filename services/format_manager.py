@@ -5558,7 +5558,9 @@ class OwCodeFormatHandler(BaseFormatHandler):
             content = f.read()
         extraction_patterns = kwargs.get('extraction_patterns', [])
         relative_path = kwargs.get('relative_path', os.path.basename(filepath))
-        strings = code_file_service.extract_translatable_strings(content, extraction_patterns, relative_path)
+        strings = code_file_service.extract_translatable_strings(
+            content, extraction_patterns, relative_path, app_instance=app_instance
+        )
         return strings, {'raw_content': content}, 'en'
 
     def save(self, filepath, translatable_objects, metadata, **kwargs):
