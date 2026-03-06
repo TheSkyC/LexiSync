@@ -112,13 +112,22 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
     return None
 
 
-def apply_all_fixes(ts_obj, target_lang):
+def apply_all_fixes(ts_obj, target_lang, plural_index=0):
     """尝试自动修复所有可修复的问题"""
-    # 获取所有警告类型
-    all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos]
+    # 1. 根据索引获取对应的原文和当前译文
+    original_text = ts_obj.original_plural if (ts_obj.is_plural and plural_index > 0) else ts_obj.original_semantic
+    current_translation = ts_obj.plural_translations.get(plural_index, "") if ts_obj.is_plural else ts_obj.translation
 
-    # 按照优先级顺序应用修复（避免冲突）
-    # 顺序：空格 -> 标点 -> 大小写
+    # 2. 获取该索引下的所有警告
+    # 过滤逻辑：只获取属于当前 p_idx 的警告
+    prefix = f"[Form {plural_index}]"
+
+    def is_current_form(msg):
+        return not ts_obj.is_plural or msg.startswith(prefix)
+
+    all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos if is_current_form(w[1])]
+
+    # 3. 优先级顺序
     priority_order = [
         WarningType.LEADING_WHITESPACE_MISMATCH,
         WarningType.TRAILING_WHITESPACE_MISMATCH,
@@ -128,12 +137,10 @@ def apply_all_fixes(ts_obj, target_lang):
         WarningType.CAPITALIZATION_MISMATCH
     ]
 
-    new_text = ts_obj.translation
-
-    # 创建一个临时的 ts_obj 用于链式修复
+    # 4. 创建一个临时的 ts_obj 用于链式修复
     from models.translatable_string import TranslatableString
-    temp_ts = TranslatableString("", ts_obj.original_semantic, 0, 0, 0, [])
-    temp_ts.translation = new_text
+    temp_ts = TranslatableString("", original_text, 0, 0, 0, [])
+    temp_ts.translation = current_translation
 
     fixed_something = False
 

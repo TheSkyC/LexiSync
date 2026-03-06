@@ -317,6 +317,10 @@ class PromptManagerDialog(QDialog):
             {'placeholder': '[Glossary]',
              'description': _('Injects glossary terms found in the original text to enforce specific translations.'),
              'provider': _('Main App')},
+            {'placeholder': '[Plural Context]',
+             'description': _(
+                 'Contextual information about the specific plural form being translated (e.g., category, examples).'),
+             'provider': _('Main App')},
             {'placeholder': '[Untranslated Context]', 'description': _('Nearby untranslated original text.'),
              'provider': _('Main App')},
             {'placeholder': '[Translated Context]', 'description': _('Nearby translated text for context.'),

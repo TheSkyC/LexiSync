@@ -19,7 +19,9 @@ class TranslatableString:
         'comment', 'is_reviewed', 'is_fuzzy', 'po_comment',
         'ui_style_cache', 'context_lines', 'current_line_in_context_idx',
         '_translation_edit_history', '_translation_history_pointer',
-        'sort_weight', '_display_original', '_display_translation'
+        'sort_weight', '_display_original', '_display_translation',
+        'is_plural', 'original_plural', 'plural_translations',
+        'plural_expr'
     ]
 
     def __init__(self, original_raw, original_semantic, line_num, char_pos_start_in_file, char_pos_end_in_file,
@@ -56,6 +58,11 @@ class TranslatableString:
         self.is_reviewed = False
         self.is_fuzzy = False
         self.po_comment = ""
+
+        self.is_plural = False
+        self.original_plural = ""
+        self.plural_translations = {0: ""} # Dict[int, str] 存储所有复数形式
+        self.plural_expr = None
 
         self.ui_style_cache = {}
         context_radius = 5
@@ -111,7 +118,22 @@ class TranslatableString:
         self.sort_weight = 4  # Translated
 
     def update_search_cache(self):
-        self._search_cache = (self.original_semantic + " " + (self.translation or "") + " " + (self.comment or "")).lower()
+        plural_trans_text = ""
+        if self.is_plural:
+            plural_trans_text = " ".join(self.plural_translations.values())
+
+        orig_plural = self.original_plural if self.is_plural else ""
+
+        search_content = [
+            self.original_semantic,
+            orig_plural,
+            self.translation or "",
+            plural_trans_text,
+            self.comment or "",
+            self.string_type or ""
+        ]
+
+        self._search_cache = " ".join(search_content).lower()
 
     @property
     def line_num_in_file(self):
@@ -127,13 +149,25 @@ class TranslatableString:
         except IndexError:
             return ""
 
-    def set_translation_internal(self, text_with_newlines, is_initial=False):
+    @property
+    def singular_index(self) -> int:
+        from utils.plural_utils import get_singular_index_from_expr
+        return get_singular_index_from_expr(self.plural_expr)
+
+    def set_translation_internal(self, text_with_newlines, is_initial=False, plural_index=0):
         """
         设置译文并同步缓存。
         is_initial: 如果为 True，则重置撤销栈，将其设为初始状态。
         """
-        self.translation = text_with_newlines
-        self._display_translation = self.translation.replace('\n', '↵')
+        if self.is_plural:
+            self.plural_translations[plural_index] = text_with_newlines
+            # 默认 translation 始终保持与 index 0 同步，用于列表展示
+            if plural_index == 0:
+                self.translation = text_with_newlines
+                self._display_translation = self.translation.replace('\n', '↵')
+        else:
+            self.translation = text_with_newlines
+            self._display_translation = self.translation.replace('\n', '↵')
 
         if is_initial:
             self._translation_edit_history = [self.translation]
@@ -145,6 +179,7 @@ class TranslatableString:
             if len(self._translation_edit_history) > MAX_UNDO_HISTORY * 2:
                 self._translation_edit_history.pop(0)
             self._translation_history_pointer = len(self._translation_edit_history) - 1
+        self.update_search_cache()
 
     def get_translation_for_ui(self):
         return self.translation
@@ -182,6 +217,9 @@ class TranslatableString:
             'warnings': serializable_warnings,
             'minor_warnings': serializable_minor_warnings,
             'infos': serializable_infos,
+            'is_plural': self.is_plural,
+            'original_plural': self.original_plural,
+            'plural_translations': self.plural_translations
         }
 
     @classmethod
@@ -208,6 +246,12 @@ class TranslatableString:
         ts.is_fuzzy = data.get('is_fuzzy', False)
         ts.po_comment = data.get('po_comment', "")
         ts.is_warning_ignored = data.get('is_warning_ignored', False)
+
+        ts.is_plural = data.get('is_plural', False)
+        ts.original_plural = data.get('original_plural', "")
+        saved_plurals = data.get('plural_translations', {0: data.get('translation', '')})
+        ts.plural_translations = {int(k): v for k, v in saved_plurals.items()}
+
         if 'warnings' in data:
             for wt_name, msg in data['warnings']:
                 try:
@@ -228,6 +272,7 @@ class TranslatableString:
                     ts.infos.append((WarningType[wt_name], msg))
                 except KeyError:
                     pass
+        ts.update_search_cache()
         return ts
 
     def update_style_cache(self, all_strings_map=None):

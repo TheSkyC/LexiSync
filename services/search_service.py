@@ -98,19 +98,24 @@ class SearchService(QObject):
             ts_obj = model.get_ts_object_by_visual_row(row)
             if not ts_obj: continue
 
-            matched = False
-            # Column 2: Original
-            if options.get("in_orig") and pattern.search(ts_obj.original_semantic):
-                self._add_match(row, 2, ts_obj)
-                matched = True
-            # Column 3: Translation
-            if options.get("in_trans") and pattern.search(ts_obj.get_translation_for_ui()):
-                self._add_match(row, 3, ts_obj)
-                matched = True
-            # Column 4: Comment
+            # --- 检查原文列 (Column 2) ---
+            if options.get("in_orig"):
+                if pattern.search(ts_obj.original_semantic) or \
+                   (ts_obj.is_plural and pattern.search(ts_obj.original_plural)):
+                    self._add_match(row, 2, ts_obj)
+
+            # --- 检查译文列 (Column 3) ---
+            if options.get("in_trans"):
+                if ts_obj.is_plural:
+                    if any(pattern.search(v) for v in ts_obj.plural_translations.values()):
+                        self._add_match(row, 3, ts_obj)
+                else:
+                    if pattern.search(ts_obj.get_translation_for_ui()):
+                        self._add_match(row, 3, ts_obj)
+
+            # --- 检查注释列 (Column 4) ---
             if options.get("in_comment") and pattern.search(ts_obj.comment):
                 self._add_match(row, 4, ts_obj)
-                matched = True
 
         self.last_options = current_options_signature
         self.highlights_changed.emit()
@@ -195,12 +200,16 @@ class SearchService(QObject):
         flags = 0 if self.last_options.get("case") else re.IGNORECASE
         pattern = re.compile(re.escape(term), flags)
 
+        p_idx = 0
+        if hasattr(self.app, 'details_panel') and self.app.current_selected_ts_id == ts_obj.id:
+            p_idx = getattr(self.app.details_panel, 'current_plural_index', 0)
+
         success = False
         if col == 3:  # Translation
-            current_text = ts_obj.get_translation_for_ui()
+            current_text = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
             new_text, num = pattern.subn(replace_with, current_text, count=1)
             if num > 0:
-                self.app._apply_translation_to_model(ts_obj, new_text, source="replace_current")
+                self.app._apply_translation_to_model(ts_obj, new_text, source="replace_current", plural_index=p_idx)
                 success = True
         elif col == 4:  # Comment
             current_text = ts_obj.comment
@@ -211,7 +220,6 @@ class SearchService(QObject):
 
         if success:
             self.last_options = {}
-
         return success
 
     def replace_all(self, replace_with):
@@ -233,16 +241,22 @@ class SearchService(QObject):
             ts_obj = res["obj"]
             if ts_obj.id in modified_ids: continue
 
-            current_text = ts_obj.get_translation_for_ui()
-            new_text = pattern.sub(replace_with, current_text)
+            indices = ts_obj.plural_translations.keys() if ts_obj.is_plural else [0]
+            item_modified = False
+            for p_idx in indices:
+                current_text = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
+                new_text, count = pattern.subn(replace_with, current_text)
 
-            if new_text != current_text:
-                old_val = ts_obj.get_translation_for_storage_and_tm()
-                ts_obj.set_translation_internal(new_text)
-                bulk_changes.append({
-                    'string_id': ts_obj.id, 'field': 'translation',
-                    'old_value': old_val, 'new_value': ts_obj.get_translation_for_storage_and_tm()
-                })
+                if count > 0:
+                    old_val = current_text.replace("\n", "\\n")
+                    ts_obj.set_translation_internal(new_text, plural_index=p_idx)
+                    bulk_changes.append({
+                        'string_id': ts_obj.id, 'field': 'translation',
+                        'old_value': old_val, 'new_value': ts_obj.get_translation_for_storage_and_tm(),
+                        'plural_index': p_idx
+                    })
+                    item_modified = True
+            if item_modified:
                 modified_ids.add(ts_obj.id)
 
         # Process Comments

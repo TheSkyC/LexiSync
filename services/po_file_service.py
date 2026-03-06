@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import polib
+import re
 import os
 import datetime
 from pathlib import Path
@@ -14,7 +15,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None, occurrence_index=0):
+def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=None,
+                                    occurrence_index=0,
+                                    nplurals_from_file=None,
+                                    plural_expr_from_file=None):
     # [CRITICAL ARCHITECTURE NOTE]
     # We MUST force the 'occurrences' to point to the PO file itself (e.g., 'source/zh.po'),
     # ignoring the actual occurrences listed inside the PO entry (e.g., '#: main.py:123').
@@ -44,13 +48,23 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
 
     msgctxt = entry.msgctxt or ""
     msgid = entry.msgid
-    if entry.msgstr_plural:
-        # 这里简化处理：取第一个复数形式作为译文展示
-        # 更好的做法是把所有复数形式合并显示，或者只支持单数形式的编辑
-        # 对于中文目标语言（只有一种复数形式），取索引 0 是正确的
-        msgstr = entry.msgstr_plural.get(0) or entry.msgstr_plural.get('0') or ""
+
+    # 复数处理
+    is_plural = bool(entry.msgid_plural)
+    msgid_plural = entry.msgid_plural if is_plural else ""
+
+    plural_translations = {}
+    if is_plural:
+        if entry.msgstr_plural:
+            for key, val in entry.msgstr_plural.items():
+                plural_translations[int(key)] = val
+
+        if nplurals_from_file:
+            for i in range(nplurals_from_file):
+                if i not in plural_translations:
+                    plural_translations[i] = ""
     else:
-        msgstr = entry.msgstr or ""
+        plural_translations[0] = entry.msgstr or ""
 
     occurrences = [(po_file_rel_path, str(po_line_num))]
 
@@ -73,8 +87,17 @@ def po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines=Non
         id=obj_id
     )
 
-    ts.translation = msgstr
-    ts._display_translation = msgstr.replace('\n', '↵')
+    ts.is_plural = is_plural
+    ts.original_plural = msgid_plural
+    ts.plural_translations = plural_translations
+    ts.plural_expr = plural_expr_from_file
+
+    ts.update_search_cache()
+    ts.update_sort_weight()
+
+    # 默认显示 index 0
+    ts.translation = plural_translations.get(0, "")
+    ts._display_translation = ts.translation.replace('\n', '↵')
 
     if msgctxt:
         ts.context = msgctxt
@@ -168,12 +191,33 @@ def extract_to_pot(code_content, extraction_patterns, project_name="Untitled Pro
 def load_from_po(filepath, relative_path=None):
     logger.debug(f"[load_from_po] Starting to load PO file: {filepath}")
     po_file = polib.pofile(filepath, encoding='utf-8', wrapwidth=0)
+
+    nplurals = None
+    plural_expr = None
+    plural_forms_str = None
+
+    for key, value in po_file.metadata.items():
+        if key.strip().lower() == 'plural-forms':
+            plural_forms_str = value
+            break
+
+    if plural_forms_str:
+        # 提取 nplurals
+        nplurals_match = re.search(r'nplurals\s*=\s*(\d+)', plural_forms_str, re.IGNORECASE)
+        if nplurals_match:
+            nplurals = int(nplurals_match.group(1))
+
+        # 提取 plural 表达式（匹配到分号为止）
+        plural_expr_match = re.search(r'plural\s*=\s*([^;]+)', plural_forms_str, re.IGNORECASE)
+        if plural_expr_match:
+            plural_expr = plural_expr_match.group(1).strip()
+
+    logger.debug(f"[load_from_po] nplurals: {nplurals}, plural_expr: {plural_expr}")
+
     translatable_objects =[]
     project_root = _find_project_root(filepath)
     file_content_cache = {}
     path_exists_cache = {}
-
-    occurrence_counters = {}
 
     def cached_is_file(path_str):
         if path_str not in path_exists_cache:
@@ -234,7 +278,12 @@ def load_from_po(filepath, relative_path=None):
             except Exception as e:
                 logger.warning(f"Warning: Could not load context file for entry '{entry.msgid[:20]}...': {e}")
 
-        ts = po_entry_to_translatable_string(entry, po_file_rel_path, full_code_lines, occurrence_index=current_index)
+        ts = po_entry_to_translatable_string(
+            entry, po_file_rel_path, full_code_lines,
+            occurrence_index=current_index,
+            nplurals_from_file=nplurals,
+            plural_expr_from_file=plural_expr
+        )
         if ts:
             translatable_objects.append(ts)
 
@@ -336,15 +385,28 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
 
         translator_comment = "\n".join(user_comment_lines)
 
-        entry = polib.POEntry(
-            msgid=ts_obj.original_semantic,
-            msgstr=ts_obj.translation,
-            msgctxt=ts_obj.context if ts_obj.context else None,
-            tcomment=tcomment_str,
-            comment=translator_comment,
-            occurrences=entry_occurrences,
-            flags=entry_flags
-        )
+        if ts_obj.is_plural:
+            msgstr_plural_dict = {str(k): v for k, v in ts_obj.plural_translations.items()}
+            entry = polib.POEntry(
+                msgid=ts_obj.original_semantic,
+                msgid_plural=ts_obj.original_plural,
+                msgstr_plural=msgstr_plural_dict,
+                msgctxt=ts_obj.context if ts_obj.context else None,
+                tcomment=tcomment_str,
+                comment=translator_comment,
+                occurrences=entry_occurrences,
+                flags=entry_flags
+            )
+        else:
+            entry = polib.POEntry(
+                msgid=ts_obj.original_semantic,
+                msgstr=ts_obj.translation,
+                msgctxt=ts_obj.context if ts_obj.context else None,
+                tcomment=tcomment_str,
+                comment=translator_comment,
+                occurrences=entry_occurrences,
+                flags=entry_flags
+            )
         po_file.append(entry)
 
     try:

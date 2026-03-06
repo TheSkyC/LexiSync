@@ -33,6 +33,8 @@ class AITaskManager(QObject):
         self.active_threads = 0
         self.successful_changes = []
 
+        self.running_workers = {}
+
         self.semaphore = None
         self.context_provider = None
 
@@ -74,6 +76,7 @@ class AITaskManager(QObject):
         if not self.is_running:
             return
         self.is_running = False
+        self.running_workers.clear()
         if self.active_threads == 0:
             self._finalize()
 
@@ -92,9 +95,15 @@ class AITaskManager(QObject):
                 self.semaphore.release()
                 return
 
-            ts_obj = self.queue[self.next_index]
+            item = self.queue[self.next_index]
             self.next_index += 1
             self.active_threads += 1
+
+            if isinstance(item, tuple):
+                ts_obj, p_idx = item
+            else:
+                ts_obj = item
+                p_idx = 0
 
             # Prepare Worker Data
             plugin_placeholders = {}
@@ -105,29 +114,41 @@ class AITaskManager(QObject):
             target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
                                     target_lang_code)
 
+            original_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
+            current_translation = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
+
             worker = AIWorker(
                 self.app,
                 ts_id=ts_obj.id,
                 operation_type=self.operation_type,
-                original_text=ts_obj.original_semantic,
+                original_text=original_text,
                 target_lang=target_lang_name,
                 context_provider=self.context_provider,
                 plugin_placeholders=plugin_placeholders,
-                current_translation=ts_obj.translation,
+                current_translation=current_translation,
+                plural_index=p_idx,
+                is_plural_item=ts_obj.is_plural,
                 **self.worker_kwargs
             )
 
             # Connect Signals
             worker.signals.result.connect(self.item_result)
             worker.signals.result.connect(self._collect_success_for_undo)
-            worker.signals.finished.connect(self._on_worker_finished)
             worker.signals.log_message.connect(self.worker_log)
+
+            worker_id = id(worker)
+            self.running_workers[worker_id] = worker
+
+            worker.signals.finished.connect(lambda _, wid=worker_id: self._on_worker_finished(wid))
             self.thread_pool.start(worker)
 
-    def _on_worker_finished(self):
+    def _on_worker_finished(self, worker_id):
         self.semaphore.release()
         self.active_threads -= 1
         self.completed_count += 1
+
+        if worker_id in self.running_workers:
+            del self.running_workers[worker_id]
 
         self.batch_progress.emit(self.completed_count, self.total_items)
 
@@ -140,18 +161,18 @@ class AITaskManager(QObject):
         elif self.active_threads == 0:
             self._finalize()
 
-    def _collect_success_for_undo(self, ts_id, text, error, op_type):
+    def _collect_success_for_undo(self, ts_id, text, error, op_type, plural_index=0):
         if not error and text:
             pass
 
     def _finalize(self):
+        self.is_running = False
+
         self.batch_finished.emit(
             self.successful_changes,
             self.completed_count,
             self.total_items
         )
-
-        self.is_running = False
 
         # Reset state
         self.queue = []

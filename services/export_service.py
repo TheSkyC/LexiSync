@@ -16,7 +16,7 @@ def export_to_json(filepath, translatable_objects, displayed_ids_order=None, app
         export_obj_list = [obj_map[ts_id] for ts_id in displayed_ids_order if ts_id in obj_map]
     elif app_instance: # Fallback to all if no specific order/filter is provided
         export_obj_list = app_instance.translatable_objects
-    else: # If no app_instance, assume translatable_objects is the full list
+    else:
         export_obj_list = translatable_objects
 
     for ts_obj in export_obj_list:
@@ -29,7 +29,10 @@ def export_to_json(filepath, translatable_objects, displayed_ids_order=None, app
             "is_reviewed": ts_obj.is_reviewed,
             "is_ignored": ts_obj.is_ignored,
             "line_num_in_file": ts_obj.line_num_in_file,
-            "original_raw": ts_obj.original_raw
+            "original_raw": ts_obj.original_raw,
+            "is_plural": ts_obj.is_plural,
+            "original_plural": ts_obj.original_plural,
+            "plural_translations": ts_obj.plural_translations
         })
 
     with open(filepath, 'w', encoding='utf-8') as f:
@@ -45,7 +48,7 @@ def export_to_yaml(filepath, translatable_objects, displayed_ids_order=None, app
         export_obj_list = [obj_map[ts_id] for ts_id in displayed_ids_order if ts_id in obj_map]
     elif app_instance: # Fallback to all if no specific order/filter is provided
         export_obj_list = app_instance.translatable_objects
-    else: # If no app_instance, assume translatable_objects is the full list
+    else:
         export_obj_list = translatable_objects
 
     for ts_obj in export_obj_list:
@@ -58,7 +61,10 @@ def export_to_yaml(filepath, translatable_objects, displayed_ids_order=None, app
             "is_reviewed": ts_obj.is_reviewed,
             "is_ignored": ts_obj.is_ignored,
             "line_num_in_file": ts_obj.line_num_in_file,
-            "original_raw": ts_obj.original_raw
+            "original_raw": ts_obj.original_raw,
+            "is_plural": ts_obj.is_plural,
+            "original_plural": ts_obj.original_plural,
+            "plural_translations": ts_obj.plural_translations
         })
 
     with open(filepath, 'w', encoding='utf-8') as f:

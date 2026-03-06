@@ -11,17 +11,18 @@ from utils.localization import _
 from services.prompt_service import generate_prompt_from_structure
 from services.validation_service import validate_string
 from models.translatable_string import TranslatableString
+from utils.plural_utils import get_plural_form_description
 from utils.constants import DEFAULT_PROMPT_STRUCTURE, SUPPORTED_LANGUAGES, DEFAULT_CORRECTION_PROMPT_STRUCTURE, COT_INJECTION_PROMPT
 
 logger = logging.getLogger(__name__)
 
 
 class AIWorkerSignals(QObject):
-    # ts_id, translated_text, error_message, op_type
-    result = Signal(str, str, str, object)
+    # ts_id, translated_text, error_message, op_type, plural_index
+    result = Signal(str, str, str, object, int)
     # message, level
     log_message = Signal(str, str)
-    finished = Signal()
+    finished = Signal(object)
     stream_chunk = Signal(str)
     final_prompt_ready = Signal(str)
 
@@ -48,13 +49,15 @@ class AIWorker(QRunnable):
         self.api_timeout = kwargs.get('api_timeout', 60)
         self.stream = kwargs.get('stream', False)
         self.current_translation = kwargs.get('current_translation', "")
+        self.plural_index = kwargs.get('plural_index', 0)
+        self.is_plural_item = kwargs.get('is_plural_item', False)
 
     def run(self):
-        app = self.app_ref()
-        if not app: return
-
         try:
-            # Whitespace Preservation
+            app = self.app_ref()
+            if not app: return
+
+            # 预处理原文空白符
             original_full = self.original_text
             match_leading = re.match(r'^(\s*)', original_full)
             match_trailing = re.search(r'(\s*)$', original_full)
@@ -65,14 +68,20 @@ class AIWorker(QRunnable):
             else:
                 text_to_translate_core = original_full
 
+            # 获取外部上下文 (Context Provider)
             if self.context_provider and callable(self.context_provider):
                 try:
-                    generated_context = self.context_provider(self.ts_id)
+                    import inspect
+                    sig = inspect.signature(self.context_provider)
+                    if len(sig.parameters) >= 2:
+                        generated_context = self.context_provider(self.ts_id, self.plural_index)
+                    else:
+                        generated_context = self.context_provider(self.ts_id)
+
                     if generated_context:
                         self.context_dict.update(generated_context)
                 except Exception as e:
                     logger.error(f"Error generating context for {self.ts_id}: {e}", exc_info=True)
-
 
             active_model_id = app.config.get("active_ai_model_id")
             models = app.config.get("ai_models", [])
@@ -81,7 +90,7 @@ class AIWorker(QRunnable):
             enhancements = current_model_config.get("enhancements", [])
             use_cot = "cot_injection" in enhancements
 
-            # --- 1. 准备 Prompt ---
+            # 准备 Prompt 数据
             final_prompt = ""
             text_to_send = ""
 
@@ -92,13 +101,12 @@ class AIWorker(QRunnable):
                 is_fix_mode = self.op_type in [AIOperationType.FIX, AIOperationType.BATCH_FIX]
 
                 if is_fix_mode:
-                    # --- 修复模式 ---
+                    # --- 纠错模式 ---
                     prompts = app.config.get("ai_prompts", [])
                     active_id = app.config.get("active_correction_prompt_id")
                     prompt_data = next((p for p in prompts if p["id"] == active_id), None)
                     prompt_structure = prompt_data["structure"] if prompt_data else DEFAULT_CORRECTION_PROMPT_STRUCTURE
 
-                    # 构建 User Input
                     text_to_send = (
                         f"Original Text:\n{text_to_translate_core}\n\n"
                         f"Current Translation:\n{self.current_translation}\n\n"
@@ -114,7 +122,29 @@ class AIWorker(QRunnable):
                         f"Translate the above text enclosed with <translate_input> into {self.target_lang} without <translate_input>. "
                     )
 
-                # 占位符填充
+                plural_context_str = ""
+                if self.is_plural_item:
+                    ts_obj = None
+                    if app:
+                        ts_obj = app._find_ts_obj_by_id(self.ts_id)
+
+                    nplurals = None
+                    plural_expr = None
+                    if ts_obj:
+                        nplurals = len(ts_obj.plural_translations)
+                        plural_expr = getattr(ts_obj, 'plural_expr', None)
+                    desc = get_plural_form_description(
+                        self.target_lang,
+                        self.plural_index,
+                        num_plurals=nplurals,
+                        plural_expr=plural_expr
+                    )
+                    if desc:
+                        plural_context_str = desc
+                    else:
+                        plural_context_str = f"Plural Form Index: {self.plural_index}"
+
+                # 填充占位符
                 glossary_prompt_part = self._build_glossary_context(app)
                 placeholders = {
                     '[Source Language]': app.source_language,
@@ -125,10 +155,10 @@ class AIWorker(QRunnable):
                     '[Semantic Context]': self.context_dict.get("[Semantic Context]", ""),
                     '[Source Text]': text_to_translate_core,
                     '[Current Translation]': self.current_translation,
-                    '[Error List]': self.context_dict.get("[Error List]", "")
+                    '[Error List]': self.context_dict.get("[Error List]", ""),
+                    '[Plural Context]': plural_context_str
                 }
 
-                # 插件占位符
                 for k, v in self.context_dict.items():
                     if k.startswith('[') and k.endswith(']'):
                         placeholders[k] = v
@@ -151,7 +181,7 @@ class AIWorker(QRunnable):
             logger.info("====================================================")
             # ============================================================
 
-            # --- 2. 执行翻译循环---
+            # 执行翻译循环
             current_attempt = 1
             max_attempts = 1 + self.self_repair_limit
 
@@ -278,15 +308,15 @@ class AIWorker(QRunnable):
                         if match:
                             final_translated_text = match.group(1).strip()
                         else:
-                            # Fallback logic
-                            parts = raw_response.split("</thinking>")
+                            parts = re.split(r'</thinking>', raw_response, flags=re.IGNORECASE)
                             if len(parts) > 1:
-                                final_translated_text = parts[1].strip()
+                                potential_text = parts[1].replace("<translation>", "").strip()
+                                final_translated_text = potential_text
                             else:
-                                final_translated_text = raw_response.strip()
+                                final_translated_text = raw_response.replace("<translation>", "").replace(
+                                    "</translation>", "").strip()
                     else:
-                        final_translated_text = raw_response
-
+                        final_translated_text = raw_response.strip()
                 # 修复首尾空格
                 last_translated_text = final_translated_text
                 final_translated_text = leading_ws + last_translated_text.strip() + trailing_ws
@@ -295,7 +325,7 @@ class AIWorker(QRunnable):
                 if self.op_type in [AIOperationType.FIX, AIOperationType.BATCH_FIX]:
                     break
 
-                # --- 3. 自修复检查 (仅翻译模式) ---
+                # 自修复检查 (仅翻译模式)
                 if current_attempt < max_attempts:
                     temp_ts = TranslatableString("", self.original_text, 0, 0, 0, [])
                     temp_ts.translation = final_translated_text
@@ -324,12 +354,12 @@ class AIWorker(QRunnable):
 
                 break
 
-            self.signals.result.emit(self.ts_id, final_translated_text, None, self.op_type)
+            self.signals.result.emit(self.ts_id, final_translated_text, None, self.op_type, self.plural_index)
 
         except Exception as e:
-            self.signals.result.emit(self.ts_id, None, str(e), self.op_type)
+            self.signals.result.emit(self.ts_id, None, str(e), self.op_type, self.plural_index)
         finally:
-            self.signals.finished.emit()
+            self.signals.finished.emit(self)
 
     def _build_self_repair_prompt(self, app, failed_translation, error_details):
         prompts = app.config.get("ai_prompts", [])

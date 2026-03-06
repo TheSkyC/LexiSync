@@ -148,6 +148,9 @@ class LexiSyncApp(QMainWindow):
         self.is_ai_translating_batch = False
         self.ai_thread_pool = QThreadPool.globalInstance()
         self.ai_batch_successful_translations_for_undo = []
+        self._single_ai_active_count = 0
+
+        self.active_single_workers = {}
 
         # Search and replace
         self.search_service = SearchService(self)
@@ -1681,7 +1684,8 @@ class LexiSyncApp(QMainWindow):
         ai_available = requests is not None
         file_loaded_and_has_strings = bool(self.translatable_objects)
         item_selected = self.current_selected_ts_id is not None
-        can_start_ai_ops = ai_available and file_loaded_and_has_strings and not self.ai_manager.is_running
+        is_any_ai_running = self.ai_manager.is_running or self._single_ai_active_count > 0
+        can_start_ai_ops = ai_available and file_loaded_and_has_strings and not is_any_ai_running
 
         self.action_ai_translate_selected.setEnabled(can_start_ai_ops and item_selected)
         self.action_ai_translate_all_untranslated.setEnabled(can_start_ai_ops)
@@ -1691,7 +1695,7 @@ class LexiSyncApp(QMainWindow):
 
         self.details_panel.ai_translate_current_btn.setEnabled(can_start_ai_ops and item_selected)
 
-        if self.ai_manager.is_running:
+        if is_any_ai_running:
             self.progress_bar.setVisible(True)
         else:
             self.progress_bar.setVisible(False)
@@ -1888,7 +1892,7 @@ class LexiSyncApp(QMainWindow):
 
     def _do_undo_core(self):
         if not self.undo_history:
-            return False, set()
+            return False, set(), None
 
         action_log_peek = self.undo_history[-1]
         target_file_id = action_log_peek.get('file_id')
@@ -1903,7 +1907,7 @@ class LexiSyncApp(QMainWindow):
             action_data=action_to_undo['data']
         )
         if was_handled_by_plugin:
-            return False, set()
+            return False, set(), None
 
         action_log = self.undo_history.pop()
         action_type, action_data = action_log['type'], action_log['data']
@@ -1914,17 +1918,26 @@ class LexiSyncApp(QMainWindow):
             obj_id = action_data['string_id']
             field = action_data['field']
             val_to_restore = action_data['old_value']
+            p_idx = action_data.get('plural_index', 0)
 
             ts_obj = self._find_ts_obj_by_id(obj_id)
             if ts_obj:
                 current_val_before_undo = getattr(ts_obj,
                                                   field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
                 if field == 'translation':
-                    ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"))
+                    current_val_before_undo = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.get_translation_for_storage_and_tm()
+                    ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"), plural_index=p_idx)
                 else:
+                    current_val_before_undo = getattr(ts_obj, field)
                     setattr(ts_obj, field, val_to_restore)
-                redo_payload_data = {'string_id': obj_id, 'field': field, 'old_value': val_to_restore,
-                                     'new_value': current_val_before_undo}
+
+                redo_payload_data = {
+                    'string_id': obj_id,
+                    'field': field,
+                    'old_value': val_to_restore,
+                    'new_value': current_val_before_undo,
+                    'plural_index': p_idx
+                }
                 changed_ids.add(obj_id)
 
         elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu',
@@ -1932,16 +1945,23 @@ class LexiSyncApp(QMainWindow):
             temp_redo_changes = []
             for item_change in action_data['changes']:
                 obj_id, field, val_to_restore = item_change['string_id'], item_change['field'], item_change['old_value']
+                p_idx = item_change.get('plural_index', 0)
                 ts_obj = self._find_ts_obj_by_id(obj_id)
                 if ts_obj:
-                    current_val_before_undo = getattr(ts_obj,
-                                                      field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
                     if field == 'translation':
-                        ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"))
+                        current_val_before_undo = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.get_translation_for_storage_and_tm()
+                        ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"), plural_index=p_idx)
                     else:
+                        current_val_before_undo = getattr(ts_obj, field)
                         setattr(ts_obj, field, val_to_restore)
-                    temp_redo_changes.append({'string_id': obj_id, 'field': field, 'old_value': val_to_restore,
-                                              'new_value': current_val_before_undo})
+
+                    temp_redo_changes.append({
+                        'string_id': obj_id,
+                        'field': field,
+                        'old_value': val_to_restore,
+                        'new_value': current_val_before_undo,
+                        'plural_index': p_idx
+                    })
                     changed_ids.add(obj_id)
             redo_payload_data = {'changes': temp_redo_changes}
 
@@ -1960,7 +1980,7 @@ class LexiSyncApp(QMainWindow):
 
     def _do_redo_core(self):
         if not self.redo_history:
-            return False, set()
+            return False, set(), None
 
         action_log_peek = self.redo_history[-1]
         target_file_id = action_log_peek.get('file_id')
@@ -1975,7 +1995,7 @@ class LexiSyncApp(QMainWindow):
             action_data=action_to_redo['data']
         )
         if was_handled_by_plugin:
-            return False, set()
+            return False, set(), None
 
         action_log = self.redo_history.pop()
         action_type, action_data_to_apply = action_log['type'], action_log['data']
@@ -1986,34 +2006,50 @@ class LexiSyncApp(QMainWindow):
             obj_id = action_data_to_apply['string_id']
             field = action_data_to_apply['field']
             val_to_set = action_data_to_apply['new_value']
+            p_idx = action_data_to_apply.get('plural_index', 0)
 
             ts_obj = self._find_ts_obj_by_id(obj_id)
             if ts_obj:
                 current_val_before_redo = getattr(ts_obj,
                                                   field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
                 if field == 'translation':
-                    ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"))
+                    current_val_before_redo = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.get_translation_for_storage_and_tm()
+                    ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"), plural_index=p_idx)
                 else:
+                    current_val_before_redo = getattr(ts_obj, field)
                     setattr(ts_obj, field, val_to_set)
-                undo_payload_data = {'string_id': obj_id, 'field': field, 'old_value': current_val_before_redo,
-                                     'new_value': val_to_set}
+                undo_payload_data = {'string_id': obj_id,
+                                     'field': field,
+                                     'old_value': current_val_before_redo,
+                                     'new_value': val_to_set,
+                                     'plural_index': p_idx
+                                     }
                 changed_ids.add(obj_id)
 
         elif action_type in ['bulk_change', 'bulk_excel_import', 'bulk_ai_translate', 'bulk_context_menu',
                              'bulk_replace_all']:
             temp_undo_changes = []
             for item_change in action_data_to_apply['changes']:
-                obj_id, field, val_to_set = item_change['string_id'], item_change['field'], item_change['new_value']
+                obj_id = item_change['string_id']
+                field = item_change['field']
+                val_to_set = item_change['new_value']
+                p_idx = item_change.get('plural_index', 0)
+
                 ts_obj = self._find_ts_obj_by_id(obj_id)
                 if ts_obj:
-                    current_val_before_redo = getattr(ts_obj,
-                                                      field) if field != 'translation' else ts_obj.get_translation_for_storage_and_tm()
                     if field == 'translation':
-                        ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"))
+                        current_val_before_redo = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.get_translation_for_storage_and_tm()
+                        ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"),
+                                                        plural_index=p_idx)
                     else:
+                        current_val_before_redo = getattr(ts_obj, field)
                         setattr(ts_obj, field, val_to_set)
-                    temp_undo_changes.append({'string_id': obj_id, 'field': field, 'old_value': current_val_before_redo,
-                                              'new_value': val_to_set})
+                    temp_undo_changes.append({'string_id': obj_id,
+                                              'field': field,
+                                              'old_value': current_val_before_redo,
+                                              'new_value': val_to_set,
+                                              'plural_index': p_idx
+                    })
                     changed_ids.add(obj_id)
             undo_payload_data = {'changes': temp_undo_changes}
 
@@ -2615,8 +2651,11 @@ class LexiSyncApp(QMainWindow):
         self.update_counts_display()
 
     def _switch_active_file(self, file_id: str):
-        if not self.is_project_mode:
-            return
+        self.current_selected_ts_id = None
+        self.current_focused_ts_id = None
+        if self.table_view.selectionModel():
+            self.table_view.selectionModel().clearSelection()
+        self.clear_details_pane()
 
         active_file_info = next((f for f in self.project_config['source_files'] if f['id'] == file_id), None)
         if not active_file_info:
@@ -3444,7 +3483,13 @@ class LexiSyncApp(QMainWindow):
             for new_id, new_obj in new_map_by_id.items():
                 if new_id in old_map_by_id:
                     old_obj = old_map_by_id[new_id]
-                    new_obj.set_translation_internal(old_obj.translation)
+                    if old_obj.is_plural:
+                        new_obj.is_plural = True
+                        new_obj.original_plural = old_obj.original_plural
+                        new_obj.plural_translations = old_obj.plural_translations.copy()
+                        new_obj.translation = old_obj.translation
+                    else:
+                        new_obj.set_translation_internal(old_obj.translation)
                     new_obj.comment = old_obj.comment
                     new_obj.is_reviewed = old_obj.is_reviewed
                     new_obj.is_ignored = old_obj.is_ignored
@@ -4254,19 +4299,12 @@ class LexiSyncApp(QMainWindow):
                 self.update_statusbar(_("Glossary matches updated."), persistent=False)
 
     def clear_details_pane(self):
-        # 清空 DetailsPanel
-        self.details_panel.original_text_display.setPlainText("")
-        self.details_panel.translation_edit_text.setPlainText("")
-        self.details_panel.update_stats_labels(None, None)
-        self.details_panel.apply_btn.setEnabled(False)
-        self.details_panel.ai_translate_current_btn.setEnabled(False)
+        self.details_panel.reset_ui()
 
-        # 清空 CommentStatusPanel
         self.comment_status_panel.comment_edit_text.setPlainText("")
         self.comment_status_panel.apply_comment_btn.setEnabled(False)
 
-        # 清空其他面板
-        self.context_panel.set_context([])
+        self.context_panel.context_text_display.clear() # 修正：直接用 clear() 更彻底
         self.tm_panel.update_tm_suggestions(exact_match=None, fuzzy_matches=[])
         self.tm_panel.update_selected_tm_btn.setEnabled(False)
         self.tm_panel.clear_selected_tm_btn.setEnabled(False)
@@ -4301,10 +4339,14 @@ class LexiSyncApp(QMainWindow):
         for ts_obj in self.translatable_objects:
             if ts_obj.is_ignored: continue
 
-            fixed_text = fix_service.apply_all_fixes(ts_obj, target_lang)
-            if fixed_text and fixed_text != ts_obj.translation:
-                fixable_count += 1
-                preview_changes.append((ts_obj, fixed_text))
+            indices = ts_obj.plural_translations.keys() if ts_obj.is_plural else [0]
+            for p_idx in indices:
+                current_trans = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
+                fixed_text = fix_service.apply_all_fixes(ts_obj, target_lang, plural_index=p_idx)
+
+                if fixed_text and fixed_text != current_trans:
+                    fixable_count += 1
+                    preview_changes.append((ts_obj, p_idx, current_trans, fixed_text))
 
         if fixable_count == 0:
             QMessageBox.information(self, _("Auto Fix"), _("No auto-fixable issues found."))
@@ -4334,10 +4376,9 @@ class LexiSyncApp(QMainWindow):
 
             # 记录 Undo
             bulk_changes_for_undo.append({
-                'string_id': ts_obj.id,
-                'field': 'translation',
-                'old_value': old_val,
-                'new_value': ts_obj.get_translation_for_storage_and_tm()
+                'string_id': ts_obj.id, 'field': 'translation',
+                'old_value': old_val, 'new_value': new_text.replace("\n", "\\n"),
+                'plural_index': p_idx
             })
             ids_to_update.add(ts_obj.id)
 
@@ -4355,10 +4396,8 @@ class LexiSyncApp(QMainWindow):
             self.add_to_undo_history('bulk_change', {'changes': bulk_changes_for_undo})
             self.mark_modified()
             self._update_view_for_ids(ids_to_update)
-
             if self.current_selected_ts_id in ids_to_update:
                 self.force_refresh_ui_for_current_selection()
-
             self.update_statusbar(_("Auto-fixed {count} items.").format(count=len(bulk_changes_for_undo)))
 
     def ai_fix_all_issues(self):
@@ -4427,22 +4466,26 @@ class LexiSyncApp(QMainWindow):
         preview_changes = []
         for ts_obj in self.translatable_objects:
             if ts_obj.is_ignored or ts_obj.is_warning_ignored: continue
-            fixed_text = fix_service.apply_all_fixes(ts_obj, target_lang)
-            if fixed_text and fixed_text != ts_obj.translation:
-                preview_changes.append((ts_obj, fixed_text))
 
-        if not preview_changes:
-            return 0
+            indices = ts_obj.plural_translations.keys() if ts_obj.is_plural else [0]
+            for p_idx in indices:
+                current_trans = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
+                fixed_text = fix_service.apply_all_fixes(ts_obj, target_lang, plural_index=p_idx)
+                if fixed_text and fixed_text != current_trans:
+                    preview_changes.append((ts_obj, p_idx, current_trans, fixed_text))
+
+        if not preview_changes: return 0
 
         bulk_changes_for_undo = []
         ids_to_update = set()
 
-        for ts_obj, new_text in preview_changes:
-            old_val = ts_obj.get_translation_for_storage_and_tm()
-            ts_obj.set_translation_internal(new_text)
+        for ts_obj, p_idx, old_text, new_text in preview_changes:
+            old_val = old_text.replace("\n", "\\n")
+            ts_obj.set_translation_internal(new_text, plural_index=p_idx)
             bulk_changes_for_undo.append({
                 'string_id': ts_obj.id, 'field': 'translation',
-                'old_value': old_val, 'new_value': ts_obj.get_translation_for_storage_and_tm()
+                'old_value': old_val, 'new_value': new_text.replace("\n", "\\n"),
+                'plural_index': p_idx
             })
             ids_to_update.add(ts_obj.id)
 
@@ -4459,32 +4502,47 @@ class LexiSyncApp(QMainWindow):
             QMessageBox.warning(self, _("Operation Restricted"), _("An AI task is already in progress."))
             return
 
+        self.is_ai_translating_batch = True
+        self.ai_batch_total_items = len(items_to_fix)
+        self.ai_batch_completed_count = 0
         self.ai_batch_successful_translations_for_undo = []
 
-        def context_provider(ts_id):
+        tasks_to_fix = []
+        for ts in items_to_fix:
+            indices = ts.plural_translations.keys() if ts.is_plural else [0]
+            for p_idx in indices:
+                tasks_to_fix.append((ts, p_idx))
+
+        def context_provider(ts_id, p_idx=0):
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if not ts_obj: return {}
+
+            plural_context_str = ""
+            if ts_obj.is_plural:
+                from utils.plural_utils import get_plural_form_description
+                plural_context_str = get_plural_form_description(
+                    self.current_target_language,
+                    p_idx,
+                    num_plurals=len(ts_obj.plural_translations),
+                    plural_expr=getattr(ts_obj, 'plural_expr', None)
+                )
 
             errors = [f"- {w[1]}" for w in ts_obj.warnings + ts_obj.minor_warnings]
             error_list_str = "\n".join(errors)
 
             return {
                 '[Error List]': error_list_str,
+                '[Plural Context]': plural_context_str, # 注入
                 '[Glossary]': self._build_glossary_context(ts_obj),
-                'current_translation': ts_obj.translation
+                'current_translation': ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
             }
 
         self.ai_manager.start_batch(
-            items_to_fix,
+            tasks_to_fix,
             context_provider,
             operation_type=AIOperationType.BATCH_FIX
         )
-
-        self.ai_manager.start_batch(
-            items_to_fix,
-            context_provider,
-            operation_type=AIOperationType.FIX
-        )
+        self.update_ai_related_ui_state()
 
     def _build_glossary_context(self, ts_obj):
         if ts_obj.id in self.glossary_analysis_cache:
@@ -4499,6 +4557,18 @@ class LexiSyncApp(QMainWindow):
         ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
         if not ts_obj: return
 
+        current_p_idx = getattr(self.details_panel, 'current_plural_index', 0)
+
+        plural_context_str = ""
+        if ts_obj.is_plural:
+            from utils.plural_utils import get_plural_form_description
+            plural_context_str = get_plural_form_description(
+                self.current_target_language,
+                current_p_idx,
+                num_plurals=len(ts_obj.plural_translations),
+                plural_expr=getattr(ts_obj, 'plural_expr', None)
+            )
+
         # 获取纠错提示词结构
         prompts = self.config.get("ai_prompts", [])
         active_id = self.config.get("active_correction_prompt_id")
@@ -4512,10 +4582,17 @@ class LexiSyncApp(QMainWindow):
 
         # 收集错误信息
         errors = []
-        for wt, msg in ts_obj.warnings: errors.append(f"- Error: {msg}")
-        for wt, msg in ts_obj.minor_warnings: errors.append(f"- Warning: {msg}")
-        for wt, msg in ts_obj.infos: errors.append(f"- Info: {msg}")
+        prefix = f"[Form {current_p_idx}]" if ts_obj.is_plural else ""
 
+        for wt, msg in ts_obj.warnings:
+            if not ts_obj.is_plural or msg.startswith(prefix):
+                errors.append(f"- Error: {msg}")
+        for wt, msg in ts_obj.minor_warnings:
+            if not ts_obj.is_plural or msg.startswith(prefix):
+                errors.append(f"- Warning: {msg}")
+        for wt, msg in ts_obj.infos:
+            if not ts_obj.is_plural or msg.startswith(prefix):
+                errors.append(f"- Info: {msg}")
 
         error_list_str = "\n".join(errors)
         if not error_list_str:
@@ -4541,26 +4618,43 @@ class LexiSyncApp(QMainWindow):
         target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
                                 target_lang_code)
 
+        source_text_to_fix = ts_obj.original_semantic if current_p_idx == 0 else ts_obj.original_plural
+        current_trans_to_fix = ts_obj.plural_translations.get(current_p_idx, "") if ts_obj.is_plural else ts_obj.translation
+
         placeholders = {
             '[Target Language]': target_lang_name,
-            '[Source Text]': ts_obj.original_semantic,
-            '[Translation]': ts_obj.translation,
-            '[Current Translation]': ts_obj.translation,
+            '[Source Text]': source_text_to_fix,
+            '[Current Translation]': current_trans_to_fix,
             '[Error List]': error_list_str,
-            '[Glossary]': glossary_text
+            '[Glossary]': glossary_text,
+            '[Plural Context]': plural_context_str
         }
 
         final_prompt = generate_prompt_from_structure(structure, placeholders)
         self.update_statusbar(_("AI is fixing the translation..."), persistent=True)
 
+        self._single_ai_active_count += 1
+        self.update_ai_related_ui_state()
+
         worker = AIWorker(
             self,
             ts_id=ts_obj.id,
             operation_type=AIOperationType.FIX,
-            original_text=ts_obj.original_semantic,
-            system_prompt=final_prompt
+            original_text=source_text_to_fix,
+            system_prompt=final_prompt,
+            plural_index=current_p_idx,
+            is_plural_item=ts_obj.is_plural
         )
+
+        task_key = f"fix_{ts_obj.id}_{current_p_idx}"
+        self.active_single_workers[task_key] = worker
+
+        self._single_ai_active_count += 1
+        self.update_ai_related_ui_state()
+
         worker.signals.result.connect(self._handle_ai_translation_result)
+        worker.signals.finished.connect(lambda w: self._on_single_ai_task_finished(task_key))
+
         self.ai_thread_pool.start(worker)
 
     def cm_set_warning_ignored_status(self, ignore_flag):
@@ -4662,7 +4756,7 @@ class LexiSyncApp(QMainWindow):
             self._update_toggle_labels_style(ts_obj)
 
     def _apply_translation_to_model(self, ts_obj, new_translation_from_ui, source="manual",
-                                    force_propagation_mode=None, collect_changes=None):
+                                    force_propagation_mode=None, collect_changes=None, plural_index=0):
         """
         collect_changes: 如果传入一个 list，则将变更记录存入该 list 而不直接 add_to_undo_history
         """
@@ -4674,9 +4768,11 @@ class LexiSyncApp(QMainWindow):
             source=source
         )
 
-        trigger_old_translation_internal = ts_obj.translation
+        if ts_obj.is_plural:
+            trigger_old_translation_internal = ts_obj.plural_translations.get(plural_index, "")
+        else:
+            trigger_old_translation_internal = ts_obj.translation
 
-        # 如果新旧内容一样，则不执行任何操作
         if processed_translation == trigger_old_translation_internal:
             return processed_translation, False
 
@@ -4693,12 +4789,13 @@ class LexiSyncApp(QMainWindow):
             ts_obj.is_fuzzy = False
             is_fuzzy_changed = True
 
-        old_translation_for_undo = ts_obj.get_translation_for_storage_and_tm()
+        old_translation_for_undo = trigger_old_translation_internal.replace("\n", "\\n")
         ids_to_update = {ts_obj.id}
         all_changes_for_undo_list = []
 
-        ts_obj.set_translation_internal(processed_translation)
+        ts_obj.set_translation_internal(processed_translation, plural_index=plural_index)
         ts_obj.update_search_cache()
+
         self.plugin_manager.run_hook(
             'on_string_saved',
             ts_object=ts_obj,
@@ -4709,7 +4806,8 @@ class LexiSyncApp(QMainWindow):
         new_translation_for_tm_storage = ts_obj.get_translation_for_storage_and_tm()
         primary_change_data = {
             'string_id': ts_obj.id, 'field': 'translation',
-            'old_value': old_translation_for_undo, 'new_value': new_translation_for_tm_storage
+            'old_value': old_translation_for_undo, 'new_value': new_translation_for_tm_storage,
+            'plural_index': plural_index
         }
         all_changes_for_undo_list.append(primary_change_data)
 
@@ -4720,7 +4818,7 @@ class LexiSyncApp(QMainWindow):
             })
 
         # 更新 TM
-        if new_translation_from_ui.strip():
+        if new_translation_from_ui.strip() and plural_index == 0:
             db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
             source_lang = self.source_language
             target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
@@ -4731,10 +4829,9 @@ class LexiSyncApp(QMainWindow):
                     ts_obj.get_translation_for_storage_and_tm(),
                     source_lang, target_lang
                 )
-        propagation_mode = force_propagation_mode if force_propagation_mode is not None else self.config.get(
-            'translation_propagation_mode', 'smart')
+        propagation_mode = force_propagation_mode if force_propagation_mode is not None else self.config.get('translation_propagation_mode', 'smart')
 
-        if propagation_mode != 'single':
+        if propagation_mode != 'single' and not ts_obj.is_plural:
             for other_ts_obj in self.translatable_objects:
                 if other_ts_obj.id == ts_obj.id:
                     continue
@@ -4781,8 +4878,7 @@ class LexiSyncApp(QMainWindow):
             collect_changes.extend(all_changes_for_undo_list)
         else:
             undo_action_type = 'bulk_change' if len(all_changes_for_undo_list) > 1 else 'single_change'
-            undo_data_payload = {'changes': all_changes_for_undo_list} if len(
-                all_changes_for_undo_list) > 1 else primary_change_data
+            undo_data_payload = {'changes': all_changes_for_undo_list} if len(all_changes_for_undo_list) > 1 else primary_change_data
 
             if source not in ["ai_batch_item"]:
                 if source == "ai_translation":
@@ -4834,7 +4930,10 @@ class LexiSyncApp(QMainWindow):
         if not ts_obj: return
 
         new_translation_ui = self.details_panel.translation_edit_text.toPlainText()
-        final_text, changed = self._apply_translation_to_model(ts_obj, new_translation_ui, source="manual_button")
+        current_idx = getattr(self.details_panel, 'current_plural_index', 0)
+
+        final_text, changed = self._apply_translation_to_model(ts_obj, new_translation_ui, source="manual_button",
+                                                               plural_index=current_idx)
         if changed:
             self.details_panel.translation_edit_text.blockSignals(True)
             self.details_panel.translation_edit_text.setPlainText(final_text)
@@ -4847,8 +4946,14 @@ class LexiSyncApp(QMainWindow):
         if not ts_obj: return
 
         new_translation_ui = self.details_panel.translation_edit_text.toPlainText()
-        if new_translation_ui != ts_obj.get_translation_for_ui():
-            final_text, changed = self._apply_translation_to_model(ts_obj, new_translation_ui, source="manual_focus_out")
+        current_idx = getattr(self.details_panel, 'current_plural_index', 0)
+
+        old_val = ts_obj.plural_translations.get(current_idx,
+                                                 "") if ts_obj.is_plural else ts_obj.get_translation_for_ui()
+
+        if new_translation_ui != old_val:
+            final_text, changed = self._apply_translation_to_model(ts_obj, new_translation_ui,
+                                                                   source="manual_focus_out", plural_index=current_idx)
             if changed:
                 self.details_panel.translation_edit_text.blockSignals(True)
                 self.details_panel.translation_edit_text.setPlainText(final_text)
@@ -5486,7 +5591,10 @@ class LexiSyncApp(QMainWindow):
                 new_ts.context = ts.context
                 new_ts.comment = ts.comment
                 new_ts.po_comment = ts.po_comment
-                # Translation is left empty for POT
+                new_ts.is_plural = ts.is_plural
+                new_ts.original_plural = ts.original_plural
+                new_ts.plural_translations = {k: "" for k in ts.plural_translations.keys()}
+                new_ts.plural_expr = ts.plural_expr
                 pot_objects.append(new_ts)
 
             # Generate Metadata
@@ -5575,6 +5683,9 @@ class LexiSyncApp(QMainWindow):
             self.undo_history.clear()
             self.redo_history.clear()
             self.mark_modified(False)
+
+            self._single_ai_active_count = 0
+            self.is_ai_translating_batch = False
 
             self._update_file_explorer(filepath)
             self.current_file_path = filepath
@@ -5681,13 +5792,13 @@ class LexiSyncApp(QMainWindow):
                 raw_content=current_content_to_reextract
             )
             self.original_raw_code_content = current_content_to_reextract
-            self.translatable_objects = extract_translatable_strings(
+            new_strings = extract_translatable_strings(
                 self.original_raw_code_content,
                 extraction_patterns,
                 app_instance=self
             )
             restored_count = 0
-            for ts_obj in self.translatable_objects:
+            for ts_obj in new_strings:
                 if ts_obj.original_semantic in old_translations_map:
                     saved_state = old_translations_map[ts_obj.original_semantic]
                     ts_obj.set_translation_internal(saved_state['translation'])
@@ -5698,23 +5809,20 @@ class LexiSyncApp(QMainWindow):
                         ts_obj.was_auto_ignored = False
                     restored_count += 1
 
-            if restored_count > 0:
-                self.update_statusbar(
-                    _("Attempted to restore {count} old translations/statuses.").format(count=restored_count),
-                    persistent=False)
+            self.translatable_objects = new_strings
+            self._run_and_refresh_with_validation()
 
-            self.apply_tm_to_all_current_strings(silent=True, only_if_empty=True, record_history=False)
-
+            # 重置状态
             self.undo_history.clear()
             self.redo_history.clear()
             self.current_selected_ts_id = None
             self.mark_modified(True)
 
-            self.refresh_sheet()
             self.update_statusbar(
-                _("Reloaded {count} strings from {source} using new rules.").format(
-                    count=len(self.translatable_objects), source=source_name),
+                _("Reloaded {count} strings. Restored {restored} translations.").format(
+                    count=len(self.translatable_objects), restored=restored_count),
                 persistent=True)
+
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
 
         except Exception as e:
@@ -5950,17 +6058,17 @@ class LexiSyncApp(QMainWindow):
         if not ts_obj: return
 
         current_translation_ui = self.details_panel.translation_edit_text.toPlainText()
+        p_idx = getattr(self.details_panel, 'current_plural_index', 0)
+
+        source_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
 
         db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
-        source_lang = self.source_language
-        target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
-
         self.tm_service.update_tm_entry(
             db_path_to_use,
-            ts_obj.original_semantic,
+            source_text,
             current_translation_ui.replace("\n", "\\n"),
-            source_lang,
-            target_lang
+            self.source_language,
+            self.current_target_language
         )
 
         self.update_statusbar(
@@ -6006,12 +6114,11 @@ class LexiSyncApp(QMainWindow):
 
     def apply_tm_suggestion_from_listbox(self, translation_text_ui):
         self.details_panel.translation_edit_text.setPlainText(translation_text_ui)
-
         if self.current_selected_ts_id:
             ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
             if ts_obj:
-                self._apply_translation_to_model(ts_obj, translation_text_ui, source="tm_suggestion")
-
+                p_idx = getattr(self.details_panel, 'current_plural_index', 0)
+                self._apply_translation_to_model(ts_obj, translation_text_ui, source="tm_suggestion", plural_index=p_idx)
         self.update_statusbar(_("TM suggestion applied."))
 
     def apply_tm_to_all_current_strings(self, silent=False, only_if_empty=False, confirm=False, record_history=True):
@@ -6023,64 +6130,74 @@ class LexiSyncApp(QMainWindow):
             reply = QMessageBox.question(self, _("Confirm Operation"),
                                          _("This will apply TM to all matching strings, overwriting existing translations. Continue?"),
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.No:
-                return 0
+            if reply == QMessageBox.No: return 0
 
         # 1. Collect all source texts that need a lookup
         texts_to_query = []
         for ts_obj in self.translatable_objects:
             if ts_obj.is_ignored: continue
-            if only_if_empty and ts_obj.translation.strip() != "": continue
-            texts_to_query.append(ts_obj.original_semantic)
+
+            indices = ts_obj.plural_translations.keys() if ts_obj.is_plural else [0]
+            for p_idx in indices:
+                current_trans = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
+                if only_if_empty and current_trans.strip() != "": continue
+
+                source_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
+                if source_text:
+                    texts_to_query.append(source_text)
 
         if not texts_to_query:
-            if not silent:
-                QMessageBox.information(self, _("Info"), _("No applicable strings to check against TM."))
+            if not silent: QMessageBox.information(self, _("Info"), _("No applicable strings to check against TM."))
             return 0
 
         # 2. Perform a single batch query
         source_lang = self.source_language
         target_lang = self.current_target_language if self.is_project_mode else self.current_target_language
-
         tm_results = self.tm_service.get_translations_batch(texts_to_query, source_lang, target_lang)
 
         if not tm_results:
-            if not silent:
-                QMessageBox.information(self, _("TM"), _("No applicable translations found in TM."))
+            if not silent: QMessageBox.information(self, _("TM"), _("No applicable translations found in TM."))
             return 0
 
-        # 3. Apply results from the in-memory dictionary
+        # 3. Apply results
         applied_count = 0
         bulk_changes_for_undo = []
         ids_to_update = set()
 
         for ts_obj in self.translatable_objects:
-            if ts_obj.original_semantic in tm_results:
-                if only_if_empty and ts_obj.translation.strip() != "": continue
+            if ts_obj.is_ignored: continue
 
-                translation_from_tm = tm_results[ts_obj.original_semantic]
-                tm_translation_ui = translation_from_tm.replace("\\n", "\n")
+            indices = ts_obj.plural_translations.keys() if ts_obj.is_plural else [0]
+            for p_idx in indices:
+                source_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
 
-                if ts_obj.translation != tm_translation_ui:
-                    old_val = ts_obj.get_translation_for_storage_and_tm()
-                    ts_obj.set_translation_internal(tm_translation_ui)
+                if source_text in tm_results:
+                    current_trans = ts_obj.plural_translations.get(p_idx,
+                                                                   "") if ts_obj.is_plural else ts_obj.translation
+                    if only_if_empty and current_trans.strip() != "": continue
 
-                    # Record translation change
-                    bulk_changes_for_undo.append({
-                        'string_id': ts_obj.id, 'field': 'translation',
-                        'old_value': old_val, 'new_value': translation_from_tm
-                    })
+                    translation_from_tm = tm_results[source_text]
+                    tm_translation_ui = translation_from_tm.replace("\\n", "\n")
 
-                    # Clear Fuzzy status if present
-                    if ts_obj.is_fuzzy:
-                        ts_obj.is_fuzzy = False
+                    if current_trans != tm_translation_ui:
+                        old_val = current_trans.replace("\n", "\\n")
+                        ts_obj.set_translation_internal(tm_translation_ui, plural_index=p_idx)
+
                         bulk_changes_for_undo.append({
-                            'string_id': ts_obj.id, 'field': 'is_fuzzy',
-                            'old_value': True, 'new_value': False
+                            'string_id': ts_obj.id, 'field': 'translation',
+                            'old_value': old_val, 'new_value': translation_from_tm,
+                            'plural_index': p_idx
                         })
 
-                    ids_to_update.add(ts_obj.id)
-                    applied_count += 1
+                        if ts_obj.is_fuzzy:
+                            ts_obj.is_fuzzy = False
+                            bulk_changes_for_undo.append({
+                                'string_id': ts_obj.id, 'field': 'is_fuzzy',
+                                'old_value': True, 'new_value': False
+                            })
+
+                        ids_to_update.add(ts_obj.id)
+                        applied_count += 1
 
         # 4. Finalize UI updates and undo history
         if applied_count > 0:
@@ -6198,7 +6315,8 @@ class LexiSyncApp(QMainWindow):
 
             formatted_content = self._format_pasted_text(clipboard_content, ts_obj.original_semantic)
             self.details_panel.translation_edit_text.setPlainText(formatted_content)
-            self._apply_translation_to_model(ts_obj, formatted_content, source="manual_paste")
+            p_idx = getattr(self.details_panel, 'current_plural_index', 0)
+            self._apply_translation_to_model(ts_obj, formatted_content, source="manual_paste", plural_index=p_idx)
             self.update_statusbar(_("Clipboard content pasted to translation."))
         else:
             self.update_statusbar(_("Paste failed: Clipboard content is not text."))
@@ -6500,12 +6618,12 @@ class LexiSyncApp(QMainWindow):
     def _get_semantic_context(self, ts_id, limit=5, mode="auto"):
         # 获取语义检索上下文
         try:
-            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+            ts_obj = self._find_ts_obj_by_id(ts_id)
             if not ts_obj:
                 return ""
 
             # 调用插件进行检索
-            results = self.app.plugin_manager.run_hook(
+            results = self.plugin_manager.run_hook(
                 'retrieve_context',
                 ts_obj.original_semantic,
                 limit=limit,
@@ -6534,14 +6652,15 @@ class LexiSyncApp(QMainWindow):
 
     def _fetch_tm_context(self, source_text, limit: int = 3, mode: str = "fuzzy", threshold: float = 0.75):
         try:
-            source_lang = self.app.source_language
-            target_lang = self.app.current_target_language
+            source_lang = self.source_language
+            target_lang = self.current_target_language
 
             lines = []
 
             if mode == "exact":
                 # Exact Match
-                exact_match = self.app.tm_service.get_translation(source_text, source_lang, target_lang)
+                exact_match = (self
+                               .tm_service.get_translation(source_text, source_lang, target_lang))
                 if exact_match:
                     lines = ["TM Matches (Exact):"]
                     tgt = exact_match.replace('\n', ' ')
@@ -6549,7 +6668,7 @@ class LexiSyncApp(QMainWindow):
                     lines.append(f"- [100%] {tgt}")
             else:
                 # Fuzzy Match
-                matches = self.app.tm_service.get_fuzzy_matches(
+                matches = self.tm_service.get_fuzzy_matches(
                     source_text, source_lang, target_lang, limit=limit, threshold=threshold
                 )
                 if matches:
@@ -6599,20 +6718,29 @@ class LexiSyncApp(QMainWindow):
         if not ts_id_to_translate:
             return False
 
+        current_p_idx = 0
+        if self.current_selected_ts_id == ts_id_to_translate and hasattr(self, 'details_panel'):
+            current_p_idx = getattr(self.details_panel, 'current_plural_index', 0)
         ts_obj = self._find_ts_obj_by_id(ts_id_to_translate)
         if not ts_obj: return False
+
         if hasattr(self, 'plugin_manager'):
             objects_to_process = self.plugin_manager.run_hook(
                 'process_ai_translate_list',
                 [ts_obj]
             )
             if not objects_to_process or objects_to_process[0].id != ts_obj.id:
-                self.update_statusbar(_("AI translation for '{text}...' was skipped by a plugin.").format(text=ts_obj.original_semantic[:20]))
+                self.update_statusbar(_("AI translation for '{text}...' was skipped by a plugin.").format(
+                    text=ts_obj.original_semantic[:20]))
                 return False
+
         if not called_from_cm and self.current_selected_ts_id == ts_id_to_translate:
             current_editor_text = self.details_panel.translation_edit_text.toPlainText()
-            if current_editor_text != ts_obj.get_translation_for_ui():
-                self._apply_translation_to_model(ts_obj, current_editor_text, source="pre_single_ai_save")
+            old_text = ts_obj.plural_translations.get(current_p_idx,
+                                                      "") if ts_obj.is_plural else ts_obj.get_translation_for_ui()
+            if current_editor_text != old_text:
+                self._apply_translation_to_model(ts_obj, current_editor_text, source="pre_single_ai_save",
+                                                 plural_index=current_p_idx)
 
         if ts_obj.is_ignored:
             if not called_from_cm:
@@ -6620,7 +6748,8 @@ class LexiSyncApp(QMainWindow):
                                         _("The selected string is marked as ignored and will not be AI translated."))
             return False
 
-        if ts_obj.translation.strip():
+        current_trans = ts_obj.plural_translations.get(current_p_idx, "") if ts_obj.is_plural else ts_obj.translation
+        if current_trans.strip():
             if called_from_cm and len(self._get_selected_ts_objects_from_sheet()) > 1:
                 return False
 
@@ -6649,9 +6778,20 @@ class LexiSyncApp(QMainWindow):
             original_text=ts_obj.original_semantic,
             target_lang=target_lang_name,
             context_dict=context_dict,
-            plugin_placeholders=plugin_placeholders
+            plugin_placeholders=plugin_placeholders,
+            plural_index=current_p_idx,
+            is_plural_item=ts_obj.is_plural
         )
+
+        task_key = f"single_{ts_id_to_translate}_{current_p_idx}"
+        self.active_single_workers[task_key] = worker
+
+        self._single_ai_active_count += 1
+        self.update_ai_related_ui_state()
+
         worker.signals.result.connect(self._handle_ai_translation_result)
+        worker.signals.finished.connect(lambda w: self._on_single_ai_task_finished(task_key))
+
         self.ai_thread_pool.start(worker)
         return True
 
@@ -6812,9 +6952,7 @@ class LexiSyncApp(QMainWindow):
         if not self.current_selected_ts_id:
             self.update_statusbar(_("Please select an item to AI translate."))
             return
-        ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
-        if ts_obj:
-            self._start_ai_batch_translation([ts_obj])
+        self._initiate_single_ai_translation(self.current_selected_ts_id, called_from_cm=False)
 
     def ai_translate_all_untranslated(self):
         untranslated_objs = [
@@ -6833,38 +6971,43 @@ class LexiSyncApp(QMainWindow):
         if self.ai_manager.is_running:
             QMessageBox.warning(self, _("Operation Restricted"), _("AI batch translation is already in progress."))
             return
+
         if hasattr(self, 'plugin_manager'):
-            items_to_translate = self.plugin_manager.run_hook(
-                'process_ai_translate_list',
-                items_to_translate
-            )
-        untranslated_items = []
-        already_translated_items = []
+            items_to_translate = self.plugin_manager.run_hook('process_ai_translate_list', items_to_translate)
+
+        untranslated_tasks = []
+        already_translated_tasks = []
 
         for ts in items_to_translate:
-            if not ts.is_ignored:
-                if ts.translation.strip():
-                    already_translated_items.append(ts)
-                else:
-                    untranslated_items.append(ts)
-        items_to_process_after_confirmation = list(untranslated_items)
+            if ts.is_ignored: continue
 
-        if already_translated_items:
-            if len(items_to_translate) == 1:
+            indices = ts.plural_translations.keys() if ts.is_plural else [0]
+            for p_idx in indices:
+                current_trans = ts.plural_translations.get(p_idx, "") if ts.is_plural else ts.translation
+                task = (ts, p_idx)
+                if current_trans.strip():
+                    already_translated_tasks.append(task)
+                else:
+                    untranslated_tasks.append(task)
+
+        tasks_to_process = list(untranslated_tasks)
+
+        if already_translated_tasks:
+            if len(items_to_translate) == 1 and len(already_translated_tasks) == len(indices):
                 ts_obj = items_to_translate[0]
                 reply = QMessageBox.question(self, _("Overwrite Confirmation"),
                                              _("String \"{text}...\" already has a translation. Overwrite with AI translation?").format(
                                                  text=ts_obj.original_semantic[:50]),
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
-                    items_to_process_after_confirmation.extend(already_translated_items)
+                    tasks_to_process.extend(already_translated_tasks)
                 else:
                     return
             else:
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle(_("Overwrite Confirmation"))
                 msg_box.setText(
-                    _("{count} item(s) already have translations.").format(count=len(already_translated_items)))
+                    _("{count} sub-item(s) already have translations.").format(count=len(already_translated_tasks)))
                 msg_box.setInformativeText(_("Do you want to overwrite them, skip them, or cancel the operation?"))
                 overwrite_btn = msg_box.addButton(_("Overwrite All"), QMessageBox.YesRole)
                 skip_btn = msg_box.addButton(_("Skip Translated"), QMessageBox.NoRole)
@@ -6872,22 +7015,24 @@ class LexiSyncApp(QMainWindow):
                 msg_box.exec()
 
                 if msg_box.clickedButton() == overwrite_btn:
-                    items_to_process_after_confirmation.extend(already_translated_items)
+                    tasks_to_process.extend(already_translated_tasks)
                 elif msg_box.clickedButton() == cancel_btn:
                     return
 
-        # Prepare unique items
-        unique_originals_to_translate = {}
-        for ts in items_to_process_after_confirmation:
-            if ts.original_semantic not in unique_originals_to_translate:
-                unique_originals_to_translate[ts.original_semantic] = ts
+        unique_tasks = {}
+        for ts, p_idx in tasks_to_process:
+            source_text = ts.original_semantic if p_idx == 0 else ts.original_plural
+            if not source_text: continue
 
-        items_queue = list(unique_originals_to_translate.values())
+            if source_text not in unique_tasks:
+                unique_tasks[source_text] = (ts, p_idx)
+
+        items_queue = list(unique_tasks.values())
         if not items_queue:
             QMessageBox.information(self, _("AI Translation"), _("No items to process."))
             return
 
-        self.ai_batch_total_items = len(self.ai_translation_batch_ids_queue)
+        self.ai_batch_total_items = len(items_queue)
         api_interval_ms = self.config.get('ai_api_interval', 100)
         max_concurrency = self.config.get('ai_max_concurrent_requests', 1)
         avg_api_time_estimate_s = 3.0
@@ -6896,8 +7041,8 @@ class LexiSyncApp(QMainWindow):
             estimated_time_s = self.ai_batch_total_items * (avg_api_time_estimate_s + api_interval_ms / 1000.0)
         else:
             estimated_time_s = (self.ai_batch_total_items / max_concurrency) * avg_api_time_estimate_s + \
-                               (self.ai_batch_total_items / max_concurrency) * (
-                                       api_interval_ms / 1000.0)
+                               (self.ai_batch_total_items / max_concurrency) * (api_interval_ms / 1000.0)
+
         if self.ai_batch_total_items > 50:
             reply = QMessageBox.question(self, _("Confirm Batch Translation"),
                                          _("You are about to AI translate {count} unique strings.\n"
@@ -6908,6 +7053,7 @@ class LexiSyncApp(QMainWindow):
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
                 return
+
         self.is_ai_translating_batch = True
         self.ai_batch_completed_count = 0
         self.ai_batch_successful_translations_for_undo = []
@@ -6924,13 +7070,13 @@ class LexiSyncApp(QMainWindow):
         self.ai_batch_successful_translations_for_undo = []
         self.ai_manager.start_batch(items_queue, self._generate_universal_context)
 
-    def _handle_ai_translation_result(self, ts_id, translated_text, error_message, op_type):
+    def _handle_ai_translation_result(self, ts_id, translated_text, error_message, op_type, plural_index=0):
         """
         Central handler for all AI results.
         """
         trigger_ts_obj = self._find_ts_obj_by_id(ts_id)
 
-        if op_type == AIOperationType.BATCH_TRANSLATION:
+        if op_type in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX]:
             if hasattr(self, 'ai_batch_completed_count'):
                 self.ai_batch_completed_count += 1
                 self._update_batch_progress_ui()
@@ -6945,10 +7091,19 @@ class LexiSyncApp(QMainWindow):
 
         # 2. Handle Success
         if translated_text and translated_text.strip():
-            self._apply_ai_result_to_model(trigger_ts_obj, translated_text, op_type)
+            self._apply_ai_result_to_model(trigger_ts_obj, translated_text, op_type, plural_index)
         else:
             if op_type != AIOperationType.BATCH_TRANSLATION:
                 self.update_statusbar(_("AI operation returned no result."), persistent=False)
+
+    def _on_single_ai_task_finished(self, task_key):
+        self._single_ai_active_count = max(0, self._single_ai_active_count - 1)
+
+        if task_key in self.active_single_workers:
+            del self.active_single_workers[task_key]
+
+        self.update_ai_related_ui_state()
+
 
     def _on_ai_batch_started(self, total_items):
         self.progress_bar.setValue(0)
@@ -6972,8 +7127,17 @@ class LexiSyncApp(QMainWindow):
         self.progress_bar.setVisible(False)
 
         if self.ai_batch_successful_translations_for_undo:
-            self.add_to_undo_history('bulk_ai_translate',
-                                     {'changes': self.ai_batch_successful_translations_for_undo})
+            is_fix = self.ai_manager.operation_type == AIOperationType.BATCH_FIX
+            action_type = 'bulk_change'
+            desc = _("AI Fix ({count} items)").format(
+                count=len(self.ai_batch_successful_translations_for_undo)) if is_fix \
+                else _("AI Translation ({count} items)").format(
+                count=len(self.ai_batch_successful_translations_for_undo))
+
+            self.add_to_undo_history(action_type,
+                                     {'changes': self.ai_batch_successful_translations_for_undo},
+                                     description=desc,
+                                     icon_type="feather.svg")
             self.mark_modified()
 
         success_count = len(self.ai_batch_successful_translations_for_undo)
@@ -7001,8 +7165,7 @@ class LexiSyncApp(QMainWindow):
         if op_type != AIOperationType.BATCH_TRANSLATION:
             QMessageBox.critical(self, _("AI Operation Error"), error_display)
 
-    def _apply_ai_result_to_model(self, trigger_ts_obj, raw_text, op_type):
-        # Plugin Hook
+    def _apply_ai_result_to_model(self, trigger_ts_obj, raw_text, op_type, plural_index=0):
         if hasattr(self, 'plugin_manager'):
             processed_text = self.plugin_manager.run_hook(
                 'process_ai_translated_text', raw_text, ts_object=trigger_ts_obj
@@ -7023,7 +7186,8 @@ class LexiSyncApp(QMainWindow):
             trigger_ts_obj,
             processed_text,
             source="ai_translation",
-            collect_changes=collector
+            collect_changes=collector,
+            plural_index=plural_index
         )
 
     def _find_items_to_propagate(self, trigger_obj, mode):
@@ -7147,6 +7311,7 @@ class LexiSyncApp(QMainWindow):
         self.details_panel.translation_edit_text.blockSignals(True)
         try:
             self.details_panel.original_text_display.setPlainText(ts_obj.original_semantic)
+            self.details_panel.update_ui_for_ts(ts_obj)
             self.details_panel.translation_edit_text.setPlainText(ts_obj.get_translation_for_ui())
             self.details_panel.translation_edit_text.reference_length = len(ts_obj.original_semantic)
             self.details_panel.update_context_badge(ts_obj)
@@ -7271,18 +7436,28 @@ class LexiSyncApp(QMainWindow):
         for ts_obj in selected_objs:
             if ts_obj.is_ignored: continue
 
-            translation_from_tm = self.tm_service.get_translation(
-                ts_obj.original_semantic, source_lang, target_lang
-            )
+            indices = ts_obj.plural_translations.keys() if ts_obj.is_plural else [0]
+            for p_idx in indices:
+                # index 0 使用单数原文，index > 0 使用复数原文
+                source_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
+                if not source_text: continue
 
-            if translation_from_tm:
-                tm_translation_ui = translation_from_tm.replace("\\n", "\n")
-                if ts_obj.translation != tm_translation_ui:
-                    old_val = ts_obj.get_translation_for_storage_and_tm()
-                    ts_obj.set_translation_internal(tm_translation_ui)
-                    bulk_changes.append({'string_id': ts_obj.id, 'field': 'translation', 'old_value': old_val,
-                                         'new_value': translation_from_tm})
-                    applied_count += 1
+                translation_from_tm = self.tm_service.get_translation(source_text, source_lang, target_lang)
+
+                if translation_from_tm:
+                    tm_translation_ui = translation_from_tm.replace("\\n", "\n")
+                    current_trans = ts_obj.plural_translations.get(p_idx,
+                                                                   "") if ts_obj.is_plural else ts_obj.translation
+
+                    if current_trans != tm_translation_ui:
+                        old_val = current_trans.replace("\n", "\\n")
+                        ts_obj.set_translation_internal(tm_translation_ui, plural_index=p_idx)
+                        bulk_changes.append({
+                            'string_id': ts_obj.id, 'field': 'translation',
+                            'old_value': old_val, 'new_value': translation_from_tm,
+                            'plural_index': p_idx
+                        })
+                        applied_count += 1
 
         if bulk_changes:
             self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
@@ -7323,25 +7498,30 @@ class LexiSyncApp(QMainWindow):
         cleared_ids = set()
 
         for ts_obj in selected_objs:
-            if ts_obj.translation != "":
-                old_val = ts_obj.get_translation_for_storage_and_tm()
-                ts_obj.set_translation_internal("")
-                bulk_changes.append({
-                    'string_id': ts_obj.id,
-                    'field': 'translation',
-                    'old_value': old_val,
-                    'new_value': ""
-                })
-                cleared_ids.add(ts_obj.id)
+            indices = ts_obj.plural_translations.keys() if ts_obj.is_plural else [0]
+
+            for p_idx in indices:
+                current_val = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
+                if current_val != "":
+                    old_val = current_val.replace("\n", "\\n")
+                    ts_obj.set_translation_internal("", plural_index=p_idx)
+                    bulk_changes.append({
+                        'string_id': ts_obj.id,
+                        'field': 'translation',
+                        'old_value': old_val,
+                        'new_value': "",
+                        'plural_index': p_idx
+                    })
+                    cleared_ids.add(ts_obj.id)
 
         if not bulk_changes:
             self.update_statusbar(_("Translations for selected items are already empty, no clearing needed."))
             return
+
         self.add_to_undo_history('bulk_context_menu', {'changes': bulk_changes})
         self.mark_modified()
         if self.current_selected_ts_id in cleared_ids:
-            self.details_panel.translation_edit_text.setPlainText("")
-            self.details_panel.translation_edit_text.document().setModified(False)
+            self.force_refresh_ui_for_current_selection()
         self._run_and_refresh_with_validation()
         self.update_statusbar(_("Cleared {count} translations.").format(count=len(bulk_changes)))
 
@@ -7390,8 +7570,13 @@ class LexiSyncApp(QMainWindow):
             for new_obj in new_strings:
                 if new_obj.original_semantic in old_map:
                     old_obj = old_map[new_obj.original_semantic]
-
-                    new_obj.set_translation_internal(old_obj.translation)
+                    if old_obj.is_plural:
+                        new_obj.is_plural = True
+                        new_obj.original_plural = old_obj.original_plural
+                        new_obj.plural_translations = old_obj.plural_translations.copy()
+                        new_obj.translation = old_obj.translation
+                    else:
+                        new_obj.set_translation_internal(old_obj.translation)
                     new_obj.comment = old_obj.comment
                     new_obj.po_comment = old_obj.po_comment
                     new_obj.is_fuzzy = old_obj.is_fuzzy

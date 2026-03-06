@@ -239,7 +239,7 @@ class TestTranslationDialog(QDialog):
             target_lang=target_lang,
             context_dict=context_dict,
             temperature=self.temp_spin.value(),
-            stream=True
+            stream=True,
         )
 
         self._current_worker.signals.result.connect(self.on_result)

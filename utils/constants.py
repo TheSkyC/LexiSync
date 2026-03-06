@@ -117,6 +117,12 @@ DEFAULT_CORRECTION_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
+        "content": "### Pluralization Context\n[Plural Context]"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": "Dynamic Instruction",
+        "enabled": True,
         "content": "Source Text:\n[Source Text]"
     },
     {
@@ -182,6 +188,12 @@ DEFAULT_PROMPT_STRUCTURE = [
         "type": DYNAMIC,
         "enabled": True,
         "content": "### Terminology Glossary\n[Glossary]"
+    },
+    {
+        "id": str(uuid.uuid4()),
+        "type": DYNAMIC,
+        "enabled": True,
+        "content": "### Pluralization Context\n[Plural Context]\n(If this section is present, you are translating a specific plural form. Ensure the translation matches the grammatical number category described.)"
     },
     {
         "id": str(uuid.uuid4()),

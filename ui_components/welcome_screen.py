@@ -634,8 +634,6 @@ class WelcomeScreen(QWidget):
             from main_window import LexiSyncApp
             from utils.path_utils import get_plugin_libs_path
             import sys
-            import logging
-            logger = logging.getLogger(__name__)
 
             self.set_status(_("Setting up plugin environment..."), "loading")
             QApplication.processEvents()
@@ -661,7 +659,8 @@ class WelcomeScreen(QWidget):
                 self.execute_main_window_action(action, path)
 
         except Exception as e:
-            logger.error(f"Failed to prewarm main window: {e}")
+            import logging
+            logging.getLogger(__name__).error(f"Failed to prewarm main window: {e}")
             QMessageBox.critical(self, "Error", f"Failed to initialize the main application:\n{str(e)}")
             self.set_status(_("Initialization Failed!"), "error")
         finally:

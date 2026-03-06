@@ -93,7 +93,8 @@ class ReviewController(QObject):
             target_lang=target_lang_name,
             context_dict=context_dict,
             temperature=self.config_snapshot.get("temperature", 0.3),
-            stream=False
+            stream=False,
+            is_plural_item=ts_obj.is_plural,
         )
 
         worker.signals.result.connect(self._on_worker_result)
@@ -416,6 +417,9 @@ class InteractiveReviewDialog(QDialog):
 
         # 创建临时对象进行验证
         temp_ts = TranslatableString("", self.current_ts.original_semantic, 0, 0, 0, [])
+        temp_ts.is_plural = self.current_ts.is_plural
+        temp_ts.original_plural = self.current_ts.original_plural
+        temp_ts.plural_translations = {0: text}
         temp_ts.translation = text
 
         validate_string(temp_ts, self.app.config, self.app)
@@ -473,9 +477,8 @@ class InteractiveReviewDialog(QDialog):
             QApplication.alert(self)  # 闪烁任务栏
 
     def accept_current(self):
-        """接受当前翻译"""
         text = self.editor.toPlainText()
-        self.app._apply_translation_to_model(self.current_ts, text, source="interactive_review")
+        self.app._apply_translation_to_model(self.current_ts, text, source="interactive_review", plural_index=0)
         self.current_ts.is_reviewed = True
         self._next()
 

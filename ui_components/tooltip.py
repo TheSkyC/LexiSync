@@ -123,6 +123,12 @@ class Tooltip(QLabel):
         if not self.isVisible() or self._is_fading_out:
             return
 
+        if not QApplication.activeWindow():
+            super().hide()
+            self.setWindowOpacity(0.0)
+            self._is_fading_out = False
+            return
+
         self._is_fading_out = True
         self.opacity_anim.stop()
         self.opacity_anim.setDuration(150)

@@ -16,6 +16,8 @@ from .newline_text_edit import NewlineTextEdit
 from .elided_label import ElidedLabel
 from .syntax_highlighter import TranslationHighlighter
 from .styled_button import StyledButton
+from .plural_editor_bar import PluralEditorBar
+from utils.plural_utils import get_plural_info
 from utils.localization import _
 
 
@@ -53,6 +55,33 @@ class DetailsPanel(QWidget):
         self.original_label = QLabel(_("Original:"))
         self.original_label.setObjectName("original_label")
         self.original_label.setMinimumHeight(18)
+
+        self.plural_toggle_btn = QPushButton(_("Singular"))
+        self.plural_toggle_btn.setCursor(Qt.PointingHandCursor)
+        self.plural_toggle_btn.setCheckable(True)  # Checked = Plural, Unchecked = Singular
+        self.plural_toggle_btn.setVisible(False)
+        self.plural_toggle_btn.setMinimumWidth(65)
+        self.plural_toggle_btn.setFixedHeight(18)
+        self.plural_toggle_btn.clicked.connect(self._toggle_original_plural_view)
+
+        self.plural_toggle_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #E0E0E0;
+                color: #444444;
+                border: none;
+                border-radius: 9px; /* 圆角 */
+                font-size: 10px;
+                font-weight: bold;
+                margin-left: 5px;
+            }
+            QPushButton:hover {
+                background-color: #D0D0D0;
+            }
+            QPushButton:checked {
+                background-color: #409EFF; /* 选中(Plural)时变蓝 */
+                color: white;
+            }
+        """)
 
         # Context Badge
         self.context_badge = QLabel(self)
@@ -93,6 +122,7 @@ class DetailsPanel(QWidget):
         self.char_count_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
         original_header_layout.addWidget(self.original_label)
+        original_header_layout.addWidget(self.plural_toggle_btn)
         original_header_layout.addWidget(self.context_badge)
         original_header_layout.addWidget(self.format_badge)
         original_header_layout.addStretch()
@@ -151,7 +181,6 @@ class DetailsPanel(QWidget):
 
         self.warning_text_label = ElidedLabel()
         self.warning_text_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.warning_text_label.installEventFilter(self)
 
         self.ignore_warning_btn = QPushButton(_("Ignore"))
         self.ignore_warning_btn.setCursor(Qt.PointingHandCursor)
@@ -229,12 +258,26 @@ class DetailsPanel(QWidget):
         translation_header_layout.addWidget(self.ratio_label)
         translation_layout.addLayout(translation_header_layout)
 
+        # 译文编辑框容器
+        editor_container = QWidget()
+        editor_layout = QVBoxLayout(editor_container)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor_layout.setSpacing(0)
+
         self.translation_edit_text = NewlineTextEdit()
         self.translation_edit_text.setLineWrapMode(NewlineTextEdit.WidgetWidth)
         self.translation_edit_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.translation_edit_text.textChanged.connect(self.translation_text_changed_signal.emit)
         self.translation_edit_text.focusOutEvent = self._translation_focus_out_event
-        translation_layout.addWidget(self.translation_edit_text)
+
+        self.plural_bar = PluralEditorBar(self.translation_edit_text)
+        self.plural_bar.hide()
+        self.plural_bar.index_changed.connect(self._on_plural_index_changed)
+        self.plural_bar.mode_toggled.connect(self._on_plural_mode_toggled)
+        self.current_plural_index = 0
+
+        editor_layout.addWidget(self.translation_edit_text)
+        translation_layout.addWidget(editor_container)
 
         splitter.addWidget(original_container)
         splitter.addWidget(translation_container)
@@ -296,6 +339,8 @@ class DetailsPanel(QWidget):
         self.highlighter = TranslationHighlighter(self.translation_edit_text.document())
 
         self.tooltip = Tooltip(self)
+        self.warning_text_label.installEventFilter(self)
+        self.plural_toggle_btn.installEventFilter(self)
         self._ui_initialized = True
 
         self.original_text_display.add_to_glossary_requested.connect(lambda: self.app_instance.add_glossary_entry(from_editor=True))
@@ -345,13 +390,141 @@ class DetailsPanel(QWidget):
                 tooltip_html = "".join(tooltip_parts)
                 self.tooltip.show_tooltip(QCursor.pos(), tooltip_html)
                 return True
+            elif event.type() == QEvent.Leave:
+                self.tooltip.hide()
+                return True
+            elif event.type() == QEvent.MouseButtonPress:
+                self.tooltip.hide()
+        elif obj == self.plural_toggle_btn:
+            if event.type() == QEvent.Enter:
+                if not self.current_ts_obj or not self.current_ts_obj.is_plural:
+                    return super().eventFilter(obj, event)
+
+                # 如果当前按钮是 Checked (显示复数)，则 Tooltip 显示单数原文
+                # 如果当前按钮是 Unchecked (显示单数)，则 Tooltip 显示复数原文
+                is_showing_plural = self.plural_toggle_btn.isChecked()
+
+                if is_showing_plural:
+                    title = _("Singular Form")
+                    content = self.current_ts_obj.original_semantic
+                    color = "#FAFAFA"  # 白色标题
+                else:
+                    title = _("Plural Form")
+                    content = self.current_ts_obj.original_plural
+                    color = "#409EFF"  # 蓝色标题
+
+                if not content: content = f"<i>{_('Empty')}</i>"
+
+                preview_text = content.replace("\n", "<br>")
+                if len(preview_text) > 300:
+                    preview_text = preview_text[:300] + "..."
+
+                tooltip_html = (
+                    f"<b style='color:{color}; font-size:12px;'>{title}</b>"
+                    f"<hr style='border-color: #666; margin: 4px 0;'>"
+                    f"<div style='color:#FFF; font-family:Consolas;'>{preview_text}</div>"
+                )
+
+                self.tooltip.show_tooltip(QCursor.pos(), tooltip_html, delay=200)
+                return True
 
             elif event.type() == QEvent.Leave:
                 self.tooltip.hide()
+                return True
             elif event.type() == QEvent.MouseButtonPress:
                 self.tooltip.hide()
 
         return super().eventFilter(obj, event)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self.plural_bar.isVisible():
+            self.plural_bar.setGeometry(0, 0, self.translation_edit_text.width(), 32)
+
+    def _on_plural_mode_toggled(self, is_compact):
+        if self.app_instance:
+            self.app_instance.config['plural_bar_compact'] = is_compact
+
+    def _on_plural_index_changed(self, new_index):
+        if not self.current_ts_obj: return
+
+        # 1. 保存当前框内的文本到旧索引
+        current_text = self.translation_edit_text.toPlainText()
+        old_text = self.current_ts_obj.plural_translations.get(self.current_plural_index, "")
+
+        if current_text != old_text:
+            self.app_instance._apply_translation_to_model(
+                self.current_ts_obj,
+                current_text,
+                source="manual_tab_switch",
+                plural_index=self.current_plural_index
+            )
+
+        # 2. 切换索引
+        self.current_plural_index = new_index
+
+        # 3. 加载新索引的文本到编辑框
+        new_text = self.current_ts_obj.plural_translations.get(new_index, "")
+        self.translation_edit_text.blockSignals(True)
+        self.translation_edit_text.setPlainText(new_text)
+        self.translation_edit_text.blockSignals(False)
+
+        # 4. 触发验证更新 UI
+        self.update_warnings(self.current_ts_obj)
+
+        # 5. 切换原文复数显示
+        is_singular_tab = (new_index == self.current_ts_obj.singular_index)
+        self.plural_toggle_btn.setChecked(not is_singular_tab)
+        self._toggle_original_plural_view(not is_singular_tab)
+
+    def _toggle_original_plural_view(self, checked):
+        if not self.current_ts_obj: return
+        if checked:
+            self.plural_toggle_btn.setText(_("Plural"))
+            self.original_text_display.setPlainText(self.current_ts_obj.original_plural)
+        else:
+            self.plural_toggle_btn.setText(_("Singular"))
+            self.original_text_display.setPlainText(self.current_ts_obj.original_semantic)
+
+    def update_ui_for_ts(self, ts_obj):
+        self.current_ts_obj = ts_obj
+        self.current_plural_index = 0  # 依然默认从第一个 Tab 开始
+
+        if ts_obj.is_plural:
+            self.plural_toggle_btn.setVisible(True)
+
+            is_index_0_singular = (0 == ts_obj.singular_index)
+
+            self.plural_toggle_btn.setChecked(not is_index_0_singular)
+
+            if is_index_0_singular:
+                self.plural_toggle_btn.setText(_("Singular"))
+                self.original_text_display.setPlainText(ts_obj.original_semantic)
+            else:
+                self.plural_toggle_btn.setText(_("Plural"))
+                self.original_text_display.setPlainText(ts_obj.original_plural)
+
+            # 配置复数仪表盘
+            target_lang = self.app_instance.current_target_language
+            plural_expr_from_ts = getattr(ts_obj, 'plural_expr', None)
+            num_plurals = len(ts_obj.plural_translations)
+
+            plural_info = get_plural_info(target_lang, num_plurals, plural_expr_from_ts)
+            saved_mode = self.app_instance.config.get('plural_bar_compact', False)
+            self.plural_bar.setup_plurals(plural_info, saved_mode)
+            self.plural_bar.show()
+
+            self.translation_edit_text.setViewportMargins(0, 32, 0, 0)
+            self.plural_bar.setGeometry(0, 0, self.translation_edit_text.width(), 32)
+            self.translation_edit_text.setPlainText(ts_obj.plural_translations.get(0, ""))
+        else:
+            self.plural_toggle_btn.setVisible(False)
+            self.original_label.setText(_("Original:"))
+            self.plural_bar.hide()
+            self.translation_edit_text.setViewportMargins(0, 0, 0, 0)
+
+            self.original_text_display.setPlainText(ts_obj.original_semantic)
+            self.translation_edit_text.setPlainText(ts_obj.get_translation_for_ui())
 
     def set_fuzzy_controls_visible(self, visible: bool):
         if hasattr(self, 'fuzzy_container'):
@@ -406,23 +579,35 @@ class DetailsPanel(QWidget):
 
     def update_warnings(self, ts_obj):
         self.current_ts_obj = ts_obj
-        if not ts_obj:
+        if not ts_obj or ts_obj.is_warning_ignored:
             self.warning_banner.hide()
             return
 
-        active_msg = None
-        style_type = "none"  # error, warning, info
+        prefix = f"[Form {self.current_plural_index}]"
 
-        # Error > Warning > Info
-        if ts_obj.warnings and not ts_obj.is_warning_ignored:
-            active_msg = ts_obj.warnings[0][1]
+        active_msg = None
+        style_type = "none"
+
+        def get_current_warning(warning_list):
+            for wt, msg in warning_list:
+                if not ts_obj.is_plural or msg.startswith(prefix):
+                    return wt, msg
+            return None, None
+
+        w_type, msg = get_current_warning(ts_obj.warnings)
+        if w_type:
+            active_msg = msg
             style_type = "error"
-        elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
-            active_msg = ts_obj.minor_warnings[0][1]
-            style_type = "warning"
-        elif ts_obj.infos and not ts_obj.is_warning_ignored:
-            active_msg = ts_obj.infos[0][1]
-            style_type = "info"
+        else:
+            w_type, msg = get_current_warning(ts_obj.minor_warnings)
+            if w_type:
+                active_msg = msg
+                style_type = "warning"
+            else:
+                w_type, msg = get_current_warning(ts_obj.infos)
+                if w_type:
+                    active_msg = msg
+                    style_type = "info"
 
         if active_msg:
             plain_text_msg = html.unescape(active_msg)
@@ -464,6 +649,8 @@ class DetailsPanel(QWidget):
             else:
                 self.ai_fix_btn.hide()
 
+            display_msg = active_msg.replace(prefix, "").strip()
+            self.warning_text_label.setText(display_msg)
             self.warning_banner.show()
         else:
             self.warning_banner.hide()
@@ -492,6 +679,10 @@ class DetailsPanel(QWidget):
         self.findChild(QLabel, "translation_label").setText(_("Translation:"))
         self.findChild(QPushButton, "apply_btn").setText(_("Apply Translation"))
         self.findChild(QPushButton, "ai_translate_current_btn").setText(_("AI Translate Selected"))
+        if self.plural_toggle_btn.isChecked():
+            self.plural_toggle_btn.setText(_("Plural"))
+        else:
+            self.plural_toggle_btn.setText(_("Singular"))
 
     def update_context_badge(self, ts_obj):
         """
@@ -583,3 +774,23 @@ class DetailsPanel(QWidget):
             self.format_badge.setVisible(True)
         else:
             self.format_badge.setVisible(False)
+
+    def reset_ui(self):
+        self.current_ts_obj = None
+        self.current_plural_index = 0
+
+        self.original_text_display.setPlainText("")
+        self.translation_edit_text.setPlainText("")
+
+        self.plural_bar.hide()
+        self.translation_edit_text.setViewportMargins(0, 0, 0, 0)
+        self.original_label.setText(_("Original:"))
+
+        self.update_stats_labels(None, None)
+        self.warning_banner.hide()
+        self.tooltip.hide()
+        self.plural_toggle_btn.setVisible(False)
+        self.context_badge.setVisible(False)
+        self.format_badge.setVisible(False)
+        self.fuzzy_toggle.set_checked_silent(False)
+        self.reviewed_toggle.set_checked_silent(False)

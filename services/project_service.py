@@ -405,7 +405,13 @@ def rebuild_project_structure(project_path: str, target_langs: list, new_pattern
             # 策略 A: ID 精确匹配
             if ts.id in old_data_map:
                 old_item = old_data_map[ts.id]
-                ts.set_translation_internal(old_item.get('translation', ""))
+                if old_item.get('is_plural'):
+                    ts.is_plural = True
+                    ts.original_plural = old_item.get('original_plural', "")
+                    ts.plural_translations = {int(k): v for k, v in old_item.get('plural_translations', {0: old_item.get('translation', "")}).items()}
+                    ts.translation = old_item.get('translation', "")
+                else:
+                    ts.set_translation_internal(old_item.get('translation', ""))
                 ts.comment = old_item.get('comment', "")
                 ts.is_reviewed = old_item.get('is_reviewed', False)
                 ts.is_ignored = old_item.get('is_ignored', False)
@@ -415,7 +421,13 @@ def rebuild_project_structure(project_path: str, target_langs: list, new_pattern
             # 策略 B: 原文内容匹配
             elif ts.original_semantic in old_pool_by_text:
                 old_item = old_pool_by_text[ts.original_semantic]
-                ts.set_translation_internal(old_item.get('translation', ""))
+                if old_item.get('is_plural'):
+                    ts.is_plural = True
+                    ts.original_plural = old_item.get('original_plural', "")
+                    ts.plural_translations = {int(k): v for k, v in old_item.get('plural_translations', {0: old_item.get('translation', "")}).items()}
+                    ts.translation = old_item.get('translation', "")
+                else:
+                    ts.set_translation_internal(old_item.get('translation', ""))
                 ts.comment = old_item.get('comment', "")
                 ts.is_fuzzy = True  # 标记为模糊，因为位置变了
                 used_old_ids.add(old_item['id'])
@@ -432,7 +444,13 @@ def rebuild_project_structure(project_path: str, target_langs: list, new_pattern
                         best_match = old_item
 
                 if best_score >= 0.85:
-                    ts.set_translation_internal(best_match.get('translation', ""))
+                    if best_match.get('is_plural'):
+                        ts.is_plural = True
+                        ts.original_plural = best_match.get('original_plural', "")
+                        ts.plural_translations = {int(k): v for k, v in best_match.get('plural_translations', {0: best_match.get('translation', "")}).items()}
+                        ts.translation = best_match.get('translation', "")
+                    else:
+                        ts.set_translation_internal(best_match.get('translation', ""))
                     ts.is_fuzzy = True
                     used_old_ids.add(best_match['id'])
 
