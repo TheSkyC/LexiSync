@@ -1,11 +1,13 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtCore import QPoint, Qt, QTimer
+from PySide6.QtCore import QPoint, Qt, QTimer, Signal
 from PySide6.QtWidgets import QTableView
 
 
 class CustomTableView(QTableView):
+    scrollFinished = Signal()
+
     def __init__(self, parent=None, app_instance=None):
         super().__init__(parent)
         self.app = app_instance
@@ -40,6 +42,8 @@ class CustomTableView(QTableView):
         if self._scroll_throttle_timer.isActive():
             self._scroll_throttle_timer.stop()
         self._perform_throttled_scroll()
+
+        self.scrollFinished.emit()
 
     def scrollContentsBy(self, dx, dy):
         if self._is_scrollbar_dragging:

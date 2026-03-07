@@ -52,13 +52,19 @@ class MarkerBar(QWidget):
         self._last_hovered_row = -1
 
         if self.table_view and self.table_view.verticalScrollBar():
-            self.table_view.verticalScrollBar().valueChanged.connect(self.update)
+            v_scroll = self.table_view.verticalScrollBar()
+            v_scroll.valueChanged.connect(self.update)
+            v_scroll.sliderReleased.connect(self.force_sync)
 
     def set_model(self, model):
         self.sheet_model = model
         if self.sheet_model:
             self.sheet_model.modelReset.connect(self._invalidate_cache)
             self.sheet_model.layoutChanged.connect(self._invalidate_cache)
+
+    def force_sync(self):
+        self._cache_valid = False
+        self.update()
 
     def _invalidate_cache(self):
         self._cache_valid = False
