@@ -1,12 +1,21 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
-from PySide6.QtGui import QIcon, QColor, QCursor
-from PySide6.QtCore import (Qt, Signal, QSize, QEvent, QPropertyAnimation, QEasingCurve,
-                            Property, QParallelAnimationGroup)
-from utils.path_utils import get_resource_path
+from PySide6.QtCore import (
+    Property,
+    QEasingCurve,
+    QEvent,
+    QParallelAnimationGroup,
+    QPropertyAnimation,
+    QSize,
+    Qt,
+    Signal,
+)
+from PySide6.QtGui import QColor, QCursor, QIcon
+from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
+
 from ui_components.tooltip import Tooltip
+from utils.path_utils import get_resource_path
 
 
 class OptionButton(QPushButton):
@@ -40,9 +49,7 @@ class OptionButton(QPushButton):
         if event.type() == QEvent.Enter:
             if self._tooltip_text:
                 self._custom_tooltip.show_tooltip(QCursor.pos(), self._tooltip_text, delay=500)
-        elif event.type() == QEvent.Leave:
-            self._custom_tooltip.hide()
-        elif event.type() == QEvent.MouseButtonPress:
+        elif event.type() == QEvent.Leave or event.type() == QEvent.MouseButtonPress:
             self._custom_tooltip.hide()
 
         return super().event(event)
@@ -102,7 +109,9 @@ class OptionButton(QPushButton):
         # 边框透明度
         border_color = QColor(self.color_hex)
         border_color.setAlphaF(self._border_opacity)
-        border_str = f"rgba({border_color.red()}, {border_color.green()}, {border_color.blue()}, {self._border_opacity})"
+        border_str = (
+            f"rgba({border_color.red()}, {border_color.green()}, {border_color.blue()}, {self._border_opacity})"
+        )
 
         # 文字颜色根据选中状态插值
         text_color = QColor("#606266")
@@ -119,8 +128,8 @@ class OptionButton(QPushButton):
 
         css = f"""
             QPushButton {{
-                background-color: {checked_bg_str if self.isChecked() else '#F2F3F5'};
-                border: 1px solid {border_str if self.isChecked() else 'transparent'};
+                background-color: {checked_bg_str if self.isChecked() else "#F2F3F5"};
+                border: 1px solid {border_str if self.isChecked() else "transparent"};
                 border-radius: 12px;
                 padding: 4px 10px;
                 color: {text_color_str};
@@ -128,7 +137,7 @@ class OptionButton(QPushButton):
                 font-weight: 500;
             }}
             QPushButton:hover {{
-                background-color: {'#E5E6EB' if not self.isChecked() else checked_bg_str};
+                background-color: {"#E5E6EB" if not self.isChecked() else checked_bg_str};
             }}
         """
         self.setStyleSheet(css)

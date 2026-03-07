@@ -1,12 +1,11 @@
-import os
-import shutil
-import logging
 from contextlib import contextmanager
+import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 
-def atomic_write_text(content: str, target_path: str, encoding: str = 'utf-8'):
+def atomic_write_text(content: str, target_path: str, encoding: str = "utf-8"):
     """
     Atomically writes string content to a file.
 
@@ -22,12 +21,12 @@ def atomic_write_text(content: str, target_path: str, encoding: str = 'utf-8'):
     try:
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
 
-        with open(temp_path, 'w', encoding=encoding, newline='') as f:
+        with open(temp_path, "w", encoding=encoding, newline="") as f:
             f.write(content)
 
         os.replace(temp_path, target_path)
         return True
-    except (IOError, OSError) as e:
+    except OSError as e:
         logger.error(f"Failed to atomically write to {target_path}: {e}")
         return False
     finally:
@@ -39,7 +38,7 @@ def atomic_write_text(content: str, target_path: str, encoding: str = 'utf-8'):
 
 
 @contextmanager
-def atomic_open(filepath, mode='w', encoding='utf-8', **kwargs):
+def atomic_open(filepath, mode="w", encoding="utf-8", **kwargs):
     """
     一个通用的原子写入上下文管理器。
     用法与内置的 open() 完全相同，支持文本('w')和二进制('wb')模式。
@@ -51,24 +50,22 @@ def atomic_open(filepath, mode='w', encoding='utf-8', **kwargs):
         with atomic_open('data.xml', 'wb') as f:
             tree.write(f)
     """
-    if 'r' in mode or 'a' in mode:
+    if "r" in mode or "a" in mode:
         raise ValueError("atomic_open only supports write modes ('w', 'wb').")
 
     temp_filepath = filepath + ".tmp"
     os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
     open_kwargs = kwargs.copy()
-    if 'b' not in mode:
-        open_kwargs['encoding'] = encoding
+    if "b" not in mode:
+        open_kwargs["encoding"] = encoding
 
     f = None
     try:
-        f = open(temp_filepath, mode, **open_kwargs)
-        yield f
-        f.close()
-        f = None
+        with open(temp_filepath, mode, **open_kwargs) as f:
+            yield f
         os.replace(temp_filepath, filepath)
 
-    except Exception as e:
+    except Exception:
         if f:
             f.close()
         if os.path.exists(temp_filepath):

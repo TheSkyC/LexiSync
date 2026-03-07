@@ -1,16 +1,31 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QGroupBox, QLabel, QComboBox,
-                               QProgressBar, QMessageBox, QHBoxLayout, QWidget, QListWidget, QListWidgetItem)
-from PySide6.QtCore import Qt, QThread, Signal
-from ui_components.styled_button import StyledButton
-from ..utils.constants import SUPPORTED_MODELS
-import uuid
-import os
-from PySide6.QtWidgets import QFileDialog
 import logging
+import os
+import uuid
+
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QProgressBar,
+    QVBoxLayout,
+)
+
+from ui_components.styled_button import StyledButton
+
+from ..utils.constants import SUPPORTED_MODELS
+
 logger = logging.getLogger(__name__)
+
 
 class DownloadThread(QThread):
     progress = Signal(int, str)
@@ -46,6 +61,7 @@ class ImportThread(QThread):
 
             # Probe dimension
             from ..backends.onnx_backend import OnnxBackend
+
             temp_backend = OnnxBackend(self.core.cache_manager)
             model_path = self.manager.get_model_dir(self.custom_id)
             temp_backend.load_model(model_path, self.custom_id, expected_dim=None)
@@ -93,12 +109,15 @@ class SettingsDialog(QDialog):
 
         # Buttons
         btn_layout = QHBoxLayout()
-        self.btn_activate = StyledButton(self._("Activate"), on_click=self.activate_model, btn_type="success",
-                                         size="small")
-        self.btn_download = StyledButton(self._("Download"), on_click=self.start_download, btn_type="primary",
-                                         size="small")
-        self.btn_delete = StyledButton(self._("Delete Files"), on_click=self.delete_model_files, btn_type="danger",
-                                       size="small")
+        self.btn_activate = StyledButton(
+            self._("Activate"), on_click=self.activate_model, btn_type="success", size="small"
+        )
+        self.btn_download = StyledButton(
+            self._("Download"), on_click=self.start_download, btn_type="primary", size="small"
+        )
+        self.btn_delete = StyledButton(
+            self._("Delete Files"), on_click=self.delete_model_files, btn_type="danger", size="small"
+        )
 
         btn_layout.addWidget(self.btn_activate)
         btn_layout.addWidget(self.btn_download)
@@ -111,8 +130,9 @@ class SettingsDialog(QDialog):
         # 2. Custom Import
         import_group = QGroupBox(self._("Custom Model"))
         import_layout = QHBoxLayout(import_group)
-        self.btn_import = StyledButton(self._("Import Local ONNX Model..."), on_click=self.import_model,
-                                       btn_type="default")
+        self.btn_import = StyledButton(
+            self._("Import Local ONNX Model..."), on_click=self.import_model, btn_type="default"
+        )
         import_layout.addWidget(self.btn_import)
         import_layout.addStretch()
         layout.addWidget(import_group)
@@ -127,7 +147,8 @@ class SettingsDialog(QDialog):
 
         current_mirror = self.core.config.get("mirror", "https://hf-mirror.com")
         idx = self.combo_mirror.findData(current_mirror)
-        if idx != -1: self.combo_mirror.setCurrentIndex(idx)
+        if idx != -1:
+            self.combo_mirror.setCurrentIndex(idx)
         self.combo_mirror.currentIndexChanged.connect(self.save_mirror_setting)
 
         dl_layout.addWidget(self.combo_mirror)
@@ -143,8 +164,9 @@ class SettingsDialog(QDialog):
 
         # Footer
         footer = QHBoxLayout()
-        self.btn_clear_cache = StyledButton(self._("Clear Vector Cache"), on_click=self.clear_cache, btn_type="warning",
-                                            size="small")
+        self.btn_clear_cache = StyledButton(
+            self._("Clear Vector Cache"), on_click=self.clear_cache, btn_type="warning", size="small"
+        )
         footer.addWidget(self.btn_clear_cache)
         footer.addStretch()
         btn_close = StyledButton(self._("Close"), on_click=self.accept, btn_type="default")
@@ -186,18 +208,16 @@ class SettingsDialog(QDialog):
             self.model_list.addItem(item)
 
     def on_model_selected(self, item, prev):
-        if not item: return
+        if not item:
+            return
         mid = item.data(Qt.UserRole)
         is_custom = item.data(Qt.UserRole + 1)
 
         is_installed = self.core.model_manager.is_model_installed(mid, is_custom)
-        is_active = (mid == self.core.config.get("active_model"))
+        is_active = mid == self.core.config.get("active_model")
 
         # Update Info
-        if is_custom:
-            desc = self._("Custom imported model.")
-        else:
-            desc = SUPPORTED_MODELS[mid].get("description", "")
+        desc = self._("Custom imported model.") if is_custom else SUPPORTED_MODELS[mid].get("description", "")
 
         status_text = self._("Installed") if is_installed else self._("Not Installed")
         color = "green" if is_installed else "red"
@@ -216,7 +236,8 @@ class SettingsDialog(QDialog):
 
     def start_download(self):
         item = self.model_list.currentItem()
-        if not item: return
+        if not item:
+            return
         mid = item.data(Qt.UserRole)
 
         self.toggle_ui(False)
@@ -250,7 +271,8 @@ class SettingsDialog(QDialog):
 
     def import_model(self):
         dir_path = QFileDialog.getExistingDirectory(self, self._("Select Model Folder"))
-        if not dir_path: return
+        if not dir_path:
+            return
 
         self.toggle_ui(False)
         self.status_label.setText(self._("Importing and verifying model..."))
@@ -259,7 +281,8 @@ class SettingsDialog(QDialog):
 
         self.import_thread = ImportThread(self.core.model_manager, dir_path, custom_id, self.core)
         self.import_thread.finished.connect(
-            lambda s, m, d: self.on_import_finished(s, m, d, custom_id, os.path.basename(dir_path)))
+            lambda s, m, d: self.on_import_finished(s, m, d, custom_id, os.path.basename(dir_path))
+        )
         self.import_thread.start()
 
     def on_import_finished(self, success, message, dimension, custom_id, model_name):
@@ -270,11 +293,7 @@ class SettingsDialog(QDialog):
             if "custom_models" not in self.core.config:
                 self.core.config["custom_models"] = {}
 
-            self.core.config["custom_models"][custom_id] = {
-                "name": model_name,
-                "path": custom_id,
-                "dim": dimension
-            }
+            self.core.config["custom_models"][custom_id] = {"name": model_name, "path": custom_id, "dim": dimension}
             self.core.save_config()
             self.refresh_list()
             QMessageBox.information(self, self._("Success"), self._("Model imported successfully."))
@@ -284,7 +303,8 @@ class SettingsDialog(QDialog):
 
     def delete_model_files(self):
         item = self.model_list.currentItem()
-        if not item: return
+        if not item:
+            return
         mid = item.data(Qt.UserRole)
         is_custom = item.data(Qt.UserRole + 1)
 
@@ -292,9 +312,12 @@ class SettingsDialog(QDialog):
             QMessageBox.warning(self, self._("Warning"), self._("Cannot delete the currently active model."))
             return
 
-        reply = QMessageBox.question(self, self._("Confirm"),
-                                     self._("Are you sure you want to delete the model files?"),
-                                     QMessageBox.Yes | QMessageBox.No)
+        reply = QMessageBox.question(
+            self,
+            self._("Confirm"),
+            self._("Are you sure you want to delete the model files?"),
+            QMessageBox.Yes | QMessageBox.No,
+        )
         if reply == QMessageBox.Yes:
             self.core.model_manager.delete_model(mid)
             self.core.cache_manager.clear_model_cache(mid)  # Also clear cache
@@ -308,7 +331,8 @@ class SettingsDialog(QDialog):
 
     def activate_model(self):
         item = self.model_list.currentItem()
-        if not item: return
+        if not item:
+            return
         mid = item.data(Qt.UserRole)
 
         if mid != self.core.config.get("active_model"):
@@ -320,8 +344,9 @@ class SettingsDialog(QDialog):
         QMessageBox.information(self, self._("Success"), self._("Model activated."))
 
     def clear_cache(self):
-        reply = QMessageBox.question(self, self._("Confirm"), self._("Clear vector cache for ALL models?"),
-                                     QMessageBox.Yes | QMessageBox.No)
+        reply = QMessageBox.question(
+            self, self._("Confirm"), self._("Clear vector cache for ALL models?"), QMessageBox.Yes | QMessageBox.No
+        )
         if reply == QMessageBox.Yes:
             success, message = self.core.cache_manager.clear_all_cache()
             if success:

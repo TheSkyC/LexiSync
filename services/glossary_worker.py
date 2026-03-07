@@ -1,13 +1,17 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtCore import QRunnable, Signal, QObject
-import weakref
 import re
+import weakref
+
+from PySide6.QtCore import QObject, QRunnable, Signal
+
 from utils.text_utils import generate_ngrams
+
 
 class GlossarySignals(QObject):
     finished = Signal(str, list, bool)
+
 
 class GlossaryAnalysisWorker(QRunnable):
     def __init__(self, app_instance, ts_id: str, text_to_analyze: str, is_manual: bool = False):
@@ -36,10 +40,7 @@ class GlossaryAnalysisWorker(QRunnable):
 
         # 批量查询数据库
         term_results_map = app.glossary_service.get_translations_batch(
-            words=candidates,
-            source_lang=source_lang,
-            target_lang=target_lang,
-            include_reverse=False
+            words=candidates, source_lang=source_lang, target_lang=target_lang, include_reverse=False
         )
 
         matches = []
@@ -55,7 +56,7 @@ class GlossaryAnalysisWorker(QRunnable):
             is_valid_occurrence = False
 
             try:
-                pattern = re.compile(r'\b' + re.escape(term) + r'\b', re.IGNORECASE)
+                pattern = re.compile(r"\b" + re.escape(term) + r"\b", re.IGNORECASE)
 
                 for match in pattern.finditer(self.text):
                     start, end = match.span()
@@ -70,10 +71,7 @@ class GlossaryAnalysisWorker(QRunnable):
                 continue
 
             if is_valid_occurrence:
-                ui_translations = [{"target": t["target"], "comment": t["comment"]} for t in term_info['translations']]
-                matches.append({
-                    "source": term,
-                    "translations": ui_translations
-                })
+                ui_translations = [{"target": t["target"], "comment": t["comment"]} for t in term_info["translations"]]
+                matches.append({"source": term, "translations": ui_translations})
 
         self.signals.finished.emit(self.ts_id, matches, self.is_manual)

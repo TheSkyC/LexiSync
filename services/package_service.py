@@ -1,12 +1,13 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import os
+from datetime import datetime
 import json
 import logging
-from datetime import datetime
+import os
 from pathlib import Path
-from PySide6.QtCore import QObject, Signal, QThread
+
+from PySide6.QtCore import QObject, Signal
 
 logger = logging.getLogger(__name__)
 
@@ -43,23 +44,24 @@ class PackageWorker(QObject):
             self.progress.emit(10, "Calculating project statistics...")
             pack_info = self._generate_pack_info(files_to_pack)
 
-            if self._is_cancelled: return
+            if self._is_cancelled:
+                return
 
             self.progress.emit(15, "Initializing archive...")
 
             # Setup ZipFile
-            if HAS_PYZIPPER and self.options.get('password'):
-                zf = pyzipper.AESZipFile(self.export_path, 'w', compression=pyzipper.ZIP_DEFLATED)
+            if HAS_PYZIPPER and self.options.get("password"):
+                zf = pyzipper.AESZipFile(self.export_path, "w", compression=pyzipper.ZIP_DEFLATED)
             else:
-                zf = pyzipper.ZipFile(self.export_path, 'w', compression=pyzipper.ZIP_DEFLATED)
+                zf = pyzipper.ZipFile(self.export_path, "w", compression=pyzipper.ZIP_DEFLATED)
 
             with zf:
                 # 1. Write pack_info.json (UNENCRYPTED for preview)
-                zf.writestr('pack_info.json', json.dumps(pack_info, indent=4, ensure_ascii=False))
+                zf.writestr("pack_info.json", json.dumps(pack_info, indent=4, ensure_ascii=False))
 
                 # 2. Enable encryption for the rest of the files
-                if HAS_PYZIPPER and self.options.get('password'):
-                    zf.setpassword(self.options['password'].encode('utf-8'))
+                if HAS_PYZIPPER and self.options.get("password"):
+                    zf.setpassword(self.options["password"].encode("utf-8"))
                     zf.setencryption(pyzipper.WZ_AES, nbits=256)
 
                 # 3. Collect files to pack
@@ -83,7 +85,7 @@ class PackageWorker(QObject):
             if os.path.exists(self.export_path):
                 try:
                     os.remove(self.export_path)
-                except:
+                except Exception:
                     pass
             self.finished.emit(False, str(e))
 
@@ -92,12 +94,12 @@ class PackageWorker(QObject):
         Generates rich metadata for the package.
         files_to_pack: List of Path objects that will be included in the zip.
         """
-        with open(self.project_path / "project.json", 'r', encoding='utf-8') as f:
+        with open(self.project_path / "project.json", encoding="utf-8") as f:
             proj_config = json.load(f)
 
         # 1. Calculate Languages Stats
         langs_stats = {}
-        for lang in self.options['langs']:
+        for lang in self.options["langs"]:
             trans_file = self.project_path / "translation" / f"{lang}.json"
 
             stats = {
@@ -105,19 +107,19 @@ class PackageWorker(QObject):
                 "translated_strings": 0,
                 "source_char_count": 0,
                 "translation_char_count": 0,
-                "progress_percent": 0.0
+                "progress_percent": 0.0,
             }
 
             if trans_file.exists():
                 try:
-                    with open(trans_file, 'r', encoding='utf-8') as f:
+                    with open(trans_file, encoding="utf-8") as f:
                         data = json.load(f)
                         stats["total_strings"] = len(data)
 
                         for item in data:
-                            src_len = len(item.get('original_semantic', ''))
-                            trans_len = len(item.get('translation', ''))
-                            is_trans = bool(item.get('translation', '').strip()) and not item.get('is_ignored', False)
+                            src_len = len(item.get("original_semantic", ""))
+                            trans_len = len(item.get("translation", ""))
+                            is_trans = bool(item.get("translation", "").strip()) and not item.get("is_ignored", False)
 
                             stats["source_char_count"] += src_len
                             if is_trans:
@@ -126,7 +128,8 @@ class PackageWorker(QObject):
 
                         if stats["total_strings"] > 0:
                             stats["progress_percent"] = round(
-                                (stats["translated_strings"] / stats["total_strings"]) * 100, 1)
+                                (stats["translated_strings"] / stats["total_strings"]) * 100, 1
+                            )
                 except Exception as e:
                     logger.error(f"Error calculating stats for {lang}: {e}")
 
@@ -134,11 +137,7 @@ class PackageWorker(QObject):
 
         # 2. Calculate File Stats
         total_size = 0
-        file_manifest = {
-            "source": [],
-            "tm": [],
-            "glossary": []
-        }
+        file_manifest = {"source": [], "tm": [], "glossary": []}
 
         for p in files_to_pack:
             try:
@@ -147,29 +146,29 @@ class PackageWorker(QObject):
 
                 # Categorize for manifest
                 rel = p.relative_to(self.project_path)
-                if str(rel).startswith('source'):
-                    file_manifest['source'].append(p.name)
-                elif str(rel).startswith('tm'):
-                    file_manifest['tm'].append(p.name)
-                elif str(rel).startswith('glossary'):
-                    file_manifest['glossary'].append(p.name)
-            except:
+                if str(rel).startswith("source"):
+                    file_manifest["source"].append(p.name)
+                elif str(rel).startswith("tm"):
+                    file_manifest["tm"].append(p.name)
+                elif str(rel).startswith("glossary"):
+                    file_manifest["glossary"].append(p.name)
+            except Exception:
                 pass
 
         return {
             "version": "1.1",
-            "project_name": proj_config.get('name', 'Unknown Project'),
+            "project_name": proj_config.get("name", "Unknown Project"),
             "created_at": datetime.now().isoformat(),
-            "source_lang": proj_config.get('source_language', 'en'),
+            "source_lang": proj_config.get("source_language", "en"),
             "overview": {
                 "total_files": len(files_to_pack),
                 "total_size_bytes": total_size,
-                "includes_tm": self.options['include_tm'],
-                "includes_glossary": self.options['include_glossary'],
-                "is_encrypted": bool(self.options.get('password'))
+                "includes_tm": self.options["include_tm"],
+                "includes_glossary": self.options["include_glossary"],
+                "is_encrypted": bool(self.options.get("password")),
             },
             "languages": langs_stats,
-            "manifest": file_manifest
+            "manifest": file_manifest,
         }
 
     def _collect_files(self):
@@ -178,19 +177,15 @@ class PackageWorker(QObject):
         files.append(self.project_path / "project.json")
 
         # 垃圾文件黑名单
-        EXCLUDE_NAMES = {'pack_info.json', '.DS_Store', 'thumbs.db', 'desktop.ini', '.gitignore'}
-        EXCLUDE_EXTS = {'.tmp', '.bak', '.log', '.swp'}
+        EXCLUDE_NAMES = {"pack_info.json", ".DS_Store", "thumbs.db", "desktop.ini", ".gitignore"}
+        EXCLUDE_EXTS = {".tmp", ".bak", ".log", ".swp"}
 
         def is_junk(path):
-            return (
-                    path.name in EXCLUDE_NAMES or
-                    path.suffix.lower() in EXCLUDE_EXTS or
-                    path.name.startswith('~$')
-            )
+            return path.name in EXCLUDE_NAMES or path.suffix.lower() in EXCLUDE_EXTS or path.name.startswith("~$")
 
         def scan_dir(directory):
             if directory.exists():
-                for p in directory.rglob('*'):
+                for p in directory.rglob("*"):
                     if p.is_file() and not is_junk(p):
                         files.append(p)
 
@@ -200,17 +195,17 @@ class PackageWorker(QObject):
         # Translation dir
         trans_dir = self.project_path / "translation"
         if trans_dir.exists():
-            for lang in self.options['langs']:
+            for lang in self.options["langs"]:
                 f = trans_dir / f"{lang}.json"
                 if f.exists() and not is_junk(f):
                     files.append(f)
 
         # TM
-        if self.options['include_tm']:
+        if self.options["include_tm"]:
             scan_dir(self.project_path / "tm")
 
         # Glossary
-        if self.options.get('include_glossary'):
+        if self.options.get("include_glossary"):
             scan_dir(self.project_path / "glossary")
 
         return files
@@ -231,13 +226,13 @@ class ExtractWorker(QObject):
             self.progress.emit(10, "Opening package...")
 
             if HAS_PYZIPPER:
-                zf = pyzipper.AESZipFile(self.package_path, 'r')
+                zf = pyzipper.AESZipFile(self.package_path, "r")
                 if self.password:
-                    zf.setpassword(self.password.encode('utf-8'))
+                    zf.setpassword(self.password.encode("utf-8"))
             else:
-                zf = pyzipper.ZipFile(self.package_path, 'r')
+                zf = pyzipper.ZipFile(self.package_path, "r")
                 if self.password:
-                    zf.setpassword(self.password.encode('utf-8'))
+                    zf.setpassword(self.password.encode("utf-8"))
 
             with zf:
                 members = zf.infolist()
@@ -248,7 +243,7 @@ class ExtractWorker(QObject):
                     prog = 10 + int((i / total) * 90)
                     self.progress.emit(prog, f"Extracting: {member.filename}")
 
-            info_path = os.path.join(self.target_dir, 'pack_info.json')
+            info_path = os.path.join(self.target_dir, "pack_info.json")
             if os.path.exists(info_path):
                 try:
                     os.remove(info_path)
@@ -259,7 +254,7 @@ class ExtractWorker(QObject):
             self.finished.emit(True, self.target_dir)
 
         except RuntimeError as e:
-            if 'Bad password' in str(e) or 'password required' in str(e):
+            if "Bad password" in str(e) or "password required" in str(e):
                 self.finished.emit(False, "INVALID_PASSWORD")
             else:
                 self.finished.emit(False, str(e))
@@ -273,22 +268,19 @@ class ExtractWorker(QObject):
         在不解压的情况下，通过尝试读取一个加密文件来校验密码。
         """
         try:
-            if HAS_PYZIPPER:
-                zf = pyzipper.AESZipFile(package_path, 'r')
-            else:
-                zf = pyzipper.ZipFile(package_path, 'r')
+            zf = pyzipper.AESZipFile(package_path, "r") if HAS_PYZIPPER else pyzipper.ZipFile(package_path, "r")
 
             if password:
-                zf.setpassword(password.encode('utf-8'))
+                zf.setpassword(password.encode("utf-8"))
 
             with zf:
                 try:
-                    zf.read('project.json')
+                    zf.read("project.json")
                 except KeyError:
                     files = zf.namelist()
                     target_file = None
                     for f in files:
-                        if f != 'pack_info.json':
+                        if f != "pack_info.json":
                             target_file = f
                             break
 
@@ -308,9 +300,10 @@ def read_package_info(package_path):
     try:
         # Standard zipfile is enough to read unencrypted members even in an encrypted zip
         import zipfile
-        with zipfile.ZipFile(package_path, 'r') as zf:
-            if 'pack_info.json' in zf.namelist():
-                with zf.open('pack_info.json') as f:
+
+        with zipfile.ZipFile(package_path, "r") as zf:
+            if "pack_info.json" in zf.namelist():
+                with zf.open("pack_info.json") as f:
                     return json.load(f)
     except Exception as e:
         logger.error(f"Failed to read pack_info.json: {e}")

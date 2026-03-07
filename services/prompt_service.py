@@ -2,13 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
-from utils.constants import STRUCTURAL, STATIC, DYNAMIC
+
+from utils.constants import DYNAMIC, STATIC, STRUCTURAL
 
 
 def generate_prompt_from_structure(prompt_structure, placeholders):
     final_prompt_parts = []
     numbered_instruction_index = 1
-    placeholder_pattern = re.compile(r'\[([a-zA-Z\s_]+)\]')
+    placeholder_pattern = re.compile(r"\[([a-zA-Z\s_]+)\]")
 
     for part in prompt_structure:
         if not part.get("enabled", True):

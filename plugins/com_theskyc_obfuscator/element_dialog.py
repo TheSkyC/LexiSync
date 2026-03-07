@@ -1,8 +1,8 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSpinBox, QPushButton, QDialogButtonBox
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QPushButton, QSpinBox, QVBoxLayout
+
 from .obfuscator_logic import ObfuscatorLogic
 
 
@@ -17,8 +17,8 @@ class ElementDialog(QDialog):
         self.setMinimumWidth(400)
         layout = QVBoxLayout(self)
         prompt_label = QLabel(
-            self._("Please provide the total number of elements from the original code:") + \
-            f"<br><small><i>{self._('How to get: In-game Workshop -> Show Diagnostics -> Total Element Count')}</i></small>"
+            self._("Please provide the total number of elements from the original code:")
+            + f"<br><small><i>{self._('How to get: In-game Workshop -> Show Diagnostics -> Total Element Count')}</i></small>"
         )
         prompt_label.setWordWrap(True)
         layout.addWidget(prompt_label)
@@ -44,11 +44,14 @@ class ElementDialog(QDialog):
 
         self.spinbox.valueChanged.connect(self.update_hint_label)
         self.update_hint_label(self.spinbox.value())
+
     def auto_calculate(self):
         estimated_count = ObfuscatorLogic.estimate_element_count(self.code_content)
         self.spinbox.setValue(estimated_count)
+
     def get_element_count(self):
         return self.spinbox.value()
+
     def update_hint_label(self, value):
         if value > self.warning_threshold:
             self.hint_label.setText(

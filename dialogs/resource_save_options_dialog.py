@@ -1,9 +1,18 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QGroupBox, QRadioButton,
-                               QCheckBox, QDialogButtonBox, QLabel, QFrame, QHBoxLayout)
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QRadioButton,
+    QVBoxLayout,
+)
+
 from utils.localization import _
 
 
@@ -17,7 +26,7 @@ class ResourceSaveOptionsDialog(QDialog):
         super().__init__(parent)
         self.resource_type = resource_type
 
-        title = _("Save to Translation Memory") if resource_type == 'tm' else _("Save to Glossary")
+        title = _("Save to Translation Memory") if resource_type == "tm" else _("Save to Glossary")
         self.setWindowTitle(title)
 
         self.setMinimumWidth(420)
@@ -56,8 +65,8 @@ class ResourceSaveOptionsDialog(QDialog):
         target_layout = QVBoxLayout(target_group)
         target_layout.setSpacing(8)
 
-        global_text = _("Global TM") if resource_type == 'tm' else _("Global Glossary")
-        project_text = _("Project TM") if resource_type == 'tm' else _("Project Glossary")
+        global_text = _("Global TM") if resource_type == "tm" else _("Global Glossary")
+        project_text = _("Project TM") if resource_type == "tm" else _("Project Glossary")
 
         self.rb_global = QRadioButton(global_text)
         self.rb_project = QRadioButton(project_text)
@@ -82,7 +91,7 @@ class ResourceSaveOptionsDialog(QDialog):
 
         # Merge is only for Glossary
         self.rb_merge = None
-        if resource_type == 'glossary':
+        if resource_type == "glossary":
             self.rb_merge = QRadioButton(_("Merge"))
 
         # Tooltips
@@ -102,7 +111,7 @@ class ResourceSaveOptionsDialog(QDialog):
         layout.addWidget(strat_group)
 
         # 3. Options (Glossary Only)
-        if resource_type == 'glossary':
+        if resource_type == "glossary":
             opt_group = QGroupBox(_("Options"))
             opt_layout = QVBoxLayout(opt_group)
             self.chk_context = QCheckBox(_("Save Context as Comment"))
@@ -119,22 +128,19 @@ class ResourceSaveOptionsDialog(QDialog):
         layout.addWidget(buttons)
 
     def get_data(self):
-        target = 'project' if self.rb_project.isChecked() else 'global'
+        target = "project" if self.rb_project.isChecked() else "global"
 
-        strategy = 'manual'
+        strategy = "manual"
         if self.rb_skip.isChecked():
-            strategy = 'skip'
+            strategy = "skip"
         elif self.rb_overwrite.isChecked():
-            strategy = 'overwrite'
+            strategy = "overwrite"
         elif self.rb_merge and self.rb_merge.isChecked():
-            strategy = 'merge'
+            strategy = "merge"
 
-        data = {
-            'target_db': target,
-            'strategy': strategy
-        }
+        data = {"target_db": target, "strategy": strategy}
 
-        if self.resource_type == 'glossary':
-            data['save_context'] = self.chk_context.isChecked()
+        if self.resource_type == "glossary":
+            data["save_context"] = self.chk_context.isChecked()
 
         return data

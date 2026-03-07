@@ -1,9 +1,9 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtCore import Qt, QObject, Signal
 import re
-from utils.localization import _
+
+from PySide6.QtCore import QObject, Signal
 
 
 class SearchService(QObject):
@@ -23,12 +23,7 @@ class SearchService(QObject):
         # Persistent State
         self.last_term = ""
         self.last_replace_term = ""
-        self.last_options = {
-            "case": False,
-            "in_orig": True,
-            "in_trans": True,
-            "in_comment": True
-        }
+        self.last_options = {"case": False, "in_orig": True, "in_trans": True, "in_comment": True}
         self._load_state_from_config()
 
     def clear(self):
@@ -38,7 +33,7 @@ class SearchService(QObject):
         self.current_focus_index = None
         self.highlights_changed.emit()
 
-        if hasattr(self.app, 'clear_search_markers'):
+        if hasattr(self.app, "clear_search_markers"):
             self.app.clear_search_markers()
 
     def _load_state_from_config(self):
@@ -58,7 +53,7 @@ class SearchService(QObject):
         self.app.config["ui_state"]["search_dialog"] = {
             "term": self.last_term,
             "replace_term": self.last_replace_term,
-            "options": self.last_options
+            "options": self.last_options,
         }
 
     def perform_search(self, term, options):
@@ -75,7 +70,7 @@ class SearchService(QObject):
         self._save_state_to_config()
 
         current_options_signature = options.copy()
-        current_options_signature['term'] = term
+        current_options_signature["term"] = term
 
         if self.last_options == current_options_signature and self.search_results:
             return len(self.search_results)
@@ -96,22 +91,23 @@ class SearchService(QObject):
 
         for row in range(model.rowCount()):
             ts_obj = model.get_ts_object_by_visual_row(row)
-            if not ts_obj: continue
+            if not ts_obj:
+                continue
 
             # --- 检查原文列 (Column 2) ---
-            if options.get("in_orig"):
-                if pattern.search(ts_obj.original_semantic) or \
-                   (ts_obj.is_plural and pattern.search(ts_obj.original_plural)):
-                    self._add_match(row, 2, ts_obj)
+            if options.get("in_orig") and (
+                pattern.search(ts_obj.original_semantic)
+                or (ts_obj.is_plural and pattern.search(ts_obj.original_plural))
+            ):
+                self._add_match(row, 2, ts_obj)
 
             # --- 检查译文列 (Column 3) ---
             if options.get("in_trans"):
                 if ts_obj.is_plural:
                     if any(pattern.search(v) for v in ts_obj.plural_translations.values()):
                         self._add_match(row, 3, ts_obj)
-                else:
-                    if pattern.search(ts_obj.get_translation_for_ui()):
-                        self._add_match(row, 3, ts_obj)
+                elif pattern.search(ts_obj.get_translation_for_ui()):
+                    self._add_match(row, 3, ts_obj)
 
             # --- 检查注释列 (Column 4) ---
             if options.get("in_comment") and pattern.search(ts_obj.comment):
@@ -121,10 +117,10 @@ class SearchService(QObject):
         self.highlights_changed.emit()
 
         # Update MarkerBar
-        if hasattr(self.app, 'update_search_markers'):
+        if hasattr(self.app, "update_search_markers"):
             source_rows = []
             for res in self.search_results:
-                ts_obj = res['obj']
+                ts_obj = res["obj"]
                 raw_row = model.get_raw_index_by_id(ts_obj.id)
                 if raw_row is not None:
                     source_rows.append(raw_row)
@@ -196,13 +192,13 @@ class SearchService(QObject):
         res = self.search_results[self.current_result_index]
         ts_obj = res["obj"]
         col = res["col"]
-        term = self.last_options.get('term', '')
+        term = self.last_options.get("term", "")
         flags = 0 if self.last_options.get("case") else re.IGNORECASE
         pattern = re.compile(re.escape(term), flags)
 
         p_idx = 0
-        if hasattr(self.app, 'details_panel') and self.app.current_selected_ts_id == ts_obj.id:
-            p_idx = getattr(self.app.details_panel, 'current_plural_index', 0)
+        if hasattr(self.app, "details_panel") and self.app.current_selected_ts_id == ts_obj.id:
+            p_idx = getattr(self.app.details_panel, "current_plural_index", 0)
 
         success = False
         if col == 3:  # Translation
@@ -226,7 +222,7 @@ class SearchService(QObject):
         if not self.search_results:
             return 0
 
-        term = self.last_options.get('term', '')
+        term = self.last_options.get("term", "")
         flags = 0 if self.last_options.get("case") else re.IGNORECASE
         pattern = re.compile(re.escape(term), flags)
 
@@ -239,7 +235,8 @@ class SearchService(QObject):
         # Process Translations
         for res in trans_results:
             ts_obj = res["obj"]
-            if ts_obj.id in modified_ids: continue
+            if ts_obj.id in modified_ids:
+                continue
 
             indices = ts_obj.plural_translations.keys() if ts_obj.is_plural else [0]
             item_modified = False
@@ -250,11 +247,15 @@ class SearchService(QObject):
                 if count > 0:
                     old_val = current_text.replace("\n", "\\n")
                     ts_obj.set_translation_internal(new_text, plural_index=p_idx)
-                    bulk_changes.append({
-                        'string_id': ts_obj.id, 'field': 'translation',
-                        'old_value': old_val, 'new_value': ts_obj.get_translation_for_storage_and_tm(),
-                        'plural_index': p_idx
-                    })
+                    bulk_changes.append(
+                        {
+                            "string_id": ts_obj.id,
+                            "field": "translation",
+                            "old_value": old_val,
+                            "new_value": ts_obj.get_translation_for_storage_and_tm(),
+                            "plural_index": p_idx,
+                        }
+                    )
                     item_modified = True
             if item_modified:
                 modified_ids.add(ts_obj.id)
@@ -262,7 +263,8 @@ class SearchService(QObject):
         # Process Comments
         for res in comment_results:
             ts_obj = res["obj"]
-            if ts_obj.id in modified_ids: continue
+            if ts_obj.id in modified_ids:
+                continue
 
             current_text = ts_obj.comment
             new_text = pattern.sub(replace_with, current_text)
@@ -270,14 +272,13 @@ class SearchService(QObject):
             if new_text != current_text:
                 old_val = ts_obj.comment
                 ts_obj.comment = new_text
-                bulk_changes.append({
-                    'string_id': ts_obj.id, 'field': 'comment',
-                    'old_value': old_val, 'new_value': new_text
-                })
+                bulk_changes.append(
+                    {"string_id": ts_obj.id, "field": "comment", "old_value": old_val, "new_value": new_text}
+                )
                 modified_ids.add(ts_obj.id)
 
         if bulk_changes:
-            self.app.add_to_undo_history('bulk_replace_all', {'changes': bulk_changes})
+            self.app.add_to_undo_history("bulk_replace_all", {"changes": bulk_changes})
             self.app.mark_modified()
             self.app.force_full_refresh(id_to_reselect=self.app.current_selected_ts_id)
 

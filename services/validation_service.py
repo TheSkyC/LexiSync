@@ -2,16 +2,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import regex as re
-from utils.localization import _
-from utils.enums import WarningType
-from utils.text_utils import get_linguistic_length, generate_ngrams
+
 from services import validation_helpers
 from services.expansion_ratio_service import ExpansionRatioService
 from utils.constants import DEFAULT_VALIDATION_RULES
+from utils.enums import WarningType
+from utils.localization import _
+from utils.text_utils import generate_ngrams, get_linguistic_length
 
-placeholder_regex = re.compile(r'\{([^{}]+)\}')
+placeholder_regex = re.compile(r"\{([^{}]+)\}")
+
+
 def has_case(char):
     return char.lower() != char.upper()
+
 
 def get_starting_cased_char(s):
     stripped_s = s.lstrip()
@@ -36,6 +40,7 @@ def _report(ts_obj, config, rule_key, warning_type, message):
     else:
         ts_obj.minor_warnings.append((warning_type, message))
 
+
 def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     ts_obj.warnings = []
     ts_obj.minor_warnings = []
@@ -45,15 +50,16 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
         return
 
     rules = config.get("validation_rules", {})
-    accelerator_markers_str = config.get('accelerator_marker', '&')
-    markers = [m.strip() for m in accelerator_markers_str.split(',') if m.strip()] or ['&']
+    accelerator_markers_str = config.get("accelerator_marker", "&")
+    markers = [m.strip() for m in accelerator_markers_str.split(",") if m.strip()] or ["&"]
 
     # 复数遍历验证
     forms_to_check = []
     if ts_obj.is_plural:
         s_idx = ts_obj.singular_index
         for idx, trans in ts_obj.plural_translations.items():
-            if not trans: continue
+            if not trans:
+                continue
             orig = ts_obj.original_semantic if idx == s_idx else ts_obj.original_plural
             forms_to_check.append((idx, orig, trans))
 
@@ -61,8 +67,9 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
         return
 
     for idx, original, translation in forms_to_check:
-        def format_msg(msg):
-            return f"[Form {idx}] {msg}" if idx is not None else msg
+
+        def format_msg(msg, current_idx=idx):
+            return f"[Form {current_idx}] {msg}" if current_idx is not None else msg
 
         original_clean = validation_helpers.strip_accelerators(original, markers)
         translation_clean = validation_helpers.strip_accelerators(translation, markers)
@@ -114,10 +121,11 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
                         continue
                     if word in original_lower:
                         term_info = term_cache[word]
-                        required_targets = [t['target'].lower() for t in term_info['translations']]
+                        required_targets = [t["target"].lower() for t in term_info["translations"]]
                         if not any(target in translation_lower for target in required_targets):
-                            msg = _("Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'.").format(
-                                term=word, targets=" / ".join(required_targets))
+                            msg = _(
+                                "Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'."
+                            ).format(term=word, targets=" / ".join(required_targets))
                             _report(ts_obj, config, "glossary", WarningType.GLOSSARY_MISMATCH, msg)
                         matched_substrings.append(word)
 
@@ -158,7 +166,7 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
             _report(ts_obj, config, "quotes", WarningType.QUOTE_MISMATCH, format_msg(_(err)))
 
         # --- 4. 长度检查 ---
-        if config.get('check_length', True):
+        if config.get("check_length", True):
             # 逻辑条件：长度大于4 且 内容不同
             if len(original) > 4 and original != translation:
                 len_orig = get_linguistic_length(original)
@@ -168,10 +176,7 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
                     actual_ratio = len_trans / len_orig
                     service = ExpansionRatioService.get_instance()
                     expected_ratio = service.get_expected_ratio(
-                        app_instance.source_language,
-                        app_instance.current_target_language,
-                        original,
-                        "none"
+                        app_instance.source_language, app_instance.current_target_language, original, "none"
                     )
 
                     # 优先从 config 读取，如果没有则使用硬编码默认值 (2.5, 0.4, 2.0, 0.5)
@@ -181,27 +186,29 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
                     minor_lower_threshold_factor = 1 / minor_upper_threshold_factor
 
                     if expected_ratio is not None and expected_ratio > 0:
-                        if actual_ratio > expected_ratio * major_upper_threshold_factor or \
-                                actual_ratio < expected_ratio * major_lower_threshold_factor:
-
+                        if (
+                            actual_ratio > expected_ratio * major_upper_threshold_factor
+                            or actual_ratio < expected_ratio * major_lower_threshold_factor
+                        ):
                             warning_msg = _(
-                                "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x.").format(
-                                actual=actual_ratio, expected=expected_ratio)
+                                "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
+                            ).format(actual=actual_ratio, expected=expected_ratio)
                             ts_obj.warnings.append((WarningType.LENGTH_DEVIATION_MAJOR, warning_msg))
 
                         # 轻微警告逻辑
-                        elif actual_ratio > expected_ratio * minor_upper_threshold_factor or \
-                                actual_ratio < expected_ratio * minor_lower_threshold_factor:
-
+                        elif (
+                            actual_ratio > expected_ratio * minor_upper_threshold_factor
+                            or actual_ratio < expected_ratio * minor_lower_threshold_factor
+                        ):
                             warning_msg = _(
-                                "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x.").format(
-                                actual=actual_ratio, expected=expected_ratio)
+                                "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
+                            ).format(actual=actual_ratio, expected=expected_ratio)
                             ts_obj.minor_warnings.append((WarningType.LENGTH_DEVIATION_MINOR, warning_msg))
 
 
 def run_validation_on_all(translatable_objects, config, app_instance=None):
     term_cache = {}
-    if config.get('check_glossary', True) and app_instance:
+    if config.get("check_glossary", True) and app_instance:
         all_words = set()
         for ts_obj in translatable_objects:
             if not ts_obj.is_ignored:
@@ -213,10 +220,7 @@ def run_validation_on_all(translatable_objects, config, app_instance=None):
             target_lang = app_instance.current_target_language
             # 批量查询所有 N-gram
             term_cache = app_instance.glossary_service.get_translations_batch(
-                words=list(all_words),
-                source_lang=source_lang,
-                target_lang=target_lang,
-                include_reverse=False
+                words=list(all_words), source_lang=source_lang, target_lang=target_lang, include_reverse=False
             )
 
     for ts_obj in translatable_objects:

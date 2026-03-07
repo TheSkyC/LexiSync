@@ -2,12 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import gettext
-import os
 import locale
-from PySide6.QtCore import QObject, Signal
-from .path_utils import get_resource_path
 import logging
+import os
+
+from PySide6.QtCore import QObject, Signal
+
+from .path_utils import get_resource_path
+
 logger = logging.getLogger(__name__)
+
 
 class LanguageManager(QObject):
     language_changed = Signal()
@@ -16,9 +20,9 @@ class LanguageManager(QObject):
         super().__init__()
         self.translator = lambda s: s
         self.app_name = "lexisync"
-        self.locale_dir = get_resource_path('locales')
+        self.locale_dir = get_resource_path("locales")
         self.supported_languages = self._get_supported_languages()
-        self.default_lang = 'en_US'
+        self.default_lang = "en_US"
         self.current_lang_code = self.default_lang
 
     def _get_supported_languages(self):
@@ -26,7 +30,7 @@ class LanguageManager(QObject):
         if os.path.isdir(self.locale_dir):
             for name in os.listdir(self.locale_dir):
                 if os.path.isdir(os.path.join(self.locale_dir, name)):
-                    mo_path = os.path.join(self.locale_dir, name, 'LC_MESSAGES', f'{self.app_name}.mo')
+                    mo_path = os.path.join(self.locale_dir, name, "LC_MESSAGES", f"{self.app_name}.mo")
                     if os.path.exists(mo_path):
                         languages.append(name)
         return languages
@@ -39,9 +43,9 @@ class LanguageManager(QObject):
         except Exception:
             pass
 
-        env_lang = os.getenv('LANG')
+        env_lang = os.getenv("LANG")
         if env_lang:
-            return env_lang.split('.')[0]
+            return env_lang.split(".")[0]
 
         return None
 
@@ -50,12 +54,12 @@ class LanguageManager(QObject):
         if not system_lang:
             return self.default_lang
 
-        system_lang_lower = system_lang.lower().replace('-', '_')
+        system_lang_lower = system_lang.lower().replace("-", "_")
 
         if system_lang_lower in self.supported_languages:
             return system_lang
 
-        base_lang = system_lang_lower.split('_')[0]
+        base_lang = system_lang_lower.split("_")[0]
         for lang in self.supported_languages:
             if lang.lower().startswith(base_lang):
                 return lang
@@ -73,7 +77,9 @@ class LanguageManager(QObject):
             self.translator = lang.gettext
             logger.info(f"Successfully set up translation for '{lang_code}'")
         except Exception as e:
-            logger.warning(f"Warning: Translation for '{lang_code}' not found or failed to load: {e}. Falling back to default.")
+            logger.warning(
+                f"Warning: Translation for '{lang_code}' not found or failed to load: {e}. Falling back to default."
+            )
             self.translator = lambda s: s
 
     def get_translator(self):
@@ -90,27 +96,31 @@ class LanguageManager(QObject):
 
     def get_language_name(self, lang_code):
         full_name_map = {
-            'en_US': 'English',
-            'zh_CN': '简体中文',
-            'zh_TW': '繁體中文',
-            'ja_JP': '日本語',
-            'ko_KR': '한국어',
-            'fr_FR': 'Français',
-            'de_DE': 'Deutsch',
-            'ru_RU': 'Русский',
-            'es_ES': 'Español (España)',
-            'es_MX': 'Español (Latinoamérica)',
-            'pt_BR': 'Português (Brasil)',
-            'pt_PT': 'Português (Portugal)',
-            'it_IT': 'Italiano',
-            'pl_PL': 'Polski',
-            'tr_TR': 'Türkçe',
-            'ar_SA': 'العربية',
+            "en_US": "English",
+            "zh_CN": "简体中文",
+            "zh_TW": "繁體中文",
+            "ja_JP": "日本語",
+            "ko_KR": "한국어",
+            "fr_FR": "Français",
+            "de_DE": "Deutsch",
+            "ru_RU": "Русский",
+            "es_ES": "Español (España)",
+            "es_MX": "Español (Latinoamérica)",
+            "pt_BR": "Português (Brasil)",
+            "pt_PT": "Português (Portugal)",
+            "it_IT": "Italiano",
+            "pl_PL": "Polski",
+            "tr_TR": "Türkçe",
+            "ar_SA": "العربية",
         }
         return full_name_map.get(lang_code, lang_code)
 
     def get_available_languages_map(self):
         return {code: self.get_language_name(code) for code in self.get_available_languages()}
 
+
 lang_manager = LanguageManager()
-_ = lambda s: lang_manager.get_translator()(s)
+
+
+def _(s):
+    return lang_manager.get_translator()(s)

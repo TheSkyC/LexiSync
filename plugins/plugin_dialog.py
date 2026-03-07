@@ -1,15 +1,30 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QListWidgetItem, QHBoxLayout, QLabel, QTextBrowser, QPushButton, QSplitter, QWidget, QMessageBox, QMenu, QFileDialog
-from PySide6.QtCore import Qt, QUrl, Signal, QThread, QRectF
-from PySide6.QtGui import QColor, QFont, QIcon, QPixmap, QPainter, QDesktopServices, QAction
-from ui_components.styled_button import StyledButton
-from services.dependency_service import DependencyManager
-from plugins.plugin_base import PluginBase
-from utils.localization import _
 import os
-import shutil
+
+from PySide6.QtCore import QRectF, Qt, QThread, QUrl, Signal
+from PySide6.QtGui import QAction, QColor, QDesktopServices, QIcon, QPainter, QPixmap
+from PySide6.QtWidgets import (
+    QDialog,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMenu,
+    QMessageBox,
+    QSplitter,
+    QTextBrowser,
+    QVBoxLayout,
+    QWidget,
+)
+
+from plugins.plugin_base import PluginBase
+from services.dependency_service import DependencyManager
+from ui_components.styled_button import StyledButton
+from utils.localization import _
+
 
 def create_icon(color1, color2=None):
     pixmap = QPixmap(16, 16)
@@ -34,6 +49,7 @@ def create_icon(color1, color2=None):
     painter.end()
     return QIcon(pixmap)
 
+
 class InstallThread(QThread):
     progress = Signal(str)
     finished = Signal(bool)
@@ -45,6 +61,7 @@ class InstallThread(QThread):
     def run(self):
         success = DependencyManager.get_instance().install_dependencies(self.dependencies, self.progress.emit)
         self.finished.emit(success)
+
 
 class UninstallThread(QThread):
     progress = Signal(str)
@@ -129,7 +146,9 @@ class PluginManagerDialog(QDialog):
         self.actions_layout = QHBoxLayout()
         self.actions_layout.setContentsMargins(0, 10, 0, 0)
 
-        self.open_dir_button = StyledButton(_("Open Plugin Directory"), on_click=self.open_plugin_directory, btn_type="default")
+        self.open_dir_button = StyledButton(
+            _("Open Plugin Directory"), on_click=self.open_plugin_directory, btn_type="default"
+        )
         self.open_dir_button.setVisible(False)
         self.actions_layout.addWidget(self.open_dir_button)
 
@@ -177,7 +196,7 @@ class PluginManagerDialog(QDialog):
     def populate_list(self):
         self.plugin_list.blockSignals(True)
         self.plugin_list.clear()
-        enabled_plugins = self.config.get('enabled_plugins', [])
+        enabled_plugins = self.config.get("enabled_plugins", [])
 
         for plugin in self.manager.plugins:
             plugin_id = plugin.plugin_id()
@@ -198,7 +217,9 @@ class PluginManagerDialog(QDialog):
                     item.setIcon(self.ICON_RED)
                     item.setToolTip(_("This plugin is incompatible. Check to force-enable."))
             elif plugin_id in self.manager.missing_deps_plugins:
-                failed_deps_str = ", ".join([d['name'] for d in self.manager.missing_deps_plugins[plugin_id]['failed_deps']])
+                failed_deps_str = ", ".join(
+                    [d["name"] for d in self.manager.missing_deps_plugins[plugin_id]["failed_deps"]]
+                )
                 if is_enabled:
                     item.setCheckState(Qt.Checked)
                     item.setIcon(self.ICON_GREEN_RED_WARNING)
@@ -207,7 +228,9 @@ class PluginManagerDialog(QDialog):
                     item.setCheckState(Qt.Unchecked)
                     item.setForeground(QColor("gray"))
                     item.setIcon(self.ICON_RED)
-                    item.setToolTip(_("Missing external libraries: {libs}. Check to force-enable.").format(libs=failed_deps_str))
+                    item.setToolTip(
+                        _("Missing external libraries: {libs}. Check to force-enable.").format(libs=failed_deps_str)
+                    )
             else:
                 item.setCheckState(Qt.Checked if is_enabled else Qt.Unchecked)
                 item.setIcon(self.ICON_GREEN if is_enabled else self.ICON_GRAY)
@@ -216,8 +239,8 @@ class PluginManagerDialog(QDialog):
 
         for plugin_id, info in self.manager.invalid_plugins.items():
             try:
-                plugin_name = info['spec']['class']().name()
-            except:
+                plugin_name = info["spec"]["class"]().name()
+            except Exception:
                 plugin_name = plugin_id
 
             item = QListWidgetItem(plugin_name)
@@ -226,7 +249,7 @@ class PluginManagerDialog(QDialog):
             item.setCheckState(Qt.Unchecked)
             item.setForeground(QColor("darkred"))
             item.setIcon(self.ICON_RED)
-            item.setToolTip(_("Failed to load: {reason}").format(reason=info['reason']))
+            item.setToolTip(_("Failed to load: {reason}").format(reason=info["reason"]))
             self.plugin_list.addItem(item)
 
         self.plugin_list.blockSignals(False)
@@ -244,44 +267,57 @@ class PluginManagerDialog(QDialog):
                 return
 
             is_checked = item.checkState() == Qt.Checked
-            enabled_plugins = self.config.get('enabled_plugins', [])
+            enabled_plugins = self.config.get("enabled_plugins", [])
 
             # 启用/禁用
             if is_checked and plugin_id in self.manager.incompatible_plugins:
                 reply = QMessageBox.warning(
                     self,
                     _("Compatibility Warning"),
-                    _("The plugin '{plugin_name}' is not marked as compatible with this application version.\n\n"
-                      "Forcing it to enable may cause instability or crashes.\n\n"
-                      "Are you sure you want to force enable it?").format(plugin_name=item.text()),
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                    _(
+                        "The plugin '{plugin_name}' is not marked as compatible with this application version.\n\n"
+                        "Forcing it to enable may cause instability or crashes.\n\n"
+                        "Are you sure you want to force enable it?"
+                    ).format(plugin_name=item.text()),
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No,
                 )
                 if reply == QMessageBox.Yes:
-                    if plugin_id not in enabled_plugins: enabled_plugins.append(plugin_id)
+                    if plugin_id not in enabled_plugins:
+                        enabled_plugins.append(plugin_id)
                     item.setIcon(self.ICON_YELLOW_WARNING)
                     self.manager.main_window.update_statusbar(
-                        _("Plugin '{plugin_name}' force-enabled.").format(plugin_name=plugin.name()), persistent=True)
+                        _("Plugin '{plugin_name}' force-enabled.").format(plugin_name=plugin.name()), persistent=True
+                    )
                 else:
                     item.setCheckState(Qt.Unchecked)
                     item.setIcon(self.ICON_RED)
                     self.plugin_list.blockSignals(False)
                     return
             elif is_checked and plugin_id in self.manager.missing_deps_plugins:
-                failed_deps = self.manager.missing_deps_plugins[plugin_id]['failed_deps']
+                failed_deps = self.manager.missing_deps_plugins[plugin_id]["failed_deps"]
                 failed_deps_str = "\n- ".join([f"{d['name']} ({d['status']})" for d in failed_deps])
                 reply = QMessageBox.warning(
                     self,
                     _("Missing Dependencies"),
-                    _("The plugin '{plugin_name}' is missing required external libraries:\n\n- {libs}\n\n"
-                      "The plugin will likely fail to run correctly. You can try to install them from the details panel.\n\n"
-                      "Are you sure you want to force enable it anyway?").format(plugin_name=item.text(), libs=failed_deps_str),
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                    _(
+                        "The plugin '{plugin_name}' is missing required external libraries:\n\n- {libs}\n\n"
+                        "The plugin will likely fail to run correctly. You can try to install them from the details panel.\n\n"
+                        "Are you sure you want to force enable it anyway?"
+                    ).format(plugin_name=item.text(), libs=failed_deps_str),
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No,
                 )
                 if reply == QMessageBox.Yes:
-                    if plugin_id not in enabled_plugins: enabled_plugins.append(plugin_id)
+                    if plugin_id not in enabled_plugins:
+                        enabled_plugins.append(plugin_id)
                     item.setIcon(self.ICON_GREEN_RED_WARNING)
                     self.manager.main_window.update_statusbar(
-                        _("Plugin '{plugin_name}' force-enabled with missing libraries.").format(plugin_name=plugin.name()), persistent=True)
+                        _("Plugin '{plugin_name}' force-enabled with missing libraries.").format(
+                            plugin_name=plugin.name()
+                        ),
+                        persistent=True,
+                    )
                 else:
                     item.setCheckState(Qt.Unchecked)
                     item.setIcon(self.ICON_RED)
@@ -293,11 +329,13 @@ class PluginManagerDialog(QDialog):
                     item.setIcon(self.ICON_GRAY)
                     self.plugin_list.blockSignals(False)
                     return
-                if plugin_id not in enabled_plugins: enabled_plugins.append(plugin_id)
+                if plugin_id not in enabled_plugins:
+                    enabled_plugins.append(plugin_id)
                 item.setIcon(self.ICON_GREEN)
                 self.manager.main_window.update_statusbar(
-                    _("Plugin '{plugin_name}' enabled.").format(plugin_name=plugin.name()), persistent=True)
-            else: # 禁用
+                    _("Plugin '{plugin_name}' enabled.").format(plugin_name=plugin.name()), persistent=True
+                )
+            else:  # 禁用
                 if self.manager.is_dependency_for_others(plugin_id):
                     item.setCheckState(Qt.Checked)
                     if plugin_id in self.manager.incompatible_plugins:
@@ -309,18 +347,18 @@ class PluginManagerDialog(QDialog):
                     self.plugin_list.blockSignals(False)
                     return
 
-                if plugin_id in enabled_plugins: enabled_plugins.remove(plugin_id)
+                if plugin_id in enabled_plugins:
+                    enabled_plugins.remove(plugin_id)
 
-                if plugin_id in self.manager.incompatible_plugins:
-                    item.setIcon(self.ICON_RED)
-                elif plugin_id in self.manager.missing_deps_plugins:
+                if plugin_id in self.manager.incompatible_plugins or plugin_id in self.manager.missing_deps_plugins:
                     item.setIcon(self.ICON_RED)
                 else:
                     item.setIcon(self.ICON_GRAY)
                 self.manager.main_window.update_statusbar(
-                    _("Plugin '{plugin_name}' disabled.").format(plugin_name=plugin.name()), persistent=True)
+                    _("Plugin '{plugin_name}' disabled.").format(plugin_name=plugin.name()), persistent=True
+                )
 
-            self.config['enabled_plugins'] = enabled_plugins
+            self.config["enabled_plugins"] = enabled_plugins
             self.manager.main_window.save_config()
             self.manager.invalidate_cache()
 
@@ -357,14 +395,15 @@ class PluginManagerDialog(QDialog):
 
         if plugin_id in self.manager.invalid_plugins:
             info = self.manager.invalid_plugins[plugin_id]
-            metadata = info.get('spec', {}).get('metadata', {})
-            self.name_label.setText(metadata.get('name', plugin_id))
+            metadata = info.get("spec", {}).get("metadata", {})
+            self.name_label.setText(metadata.get("name", plugin_id))
             self.version_author_label.setText(
                 f"{_('Version')}: {metadata.get('version', 'N/A')}  |  {_('Author')}: {metadata.get('author', 'N/A')}"
             )
             self.description_browser.setHtml(f"<p>{metadata.get('description', '')}</p>")
             self.compat_label.setText(
-                f"<b style='color:red;'>{_('Loading Failed')}</b><br><small>{info['reason']}</small>")
+                f"<b style='color:red;'>{_('Loading Failed')}</b><br><small>{info['reason']}</small>"
+            )
             self.compat_label.setVisible(True)
             return
         plugin = self.manager.get_plugin(plugin_id)
@@ -393,11 +432,9 @@ class PluginManagerDialog(QDialog):
             )
             self.compat_label.setVisible(True)
         elif plugin_id in self.manager.missing_deps_plugins:
-            failed_deps = self.manager.missing_deps_plugins[plugin_id]['failed_deps']
-            failed_deps_str = ", ".join([f"{d['name']} ({d['status']})" for d in failed_deps])
-            self.compat_label.setText(
-                f"<b style='color:#E74C3C;'>{_('Missing Libraries')}</b>"
-            )
+            failed_deps = self.manager.missing_deps_plugins[plugin_id]["failed_deps"]
+            ", ".join([f"{d['name']} ({d['status']})" for d in failed_deps])
+            self.compat_label.setText(f"<b style='color:#E74C3C;'>{_('Missing Libraries')}</b>")
             self.compat_label.setVisible(True)
         else:
             required_version = plugin.compatible_app_version()
@@ -418,10 +455,11 @@ class PluginManagerDialog(QDialog):
             all_plugins = {p.plugin_id(): p for p in self.manager.plugins}
             for dep_id, spec in plugin_deps.items():
                 res = DependencyManager.get_instance().check_plugin_dependency(dep_id, spec, all_plugins)
-                color = {'ok': 'green', 'missing': 'red', 'outdated': 'orange'}[res['status']]
+                color = {"ok": "green", "missing": "red", "outdated": "orange"}[res["status"]]
                 title = f"{_('Required')}: {res['required'] or 'any'}\n{_('Installed')}: {res['installed'] or 'N/A'}"
                 links.append(
-                    f"<a href='plugin:{dep_id}' style='color:{color}; text-decoration:none;' title='{title}'>{res['name']}</a>")
+                    f"<a href='plugin:{dep_id}' style='color:{color}; text-decoration:none;' title='{title}'>{res['name']}</a>"
+                )
             html += ", ".join(links)
             self.plugin_deps_label.setText(html)
             self.plugin_deps_label.show()
@@ -433,10 +471,11 @@ class PluginManagerDialog(QDialog):
             links = []
             for lib_name, spec in ext_deps.items():
                 res = DependencyManager.get_instance().check_external_dependency(lib_name, spec)
-                color = {'ok': 'green', 'missing': 'red', 'outdated': 'orange'}[res['status']]
+                color = {"ok": "green", "missing": "red", "outdated": "orange"}[res["status"]]
                 title = f"{_('Required')}: {res['required'] or 'any'}\n{_('Installed')}: {res['installed'] or 'N/A'}"
                 links.append(
-                    f"<a href='lib:{lib_name}:{spec}' style='color:{color}; text-decoration:none;' title='{title}'>{res['name']}</a>")
+                    f"<a href='lib:{lib_name}:{spec}' style='color:{color}; text-decoration:none;' title='{title}'>{res['name']}</a>"
+                )
             html += ", ".join(links)
             self.external_deps_label.setText(html)
             self.external_deps_label.show()
@@ -472,7 +511,7 @@ class PluginManagerDialog(QDialog):
             self,
             _("Select Plugin Archive"),
             self.manager.main_window.config.get("last_dir", ""),
-            f"{_('Plugin Archives')} (*.zip)"
+            f"{_('Plugin Archives')} (*.zip)",
         )
         if not filepath:
             return
@@ -482,8 +521,9 @@ class PluginManagerDialog(QDialog):
                 QMessageBox.information(
                     self,
                     _("Installation Successful"),
-                    _("Plugin '{plugin_id}' has been installed.\n\nPlease restart the application to enable it.").format(
-                        plugin_id=installed_plugin_id)
+                    _(
+                        "Plugin '{plugin_id}' has been installed.\n\nPlease restart the application to enable it."
+                    ).format(plugin_id=installed_plugin_id),
                 )
                 self.reload_plugins()
                 for i in range(self.plugin_list.count()):
@@ -502,7 +542,8 @@ class PluginManagerDialog(QDialog):
 
     def open_plugin_directory(self):
         current_item = self.plugin_list.currentItem()
-        if not current_item: return
+        if not current_item:
+            return
         plugin_id = current_item.data(Qt.UserRole)
 
         plugin_dir = os.path.join(self.manager.plugin_dir, plugin_id)
@@ -513,18 +554,22 @@ class PluginManagerDialog(QDialog):
 
     def delete_plugin(self):
         current_item = self.plugin_list.currentItem()
-        if not current_item: return
+        if not current_item:
+            return
         plugin_id = current_item.data(Qt.UserRole)
         plugin = self.manager.get_plugin(plugin_id)
-        if not plugin: return
+        if not plugin:
+            return
 
         reply = QMessageBox.warning(
             self,
             _("Confirm Deletion"),
-            _("Are you sure you want to permanently delete the plugin '{plugin_name}'?\n\n"
-              "The application will need to be restarted after deletion.").format(plugin_name=plugin.name()),
+            _(
+                "Are you sure you want to permanently delete the plugin '{plugin_name}'?\n\n"
+                "The application will need to be restarted after deletion."
+            ).format(plugin_name=plugin.name()),
             QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.No,
         )
 
         if reply == QMessageBox.Yes:
@@ -534,37 +579,38 @@ class PluginManagerDialog(QDialog):
                     self,
                     _("Plugin Deleted"),
                     _("Plugin '{plugin_name}' has been deleted.\nPlease restart the application.").format(
-                        plugin_name=plugin.name())
+                        plugin_name=plugin.name()
+                    ),
                 )
                 self.populate_list()
             else:
                 QMessageBox.critical(self, _("Error"), message)
 
     def on_link_activated(self, link: str):
-        parts = link.split(':', 2)
+        parts = link.split(":", 2)
         link_type = parts[0]
 
-        if link_type == 'plugin':
+        if link_type == "plugin":
             plugin_id = parts[1]
             for i in range(self.plugin_list.count()):
                 item = self.plugin_list.item(i)
                 if item.data(Qt.UserRole) == plugin_id:
                     self.plugin_list.setCurrentItem(item)
                     return
-        elif link_type == 'lib':
+        elif link_type == "lib":
             lib_name, spec = parts[1], parts[2]
             self.install_dependency_dialog(lib_name, spec)
 
     def install_dependency_dialog(self, lib_name, spec):
         res = DependencyManager.get_instance().check_external_dependency(lib_name, spec)
 
-        if res['status'] == 'ok':
+        if res["status"] == "ok":
             msg_box = QMessageBox(self)
             msg_box.setWindowTitle(_("Dependency Check"))
             msg_box.setText(_("Library '{lib}' is already installed and compatible.").format(lib=lib_name))
             msg_box.setIcon(QMessageBox.Information)
             uninstall_btn = msg_box.addButton(_("Uninstall"), QMessageBox.ResetRole)
-            ok_btn = msg_box.addButton(_("OK"), QMessageBox.AcceptRole)
+            msg_box.addButton(_("OK"), QMessageBox.AcceptRole)
             uninstall_btn.setStyleSheet("""
                 QPushButton {
                     color: #F56C6C;
@@ -586,14 +632,15 @@ class PluginManagerDialog(QDialog):
                 self.confirm_and_uninstall(lib_name)
             return
 
-        action_text = _("Install") if res['status'] == 'missing' else _("Update")
+        action_text = _("Install") if res["status"] == "missing" else _("Update")
 
         reply = QMessageBox.question(
-            self, _("Install Dependency"),
-            _("The plugin requires the library '{lib}' (version: {spec}).\n\nDo you want to try to {action} it now?").format(
-                lib=lib_name, spec=spec or "any", action=action_text
-            ),
-            QMessageBox.Yes | QMessageBox.No
+            self,
+            _("Install Dependency"),
+            _(
+                "The plugin requires the library '{lib}' (version: {spec}).\n\nDo you want to try to {action} it now?"
+            ).format(lib=lib_name, spec=spec or "any", action=action_text),
+            QMessageBox.Yes | QMessageBox.No,
         )
 
         if reply == QMessageBox.Yes:
@@ -614,24 +661,31 @@ class PluginManagerDialog(QDialog):
     def on_install_finished(self, success, lib_name, log_dialog):
         log_dialog.close()
         if success:
-            QMessageBox.information(self, _("Success"), _(
-                "Library '{lib}' installed successfully.\nPlease restart the application to use the plugin.").format(
-                lib=lib_name))
+            QMessageBox.information(
+                self,
+                _("Success"),
+                _("Library '{lib}' installed successfully.\nPlease restart the application to use the plugin.").format(
+                    lib=lib_name
+                ),
+            )
             DependencyManager.get_instance()._cache.pop(lib_name, None)
             self.update_details(self.plugin_list.currentItem(), None)
         else:
-            QMessageBox.critical(self, _("Failed"),
-                                 _("Failed to install library '{lib}'.\nPlease check the log for details.").format(
-                                     lib=lib_name))
+            QMessageBox.critical(
+                self,
+                _("Failed"),
+                _("Failed to install library '{lib}'.\nPlease check the log for details.").format(lib=lib_name),
+            )
 
     def confirm_and_uninstall(self, lib_name):
         reply = QMessageBox.question(
             self,
             _("Confirm Uninstall"),
-            _("Are you sure you want to uninstall the library '{lib}'?\nThis may break plugins that depend on it.").format(
-                lib=lib_name),
+            _(
+                "Are you sure you want to uninstall the library '{lib}'?\nThis may break plugins that depend on it."
+            ).format(lib=lib_name),
             QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.No,
         )
 
         if reply == QMessageBox.Yes:
@@ -653,13 +707,16 @@ class PluginManagerDialog(QDialog):
     def on_uninstall_finished(self, success, lib_name, log_dialog):
         log_dialog.close()
         if success:
-            QMessageBox.information(self, _("Success"), _(
-                "Library '{lib}' uninstalled successfully.").format(lib=lib_name))
+            QMessageBox.information(
+                self, _("Success"), _("Library '{lib}' uninstalled successfully.").format(lib=lib_name)
+            )
             self.update_details(self.plugin_list.currentItem(), None)
         else:
-            QMessageBox.critical(self, _("Failed"),
-                                 _("Failed to uninstall library '{lib}'.\nPlease check the log for details.").format(
-                                     lib=lib_name))
+            QMessageBox.critical(
+                self,
+                _("Failed"),
+                _("Failed to uninstall library '{lib}'.\nPlease check the log for details.").format(lib=lib_name),
+            )
 
     def reload_plugins(self):
         self.manager.reload_plugins()

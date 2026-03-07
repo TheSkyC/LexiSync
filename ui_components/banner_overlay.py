@@ -1,40 +1,54 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QGraphicsOpacityEffect
-from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QEvent, QSize, QPoint
-from PySide6.QtGui import QIcon, QPixmap, QColor, QFont
+from PySide6.QtCore import QEasingCurve, QEvent, QPoint, QPropertyAnimation, Qt
+from PySide6.QtWidgets import QGraphicsOpacityEffect, QHBoxLayout, QLabel, QWidget
 
 
 class BannerOverlay(QWidget):
     PRESETS = {
         "drop": {
-            "bg_color": "rgba(0, 0, 0, 180)", "text_color": "#FFFFFF",
-            "border": "none", "border_radius": "15px",
-            "font_size": "24px", "font_weight": "bold", "icon_size": 32
+            "bg_color": "rgba(0, 0, 0, 180)",
+            "text_color": "#FFFFFF",
+            "border": "none",
+            "border_radius": "15px",
+            "font_size": "24px",
+            "font_weight": "bold",
+            "icon_size": 32,
         },
         "warning": {
-            "bg_color": "rgba(255, 193, 7, 235)", "text_color": "#333333",
-            "border": "1px solid #E6A23C", "border_radius": "6px",
-            "font_size": "13px", "font_weight": "bold", "icon_size": 16
+            "bg_color": "rgba(255, 193, 7, 235)",
+            "text_color": "#333333",
+            "border": "1px solid #E6A23C",
+            "border_radius": "6px",
+            "font_size": "13px",
+            "font_weight": "bold",
+            "icon_size": 16,
         },
         "info": {
-            "bg_color": "rgba(64, 158, 255, 235)", "text_color": "#FFFFFF",
-            "border": "1px solid #3A8EE6", "border_radius": "6px",
-            "font_size": "13px", "font_weight": "bold", "icon_size": 16
+            "bg_color": "rgba(64, 158, 255, 235)",
+            "text_color": "#FFFFFF",
+            "border": "1px solid #3A8EE6",
+            "border_radius": "6px",
+            "font_size": "13px",
+            "font_weight": "bold",
+            "icon_size": 16,
         },
         "success": {
-            "bg_color": "rgba(103, 194, 58, 235)", "text_color": "#FFFFFF",
-            "border": "1px solid #5DAF34", "border_radius": "6px",
-            "font_size": "13px", "font_weight": "bold", "icon_size": 16
-        }
+            "bg_color": "rgba(103, 194, 58, 235)",
+            "text_color": "#FFFFFF",
+            "border": "1px solid #5DAF34",
+            "border_radius": "6px",
+            "font_size": "13px",
+            "font_weight": "bold",
+            "icon_size": 16,
+        },
     }
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WA_StyledBackground, True)
-
 
         self._target_widget = parent
         self._layout_mode = "fill"  # 'fill', 'top', 'bottom', 'center'
@@ -89,7 +103,8 @@ class BannerOverlay(QWidget):
         return super().eventFilter(obj, event)
 
     def _update_geometry(self):
-        if not self._target_widget: return
+        if not self._target_widget:
+            return
 
         tw = self._target_widget.width()
         th = self._target_widget.height()
@@ -109,8 +124,7 @@ class BannerOverlay(QWidget):
             elif self._layout_mode == "center":
                 self.setGeometry((tw - w) // 2, (th - h) // 2, w, h)
 
-    def show_message(self, text: str, preset="info", layout_mode="fill", margin=10, fixed_height=None,
-                     **custom_styles):
+    def show_message(self, text: str, preset="info", layout_mode="fill", margin=10, fixed_height=None, **custom_styles):
         """
         显示横幅。
         :param text: 显示的文本
@@ -131,17 +145,17 @@ class BannerOverlay(QWidget):
         # 应用样式
         self.setStyleSheet(f"""
             BannerOverlay {{
-                background-color: {style['bg_color']};
-                border: {style['border']};
-                border-radius: {style['border_radius']};
+                background-color: {style["bg_color"]};
+                border: {style["border"]};
+                border-radius: {style["border_radius"]};
             }}
         """)
 
         self.text_label.setStyleSheet(f"""
             QLabel {{
-                color: {style['text_color']};
-                font-size: {style['font_size']};
-                font-weight: {style['font_weight']};
+                color: {style["text_color"]};
+                font-size: {style["font_size"]};
+                font-weight: {style["font_weight"]};
                 background: transparent;
                 border: none;
             }}
@@ -178,13 +192,7 @@ class BannerOverlay(QWidget):
 
         self.setGeometry(pos.x(), pos.y(), size.width(), size.height())
 
-        self.show_message(
-            text,
-            preset=preset,
-            icon_path=icon_path,
-            layout_mode="fill",
-            **custom_styles
-        )
+        self.show_message(text, preset=preset, icon_path=icon_path, layout_mode="fill", **custom_styles)
 
     def _on_anim_finished(self):
         if self.opacity_effect.opacity() == 0.0:

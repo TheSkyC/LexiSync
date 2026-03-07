@@ -1,13 +1,24 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QHBoxLayout, QListWidget, QStackedWidget,
-                               QListWidgetItem,QVBoxLayout, QMessageBox)
-from ui_components.styled_button import StyledButton
-from .settings_pages import GeneralSettingsPage, AppearanceSettingsPage, AISettingsPage, ValidationSettingsPage
-from .resources_page import ResourcesSettingsPage
-from utils.localization import _
 import logging
+
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QStackedWidget,
+    QVBoxLayout,
+)
+
+from ui_components.styled_button import StyledButton
+from utils.localization import _
+
+from .resources_page import ResourcesSettingsPage
+from .settings_pages import AISettingsPage, AppearanceSettingsPage, GeneralSettingsPage, ValidationSettingsPage
+
 logger = logging.getLogger(__name__)
 
 
@@ -120,8 +131,8 @@ class SettingsDialog(QDialog):
         resources_page = ResourcesSettingsPage(self.app, context="global")
         self._add_page(resources_page, _("Global Resources"))
 
-        if hasattr(self.app, 'plugin_manager'):
-            plugin_pages_data = self.app.plugin_manager.run_hook('register_settings_pages')
+        if hasattr(self.app, "plugin_manager"):
+            plugin_pages_data = self.app.plugin_manager.run_hook("register_settings_pages")
             if plugin_pages_data:
                 all_plugin_pages = {}
                 for page_dict in plugin_pages_data:
@@ -145,7 +156,7 @@ class SettingsDialog(QDialog):
     def apply_changes(self):
         language_was_changed = False
         for page_widget in self.pages.values():
-            if hasattr(page_widget, 'save_settings'):
+            if hasattr(page_widget, "save_settings"):
                 try:
                     result = page_widget.save_settings()
                     if result is True:
@@ -168,7 +179,10 @@ class SettingsDialog(QDialog):
     def on_apply_button_clicked(self):
         language_changed = self.apply_changes()
         if language_changed:
-            QMessageBox.information(self,
-                                    _("Language Changed"),
-                                    _("The UI language has been changed.\nSome changes may require a restart of the application to take full effect.")
-                                    )
+            QMessageBox.information(
+                self,
+                _("Language Changed"),
+                _(
+                    "The UI language has been changed.\nSome changes may require a restart of the application to take full effect."
+                ),
+            )

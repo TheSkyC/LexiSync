@@ -1,18 +1,41 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QCheckBox, QTreeWidget, QTreeWidgetItem, QHeaderView, QMessageBox,
-    QFileDialog, QWidget, QTextEdit, QComboBox, QGroupBox, QTextBrowser,
-    QAbstractItemView, QSizePolicy, QInputDialog
-)
-from PySide6.QtCore import Qt, Signal, QEvent, QSize
+from copy import deepcopy
 import json
 import uuid
-from copy import deepcopy
+
+from PySide6.QtCore import QEvent, QSize, Qt, Signal
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QInputDialog,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QSizePolicy,
+    QTextBrowser,
+    QTextEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+)
+
 from ui_components.tooltip import Tooltip
-from utils.constants import PROMPT_PRESET_EXTENSION, DEFAULT_PROMPT_STRUCTURE, STRUCTURAL, STATIC, DYNAMIC, DEFAULT_CORRECTION_PROMPT_STRUCTURE
+from utils.constants import (
+    DEFAULT_CORRECTION_PROMPT_STRUCTURE,
+    DEFAULT_PROMPT_STRUCTURE,
+    DYNAMIC,
+    PROMPT_PRESET_EXTENSION,
+    STATIC,
+    STRUCTURAL,
+)
 from utils.localization import _
 
 
@@ -32,7 +55,6 @@ class WrappingTextBrowser(QTextBrowser):
     def setSource(self, name):
         if name.toString():
             self.placeholder_clicked.emit(name.toString())
-
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -138,7 +160,6 @@ class PromptManagerDialog(QDialog):
         self.tree.model().rowsMoved.connect(self.sync_data_from_tree)
         main_layout.addWidget(self.tree)
 
-
         # Buttons
         button_box = QHBoxLayout()
         button_box.addStretch(1)
@@ -156,11 +177,7 @@ class PromptManagerDialog(QDialog):
         for part in self.prompt_structure:
             enabled_char = "✓" if part.get("enabled", True) else "✗"
             display_type = self.get_display_type(part["type"])
-            item = QTreeWidgetItem(self.tree, [
-                enabled_char,
-                display_type,
-                part["content"]
-            ])
+            item = QTreeWidgetItem(self.tree, [enabled_char, display_type, part["content"]])
             item.setData(0, Qt.UserRole, part["id"])
             item.setFlags(item.flags() & ~Qt.ItemIsDropEnabled)
             self.tree.addTopLevelItem(item)
@@ -187,34 +204,38 @@ class PromptManagerDialog(QDialog):
                 break
 
     def get_display_type(self, internal_type):
-        if internal_type == STRUCTURAL: return _("Structural Content")
-        if internal_type == STATIC: return _("Static Instruction")
-        if internal_type == DYNAMIC: return _("Dynamic Instruction")
+        if internal_type == STRUCTURAL:
+            return _("Structural Content")
+        if internal_type == STATIC:
+            return _("Static Instruction")
+        if internal_type == DYNAMIC:
+            return _("Dynamic Instruction")
         return internal_type
 
     def get_internal_type(self, display_type):
-        if display_type == _("Structural Content"): return STRUCTURAL
-        if display_type == _("Static Instruction"): return STATIC
-        if display_type == _("Dynamic Instruction"): return DYNAMIC
+        if display_type == _("Structural Content"):
+            return STRUCTURAL
+        if display_type == _("Static Instruction"):
+            return STATIC
+        if display_type == _("Dynamic Instruction"):
+            return DYNAMIC
         return display_type
 
     def update_preset_combo(self):
         self.preset_combo.blockSignals(True)
         self.preset_combo.clear()
         for p in self.prompts_data:
-            if p.get("type") == "translation":
-                type_str = _("Translation Prompt")
-            else:
-                type_str = _("Correction Prompt")
+            type_str = _("Translation Prompt") if p.get("type") == "translation" else _("Correction Prompt")
 
-            self.preset_combo.addItem(f"{p['name']} ({type_str})", p['id'])
+            self.preset_combo.addItem(f"{p['name']} ({type_str})", p["id"])
 
         if 0 <= self.current_prompt_index < len(self.prompts_data):
             self.preset_combo.setCurrentIndex(self.current_prompt_index)
         self.preset_combo.blockSignals(False)
 
     def on_preset_changed(self, index):
-        if index < 0: return
+        if index < 0:
+            return
         # 切换前先保存当前树的数据到内存中的 list
         self.save_tree_to_current_memory()
         self.current_prompt_index = index
@@ -230,12 +251,14 @@ class PromptManagerDialog(QDialog):
         self.populate_tree()  # 复用原有的 populate_tree
 
     def save_tree_to_current_memory(self):
-        if not self.prompts_data: return
+        if not self.prompts_data:
+            return
         self.sync_data_from_tree()
         self.prompts_data[self.current_prompt_index]["structure"] = self.prompt_structure
 
     def add_new_preset(self):
-        if not self.prompts_data: return
+        if not self.prompts_data:
+            return
         new_preset = deepcopy(self.prompts_data[self.current_prompt_index])
         new_preset["id"] = str(uuid.uuid4())
         new_preset["name"] = new_preset["name"] + " (Copy)"
@@ -263,12 +286,13 @@ class PromptManagerDialog(QDialog):
         if ok and new_name:
             current["name"] = new_name
 
-            types = ["translation", "correction"]
             type_item, ok_type = QInputDialog.getItem(
-                self, _("Preset Type"), _("Select Usage Type:"),
+                self,
+                _("Preset Type"),
+                _("Select Usage Type:"),
                 [_("Translation"), _("Correction")],
                 0 if current.get("type") == "translation" else 1,
-                False
+                False,
             )
             if ok_type:
                 current["type"] = "translation" if type_item == _("Translation") else "correction"
@@ -305,28 +329,50 @@ class PromptManagerDialog(QDialog):
             return
 
         placeholders_data = [
-            {'placeholder': '[Source Text]', 'description': _('The original text to be translated.'),
-             'provider': _('Main App')},
-            {'placeholder': '[Translation]', 'description': _('The current translation text.'),
-             'provider': _('Main App')},
-            {'placeholder': '[Error List]',
-             'description': _('List of validation errors found in the current translation.'),
-             'provider': _('Main App')},
-            {'placeholder': '[Target Language]', 'description': _('The target language for translation.'),
-             'provider': _('Main App')},
-            {'placeholder': '[Glossary]',
-             'description': _('Injects glossary terms found in the original text to enforce specific translations.'),
-             'provider': _('Main App')},
-            {'placeholder': '[Plural Context]',
-             'description': _(
-                 'Contextual information about the specific plural form being translated (e.g., category, examples).'),
-             'provider': _('Main App')},
-            {'placeholder': '[Untranslated Context]', 'description': _('Nearby untranslated original text.'),
-             'provider': _('Main App')},
-            {'placeholder': '[Translated Context]', 'description': _('Nearby translated text for context.'),
-             'provider': _('Main App')},
+            {
+                "placeholder": "[Source Text]",
+                "description": _("The original text to be translated."),
+                "provider": _("Main App"),
+            },
+            {
+                "placeholder": "[Translation]",
+                "description": _("The current translation text."),
+                "provider": _("Main App"),
+            },
+            {
+                "placeholder": "[Error List]",
+                "description": _("List of validation errors found in the current translation."),
+                "provider": _("Main App"),
+            },
+            {
+                "placeholder": "[Target Language]",
+                "description": _("The target language for translation."),
+                "provider": _("Main App"),
+            },
+            {
+                "placeholder": "[Glossary]",
+                "description": _("Injects glossary terms found in the original text to enforce specific translations."),
+                "provider": _("Main App"),
+            },
+            {
+                "placeholder": "[Plural Context]",
+                "description": _(
+                    "Contextual information about the specific plural form being translated (e.g., category, examples)."
+                ),
+                "provider": _("Main App"),
+            },
+            {
+                "placeholder": "[Untranslated Context]",
+                "description": _("Nearby untranslated original text."),
+                "provider": _("Main App"),
+            },
+            {
+                "placeholder": "[Translated Context]",
+                "description": _("Nearby translated text for context."),
+                "provider": _("Main App"),
+            },
         ]
-        plugin_placeholders = self.app.plugin_manager.run_hook('register_ai_placeholders')
+        plugin_placeholders = self.app.plugin_manager.run_hook("register_ai_placeholders")
         if plugin_placeholders:
             placeholders_data.extend(plugin_placeholders)
 
@@ -344,13 +390,18 @@ class PromptManagerDialog(QDialog):
 
         if preset_type == "correction":
             default_structure_to_use = deepcopy(DEFAULT_CORRECTION_PROMPT_STRUCTURE)
-            confirm_message = _("Are you sure you want to reset this Correction Prompt to its default settings?\nAll current customizations will be lost.")
+            confirm_message = _(
+                "Are you sure you want to reset this Correction Prompt to its default settings?\nAll current customizations will be lost."
+            )
         else:
             default_structure_to_use = deepcopy(DEFAULT_PROMPT_STRUCTURE)
-            confirm_message = _("Are you sure you want to reset this Translation Prompt to its default settings?\nAll current customizations will be lost.")
+            confirm_message = _(
+                "Are you sure you want to reset this Translation Prompt to its default settings?\nAll current customizations will be lost."
+            )
 
-        reply = QMessageBox.question(self, _("Confirm"), confirm_message,
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(
+            self, _("Confirm"), confirm_message, QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
         if reply == QMessageBox.Yes:
             self.prompt_structure = default_structure_to_use
             self.populate_tree()
@@ -360,17 +411,21 @@ class PromptManagerDialog(QDialog):
             self,
             _("Import Prompt Preset"),
             "",
-            _("Prompt Files (*{ext});;All Files (*.*)").format(ext=PROMPT_PRESET_EXTENSION)
+            _("Prompt Files (*{ext});;All Files (*.*)").format(ext=PROMPT_PRESET_EXTENSION),
         )
-        if not filepath: return
+        if not filepath:
+            return
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, encoding="utf-8") as f:
                 preset = json.load(f)
             if isinstance(preset, list) and all("content" in p for p in preset):
                 for p_item in preset:
-                    if "id" not in p_item: p_item["id"] = str(uuid.uuid4())
-                    if "enabled" not in p_item: p_item["enabled"] = True
-                    if "type" not in p_item: p_item["type"] = STATIC
+                    if "id" not in p_item:
+                        p_item["id"] = str(uuid.uuid4())
+                    if "enabled" not in p_item:
+                        p_item["enabled"] = True
+                    if "type" not in p_item:
+                        p_item["type"] = STATIC
                 self.prompt_structure = preset
                 self.populate_tree()
                 QMessageBox.information(self, _("Success"), _("Preset imported successfully."))
@@ -384,11 +439,12 @@ class PromptManagerDialog(QDialog):
             self,
             _("Export Prompt Preset"),
             "my_prompt_preset.prompt",
-            _("Prompt Files (*{ext});;All Files (*.*)").format(ext=PROMPT_PRESET_EXTENSION)
+            _("Prompt Files (*{ext});;All Files (*.*)").format(ext=PROMPT_PRESET_EXTENSION),
         )
-        if not filepath: return
+        if not filepath:
+            return
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(self.prompt_structure, f, indent=4, ensure_ascii=False)
             QMessageBox.information(self, _("Success"), _("Preset exported successfully."))
         except Exception as e:
@@ -437,7 +493,7 @@ class PromptItemEditor(QDialog):
         self.display_values = {
             STRUCTURAL: _("Structural Content"),
             STATIC: _("Static Instruction"),
-            DYNAMIC: _("Dynamic Instruction")
+            DYNAMIC: _("Dynamic Instruction"),
         }
         self.type_combo.addItems(list(self.display_values.values()))
         self.type_combo.setCurrentText(self.display_values.get(self.initial_data["type"], self.initial_data["type"]))
@@ -480,9 +536,9 @@ class PromptItemEditor(QDialog):
             self.placeholders_browser.linkActivated.connect(self.insert_placeholder_text)
 
             self.placeholders_browser.setStyleSheet("""
-                QLabel { 
+                QLabel {
                     border: 1px solid #ccc;
-                    background-color: #f9f9f9; 
+                    background-color: #f9f9f9;
                     font-size: 13px;
                     padding: 8px;
                     border-radius: 4px;
@@ -491,7 +547,7 @@ class PromptItemEditor(QDialog):
 
             html_parts = []
             for data in self.placeholders_data:
-                placeholder = data['placeholder']
+                placeholder = data["placeholder"]
                 html_parts.append(
                     f'<a href="{placeholder}" style="color: #007BFF; text-decoration: none; background-color: #EAF2F8; padding: 2px 5px; border-radius: 3px; margin: 2px; display: inline-block;">{placeholder}</a>'
                 )
@@ -519,16 +575,16 @@ class PromptItemEditor(QDialog):
     def eventFilter(self, obj, event):
         if obj is self.placeholders_browser:
             if event.type() == QEvent.MouseMove:
-                from PySide6.QtGui import QTextDocument, QTextCursor
                 from PySide6.QtCore import QPoint
+                from PySide6.QtGui import QTextCursor, QTextDocument
+
                 local_pos = event.pos()
                 doc = QTextDocument()
                 doc.setDefaultFont(self.placeholders_browser.font())
                 doc.setHtml(self.placeholders_browser.text())
                 doc.setTextWidth(self.placeholders_browser.width())
                 margins = self.placeholders_browser.contentsMargins()
-                adjusted_pos = QPoint(local_pos.x() - margins.left(),
-                                      local_pos.y() - margins.top())
+                adjusted_pos = QPoint(local_pos.x() - margins.left(), local_pos.y() - margins.top())
                 cursor_pos = doc.documentLayout().hitTest(adjusted_pos, Qt.FuzzyHit)
 
                 anchor = ""
@@ -543,7 +599,7 @@ class PromptItemEditor(QDialog):
                 if anchor:
                     if anchor != self._last_hovered_anchor:
                         self._last_hovered_anchor = anchor
-                        placeholder_data = next((p for p in self.placeholders_data if p['placeholder'] == anchor), None)
+                        placeholder_data = next((p for p in self.placeholders_data if p["placeholder"] == anchor), None)
                         if placeholder_data:
                             tooltip_text = (
                                 f"<b>{placeholder_data['placeholder']}</b><br>"
@@ -554,10 +610,9 @@ class PromptItemEditor(QDialog):
                             self.tooltip.show_tooltip(event.globalPos(), tooltip_text)
                         else:
                             self.tooltip.hide()
-                else:
-                    if self._last_hovered_anchor:
-                        self._last_hovered_anchor = ""
-                        self.tooltip.hide()
+                elif self._last_hovered_anchor:
+                    self._last_hovered_anchor = ""
+                    self.tooltip.hide()
 
             elif event.type() == QEvent.Leave:
                 self._last_hovered_anchor = ""
@@ -577,7 +632,7 @@ class PromptItemEditor(QDialog):
             "id": self.initial_data["id"],
             "type": internal_key,
             "enabled": self.enabled_checkbox.isChecked(),
-            "content": self.content_text_edit.toPlainText().strip()
+            "content": self.content_text_edit.toPlainText().strip(),
         }
         super().accept()
 

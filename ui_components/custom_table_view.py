@@ -1,8 +1,8 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtWidgets import QTableView
-from PySide6.QtCore import Qt, QPoint, QTimer
 
 
 class CustomTableView(QTableView):

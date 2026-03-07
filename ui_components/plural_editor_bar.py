@@ -1,13 +1,12 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QWidget, QHBoxLayout, QPushButton,
-                               QButtonGroup, QComboBox, QStyledItemDelegate, QStyle)
-from PySide6.QtCore import (Qt, Signal, QSize, QPropertyAnimation,
-                            QParallelAnimationGroup, QEasingCurve)
-from PySide6.QtGui import QIcon, QPainter, QFont
-from utils.path_utils import get_resource_path
+from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, QSize, Qt, Signal
+from PySide6.QtGui import QIcon, QPainter
+from PySide6.QtWidgets import QButtonGroup, QComboBox, QHBoxLayout, QPushButton, QStyle, QStyledItemDelegate, QWidget
+
 from utils.localization import _
+from utils.path_utils import get_resource_path
 
 
 class PluralComboBoxDelegate(QStyledItemDelegate):
@@ -183,9 +182,9 @@ class PluralEditorBar(QWidget):
             self.compact_combo.clear()
 
             for info in plural_info:
-                idx = info['index']
-                cat = info['category']
-                ex = info['examples']
+                idx = info["index"]
+                cat = info["category"]
+                ex = info["examples"]
 
                 # Flat Button
                 btn = QPushButton(f"{cat}")
@@ -255,7 +254,7 @@ class PluralEditorBar(QWidget):
 
     def _animate_transition(self):
         # 1. 停止正在运行的旧动画，防止快速连点时出现冲突
-        if hasattr(self, 'anim_group') and self.anim_group.state() == QParallelAnimationGroup.Running:
+        if hasattr(self, "anim_group") and self.anim_group.state() == QParallelAnimationGroup.Running:
             self.anim_group.stop()
 
         self.anim_group = QParallelAnimationGroup(self)

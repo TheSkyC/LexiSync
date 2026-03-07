@@ -1,18 +1,24 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtCore import QRunnable, QObject, Signal
-import weakref
-import re
 import logging
-from utils.enums import AIOperationType
-from utils.text_utils import generate_ngrams
-from utils.localization import _
+import re
+import weakref
+
+from PySide6.QtCore import QObject, QRunnable, Signal
+
+from models.translatable_string import TranslatableString
 from services.prompt_service import generate_prompt_from_structure
 from services.validation_service import validate_string
-from models.translatable_string import TranslatableString
+from utils.constants import (
+    COT_INJECTION_PROMPT,
+    DEFAULT_CORRECTION_PROMPT_STRUCTURE,
+    DEFAULT_PROMPT_STRUCTURE,
+)
+from utils.enums import AIOperationType
+from utils.localization import _
 from utils.plural_utils import get_plural_form_description
-from utils.constants import DEFAULT_PROMPT_STRUCTURE, SUPPORTED_LANGUAGES, DEFAULT_CORRECTION_PROMPT_STRUCTURE, COT_INJECTION_PROMPT
+from utils.text_utils import generate_ngrams
 
 logger = logging.getLogger(__name__)
 
@@ -36,31 +42,32 @@ class AIWorker(QRunnable):
         self.signals = AIWorkerSignals()
 
         # Args
-        self.original_text = kwargs.get('original_text', "")
-        self.target_lang = kwargs.get('target_lang', "")
+        self.original_text = kwargs.get("original_text", "")
+        self.target_lang = kwargs.get("target_lang", "")
 
-        self.context_provider = kwargs.get('context_provider', None)
-        self.context_dict = kwargs.get('context_dict', {})
+        self.context_provider = kwargs.get("context_provider")
+        self.context_dict = kwargs.get("context_dict", {})
 
-        self.plugin_placeholders = kwargs.get('plugin_placeholders', {})
-        self.system_prompt = kwargs.get('system_prompt', None)
-        self.temperature = kwargs.get('temperature', None)
-        self.self_repair_limit = kwargs.get('self_repair_limit', 1)
-        self.api_timeout = kwargs.get('api_timeout', 60)
-        self.stream = kwargs.get('stream', False)
-        self.current_translation = kwargs.get('current_translation', "")
-        self.plural_index = kwargs.get('plural_index', 0)
-        self.is_plural_item = kwargs.get('is_plural_item', False)
+        self.plugin_placeholders = kwargs.get("plugin_placeholders", {})
+        self.system_prompt = kwargs.get("system_prompt")
+        self.temperature = kwargs.get("temperature")
+        self.self_repair_limit = kwargs.get("self_repair_limit", 1)
+        self.api_timeout = kwargs.get("api_timeout", 60)
+        self.stream = kwargs.get("stream", False)
+        self.current_translation = kwargs.get("current_translation", "")
+        self.plural_index = kwargs.get("plural_index", 0)
+        self.is_plural_item = kwargs.get("is_plural_item", False)
 
     def run(self):
         try:
             app = self.app_ref()
-            if not app: return
+            if not app:
+                return
 
             # 预处理原文空白符
             original_full = self.original_text
-            match_leading = re.match(r'^(\s*)', original_full)
-            match_trailing = re.search(r'(\s*)$', original_full)
+            match_leading = re.match(r"^(\s*)", original_full)
+            match_trailing = re.search(r"(\s*)$", original_full)
             leading_ws = match_leading.group(1) if match_leading else ""
             trailing_ws = match_trailing.group(1) if match_trailing else ""
             if len(leading_ws) + len(trailing_ws) < len(original_full):
@@ -72,6 +79,7 @@ class AIWorker(QRunnable):
             if self.context_provider and callable(self.context_provider):
                 try:
                     import inspect
+
                     sig = inspect.signature(self.context_provider)
                     if len(sig.parameters) >= 2:
                         generated_context = self.context_provider(self.ts_id, self.plural_index)
@@ -132,35 +140,29 @@ class AIWorker(QRunnable):
                     plural_expr = None
                     if ts_obj:
                         nplurals = len(ts_obj.plural_translations)
-                        plural_expr = getattr(ts_obj, 'plural_expr', None)
+                        plural_expr = getattr(ts_obj, "plural_expr", None)
                     desc = get_plural_form_description(
-                        self.target_lang,
-                        self.plural_index,
-                        num_plurals=nplurals,
-                        plural_expr=plural_expr
+                        self.target_lang, self.plural_index, num_plurals=nplurals, plural_expr=plural_expr
                     )
-                    if desc:
-                        plural_context_str = desc
-                    else:
-                        plural_context_str = f"Plural Form Index: {self.plural_index}"
+                    plural_context_str = desc if desc else f"Plural Form Index: {self.plural_index}"
 
                 # 填充占位符
                 glossary_prompt_part = self._build_glossary_context(app)
                 placeholders = {
-                    '[Source Language]': app.source_language,
-                    '[Target Language]': self.target_lang,
-                    '[Untranslated Context]': self.context_dict.get("original_context", ""),
-                    '[Translated Context]': self.context_dict.get("translation_context", ""),
-                    '[Glossary]': glossary_prompt_part,
-                    '[Semantic Context]': self.context_dict.get("[Semantic Context]", ""),
-                    '[Source Text]': text_to_translate_core,
-                    '[Current Translation]': self.current_translation,
-                    '[Error List]': self.context_dict.get("[Error List]", ""),
-                    '[Plural Context]': plural_context_str
+                    "[Source Language]": app.source_language,
+                    "[Target Language]": self.target_lang,
+                    "[Untranslated Context]": self.context_dict.get("original_context", ""),
+                    "[Translated Context]": self.context_dict.get("translation_context", ""),
+                    "[Glossary]": glossary_prompt_part,
+                    "[Semantic Context]": self.context_dict.get("[Semantic Context]", ""),
+                    "[Source Text]": text_to_translate_core,
+                    "[Current Translation]": self.current_translation,
+                    "[Error List]": self.context_dict.get("[Error List]", ""),
+                    "[Plural Context]": plural_context_str,
                 }
 
                 for k, v in self.context_dict.items():
-                    if k.startswith('[') and k.endswith(']'):
+                    if k.startswith("[") and k.endswith("]"):
                         placeholders[k] = v
                 if self.plugin_placeholders:
                     placeholders.update(self.plugin_placeholders)
@@ -202,9 +204,7 @@ class AIWorker(QRunnable):
                         self.signals.stream_chunk.emit("Thinking...")
 
                     for chunk in app.ai_translator.translate_stream(
-                            text_to_send, final_prompt,
-                            temperature=self.temperature,
-                            timeout=self.api_timeout
+                        text_to_send, final_prompt, temperature=self.temperature, timeout=self.api_timeout
                     ):
                         if not use_cot:
                             # Standard streaming
@@ -282,39 +282,37 @@ class AIWorker(QRunnable):
                                         cot_emitted_len = safe_end_index
 
                     # Post-processing for CoT (Stream finished)
-                    if use_cot:
-                        if not final_translated_text:
-                            match = re.search(r'<translation>(.*?)</translation>', full_text_buffer, re.DOTALL)
-                            if match:
-                                final_translated_text = match.group(1).strip()
+                    if use_cot and not final_translated_text:
+                        match = re.search(r"<translation>(.*?)</translation>", full_text_buffer, re.DOTALL)
+                        if match:
+                            final_translated_text = match.group(1).strip()
+                        else:
+                            parts = full_text_buffer.split("</thinking>")
+                            if len(parts) > 1:
+                                temp = parts[1].replace("<translation>", "")
+                                final_translated_text = temp.strip()
                             else:
-                                parts = full_text_buffer.split("</thinking>")
-                                if len(parts) > 1:
-                                    temp = parts[1].replace("<translation>", "")
-                                    final_translated_text = temp.strip()
-                                else:
-                                    final_translated_text = full_text_buffer.replace("<translation>", "").strip()
+                                final_translated_text = full_text_buffer.replace("<translation>", "").strip()
 
                 else:
                     # Non-streaming logic
                     raw_response = app.ai_translator.translate(
-                        text_to_send, final_prompt,
-                        temperature=self.temperature,
-                        timeout=self.api_timeout
+                        text_to_send, final_prompt, temperature=self.temperature, timeout=self.api_timeout
                     )
 
                     if use_cot:
-                        match = re.search(r'<translation>(.*?)</translation>', raw_response, re.DOTALL)
+                        match = re.search(r"<translation>(.*?)</translation>", raw_response, re.DOTALL)
                         if match:
                             final_translated_text = match.group(1).strip()
                         else:
-                            parts = re.split(r'</thinking>', raw_response, flags=re.IGNORECASE)
+                            parts = re.split(r"</thinking>", raw_response, flags=re.IGNORECASE)
                             if len(parts) > 1:
                                 potential_text = parts[1].replace("<translation>", "").strip()
                                 final_translated_text = potential_text
                             else:
-                                final_translated_text = raw_response.replace("<translation>", "").replace(
-                                    "</translation>", "").strip()
+                                final_translated_text = (
+                                    raw_response.replace("<translation>", "").replace("</translation>", "").strip()
+                                )
                     else:
                         final_translated_text = raw_response.strip()
                 # 修复首尾空格
@@ -336,9 +334,8 @@ class AIWorker(QRunnable):
                         error_details = "\n".join([f"- {msg}" for __, msg in temp_ts.warnings])
 
                         log_msg = _(
-                            "Self-Repair: '{text}...' failed validation. Issues:\n{errors}\nRetrying with user correction template...").format(
-                            text=self.original_text[:20], errors=error_details
-                        )
+                            "Self-Repair: '{text}...' failed validation. Issues:\n{errors}\nRetrying with user correction template..."
+                        ).format(text=self.original_text[:20], errors=error_details)
                         self.signals.log_message.emit(log_msg, "WARNING")
 
                         # 构建自修复 Prompt
@@ -366,17 +363,14 @@ class AIWorker(QRunnable):
         active_fix_id = app.config.get("active_correction_prompt_id")
         prompt_data = next((p for p in prompts if p["id"] == active_fix_id), None)
 
-        if prompt_data:
-            structure = prompt_data["structure"]
-        else:
-            structure = DEFAULT_CORRECTION_PROMPT_STRUCTURE
+        structure = prompt_data["structure"] if prompt_data else DEFAULT_CORRECTION_PROMPT_STRUCTURE
 
         placeholders = {
-            '[Target Language]': self.target_lang,
-            '[Source Text]': self.original_text,
-            '[Current Translation]': failed_translation,
-            '[Error List]': error_details,
-            '[Glossary]': self._build_glossary_context(app)
+            "[Target Language]": self.target_lang,
+            "[Source Text]": self.original_text,
+            "[Current Translation]": failed_translation,
+            "[Error List]": error_details,
+            "[Glossary]": self._build_glossary_context(app),
         }
 
         base_prompt = generate_prompt_from_structure(structure, placeholders)
@@ -393,20 +387,19 @@ class AIWorker(QRunnable):
 
     def _build_glossary_context(self, app):
         candidates = generate_ngrams(self.original_text, min_n=1, max_n=5)
-        if not candidates: return ""
+        if not candidates:
+            return ""
 
         source_lang = app.source_language
         target_lang_code = app.current_target_language
 
         # 批量查询数据库
         potential_terms = app.glossary_service.get_translations_batch(
-            words=candidates,
-            source_lang=source_lang,
-            target_lang=target_lang_code,
-            include_reverse=False
+            words=candidates, source_lang=source_lang, target_lang=target_lang_code, include_reverse=False
         )
 
-        if not potential_terms: return ""
+        if not potential_terms:
+            return ""
 
         placeholder_spans = [m.span() for m in app.placeholder_regex.finditer(self.original_text)]
         valid_terms = {}
@@ -416,7 +409,7 @@ class AIWorker(QRunnable):
         for word in sorted_terms:
             term_info = potential_terms[word]
             try:
-                for match in re.finditer(r'\b' + re.escape(word) + r'\b', self.original_text, re.IGNORECASE):
+                for match in re.finditer(r"\b" + re.escape(word) + r"\b", self.original_text, re.IGNORECASE):
                     start, end = match.start(), match.end()
 
                     if any(p_start <= start < p_end for p_start, p_end in placeholder_spans):
@@ -434,12 +427,13 @@ class AIWorker(QRunnable):
             except re.error:
                 continue
 
-        if not valid_terms: return ""
+        if not valid_terms:
+            return ""
 
         header = f"| {_('Source Term')} | {_('Should be Translated As')} |\n|---|---|\n"
         rows = []
         for word, term_info in valid_terms.items():
-            targets = " or ".join(f"'{t['target']}'" for t in term_info['translations'])
+            targets = " or ".join(f"'{t['target']}'" for t in term_info["translations"])
             rows.append(f"| {word} | {targets} |")
 
         return header + "\n".join(rows)

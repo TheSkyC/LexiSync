@@ -1,8 +1,9 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
 from PySide6.QtCore import QRegularExpression
+from PySide6.QtGui import QColor, QSyntaxHighlighter, QTextCharFormat
+
 
 class PoCommentHighlighter(QSyntaxHighlighter):
     def __init__(self, parent=None):

@@ -1,15 +1,14 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFrame, QSizePolicy
-)
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
+
+from utils.localization import _
+
 from .newline_text_edit import NewlineTextEdit
 from .po_comment_highlighter import PoCommentHighlighter
 from .styled_button import StyledButton
-from utils.localization import _
 
 
 class CommentStatusPanel(QWidget):
@@ -42,7 +41,9 @@ class CommentStatusPanel(QWidget):
         comment_actions_frame = QFrame()
         comment_actions_layout = QHBoxLayout(comment_actions_frame)
         comment_actions_layout.setContentsMargins(0, 0, 0, 0)
-        self.apply_comment_btn = StyledButton(_("Apply Comment"), on_click=self.apply_comment_signal.emit, btn_type="default", size="small")
+        self.apply_comment_btn = StyledButton(
+            _("Apply Comment"), on_click=self.apply_comment_signal.emit, btn_type="default", size="small"
+        )
         self.apply_comment_btn.setObjectName("apply_comment_btn")
         self.apply_comment_btn.setEnabled(False)
         comment_actions_layout.addWidget(self.apply_comment_btn)

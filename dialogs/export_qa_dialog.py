@@ -1,11 +1,8 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QRadioButton,
-    QCheckBox, QGroupBox, QDialogButtonBox, QFrame
-)
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QGroupBox, QRadioButton, QVBoxLayout
+
 from utils.localization import _
 
 
@@ -72,7 +69,7 @@ class ExportQADialog(QDialog):
             "levels": {
                 "error": self.chk_error.isChecked(),
                 "warning": self.chk_warning.isChecked(),
-                "info": self.chk_info.isChecked()
+                "info": self.chk_info.isChecked(),
             },
-            "include_ignored": self.chk_ignored.isChecked()
+            "include_ignored": self.chk_ignored.isChecked(),
         }

@@ -1,42 +1,79 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import xxhash
-from PySide6.QtGui import QColor, QFont
-from utils.constants import APP_NAMESPACE_UUID, MAX_UNDO_HISTORY
-from utils.localization import _
-from utils.enums import WarningType
 import logging
+
+from PySide6.QtGui import QColor, QFont
+import xxhash
+
+from utils.constants import MAX_UNDO_HISTORY
+from utils.enums import WarningType
+from utils.localization import _
+
 logger = logging.getLogger(__name__)
 
 
 class TranslatableString:
     __slots__ = [
-        'id', '_search_cache', 'context', 'original_raw', 'original_semantic',
-        'translation', 'is_ignored', 'was_auto_ignored', 'occurrences',
-        'char_pos_start_in_file', 'char_pos_end_in_file', 'warnings',
-        'minor_warnings', 'infos', 'is_warning_ignored', 'string_type',
-        'comment', 'is_reviewed', 'is_fuzzy', 'po_comment',
-        'ui_style_cache', 'context_lines', 'current_line_in_context_idx',
-        '_translation_edit_history', '_translation_history_pointer',
-        'sort_weight', '_display_original', '_display_translation',
-        'is_plural', 'original_plural', 'plural_translations',
-        'plural_expr'
+        "_display_original",
+        "_display_translation",
+        "_search_cache",
+        "_translation_edit_history",
+        "_translation_history_pointer",
+        "char_pos_end_in_file",
+        "char_pos_start_in_file",
+        "comment",
+        "context",
+        "context_lines",
+        "current_line_in_context_idx",
+        "id",
+        "infos",
+        "is_fuzzy",
+        "is_ignored",
+        "is_plural",
+        "is_reviewed",
+        "is_warning_ignored",
+        "minor_warnings",
+        "occurrences",
+        "original_plural",
+        "original_raw",
+        "original_semantic",
+        "plural_expr",
+        "plural_translations",
+        "po_comment",
+        "sort_weight",
+        "string_type",
+        "translation",
+        "ui_style_cache",
+        "warnings",
+        "was_auto_ignored",
     ]
 
-    def __init__(self, original_raw, original_semantic, line_num, char_pos_start_in_file, char_pos_end_in_file,
-                 full_code_lines, string_type="Custom String", source_file_path="", occurrences=None, occurrence_index=0, id=None):
+    def __init__(
+        self,
+        original_raw,
+        original_semantic,
+        line_num,
+        char_pos_start_in_file,
+        char_pos_end_in_file,
+        full_code_lines,
+        string_type="Custom String",
+        source_file_path="",
+        occurrences=None,
+        occurrence_index=0,
+        id=None,
+    ):
         if id:
             self.id = id
         else:
-            name_string_for_uuid = f"{source_file_path}::{original_semantic}::{string_type}::{str(occurrence_index)}"
-            self.id = xxhash.xxh128(name_string_for_uuid.encode('utf-8')).hexdigest()
+            name_string_for_uuid = f"{source_file_path}::{original_semantic}::{string_type}::{occurrence_index!s}"
+            self.id = xxhash.xxh128(name_string_for_uuid.encode("utf-8")).hexdigest()
         self._search_cache = (original_semantic + " " + string_type).lower()
         self.context = ""
         self.original_raw = original_raw
         self.original_semantic = original_semantic
         self.translation = ""
-        self._display_original = self.original_semantic.replace('\n', '↵')
+        self._display_original = self.original_semantic.replace("\n", "↵")
         self._display_translation = ""
         self.is_ignored = False
         self.was_auto_ignored = False
@@ -61,7 +98,7 @@ class TranslatableString:
 
         self.is_plural = False
         self.original_plural = ""
-        self.plural_translations = {0: ""} # Dict[int, str] 存储所有复数形式
+        self.plural_translations = {0: ""}  # Dict[int, str] 存储所有复数形式
         self.plural_expr = None
 
         self.ui_style_cache = {}
@@ -70,8 +107,8 @@ class TranslatableString:
         current_line_content_idx = line_num - 1
         if full_code_lines:
             self.context_lines = full_code_lines[
-                                 start_line_idx: min(len(full_code_lines),
-                                                     current_line_content_idx + context_radius + 1)]
+                start_line_idx : min(len(full_code_lines), current_line_content_idx + context_radius + 1)
+            ]
             self.current_line_in_context_idx = current_line_content_idx - start_line_idx
         else:
             self.context_lines = []
@@ -130,7 +167,7 @@ class TranslatableString:
             self.translation or "",
             plural_trans_text,
             self.comment or "",
-            self.string_type or ""
+            self.string_type or "",
         ]
 
         self._search_cache = " ".join(search_content).lower()
@@ -152,6 +189,7 @@ class TranslatableString:
     @property
     def singular_index(self) -> int:
         from utils.plural_utils import get_singular_index_from_expr
+
         return get_singular_index_from_expr(self.plural_expr)
 
     def set_translation_internal(self, text_with_newlines, is_initial=False, plural_index=0):
@@ -164,17 +202,17 @@ class TranslatableString:
             # 默认 translation 始终保持与 index 0 同步，用于列表展示
             if plural_index == 0:
                 self.translation = text_with_newlines
-                self._display_translation = self.translation.replace('\n', '↵')
+                self._display_translation = self.translation.replace("\n", "↵")
         else:
             self.translation = text_with_newlines
-            self._display_translation = self.translation.replace('\n', '↵')
+            self._display_translation = self.translation.replace("\n", "↵")
 
         if is_initial:
             self._translation_edit_history = [self.translation]
             self._translation_history_pointer = 0
         else:
             if self._translation_history_pointer < len(self._translation_edit_history) - 1:
-                self._translation_edit_history = self._translation_edit_history[:self._translation_history_pointer + 1]
+                self._translation_edit_history = self._translation_edit_history[: self._translation_history_pointer + 1]
             self._translation_edit_history.append(self.translation)
             if len(self._translation_edit_history) > MAX_UNDO_HISTORY * 2:
                 self._translation_edit_history.pop(0)
@@ -188,7 +226,7 @@ class TranslatableString:
         return self.translation.replace("\n", "\\n")
 
     def get_raw_translated_for_code(self):
-        return self.translation.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
+        return self.translation.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
 
     def to_dict(self):
         serializable_warnings = [(wt.name, msg) for wt, msg in self.warnings]
@@ -196,78 +234,80 @@ class TranslatableString:
         serializable_infos = [(wt.name, msg) for wt, msg in self.infos]
 
         return {
-            'id': self.id,
-            'original_raw': self.original_raw,
-            'original_semantic': self.original_semantic,
-            'translation': self.translation,
-            'is_ignored': self.is_ignored,
-            'was_auto_ignored': self.was_auto_ignored,
-            'line_num_in_file': self.line_num_in_file, # Backward compatible
-            'source_file_path': self.source_file_path, # Backward compatible
-            'occurrences': self.occurrences,
-            'char_pos_start_in_file': self.char_pos_start_in_file,
-            'char_pos_end_in_file': self.char_pos_end_in_file,
-            'string_type': self.string_type,
-            'context': self.context,
-            'comment': self.comment,
-            'is_reviewed': self.is_reviewed,
-            'is_fuzzy': self.is_fuzzy,
-            'po_comment': self.po_comment,
-            'is_warning_ignored': self.is_warning_ignored,
-            'warnings': serializable_warnings,
-            'minor_warnings': serializable_minor_warnings,
-            'infos': serializable_infos,
-            'is_plural': self.is_plural,
-            'original_plural': self.original_plural,
-            'plural_translations': self.plural_translations
+            "id": self.id,
+            "original_raw": self.original_raw,
+            "original_semantic": self.original_semantic,
+            "translation": self.translation,
+            "is_ignored": self.is_ignored,
+            "was_auto_ignored": self.was_auto_ignored,
+            "line_num_in_file": self.line_num_in_file,  # Backward compatible
+            "source_file_path": self.source_file_path,  # Backward compatible
+            "occurrences": self.occurrences,
+            "char_pos_start_in_file": self.char_pos_start_in_file,
+            "char_pos_end_in_file": self.char_pos_end_in_file,
+            "string_type": self.string_type,
+            "context": self.context,
+            "comment": self.comment,
+            "is_reviewed": self.is_reviewed,
+            "is_fuzzy": self.is_fuzzy,
+            "po_comment": self.po_comment,
+            "is_warning_ignored": self.is_warning_ignored,
+            "warnings": serializable_warnings,
+            "minor_warnings": serializable_minor_warnings,
+            "infos": serializable_infos,
+            "is_plural": self.is_plural,
+            "original_plural": self.original_plural,
+            "plural_translations": self.plural_translations,
         }
 
     @classmethod
     def from_dict(cls, data, full_code_lines_ref):
         ts = cls(
-            original_raw=data['original_raw'],
-            original_semantic=data['original_semantic'],
-            line_num=data['line_num_in_file'],
-            char_pos_start_in_file=data['char_pos_start_in_file'],
-            char_pos_end_in_file=data['char_pos_end_in_file'],
+            original_raw=data["original_raw"],
+            original_semantic=data["original_semantic"],
+            line_num=data["line_num_in_file"],
+            char_pos_start_in_file=data["char_pos_start_in_file"],
+            char_pos_end_in_file=data["char_pos_end_in_file"],
             full_code_lines=full_code_lines_ref,
-            string_type=data.get('string_type', "Custom String"),
-            occurrences=data.get('occurrences')
+            string_type=data.get("string_type", "Custom String"),
+            occurrences=data.get("occurrences"),
         )
-        if not ts.occurrences and 'line_num_in_file' in data: # Backward compatible
-            ts.occurrences = [(data.get('source_file_path', ''), str(data['line_num_in_file']))]
-        ts.id = data['id']
-        ts.set_translation_internal(data.get('translation', ""), is_initial=True)
-        ts.is_ignored = data.get('is_ignored', False)
-        ts.was_auto_ignored = data.get('was_auto_ignored', False)
-        ts.context = data.get('context', "")
-        ts.comment = data.get('comment', "")
-        ts.is_reviewed = data.get('is_reviewed', False)
-        ts.is_fuzzy = data.get('is_fuzzy', False)
-        ts.po_comment = data.get('po_comment', "")
-        ts.is_warning_ignored = data.get('is_warning_ignored', False)
+        if not ts.occurrences and "line_num_in_file" in data:  # Backward compatible
+            ts.occurrences = [(data.get("source_file_path", ""), str(data["line_num_in_file"]))]
+        ts.id = data["id"]
+        ts.set_translation_internal(data.get("translation", ""), is_initial=True)
+        ts.is_ignored = data.get("is_ignored", False)
+        ts.was_auto_ignored = data.get("was_auto_ignored", False)
+        ts.context = data.get("context", "")
+        ts.comment = data.get("comment", "")
+        ts.is_reviewed = data.get("is_reviewed", False)
+        ts.is_fuzzy = data.get("is_fuzzy", False)
+        ts.po_comment = data.get("po_comment", "")
+        ts.is_warning_ignored = data.get("is_warning_ignored", False)
 
-        ts.is_plural = data.get('is_plural', False)
-        ts.original_plural = data.get('original_plural', "")
-        saved_plurals = data.get('plural_translations', {0: data.get('translation', '')})
+        ts.is_plural = data.get("is_plural", False)
+        ts.original_plural = data.get("original_plural", "")
+        saved_plurals = data.get("plural_translations", {0: data.get("translation", "")})
         ts.plural_translations = {int(k): v for k, v in saved_plurals.items()}
 
-        if 'warnings' in data:
-            for wt_name, msg in data['warnings']:
+        if "warnings" in data:
+            for wt_name, msg in data["warnings"]:
                 try:
                     ts.warnings.append((WarningType[wt_name], msg))
                 except KeyError:
                     logger.warning(
-                        f"Warning: Unknown warning type name '{wt_name}' found in project file for ID {ts.id}. Original message: {msg}")
-        if 'minor_warnings' in data:
-            for wt_name, msg in data['minor_warnings']:
+                        f"Warning: Unknown warning type name '{wt_name}' found in project file for ID {ts.id}. Original message: {msg}"
+                    )
+        if "minor_warnings" in data:
+            for wt_name, msg in data["minor_warnings"]:
                 try:
                     ts.minor_warnings.append((WarningType[wt_name], msg))
                 except KeyError:
                     logger.warning(
-                        f"Warning: Unknown minor warning type name '{wt_name}' found in project file for ID {ts.id}. Original message: {msg}")
-        if 'infos' in data:
-            for wt_name, msg in data['infos']:
+                        f"Warning: Unknown minor warning type name '{wt_name}' found in project file for ID {ts.id}. Original message: {msg}"
+                    )
+        if "infos" in data:
+            for wt_name, msg in data["infos"]:
                 try:
                     ts.infos.append((WarningType[wt_name], msg))
                 except KeyError:
@@ -293,54 +333,54 @@ class TranslatableString:
 
         # 1. 已忽略
         if self.is_ignored:
-            self.ui_style_cache['background'] = QColor(220, 220, 220, 200)
-            self.ui_style_cache['foreground'] = QColor("#707070")
+            self.ui_style_cache["background"] = QColor(220, 220, 220, 200)
+            self.ui_style_cache["foreground"] = QColor("#707070")
             font = QFont()
             font.setItalic(True)
-            self.ui_style_cache['font'] = font
+            self.ui_style_cache["font"] = font
 
         # 2. 已审阅 (绿色背景，黑色字)
         elif self.is_reviewed:
-            self.ui_style_cache['background'] = QColor("#E8F5E9")
-            self.ui_style_cache['foreground'] = QColor("#000000")
+            self.ui_style_cache["background"] = QColor("#E8F5E9")
+            self.ui_style_cache["foreground"] = QColor("#000000")
 
         # 3. 严重错误 (红色背景，红色字)
         elif self.warnings and not self.is_warning_ignored:
-            self.ui_style_cache['background'] = QColor("#FFDDDD")
-            self.ui_style_cache['foreground'] = QColor("#D32F2F")
+            self.ui_style_cache["background"] = QColor("#FFDDDD")
+            self.ui_style_cache["foreground"] = QColor("#D32F2F")
 
         # 4. 次级警告 (黄色背景，黑色字)
         elif self.minor_warnings and not self.is_warning_ignored:
-            self.ui_style_cache['background'] = QColor("#FFFACD")
-            self.ui_style_cache['foreground'] = QColor("#000000")
+            self.ui_style_cache["background"] = QColor("#FFFACD")
+            self.ui_style_cache["foreground"] = QColor("#000000")
 
         # 5. 未翻译 (透明背景，暗红色字)
         elif not self.translation.strip():
-            self.ui_style_cache['foreground'] = QColor("darkred")
+            self.ui_style_cache["foreground"] = QColor("darkred")
 
         # 6. 普通已翻译 (透明背景，黑色字)
         else:
-            self.ui_style_cache['foreground'] = QColor("#000000")
+            self.ui_style_cache["foreground"] = QColor("#000000")
 
         # 换行符
-        orig_nl_count = self.original_semantic.count('\n')
-        trans_nl_count = self.translation.count('\n')
+        orig_nl_count = self.original_semantic.count("\n")
+        trans_nl_count = self.translation.count("\n")
 
-        self.ui_style_cache.pop('original_newline_color', None)
-        self.ui_style_cache.pop('translation_newline_color', None)
+        self.ui_style_cache.pop("original_newline_color", None)
+        self.ui_style_cache.pop("translation_newline_color", None)
 
         if orig_nl_count > 0 or trans_nl_count > 0:
             if orig_nl_count == trans_nl_count:
                 # 数量严致 -> 绿色
                 green_color = QColor(34, 177, 76, 180)
                 if orig_nl_count > 0:
-                    self.ui_style_cache['original_newline_color'] = green_color
+                    self.ui_style_cache["original_newline_color"] = green_color
                 if trans_nl_count > 0:
-                    self.ui_style_cache['translation_newline_color'] = green_color
+                    self.ui_style_cache["translation_newline_color"] = green_color
             else:
                 # 数量不一致 -> 红色
                 red_color = QColor(237, 28, 36, 180)
                 if orig_nl_count > 0:
-                    self.ui_style_cache['original_newline_color'] = red_color
+                    self.ui_style_cache["original_newline_color"] = red_color
                 if trans_nl_count > 0:
-                    self.ui_style_cache['translation_newline_color'] = red_color
+                    self.ui_style_cache["translation_newline_color"] = red_color

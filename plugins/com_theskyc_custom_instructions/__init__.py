@@ -1,12 +1,15 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from plugins.plugin_base import PluginBase
-from PySide6.QtWidgets import QInputDialog, QMessageBox
 import json
 import os
 
+from PySide6.QtWidgets import QInputDialog, QMessageBox
+
+from plugins.plugin_base import PluginBase
+
 GLOBAL_SETTINGS_KEY = "__GLOBAL__"
+
 
 class PersonalizedTranslationPlugin(PluginBase):
     def plugin_id(self) -> str:
@@ -33,19 +36,17 @@ class PersonalizedTranslationPlugin(PluginBase):
     def register_ai_placeholders(self) -> list[dict]:
         return [
             {
-                'placeholder': '[Global Instructions]',
-                'description': self._('Global instructions that apply to all projects.')
+                "placeholder": "[Global Instructions]",
+                "description": self._("Global instructions that apply to all projects."),
             },
             {
-                'placeholder': '[Project Instructions]',
-                'description': self._('Instructions specific to the current project.')
-            }
+                "placeholder": "[Project Instructions]",
+                "description": self._("Instructions specific to the current project."),
+            },
         ]
 
     def get_default_config(self) -> dict:
-        return {
-            GLOBAL_SETTINGS_KEY: ""
-        }
+        return {GLOBAL_SETTINGS_KEY: ""}
 
     def get_current_project_key(self):
         if self.main_window.current_project_path:
@@ -56,10 +57,13 @@ class PersonalizedTranslationPlugin(PluginBase):
 
     def add_menu_items(self) -> list:
         return [
-            (self.name(), [
-                (self._("Project-specific Instructions..."), self.show_project_settings_dialog),
-                (self._("Global Instructions..."), self.show_global_settings_dialog)
-            ])
+            (
+                self.name(),
+                [
+                    (self._("Project-specific Instructions..."), self.show_project_settings_dialog),
+                    (self._("Global Instructions..."), self.show_global_settings_dialog),
+                ],
+            )
         ]
 
     def show_project_settings_dialog(self):
@@ -73,7 +77,7 @@ class PersonalizedTranslationPlugin(PluginBase):
             self.main_window,
             self._("Project-specific Instructions"),
             self._("Enter instructions for this project..."),
-            current_instructions
+            current_instructions,
         )
 
         if ok and new_instructions != current_instructions:
@@ -88,7 +92,7 @@ class PersonalizedTranslationPlugin(PluginBase):
             self.main_window,
             self._("Global Instructions"),
             self._("Enter global instructions..."),
-            current_instructions
+            current_instructions,
         )
 
         if ok and new_instructions != current_instructions:
@@ -102,7 +106,4 @@ class PersonalizedTranslationPlugin(PluginBase):
         project_key = self.get_current_project_key()
         if project_key:
             project_instructions = self.config.get(project_key, "")
-        return {
-            '[Global Instructions]': global_instructions,
-            '[Project Instructions]': project_instructions
-        }
+        return {"[Global Instructions]": global_instructions, "[Project Instructions]": project_instructions}

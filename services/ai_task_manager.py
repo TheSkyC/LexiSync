@@ -1,12 +1,14 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtCore import QObject, Signal, QThreadPool, QTimer
-import threading
 import logging
-from utils.enums import AIOperationType
-from utils.constants import SUPPORTED_LANGUAGES
+import threading
+
+from PySide6.QtCore import QObject, QThreadPool, QTimer, Signal
+
 from services.ai_worker import AIWorker
+from utils.constants import SUPPORTED_LANGUAGES
+from utils.enums import AIOperationType
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,14 @@ class AITaskManager(QObject):
         self.semaphore = None
         self.context_provider = None
 
-    def start_batch(self, items, context_provider_func, operation_type=AIOperationType.BATCH_TRANSLATION, concurrency_override=None, **worker_kwargs):
+    def start_batch(
+        self,
+        items,
+        context_provider_func,
+        operation_type=AIOperationType.BATCH_TRANSLATION,
+        concurrency_override=None,
+        **worker_kwargs,
+    ):
         if self.is_running:
             return False
 
@@ -81,8 +90,10 @@ class AITaskManager(QObject):
             self._finalize()
 
     def _dispatch_next(self):
-        if not self.is_running: return
-        if self.next_index >= self.total_items: return
+        if not self.is_running:
+            return
+        if self.next_index >= self.total_items:
+            return
 
         # Try to acquire semaphore without blocking UI
         if self.semaphore.acquire(blocking=False):
@@ -107,12 +118,13 @@ class AITaskManager(QObject):
 
             # Prepare Worker Data
             plugin_placeholders = {}
-            if hasattr(self.app, 'plugin_manager'):
-                plugin_placeholders = self.app.plugin_manager.run_hook('get_ai_translation_context') or {}
+            if hasattr(self.app, "plugin_manager"):
+                plugin_placeholders = self.app.plugin_manager.run_hook("get_ai_translation_context") or {}
 
             target_lang_code = self.app.current_target_language
-            target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
-                                    target_lang_code)
+            target_lang_name = next(
+                (name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code), target_lang_code
+            )
 
             original_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
             current_translation = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
@@ -128,7 +140,7 @@ class AITaskManager(QObject):
                 current_translation=current_translation,
                 plural_index=p_idx,
                 is_plural_item=ts_obj.is_plural,
-                **self.worker_kwargs
+                **self.worker_kwargs,
             )
 
             # Connect Signals
@@ -168,11 +180,7 @@ class AITaskManager(QObject):
     def _finalize(self):
         self.is_running = False
 
-        self.batch_finished.emit(
-            self.successful_changes,
-            self.completed_count,
-            self.total_items
-        )
+        self.batch_finished.emit(self.successful_changes, self.completed_count, self.total_items)
 
         # Reset state
         self.queue = []

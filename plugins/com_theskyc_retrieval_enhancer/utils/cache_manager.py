@@ -1,14 +1,15 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import sqlite3
-import numpy as np
-import hashlib
-import time
-import os
 import gc
-import threading
+import hashlib
 import logging
+import os
+import sqlite3
+import threading
+import time
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,8 @@ class CacheManager:
             logger.error(f"Failed to init cache db: {e}")
 
     def get_vectors(self, texts: list, model_name: str) -> dict:
-        if not texts: return {}
+        if not texts:
+            return {}
         hashes = {self._hash_text(t): t for t in texts}
         result = {}
         try:
@@ -53,10 +55,10 @@ class CacheManager:
                 hash_keys = list(hashes.keys())
                 batch_size = 900
                 for i in range(0, len(hash_keys), batch_size):
-                    batch = hash_keys[i:i + batch_size]
-                    placeholders = ','.join('?' for _ in batch)
+                    batch = hash_keys[i : i + batch_size]
+                    placeholders = ",".join("?" for _ in batch)
                     query = f"SELECT hash, vector FROM embeddings WHERE model_name = ? AND hash IN ({placeholders})"
-                    cursor = conn.execute(query, [model_name] + batch)
+                    cursor = conn.execute(query, [model_name, *batch])
                     for row in cursor:
                         h, blob = row
                         if h in hashes:
@@ -68,7 +70,8 @@ class CacheManager:
         return result
 
     def save_vectors(self, text_vector_map: dict, model_name: str):
-        if not text_vector_map: return
+        if not text_vector_map:
+            return
         data_to_insert = []
         for text, vector in text_vector_map.items():
             h = self._hash_text(text)
@@ -78,7 +81,7 @@ class CacheManager:
             with self._lock, sqlite3.connect(self.db_path) as conn:
                 conn.executemany(
                     "INSERT OR IGNORE INTO embeddings (hash, model_name, vector, text) VALUES (?, ?, ?, ?)",
-                    data_to_insert
+                    data_to_insert,
                 )
                 conn.commit()
         except Exception as e:
@@ -95,8 +98,10 @@ class CacheManager:
                             os.remove(self.db_path)
                         wal_path = self.db_path + "-wal"
                         shm_path = self.db_path + "-shm"
-                        if os.path.exists(wal_path): os.remove(wal_path)
-                        if os.path.exists(shm_path): os.remove(shm_path)
+                        if os.path.exists(wal_path):
+                            os.remove(wal_path)
+                        if os.path.exists(shm_path):
+                            os.remove(shm_path)
                         logger.info("Cache database file removed successfully.")
                         break
                     except PermissionError as e:
@@ -124,4 +129,4 @@ class CacheManager:
 
     @staticmethod
     def _hash_text(text: str) -> str:
-        return hashlib.md5(text.encode('utf-8')).hexdigest()
+        return hashlib.md5(text.encode("utf-8")).hexdigest()

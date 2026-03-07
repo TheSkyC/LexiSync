@@ -1,17 +1,17 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import sqlite3
-import os
-import json
-import hashlib
-import logging
-import threading
-from datetime import datetime
-from typing import List, Dict, Tuple, Optional
 from contextlib import contextmanager
-from utils.tbx_parser import TBXParser
+from datetime import datetime
+import hashlib
+import json
+import logging
+import os
+import sqlite3
+import threading
+
 from utils.localization import _
+from utils.tbx_parser import TBXParser
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +21,11 @@ DB_FILE = "glossary.db"
 
 class GlossaryService:
     def __init__(self):
-        self.project_db_path: Optional[str] = None
-        self.global_db_path: Optional[str] = None
+        self.project_db_path: str | None = None
+        self.global_db_path: str | None = None
         self._lock = threading.RLock()  # 线程安全锁
 
-    def connect_databases(self, global_glossary_path: str, project_glossary_path: Optional[str] = None):
+    def connect_databases(self, global_glossary_path: str, project_glossary_path: str | None = None):
         with self._lock:
             self.disconnect_databases()
 
@@ -50,12 +50,7 @@ class GlossaryService:
         """线程安全的数据库连接上下文管理器"""
         conn = None
         try:
-            conn = sqlite3.connect(
-                db_path,
-                timeout=30.0,
-                check_same_thread=False,
-                isolation_level=None
-            )
+            conn = sqlite3.connect(db_path, timeout=30.0, check_same_thread=False, isolation_level=None)
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
             conn.execute("PRAGMA cache_size=10000")
@@ -67,7 +62,7 @@ class GlossaryService:
             if conn:
                 try:
                     conn.rollback()
-                except:
+                except Exception:
                     pass
             logger.error(f"Database connection error for {db_path}: {e}")
             raise
@@ -118,12 +113,15 @@ class GlossaryService:
 
             # 创建索引
             cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_terms_text_lower_lang ON terms (term_text_lower, language_code);")
+                "CREATE INDEX IF NOT EXISTS idx_terms_text_lower_lang ON terms (term_text_lower, language_code);"
+            )
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_translations_source ON term_translations (source_term_id);")
             cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_translations_target_bidirectional ON term_translations (target_term_id, is_bidirectional);")
+                "CREATE INDEX IF NOT EXISTS idx_translations_target_bidirectional ON term_translations (target_term_id, is_bidirectional);"
+            )
             cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_translations_source_manifest ON term_translations (source_manifest_key);")
+                "CREATE INDEX IF NOT EXISTS idx_translations_source_manifest ON term_translations (source_manifest_key);"
+            )
 
             cursor.execute("COMMIT")
 
@@ -132,8 +130,15 @@ class GlossaryService:
             logger.error(f"Schema creation failed: {e}")
             raise
 
-    def register_source_in_manifest(self, glossary_dir_path: str, source_key: str, display_name: str,
-                                    term_count: int, source_lang: str, target_lang: str):
+    def register_source_in_manifest(
+        self,
+        glossary_dir_path: str,
+        source_key: str,
+        display_name: str,
+        term_count: int,
+        source_lang: str,
+        target_lang: str,
+    ):
         manifest_path = os.path.join(glossary_dir_path, MANIFEST_FILE)
 
         try:
@@ -142,6 +147,7 @@ class GlossaryService:
 
                 # UTC 时间
                 import datetime
+
                 now_utc = datetime.datetime.utcnow().isoformat() + "Z"
 
                 # 覆盖更新信息
@@ -154,7 +160,7 @@ class GlossaryService:
                     "term_count": term_count,
                     "source_lang": source_lang,
                     "target_langs": [target_lang],
-                    "is_bidirectional": True
+                    "is_bidirectional": True,
                 }
 
                 self._write_manifest(manifest_path, manifest)
@@ -163,14 +169,16 @@ class GlossaryService:
             logger.error(f"Failed to register source in manifest: {e}")
             return False
 
-    def get_translations(self, term_text: str, source_lang: str, target_lang: str = None,
-                         include_reverse: bool = True) -> Optional[List[Dict]]:
+    def get_translations(
+        self, term_text: str, source_lang: str, target_lang: str | None = None, include_reverse: bool = True
+    ) -> list[dict] | None:
         with self._lock:
             if self.project_db_path:
                 try:
                     with self._get_db_connection(self.project_db_path) as conn:
-                        result = self._query_translations_in_db(conn, term_text, source_lang, target_lang,
-                                                                include_reverse)
+                        result = self._query_translations_in_db(
+                            conn, term_text, source_lang, target_lang, include_reverse
+                        )
                         if result:
                             return result
                 except Exception as e:
@@ -179,8 +187,9 @@ class GlossaryService:
             if self.global_db_path:
                 try:
                     with self._get_db_connection(self.global_db_path) as conn:
-                        return self._query_translations_in_db(conn, term_text, source_lang, target_lang,
-                                                              include_reverse)
+                        return self._query_translations_in_db(
+                            conn, term_text, source_lang, target_lang, include_reverse
+                        )
                 except Exception as e:
                     logger.warning(f"Global database query failed: {e}")
 
@@ -199,18 +208,21 @@ class GlossaryService:
         try:
             with self._get_db_connection(db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT COUNT(*) FROM term_translations WHERE source_manifest_key = ?",
-                    (source_key,)
-                )
+                cursor.execute("SELECT COUNT(*) FROM term_translations WHERE source_manifest_key = ?", (source_key,))
                 result = cursor.fetchone()
                 return result[0] if result else 0
         except Exception as e:
             logger.error(f"Failed to get entry count for source '{source_key}': {e}")
             return 0
 
-    def _query_translations_in_db(self, conn: sqlite3.Connection, term_text: str, source_lang: str,
-                                  target_lang: str = None, include_reverse: bool = True) -> Optional[List[Dict]]:
+    def _query_translations_in_db(
+        self,
+        conn: sqlite3.Connection,
+        term_text: str,
+        source_lang: str,
+        target_lang: str | None = None,
+        include_reverse: bool = True,
+    ) -> list[dict] | None:
         try:
             cursor = conn.cursor()
 
@@ -224,7 +236,7 @@ class GlossaryService:
             FROM terms t_source
             JOIN term_translations tt ON t_source.id = tt.source_term_id
             JOIN terms t_target ON tt.target_term_id = t_target.id
-            WHERE t_source.term_text_lower = ? 
+            WHERE t_source.term_text_lower = ?
             AND t_source.language_code = ?
             """
 
@@ -246,7 +258,7 @@ class GlossaryService:
                 FROM terms t_target
                 JOIN term_translations tt ON t_target.id = tt.target_term_id
                 JOIN terms t_source ON tt.source_term_id = t_source.id
-                WHERE t_target.term_text_lower = ? 
+                WHERE t_target.term_text_lower = ?
                 AND t_target.language_code = ?
                 AND tt.is_bidirectional = 1
                 """
@@ -275,7 +287,8 @@ class GlossaryService:
         :param is_source: True 更新源术语，False 更新目标术语
         :param new_text: 新的文本内容
         """
-        if not db_path or not new_text.strip(): return False
+        if not db_path or not new_text.strip():
+            return False
 
         column_to_query = "source_term_id" if is_source else "target_term_id"
 
@@ -295,7 +308,7 @@ class GlossaryService:
                     # 2. 更新 terms 表
                     cursor.execute(
                         "UPDATE terms SET term_text = ?, term_text_lower = ? WHERE id = ?",
-                        (new_text, new_text.lower(), term_id)
+                        (new_text, new_text.lower(), term_id),
                     )
 
                     cursor.execute("COMMIT")
@@ -307,9 +320,16 @@ class GlossaryService:
                 logger.error(f"Glossary update failed: {e}")
                 return False
 
-    def import_from_tbx(self, tbx_filepath: str, glossary_dir_path: str,
-                        source_lang: str, target_langs: List[str], is_bidirectional: bool,
-                        lang_mapping: Dict[str, str], progress_callback=None) -> Tuple[bool, str]:
+    def import_from_tbx(
+        self,
+        tbx_filepath: str,
+        glossary_dir_path: str,
+        source_lang: str,
+        target_langs: list[str],
+        is_bidirectional: bool,
+        lang_mapping: dict[str, str],
+        progress_callback=None,
+    ) -> tuple[bool, str]:
         """导入TBX文件"""
         try:
             with self._lock:
@@ -326,8 +346,9 @@ class GlossaryService:
                 # 检查文件是否已导入
                 if filename in manifest.get("imported_sources", {}):
                     existing_stats = manifest["imported_sources"][filename]
-                    if all(existing_stats.get(k) == file_stats.get(k) for k in
-                           ["filesize", "last_modified", "checksum"]):
+                    if all(
+                        existing_stats.get(k) == file_stats.get(k) for k in ["filesize", "last_modified", "checksum"]
+                    ):
                         return True, _("This file has already been imported and has not changed.")
 
                 # 解析TBX文件
@@ -345,16 +366,22 @@ class GlossaryService:
                     self._create_schema(conn)
 
                     self._merge_terms_into_db(
-                        conn, terms_to_import, filename, source_lang,
-                        target_langs, is_bidirectional, lang_mapping, progress_callback
+                        conn,
+                        terms_to_import,
+                        filename,
+                        source_lang,
+                        target_langs,
+                        is_bidirectional,
+                        lang_mapping,
+                        progress_callback,
                     )
 
                 # 更新manifest
-                file_stats['import_date'] = datetime.now().isoformat() + "Z"
-                file_stats['term_count'] = term_count
-                file_stats['source_lang'] = source_lang
-                file_stats['target_langs'] = target_langs
-                file_stats['is_bidirectional'] = is_bidirectional
+                file_stats["import_date"] = datetime.now().isoformat() + "Z"
+                file_stats["term_count"] = term_count
+                file_stats["source_lang"] = source_lang
+                file_stats["target_langs"] = target_langs
+                file_stats["is_bidirectional"] = is_bidirectional
                 manifest.setdefault("imported_sources", {})[filename] = file_stats
                 self._write_manifest(manifest_path, manifest)
 
@@ -362,9 +389,9 @@ class GlossaryService:
 
         except Exception as e:
             logger.error(f"Failed to import TBX file '{tbx_filepath}': {e}", exc_info=True)
-            return False, f"Import failed: {str(e)}"
+            return False, f"Import failed: {e!s}"
 
-    def _parse_tbx(self, filepath: str) -> List[Dict]:
+    def _parse_tbx(self, filepath: str) -> list[dict]:
         """解析TBX文件"""
         try:
             parser = TBXParser()
@@ -374,9 +401,17 @@ class GlossaryService:
             logger.error(f"TBXParser failed for file '{filepath}': {e}", exc_info=True)
             raise
 
-    def _merge_terms_into_db(self, conn: sqlite3.Connection, term_entries: List[Dict], source_key: str,
-                             source_lang_code: str, target_lang_codes: List[str], is_bidirectional: bool,
-                             lang_mapping: Dict[str, str], progress_callback=None):
+    def _merge_terms_into_db(
+        self,
+        conn: sqlite3.Connection,
+        term_entries: list[dict],
+        source_key: str,
+        source_lang_code: str,
+        target_lang_codes: list[str],
+        is_bidirectional: bool,
+        lang_mapping: dict[str, str],
+        progress_callback=None,
+    ):
         """合并术语到数据库"""
         try:
             cursor = conn.cursor()
@@ -404,13 +439,9 @@ class GlossaryService:
 
                             key = (term_text.lower(), lexisync_lang)
                             if key not in seen_terms_in_batch:
-                                new_terms_to_insert.append((
-                                    term_text.strip(),
-                                    term_text.strip().lower(),
-                                    lexisync_lang,
-                                    0,
-                                    ""
-                                ))
+                                new_terms_to_insert.append(
+                                    (term_text.strip(), term_text.strip().lower(), lexisync_lang, 0, "")
+                                )
                                 seen_terms_in_batch.add(key)
 
                 # 批量插入术语
@@ -420,15 +451,12 @@ class GlossaryService:
 
                     cursor.executemany(
                         "INSERT OR IGNORE INTO terms (term_text, term_text_lower, language_code, case_sensitive, comment) VALUES (?, ?, ?, ?, ?)",
-                        new_terms_to_insert
+                        new_terms_to_insert,
                     )
 
                 # 获取所有术语ID映射
                 cursor.execute("SELECT term_text_lower, language_code, id FROM terms")
-                all_terms_map = {
-                    (row['term_text_lower'], row['language_code']): row['id']
-                    for row in cursor.fetchall()
-                }
+                all_terms_map = {(row["term_text_lower"], row["language_code"]): row["id"] for row in cursor.fetchall()}
 
                 # 准备翻译关系
                 new_translations_to_insert = []
@@ -464,9 +492,9 @@ class GlossaryService:
                                     # 使用排序后的ID对作为唯一标识
                                     pair = tuple(sorted((s_id, t_id)))
                                     if pair not in seen_translations_in_batch:
-                                        new_translations_to_insert.append((
-                                            s_id, t_id, int(is_bidirectional), source_key
-                                        ))
+                                        new_translations_to_insert.append(
+                                            (s_id, t_id, int(is_bidirectional), source_key)
+                                        )
                                         seen_translations_in_batch.add(pair)
 
                 # 批量插入翻译关系
@@ -476,22 +504,22 @@ class GlossaryService:
 
                     cursor.executemany(
                         "INSERT OR IGNORE INTO term_translations (source_term_id, target_term_id, is_bidirectional, source_manifest_key) VALUES (?, ?, ?, ?)",
-                        new_translations_to_insert
+                        new_translations_to_insert,
                     )
                 cursor.execute("COMMIT")
 
                 if progress_callback:
                     progress_callback(_("Database update complete!"))
 
-            except Exception as e:
+            except Exception:
                 cursor.execute("ROLLBACK")
                 raise
 
         except Exception as e:
             logger.error(f"Database merge failed: {e}", exc_info=True)
-            raise IOError(f"Database operation failed: {e}")
+            raise OSError(f"Database operation failed: {e}") from e
 
-    def remove_source(self, source_key: str, glossary_dir_path: str) -> Tuple[bool, str]:
+    def remove_source(self, source_key: str, glossary_dir_path: str) -> tuple[bool, str]:
         """删除指定源的所有术语"""
         try:
             with self._lock:
@@ -508,16 +536,13 @@ class GlossaryService:
                         logger.info(f"Starting transaction to remove source: {source_key}")
 
                         # 删除翻译关系
-                        cursor.execute(
-                            "DELETE FROM term_translations WHERE source_manifest_key = ?",
-                            (source_key,)
-                        )
+                        cursor.execute("DELETE FROM term_translations WHERE source_manifest_key = ?", (source_key,))
                         rows_deleted = cursor.rowcount
                         logger.info(f"Deleted {rows_deleted} translation relationships from source: {source_key}")
 
                         # 清理孤立的术语
                         cursor.execute("""
-                            DELETE FROM terms 
+                            DELETE FROM terms
                             WHERE id NOT IN (
                                 SELECT DISTINCT source_term_id FROM term_translations
                                 UNION
@@ -536,18 +561,20 @@ class GlossaryService:
                             self._write_manifest(manifest_path, manifest)
 
                         return True, _("Successfully removed {count} translations from source '{source}'.").format(
-                            count=rows_deleted, source=source_key)
+                            count=rows_deleted, source=source_key
+                        )
 
-                    except Exception as e:
+                    except Exception:
                         cursor.execute("ROLLBACK")
                         raise
 
         except Exception as e:
             logger.error(f"Failed to remove source '{source_key}': {e}", exc_info=True)
-            return False, f"Removal failed: {str(e)}"
+            return False, f"Removal failed: {e!s}"
 
-    def get_translations_batch(self, words: List[str], source_lang: str = "auto", target_lang: str = None,
-                               include_reverse: bool = True) -> Dict:
+    def get_translations_batch(
+        self, words: list[str], source_lang: str = "auto", target_lang: str | None = None, include_reverse: bool = True
+    ) -> dict:
         if not words:
             return {}
 
@@ -556,14 +583,15 @@ class GlossaryService:
 
             # 分块查询项目数据库
             chunk_size = 5000
-            word_chunks = [words[i:i + chunk_size] for i in range(0, len(words), chunk_size)]
+            word_chunks = [words[i : i + chunk_size] for i in range(0, len(words), chunk_size)]
 
             for chunk in word_chunks:
                 if self.project_db_path:
                     try:
                         with self._get_db_connection(self.project_db_path) as conn:
-                            matches = self._query_translations_batch_in_db(conn, chunk, source_lang, target_lang,
-                                                                           include_reverse)
+                            matches = self._query_translations_batch_in_db(
+                                conn, chunk, source_lang, target_lang, include_reverse
+                            )
                             all_matches.update(matches)
                     except Exception as e:
                         logger.warning(f"Project database batch query failed for a chunk: {e}")
@@ -573,28 +601,33 @@ class GlossaryService:
                     if remaining_words_in_chunk:
                         try:
                             with self._get_db_connection(self.global_db_path) as conn:
-                                matches = self._query_translations_batch_in_db(conn, remaining_words_in_chunk,
-                                                                               source_lang,
-                                                                               target_lang, include_reverse)
+                                matches = self._query_translations_batch_in_db(
+                                    conn, remaining_words_in_chunk, source_lang, target_lang, include_reverse
+                                )
                                 all_matches.update(matches)
                         except Exception as e:
                             logger.warning(f"Global database batch query failed for a chunk: {e}")
             return all_matches
 
-    def _query_translations_batch_in_db(self, conn: sqlite3.Connection, words: List[str],
-                                        source_lang: str = "auto", target_lang: str = None,
-                                        include_reverse: bool = True) -> Dict:
+    def _query_translations_batch_in_db(
+        self,
+        conn: sqlite3.Connection,
+        words: list[str],
+        source_lang: str = "auto",
+        target_lang: str | None = None,
+        include_reverse: bool = True,
+    ) -> dict:
         """在指定数据库中批量查询翻译"""
         if not words:
             return {}
 
         try:
             words_lower = [w.lower() for w in words]
-            placeholders = ','.join('?' for _ in words_lower)
+            placeholders = ",".join("?" for _ in words_lower)
 
             # --- 正向查询 ---
             base_query = f"""
-            SELECT 
+            SELECT
                 t_source.term_text_lower as source_key,
                 t_target.term_text as target_term,
                 t_target.language_code as target_lang,
@@ -620,7 +653,7 @@ class GlossaryService:
             if include_reverse:
                 reverse_query = f"""
                 UNION
-                SELECT 
+                SELECT
                     t_target.term_text_lower as source_key,
                     t_source.term_text as target_term,
                     t_source.language_code as target_lang,
@@ -653,16 +686,18 @@ class GlossaryService:
 
             results = {}
             for row in cursor.fetchall():
-                source_key = row['source_key']
+                source_key = row["source_key"]
                 if source_key not in results:
                     results[source_key] = {"translations": []}
-                results[source_key]["translations"].append({
-                    "target": row["target_term"],
-                    "target_lang": row["target_lang"],
-                    "comment": row["comment"],
-                    "confidence_score": row["confidence_score"],
-                    "direction": row["direction"]
-                })
+                results[source_key]["translations"].append(
+                    {
+                        "target": row["target_term"],
+                        "target_lang": row["target_lang"],
+                        "comment": row["comment"],
+                        "confidence_score": row["confidence_score"],
+                        "direction": row["direction"],
+                    }
+                )
 
             logger.debug(f"Found {len(results)} matches in batch query.")
             return results
@@ -671,20 +706,28 @@ class GlossaryService:
             logger.error(f"Batch query failed: {e}", exc_info=True)
             return {}
 
-    def query_entries(self, db_path: str, page: int = 1, page_size: int = 50,
-                      source_key: str = None, src_lang: str = None, tgt_lang: str = None,
-                      search_term: str = None) -> List[Dict]:
-        if not db_path or not os.path.exists(db_path): return []
+    def query_entries(
+        self,
+        db_path: str,
+        page: int = 1,
+        page_size: int = 50,
+        source_key: str | None = None,
+        src_lang: str | None = None,
+        tgt_lang: str | None = None,
+        search_term: str | None = None,
+    ) -> list[dict]:
+        if not db_path or not os.path.exists(db_path):
+            return []
 
         offset = (page - 1) * page_size
 
         query = """
-            SELECT 
-                tt.id, 
-                s.term_text as source_text, 
-                t.term_text as target_text, 
-                s.language_code as source_lang, 
-                t.language_code as target_lang, 
+            SELECT
+                tt.id,
+                s.term_text as source_text,
+                t.term_text as target_text,
+                s.language_code as source_lang,
+                t.language_code as target_lang,
                 tt.source_manifest_key,
                 tt.comment
             FROM term_translations tt
@@ -720,12 +763,19 @@ class GlossaryService:
             logger.error(f"Glossary query failed: {e}")
             return []
 
-    def count_entries(self, db_path: str, source_key: str = None, src_lang: str = None,
-                      tgt_lang: str = None, search_term: str = None) -> int:
-        if not db_path or not os.path.exists(db_path): return 0
+    def count_entries(
+        self,
+        db_path: str,
+        source_key: str | None = None,
+        src_lang: str | None = None,
+        tgt_lang: str | None = None,
+        search_term: str | None = None,
+    ) -> int:
+        if not db_path or not os.path.exists(db_path):
+            return 0
 
         query = """
-            SELECT COUNT(*) 
+            SELECT COUNT(*)
             FROM term_translations tt
             JOIN terms s ON tt.source_term_id = s.id
             JOIN terms t ON tt.target_term_id = t.id
@@ -767,8 +817,9 @@ class GlossaryService:
             logger.error(f"Glossary delete failed: {e}")
             return False
 
-    def get_distinct_languages(self, db_path: str) -> Tuple[List[str], List[str]]:
-        if not db_path or not os.path.exists(db_path): return [], []
+    def get_distinct_languages(self, db_path: str) -> tuple[list[str], list[str]]:
+        if not db_path or not os.path.exists(db_path):
+            return [], []
         try:
             with self._get_db_connection(db_path) as conn:
                 cursor = conn.cursor()
@@ -778,36 +829,36 @@ class GlossaryService:
         except Exception:
             return [], []
 
-    def _read_manifest(self, manifest_path: str) -> Dict:
+    def _read_manifest(self, manifest_path: str) -> dict:
         """读取manifest文件"""
         try:
-            with open(manifest_path, 'r', encoding='utf-8') as f:
+            with open(manifest_path, encoding="utf-8") as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             logger.debug(f"Manifest file not found or invalid, creating new: {e}")
             return {"version": 2, "imported_sources": {}}
 
-    def _write_manifest(self, manifest_path: str, manifest_data: Dict):
+    def _write_manifest(self, manifest_path: str, manifest_data: dict):
         """写入manifest文件"""
         try:
             os.makedirs(os.path.dirname(manifest_path), exist_ok=True)
 
-            with open(manifest_path, 'w', encoding='utf-8') as f:
+            with open(manifest_path, "w", encoding="utf-8") as f:
                 json.dump(manifest_data, f, indent=4, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Failed to write manifest: {e}")
             raise
 
-    def _get_file_stats(self, filepath: str) -> Dict:
+    def _get_file_stats(self, filepath: str) -> dict:
         """获取文件统计信息"""
         try:
             stat = os.stat(filepath)
-            normalized_filepath = filepath.replace('\\', '/')
+            normalized_filepath = filepath.replace("\\", "/")
             return {
                 "filepath": normalized_filepath,
                 "filesize": stat.st_size,
                 "last_modified": datetime.fromtimestamp(stat.st_mtime).isoformat() + "Z",
-                "checksum": self._calculate_checksum(filepath)
+                "checksum": self._calculate_checksum(filepath),
             }
         except Exception as e:
             logger.error(f"Failed to get file stats for {filepath}: {e}")
@@ -817,7 +868,7 @@ class GlossaryService:
         """计算文件校验和"""
         try:
             h = hashlib.new(hash_algo)
-            with open(filepath, 'rb') as f:
+            with open(filepath, "rb") as f:
                 while chunk := f.read(8192):
                     h.update(chunk)
             return h.hexdigest()
@@ -825,8 +876,9 @@ class GlossaryService:
             logger.error(f"Failed to calculate checksum for {filepath}: {e}")
             raise
 
-    def find_conflicts(self, db_path: str, source_terms: List[str], source_lang: str, target_lang: str) -> Dict[
-        str, dict]:
+    def find_conflicts(
+        self, db_path: str, source_terms: list[str], source_lang: str, target_lang: str
+    ) -> dict[str, dict]:
         """
         批量检查术语是否存在（精确匹配源语言和目标语言）。
         返回: { 'source_term_lower': {'id': term_id, 'existing_targets': ['tgt1', 'tgt2']} }
@@ -843,41 +895,42 @@ class GlossaryService:
                 cursor = conn.cursor()
                 chunk_size = 900
                 for i in range(0, len(terms_lower), chunk_size):
-                    chunk = terms_lower[i:i + chunk_size]
-                    placeholders = ','.join('?' for _ in chunk)
+                    chunk = terms_lower[i : i + chunk_size]
+                    placeholders = ",".join("?" for _ in chunk)
 
                     query = f"""
                         SELECT t_source.id, t_source.term_text as src_text, t_target.term_text as tgt_text
                         FROM terms t_source
                         JOIN term_translations tt ON t_source.id = tt.source_term_id
                         JOIN terms t_target ON tt.target_term_id = t_target.id
-                        WHERE t_source.term_text_lower IN ({placeholders}) 
+                        WHERE t_source.term_text_lower IN ({placeholders})
                           AND t_source.language_code = ?
                           AND t_target.language_code = ?
                     """
                     # 传入 source_lang 和 target_lang
-                    cursor.execute(query, chunk + [source_lang, target_lang])
+                    cursor.execute(query, [*chunk, source_lang, target_lang])
 
                     rows = cursor.fetchall()
                     for row in rows:
-                        term_id = row['id']
-                        src_text = row['src_text']
-                        tgt_text = row['tgt_text']
+                        term_id = row["id"]
+                        src_text = row["src_text"]
+                        tgt_text = row["tgt_text"]
 
                         key = src_text.strip().lower()
 
                         if key not in conflicts:
-                            conflicts[key] = {'id': term_id, 'original_text': src_text, 'existing_targets': []}
+                            conflicts[key] = {"id": term_id, "original_text": src_text, "existing_targets": []}
 
-                        conflicts[key]['existing_targets'].append(tgt_text)
+                        conflicts[key]["existing_targets"].append(tgt_text)
 
         except Exception as e:
             logger.error(f"Failed to find conflicts: {e}")
 
         return conflicts
 
-    def batch_save_entries(self, db_path: str, entries: List[Dict], source_lang: str, target_lang: str,
-                           source_key: str):
+    def batch_save_entries(
+        self, db_path: str, entries: list[dict], source_lang: str, target_lang: str, source_key: str
+    ):
         """
         批量保存条目。
         entries: List of dicts:
@@ -889,7 +942,8 @@ class GlossaryService:
             'term_id': int (optional, for overwrite/merge)
         }
         """
-        if not db_path: return False, "No database path."
+        if not db_path:
+            return False, "No database path."
 
         count_success = 0
         try:
@@ -898,44 +952,48 @@ class GlossaryService:
                 cursor.execute("BEGIN IMMEDIATE TRANSACTION")
 
                 for entry in entries:
-                    action = entry.get('action', 'new')
-                    if action == 'skip':
+                    action = entry.get("action", "new")
+                    if action == "skip":
                         continue
 
-                    src_text = entry['source'].strip()
-                    tgt_text = entry['target'].strip()
-                    comment = entry.get('comment', "")
+                    src_text = entry["source"].strip()
+                    tgt_text = entry["target"].strip()
+                    comment = entry.get("comment", "")
 
-                    source_id = entry.get('term_id')
+                    source_id = entry.get("term_id")
 
                     # 1. 处理源术语 ID
                     if not source_id:
-                        cursor.execute("SELECT id FROM terms WHERE term_text_lower = ? AND language_code = ?",
-                                       (src_text.lower(), source_lang))
+                        cursor.execute(
+                            "SELECT id FROM terms WHERE term_text_lower = ? AND language_code = ?",
+                            (src_text.lower(), source_lang),
+                        )
                         row = cursor.fetchone()
                         if row:
-                            source_id = row['id']
+                            source_id = row["id"]
                         else:
                             cursor.execute(
                                 "INSERT INTO terms (term_text, term_text_lower, language_code) VALUES (?, ?, ?)",
-                                (src_text, src_text.lower(), source_lang)
+                                (src_text, src_text.lower(), source_lang),
                             )
                             source_id = cursor.lastrowid
 
                     # 2. 处理 Overwrite (先删除旧关系)
-                    if action == 'overwrite':
+                    if action == "overwrite":
                         cursor.execute("DELETE FROM term_translations WHERE source_term_id = ?", (source_id,))
 
                     # 3. 获取或插入目标术语 ID
-                    cursor.execute("SELECT id FROM terms WHERE term_text_lower = ? AND language_code = ?",
-                                   (tgt_text.lower(), target_lang))
+                    cursor.execute(
+                        "SELECT id FROM terms WHERE term_text_lower = ? AND language_code = ?",
+                        (tgt_text.lower(), target_lang),
+                    )
                     row_tgt = cursor.fetchone()
                     if row_tgt:
-                        target_id = row_tgt['id']
+                        target_id = row_tgt["id"]
                     else:
                         cursor.execute(
                             "INSERT INTO terms (term_text, term_text_lower, language_code) VALUES (?, ?, ?)",
-                            (tgt_text, tgt_text.lower(), target_lang)
+                            (tgt_text, tgt_text.lower(), target_lang),
                         )
                         target_id = cursor.lastrowid
 
@@ -943,11 +1001,11 @@ class GlossaryService:
                     try:
                         cursor.execute(
                             """
-                            INSERT OR IGNORE INTO term_translations 
+                            INSERT OR IGNORE INTO term_translations
                             (source_term_id, target_term_id, is_bidirectional, comment, source_manifest_key)
                             VALUES (?, ?, ?, ?, ?)
                             """,
-                            (source_id, target_id, 1, comment, source_key)
+                            (source_id, target_id, 1, comment, source_key),
                         )
                         count_success += 1
                     except sqlite3.IntegrityError:
@@ -960,7 +1018,16 @@ class GlossaryService:
             logger.error(f"Batch save failed: {e}", exc_info=True)
             return False, str(e)
 
-    def add_entry(self, db_path: str, source_term: str, target_term: str, source_lang: str, target_lang: str, comment: str = "", source_key: str = "manual"):
+    def add_entry(
+        self,
+        db_path: str,
+        source_term: str,
+        target_term: str,
+        source_lang: str,
+        target_lang: str,
+        comment: str = "",
+        source_key: str = "manual",
+    ):
         if not db_path:
             raise ValueError("Database path must be specified.")
 
@@ -970,35 +1037,35 @@ class GlossaryService:
             try:
                 cursor.execute(
                     "INSERT OR IGNORE INTO terms (term_text, term_text_lower, language_code) VALUES (?, ?, ?)",
-                    (source_term, source_term.lower(), source_lang)
+                    (source_term, source_term.lower(), source_lang),
                 )
                 cursor.execute(
-                    "SELECT id FROM terms WHERE term_text = ? AND language_code = ?",
-                    (source_term, source_lang)
+                    "SELECT id FROM terms WHERE term_text = ? AND language_code = ?", (source_term, source_lang)
                 )
                 source_id_row = cursor.fetchone()
-                if not source_id_row: raise Exception("Failed to retrieve source term ID.")
-                source_id = source_id_row['id']
+                if not source_id_row:
+                    raise Exception("Failed to retrieve source term ID.")
+                source_id = source_id_row["id"]
 
                 cursor.execute(
                     "INSERT OR IGNORE INTO terms (term_text, term_text_lower, language_code) VALUES (?, ?, ?)",
-                    (target_term, target_term.lower(), target_lang)
+                    (target_term, target_term.lower(), target_lang),
                 )
                 cursor.execute(
-                    "SELECT id FROM terms WHERE term_text = ? AND language_code = ?",
-                    (target_term, target_lang)
+                    "SELECT id FROM terms WHERE term_text = ? AND language_code = ?", (target_term, target_lang)
                 )
                 target_id_row = cursor.fetchone()
-                if not target_id_row: raise Exception("Failed to retrieve target term ID.")
-                target_id = target_id_row['id']
+                if not target_id_row:
+                    raise Exception("Failed to retrieve target term ID.")
+                target_id = target_id_row["id"]
 
                 cursor.execute(
                     """
-                    INSERT OR REPLACE INTO term_translations 
+                    INSERT OR REPLACE INTO term_translations
                     (source_term_id, target_term_id, is_bidirectional, comment, source_manifest_key)
                     VALUES (?, ?, ?, ?, ?)
                     """,
-                    (source_id, target_id, 1, comment, source_key)
+                    (source_id, target_id, 1, comment, source_key),
                 )
                 conn.commit()
                 return True, _("Glossary entry added successfully.")

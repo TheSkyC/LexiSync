@@ -1,13 +1,22 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTableWidget, QTableWidgetItem, QComboBox, QCheckBox,
-    QHeaderView, QMessageBox, QAbstractItemView
-)
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+)
+
 from utils.localization import _
 
 
@@ -50,7 +59,7 @@ class ColumnMapperDialog(QDialog):
             ("source", _("Source")),
             ("target", _("Target (Translation)")),
             ("key", _("Key / ID")),
-            ("comment", _("Comment / Context"))
+            ("comment", _("Comment / Context")),
         ]
 
         # 填充表头和下拉框
@@ -65,7 +74,8 @@ class ColumnMapperDialog(QDialog):
             for role_id, mapped_col in self.mapping.items():
                 if mapped_col == col_idx:
                     idx = combo.findData(role_id)
-                    if idx >= 0: combo.setCurrentIndex(idx)
+                    if idx >= 0:
+                        combo.setCurrentIndex(idx)
                     break
 
             combo.currentIndexChanged.connect(lambda _, c=combo: self._update_combo_style(c))
@@ -87,7 +97,8 @@ class ColumnMapperDialog(QDialog):
         for row_idx, row_data in enumerate(self.sample_data):
             for col_idx in range(col_count):
                 val = str(row_data[col_idx]) if col_idx < len(row_data) else ""
-                if len(val) > 50: val = val[:47] + "..."
+                if len(val) > 50:
+                    val = val[:47] + "..."
                 item = QTableWidgetItem(val)
                 item.setForeground(QColor("#666666"))
                 self.table.setItem(row_idx + 2, col_idx, item)
@@ -119,8 +130,9 @@ class ColumnMapperDialog(QDialog):
             role = combo.currentData()
             if role != "ignore":
                 if role in new_mapping:
-                    QMessageBox.warning(self, _("Error"),
-                                        _("Role '{role}' is assigned to multiple columns.").format(role=role))
+                    QMessageBox.warning(
+                        self, _("Error"), _("Role '{role}' is assigned to multiple columns.").format(role=role)
+                    )
                     return
                 new_mapping[role] = col_idx
 

@@ -1,9 +1,10 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtGui import QColor, QCursor
 from PySide6.QtWidgets import QPushButton
-from PySide6.QtCore import Qt, QEvent
-from PySide6.QtGui import QCursor, QColor, QFont
+
 from .tooltip import Tooltip
 
 
@@ -11,9 +12,15 @@ class StyledButton(QPushButton):
     # Predefined Color Palettes
     PRESETS = {
         "default": {
-            "normal_bg": "#FFFFFF", "normal_border": "#DCDFE6", "normal_text": "#606266",
-            "hover_bg": "#ECF5FF", "hover_border": "#C6E2FF", "hover_text": "#409EFF",
-            "pressed_bg": "#ECF5FF", "pressed_border": "#3A8EE6", "pressed_text": "#3A8EE6"
+            "normal_bg": "#FFFFFF",
+            "normal_border": "#DCDFE6",
+            "normal_text": "#606266",
+            "hover_bg": "#ECF5FF",
+            "hover_border": "#C6E2FF",
+            "hover_text": "#409EFF",
+            "pressed_bg": "#ECF5FF",
+            "pressed_border": "#3A8EE6",
+            "pressed_text": "#3A8EE6",
         },
         "primary": {"base": "#409EFF"},
         "success": {"base": "#67C23A"},
@@ -39,16 +46,23 @@ class StyledButton(QPushButton):
             "padding": "8px 20px",
             "font_size": "14px",
             "border_radius": "5px",
-        }
+        },
     }
 
-    def __init__(self, text="", on_click=None,
-                 btn_type="default", color=None,
-                 size="medium",
-                 font_family=None,
-                 font_size=None,
-                 font_weight=None,
-                 icon=None, tooltip=None, parent=None):
+    def __init__(
+        self,
+        text="",
+        on_click=None,
+        btn_type="default",
+        color=None,
+        size="medium",
+        font_family=None,
+        font_size=None,
+        font_weight=None,
+        icon=None,
+        tooltip=None,
+        parent=None,
+    ):
         super().__init__(text, parent)
 
         self._custom_tooltip = Tooltip(self)
@@ -68,10 +82,7 @@ class StyledButton(QPushButton):
             palette = self.generate_palette(color)
         elif btn_type in self.PRESETS:
             preset = self.PRESETS[btn_type]
-            if "base" in preset:
-                palette = self.generate_palette(preset["base"])
-            else:
-                palette = preset
+            palette = self.generate_palette(preset["base"]) if "base" in preset else preset
         else:
             palette = self.PRESETS["default"]
 
@@ -82,7 +93,7 @@ class StyledButton(QPushButton):
         font_config = {
             "family": font_family or "Segoe UI, Microsoft YaHei, sans-serif",
             "size": font_size or size_config["font_size"],
-            "weight": font_weight or "500"
+            "weight": font_weight or "500",
         }
 
         self._apply_css(palette, size_config, font_config)
@@ -94,9 +105,7 @@ class StyledButton(QPushButton):
         if event.type() == QEvent.Enter:
             if self._tooltip_text:
                 self._custom_tooltip.show_tooltip(QCursor.pos(), self._tooltip_text, delay=500)
-        elif event.type() == QEvent.Leave:
-            self._custom_tooltip.hide()
-        elif event.type() == QEvent.MouseButtonPress:
+        elif event.type() == QEvent.Leave or event.type() == QEvent.MouseButtonPress:
             self._custom_tooltip.hide()
 
         return super().event(event)
@@ -119,14 +128,12 @@ class StyledButton(QPushButton):
             "normal_bg": mix_white(c, 0.9),  # 90% White (Very Pale)
             "normal_border": mix_white(c, 0.8),  # 80% White (Pale)
             "normal_text": base_hex,  # Base Color
-
             "hover_bg": mix_white(c, 0.8),  # 80% White
             "hover_border": base_hex,  # Base Color
             "hover_text": base_hex,  # Base Color
-
-            "pressed_bg": base_hex,            # Solid Base Color
-            "pressed_border": base_hex,        # Solid Base Color
-            "pressed_text": "#FFFFFF"          # White Text
+            "pressed_bg": base_hex,  # Solid Base Color
+            "pressed_border": base_hex,  # Solid Base Color
+            "pressed_text": "#FFFFFF",  # White Text
         }
 
     def _apply_css(self, color_palette: dict, size_config: dict, font_config: dict):
@@ -135,11 +142,11 @@ class StyledButton(QPushButton):
         """
         base_css = f"""
             QPushButton {{
-                padding: {size_config['padding']};
-                border-radius: {size_config['border_radius']};
-                font-family: {font_config['family']};
-                font-size: {font_config['size']};
-                font-weight: {font_config['weight']};
+                padding: {size_config["padding"]};
+                border-radius: {size_config["border_radius"]};
+                font-family: {font_config["family"]};
+                font-size: {font_config["size"]};
+                font-weight: {font_config["weight"]};
                 border-style: solid;
                 border-width: 1px;
             }}
@@ -152,19 +159,19 @@ class StyledButton(QPushButton):
 
         theme_css = f"""
             QPushButton {{
-                background-color: {color_palette['normal_bg']};
-                border-color: {color_palette['normal_border']};
-                color: {color_palette['normal_text']};
+                background-color: {color_palette["normal_bg"]};
+                border-color: {color_palette["normal_border"]};
+                color: {color_palette["normal_text"]};
             }}
             QPushButton:hover {{
-                background-color: {color_palette['hover_bg']};
-                border-color: {color_palette['hover_border']};
-                color: {color_palette['hover_text']};
+                background-color: {color_palette["hover_bg"]};
+                border-color: {color_palette["hover_border"]};
+                color: {color_palette["hover_text"]};
             }}
             QPushButton:pressed {{
-                background-color: {color_palette['pressed_bg']};
-                border-color: {color_palette['pressed_border']};
-                color: {color_palette['pressed_text']};
+                background-color: {color_palette["pressed_bg"]};
+                border-color: {color_palette["pressed_border"]};
+                color: {color_palette["pressed_text"]};
             }}
         """
         self.setStyleSheet(base_css + theme_css)

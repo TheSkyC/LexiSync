@@ -1,14 +1,16 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QWidget, QTableView
-from PySide6.QtCore import Qt, Signal, QTimer, QEvent
-from PySide6.QtGui import QPainter, QColor, QMouseEvent, QCursor
-from .tooltip import Tooltip
-import bisect
 from collections import defaultdict
-from utils.localization import _
 import logging
+
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QMouseEvent, QPainter
+from PySide6.QtWidgets import QTableView, QWidget
+
+from utils.localization import _
+
+from .tooltip import Tooltip
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +33,13 @@ class MarkerBar(QWidget):
         self._range_markers = defaultdict(list)
 
         self._marker_configs = {
-            'error': {'color': QColor(237, 28, 36, 200), 'priority': 10, 'label': _("Error")},
-            'warning': {'color': QColor(255, 193, 7, 200), 'priority': 9, 'label': _("Warning")},
-            'info': {'color': QColor(33, 150, 243, 200), 'priority': 8, 'label': _("Info")},
-            'search': {'color': QColor(147, 112, 219, 180), 'priority': 7, 'label': _("Search Match")},
-            'selection': {'color': QColor(0, 120, 215, 180), 'priority': 20, 'label': _("Selection")},
-            'git_modified': {'color': QColor(255, 193, 7, 150), 'priority': 5, 'label': _("Git Modified")},
-            'git_added': {'color': QColor(76, 175, 80, 150), 'priority': 4, 'label': _("Git Added")},
+            "error": {"color": QColor(237, 28, 36, 200), "priority": 10, "label": _("Error")},
+            "warning": {"color": QColor(255, 193, 7, 200), "priority": 9, "label": _("Warning")},
+            "info": {"color": QColor(33, 150, 243, 200), "priority": 8, "label": _("Info")},
+            "search": {"color": QColor(147, 112, 219, 180), "priority": 7, "label": _("Search Match")},
+            "selection": {"color": QColor(0, 120, 215, 180), "priority": 20, "label": _("Selection")},
+            "git_modified": {"color": QColor(255, 193, 7, 150), "priority": 5, "label": _("Git Modified")},
+            "git_added": {"color": QColor(76, 175, 80, 150), "priority": 4, "label": _("Git Added")},
         }
 
         self._cached_points = []
@@ -65,7 +67,7 @@ class MarkerBar(QWidget):
     def _get_total_rows(self):
         return self.sheet_model.rowCount() if self.sheet_model else 0
 
-    def clear_markers(self, marker_type: str = None):
+    def clear_markers(self, marker_type: str | None = None):
         if marker_type:
             self._point_markers.pop(marker_type, None)
         else:
@@ -84,7 +86,7 @@ class MarkerBar(QWidget):
         self._range_markers[range_type] = ranges
         self.update()
 
-    def clear_ranges(self, range_type: str = None):
+    def clear_ranges(self, range_type: str | None = None):
         if range_type:
             self._range_markers.pop(range_type, None)
         else:
@@ -93,21 +95,25 @@ class MarkerBar(QWidget):
 
     def _row_to_y(self, source_row: int) -> int:
         total = self._get_total_rows()
-        if total == 0: return 0
+        if total == 0:
+            return 0
         return int((source_row / total) * self.height())
 
     def _y_to_row(self, y: int) -> int:
         total = self._get_total_rows()
-        if total == 0 or self.height() == 0: return 0
+        if total == 0 or self.height() == 0:
+            return 0
         return int((y / self.height()) * total)
 
     def add_markers(self, marker_type: str, source_rows: list):
-        if marker_type not in self._marker_configs: return
-        self._point_markers[marker_type] = sorted(list(set(source_rows)))
+        if marker_type not in self._marker_configs:
+            return
+        self._point_markers[marker_type] = sorted(set(source_rows))
         self._invalidate_cache()
 
     def _build_cache(self):
-        if self._cache_valid: return
+        if self._cache_valid:
+            return
         height = self.height()
         total_visible = self._get_total_rows()
         if height <= 0 or total_visible <= 0 or not self.sheet_model:
@@ -117,7 +123,7 @@ class MarkerBar(QWidget):
 
         ratio = height / total_visible
         pixel_map = {}
-        sorted_types = sorted(self._point_markers.keys(), key=lambda k: self._marker_configs[k]['priority'])
+        sorted_types = sorted(self._point_markers.keys(), key=lambda k: self._marker_configs[k]["priority"])
 
         for m_type in sorted_types:
             config = self._marker_configs[m_type]
@@ -126,23 +132,24 @@ class MarkerBar(QWidget):
                 if visual_row != -1 and visual_row < total_visible:
                     y = int(visual_row * ratio)
                     pixel_map[y] = {
-                        'visual_row': visual_row,
-                        'color': config['color'],
-                        'label': config['label'],
-                        'type': m_type
+                        "visual_row": visual_row,
+                        "color": config["color"],
+                        "label": config["label"],
+                        "type": m_type,
                     }
-        self._cached_points = [{'y': y, **data} for y, data in pixel_map.items()]
+        self._cached_points = [{"y": y, **data} for y, data in pixel_map.items()]
         self._cache_valid = True
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.fillRect(self.rect(), self.palette().window())
         total = self._get_total_rows()
-        if total <= 0: return
+        if total <= 0:
+            return
         height, ratio = self.height(), self.height() / total
 
         for r_type, ranges in self._range_markers.items():
-            color = self._marker_configs[r_type]['color']
+            color = self._marker_configs[r_type]["color"]
             for start, end in ranges:
                 y1, y2 = int(start * ratio), int((end + 1) * ratio)
                 painter.fillRect(8, y1, 6, max(1, y2 - y1), color)
@@ -150,7 +157,7 @@ class MarkerBar(QWidget):
         self._build_cache()
         marker_h = max(2, int(height / total))
         for pt in self._cached_points:
-            painter.fillRect(0, pt['y'], 8, marker_h, pt['color'])
+            painter.fillRect(0, pt["y"], 8, marker_h, pt["color"])
 
         first_vis = self.table_view.rowAt(0)
         last_vis = self.table_view.rowAt(self.table_view.viewport().height() - 1)
@@ -160,14 +167,16 @@ class MarkerBar(QWidget):
             painter.fillRect(0, y1, self.width(), max(2, y2 - y1), QColor(128, 128, 128, 60))
 
     def _find_marker_at_y(self, y_pos: int):
-        if not self._cached_points: return None
+        if not self._cached_points:
+            return None
         total = self._get_total_rows()
         row_h = self.height() / total
         tolerance = max(5, row_h / 2)
-        closest, min_dist = None, float('inf')
+        closest, min_dist = None, float("inf")
         for pt in self._cached_points:
-            dist = abs(pt['y'] + row_h / 2 - y_pos)
-            if dist < min_dist: min_dist, closest = dist, pt
+            dist = abs(pt["y"] + row_h / 2 - y_pos)
+            if dist < min_dist:
+                min_dist, closest = dist, pt
         return closest if min_dist <= tolerance else None
 
     def mouseMoveEvent(self, event: QMouseEvent):
@@ -180,49 +189,61 @@ class MarkerBar(QWidget):
             for r_type, ranges in self._range_markers.items():
                 for s, e in ranges:
                     if s <= target_row <= e:
-                        found = {'visual_row': target_row, 'type': r_type, 'is_range': True,
-                                 'start': s, 'end': e, 'label': self._marker_configs[r_type]['label'],
-                                 'color': self._marker_configs[r_type]['color']}
+                        found = {
+                            "visual_row": target_row,
+                            "type": r_type,
+                            "is_range": True,
+                            "start": s,
+                            "end": e,
+                            "label": self._marker_configs[r_type]["label"],
+                            "color": self._marker_configs[r_type]["color"],
+                        }
                         break
 
         if found:
             self.setCursor(Qt.PointingHandCursor)
-            v_row = found['visual_row']
+            v_row = found["visual_row"]
             if v_row != self._last_hovered_row:
                 self._last_hovered_row = v_row
                 ts_obj = self.sheet_model.get_ts_object_by_visual_row(v_row)
                 if ts_obj:
                     tooltip_parts = []
-                    color_hex = found['color'].name()
+                    color_hex = found["color"].name()
                     tooltip_parts.append(f"<b style='color:{color_hex}; font-size:13px;'>{found['label']}</b>")
 
-                    if found.get('is_range'):
+                    if found.get("is_range"):
                         tooltip_parts.append(
-                            f" <span style='color:#FFFFFF;'>({_('Range')}: {found['start'] + 1}-{found['end'] + 1})</span>")
+                            f" <span style='color:#FFFFFF;'>({_('Range')}: {found['start'] + 1}-{found['end'] + 1})</span>"
+                        )
                     else:
                         tooltip_parts.append(f" <span style='color:#FFFFFF;'>({_('Row')} {v_row + 1})</span>")
 
                     tooltip_parts.append("<hr style='border-color: #555; margin: 6px 0;'>")
 
                     if not ts_obj.is_warning_ignored:
-                        groups = [(_("Error"), ts_obj.warnings, "#D32F2F"),
-                                  (_("Warning"), ts_obj.minor_warnings, "#F57C00"),
-                                  (_("Info"), ts_obj.infos, "#1976D2")]
+                        groups = [
+                            (_("Error"), ts_obj.warnings, "#D32F2F"),
+                            (_("Warning"), ts_obj.minor_warnings, "#F57C00"),
+                            (_("Info"), ts_obj.infos, "#1976D2"),
+                        ]
                         has_msg = False
                         for title, msgs, color in groups:
                             if msgs:
                                 has_msg = True
                                 tooltip_parts.append(
-                                    f"<div style='color:{color}; font-weight:bold; margin-top:4px;'>{title}</div>")
+                                    f"<div style='color:{color}; font-weight:bold; margin-top:4px;'>{title}</div>"
+                                )
                                 for __, m in msgs:
                                     tooltip_parts.append(
-                                        f"<div style='margin-left:8px;'><span style='color:{color};'>●</span> {m}</div>")
+                                        f"<div style='margin-left:8px;'><span style='color:{color};'>●</span> {m}</div>"
+                                    )
                         if not has_msg:
-                            summary = ts_obj.original_semantic[:80].replace('\n', ' ')
+                            summary = ts_obj.original_semantic[:80].replace("\n", " ")
                             tooltip_parts.append(f"<div style='color:#CCC;'>{summary}</div>")
                     else:
                         tooltip_parts.append(
-                            f"<div style='color:#999; font-style:italic;'>{_('Warnings ignored')}</div>")
+                            f"<div style='color:#999; font-style:italic;'>{_('Warnings ignored')}</div>"
+                        )
 
                     self.tooltip.show_tooltip(event.globalPos(), "".join(tooltip_parts), delay=0)
         else:
@@ -240,7 +261,7 @@ class MarkerBar(QWidget):
         if event.button() == Qt.LeftButton:
             pt = self._find_marker_at_y(event.pos().y())
             if pt:
-                self.marker_clicked.emit(pt['visual_row'])
+                self.marker_clicked.emit(pt["visual_row"])
             else:
                 total = self._get_total_rows()
                 if total > 0:
@@ -248,10 +269,12 @@ class MarkerBar(QWidget):
 
     def set_selection_model(self, sm):
         self._selection_model = sm
-        if sm: sm.selectionChanged.connect(lambda: self._update_timer.start())
+        if sm:
+            sm.selectionChanged.connect(lambda: self._update_timer.start())
 
     def _update_selection_ranges_from_model(self):
-        if not self._selection_model: return
+        if not self._selection_model:
+            return
         rows = sorted([i.row() for i in self._selection_model.selectedRows()])
         ranges = []
         if rows:
@@ -263,4 +286,4 @@ class MarkerBar(QWidget):
                     ranges.append((start, end))
                     start = end = rows[i]
             ranges.append((start, end))
-        self.set_ranges('selection', ranges)
+        self.set_ranges("selection", ranges)

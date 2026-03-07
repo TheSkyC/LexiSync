@@ -1,14 +1,16 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import re
-import os
-import shutil
 import datetime
+import logging
+import os
+import re
+import shutil
+
 from models.translatable_string import TranslatableString
 from utils.file_utils import atomic_open
 from utils.localization import _
-import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,23 +18,23 @@ def unescape_overwatch_string(s):
     res = []
     i = 0
     while i < len(s):
-        if s[i] == '\\':
+        if s[i] == "\\":
             if i + 1 < len(s):
                 char_after_backslash = s[i + 1]
-                if char_after_backslash in ('n', 'r'):
-                    res.append('\n')
-                elif char_after_backslash == 't':
-                    res.append('\t')
+                if char_after_backslash in ("n", "r"):
+                    res.append("\n")
+                elif char_after_backslash == "t":
+                    res.append("\t")
                 elif char_after_backslash == '"':
                     res.append('"')
-                elif char_after_backslash == '\\':
-                    res.append('\\')
+                elif char_after_backslash == "\\":
+                    res.append("\\")
                 else:
-                    res.append('\\')
+                    res.append("\\")
                     res.append(char_after_backslash)
                 i += 2
             else:
-                res.append('\\')
+                res.append("\\")
                 i += 1
         else:
             res.append(s[i])
@@ -46,16 +48,29 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
     full_code_lines = code_content.splitlines()
     occurrence_counters = {}
 
-    regex_all_digits = re.compile(r'^\d+$')
-    regex_ow_placeholder = re.compile(r'^\{\d+}$')
+    regex_all_digits = re.compile(r"^\d+$")
+    regex_ow_placeholder = re.compile(r"^\{\d+}$")
     allowed_symbols_and_whitespace_chars = r".,?!|:;\-_+=*/%&#@$^~`<>(){}\[\]\s"
     regex_only_symbols_and_whitespace = re.compile(f"^[{re.escape(allowed_symbols_and_whitespace_chars)}]+$")
-    regex_placeholder_like = re.compile(r'\{\d+}')
+    regex_placeholder_like = re.compile(r"\{\d+}")
     regex_repeating_char = re.compile(r"^(.)\1+$")
     regex_progress_bar_like = re.compile(r"^[\[(|\-=<>#\s]*[]\s]*$")
     known_untranslatable_short_words = {
-        "ID", "HP", "MP", "XP", "LV", "CD", "UI", "OK",
-        "X", "Y", "Z", "A", "B", "C", "N/A"
+        "ID",
+        "HP",
+        "MP",
+        "XP",
+        "LV",
+        "CD",
+        "UI",
+        "OK",
+        "X",
+        "Y",
+        "Z",
+        "A",
+        "B",
+        "C",
+        "N/A",
     }
 
     for pattern_config in extraction_patterns:
@@ -101,7 +116,7 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
                 continue
             occupied_ranges.append((content_start_pos, content_end_pos))
 
-            line_num = code_content.count('\n', 0, content_start_pos) + 1
+            line_num = code_content.count("\n", 0, content_start_pos) + 1
             counter_key = (semantic_content, string_type_from_pattern)
             current_index = occurrence_counters.get(counter_key, 0)
             occurrence_counters[counter_key] = current_index + 1
@@ -116,10 +131,10 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
                 string_type=string_type_from_pattern,
                 source_file_path=source_file_rel_path,
                 occurrences=[(source_file_rel_path, str(line_num))],
-                occurrence_index=current_index
+                occurrence_index=current_index,
             )
             fill_enabled = False
-            if app_instance and hasattr(app_instance, 'config'):
+            if app_instance and hasattr(app_instance, "config"):
                 fill_enabled = app_instance.config.get("fill_translation_with_source", False)
             if fill_enabled:
                 ts.set_translation_internal(semantic_content, is_initial=True)
@@ -131,38 +146,26 @@ def extract_translatable_strings(code_content, extraction_patterns, source_file_
             s_semantic_stripped = semantic_content.strip()
             s_len_stripped = len(s_semantic_stripped)
 
-            if not s_semantic_stripped:
+            if (
+                not s_semantic_stripped
+                or regex_all_digits.fullmatch(s_semantic_stripped)
+                or regex_ow_placeholder.fullmatch(s_semantic_stripped)
+                or (s_len_stripped == 1 and "a" <= s_semantic_stripped.lower() <= "z" and s_semantic_stripped.isascii())
+                or regex_only_symbols_and_whitespace.fullmatch(semantic_content)
+                or (s_len_stripped >= 2 and regex_repeating_char.fullmatch(s_semantic_stripped))
+                or s_semantic_stripped.upper() in known_untranslatable_short_words
+                or (s_len_stripped > 2 and regex_progress_bar_like.fullmatch(s_semantic_stripped))
+            ):
                 ts.was_auto_ignored = True
                 ts.is_ignored = True
-            elif regex_all_digits.fullmatch(s_semantic_stripped):
-                ts.was_auto_ignored = True
-                ts.is_ignored = True
-            elif regex_ow_placeholder.fullmatch(s_semantic_stripped):
-                ts.was_auto_ignored = True
-                ts.is_ignored = True
-            elif s_len_stripped == 1 and 'a' <= s_semantic_stripped.lower() <= 'z' and s_semantic_stripped.isascii():
-                ts.was_auto_ignored = True
-                ts.is_ignored = True
-            elif regex_only_symbols_and_whitespace.fullmatch(semantic_content):
-                ts.was_auto_ignored = True
-                ts.is_ignored = True
-            elif s_len_stripped >= 2 and regex_repeating_char.fullmatch(s_semantic_stripped):
-                ts.was_auto_ignored = True
-                ts.is_ignored = True
-            elif s_semantic_stripped.upper() in known_untranslatable_short_words:
-                ts.was_auto_ignored = True
-                ts.is_ignored = True
-            elif s_len_stripped > 2 and regex_progress_bar_like.fullmatch(s_semantic_stripped):
-                ts.was_auto_ignored = True
-                ts.is_ignored = True
-            else:
-                if regex_placeholder_like.search(s_semantic_stripped):
-                    content_no_placeholders = regex_placeholder_like.sub('', s_semantic_stripped)
-                    content_text_only = re.sub(f"[{re.escape(allowed_symbols_and_whitespace_chars)}]", '',
-                                               content_no_placeholders).strip()
-                    if len(content_text_only) < 2:
-                        ts.was_auto_ignored = True
-                        ts.is_ignored = True
+            elif regex_placeholder_like.search(s_semantic_stripped):
+                content_no_placeholders = regex_placeholder_like.sub("", s_semantic_stripped)
+                content_text_only = re.sub(
+                    f"[{re.escape(allowed_symbols_and_whitespace_chars)}]", "", content_no_placeholders
+                ).strip()
+                if len(content_text_only) < 2:
+                    ts.was_auto_ignored = True
+                    ts.is_ignored = True
             ts.update_sort_weight()
             strings.append(ts)
 
@@ -181,7 +184,7 @@ def save_translated_code(filepath_to_save, original_raw_code_content, translatab
             start_idx = ts_obj.char_pos_start_in_file
             end_idx_of_content_to_replace = ts_obj.char_pos_end_in_file
             raw_translated_str_for_code = ts_obj.get_raw_translated_for_code()
-            content_chars[start_idx: end_idx_of_content_to_replace] = list(raw_translated_str_for_code)
+            content_chars[start_idx:end_idx_of_content_to_replace] = list(raw_translated_str_for_code)
 
     final_content = "".join(content_chars)
 
@@ -190,15 +193,21 @@ def save_translated_code(filepath_to_save, original_raw_code_content, translatab
         try:
             shutil.copy2(filepath_to_save, backup_path)
             app_instance.update_statusbar(
-                _("Backup created: {filename}").format(filename=os.path.basename(backup_path)))
+                _("Backup created: {filename}").format(filename=os.path.basename(backup_path))
+            )
         except Exception as e_backup:
             from PySide6.QtWidgets import QMessageBox
+
             if app_instance and app_instance.isVisible():
-                QMessageBox.warning(app_instance, _("Backup Failed"),
-                                    _("Could not create code file backup '{filename}': {error}").format(
-                                        filename=os.path.basename(backup_path), error=e_backup))
+                QMessageBox.warning(
+                    app_instance,
+                    _("Backup Failed"),
+                    _("Could not create code file backup '{filename}': {error}").format(
+                        filename=os.path.basename(backup_path), error=e_backup
+                    ),
+                )
             else:
                 logger.warning(f"Backup Failed: {e_backup}")
 
-    with atomic_open(filepath_to_save, 'w', encoding='utf-8') as f:
+    with atomic_open(filepath_to_save, "w", encoding="utf-8") as f:
         f.write(final_content)

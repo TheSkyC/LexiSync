@@ -1,11 +1,13 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from .base import RetrievalBackend
+import gc
 import logging
 import os
-import gc
+
 import numpy as np
+
+from .base import RetrievalBackend
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +37,13 @@ class OnnxBackend(RetrievalBackend):
         return "Local LLM (ONNX)"
 
     def is_available(self) -> bool:
-        if not ONNX_AVAILABLE: return False
-        if not self.model_path: return False
-        has_model = os.path.exists(os.path.join(self.model_path, "model.onnx")) or \
-                    os.path.exists(os.path.join(self.model_path, "model_quantized.onnx"))
+        if not ONNX_AVAILABLE:
+            return False
+        if not self.model_path:
+            return False
+        has_model = os.path.exists(os.path.join(self.model_path, "model.onnx")) or os.path.exists(
+            os.path.join(self.model_path, "model_quantized.onnx")
+        )
         has_tok = os.path.exists(os.path.join(self.model_path, "tokenizer.json"))
         return has_model and has_tok
 
@@ -59,8 +64,10 @@ class OnnxBackend(RetrievalBackend):
         self._use_token_type_ids = None
 
     def _ensure_loaded(self):
-        if self._is_ready: return True
-        if not self.is_available(): return False
+        if self._is_ready:
+            return True
+        if not self.is_available():
+            return False
 
         try:
             tok_file = os.path.join(self.model_path, "tokenizer.json")
@@ -86,9 +93,9 @@ class OnnxBackend(RetrievalBackend):
                 logger.warning(f"[OnnxBackend] Could not set thread count: {e}")
             available_providers = ort.get_available_providers()
             providers_to_use = []
-            if 'DmlExecutionProvider' in available_providers:
-                providers_to_use.append('DmlExecutionProvider')
-            providers_to_use.append('CPUExecutionProvider')
+            if "DmlExecutionProvider" in available_providers:
+                providers_to_use.append("DmlExecutionProvider")
+            providers_to_use.append("CPUExecutionProvider")
             logger.info(f"[OnnxBackend] Using ONNX providers: {providers_to_use}")
             temp_session = ort.InferenceSession(onnx_file, sess_options, providers=providers_to_use)
 
@@ -99,10 +106,12 @@ class OnnxBackend(RetrievalBackend):
                 token_type_ids = np.array([e.type_ids for e in encoded], dtype=np.int64)
 
                 try:
-                    temp_session.run(None, {'input_ids': input_ids, 'attention_mask': attention_mask,
-                                            'token_type_ids': token_type_ids})
+                    temp_session.run(
+                        None,
+                        {"input_ids": input_ids, "attention_mask": attention_mask, "token_type_ids": token_type_ids},
+                    )
                     self._use_token_type_ids = True
-                except:
+                except Exception:
                     self._use_token_type_ids = False
                 logger.info(f"[OnnxBackend] Model requires token_type_ids: {self._use_token_type_ids}")
 
@@ -142,42 +151,45 @@ class OnnxBackend(RetrievalBackend):
         input_ids = np.array([e.ids for e in encoded], dtype=np.int64)
         attention_mask = np.array([e.attention_mask for e in encoded], dtype=np.int64)
 
-        inputs = {'input_ids': input_ids, 'attention_mask': attention_mask}
+        inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
         if self._use_token_type_ids:
-            inputs['token_type_ids'] = np.array([e.type_ids for e in encoded], dtype=np.int64)
+            inputs["token_type_ids"] = np.array([e.type_ids for e in encoded], dtype=np.int64)
 
         outputs = session.run(None, inputs)
         return self._mean_pooling(outputs, attention_mask)
 
     def _compute_embeddings(self, texts: list):
-        if not self._ensure_loaded(): return None
+        if not self._ensure_loaded():
+            return None
         embeddings = self._compute_embeddings_internal(self.tokenizer, self.session, texts)
         norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
         return embeddings / np.clip(norm, a_min=1e-9, a_max=None)
 
     def build_index(self, data_list: list, progress_callback=None, check_cancel=None) -> bool:
-        if not self.is_available(): return False
+        if not self.is_available():
+            return False
         try:
             self.indexed_data = data_list
-            corpus = [item['source'] for item in data_list]
+            corpus = [item["source"] for item in data_list]
             cached_vectors = self.cache_manager.get_vectors(corpus, self.model_id)
             missing_texts = [t for t in corpus if t not in cached_vectors]
 
             logger.info(
-                f"[OnnxBackend] Cache Stats - Total: {len(corpus)}, Hits: {len(cached_vectors)}, Misses: {len(missing_texts)}")
+                f"[OnnxBackend] Cache Stats - Total: {len(corpus)}, Hits: {len(cached_vectors)}, Misses: {len(missing_texts)}"
+            )
 
             if missing_texts:
                 logger.info(f"Computing embeddings for {len(missing_texts)} new items...")
                 batch_size = 32
                 new_vectors_map = {}
-                total_missing = len(missing_texts)
+                len(missing_texts)
 
                 for i in range(0, len(missing_texts), batch_size):
                     if check_cancel and check_cancel():
                         logger.info("[OnnxBackend] Build index cancelled.")
                         return False
 
-                    batch = missing_texts[i:i + batch_size]
+                    batch = missing_texts[i : i + batch_size]
                     embeddings = self._compute_embeddings(batch)
                     if embeddings is not None:
                         for j, text in enumerate(batch):
@@ -193,25 +205,28 @@ class OnnxBackend(RetrievalBackend):
                     final_list.append(cached_vectors[text])
                     valid_indices.append(i)
 
-            if progress_callback: progress_callback(100)
+            if progress_callback:
+                progress_callback(100)
             return True
         except Exception as e:
             logger.error(f"ONNX build failed: {e}", exc_info=True)
             return False
 
     def retrieve(self, query: str, limit: int = 5, threshold: float = 0.0) -> list:
-        if self.index_embeddings is None: return []
+        if self.index_embeddings is None:
+            return []
         try:
             query_emb = self._compute_embeddings([query])
-            if query_emb is None: return []
+            if query_emb is None:
+                return []
             scores = np.dot(self.index_embeddings, query_emb.T).flatten()
-            related_indices = scores.argsort()[:-limit - 1:-1]
+            related_indices = scores.argsort()[: -limit - 1 : -1]
             results = []
             for idx in related_indices:
                 score = float(scores[idx])
                 if score >= threshold:
                     item = self.indexed_data[idx].copy()
-                    item['score'] = score
+                    item["score"] = score
                     results.append(item)
             return results
         except Exception as e:

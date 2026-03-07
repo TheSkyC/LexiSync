@@ -1,17 +1,34 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QFormLayout, QComboBox, QCheckBox, QSpinBox,
-    QPushButton, QGroupBox, QHBoxLayout, QLineEdit, QMessageBox, QLabel,
-    QApplication, QScrollArea, QFrame, QDoubleSpinBox, QGridLayout,
-    QButtonGroup, QRadioButton, QAbstractSpinBox
+    QAbstractSpinBox,
+    QApplication,
+    QButtonGroup,
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QFrame,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QRadioButton,
+    QScrollArea,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtGui import QColor, QPixmap, QPainter
-from PySide6.QtCore import Qt, QEvent
-from utils.path_utils import get_resource_path
-from utils.constants import DEFAULT_API_URL, DEFAULT_VALIDATION_RULES
+
+from utils.constants import DEFAULT_VALIDATION_RULES
 from utils.localization import _, lang_manager
+from utils.path_utils import get_resource_path
 
 
 class BaseSettingsPage(QWidget):
@@ -150,6 +167,7 @@ class BaseSettingsPage(QWidget):
                     original(event)
                 else:
                     event.ignore()
+
             widget.wheelEvent = smart_wheel_event
             widget.setFocusPolicy(Qt.StrongFocus)
 
@@ -169,7 +187,6 @@ class GeneralSettingsPage(BaseSettingsPage):
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(15)
 
-
         main_form_layout = QFormLayout()
         main_form_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
         main_form_layout.setLabelAlignment(Qt.AlignLeft)
@@ -180,7 +197,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         for code in available_langs:
             name = lang_manager.get_language_name(code)
             self.lang_combo.addItem(f"{name} ({code})", code)
-        self.current_lang_on_open = self.app.config.get('language', 'en_US')
+        self.current_lang_on_open = self.app.config.get("language", "en_US")
         index = self.lang_combo.findData(self.current_lang_on_open)
         if index != -1:
             self.lang_combo.setCurrentIndex(index)
@@ -189,7 +206,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         # Recent Files Limit
         self.recent_files_limit_spinbox = QSpinBox()
         self.recent_files_limit_spinbox.setRange(5, 100)
-        self.recent_files_limit_spinbox.setValue(self.app.config.get('recent_files_limit', 25))
+        self.recent_files_limit_spinbox.setValue(self.app.config.get("recent_files_limit", 25))
         main_form_layout.addRow(_("Recent Files History Size:"), self.recent_files_limit_spinbox)
 
         # Auto-save
@@ -199,7 +216,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         self.auto_save_spinbox.setRange(0, 3600)
         self.auto_save_spinbox.setSingleStep(30)
         self.auto_save_spinbox.setSuffix(_(" s"))
-        self.auto_save_spinbox.setValue(self.app.config.get('auto_save_interval_sec', 60))
+        self.auto_save_spinbox.setValue(self.app.config.get("auto_save_interval_sec", 60))
         self.auto_save_hint_label = QLabel(_("(0 to disable)"))
         self.auto_save_hint_label.setStyleSheet("color: gray;")
         auto_save_layout.addWidget(self.auto_save_spinbox)
@@ -210,10 +227,10 @@ class GeneralSettingsPage(BaseSettingsPage):
         self.propagation_combo = QComboBox()
 
         self.propagation_options = [
-            ('smart', _("Smart"), _("Update empty translations or those identical to the current one.")),
-            ('fill_blanks', _("Fill Blanks Only"), _("Update only items that have no translation.")),
-            ('always', _("Always"), _("Update all items with the same source text.")),
-            ('single', _("Single"), _("Update only the currently selected item."))
+            ("smart", _("Smart"), _("Update empty translations or those identical to the current one.")),
+            ("fill_blanks", _("Fill Blanks Only"), _("Update only items that have no translation.")),
+            ("always", _("Always"), _("Update all items with the same source text.")),
+            ("single", _("Single"), _("Update only the currently selected item.")),
         ]
 
         for key, text, tooltip in self.propagation_options:
@@ -221,7 +238,7 @@ class GeneralSettingsPage(BaseSettingsPage):
             index = self.propagation_combo.count() - 1
             self.propagation_combo.setItemData(index, tooltip, Qt.ToolTipRole)
 
-        current_mode = self.app.config.get('translation_propagation_mode', 'smart')
+        current_mode = self.app.config.get("translation_propagation_mode", "smart")
         index = self.propagation_combo.findData(current_mode)
         if index != -1:
             self.propagation_combo.setCurrentIndex(index)
@@ -233,18 +250,18 @@ class GeneralSettingsPage(BaseSettingsPage):
         # Ctrl+Enter Behavior
         self.next_behavior_combo = QComboBox()
         self.next_behavior_map = {
-            'untranslated': _("Next Untranslated"),
-            'any': _("Next Item"),
-            'unreviewed': _("Next Unreviewed"),
-            'error': _("Next Error"),
-            'warning': _("Next Warning"),
-            'info': _("Next Info")
+            "untranslated": _("Next Untranslated"),
+            "any": _("Next Item"),
+            "unreviewed": _("Next Unreviewed"),
+            "error": _("Next Error"),
+            "warning": _("Next Warning"),
+            "info": _("Next Info"),
         }
-        order = ['untranslated', 'any', 'unreviewed', 'error', 'warning', 'info']
+        order = ["untranslated", "any", "unreviewed", "error", "warning", "info"]
         for key in order:
             self.next_behavior_combo.addItem(self.next_behavior_map[key], key)
 
-        current_behavior = self.app.config.get('apply_and_next_behavior', 'untranslated')
+        current_behavior = self.app.config.get("apply_and_next_behavior", "untranslated")
         index = self.next_behavior_combo.findData(current_behavior)
         if index != -1:
             self.next_behavior_combo.setCurrentIndex(index)
@@ -256,19 +273,24 @@ class GeneralSettingsPage(BaseSettingsPage):
         project_layout = QFormLayout(project_group)
         self.load_all_files_checkbox = QCheckBox(_("Load all source files when opening a project"))
         self.load_all_files_checkbox.setToolTip(
-            _("Improves performance for cross-file operations, but may increase initial loading time for large projects."))
-        self.load_all_files_checkbox.setChecked(self.app.config.get('load_all_files_on_project_open', False))
+            _(
+                "Improves performance for cross-file operations, but may increase initial loading time for large projects."
+            )
+        )
+        self.load_all_files_checkbox.setChecked(self.app.config.get("load_all_files_on_project_open", False))
         project_layout.addRow(self.load_all_files_checkbox)
         content_layout.addWidget(project_group)
 
         # Import Settings Group
         import_group = QGroupBox(_("Import Settings"))
         import_layout = QVBoxLayout(import_group)
-        self.fill_source_checkbox = QCheckBox(
-            _("Fill translation with source text for monolingual files"))
+        self.fill_source_checkbox = QCheckBox(_("Fill translation with source text for monolingual files"))
         self.fill_source_checkbox.setToolTip(
-            _("If disabled, translations will be empty when loading monolingual files (MD, JSON, etc.), ensuring accurate statistics."))
-        self.fill_source_checkbox.setChecked(self.app.config.get('fill_translation_with_source', False))
+            _(
+                "If disabled, translations will be empty when loading monolingual files (MD, JSON, etc.), ensuring accurate statistics."
+            )
+        )
+        self.fill_source_checkbox.setChecked(self.app.config.get("fill_translation_with_source", False))
 
         import_layout.addWidget(self.fill_source_checkbox)
         content_layout.addWidget(import_group)
@@ -277,7 +299,7 @@ class GeneralSettingsPage(BaseSettingsPage):
         on_save_group = QGroupBox(_("On File Save"))
         on_save_layout = QVBoxLayout(on_save_group)
         self.compile_mo_checkbox = QCheckBox(_("Auto-compile .mo file when save .po file"))
-        self.compile_mo_checkbox.setChecked(self.app.config.get('auto_compile_mo_on_save', True))
+        self.compile_mo_checkbox.setChecked(self.app.config.get("auto_compile_mo_on_save", True))
         on_save_layout.addWidget(self.compile_mo_checkbox)
         content_layout.addWidget(on_save_group)
 
@@ -286,11 +308,11 @@ class GeneralSettingsPage(BaseSettingsPage):
         paste_layout = QVBoxLayout(paste_group)
         self.smart_paste_checkbox = QCheckBox(_("Enable Smart Paste"))
         self.smart_paste_checkbox.setToolTip(_("Automatically format text when pasting into the translation editor."))
-        self.smart_paste_checkbox.setChecked(self.app.config.get('smart_paste_enabled', True))
+        self.smart_paste_checkbox.setChecked(self.app.config.get("smart_paste_enabled", True))
         self.sync_whitespace_checkbox = QCheckBox(_("Sync leading/trailing whitespace"))
-        self.sync_whitespace_checkbox.setChecked(self.app.config.get('smart_paste_sync_whitespace', True))
+        self.sync_whitespace_checkbox.setChecked(self.app.config.get("smart_paste_sync_whitespace", True))
         self.normalize_newlines_checkbox = QCheckBox(_("Normalize newlines"))
-        self.normalize_newlines_checkbox.setChecked(self.app.config.get('smart_paste_normalize_newlines', True))
+        self.normalize_newlines_checkbox.setChecked(self.app.config.get("smart_paste_normalize_newlines", True))
         self.smart_paste_checkbox.stateChanged.connect(self.sync_whitespace_checkbox.setEnabled)
         self.smart_paste_checkbox.stateChanged.connect(self.normalize_newlines_checkbox.setEnabled)
         self.sync_whitespace_checkbox.setEnabled(self.smart_paste_checkbox.isChecked())
@@ -306,8 +328,9 @@ class GeneralSettingsPage(BaseSettingsPage):
         sub_options_layout.addWidget(sub_options_widget)
         self.paste_protection_checkbox = QCheckBox(_("Enable Large Text Paste Protection"))
         self.paste_protection_checkbox.setToolTip(
-            _("Warns when pasting large text that is significantly longer than the original."))
-        self.paste_protection_checkbox.setChecked(self.app.config.get('paste_protection_enabled', True))
+            _("Warns when pasting large text that is significantly longer than the original.")
+        )
+        self.paste_protection_checkbox.setChecked(self.app.config.get("paste_protection_enabled", True))
 
         paste_layout.addWidget(self.smart_paste_checkbox)
         paste_layout.addLayout(sub_options_layout)
@@ -328,7 +351,6 @@ class GeneralSettingsPage(BaseSettingsPage):
         self.page_layout.addWidget(scroll_area)
         self.apply_widget_policies()
 
-
     def save_settings(self):
         lang_changed = False
         new_lang_code = self.lang_combo.currentData()
@@ -337,23 +359,25 @@ class GeneralSettingsPage(BaseSettingsPage):
             self.current_lang_on_open = new_lang_code
             lang_changed = True
 
-        self.app.config['recent_files_limit'] = self.recent_files_limit_spinbox.value()
-        self.app.config['translation_propagation_mode'] = self.propagation_combo.currentData()
+        self.app.config["recent_files_limit"] = self.recent_files_limit_spinbox.value()
+        self.app.config["translation_propagation_mode"] = self.propagation_combo.currentData()
         self.app.auto_save_interval_sec = self.auto_save_spinbox.value()
-        self.app.config['auto_save_interval_sec'] = self.app.auto_save_interval_sec
+        self.app.config["auto_save_interval_sec"] = self.app.auto_save_interval_sec
         self.app.setup_auto_save_timer()
-        self.app.config['load_all_files_on_project_open'] = self.load_all_files_checkbox.isChecked()
-        self.app.config['fill_translation_with_source'] = self.fill_source_checkbox.isChecked()
+        self.app.config["load_all_files_on_project_open"] = self.load_all_files_checkbox.isChecked()
+        self.app.config["fill_translation_with_source"] = self.fill_source_checkbox.isChecked()
         self.app.auto_compile_mo_var = self.compile_mo_checkbox.isChecked()
-        self.app.config['auto_compile_mo_on_save'] = self.app.auto_compile_mo_var
-        self.app.config['apply_and_next_behavior'] = self.next_behavior_combo.currentData()
-        self.app.config['smart_paste_enabled'] = self.smart_paste_checkbox.isChecked()
-        self.app.config['smart_paste_sync_whitespace'] = self.sync_whitespace_checkbox.isChecked()
-        self.app.config['smart_paste_normalize_newlines'] = self.normalize_newlines_checkbox.isChecked()
-        self.app.config['paste_protection_enabled'] = self.paste_protection_checkbox.isChecked()
+        self.app.config["auto_compile_mo_on_save"] = self.app.auto_compile_mo_var
+        self.app.config["apply_and_next_behavior"] = self.next_behavior_combo.currentData()
+        self.app.config["smart_paste_enabled"] = self.smart_paste_checkbox.isChecked()
+        self.app.config["smart_paste_sync_whitespace"] = self.sync_whitespace_checkbox.isChecked()
+        self.app.config["smart_paste_normalize_newlines"] = self.normalize_newlines_checkbox.isChecked()
+        self.app.config["paste_protection_enabled"] = self.paste_protection_checkbox.isChecked()
 
-        if hasattr(self.app, 'details_panel'):
-            self.app.details_panel.translation_edit_text.paste_protection_enabled = self.paste_protection_checkbox.isChecked()
+        if hasattr(self.app, "details_panel"):
+            self.app.details_panel.translation_edit_text.paste_protection_enabled = (
+                self.paste_protection_checkbox.isChecked()
+            )
         return lang_changed
 
 
@@ -366,9 +390,11 @@ class AppearanceSettingsPage(BaseSettingsPage):
         form_layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
         form_layout.setLabelAlignment(Qt.AlignLeft)
 
-        self.accelerator_marker_edit = QLineEdit(self.app.config.get('accelerator_marker', '&'))
+        self.accelerator_marker_edit = QLineEdit(self.app.config.get("accelerator_marker", "&"))
         self.accelerator_marker_edit.setMaxLength(20)
-        self.accelerator_marker_edit.setToolTip(_("Enter characters used for menu accelerators, separated by comma (e.g., '&, _')."))
+        self.accelerator_marker_edit.setToolTip(
+            _("Enter characters used for menu accelerators, separated by comma (e.g., '&, _').")
+        )
         form_layout.addRow(_("Accelerator Marker(s):"), self.accelerator_marker_edit)
 
         self.font_button = QPushButton(_("Font Settings..."))
@@ -383,7 +409,7 @@ class AppearanceSettingsPage(BaseSettingsPage):
         self.apply_widget_policies()
 
     def save_settings(self):
-        self.app.config['accelerator_marker'] = self.accelerator_marker_edit.text()
+        self.app.config["accelerator_marker"] = self.accelerator_marker_edit.text()
 
 
 class AISettingsPage(BaseSettingsPage):
@@ -410,6 +436,7 @@ class AISettingsPage(BaseSettingsPage):
         self.lbl_active_model_name.setStyleSheet("font-size: 14px; margin-bottom: 2px;")
 
         from ui_components.elided_label import ElidedLabel
+
         self.lbl_active_model_detail = ElidedLabel()
         self.lbl_active_model_detail.setStyleSheet("color: gray; font-size: 12px;")
 
@@ -488,10 +515,11 @@ class AISettingsPage(BaseSettingsPage):
         self.combo_retrieval_mode.addItem("Local LLM", "onnx")
         current_rag_mode = self.app.config.get("ai_retrieval_mode", "auto")
         idx = self.combo_retrieval_mode.findData(current_rag_mode)
-        if idx != -1: self.combo_retrieval_mode.setCurrentIndex(idx)
+        if idx != -1:
+            self.combo_retrieval_mode.setCurrentIndex(idx)
 
         # Check plugin availability
-        if hasattr(self.app, 'plugin_manager'):
+        if hasattr(self.app, "plugin_manager"):
             plugin = self.app.plugin_manager.get_plugin("com_theskyc_retrieval_enhancer")
             if not plugin:
                 self.chk_retrieval.setEnabled(False)
@@ -592,7 +620,8 @@ class AISettingsPage(BaseSettingsPage):
         if active_model:
             # Line 1: Profile Name
             self.lbl_active_model_name.setText(
-                f"<b>{_('Current Active Model')}:</b> {active_model.get('name', 'Unknown')}")
+                f"<b>{_('Current Active Model')}:</b> {active_model.get('name', 'Unknown')}"
+            )
 
             # Line 2: Model ID @ URL
             detail_text = f"{active_model.get('model_name', '')} @ {active_model.get('api_base_url', '')}"
@@ -605,6 +634,7 @@ class AISettingsPage(BaseSettingsPage):
 
     def open_model_manager(self):
         from dialogs.ai_model_manager_dialog import AIModelManagerDialog
+
         dialog = AIModelManagerDialog(self, self.app)
         if dialog.exec():
             self.update_active_model_label()
@@ -624,10 +654,12 @@ class AISettingsPage(BaseSettingsPage):
         curr_fix = self.app.config.get("active_correction_prompt_id")
 
         idx_t = self.trans_prompt_combo.findData(curr_trans)
-        if idx_t != -1: self.trans_prompt_combo.setCurrentIndex(idx_t)
+        if idx_t != -1:
+            self.trans_prompt_combo.setCurrentIndex(idx_t)
 
         idx_f = self.fix_prompt_combo.findData(curr_fix)
-        if idx_f != -1: self.fix_prompt_combo.setCurrentIndex(idx_f)
+        if idx_f != -1:
+            self.fix_prompt_combo.setCurrentIndex(idx_f)
 
     def open_prompt_manager(self):
         self.app.show_prompt_manager()
@@ -783,13 +815,14 @@ class ValidationRuleWidget(QWidget):
         data = {
             "enabled": self.checkbox.isChecked(),
             "level": self.level_combo.currentData(),
-            "label": self.config_data.get("label", self.key)
+            "label": self.config_data.get("label", self.key),
         }
         if self.mode_combo.isVisible():
             data["mode"] = self.mode_combo.currentData()
             data["modes"] = self.config_data.get("modes")
             data["default_mode"] = self.config_data.get("default_mode")
         return data
+
 
 class ValidationSettingsPage(BaseSettingsPage):
     def __init__(self, app_instance):
@@ -812,9 +845,18 @@ class ValidationSettingsPage(BaseSettingsPage):
 
         # 分组定义
         groups = {
-            _("Code Safety"):["printf", "python_brace", "icu_placeholder", "html_tags", "url_email", "accelerator"],
+            _("Code Safety"): ["printf", "python_brace", "icu_placeholder", "html_tags", "url_email", "accelerator"],
             _("Content Consistency"): ["numbers", "glossary", "fuzzy", "repeated_word"],
-            _("Formatting & Punctuation"): ["punctuation", "brackets", "whitespace", "double_space", "capitalization", "newline_count", "quotes", "pangu"]
+            _("Formatting & Punctuation"): [
+                "punctuation",
+                "brackets",
+                "whitespace",
+                "double_space",
+                "capitalization",
+                "newline_count",
+                "quotes",
+                "pangu",
+            ],
         }
 
         for group_name, keys in groups.items():
@@ -834,17 +876,17 @@ class ValidationSettingsPage(BaseSettingsPage):
         length_layout = QFormLayout(length_group)
 
         self.check_length = QCheckBox(_("Enable Length Check"))
-        self.check_length.setChecked(self.app.config.get('check_length', True))
+        self.check_length.setChecked(self.app.config.get("check_length", True))
 
         self.major_threshold = QDoubleSpinBox()
         self.major_threshold.setRange(1.1, 10.0)
         self.major_threshold.setSingleStep(0.1)
-        self.major_threshold.setValue(self.app.config.get('length_threshold_major', 2.5))
+        self.major_threshold.setValue(self.app.config.get("length_threshold_major", 2.5))
 
         self.minor_threshold = QDoubleSpinBox()
         self.minor_threshold.setRange(1.1, 10.0)
         self.minor_threshold.setSingleStep(0.1)
-        self.minor_threshold.setValue(self.app.config.get('length_threshold_minor', 2.0))
+        self.minor_threshold.setValue(self.app.config.get("length_threshold_minor", 2.0))
 
         length_layout.addRow(self.check_length)
         length_layout.addRow(_("Major Threshold (Error):"), self.major_threshold)
@@ -864,9 +906,9 @@ class ValidationSettingsPage(BaseSettingsPage):
         for key, widget in self.rule_widgets.items():
             self._initial_rules_state[key] = widget.get_data()
         self._initial_length_state = {
-            'check': self.check_length.isChecked(),
-            'major': self.major_threshold.value(),
-            'minor': self.minor_threshold.value()
+            "check": self.check_length.isChecked(),
+            "major": self.major_threshold.value(),
+            "minor": self.minor_threshold.value(),
         }
 
     def save_settings(self):
@@ -875,24 +917,24 @@ class ValidationSettingsPage(BaseSettingsPage):
             new_rules[key] = widget.get_data()
 
         new_length_state = {
-            'check': self.check_length.isChecked(),
-            'major': self.major_threshold.value(),
-            'minor': self.minor_threshold.value()
+            "check": self.check_length.isChecked(),
+            "major": self.major_threshold.value(),
+            "minor": self.minor_threshold.value(),
         }
 
         rules_changed = new_rules != self._initial_rules_state
 
         length_settings_changed = (
-                new_length_state['check'] != self._initial_length_state['check'] or
-                abs(new_length_state['major'] - self._initial_length_state['major']) > 0.001 or
-                abs(new_length_state['minor'] - self._initial_length_state['minor']) > 0.001
+            new_length_state["check"] != self._initial_length_state["check"]
+            or abs(new_length_state["major"] - self._initial_length_state["major"]) > 0.001
+            or abs(new_length_state["minor"] - self._initial_length_state["minor"]) > 0.001
         )
 
         if rules_changed or length_settings_changed:
             self.app.config["validation_rules"] = new_rules
-            self.app.config['check_length'] = new_length_state['check']
-            self.app.config['length_threshold_major'] = new_length_state['major']
-            self.app.config['length_threshold_minor'] = new_length_state['minor']
+            self.app.config["check_length"] = new_length_state["check"]
+            self.app.config["length_threshold_major"] = new_length_state["major"]
+            self.app.config["length_threshold_minor"] = new_length_state["minor"]
             self._take_state_snapshot()
             self.app._run_and_refresh_with_validation()
 

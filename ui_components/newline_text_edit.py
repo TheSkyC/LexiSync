@@ -1,13 +1,17 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import re
-from PySide6.QtWidgets import QTextEdit, QMessageBox, QMenu
-from PySide6.QtGui import QPainter, QColor, QFont, QTextCursor, QFontMetricsF, QAction
-from PySide6.QtCore import Qt, QPoint, QMimeData, Signal
-from .tooltip import Tooltip
-from utils.localization import _
 import logging
+import re
+
+from PySide6.QtCore import QMimeData, Signal
+from PySide6.QtGui import QAction, QColor, QFont, QFontMetricsF, QPainter, QTextCursor
+from PySide6.QtWidgets import QMessageBox, QTextEdit
+
+from utils.localization import _
+
+from .tooltip import Tooltip
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +46,7 @@ class NewlineTextEdit(QTextEdit):
 
     def _update_tab_width(self):
         metrics = QFontMetricsF(self.font())
-        space_width = metrics.horizontalAdvance(' ')
+        space_width = metrics.horizontalAdvance(" ")
         self.setTabStopDistance(space_width * 4)
 
     def setFont(self, font):
@@ -71,10 +75,10 @@ class NewlineTextEdit(QTextEdit):
             return
 
         found_match = None
-        sorted_matches = sorted(self.glossary_matches, key=lambda m: len(m['source']), reverse=True)
+        sorted_matches = sorted(self.glossary_matches, key=lambda m: len(m["source"]), reverse=True)
 
         for match in sorted_matches:
-            term = match['source']
+            term = match["source"]
             try:
                 pattern = re.compile(re.escape(term), re.IGNORECASE)
                 for m in pattern.finditer(text):
@@ -101,23 +105,23 @@ class NewlineTextEdit(QTextEdit):
                 break
 
         if found_match:
-            if found_match['source'] != self._last_hovered_term:
-                self._last_hovered_term = found_match['source']
+            if found_match["source"] != self._last_hovered_term:
+                self._last_hovered_term = found_match["source"]
                 self._show_glossary_tooltip(event.globalPos(), found_match)
         else:
             self.tooltip.hide()
             self._last_hovered_term = None
 
     def _show_glossary_tooltip(self, global_pos, match):
-        source = match['source']
-        translations = match['translations']
+        source = match["source"]
+        translations = match["translations"]
 
         html = f"<b style='color:#2196F3; font-size:14px;'>{source}</b>"
         html += "<hr style='border-color: #555; margin: 6px 0;'>"
 
         for t in translations:
-            target = t['target']
-            comment = t.get('comment', '')
+            target = t["target"]
+            comment = t.get("comment", "")
             html += f"<div style='margin-bottom: 3px;'>• <b>{target}</b>"
             if comment:
                 html += f" <span style='color:#AAA;'>({comment})</span>"
@@ -139,12 +143,11 @@ class NewlineTextEdit(QTextEdit):
             text_len = len(text)
 
             if text_len > self.paste_limit_threshold:
-
                 similarity_ratio = 0.0
                 if self.reference_length > 0:
                     similarity_ratio = self.reference_length / text_len
                 if similarity_ratio < 0.7:
-                    logger.info(f"Large paste detected.")
+                    logger.info("Large paste detected.")
                     msg = _(
                         "Large Text Detected ({len} chars).\n"
                         "It exceeds the safety limit.\n\n"
@@ -152,18 +155,13 @@ class NewlineTextEdit(QTextEdit):
                     ).format(len=text_len)
 
                     reply = QMessageBox.question(
-                        self,
-                        _("Paste Protection"),
-                        msg,
-                        QMessageBox.Yes | QMessageBox.No,
-                        QMessageBox.No
+                        self, _("Paste Protection"), msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No
                     )
 
                     if reply == QMessageBox.No:
                         logger.info("Paste cancelled by user.")
                         return
-                    else:
-                        logger.info("User forced paste.")
+                    logger.info("User forced paste.")
 
             self.insertPlainText(text)
 

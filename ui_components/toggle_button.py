@@ -1,10 +1,10 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, QRectF, QSize, Qt
+from PySide6.QtGui import QBrush, QColor, QCursor, QPainter
 from PySide6.QtWidgets import QAbstractButton
-from PySide6.QtCore import (Qt, QSize, QPropertyAnimation, QEasingCurve,
-                            Property, QRectF)
-from PySide6.QtGui import QPainter, QColor, QBrush, QPen, QCursor
+
 from .tooltip import Tooltip
 
 
@@ -77,7 +77,6 @@ class ToggleButton(QAbstractButton):
         self.update()
         self.blockSignals(False)
 
-
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
@@ -89,10 +88,14 @@ class ToggleButton(QAbstractButton):
         current_bg = QColor(self._bg_color_off)
         if self._circle_position > 0:
             r = self._bg_color_off.red() + (self._bg_color_on.red() - self._bg_color_off.red()) * self._circle_position
-            g = self._bg_color_off.green() + (
-                        self._bg_color_on.green() - self._bg_color_off.green()) * self._circle_position
-            b = self._bg_color_off.blue() + (
-                        self._bg_color_on.blue() - self._bg_color_off.blue()) * self._circle_position
+            g = (
+                self._bg_color_off.green()
+                + (self._bg_color_on.green() - self._bg_color_off.green()) * self._circle_position
+            )
+            b = (
+                self._bg_color_off.blue()
+                + (self._bg_color_on.blue() - self._bg_color_off.blue()) * self._circle_position
+            )
             current_bg = QColor(int(r), int(g), int(b))
 
         painter.setBrush(QBrush(current_bg))

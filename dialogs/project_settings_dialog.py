@@ -1,27 +1,46 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QHBoxLayout, QListWidget, QStackedWidget,
-                               QDialogButtonBox, QListWidgetItem, QVBoxLayout, QLabel,
-                               QTabWidget, QFormLayout, QLineEdit, QPushButton,
-                               QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView,
-                               QFileDialog, QWidget, QGroupBox)
-from PySide6.QtCore import Qt
-import uuid
-import os
+import copy
 import json
+import logging
+import os
 from pathlib import Path
 import shutil
-import copy
-from utils.text_utils import format_file_size
-from utils.localization import _
-from .settings_pages import BaseSettingsPage
-from .management_tabs import GlossaryManagementTab, TMManagementTab
-from utils.constants import SUPPORTED_LANGUAGES
+import uuid
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QStackedWidget,
+    QTableWidget,
+    QTableWidgetItem,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
 from services import project_service
-from services.format_manager import FormatManager
 from services.code_file_service import extract_translatable_strings
-import logging
+from services.format_manager import FormatManager
+from utils.constants import SUPPORTED_LANGUAGES
+from utils.localization import _
+from utils.text_utils import format_file_size
+
+from .management_tabs import GlossaryManagementTab, TMManagementTab
+from .settings_pages import BaseSettingsPage
 
 logger = logging.getLogger(__name__)
 
@@ -106,14 +125,15 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
         form_layout = QFormLayout()
 
         # 项目名称
-        self.project_name_edit = QLineEdit(self.project_config.get('name', ''))
+        self.project_name_edit = QLineEdit(self.project_config.get("name", ""))
         self.project_name_edit.textChanged.connect(self._mark_changed)
         form_layout.addRow(_("Project Name:"), self.project_name_edit)
 
         # 源语言
-        source_lang_code = self.project_config.get('source_language', '')
-        source_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == source_lang_code),
-                                source_lang_code)
+        source_lang_code = self.project_config.get("source_language", "")
+        source_lang_name = next(
+            (name for name, code in SUPPORTED_LANGUAGES.items() if code == source_lang_code), source_lang_code
+        )
         self.source_lang_display = QLineEdit(f"{source_lang_name} ({source_lang_code})")
         self.source_lang_display.setReadOnly(True)
         self.source_lang_display.setToolTip(_("Source language cannot be changed after project creation."))
@@ -204,7 +224,8 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
 
         self.rebuild_btn = QPushButton(_("Rebuild Project..."))
         self.rebuild_btn.setToolTip(
-            _("Re-scan all source files and fix broken IDs. Use this after changing extraction rules."))
+            _("Re-scan all source files and fix broken IDs. Use this after changing extraction rules.")
+        )
         self.rebuild_btn.clicked.connect(self.app.rebuild_current_project)
 
         maint_layout.addWidget(self.rebuild_btn)
@@ -214,17 +235,17 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
 
     def _populate_target_langs(self):
         self.target_langs_list.clear()
-        for lang_code in self.project_config.get('target_languages', []):
+        for lang_code in self.project_config.get("target_languages", []):
             lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == lang_code), lang_code)
             self.target_langs_list.addItem(f"{lang_name} ({lang_code})")
 
     def _add_language(self):
-        existing_langs = self.project_config.get('target_languages', []) + [self.project_config.get('source_language')]
+        existing_langs = [*self.project_config.get("target_languages", []), self.project_config.get("source_language")]
         dialog = LanguageSelectionDialog(self, existing_langs)
         if dialog.exec():
             new_lang = dialog.selected_language
             if new_lang:
-                self.project_config.get('target_languages', []).append(new_lang)
+                self.project_config.get("target_languages", []).append(new_lang)
                 self._populate_target_langs()
                 self._mark_changed()
 
@@ -235,19 +256,24 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
             return
 
         lang_text = current_item.text()
-        lang_code = lang_text.split('(')[-1].strip(')')
+        lang_code = lang_text.split("(")[-1].strip(")")
 
-        if len(self.project_config.get('target_languages', [])) <= 1:
+        if len(self.project_config.get("target_languages", [])) <= 1:
             QMessageBox.warning(self, _("Cannot Remove"), _("A project must have at least one target language."))
             return
 
-        reply = QMessageBox.warning(self, _("Confirm Removal"),
-                                    _("Are you sure you want to remove the language '{lang}'?\nThis will permanently delete its translation file.").format(
-                                        lang=lang_text),
-                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.warning(
+            self,
+            _("Confirm Removal"),
+            _(
+                "Are you sure you want to remove the language '{lang}'?\nThis will permanently delete its translation file."
+            ).format(lang=lang_text),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
 
         if reply == QMessageBox.Yes:
-            self.project_config.get('target_languages', []).remove(lang_code)
+            self.project_config.get("target_languages", []).remove(lang_code)
             self._populate_target_langs()
             self._mark_changed()
 
@@ -258,12 +284,12 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
         if not self.changes_made:
             return False
 
-        self.app.project_config['name'] = self.project_name_edit.text()
-        self.app.project_config['target_languages'] = self.project_config['target_languages']
+        self.app.project_config["name"] = self.project_name_edit.text()
+        self.app.project_config["target_languages"] = self.project_config["target_languages"]
 
-        backup_config = self.app.config.get('project_config_backup_on_dialog_open', {})
-        old_langs = set(backup_config.get('target_languages', []))
-        new_langs = set(self.app.project_config.get('target_languages', []))
+        backup_config = self.app.config.get("project_config_backup_on_dialog_open", {})
+        old_langs = set(backup_config.get("target_languages", []))
+        new_langs = set(self.app.project_config.get("target_languages", []))
 
         added_langs = new_langs - old_langs
         removed_langs = old_langs - new_langs
@@ -281,11 +307,11 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
                     logger.error("Cannot add new language: No source files in project to create structure from.")
                     continue
                 source_file_path = proj_path / self.app.project_config["source_files"][0]["project_path"]
-                with open(source_file_path, 'r', encoding='utf-8') as f:
-                    content = f.read().replace('\r\n', '\n').replace('\r', '\n')
+                with open(source_file_path, encoding="utf-8") as f:
+                    content = f.read().replace("\r\n", "\n").replace("\r", "\n")
                 patterns = self.app.config.get("extraction_patterns", [])
                 initial_objects = [ts.to_dict() for ts in extract_translatable_strings(content, patterns)]
-                with open(translation_path, 'w', encoding='utf-8') as f:
+                with open(translation_path, "w", encoding="utf-8") as f:
                     json.dump(initial_objects, f, indent=4, ensure_ascii=False)
 
         for lang in removed_langs:
@@ -293,13 +319,14 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
             if translation_path.exists():
                 os.remove(translation_path)
             if self.app.current_target_language == lang:
-                if self.app.project_config['target_languages']:
-                    self.app.project_config['current_target_language'] = self.app.project_config['target_languages'][0]
+                if self.app.project_config["target_languages"]:
+                    self.app.project_config["current_target_language"] = self.app.project_config["target_languages"][0]
                 else:
-                    self.app.project_config['current_target_language'] = ""
+                    self.app.project_config["current_target_language"] = ""
 
         self.changes_made = False
         return True
+
 
 class ProjectSourceFilesPage(BaseSettingsPage):
     def __init__(self, app_instance):
@@ -339,26 +366,29 @@ class ProjectSourceFilesPage(BaseSettingsPage):
 
     def _populate_files_table(self):
         self.table.setRowCount(0)
-        for file_info in self.project_config.get('source_files', []):
+        for file_info in self.project_config.get("source_files", []):
             row_position = self.table.rowCount()
             self.table.insertRow(row_position)
 
-            filename = Path(file_info['project_path']).name if file_info['project_path'] else Path(
-                file_info['original_path']).name
+            filename = (
+                Path(file_info["project_path"]).name
+                if file_info["project_path"]
+                else Path(file_info["original_path"]).name
+            )
             self.table.setItem(row_position, 0, QTableWidgetItem(filename))
 
-            format_id = file_info.get('format_id')
+            format_id = file_info.get("format_id")
             handler = FormatManager.get_handler(format_id)
-            display_type = handler.badge_text if handler else file_info.get('type', 'UNK')
+            display_type = handler.badge_text if handler else file_info.get("type", "UNK")
 
             self.table.setItem(row_position, 1, QTableWidgetItem(display_type))
 
             size_str = "N/A"
             path_to_check = ""
-            if file_info['project_path']:
-                path_to_check = os.path.join(self.app.current_project_path, file_info['project_path'])
+            if file_info["project_path"]:
+                path_to_check = os.path.join(self.app.current_project_path, file_info["project_path"])
             else:
-                path_to_check = file_info['original_path']
+                path_to_check = file_info["original_path"]
 
             try:
                 if os.path.isfile(path_to_check):
@@ -369,23 +399,22 @@ class ProjectSourceFilesPage(BaseSettingsPage):
                 logger.warning(f"Could not get size for {path_to_check}: {e}")
                 size_str = _("Error")
             self.table.setItem(row_position, 2, QTableWidgetItem(size_str))
-            self.table.setItem(row_position, 3, QTableWidgetItem(file_info['original_path']))
-            self.table.item(row_position, 0).setData(Qt.UserRole, file_info['id'])
+            self.table.setItem(row_position, 3, QTableWidgetItem(file_info["original_path"]))
+            self.table.item(row_position, 0).setData(Qt.UserRole, file_info["id"])
 
     def _add_file(self):
         file_filters = FormatManager.get_file_dialog_filters()
-        filepath, __ = QFileDialog.getOpenFileName(
-            self, _("Select Source File"), "", file_filters
-        )
+        filepath, __ = QFileDialog.getOpenFileName(self, _("Select Source File"), "", file_filters)
         if not filepath:
             return
 
-        if any(Path(f['original_path']).name == Path(filepath).name for f in self.project_config['source_files']):
+        if any(Path(f["original_path"]).name == Path(filepath).name for f in self.project_config["source_files"]):
             QMessageBox.warning(self, _("File Exists"), _("A file with this name already exists in the project."))
             return
 
         handler = FormatManager.get_handler_by_extension(filepath)
-        if not handler: return
+        if not handler:
+            return
 
         new_file_entry = {
             "id": str(uuid.uuid4()),
@@ -393,9 +422,9 @@ class ProjectSourceFilesPage(BaseSettingsPage):
             "project_path": "",
             "type": handler.format_type,
             "format_id": handler.format_id,
-            "linked": False
+            "linked": False,
         }
-        self.project_config['source_files'].append(new_file_entry)
+        self.project_config["source_files"].append(new_file_entry)
         self._populate_files_table()
         self._mark_changed()
 
@@ -404,20 +433,25 @@ class ProjectSourceFilesPage(BaseSettingsPage):
         if current_row < 0:
             return
 
-        if len(self.project_config.get('source_files', [])) <= 1:
+        if len(self.project_config.get("source_files", [])) <= 1:
             QMessageBox.warning(self, _("Cannot Remove"), _("A project must have at least one source file."))
             return
 
         file_id = self.table.item(current_row, 0).data(Qt.UserRole)
         file_name = self.table.item(current_row, 0).text()
 
-        reply = QMessageBox.warning(self, _("Confirm Removal"),
-                                    _("Are you sure you want to remove '{file}' from the project?\nThis action cannot be undone and will affect all translations.").format(
-                                        file=file_name),
-                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.warning(
+            self,
+            _("Confirm Removal"),
+            _(
+                "Are you sure you want to remove '{file}' from the project?\nThis action cannot be undone and will affect all translations."
+            ).format(file=file_name),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
 
         if reply == QMessageBox.Yes:
-            self.project_config['source_files'] = [f for f in self.project_config['source_files'] if f['id'] != file_id]
+            self.project_config["source_files"] = [f for f in self.project_config["source_files"] if f["id"] != file_id]
             self._populate_files_table()
             self._mark_changed()
 
@@ -428,12 +462,11 @@ class ProjectSourceFilesPage(BaseSettingsPage):
             return
 
         file_id = current_item.data(Qt.UserRole)
-        file_info = next((f for f in self.app.project_config['source_files'] if f['id'] == file_id), None)
+        file_info = next((f for f in self.app.project_config["source_files"] if f["id"] == file_id), None)
         if not file_info:
             return
 
         self.app.rescan_source_file(file_info)
-
 
     def _mark_changed(self):
         self.changes_made = True
@@ -442,19 +475,19 @@ class ProjectSourceFilesPage(BaseSettingsPage):
         if not self.changes_made:
             return False
 
-        self.app.project_config['source_files'] = self.project_config['source_files']
+        self.app.project_config["source_files"] = self.project_config["source_files"]
 
         proj_path = Path(self.app.current_project_path)
 
-        for file_info in self.app.project_config['source_files']:
-            if not file_info['project_path']:
-                original_path = Path(file_info['original_path'])
+        for file_info in self.app.project_config["source_files"]:
+            if not file_info["project_path"]:
+                original_path = Path(file_info["original_path"])
                 destination_path = proj_path / project_service.SOURCE_DIR / original_path.name
                 shutil.copy2(original_path, destination_path)
-                file_info['project_path'] = str(destination_path.relative_to(proj_path).as_posix())
+                file_info["project_path"] = str(destination_path.relative_to(proj_path).as_posix())
 
         config_files_on_disk = {f.name for f in (proj_path / project_service.SOURCE_DIR).iterdir()}
-        config_files_in_memory = {Path(f['project_path']).name for f in self.app.project_config['source_files']}
+        config_files_in_memory = {Path(f["project_path"]).name for f in self.app.project_config["source_files"]}
         files_to_remove = config_files_on_disk - config_files_in_memory
 
         for filename in files_to_remove:
@@ -483,7 +516,8 @@ class ProjectSettingsDialog(QDialog):
         self.app = parent
 
         import copy
-        self.app.config['project_config_backup_on_dialog_open'] = copy.deepcopy(self.app.project_config)
+
+        self.app.config["project_config_backup_on_dialog_open"] = copy.deepcopy(self.app.project_config)
 
         self.setWindowTitle(_("Project Settings"))
         self.setModal(True)
@@ -588,25 +622,21 @@ class ProjectSettingsDialog(QDialog):
 
     def accept(self):
         needs_ui_update = False
-        for page_name, page in self.pages.items():
-            if hasattr(page, 'save_settings'):
-                if page.save_settings():
-                    needs_ui_update = True
+        for _page_name, page in self.pages.items():
+            if hasattr(page, "save_settings") and page.save_settings():
+                needs_ui_update = True
 
-        if 'project_config_backup_on_dialog_open' in self.app.config:
-            del self.app.config['project_config_backup_on_dialog_open']
+        if "project_config_backup_on_dialog_open" in self.app.config:
+            del self.app.config["project_config_backup_on_dialog_open"]
 
         project_service.save_project(self.app.current_project_path, self.app)
 
         if needs_ui_update:
             __, all_strings = project_service.load_project_data(
-                self.app.current_project_path,
-                self.app.current_target_language,
-                self.app,
-                all_files=True
+                self.app.current_project_path, self.app.current_target_language, self.app, all_files=True
             )
             self.app.all_project_strings = all_strings
-            self.app.loaded_file_ids = {f['id'] for f in self.app.project_config.get('source_files', [])}
+            self.app.loaded_file_ids = {f["id"] for f in self.app.project_config.get("source_files", [])}
 
             if self.app.current_active_source_file_id:
                 self.app._switch_active_file(self.app.current_active_source_file_id)

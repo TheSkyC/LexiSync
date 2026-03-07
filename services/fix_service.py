@@ -1,21 +1,44 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from utils.enums import WarningType
 import regex as re
 
 from services.validation_helpers import RE_PANGU_CJK_LATIN, RE_PANGU_LATIN_CJK
+from utils.enums import WarningType
+
 # 标点映射表
 PUNCTUATION_MAP = {
-    'zh': {'.': '。', ',': '，', ':': '：', ';': '；', '?': '？', '!': '！', '(': '（', ')': '）'},
-    'zh_CN': {'.': '。', ',': '，', ':': '：', ';': '；', '?': '？', '!': '！', '(': '（', ')': '）'},
-    'zh_TW': {'.': '。', ',': '，', ':': '：', ';': '；', '?': '？', '!': '！', '(': '（', ')': '）'},
-    'ja': {'.': '。', ',': '、', ':': '：', ';': '；', '?': '？', '!': '！', '(': '（', ')': '）'},
+    "zh": {".": "。", ",": "，", ":": "：", ";": "；", "?": "？", "!": "！", "(": "（", ")": "）"},
+    "zh_CN": {".": "。", ",": "，", ":": "：", ";": "；", "?": "？", "!": "！", "(": "（", ")": "）"},
+    "zh_TW": {".": "。", ",": "，", ":": "：", ";": "；", "?": "？", "!": "！", "(": "（", ")": "）"},
+    "ja": {".": "。", ",": "、", ":": "：", ";": "；", "?": "？", "!": "！", "(": "（", ")": "）"},
 }
 
 ALL_ENDING_PUNCTS = {
-    '.', ',', ':', ';', '?', '!', ')', ']', '}', '>', '"', "'",
-    '。', '，', '：', '；', '？', '！', '）', '】', '》', '”', '’', '、'
+    ".",
+    ",",
+    ":",
+    ";",
+    "?",
+    "!",
+    ")",
+    "]",
+    "}",
+    ">",
+    '"',
+    "'",
+    "。",
+    "，",
+    "：",
+    "；",
+    "？",
+    "！",
+    "）",
+    "】",
+    "》",
+    "”",
+    "’",
+    "、",
 }
 
 
@@ -31,17 +54,17 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
         return None
 
     # 1. 前导空格修复
-    whitespace_chars_to_fix = ' \t'
+    whitespace_chars_to_fix = " \t"
     if warning_type == WarningType.LEADING_WHITESPACE_MISMATCH:
-        src_leading_match = re.match(f'^[{whitespace_chars_to_fix}]*', original)
-        src_leading = src_leading_match.group(0) if src_leading_match else ''
+        src_leading_match = re.match(f"^[{whitespace_chars_to_fix}]*", original)
+        src_leading = src_leading_match.group(0) if src_leading_match else ""
         tgt_stripped = current_translation.lstrip(whitespace_chars_to_fix)
         return src_leading + tgt_stripped
 
     # 2. 尾随空格修复
     if warning_type == WarningType.TRAILING_WHITESPACE_MISMATCH:
-        src_trailing_match = re.search(f'[{whitespace_chars_to_fix}]*$', original)
-        src_trailing = src_trailing_match.group(0) if src_trailing_match else ''
+        src_trailing_match = re.search(f"[{whitespace_chars_to_fix}]*$", original)
+        src_trailing = src_trailing_match.group(0) if src_trailing_match else ""
         tgt_stripped = current_translation.rstrip(whitespace_chars_to_fix)
         return tgt_stripped + src_trailing
 
@@ -50,14 +73,13 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
         return current_translation.replace("  ", " ")
 
     # 4. 首字母大小写修复
-    if warning_type == WarningType.CAPITALIZATION_MISMATCH:
-        if not target_lang.startswith(('zh', 'ja', 'ko')):
-            src_first = original[0] if original else ''
-            tgt_first = current_translation[0] if current_translation else ''
-            if src_first.isupper() and tgt_first.islower():
-                return tgt_first.upper() + current_translation[1:]
-            elif src_first.islower() and tgt_first.isupper():
-                return tgt_first.lower() + current_translation[1:]
+    if warning_type == WarningType.CAPITALIZATION_MISMATCH and not target_lang.startswith(("zh", "ja", "ko")):
+        src_first = original[0] if original else ""
+        tgt_first = current_translation[0] if current_translation else ""
+        if src_first.isupper() and tgt_first.islower():
+            return tgt_first.upper() + current_translation[1:]
+        if src_first.islower() and tgt_first.isupper():
+            return tgt_first.lower() + current_translation[1:]
 
     # 5. 结尾标点修复
     if warning_type == WarningType.PUNCTUATION_MISMATCH_END:
@@ -72,18 +94,15 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
         tgt_has_ellipsis = any(tgt_strip.endswith(e) for e in ellipses)
 
         if src_has_ellipsis and not tgt_has_ellipsis:
-            if target_lang.startswith('zh'):
-                ellipsis_to_add = "……"
-            else:
-                ellipsis_to_add = "..."
+            ellipsis_to_add = "……" if target_lang.startswith("zh") else "..."
             if tgt_strip[-1] in ALL_ENDING_PUNCTS:
                 return tgt_strip[:-1] + ellipsis_to_add
             return tgt_strip + ellipsis_to_add
 
-        elif not src_has_ellipsis and tgt_has_ellipsis:
+        if not src_has_ellipsis and tgt_has_ellipsis:
             for e in ellipses:
                 if tgt_strip.endswith(e):
-                    return tgt_strip[:-len(e)]
+                    return tgt_strip[: -len(e)]
 
         src_last = src_strip[-1]
         tgt_last = tgt_strip[-1]
@@ -105,8 +124,8 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
             return base_text + expected_punct
     # 6. 盘古之白修复
     if warning_type == WarningType.PANGU_SPACING:
-        new_text = RE_PANGU_CJK_LATIN.sub(r'\1 \2', current_translation)
-        new_text = RE_PANGU_LATIN_CJK.sub(r'\1 \2', new_text)
+        new_text = RE_PANGU_CJK_LATIN.sub(r"\1 \2", current_translation)
+        new_text = RE_PANGU_LATIN_CJK.sub(r"\1 \2", new_text)
         return new_text
 
     return None
@@ -134,11 +153,12 @@ def apply_all_fixes(ts_obj, target_lang, plural_index=0):
         WarningType.DOUBLE_SPACE,
         WarningType.PANGU_SPACING,
         WarningType.PUNCTUATION_MISMATCH_END,
-        WarningType.CAPITALIZATION_MISMATCH
+        WarningType.CAPITALIZATION_MISMATCH,
     ]
 
     # 4. 创建一个临时的 ts_obj 用于链式修复
     from models.translatable_string import TranslatableString
+
     temp_ts = TranslatableString("", original_text, 0, 0, 0, [])
     temp_ts.translation = current_translation
 

@@ -2,10 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import uuid
-def _(message): return message
 
 
-APP_NAMESPACE_UUID = uuid.UUID('c2e02333-2f1d-48ba-bc8d-90d49da373af')
+def _(message):
+    return message
+
+
+APP_NAMESPACE_UUID = uuid.UUID("c2e02333-2f1d-48ba-bc8d-90d49da373af")
 EXPANSION_DATA_DIR = "expansion_data"
 MAX_UNDO_HISTORY = 30
 DEFAULT_API_URL = "https://api.deepseek.com/chat/completions"
@@ -26,20 +29,19 @@ DEFAULT_VALIDATION_RULES = {
         "modes": {
             "strict": {
                 "name": _("Strict"),
-                "description": _("Format specifiers must match exactly (e.g. %s != %1$s).")
+                "description": _("Format specifiers must match exactly (e.g. %s != %1$s)."),
             },
             "loose": {
                 "name": _("Loose"),
-                "description": _("Allows positional arguments and width changes (e.g. %s == %1$s).")
-            }
+                "description": _("Allows positional arguments and width changes (e.g. %s == %1$s)."),
+            },
         },
-        "default_mode": "loose"
+        "default_mode": "loose",
     },
     "python_brace": {"enabled": True, "level": "error", "label": _("Python Brace ({}, {name})")},
     "icu_placeholder": {"enabled": True, "level": "error", "label": _("ICU MessageFormat ({var, plural, ...})")},
     "html_tags": {"enabled": True, "level": "error", "label": _("HTML/XML Tags")},
     "url_email": {"enabled": True, "level": "warning", "label": _("URL & Email")},
-
     # --- 内容一致性 ---
     "numbers": {
         "enabled": True,
@@ -48,18 +50,17 @@ DEFAULT_VALIDATION_RULES = {
         "modes": {
             "strict": {
                 "name": _("Strict"),
-                "description": _("Arabic numerals must match exactly (e.g. '1' must be '1').")
+                "description": _("Arabic numerals must match exactly (e.g. '1' must be '1')."),
             },
             "loose": {
                 "name": _("Loose"),
-                "description": _("Allows numerals to be translated into words (e.g. '1' -> 'One', '一', 'First').")
-            }
+                "description": _("Allows numerals to be translated into words (e.g. '1' -> 'One', '一', 'First')."),
+            },
         },
-        "default_mode": "loose"
+        "default_mode": "loose",
     },
     "glossary": {"enabled": True, "level": "warning", "label": _("Glossary Terms")},
     "fuzzy": {"enabled": True, "level": "warning", "label": _("Fuzzy State")},
-
     # --- 格式与标点 ---
     "punctuation": {"enabled": True, "level": "warning", "label": _("Ending Punctuation")},
     "brackets": {"enabled": True, "level": "warning", "label": _("Paired Brackets () [] {}")},
@@ -75,14 +76,16 @@ DEFAULT_VALIDATION_RULES = {
         "modes": {
             "strict": {
                 "name": _("Strict"),
-                "description": _("Single and double quotes must match their types exactly.")
+                "description": _("Single and double quotes must match their types exactly."),
             },
             "loose": {
                 "name": _("Loose"),
-                "description": _("Allows converting single quotes to double quotes (e.g., '...' -> “...”) and vice versa.")
-            }
+                "description": _(
+                    "Allows converting single quotes to double quotes (e.g., '...' -> “...”) and vice versa."
+                ),
+            },
         },
-        "default_mode": "loose"
+        "default_mode": "loose",
     },
     "accelerator": {"enabled": True, "level": "error", "label": _("Accelerator Mismatch")},
     "pangu": {"enabled": False, "level": "info", "label": _("Pangu Spacing")},
@@ -93,56 +96,51 @@ DEFAULT_CORRECTION_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": "Structural Content",
         "enabled": True,
-        "content": "You are a professional localization QA specialist. Your task is to fix the errors in the provided translation to match the source text and adhere to the project's rules."
+        "content": "You are a professional localization QA specialist. Your task is to fix the errors in the provided translation to match the source text and adhere to the project's rules.",
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Static Instruction",
         "enabled": True,
-        "content": "Target Language: [Target Language]"
+        "content": "Target Language: [Target Language]",
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "Reference Glossary:\n[Glossary]"
+        "content": "Reference Glossary:\n[Glossary]",
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "Detected Errors to Fix:\n[Error List]"
+        "content": "Detected Errors to Fix:\n[Error List]",
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "### Pluralization Context\n[Plural Context]"
+        "content": "### Pluralization Context\n[Plural Context]",
     },
+    {"id": str(uuid.uuid4()), "type": "Dynamic Instruction", "enabled": True, "content": "Source Text:\n[Source Text]"},
     {
         "id": str(uuid.uuid4()),
         "type": "Dynamic Instruction",
         "enabled": True,
-        "content": "Source Text:\n[Source Text]"
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "type": "Dynamic Instruction",
-        "enabled": True,
-        "content": "Current Incorrect Translation:\n<translate_input>\n[Current Translation]\n</translate_input>"
+        "content": "Current Incorrect Translation:\n<translate_input>\n[Current Translation]\n</translate_input>",
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Static Instruction",
         "enabled": True,
-        "content": "CRITICAL: You MUST strictly preserve all original formatting, including:\n- XML/HTML tags (e.g., <br>, <b>, <![CDATA[...]]>)\n- Escape sequences (\\n, \\t, \\r, \\\")\n- Placeholders (%s, {var})\nDo not remove or interpret tags wrapping the content."
+        "content": 'CRITICAL: You MUST strictly preserve all original formatting, including:\n- XML/HTML tags (e.g., <br>, <b>, <![CDATA[...]]>)\n- Escape sequences (\\n, \\t, \\r, \\")\n- Placeholders (%s, {var})\nDo not remove or interpret tags wrapping the content.',
     },
     {
         "id": str(uuid.uuid4()),
         "type": "Structural Content",
         "enabled": True,
-        "content": "Based on the source text and the error list, correct the text within <translate_input>. Output ONLY the corrected translation. Do not include the <translate_input> tags or any explanations."
-    }
+        "content": "Based on the source text and the error list, correct the text within <translate_input>. Output ONLY the corrected translation. Do not include the <translate_input> tags or any explanations.",
+    },
 ]
 
 
@@ -151,62 +149,57 @@ DEFAULT_PROMPT_STRUCTURE = [
         "id": str(uuid.uuid4()),
         "type": STRUCTURAL,
         "enabled": True,
-        "content": "You are a professional localization expert. Your task is to translate the text enclosed within <translate_input> tags from [Source Language] to [Target Language]."
+        "content": "You are a professional localization expert. Your task is to translate the text enclosed within <translate_input> tags from [Source Language] to [Target Language].",
     },
     {
         "id": str(uuid.uuid4()),
         "type": STATIC,
         "enabled": True,
-        "content": "CRITICAL: Preserve ALL placeholders exactly as-is:\n- Format specifiers: %s, %d, %f, %.2f, etc.\n- Named placeholders: {variable}, %{count}, {{name}}\n- Template syntax: ${var}, [[key]], <placeholder>\nThe quantity, order, and names must match the original perfectly."
+        "content": "CRITICAL: Preserve ALL placeholders exactly as-is:\n- Format specifiers: %s, %d, %f, %.2f, etc.\n- Named placeholders: {variable}, %{count}, {{name}}\n- Template syntax: ${var}, [[key]], <placeholder>\nThe quantity, order, and names must match the original perfectly.",
     },
     {
         "id": str(uuid.uuid4()),
         "type": STATIC,
         "enabled": True,
-        "content": "CRITICAL: Preserve ALL formatting exactly:\n- Escape sequences: \\n, \\t, \\r, \\\"\n- HTML tags: <br>, <b>, <i>, <span>, <a>, <![CDATA[...]]>, etc.\n- Do NOT convert between \\n and <br>\n- Match the original format character-by-character"
+        "content": 'CRITICAL: Preserve ALL formatting exactly:\n- Escape sequences: \\n, \\t, \\r, \\"\n- HTML tags: <br>, <b>, <i>, <span>, <a>, <![CDATA[...]]>, etc.\n- Do NOT convert between \\n and <br>\n- Match the original format character-by-character',
     },
     {
         "id": str(uuid.uuid4()),
         "type": STATIC,
         "enabled": True,
-        "content": "Do not add or remove any characters, symbols, or spaces not present in the original text, unless required by the target language's punctuation conventions."
+        "content": "Do not add or remove any characters, symbols, or spaces not present in the original text, unless required by the target language's punctuation conventions.",
     },
     {
         "id": str(uuid.uuid4()),
         "type": DYNAMIC,
         "enabled": True,
-        "content": "### Project Instructions\n[Global Instructions]\n[Project Instructions]"
+        "content": "### Project Instructions\n[Global Instructions]\n[Project Instructions]",
     },
     {
         "id": str(uuid.uuid4()),
         "type": DYNAMIC,
         "enabled": True,
-        "content": "### Translation Style Guide\n[Style Guide]"
+        "content": "### Translation Style Guide\n[Style Guide]",
+    },
+    {"id": str(uuid.uuid4()), "type": DYNAMIC, "enabled": True, "content": "### Terminology Glossary\n[Glossary]"},
+    {
+        "id": str(uuid.uuid4()),
+        "type": DYNAMIC,
+        "enabled": True,
+        "content": "### Pluralization Context\n[Plural Context]\n(If this section is present, you are translating a specific plural form. Ensure the translation matches the grammatical number category described.)",
     },
     {
         "id": str(uuid.uuid4()),
         "type": DYNAMIC,
         "enabled": True,
-        "content": "### Terminology Glossary\n[Glossary]"
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "type": DYNAMIC,
-        "enabled": True,
-        "content": "### Pluralization Context\n[Plural Context]\n(If this section is present, you are translating a specific plural form. Ensure the translation matches the grammatical number category described.)"
-    },
-    {
-        "id": str(uuid.uuid4()),
-        "type": DYNAMIC,
-        "enabled": True,
-        "content": "### Reference Context\n[Semantic Context]\n[Untranslated Context]\n[Translated Context]"
+        "content": "### Reference Context\n[Semantic Context]\n[Untranslated Context]\n[Translated Context]",
     },
     {
         "id": str(uuid.uuid4()),
         "type": STATIC,
         "enabled": True,
-        "content": "Output ONLY the final translation. No explanations, no notes."
-    }
+        "content": "Output ONLY the final translation. No explanations, no notes.",
+    },
 ]
 
 COT_INJECTION_PROMPT = """
@@ -247,49 +240,55 @@ You must strictly follow this XML-style format. Output your step-by-step reasoni
 
 DEFAULT_EXTRACTION_PATTERNS = [
     {
-        "id": str(uuid.uuid4()), "name": "Custom String (EN/CN)", "enabled": True,
+        "id": str(uuid.uuid4()),
+        "name": "Custom String (EN/CN)",
+        "enabled": True,
         "left_delimiter": r'(?:Custom String|自定义字符串)\s*\(\s*"',
         "right_delimiter": r'(?<!\\)"',
         "string_type": "OW Script",
         "description": "",
-        "multiline": True
+        "multiline": True,
     },
     {
-        "id": str(uuid.uuid4()), "name": "Description (EN/CN)", "enabled": True,
+        "id": str(uuid.uuid4()),
+        "name": "Description (EN/CN)",
+        "enabled": True,
         "left_delimiter": r'(?:Description|描述)\s*:\s*"',
         "right_delimiter": r'(?<!\\)"',
         "string_type": "OW Script Metadata",
         "description": "Mode Description",
-        "multiline": False
+        "multiline": False,
     },
     {
-        "id": str(uuid.uuid4()), "name": "Mode Name (EN/CN)", "enabled": True,
+        "id": str(uuid.uuid4()),
+        "name": "Mode Name (EN/CN)",
+        "enabled": True,
         "left_delimiter": r'(?:Mode Name|模式名称)\s*:\s*"',
         "right_delimiter": r'(?<!\\)"',
         "string_type": "OW Script Metadata",
         "description": "Mode Name",
-        "multiline": False
-    }
+        "multiline": False,
+    },
 ]
 
 DEFAULT_KEYBINDINGS = {
-    'open_code_file': 'Ctrl+O',
-    'new_project': 'Ctrl+Shift+N',
-    'open_project': 'Ctrl+Shift+O',
-    'build_project': 'Ctrl+B',
-    'save_current_file': 'Ctrl+S',
-    'save_code_file': 'Ctrl+Shift+S',
-    'undo': 'Ctrl+Z',
-    'redo': 'Ctrl+Y',
-    'find_replace': 'Ctrl+Shift+F',
-    'copy_original': 'Ctrl+Shift+C',
-    'paste_translation': 'Ctrl+Shift+V',
-    'ai_translate_selected': 'Ctrl+T',
-    'toggle_reviewed': 'Ctrl+R',
-    'toggle_fuzzy': 'Ctrl+F',
-    'toggle_ignored': 'Ctrl+I',
-    'apply_and_next': 'Ctrl+Return',
-    'refresh_sort': 'F5',
+    "open_code_file": "Ctrl+O",
+    "new_project": "Ctrl+Shift+N",
+    "open_project": "Ctrl+Shift+O",
+    "build_project": "Ctrl+B",
+    "save_current_file": "Ctrl+S",
+    "save_code_file": "Ctrl+Shift+S",
+    "undo": "Ctrl+Z",
+    "redo": "Ctrl+Y",
+    "find_replace": "Ctrl+Shift+F",
+    "copy_original": "Ctrl+Shift+C",
+    "paste_translation": "Ctrl+Shift+V",
+    "ai_translate_selected": "Ctrl+T",
+    "toggle_reviewed": "Ctrl+R",
+    "toggle_fuzzy": "Ctrl+F",
+    "toggle_ignored": "Ctrl+I",
+    "apply_and_next": "Ctrl+Return",
+    "refresh_sort": "F5",
 }
 
 SUPPORTED_LANGUAGES = {
@@ -396,69 +395,25 @@ SUPPORTED_LANGUAGES = {
 }
 
 AI_PROVIDER_PRESETS = {
-    "DeepSeek": {
-        "api_base_url": "https://api.deepseek.com",
-        "model_name": "deepseek-chat",
-        "concurrency": 8
-    },
+    "DeepSeek": {"api_base_url": "https://api.deepseek.com", "model_name": "deepseek-chat", "concurrency": 8},
     "SiliconFlow": {
         "api_base_url": "https://api.siliconflow.cn/v1",
         "model_name": "deepseek-ai/DeepSeek-V3",
-        "concurrency": 5
+        "concurrency": 5,
     },
-    "OpenAI": {
-        "api_base_url": "https://api.openai.com/v1",
-        "model_name": "gpt-4o",
-        "concurrency": 5
-    },
-    "火山引擎": {
-        "api_base_url": "https://ark.cn-beijing.volces.com/api/v3",
-        "model_name": "ep-",
-        "concurrency": 16
-    },
-    "Moonshot (Kimi)": {
-        "api_base_url": "https://api.moonshot.cn/v1",
-        "model_name": "moonshot-v1-8k",
-        "concurrency": 3
-    },
-    "Ollama (Local)": {
-        "api_base_url": "http://localhost:11434/v1",
-        "model_name": "qwen2.5:7b",
-        "concurrency": 1
-    },
-    "LM Studio (Local)": {
-        "api_base_url": "http://localhost:1234/v1",
-        "model_name": "local-model",
-        "concurrency": 1
-    },
-    "vLLM (Local)": {
-        "api_base_url": "http://localhost:8000/v1",
-        "model_name": "default",
-        "concurrency": 4
-    },
+    "OpenAI": {"api_base_url": "https://api.openai.com/v1", "model_name": "gpt-4o", "concurrency": 5},
+    "火山引擎": {"api_base_url": "https://ark.cn-beijing.volces.com/api/v3", "model_name": "ep-", "concurrency": 16},
+    "Moonshot (Kimi)": {"api_base_url": "https://api.moonshot.cn/v1", "model_name": "moonshot-v1-8k", "concurrency": 3},
+    "Ollama (Local)": {"api_base_url": "http://localhost:11434/v1", "model_name": "qwen2.5:7b", "concurrency": 1},
+    "LM Studio (Local)": {"api_base_url": "http://localhost:1234/v1", "model_name": "local-model", "concurrency": 1},
+    "vLLM (Local)": {"api_base_url": "http://localhost:8000/v1", "model_name": "default", "concurrency": 4},
     "OpenRouter": {
         "api_base_url": "https://openrouter.ai/api/v1",
         "model_name": "deepseek/deepseek-chat",
-        "concurrency": 5
+        "concurrency": 5,
     },
-    "Groq": {
-        "api_base_url": "https://api.groq.com/openai/v1",
-        "model_name": "llama3-70b-8192",
-        "concurrency": 5
-    },
-    "Zhipu AI": {
-        "api_base_url": "https://open.bigmodel.cn/api/paas/v4",
-        "model_name": "glm-4-flash",
-        "concurrency": 5
-    },
-    "AiHubMix": {
-        "api_base_url": "https://aihubmix.com/v1",
-        "model_name": "gpt-4o",
-        "concurrency": 5
-    },
-    "Custom": {
-        "api_base_url": "",
-        "model_name": "",
-        "concurrency": 1
-    }
+    "Groq": {"api_base_url": "https://api.groq.com/openai/v1", "model_name": "llama3-70b-8192", "concurrency": 5},
+    "Zhipu AI": {"api_base_url": "https://open.bigmodel.cn/api/paas/v4", "model_name": "glm-4-flash", "concurrency": 5},
+    "AiHubMix": {"api_base_url": "https://aihubmix.com/v1", "model_name": "gpt-4o", "concurrency": 5},
+    "Custom": {"api_base_url": "", "model_name": "", "concurrency": 1},
 }

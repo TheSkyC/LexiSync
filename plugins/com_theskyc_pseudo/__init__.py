@@ -1,12 +1,13 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtGui import QAction
-from plugins.plugin_base import PluginBase
-from plugins.com_theskyc_pseudo.settings_dialog import SettingsDialog
-from plugins.com_theskyc_pseudo.preview_dialog import PreviewDialog
-import re
 import logging
+import re
+
+from plugins.com_theskyc_pseudo.preview_dialog import PreviewDialog
+from plugins.com_theskyc_pseudo.settings_dialog import SettingsDialog
+from plugins.plugin_base import PluginBase
+
 
 class PseudoLocalizationPlugin(PluginBase):
     def __init__(self):
@@ -15,14 +16,14 @@ class PseudoLocalizationPlugin(PluginBase):
 
     def get_default_config(self) -> dict:
         return {
-            'auto_pseudo_on_apply': False,
-            'mode': 'comprehensive',
-            'length_expansion': True,
-            'expansion_factor': 1.1,
-            'unicode_replacement': True,
-            'preserve_placeholders': True,
-            'preserve_html': True,
-            'preserve_urls': True,
+            "auto_pseudo_on_apply": False,
+            "mode": "comprehensive",
+            "length_expansion": True,
+            "expansion_factor": 1.1,
+            "unicode_replacement": True,
+            "preserve_placeholders": True,
+            "preserve_html": True,
+            "preserve_urls": True,
         }
 
     def plugin_id(self) -> str:
@@ -49,13 +50,11 @@ class PseudoLocalizationPlugin(PluginBase):
             (self._("Copy Original to Translation"), self.copy_original_to_translation),
             (self._("Preview on Selected"), self.preview_selected),
             (self._("Clear Translation for Selected"), self.clear_selected_translation),
-            '---',
-            (self._("Settings..."), lambda: self.show_settings_dialog(self.main_window))
+            "---",
+            (self._("Settings..."), lambda: self.show_settings_dialog(self.main_window)),
         ]
 
-        return [
-            (self.name(), submenu_items)
-        ]
+        return [(self.name(), submenu_items)]
 
     def apply_to_selected(self):
         selected_objs = self.main_window._get_selected_ts_objects_from_sheet()
@@ -79,9 +78,7 @@ class PseudoLocalizationPlugin(PluginBase):
 
         for ts_obj in selected_objs:
             self.main_window._apply_translation_to_model(
-                ts_obj,
-                ts_obj.original_semantic,
-                source="plugin_copy_original"
+                ts_obj, ts_obj.original_semantic, source="plugin_copy_original"
             )
 
         self.main_window.update_statusbar(
@@ -120,13 +117,13 @@ class PseudoLocalizationPlugin(PluginBase):
             self.config = dialog.get_settings()
             self.save_config()
             self.main_window.update_statusbar(self._("Pseudo-localization settings updated."))
-            return True # 设置已更改
-        return False # 用户取消
+            return True  # 设置已更改
+        return False  # 用户取消
 
     def process_string_for_save(self, text: str, ts_object, column: str, source: str) -> str:
         if source == "plugin_copy_original":
             return text
-        if not self.config.get('auto_pseudo_on_apply', False):
+        if not self.config.get("auto_pseudo_on_apply", False):
             return text
         return self._do_pseudo_localization(text)
 
@@ -136,17 +133,17 @@ class PseudoLocalizationPlugin(PluginBase):
 
         try:
             patterns = []
-            if self.config['preserve_placeholders']:
-                patterns.append(r'\{[^{}]+\}')
-            if self.config['preserve_html']:
-                patterns.append(r'<[^>]+>|&[a-zA-Z]+;|&#\d+;')
-            if self.config['preserve_urls']:
-                patterns.append(r'https?://[^\s]+|www\.[^\s]+|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
+            if self.config["preserve_placeholders"]:
+                patterns.append(r"\{[^{}]+\}")
+            if self.config["preserve_html"]:
+                patterns.append(r"<[^>]+>|&[a-zA-Z]+;|&#\d+;")
+            if self.config["preserve_urls"]:
+                patterns.append(r"https?://[^\s]+|www\.[^\s]+|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 
             if not patterns:
                 processed_text = self._process_normal_text(text)
             else:
-                combined_pattern = re.compile('|'.join(patterns))
+                combined_pattern = re.compile("|".join(patterns))
                 result_parts = []
                 last_end = 0
                 for match in combined_pattern.finditer(text):
@@ -169,38 +166,145 @@ class PseudoLocalizationPlugin(PluginBase):
         if not text:
             return ""
 
-        if self.config['unicode_replacement']:
+        if self.config["unicode_replacement"]:
             text = self._apply_unicode_replacement(text)
 
-        if self.config['length_expansion']:
+        if self.config["length_expansion"]:
             text = self._apply_length_expansion(text)
 
         return text
 
     def _apply_unicode_replacement(self, text: str) -> str:
-        mode = self.config['mode']
-        if mode == 'basic':
-            char_map = {'a': 'ä', 'e': 'ë', 'i': 'ï', 'o': 'ö', 'u': 'ü', 'y': 'ÿ', 'A': 'Ä', 'E': 'Ë', 'I': 'Ï',
-                        'O': 'Ö', 'U': 'Ü', 'Y': 'Ÿ'}
-        elif mode == 'comprehensive':
-            char_map = {'a': 'ä', 'b': 'ḅ', 'c': 'ç', 'd': 'ḍ', 'e': 'ë', 'f': 'ḟ', 'g': 'ğ', 'h': 'ḥ', 'i': 'ï',
-                        'j': 'ĵ', 'k': 'ķ', 'l': 'ł', 'm': 'ṁ', 'n': 'ñ', 'o': 'ö', 'p': 'ṗ', 'q': 'ǫ', 'r': 'ř',
-                        's': 'ş', 't': 'ţ', 'u': 'ü', 'v': 'ṿ', 'w': 'ẅ', 'x': 'ẋ', 'y': 'ÿ', 'z': 'ẓ', 'A': 'Ä',
-                        'B': 'Ḅ', 'C': 'Ç', 'D': 'Ḍ', 'E': 'Ë', 'F': 'Ḟ', 'G': 'Ğ', 'H': 'Ḥ', 'I': 'Ï', 'J': 'Ĵ',
-                        'K': 'Ķ', 'L': 'Ł', 'M': 'Ṁ', 'N': 'Ñ', 'O': 'Ö', 'P': 'Ṗ', 'Q': 'Ǫ', 'R': 'Ř', 'S': 'Ş',
-                        'T': 'Ţ', 'U': 'Ü', 'V': 'Ṿ', 'W': 'Ẅ', 'X': 'Ẋ', 'Y': 'Ÿ', 'Z': 'Ẓ'}
+        mode = self.config["mode"]
+        if mode == "basic":
+            char_map = {
+                "a": "ä",
+                "e": "ë",
+                "i": "ï",
+                "o": "ö",
+                "u": "ü",
+                "y": "ÿ",
+                "A": "Ä",
+                "E": "Ë",
+                "I": "Ï",
+                "O": "Ö",
+                "U": "Ü",
+                "Y": "Ÿ",
+            }
+        elif mode == "comprehensive":
+            char_map = {
+                "a": "ä",
+                "b": "ḅ",
+                "c": "ç",
+                "d": "ḍ",
+                "e": "ë",
+                "f": "ḟ",
+                "g": "ğ",
+                "h": "ḥ",
+                "i": "ï",
+                "j": "ĵ",
+                "k": "ķ",
+                "l": "ł",
+                "m": "ṁ",
+                "n": "ñ",
+                "o": "ö",
+                "p": "ṗ",
+                "q": "ǫ",
+                "r": "ř",
+                "s": "ş",
+                "t": "ţ",
+                "u": "ü",
+                "v": "ṿ",
+                "w": "ẅ",
+                "x": "ẋ",
+                "y": "ÿ",
+                "z": "ẓ",
+                "A": "Ä",
+                "B": "Ḅ",
+                "C": "Ç",
+                "D": "Ḍ",
+                "E": "Ë",
+                "F": "Ḟ",
+                "G": "Ğ",
+                "H": "Ḥ",
+                "I": "Ï",
+                "J": "Ĵ",
+                "K": "Ķ",
+                "L": "Ł",
+                "M": "Ṁ",
+                "N": "Ñ",
+                "O": "Ö",
+                "P": "Ṗ",
+                "Q": "Ǫ",
+                "R": "Ř",
+                "S": "Ş",
+                "T": "Ţ",
+                "U": "Ü",
+                "V": "Ṿ",
+                "W": "Ẅ",
+                "X": "Ẋ",
+                "Y": "Ÿ",
+                "Z": "Ẓ",
+            }
         else:
-            char_map = {'a': 'ä́', 'b': 'ḅ̌', 'c': 'ç̂', 'd': 'ḍ̃', 'e': 'ë́', 'f': 'ḟ̌', 'g': 'ğ̂', 'h': 'ḥ̃',
-                        'i': 'ḯ', 'j': 'ĵ̌', 'k': 'ķ̂', 'l': 'ł̃', 'm': 'ṁ́', 'n': 'ñ̌', 'o': 'ö̂', 'p': 'ṗ̃',
-                        'q': 'ǫ́', 'r': 'ř̌', 's': 'ş̂', 't': 'ţ̃', 'u': 'ǘ', 'v': 'ṿ̌', 'w': 'ẅ̂', 'x': 'ẋ̃',
-                        'y': 'ÿ́', 'z': 'ẓ̌', 'A': 'Ä́', 'B': 'Ḅ̌', 'C': 'Ç̂', 'D': 'Ḍ̃', 'E': 'Ë́', 'F': 'Ḟ̌',
-                        'G': 'Ğ̂', 'H': 'Ḥ̃', 'I': 'Ḯ', 'J': 'Ĵ̌', 'K': 'Ķ̂', 'L': 'Ł̃', 'M': 'Ṁ́', 'N': 'Ñ̌',
-                        'O': 'Ö̂', 'P': 'Ṗ̃', 'Q': 'Ǫ́', 'R': 'Ř̌', 'S': 'Ş̂', 'T': 'Ţ̃', 'U': 'Ǘ', 'V': 'Ṿ̌',
-                        'W': 'Ẅ̂', 'X': 'Ẋ̃', 'Y': 'Ÿ́', 'Z': 'Ẓ̌'}
+            char_map = {
+                "a": "ä́",
+                "b": "ḅ̌",
+                "c": "ç̂",
+                "d": "ḍ̃",
+                "e": "ë́",
+                "f": "ḟ̌",
+                "g": "ğ̂",
+                "h": "ḥ̃",
+                "i": "ḯ",
+                "j": "ĵ̌",
+                "k": "ķ̂",
+                "l": "ł̃",
+                "m": "ṁ́",
+                "n": "ñ̌",
+                "o": "ö̂",
+                "p": "ṗ̃",
+                "q": "ǫ́",
+                "r": "ř̌",
+                "s": "ş̂",
+                "t": "ţ̃",
+                "u": "ǘ",
+                "v": "ṿ̌",
+                "w": "ẅ̂",
+                "x": "ẋ̃",
+                "y": "ÿ́",
+                "z": "ẓ̌",
+                "A": "Ä́",
+                "B": "Ḅ̌",
+                "C": "Ç̂",
+                "D": "Ḍ̃",
+                "E": "Ë́",
+                "F": "Ḟ̌",
+                "G": "Ğ̂",
+                "H": "Ḥ̃",
+                "I": "Ḯ",
+                "J": "Ĵ̌",
+                "K": "Ķ̂",
+                "L": "Ł̃",
+                "M": "Ṁ́",
+                "N": "Ñ̌",
+                "O": "Ö̂",
+                "P": "Ṗ̃",
+                "Q": "Ǫ́",
+                "R": "Ř̌",
+                "S": "Ş̂",
+                "T": "Ţ̃",
+                "U": "Ǘ",
+                "V": "Ṿ̌",
+                "W": "Ẅ̂",
+                "X": "Ẋ̃",
+                "Y": "Ÿ́",
+                "Z": "Ẓ̌",
+            }
         return "".join(char_map.get(char, char) for char in text)
 
     def _apply_length_expansion(self, text: str) -> str:
-        expansion_factor = self.config['expansion_factor']
+        expansion_factor = self.config["expansion_factor"]
         target_length = int(len(text) * expansion_factor)
         if target_length <= len(text):
             return text
@@ -208,4 +312,5 @@ class PseudoLocalizationPlugin(PluginBase):
         padding = " " * (target_length - len(text))
         return text + padding
 
-    _add_brackets = lambda self, text: f"[{text}]"
+    def _add_brackets(self, text):
+        return f"[{text}]"

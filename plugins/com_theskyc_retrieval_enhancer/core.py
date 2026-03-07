@@ -1,16 +1,18 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import json
-from .backends.tfidf import TfidfBackend
-from .backends.onnx_backend import OnnxBackend
-from .utils.cache_manager import CacheManager
-from .utils.model_manager import ModelManager
-from .utils.constants import DEFAULT_CONFIG, SUPPORTED_MODELS
-from utils.path_utils import get_app_data_path
 import logging
+import os
+
+from .backends.onnx_backend import OnnxBackend
+from .backends.tfidf import TfidfBackend
+from .utils.cache_manager import CacheManager
+from .utils.constants import DEFAULT_CONFIG, SUPPORTED_MODELS
+from .utils.model_manager import ModelManager
+
 logger = logging.getLogger(__name__)
+
 
 class RetrievalCore:
     def __init__(self, plugin_data_dir: str, config_path: str):
@@ -36,7 +38,7 @@ class RetrievalCore:
     def _load_config(self):
         if os.path.exists(self.config_path):
             try:
-                with open(self.config_path, 'r', encoding='utf-8') as f:
+                with open(self.config_path, encoding="utf-8") as f:
                     user_config = json.load(f)
                     config = DEFAULT_CONFIG.copy()
                     config.update(user_config)
@@ -48,7 +50,7 @@ class RetrievalCore:
         return DEFAULT_CONFIG
 
     def _save_config_to_disk(self, config):
-        with open(self.config_path, 'w', encoding='utf-8') as f:
+        with open(self.config_path, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=4)
 
     def save_config(self):
@@ -87,15 +89,15 @@ class RetrievalCore:
                 return True
 
         # 降级到 TF-IDF
-        if self.tfidf_backend.is_available():
-            if self.tfidf_backend.build_index(data_list, progress_callback):
-                self.active_backend = self.tfidf_backend
-                return True
+        if self.tfidf_backend.is_available() and self.tfidf_backend.build_index(data_list, progress_callback):
+            self.active_backend = self.tfidf_backend
+            return True
 
         return False
 
     def retrieve(self, query, limit=5, mode="auto"):
         import logging
+
         logger = logging.getLogger(__name__)
 
         backend = None
@@ -106,23 +108,24 @@ class RetrievalCore:
         elif mode == "tfidf":
             if self.tfidf_backend.is_available():
                 backend = self.tfidf_backend
-        else:  # Auto
-            if self.onnx_backend.is_available():
-                backend = self.onnx_backend
-            elif self.tfidf_backend.is_available():
-                backend = self.tfidf_backend
+        elif self.onnx_backend.is_available():
+            backend = self.onnx_backend
+        elif self.tfidf_backend.is_available():
+            backend = self.tfidf_backend
 
         target_backend = backend if backend else self.active_backend
 
         if not target_backend:
             logger.error(
-                f"[RetrievalCore] CRITICAL: No backend available! ONNX Available: {self.onnx_backend.is_available()}, TF-IDF Available: {self.tfidf_backend.is_available()}")
+                f"[RetrievalCore] CRITICAL: No backend available! ONNX Available: {self.onnx_backend.is_available()}, TF-IDF Available: {self.tfidf_backend.is_available()}"
+            )
             return []
 
-        data_count = len(target_backend.indexed_data) if hasattr(target_backend, 'indexed_data') else 0
+        data_count = len(target_backend.indexed_data) if hasattr(target_backend, "indexed_data") else 0
         if data_count == 0:
             logger.warning(
-                f"[RetrievalCore] Backend '{target_backend.name()}' has EMPTY index (0 items). build_index() was likely not called yet.")
+                f"[RetrievalCore] Backend '{target_backend.name()}' has EMPTY index (0 items). build_index() was likely not called yet."
+            )
             return []
 
         logger.info(f"[RetrievalCore] Using backend '{target_backend.name()}' to search in {data_count} items.")

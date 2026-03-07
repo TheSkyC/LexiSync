@@ -1,13 +1,21 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem,
-                               QLabel, QAbstractItemView, QSizePolicy, QHBoxLayout)
-from PySide6.QtCore import Qt, Signal, QSize
-from PySide6.QtGui import QColor, QFont, QCursor
 import os
+
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
 from services.format_manager import FormatManager
-from utils.localization import _
 
 
 class RecentFileItemWidget(QWidget):
@@ -33,12 +41,12 @@ class RecentFileItemWidget(QWidget):
             if ftype == "project":
                 badge = QLabel("📁 Project")
                 badge.setStyleSheet("""
-                    background-color: #E3F2FD; 
-                    color: #0277BD; 
+                    background-color: #E3F2FD;
+                    color: #0277BD;
                     border: 1px solid #0277BD;
-                    border-radius: 3px; 
-                    padding: 0px 4px; 
-                    font-size: 10px; 
+                    border-radius: 3px;
+                    padding: 0px 4px;
+                    font-size: 10px;
                     font-weight: bold;
                 """)
                 top_row.addWidget(badge)
@@ -52,11 +60,11 @@ class RecentFileItemWidget(QWidget):
                 if handler:
                     badge = QLabel(handler.badge_text)
                     badge.setStyleSheet(f"""
-                        background-color: {handler.badge_bg_color}; 
-                        color: {handler.badge_text_color}; 
-                        border-radius: 3px; 
-                        padding: 1px 4px; 
-                        font-size: 10px; 
+                        background-color: {handler.badge_bg_color};
+                        color: {handler.badge_text_color};
+                        border-radius: 3px;
+                        padding: 1px 4px;
+                        font-size: 10px;
                         font-weight: bold;
                     """)
                     top_row.addWidget(badge)
@@ -146,7 +154,8 @@ class ScrollableRecentFileList(QWidget):
                 path = entry.get("path", "")
                 metadata = entry
 
-            if not path: continue
+            if not path:
+                continue
 
             filename = os.path.basename(path)
             dirpath = os.path.dirname(path)
@@ -169,7 +178,8 @@ class ScrollableRecentFileList(QWidget):
 
         item_height = self.list_widget.sizeHintForRow(0)
 
-        if item_height <= 0: item_height = 50
+        if item_height <= 0:
+            item_height = 50
 
         max_visible_items = 8
         visible_items = min(count, max_visible_items)

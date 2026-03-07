@@ -1,15 +1,13 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTreeView,
-    QHeaderView, QFrame, QTextEdit, QStyledItemDelegate
-)
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import (QStandardItemModel, QStandardItem, QColor,
-                           QFont, QIcon, QPainter, QBrush)
-from utils.localization import _
 import difflib
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QBrush, QColor, QFont, QStandardItem, QStandardItemModel
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QHeaderView, QLabel, QPushButton, QTextEdit, QTreeView, QVBoxLayout
+
+from utils.localization import _
 
 
 class DiffDialog(QDialog):
@@ -72,7 +70,7 @@ class DiffDialog(QDialog):
         main_layout.setSpacing(15)
 
         # 顶部说明
-        summary_text = self.diff_results.get('summary', _('Comparison Results'))
+        summary_text = self.diff_results.get("summary", _("Comparison Results"))
         summary_label = QLabel(summary_text)
         summary_label.setWordWrap(True)
         summary_label.setStyleSheet("font-size: 14px; color: #333; font-weight: bold;")
@@ -80,7 +78,8 @@ class DiffDialog(QDialog):
 
         # 提示语
         hint_label = QLabel(
-            _("Uncheck items to reject changes. Rejected 'Modified' items will be split into 'Delete Old' + 'Add New'."))
+            _("Uncheck items to reject changes. Rejected 'Modified' items will be split into 'Delete Old' + 'Add New'.")
+        )
         hint_label.setStyleSheet("color: #666; font-style: italic; margin-bottom: 5px;")
         main_layout.addWidget(hint_label)
 
@@ -134,48 +133,42 @@ class DiffDialog(QDialog):
     def populate_tree(self):
         # 1. 新增 (Added)
         self._add_category_node(
-            _("Added"),
-            self.diff_results.get('added', []),
-            QColor("#4CAF50"),
-            "new_obj",
-            is_checkable=True
+            _("Added"), self.diff_results.get("added", []), QColor("#4CAF50"), "new_obj", is_checkable=True
         )
 
         # 2. 修改 (Modified)
         self._add_category_node(
             _("Modified"),
-            self.diff_results.get('modified', []),
+            self.diff_results.get("modified", []),
             QColor("#FF9800"),
             "new_obj",
             is_checkable=True,
-            show_similarity=True
+            show_similarity=True,
         )
 
         # 3. 删除 (Removed)
         self._add_category_node(
-            _("Removed"),
-            self.diff_results.get('removed', []),
-            QColor("#F44336"),
-            "old_obj",
-            is_checkable=True
+            _("Removed"), self.diff_results.get("removed", []), QColor("#F44336"), "old_obj", is_checkable=True
         )
 
         # 4. 未变动 (Unchanged)
         self._add_category_node(
             _("Unchanged"),
-            self.diff_results.get('unchanged', []),
+            self.diff_results.get("unchanged", []),
             QColor("#9E9E9E"),
             "new_obj",
             is_checkable=False,  # 不可取消勾选，作为基准
-            default_expanded=False
+            default_expanded=False,
         )
 
         self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.tree.header().setSectionResizeMode(1, QHeaderView.Stretch)
 
-    def _add_category_node(self, title, items, color, obj_key, is_checkable=True, show_similarity=False,
-                           default_expanded=True):
-        if not items: return
+    def _add_category_node(
+        self, title, items, color, obj_key, is_checkable=True, show_similarity=False, default_expanded=True
+    ):
+        if not items:
+            return
 
         # 显式创建 Item
         root_item = QStandardItem(str(title) + f" ({len(items)})")
@@ -191,8 +184,9 @@ class DiffDialog(QDialog):
 
         for item_data in items:
             ts_obj = item_data[obj_key]
-            text = str(ts_obj.original_semantic).replace('\n', ' ')
-            if len(text) > 80: text = text[:77] + "..."
+            text = str(ts_obj.original_semantic).replace("\n", " ")
+            if len(text) > 80:
+                text = text[:77] + "..."
 
             child_item = QStandardItem(text)
             child_item.setData(item_data, Qt.UserRole)
@@ -203,7 +197,7 @@ class DiffDialog(QDialog):
 
             detail_text = ""
             if show_similarity:
-                sim = item_data.get('similarity', 0)
+                sim = item_data.get("similarity", 0)
                 detail_text = f"{sim:.0%} similarity"
 
             detail_item = QStandardItem(detail_text)
@@ -266,16 +260,16 @@ class DiffDialog(QDialog):
             self.diff_view.clear()
             return
 
-        if 'old_obj' in item_data and 'new_obj' in item_data:  # Modified
-            old_text = item_data['old_obj'].original_semantic
-            new_text = item_data['new_obj'].original_semantic
+        if "old_obj" in item_data and "new_obj" in item_data:  # Modified
+            old_text = item_data["old_obj"].original_semantic
+            new_text = item_data["new_obj"].original_semantic
             self._display_inline_diff(old_text, new_text)
-        elif 'new_obj' in item_data:  # Added / Unchanged
+        elif "new_obj" in item_data:  # Added / Unchanged
             self.diff_view.setHtml(
                 f"<div style='color:#4CAF50; font-weight:bold;'>{_('New Content')}:</div>"
                 f"<div style='margin-top:5px;'>{self._escape(item_data['new_obj'].original_semantic)}</div>"
             )
-        elif 'old_obj' in item_data:  # Removed
+        elif "old_obj" in item_data:  # Removed
             self.diff_view.setHtml(
                 f"<div style='color:#F44336; font-weight:bold;'>{_('Removed Content')}:</div>"
                 f"<div style='margin-top:5px; text-decoration:line-through; color:#888;'>"
@@ -288,12 +282,13 @@ class DiffDialog(QDialog):
         for line in diff:
             code = line[:2]
             text = self._escape(line[2:])
-            if code == '+ ':
+            if code == "+ ":
                 html.append(f"<span style='background:#E8F5E9; color:#2E7D32;'>{text}</span>")
-            elif code == '- ':
+            elif code == "- ":
                 html.append(
-                    f"<span style='background:#FFEBEE; color:#C62828; text-decoration:line-through;'>{text}</span>")
-            elif code == '? ':
+                    f"<span style='background:#FFEBEE; color:#C62828; text-decoration:line-through;'>{text}</span>"
+                )
+            elif code == "? ":
                 continue
             else:
                 html.append(text)
@@ -307,14 +302,14 @@ class DiffDialog(QDialog):
         根据用户勾选状态，生成最终的决策清单。
         """
         decisions = {
-            'added': [],
-            'removed': [],
-            'modified': [],
-            'unchanged': []  # 始终包含
+            "added": [],
+            "removed": [],
+            "modified": [],
+            "unchanged": [],  # 始终包含
         }
 
         # 1. 处理 Unchanged (始终保留)
-        decisions['unchanged'] = [item['new_obj'] for item in self.diff_results.get('unchanged', [])]
+        decisions["unchanged"] = [item["new_obj"] for item in self.diff_results.get("unchanged", [])]
 
         # 2. 遍历树节点获取决策
         root = self.model.invisibleRootItem()
@@ -323,16 +318,17 @@ class DiffDialog(QDialog):
             title = category_item.text()
 
             # 跳过 Unchanged 组
-            if "Unchanged" in title: continue
+            if "Unchanged" in title:
+                continue
 
             for j in range(category_item.rowCount()):
                 child = category_item.child(j)
                 item_data = child.data(Qt.UserRole)
-                is_checked = (child.checkState() == Qt.Checked)
+                is_checked = child.checkState() == Qt.Checked
 
                 if "Added" in title:
                     if is_checked:
-                        decisions['added'].append(item_data['new_obj'])
+                        decisions["added"].append(item_data["new_obj"])
                     # Unchecked: 丢弃，不加入任何列表
 
                 elif "Removed" in title:
@@ -341,16 +337,16 @@ class DiffDialog(QDialog):
                         pass
                     else:
                         # 拒绝删除 -> 保留旧对象，并标记废弃
-                        old_obj = item_data['old_obj']
+                        old_obj = item_data["old_obj"]
                         old_obj.is_ignored = True
                         old_obj.comment = f"[{_('Obsolete')}] {old_obj.comment}".strip()
-                        decisions['unchanged'].append(old_obj)
+                        decisions["unchanged"].append(old_obj)
 
                 elif "Modified" in title:
                     if is_checked:
                         # 确认修改 -> 迁移属性
-                        old_obj = item_data['old_obj']
-                        new_obj = item_data['new_obj']
+                        old_obj = item_data["old_obj"]
+                        new_obj = item_data["new_obj"]
 
                         # 迁移逻辑 (与之前相同)
                         new_obj.set_translation_internal(old_obj.translation)
@@ -359,16 +355,16 @@ class DiffDialog(QDialog):
                         new_obj.is_fuzzy = True
                         new_obj.po_comment = old_obj.po_comment
 
-                        decisions['modified'].append(new_obj)
+                        decisions["modified"].append(new_obj)
                     else:
                         # 拒绝修改 -> 拆解为：保留旧的(废弃) + 新增新的
-                        old_obj = item_data['old_obj']
+                        old_obj = item_data["old_obj"]
                         old_obj.is_ignored = True
                         old_obj.comment = f"[{_('Obsolete')}] {old_obj.comment}".strip()
-                        decisions['unchanged'].append(old_obj)
+                        decisions["unchanged"].append(old_obj)
 
-                        new_obj = item_data['new_obj']
-                        decisions['added'].append(new_obj)
+                        new_obj = item_data["new_obj"]
+                        decisions["added"].append(new_obj)
 
         return decisions
 

@@ -1,8 +1,9 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PySide6.QtGui import QColor
+
 from utils.localization import _
 
 NewlineColorRole = Qt.UserRole + 1
@@ -22,31 +23,31 @@ class TranslatableStringsModel(QAbstractTableModel):
         self._id_to_raw_index_map = {obj.id: i for i, obj in enumerate(self._all_data)}
         self._default_flags = Qt.ItemIsEnabled | Qt.ItemIsSelectable
         self._colors = {
-            'transparent': QColor(Qt.transparent),
-            'bg_ignored': QColor(220, 220, 220, 200),
-            'fg_ignored': QColor("#707070"),
-            'bg_error': QColor("#FFDDDD"),
-            'fg_error': QColor("red"),
-            'bg_warning': QColor("#FFFACD"),
-            'fg_reviewed': QColor("darkgreen"),
-            'fg_translated': QColor("darkblue"),
-            'fg_untranslated': QColor("darkred"),
-            'bg_read_only': QColor("#EFEFEF")
+            "transparent": QColor(Qt.transparent),
+            "bg_ignored": QColor(220, 220, 220, 200),
+            "fg_ignored": QColor("#707070"),
+            "bg_error": QColor("#FFDDDD"),
+            "fg_error": QColor("red"),
+            "bg_warning": QColor("#FFFACD"),
+            "fg_reviewed": QColor("darkgreen"),
+            "fg_translated": QColor("darkblue"),
+            "fg_untranslated": QColor("darkred"),
+            "bg_read_only": QColor("#EFEFEF"),
         }
 
         self._colors = {
-            'transparent': QColor(Qt.transparent),
-            'bg_ignored': QColor(220, 220, 220, 200),
-            'fg_ignored': QColor("#707070"),
-            'bg_error': QColor("#FFDDDD"),
-            'fg_error': QColor("#D32F2F"), # 稍微深一点的红色，更易读
-            'bg_warning': QColor("#FFFACD"),
-            'bg_reviewed': QColor("#E8F5E9"), # 浅绿色背景 (Material Green 50)
-            'fg_reviewed': QColor("#000000"), # 字体回归黑色
-            'fg_translated': QColor("#000000"), # 字体回归黑色
-            'fg_untranslated': QColor("darkred"),
-            'fg_default': QColor("#000000"),
-            'bg_read_only': QColor("#EFEFEF")
+            "transparent": QColor(Qt.transparent),
+            "bg_ignored": QColor(220, 220, 220, 200),
+            "fg_ignored": QColor("#707070"),
+            "bg_error": QColor("#FFDDDD"),
+            "fg_error": QColor("#D32F2F"),  # 稍微深一点的红色，更易读
+            "bg_warning": QColor("#FFFACD"),
+            "bg_reviewed": QColor("#E8F5E9"),  # 浅绿色背景 (Material Green 50)
+            "fg_reviewed": QColor("#000000"),  # 字体回归黑色
+            "fg_translated": QColor("#000000"),  # 字体回归黑色
+            "fg_untranslated": QColor("darkred"),
+            "fg_default": QColor("#000000"),
+            "bg_read_only": QColor("#EFEFEF"),
         }
 
         self.current_search_term = ""
@@ -68,12 +69,11 @@ class TranslatableStringsModel(QAbstractTableModel):
         return len(self.headers)
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            if section < len(self.headers):
-                try:
-                    return _(self.headers[section])
-                except:
-                    return self.headers[section]
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal and section < len(self.headers):
+            try:
+                return _(self.headers[section])
+            except Exception:
+                return self.headers[section]
         return None
 
     def flags(self, index):
@@ -96,80 +96,90 @@ class TranslatableStringsModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if col == 2:
                 return ts_obj._display_original
-            elif col == 3:
+            if col == 3:
                 return ts_obj._display_translation
-            elif col == 4:
-                return ts_obj.comment.replace('\n', ' ')
-            elif col == 1:
+            if col == 4:
+                return ts_obj.comment.replace("\n", " ")
+            if col == 1:
                 if ts_obj.is_ignored:
                     return "I"
-                elif ts_obj.is_reviewed:
+                if ts_obj.is_reviewed:
                     return "R" if ts_obj.translation.strip() else "U"
-                elif ts_obj.warnings and not ts_obj.is_warning_ignored:
+                if ts_obj.warnings and not ts_obj.is_warning_ignored:
                     return "⚠️"
-                elif ts_obj.translation.strip():
+                if ts_obj.translation.strip():
                     return "*T" if (ts_obj.minor_warnings and not ts_obj.is_warning_ignored) else "T"
-                else:
-                    return "U"
-            elif col == 0:
+                return "U"
+            if col == 0:
                 return row + 1
-            elif col == 5:
+            if col == 5:
                 return "✔" if ts_obj.is_reviewed else ""
-            elif col == 6:
+            if col == 6:
                 return ts_obj.line_num_in_file
 
         elif role == Qt.BackgroundRole:
             # 1. 已忽略 (灰色)
             if ts_obj.is_ignored:
                 if ts_obj.warnings and not ts_obj.is_warning_ignored:
-                    return self._colors['bg_error']
-                return self._colors['bg_ignored']
+                    return self._colors["bg_error"]
+                return self._colors["bg_ignored"]
             # 2. 已审阅 (绿色)
             if ts_obj.is_reviewed:
-                return self._colors['bg_reviewed']
+                return self._colors["bg_reviewed"]
             # 3. 错误 (红色)
-            elif ts_obj.warnings and not ts_obj.is_warning_ignored:
-                return self._colors['bg_error']
+            if ts_obj.warnings and not ts_obj.is_warning_ignored:
+                return self._colors["bg_error"]
             # 4. 警告 (黄色)
-            elif ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
-                return self._colors['bg_warning']
+            if ts_obj.minor_warnings and not ts_obj.is_warning_ignored:
+                return self._colors["bg_warning"]
             if col in [0, 3, 4, 6]:
                 pass
 
-            return self._colors['transparent']
+            return self._colors["transparent"]
 
         elif role == Qt.ForegroundRole:
             # 1. 已忽略 (灰色)
             if ts_obj.is_ignored:
-                return self._colors['fg_ignored']
+                return self._colors["fg_ignored"]
             # 2. 错误  (红色)
             if ts_obj.warnings and not ts_obj.is_warning_ignored and not ts_obj.is_reviewed:
-                return self._colors['fg_error']
+                return self._colors["fg_error"]
             # 3. 未翻译 (暗红色)
             if not ts_obj.translation.strip():
-                return self._colors['fg_untranslated']
+                return self._colors["fg_untranslated"]
             # 4. 其他 （黑色）
-            return self._colors['fg_default']
+            return self._colors["fg_default"]
 
         elif role == Qt.FontRole:
-            return ts_obj.ui_style_cache.get('font')
+            return ts_obj.ui_style_cache.get("font")
 
         elif role == NewlineColorRole:
             if col in [2, 3]:
-                if ts_obj.ui_style_cache.get('original_newline_color') or ts_obj.ui_style_cache.get(
-                        'translation_newline_color'):
-                    return ts_obj.ui_style_cache.get(
-                        'original_newline_color') if col == 2 else ts_obj.ui_style_cache.get(
-                        'translation_newline_color')
+                if ts_obj.ui_style_cache.get("original_newline_color") or ts_obj.ui_style_cache.get(
+                    "translation_newline_color"
+                ):
+                    return (
+                        ts_obj.ui_style_cache.get("original_newline_color")
+                        if col == 2
+                        else ts_obj.ui_style_cache.get("translation_newline_color")
+                    )
             return None
 
         elif role == Qt.UserRole:
             return ts_obj
         return None
 
-    def apply_filter_and_sort(self, search_term, show_ignored, show_untranslated,
-                              show_translated, show_unreviewed, is_translation_mode,
-                              sort_col, sort_order):
+    def apply_filter_and_sort(
+        self,
+        search_term,
+        show_ignored,
+        show_untranslated,
+        show_translated,
+        show_unreviewed,
+        is_translation_mode,
+        sort_col,
+        sort_order,
+    ):
         self.current_search_term = search_term.lower().strip()
         self.beginResetModel()
 
@@ -190,11 +200,14 @@ class TranslatableStringsModel(QAbstractTableModel):
                     continue
 
                 if ts.is_ignored:
-                    if not show_ignored: continue
+                    if not show_ignored:
+                        continue
                 else:
                     has_trans = bool(ts.translation.strip())
-                    if not has_trans and not show_untranslated: continue
-                    if has_trans and not show_translated: continue
+                    if not has_trans and not show_untranslated:
+                        continue
+                    if has_trans and not show_translated:
+                        continue
 
                 if show_unreviewed and ts.is_reviewed:
                     continue
@@ -205,23 +218,34 @@ class TranslatableStringsModel(QAbstractTableModel):
 
         # 排序
         if sort_col != -1:
-            reverse = (sort_order == Qt.DescendingOrder)
+            reverse = sort_order == Qt.DescendingOrder
 
             key_func = None
 
-            if sort_col == 1 or sort_col == 5:  # Status / Reviewed
+            if sort_col in {1, 5}:  # Status / Reviewed
                 # 优先按权重排序，次级按行号
-                key_func = lambda i: (data[i].sort_weight, data[i].line_num_in_file)
+                def key_func(i):
+                    return (data[i].sort_weight, data[i].line_num_in_file)
             elif sort_col == 2:  # Original
-                key_func = lambda i: data[i].original_semantic.lower()
+
+                def key_func(i):
+                    return data[i].original_semantic.lower()
             elif sort_col == 3:  # Translation
-                key_func = lambda i: data[i].translation.lower()
+
+                def key_func(i):
+                    return data[i].translation.lower()
             elif sort_col == 4:  # Comment
-                key_func = lambda i: data[i].comment.lower()
+
+                def key_func(i):
+                    return data[i].comment.lower()
             elif sort_col == 6:  # Line
-                key_func = lambda i: data[i].line_num_in_file
+
+                def key_func(i):
+                    return data[i].line_num_in_file
             else:  # ID (0)
-                key_func = lambda i: data[i].line_num_in_file
+
+                def key_func(i):
+                    return data[i].line_num_in_file
 
             if key_func:
                 self._visible_indices.sort(key=key_func, reverse=reverse)

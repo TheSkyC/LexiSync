@@ -1,24 +1,23 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import re
 import html
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QFrame, QSizePolicy, QSplitter
-)
-from PySide6.QtCore import Qt, Signal, QEvent
-from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor, QCursor
+
+from PySide6.QtCore import QEvent, Qt, Signal
+from PySide6.QtGui import QCursor, QTextCursor
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QSplitter, QVBoxLayout, QWidget
+
 from services import fix_service
-from .tooltip import Tooltip
-from .toggle_button import ToggleButton
-from .newline_text_edit import NewlineTextEdit
-from .elided_label import ElidedLabel
-from .syntax_highlighter import TranslationHighlighter
-from .styled_button import StyledButton
-from .plural_editor_bar import PluralEditorBar
-from utils.plural_utils import get_plural_info
 from utils.localization import _
+from utils.plural_utils import get_plural_info
+
+from .elided_label import ElidedLabel
+from .newline_text_edit import NewlineTextEdit
+from .plural_editor_bar import PluralEditorBar
+from .styled_button import StyledButton
+from .syntax_highlighter import TranslationHighlighter
+from .toggle_button import ToggleButton
+from .tooltip import Tooltip
 
 
 class DetailsPanel(QWidget):
@@ -137,7 +136,6 @@ class DetailsPanel(QWidget):
         original_layout.addWidget(self.original_text_display)
         self.original_highlighter = TranslationHighlighter(self.original_text_display.document())
 
-
         # --- 译文区域 ---
         translation_container = QWidget()
         translation_layout = QVBoxLayout(translation_container)
@@ -162,8 +160,8 @@ class DetailsPanel(QWidget):
                 margin-left: 10px;
                 /* margin-right: 10px;
             }
-            QLabel { 
-                color: #856404; 
+            QLabel {
+                color: #856404;
                 font-size: 11px;
                 border: none;
                 background: transparent;
@@ -287,11 +285,12 @@ class DetailsPanel(QWidget):
         trans_actions_frame = QFrame()
         trans_actions_layout = QHBoxLayout(trans_actions_frame)
         trans_actions_layout.setContentsMargins(0, 0, 0, 0)
-        self.apply_btn = StyledButton(_("Apply Translation"), on_click=self.apply_translation_signal.emit, btn_type="success", size="medium")
+        self.apply_btn = StyledButton(
+            _("Apply Translation"), on_click=self.apply_translation_signal.emit, btn_type="success", size="medium"
+        )
         self.apply_btn.setObjectName("apply_btn")
         self.apply_btn.setEnabled(False)
         trans_actions_layout.addWidget(self.apply_btn)
-
 
         trans_actions_layout.addSpacing(15)
         # --- 模糊切换 (Fuzzy) ---
@@ -318,7 +317,7 @@ class DetailsPanel(QWidget):
         reviewed_layout.setContentsMargins(0, 0, 0, 0)
         reviewed_layout.setSpacing(2)
 
-        self.reviewed_toggle = ToggleButton(on_color="#27AE60") # 绿色
+        self.reviewed_toggle = ToggleButton(on_color="#27AE60")  # 绿色
         self.reviewed_toggle.setToolTip(_("Mark as Reviewed"))
         self.reviewed_toggle.toggled.connect(self.reviewed_toggled_signal.emit)
         self.reviewed_label = QLabel(_("Reviewed"))
@@ -330,7 +329,9 @@ class DetailsPanel(QWidget):
 
         trans_actions_layout.addStretch(1)
 
-        self.ai_translate_current_btn = StyledButton(_("AI Translate Selected"), on_click=self.ai_translate_signal.emit, btn_type="primary", size="medium")
+        self.ai_translate_current_btn = StyledButton(
+            _("AI Translate Selected"), on_click=self.ai_translate_signal.emit, btn_type="primary", size="medium"
+        )
         self.ai_translate_current_btn.setObjectName("ai_translate_current_btn")
         self.ai_translate_current_btn.setEnabled(False)
         trans_actions_layout.addWidget(self.ai_translate_current_btn)
@@ -343,8 +344,12 @@ class DetailsPanel(QWidget):
         self.plural_toggle_btn.installEventFilter(self)
         self._ui_initialized = True
 
-        self.original_text_display.add_to_glossary_requested.connect(lambda: self.app_instance.add_glossary_entry(from_editor=True))
-        self.translation_edit_text.add_to_glossary_requested.connect(lambda: self.app_instance.add_glossary_entry(from_editor=True))
+        self.original_text_display.add_to_glossary_requested.connect(
+            lambda: self.app_instance.add_glossary_entry(from_editor=True)
+        )
+        self.translation_edit_text.add_to_glossary_requested.connect(
+            lambda: self.app_instance.add_glossary_entry(from_editor=True)
+        )
 
     def eventFilter(self, obj, event):
         if obj == self.warning_text_label:
@@ -367,33 +372,33 @@ class DetailsPanel(QWidget):
                 tooltip_parts = []
                 if ts_obj.line_num_in_file > 0:
                     tooltip_parts.append(
-                        f"<div style='color:#FFFFFF; margin-bottom:5px;'>{_('Line')} {ts_obj.line_num_in_file}</div>")
+                        f"<div style='color:#FFFFFF; margin-bottom:5px;'>{_('Line')} {ts_obj.line_num_in_file}</div>"
+                    )
                 groups = [
                     (_("Error"), errors, "#D32F2F"),  # 红色
                     (_("Warning"), warnings, "#F57C00"),  # 橙色
-                    (_("Info"), infos, "#1976D2")  # 蓝色
+                    (_("Info"), infos, "#1976D2"),  # 蓝色
                 ]
 
                 for title, msg_list, color in groups:
                     if msg_list:
                         # 组标题
                         tooltip_parts.append(
-                            f"<div style='color:{color}; font-weight:bold; margin-top:4px;'>{title}</div>")
+                            f"<div style='color:{color}; font-weight:bold; margin-top:4px;'>{title}</div>"
+                        )
                         # 组内容
                         for __, msg in msg_list:
                             tooltip_parts.append(
-                                f"<div style='margin-left:10px;'>"
-                                f"<span style='color:{color};'>●</span> {msg}"
-                                f"</div>"
+                                f"<div style='margin-left:10px;'><span style='color:{color};'>●</span> {msg}</div>"
                             )
 
                 tooltip_html = "".join(tooltip_parts)
                 self.tooltip.show_tooltip(QCursor.pos(), tooltip_html)
                 return True
-            elif event.type() == QEvent.Leave:
+            if event.type() == QEvent.Leave:
                 self.tooltip.hide()
                 return True
-            elif event.type() == QEvent.MouseButtonPress:
+            if event.type() == QEvent.MouseButtonPress:
                 self.tooltip.hide()
         elif obj == self.plural_toggle_btn:
             if event.type() == QEvent.Enter:
@@ -413,7 +418,8 @@ class DetailsPanel(QWidget):
                     content = self.current_ts_obj.original_plural
                     color = "#409EFF"  # 蓝色标题
 
-                if not content: content = f"<i>{_('Empty')}</i>"
+                if not content:
+                    content = f"<i>{_('Empty')}</i>"
 
                 preview_text = content.replace("\n", "<br>")
                 if len(preview_text) > 300:
@@ -428,10 +434,10 @@ class DetailsPanel(QWidget):
                 self.tooltip.show_tooltip(QCursor.pos(), tooltip_html, delay=200)
                 return True
 
-            elif event.type() == QEvent.Leave:
+            if event.type() == QEvent.Leave:
                 self.tooltip.hide()
                 return True
-            elif event.type() == QEvent.MouseButtonPress:
+            if event.type() == QEvent.MouseButtonPress:
                 self.tooltip.hide()
 
         return super().eventFilter(obj, event)
@@ -443,10 +449,11 @@ class DetailsPanel(QWidget):
 
     def _on_plural_mode_toggled(self, is_compact):
         if self.app_instance:
-            self.app_instance.config['plural_bar_compact'] = is_compact
+            self.app_instance.config["plural_bar_compact"] = is_compact
 
     def _on_plural_index_changed(self, new_index):
-        if not self.current_ts_obj: return
+        if not self.current_ts_obj:
+            return
 
         # 1. 保存当前框内的文本到旧索引
         current_text = self.translation_edit_text.toPlainText()
@@ -454,10 +461,7 @@ class DetailsPanel(QWidget):
 
         if current_text != old_text:
             self.app_instance._apply_translation_to_model(
-                self.current_ts_obj,
-                current_text,
-                source="manual_tab_switch",
-                plural_index=self.current_plural_index
+                self.current_ts_obj, current_text, source="manual_tab_switch", plural_index=self.current_plural_index
             )
 
         # 2. 切换索引
@@ -473,12 +477,13 @@ class DetailsPanel(QWidget):
         self.update_warnings(self.current_ts_obj)
 
         # 5. 切换原文复数显示
-        is_singular_tab = (new_index == self.current_ts_obj.singular_index)
+        is_singular_tab = new_index == self.current_ts_obj.singular_index
         self.plural_toggle_btn.setChecked(not is_singular_tab)
         self._toggle_original_plural_view(not is_singular_tab)
 
     def _toggle_original_plural_view(self, checked):
-        if not self.current_ts_obj: return
+        if not self.current_ts_obj:
+            return
         if checked:
             self.plural_toggle_btn.setText(_("Plural"))
             self.original_text_display.setPlainText(self.current_ts_obj.original_plural)
@@ -496,7 +501,7 @@ class DetailsPanel(QWidget):
         if ts_obj.is_plural:
             self.plural_toggle_btn.setVisible(True)
 
-            is_index_0_singular = (0 == ts_obj.singular_index)
+            is_index_0_singular = ts_obj.singular_index == 0
 
             self.plural_toggle_btn.setChecked(not is_index_0_singular)
 
@@ -509,11 +514,11 @@ class DetailsPanel(QWidget):
 
             # 配置复数仪表盘
             target_lang = self.app_instance.current_target_language
-            plural_expr_from_ts = getattr(ts_obj, 'plural_expr', None)
+            plural_expr_from_ts = getattr(ts_obj, "plural_expr", None)
             num_plurals = len(ts_obj.plural_translations)
 
             plural_info = get_plural_info(target_lang, num_plurals, plural_expr_from_ts)
-            saved_mode = self.app_instance.config.get('plural_bar_compact', False)
+            saved_mode = self.app_instance.config.get("plural_bar_compact", False)
             self.plural_bar.setup_plurals(plural_info, saved_mode)
             self.plural_bar.show()
 
@@ -530,7 +535,7 @@ class DetailsPanel(QWidget):
             self.translation_edit_text.setPlainText(ts_obj.get_translation_for_ui())
 
     def set_fuzzy_controls_visible(self, visible: bool):
-        if hasattr(self, 'fuzzy_container'):
+        if hasattr(self, "fuzzy_container"):
             self.fuzzy_container.setVisible(visible)
 
     def _translation_focus_out_event(self, event):
@@ -538,20 +543,21 @@ class DetailsPanel(QWidget):
         super(NewlineTextEdit, self.translation_edit_text).focusOutEvent(event)
 
     def update_glossary_highlights(self, matches):
-        if hasattr(self, 'original_highlighter'):
+        if hasattr(self, "original_highlighter"):
             self.original_highlighter.update_glossary(matches)
 
-        if hasattr(self, 'original_text_display'):
+        if hasattr(self, "original_text_display"):
             self.original_text_display.set_glossary_matches(matches)
 
-    def apply_placeholder_highlights(self, original_text_widget, translation_text_widget, original_placeholders,
-                                     translated_placeholders):
+    def apply_placeholder_highlights(
+        self, original_text_widget, translation_text_widget, original_placeholders, translated_placeholders
+    ):
         missing_in_translation = original_placeholders - translated_placeholders
 
-        if hasattr(self, 'highlighter'):
+        if hasattr(self, "highlighter"):
             self.highlighter.update_data(original_placeholders, set())
 
-        if hasattr(self, 'original_highlighter'):
+        if hasattr(self, "original_highlighter"):
             self.original_highlighter.update_data(original_placeholders, missing_in_translation)
 
     def update_fuzzy_status(self, is_fuzzy):
@@ -559,7 +565,8 @@ class DetailsPanel(QWidget):
         self._on_fuzzy_ui_toggled(is_fuzzy)
 
     def on_fix_all_clicked(self):
-        if not self.current_ts_obj: return
+        if not self.current_ts_obj:
+            return
         target_lang = self.app_instance.current_target_language
 
         fixed_text = fix_service.apply_all_fixes(self.current_ts_obj, target_lang)
@@ -707,69 +714,58 @@ class DetailsPanel(QWidget):
 
         from itertools import chain
 
-        flags = set(chain.from_iterable(
-            (f.strip() for f in line.replace('#,', '').strip().split(','))
-            for line in ts_obj.po_comment.splitlines()
-            if line.strip().startswith('#,')
-        ))
+        flags = set(
+            chain.from_iterable(
+                (f.strip() for f in line.replace("#,", "").strip().split(","))
+                for line in ts_obj.po_comment.splitlines()
+                if line.strip().startswith("#,")
+            )
+        )
 
         format_map = {
             # Python
-            'python-format': 'Python',
-            'python-brace-format': 'Python Brace',
-
+            "python-format": "Python",
+            "python-brace-format": "Python Brace",
             # C
-            'c-format': 'C',
-            'c-sharp-format': 'C#',
-            'objc-format': 'Objective-C',
-
+            "c-format": "C",
+            "c-sharp-format": "C#",
+            "objc-format": "Objective-C",
             # Java
-            'java-format': 'Java',
-            'java-printf-format': 'Java Printf',
-
+            "java-format": "Java",
+            "java-printf-format": "Java Printf",
             # JavaScript/Web
-            'javascript-format': 'JavaScript',
-            'typescript-format': 'TypeScript',
-
+            "javascript-format": "JavaScript",
+            "typescript-format": "TypeScript",
             # Shell
-            'sh-format': 'Shell',
-            'bash-format': 'Bash',
-            'perl-format': 'Perl',
-            'perl-brace-format': 'Perl Brace',
-
+            "sh-format": "Shell",
+            "bash-format": "Bash",
+            "perl-format": "Perl",
+            "perl-brace-format": "Perl Brace",
             # PHP
-            'php-format': 'PHP',
-
+            "php-format": "PHP",
             # Qt
-            'qt-format': 'Qt',
-            'qt-plural-format': 'Qt Plural',
-
+            "qt-format": "Qt",
+            "qt-plural-format": "Qt Plural",
             # Ruby
-            'ruby-format': 'Ruby',
-
+            "ruby-format": "Ruby",
             # Lisp
-            'lisp-format': 'Lisp',
-            'scheme-format': 'Scheme',
-
+            "lisp-format": "Lisp",
+            "scheme-format": "Scheme",
             # Others
-            'elisp-format': 'Emacs Lisp',
-            'librep-format': 'LibRep',
-            'smalltalk-format': 'Smalltalk',
-            'tcl-format': 'Tcl',
-            'awk-format': 'AWK',
-            'lua-format': 'Lua',
-            'gcc-internal-format': 'GCC Internal',
-            'gfc-internal-format': 'GFortran Internal',
-            'boost-format': 'Boost',
+            "elisp-format": "Emacs Lisp",
+            "librep-format": "LibRep",
+            "smalltalk-format": "Smalltalk",
+            "tcl-format": "Tcl",
+            "awk-format": "AWK",
+            "lua-format": "Lua",
+            "gcc-internal-format": "GCC Internal",
+            "gfc-internal-format": "GFortran Internal",
+            "boost-format": "Boost",
         }
 
         found_format = next(
             (format_map[flag] for flag in flags if flag in format_map),
-            next(
-                (flag.replace('-format', '').capitalize()
-                 for flag in flags if flag.endswith('-format')),
-                None
-            )
+            next((flag.replace("-format", "").capitalize() for flag in flags if flag.endswith("-format")), None),
         )
 
         if found_format:

@@ -1,18 +1,28 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTextEdit, QComboBox, QSplitter, QWidget, QGroupBox,
-    QTabWidget, QDoubleSpinBox, QMessageBox
-)
-from PySide6.QtCore import Qt, QTimer
+import logging
+
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextCursor
-from services.smart_translation_service import SmartTranslationService
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QDoubleSpinBox,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSplitter,
+    QTabWidget,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
 from services.ai_worker import AIWorker
 from utils.enums import AIOperationType
 from utils.localization import _
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +77,9 @@ class TestTranslationDialog(QDialog):
 
         controls_layout = QHBoxLayout()
         self.sample_type_combo = QComboBox()
-        self.sample_type_combo.addItems([
-            _("Most Complex (Variables/Tags)"),
-            _("Longest Text"),
-            _("Random Sample"),
-            _("Manual Input")
-        ])
+        self.sample_type_combo.addItems(
+            [_("Most Complex (Variables/Tags)"), _("Longest Text"), _("Random Sample"), _("Manual Input")]
+        )
         self.sample_type_combo.currentIndexChanged.connect(self.load_smart_sample)
 
         btn_refresh = QPushButton(_("Next Sample"))
@@ -161,16 +168,19 @@ class TestTranslationDialog(QDialog):
     def load_smart_sample(self):
         mode = self.sample_type_combo.currentIndex()
         items = self.parent_dialog.target_items
-        if not items: return
+        if not items:
+            return
 
         import random
+
         selected = None
 
         if mode == 0:  # Complex
             # 简单的复杂度评分：长度 + 变量数 * 5
             def complexity(ts):
-                return len(ts.original_semantic) + (
-                            ts.original_semantic.count('%') + ts.original_semantic.count('{')) * 10
+                return (
+                    len(ts.original_semantic) + (ts.original_semantic.count("%") + ts.original_semantic.count("{")) * 10
+                )
 
             sorted_items = sorted(items, key=complexity, reverse=True)
             pool = sorted_items[:20]
@@ -196,7 +206,8 @@ class TestTranslationDialog(QDialog):
 
     def run_test(self):
         text = self.input_edit.toPlainText().strip()
-        if not text: return
+        if not text:
+            return
 
         self.btn_action.setText(_("⏹ Stop"))
         self.btn_action.setStyleSheet("background-color: #F44336; color: white; font-weight: bold; padding: 10px;")
@@ -225,8 +236,8 @@ class TestTranslationDialog(QDialog):
         self.parent_dialog.edit_style.setPlainText(original_style)
 
         # 2. 展示上下文到 Inspector
-        self.tab_glossary.setPlainText(context_dict.get('[Glossary]', _("No glossary terms injected.")))
-        self.tab_tm.setPlainText(context_dict.get('[Semantic Context]', _("No TM/RAG matches.")))
+        self.tab_glossary.setPlainText(context_dict.get("[Glossary]", _("No glossary terms injected.")))
+        self.tab_tm.setPlainText(context_dict.get("[Semantic Context]", _("No TM/RAG matches.")))
 
         # 3. 启动 Worker
         target_lang = self.parent_dialog._get_target_language()
@@ -255,7 +266,7 @@ class TestTranslationDialog(QDialog):
                 self._current_worker.signals.stream_chunk.disconnect(self.on_stream_chunk)
                 self._current_worker.signals.result.disconnect(self.on_result)
                 self._current_worker.signals.finished.disconnect(self.on_worker_finished)
-            except:
+            except Exception:
                 pass
             self._current_worker = None
 
@@ -291,17 +302,17 @@ class TestTranslationDialog(QDialog):
         # RAG
         if self.parent_dialog.chk_retrieval.isChecked() and self.parent_dialog.retrieval_enabled:
             rag_result = self.app.plugin_manager.run_hook(
-                'retrieve_context',
+                "retrieve_context",
                 text,
                 limit=self.parent_dialog.spin_retrieval.value(),
-                mode=self.parent_dialog.combo_retrieval_mode.currentData()
+                mode=self.parent_dialog.combo_retrieval_mode.currentData(),
             )
             # 格式化结果
             if rag_result:
                 lines = []
                 for r in rag_result:
-                    src = r.get('source', '')[:60]
-                    tgt = r.get('target', '')[:60]
+                    src = r.get("source", "")[:60]
+                    tgt = r.get("target", "")[:60]
                     if src and tgt:
                         lines.append(f"- {src}... → {tgt}...")
                 if lines:
@@ -312,7 +323,7 @@ class TestTranslationDialog(QDialog):
             "translation_context": "",
             "[Style Guide]": self.style_override.toPlainText(),
             "[Glossary]": "\n".join(glossary_lines),
-            "[Semantic Context]": "\n\n".join(semantic_parts)
+            "[Semantic Context]": "\n\n".join(semantic_parts),
         }
 
     def on_stream_chunk(self, chunk):

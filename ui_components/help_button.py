@@ -1,11 +1,12 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+from PySide6.QtCore import QEvent, QSize, Qt
+from PySide6.QtGui import QCursor, QIcon
 from PySide6.QtWidgets import QToolButton
-from PySide6.QtGui import QIcon, QCursor
-from PySide6.QtCore import Qt, QSize, QEvent
-from utils.path_utils import get_resource_path
+
 from ui_components.tooltip import Tooltip
+from utils.path_utils import get_resource_path
 
 
 class HelpButton(QToolButton):
@@ -40,11 +41,11 @@ class HelpButton(QToolButton):
             if event.type() == QEvent.Enter:
                 self.tooltip_widget.show_tooltip(QCursor.pos(), self.custom_tooltip_text)
                 return True
-            elif event.type() == QEvent.Leave:
+            if event.type() == QEvent.Leave:
                 self.tooltip_widget.hide()
                 return True
 
-            elif event.type() == QEvent.MouseButtonPress:
+            if event.type() == QEvent.MouseButtonPress:
                 return True
 
         return super().eventFilter(obj, event)

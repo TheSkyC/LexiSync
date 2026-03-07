@@ -1,18 +1,32 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-                               QPushButton, QProgressBar, QFrame, QLineEdit,
-                               QMessageBox, QFileDialog, QGroupBox, QTableWidget,
-                               QTableWidgetItem, QHeaderView, QAbstractItemView,
-                               QApplication)
+import os
+
 from PySide6.QtCore import Qt, QThread
-from PySide6.QtGui import QFont, QColor, QBrush
+from PySide6.QtGui import QBrush, QColor, QFont
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QApplication,
+    QDialog,
+    QFileDialog,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+)
+
 from services.package_service import ExtractWorker
 from ui_components.password_edit import PasswordEdit
-from utils.text_utils import format_file_size
 from utils.localization import _
-import os
+from utils.text_utils import format_file_size
 
 
 class ImportPackageDialog(QDialog):
@@ -36,11 +50,11 @@ class ImportPackageDialog(QDialog):
 
         # Project Icon/Title
         title_layout = QVBoxLayout()
-        title = QLabel(self.pack_info.get('project_name', 'Unknown Project'))
+        title = QLabel(self.pack_info.get("project_name", "Unknown Project"))
         title.setFont(QFont("Segoe UI", 18, QFont.Bold))
         title.setStyleSheet("color: #333;")
 
-        created_at = self.pack_info.get('created_at', '')[:16].replace('T', ' ')
+        created_at = self.pack_info.get("created_at", "")[:16].replace("T", " ")
         subtitle = QLabel(f"{_('Created')}: {created_at}  |  {_('Source')}: {self.pack_info.get('source_lang', 'en')}")
         subtitle.setStyleSheet("color: #777;")
 
@@ -50,18 +64,18 @@ class ImportPackageDialog(QDialog):
         header_layout.addStretch()
 
         # Overview Badge
-        overview = self.pack_info.get('overview', {})
-        size_str = format_file_size(overview.get('total_size_bytes', 0))
-        file_count = overview.get('total_files', 0)
+        overview = self.pack_info.get("overview", {})
+        size_str = format_file_size(overview.get("total_size_bytes", 0))
+        file_count = overview.get("total_files", 0)
         badge_text = f"{file_count} {_('Files')}\n{size_str}"
         badge = QLabel(badge_text)
         badge.setAlignment(Qt.AlignCenter)
         badge.setStyleSheet("""
-            background-color: #E3F2FD; 
-            color: #0277BD; 
+            background-color: #E3F2FD;
+            color: #0277BD;
             border: 1px solid #B3E5FC;
-            border-radius: 6px; 
-            padding: 8px; 
+            border-radius: 6px;
+            padding: 8px;
             font-weight: bold;
         """)
         header_layout.addWidget(badge)
@@ -79,9 +93,7 @@ class ImportPackageDialog(QDialog):
 
         self.table = QTableWidget()
         self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels([
-            _("Language"), _("Progress"), _("Strings"), _("Chars"), _("Expansion")
-        ])
+        self.table.setHorizontalHeaderLabels([_("Language"), _("Progress"), _("Strings"), _("Chars"), _("Expansion")])
 
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -93,7 +105,7 @@ class ImportPackageDialog(QDialog):
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setStyleSheet("QTableWidget { border: 1px solid #DDD; background-color: #FAFAFA; }")
 
-        langs = self.pack_info.get('languages', {})
+        langs = self.pack_info.get("languages", {})
         self.table.setRowCount(len(langs))
 
         for i, (lang, stats) in enumerate(langs.items()):
@@ -104,7 +116,7 @@ class ImportPackageDialog(QDialog):
 
             # Progress Bar
             pb = QProgressBar()
-            percent = stats.get('progress_percent', 0)
+            percent = stats.get("progress_percent", 0)
             pb.setValue(int(percent))
             pb.setStyleSheet(self._get_progress_style(percent))
             pb.setFormat(f"{percent}%")
@@ -112,13 +124,13 @@ class ImportPackageDialog(QDialog):
             self.table.setCellWidget(i, 1, pb)
 
             # Strings
-            done = stats.get('translated_strings', 0)
-            total = stats.get('total_strings', 0)
+            done = stats.get("translated_strings", 0)
+            total = stats.get("total_strings", 0)
             self.table.setItem(i, 2, QTableWidgetItem(f"{done}/{total}"))
 
             # Chars
-            src_chars = stats.get('source_char_count', 0)
-            trans_chars = stats.get('translation_char_count', 0)
+            src_chars = stats.get("source_char_count", 0)
+            trans_chars = stats.get("translation_char_count", 0)
             self.table.setItem(i, 3, QTableWidgetItem(f"{trans_chars}"))
 
             # Expansion
@@ -134,16 +146,16 @@ class ImportPackageDialog(QDialog):
         res_group = QGroupBox(_("Included Resources"))
         res_layout = QHBoxLayout(res_group)
 
-        manifest = self.pack_info.get('manifest', {})
+        manifest = self.pack_info.get("manifest", {})
 
         def create_res_label(count, label):
             lbl = QLabel(f"{count} {label}")
             lbl.setStyleSheet("color: #555; background-color: #F5F5F5; border-radius: 4px; padding: 4px 8px;")
             return lbl
 
-        res_layout.addWidget(create_res_label(len(manifest.get('source', [])), _("Source Files")))
-        res_layout.addWidget(create_res_label(len(manifest.get('tm', [])), _("TM Databases")))
-        res_layout.addWidget(create_res_label(len(manifest.get('glossary', [])), _("Glossaries")))
+        res_layout.addWidget(create_res_label(len(manifest.get("source", [])), _("Source Files")))
+        res_layout.addWidget(create_res_label(len(manifest.get("tm", [])), _("TM Databases")))
+        res_layout.addWidget(create_res_label(len(manifest.get("glossary", [])), _("Glossaries")))
         res_layout.addStretch()
 
         layout.addWidget(res_group)
@@ -155,7 +167,7 @@ class ImportPackageDialog(QDialog):
         self.pwd_input.setPlaceholderText(_("🔒 This package is encrypted. Enter password to unlock..."))
         self.pwd_input.setStyleSheet("padding: 6px; border: 1px solid #CCC; border-radius: 4px;")
 
-        if overview.get('is_encrypted'):
+        if overview.get("is_encrypted"):
             layout.addWidget(self.pwd_input)
 
         # Status Label
@@ -173,9 +185,9 @@ class ImportPackageDialog(QDialog):
         self.btn_import.setFixedSize(180, 36)
         self.btn_import.setStyleSheet("""
             QPushButton {
-                background-color: #4CAF50; 
-                color: white; 
-                font-weight: bold; 
+                background-color: #4CAF50;
+                color: white;
+                font-weight: bold;
                 border-radius: 4px;
             }
             QPushButton:hover { background-color: #43A047; }
@@ -210,15 +222,15 @@ class ImportPackageDialog(QDialog):
         """
 
     def start_extraction(self):
-        overview = self.pack_info.get('overview', {})
-        pwd = self.pwd_input.text() if overview.get('is_encrypted') else None
+        overview = self.pack_info.get("overview", {})
+        pwd = self.pwd_input.text() if overview.get("is_encrypted") else None
 
-        if overview.get('is_encrypted') and not pwd:
+        if overview.get("is_encrypted") and not pwd:
             QMessageBox.warning(self, _("Warning"), _("Please enter the password."))
             return
 
         # 密码校验
-        if overview.get('is_encrypted'):
+        if overview.get("is_encrypted"):
             self.status_label.setText(_("Verifying password..."))
             self.status_label.setStyleSheet("color: #666; font-style: italic;")
             QApplication.processEvents()
@@ -232,7 +244,8 @@ class ImportPackageDialog(QDialog):
                 return
 
             self.status_label.setText(
-                f"<span style='color:green;'>{_('Password verified.')}</span> {_('Please select destination folder...')}")
+                f"<span style='color:green;'>{_('Password verified.')}</span> {_('Please select destination folder...')}"
+            )
             QApplication.processEvents()
         else:
             self.status_label.setText(_("Please select destination folder..."))
@@ -246,7 +259,7 @@ class ImportPackageDialog(QDialog):
             self.status_label.setText(_("Extraction cancelled."))
             return
 
-        proj_folder = os.path.join(target_dir, self.pack_info.get('project_name', 'Imported_Project'))
+        proj_folder = os.path.join(target_dir, self.pack_info.get("project_name", "Imported_Project"))
         os.makedirs(proj_folder, exist_ok=True)
 
         self.btn_import.setEnabled(False)

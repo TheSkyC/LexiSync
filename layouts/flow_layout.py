@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
-from PySide6.QtWidgets import QLayout, QSizePolicy
+from PySide6.QtWidgets import QLayout
 
 
 class FlowLayout(QLayout):
@@ -67,7 +67,7 @@ class FlowLayout(QLayout):
         line_height = 0
 
         for item in self.item_list:
-            wid = item.widget()
+            item.widget()
             space_x = self.spacing() if self.h_spacing == -1 else self.h_spacing
             space_y = self.spacing() if self.v_spacing == -1 else self.v_spacing
 

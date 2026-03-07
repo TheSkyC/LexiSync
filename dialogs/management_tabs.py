@@ -1,24 +1,37 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
-                               QPushButton, QTableWidget, QHeaderView, QAbstractItemView,
-                               QFileDialog, QMessageBox, QProgressDialog, QTableWidgetItem,
-                               QApplication, QLabel)
-from PySide6.QtCore import Qt, QThread, Signal, QTimer, QMutex, QMutexLocker, QObject
-from typing import Optional
-from .settings_pages import BaseSettingsPage
+import datetime
+import gc
+import logging
+import os
+
+from PySide6.QtCore import QMutex, QMutexLocker, QObject, Qt, QThread, QTimer, Signal
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QApplication,
+    QFileDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QMessageBox,
+    QProgressDialog,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+from services.glossary_service import MANIFEST_FILE as GLOSSARY_MANIFEST_FILE
 from utils.localization import _
 from utils.path_utils import get_app_data_path
 from utils.tbx_parser import TBXParser
-from services.glossary_service import MANIFEST_FILE as GLOSSARY_MANIFEST_FILE
-from .resource_viewer_dialog import ResourceViewerDialog
+
 from .import_configuration_dialog import ImportConfigurationDialog
+from .resource_viewer_dialog import ResourceViewerDialog
 from .tm_import_dialog import TMImportDialog
-import os
-import logging
-import datetime
-import gc
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,8 +39,9 @@ class TbxImportWorker(QObject):
     progress = Signal(str)
     finished = Signal(bool, str)
 
-    def __init__(self, glossary_service, tbx_path, glossary_dir, source_lang, target_langs, is_bidirectional,
-                 lang_mapping):
+    def __init__(
+        self, glossary_service, tbx_path, glossary_dir, source_lang, target_langs, is_bidirectional, lang_mapping
+    ):
         super().__init__()
         self.glossary_service = glossary_service
         self.tbx_path = tbx_path
@@ -56,9 +70,13 @@ class TbxImportWorker(QObject):
                 return
 
             success, message = self.glossary_service.import_from_tbx(
-                self.tbx_path, self.glossary_dir, self.source_lang,
-                self.target_langs, self.is_bidirectional, self.lang_mapping,
-                self.progress.emit
+                self.tbx_path,
+                self.glossary_dir,
+                self.source_lang,
+                self.target_langs,
+                self.is_bidirectional,
+                self.lang_mapping,
+                self.progress.emit,
             )
 
             if self.is_cancelled():
@@ -70,7 +88,7 @@ class TbxImportWorker(QObject):
 
         except Exception as e:
             logger.exception("Error in TbxImportWorker.do_import()")
-            self.finished.emit(False, f"Import failed with error: {str(e)}")
+            self.finished.emit(False, f"Import failed with error: {e!s}")
 
 
 class SimpleProgressDialog(QWidget):
@@ -103,6 +121,7 @@ class SimpleProgressDialog(QWidget):
     def closeEvent(self, event):
         self.cancel()
         event.ignore()
+
 
 class GlossaryManagementTab(QWidget):
     def __init__(self, app_instance, context: str):
@@ -150,10 +169,9 @@ class GlossaryManagementTab(QWidget):
 
         self.sources_table = QTableWidget()
         self.sources_table.setColumnCount(6)
-        self.sources_table.setHorizontalHeaderLabels([
-            _("File Name"), _("Entry Count"), _("Source Lang"),
-            _("Target Lang(s)"), _("Import Date"), _("Path")
-        ])
+        self.sources_table.setHorizontalHeaderLabels(
+            [_("File Name"), _("Entry Count"), _("Source Lang"), _("Target Lang(s)"), _("Import Date"), _("Path")]
+        )
         header = self.sources_table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -176,11 +194,7 @@ class GlossaryManagementTab(QWidget):
         source_key = item.data(Qt.UserRole) or item.text()
 
         dialog = ResourceViewerDialog(
-            self.window(),
-            self.app,
-            mode='glossary',
-            initial_source_key=source_key,
-            initial_db_type=self.context
+            self.window(), self.app, mode="glossary", initial_source_key=source_key, initial_db_type=self.context
         )
         dialog.show()
 
@@ -229,10 +243,9 @@ class GlossaryManagementTab(QWidget):
         try:
             logger.info("Starting delayed cleanup")
 
-            if self._import_thread:
-                if not self._import_thread.isRunning():
-                    self._import_thread.deleteLater()
-                    self._import_thread = None
+            if self._import_thread and not self._import_thread.isRunning():
+                self._import_thread.deleteLater()
+                self._import_thread = None
 
             if self._import_worker:
                 self._import_worker.setParent(None)
@@ -245,10 +258,13 @@ class GlossaryManagementTab(QWidget):
         except Exception as e:
             logger.exception(f"Error during delayed cleanup: {e}")
 
-    def import_tbx(self, filepath: Optional[str] = None):
+    def import_tbx(self, filepath: str | None = None):
         if self._import_thread and self._import_thread.isRunning():
-            QMessageBox.warning(self, _("Import In Progress"),
-                                _("An import operation is already in progress. Please wait for it to complete."))
+            QMessageBox.warning(
+                self,
+                _("Import In Progress"),
+                _("An import operation is already in progress. Please wait for it to complete."),
+            )
             return
         self._force_cleanup()
 
@@ -264,13 +280,17 @@ class GlossaryManagementTab(QWidget):
             parse_result = parser.parse_tbx(filepath, analyze_only=True)
             detected_languages = parse_result.get("detected_languages", [])
             if not detected_languages:
-                QMessageBox.warning(self, _("Analysis Failed"),
-                                    _("Could not detect any languages in the TBX file. Please check the file format."))
+                QMessageBox.warning(
+                    self,
+                    _("Analysis Failed"),
+                    _("Could not detect any languages in the TBX file. Please check the file format."),
+                )
                 return
         except Exception as e:
             logger.exception("TBX analysis failed")
-            QMessageBox.critical(self, _("Parse Error"),
-                                 _("Failed to analyze the TBX file: {error}").format(error=str(e)))
+            QMessageBox.critical(
+                self, _("Parse Error"), _("Failed to analyze the TBX file: {error}").format(error=str(e))
+            )
             return
 
         config_dialog = ImportConfigurationDialog(self, os.path.basename(filepath), detected_languages, "Glossary")
@@ -278,10 +298,10 @@ class GlossaryManagementTab(QWidget):
             return
 
         import_settings = config_dialog.get_data()
-        source_lang = import_settings['source_lang']
-        target_langs = import_settings['target_langs']
-        is_bidirectional = import_settings['is_bidirectional']
-        lang_mapping = import_settings['lang_mapping']
+        source_lang = import_settings["source_lang"]
+        target_langs = import_settings["target_langs"]
+        is_bidirectional = import_settings["is_bidirectional"]
+        lang_mapping = import_settings["lang_mapping"]
 
         self._start_import_process(filepath, source_lang, target_langs, is_bidirectional, lang_mapping)
 
@@ -296,8 +316,13 @@ class GlossaryManagementTab(QWidget):
             self._import_thread = QThread()
 
             self._import_worker = TbxImportWorker(
-                self.glossary_service, filepath, self.glossary_dir,
-                source_lang, target_langs, is_bidirectional, lang_mapping
+                self.glossary_service,
+                filepath,
+                self.glossary_dir,
+                source_lang,
+                target_langs,
+                is_bidirectional,
+                lang_mapping,
             )
 
             self._import_worker.moveToThread(self._import_thread)
@@ -314,8 +339,7 @@ class GlossaryManagementTab(QWidget):
             logger.info("Import process started successfully")
         except Exception as e:
             logger.exception("Failed to start import process")
-            QMessageBox.critical(self, _("Import Error"),
-                                 _("Failed to start import: {error}").format(error=str(e)))
+            QMessageBox.critical(self, _("Import Error"), _("Failed to start import: {error}").format(error=str(e)))
             self._force_cleanup()
 
     def _cancel_import(self):
@@ -397,15 +421,19 @@ class GlossaryManagementTab(QWidget):
         display_name = item.text()
 
         if self._import_thread and self._import_thread.isRunning():
-            QMessageBox.warning(self, _("Operation In Progress"),
-                                _("Cannot remove source while an import operation is in progress."))
+            QMessageBox.warning(
+                self, _("Operation In Progress"), _("Cannot remove source while an import operation is in progress.")
+            )
             return
 
         reply = QMessageBox.question(
-            self, _("Confirm Removal"),
+            self,
+            _("Confirm Removal"),
             _("Are you sure you want to remove all terms from '{source}'?\nThis action cannot be undone.").format(
-                source=display_name),
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                source=display_name
+            ),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
         )
         if reply == QMessageBox.No:
             return
@@ -462,7 +490,7 @@ class GlossaryManagementTab(QWidget):
                 import_date_str = "N/A"
                 if "import_date" in data:
                     try:
-                        iso_str = data["import_date"].split('.')[0]
+                        iso_str = data["import_date"].split(".")[0]
                         dt = datetime.datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%S")
                         import_date_str = dt.strftime("%Y-%m-%d %H:%M")
                     except (ValueError, TypeError):
@@ -475,7 +503,7 @@ class GlossaryManagementTab(QWidget):
                 self.sources_table.setItem(current_row, 5, path_item)
                 current_row += 1
 
-        except Exception as e:
+        except Exception:
             logger.exception("Error in load_sources_into_table")
 
 
@@ -496,6 +524,7 @@ class TMImportThread(QThread):
             self.file_path, self.tm_dir, self.source_lang, self.target_lang, self.progress.emit
         )
         self.finished.emit(success, message)
+
 
 class TMManagementTab(QWidget):
     def __init__(self, app_instance, context: str):
@@ -538,9 +567,9 @@ class TMManagementTab(QWidget):
 
         self.sources_table = QTableWidget()
         self.sources_table.setColumnCount(6)
-        self.sources_table.setHorizontalHeaderLabels([
-            _("File Name"), _("Entry Count"), _("Source Lang"), _("Target Lang"), _("Import Date"), _("Path")
-        ])
+        self.sources_table.setHorizontalHeaderLabels(
+            [_("File Name"), _("Entry Count"), _("Source Lang"), _("Target Lang"), _("Import Date"), _("Path")]
+        )
         header = self.sources_table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -559,19 +588,14 @@ class TMManagementTab(QWidget):
         source_key = item.data(Qt.UserRole) or item.text()
 
         dialog = ResourceViewerDialog(
-            self.window(),
-            self.app,
-            mode='tm',
-            initial_source_key=source_key,
-            initial_db_type=self.context
+            self.window(), self.app, mode="tm", initial_source_key=source_key, initial_db_type=self.context
         )
         dialog.show()
 
-    def import_tm_file(self, filepath: Optional[str] = None):
+    def import_tm_file(self, filepath: str | None = None):
         if not filepath:
             filepath, __ = QFileDialog.getOpenFileName(
-                self, _("Select TM File to Import"), "",
-                _("TM Files (*.xlsx);;All Files (*.*)")
+                self, _("Select TM File to Import"), "", _("TM Files (*.xlsx);;All Files (*.*)")
             )
         if not filepath:
             return
@@ -581,17 +605,15 @@ class TMManagementTab(QWidget):
             return
 
         lang_data = lang_dialog.get_data()
-        source_lang = lang_data['source_lang']
-        target_lang = lang_data['target_lang']
+        source_lang = lang_data["source_lang"]
+        target_lang = lang_data["target_lang"]
 
         self.progress_dialog = QProgressDialog(_("Importing TM file..."), _("Cancel"), 0, 100, self)
         self.progress_dialog.setWindowModality(Qt.WindowModal)
         self.progress_dialog.setAutoClose(True)
         self.progress_dialog.show()
 
-        self.import_thread = TMImportThread(
-            self.tm_service, filepath, self.global_tm_dir, source_lang, target_lang
-        )
+        self.import_thread = TMImportThread(self.tm_service, filepath, self.global_tm_dir, source_lang, target_lang)
         self.import_thread.progress.connect(self.update_progress)
         self.import_thread.finished.connect(self.on_import_finished)
         self.progress_dialog.canceled.connect(self.import_thread.terminate)
@@ -623,10 +645,13 @@ class TMManagementTab(QWidget):
         display_name = item.text()
 
         reply = QMessageBox.question(
-            self, _("Confirm Removal"),
+            self,
+            _("Confirm Removal"),
             _("Are you sure you want to remove all TM entries from '{source}'?\nThis action cannot be undone.").format(
-                source=display_name),
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                source=display_name
+            ),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
         )
         if reply == QMessageBox.No:
             return
@@ -680,7 +705,7 @@ class TMManagementTab(QWidget):
             import_date_str = "N/A"
             if "import_date" in data:
                 try:
-                    iso_str = data["import_date"].split('.')[0]
+                    iso_str = data["import_date"].split(".")[0]
                     dt = datetime.datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%S")
                     import_date_str = dt.strftime("%Y-%m-%d %H:%M")
                 except (ValueError, TypeError):

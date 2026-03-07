@@ -1,8 +1,9 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+
 class TrieNode:
-    __slots__ = ('children', 'is_end', 'data')
+    __slots__ = ("children", "data", "is_end")
 
     def __init__(self):
         self.children = {}
@@ -15,6 +16,7 @@ class KeywordMatcher:
     基于 Trie 树的高效关键词匹配器。
     用于在长文本中快速查找已知的术语。
     """
+
     def __init__(self, case_sensitive=False):
         self.root = TrieNode()
         self.case_sensitive = case_sensitive
@@ -77,17 +79,12 @@ class KeywordMatcher:
                 is_valid_word = True
                 if last_match_end < n:
                     next_char = processing_text[last_match_end]
-                    if next_char.isalnum() or next_char == '_':
+                    if next_char.isalnum() or next_char == "_":
                         is_valid_word = False
 
                 if is_valid_word:
                     original_term = text[i:last_match_end]
-                    results.append({
-                        'term': original_term,
-                        'data': last_match_data,
-                        'start': i,
-                        'end': last_match_end
-                    })
+                    results.append({"term": original_term, "data": last_match_data, "start": i, "end": last_match_end})
                     i = last_match_end
                     continue
 

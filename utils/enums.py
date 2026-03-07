@@ -17,17 +17,17 @@ class WarningType(Enum):
     # --- 格式与结构 ---
     # 包含大小写、空格、换行、标点符号及括号的成对情况
     CAPITALIZATION_MISMATCH = auto()  # 首字母大小写不匹配
-    REPEATED_WORD = auto() # 有重复文本
+    REPEATED_WORD = auto()  # 有重复文本
     LEADING_WHITESPACE_MISMATCH = auto()  # 前导空格不匹配
     TRAILING_WHITESPACE_MISMATCH = auto()  # 后导空格不匹配
     DOUBLE_SPACE = auto()  # 意外的双空格
-    NEWLINE_COUNT_MISMATCH = auto() # 换行符数量不匹配
+    NEWLINE_COUNT_MISMATCH = auto()  # 换行符数量不匹配
     PUNCTUATION_MISMATCH_START = auto()  # 开头标点不匹配
     PUNCTUATION_MISMATCH_END = auto()  # 结尾标点不匹配
     BRACKET_MISMATCH = auto()  # 括号不成对
-    QUOTE_MISMATCH = auto() # 引号不成对
-    PANGU_SPACING = auto() # 盘古之白
-    ACCELERATOR_MISMATCH = auto() #加速键不匹配
+    QUOTE_MISMATCH = auto()  # 引号不成对
+    PANGU_SPACING = auto()  # 盘古之白
+    ACCELERATOR_MISMATCH = auto()  # 加速键不匹配
 
     # --- 长度相关 ---
     LENGTH_DEVIATION_MINOR = auto()  # 译文长度与原文差异略大
@@ -41,11 +41,12 @@ class WarningType(Enum):
     URL_MISMATCH = auto()  # URL 被错误翻译或丢失
     EMAIL_MISMATCH = auto()  # Email 被错误翻译或丢失
     NUMBER_MISMATCH = auto()  # 数字内容不一致
-    FUZZY_TRANSLATION = auto() # 模糊标记
-    UNUSUAL_EXPANSION_RATIO = auto() # 膨胀率差异大
+    FUZZY_TRANSLATION = auto()  # 模糊标记
+    UNUSUAL_EXPANSION_RATIO = auto()  # 膨胀率差异大
 
     def get_display_text(self):
         from utils.localization import _
+
         if self == WarningType.PLACEHOLDER_MISSING:
             return _("Placeholder Missing")
         if self == WarningType.PLACEHOLDER_EXTRA:
@@ -107,7 +108,8 @@ class WarningType(Enum):
             return _("Unusual Expansion Ratio")
 
         # Fallback
-        return self.name.replace('_', ' ').title()
+        return self.name.replace("_", " ").title()
+
 
 class AIOperationType(Enum):
     TRANSLATION = auto()

@@ -1,10 +1,21 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-                               QLineEdit, QPushButton, QMessageBox, QWidget, QScrollArea, QApplication, QSizePolicy)
-from PySide6.QtCore import Qt, Signal, QEvent, QTimer
-from PySide6.QtGui import QKeySequence, QAction
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
 from utils.constants import DEFAULT_KEYBINDINGS
 from utils.localization import _
 
@@ -13,6 +24,7 @@ class KeyCaptureEdit(QLineEdit):
     """
     快捷键捕获控件。
     """
+
     # 请求开始录制
     activationRequested = Signal(object)
     # 录制结束
@@ -48,8 +60,8 @@ class KeyCaptureEdit(QLineEdit):
         """
         # 录制状态（蓝色）
         self.STYLE_RECORDING = """
-            QLineEdit { 
-                background-color: #E1F5FE; 
+            QLineEdit {
+                background-color: #E1F5FE;
                 border: 2px solid #03A9F4;
                 border-radius: 4px;
                 color: #0277BD;
@@ -59,8 +71,8 @@ class KeyCaptureEdit(QLineEdit):
         """
         # 按键按下状态（紫色）
         self.STYLE_PRESSING = """
-            QLineEdit { 
-                background-color: #F3E5F5; 
+            QLineEdit {
+                background-color: #F3E5F5;
                 border: 2px solid #9C27B0;
                 border-radius: 4px;
                 color: #6A1B9A;
@@ -137,20 +149,24 @@ class KeyCaptureEdit(QLineEdit):
 
             # 实时显示功能键
             parts = []
-            if modifiers & Qt.ControlModifier: parts.append('Ctrl')
-            if modifiers & Qt.ShiftModifier: parts.append('Shift')
-            if modifiers & Qt.AltModifier: parts.append('Alt')
-            if modifiers & Qt.MetaModifier: parts.append('Meta')
+            if modifiers & Qt.ControlModifier:
+                parts.append("Ctrl")
+            if modifiers & Qt.ShiftModifier:
+                parts.append("Shift")
+            if modifiers & Qt.AltModifier:
+                parts.append("Alt")
+            if modifiers & Qt.MetaModifier:
+                parts.append("Meta")
 
             if parts:
                 self.setText("+".join(parts) + "+")
-            return
+            return None
 
         # 2. ESC: 取消
         if key == Qt.Key_Escape:
             self._is_pressing = False
             self.recordingFinished.emit(self)
-            return
+            return None
 
         # 3. Backspace/Delete: 清除
         if key in [Qt.Key_Backspace, Qt.Key_Delete]:
@@ -158,7 +174,7 @@ class KeyCaptureEdit(QLineEdit):
             self.current_seq = ""
             self.setText("")
             self.recordingFinished.emit(self)
-            return
+            return None
 
         # 4. 解析按键
         self._is_pressing = True
@@ -167,19 +183,25 @@ class KeyCaptureEdit(QLineEdit):
         self.style().polish(self)
 
         parts = []
-        if modifiers & Qt.ControlModifier: parts.append('Ctrl')
-        if modifiers & Qt.ShiftModifier: parts.append('Shift')
-        if modifiers & Qt.AltModifier: parts.append('Alt')
-        if modifiers & Qt.MetaModifier: parts.append('Meta')
+        if modifiers & Qt.ControlModifier:
+            parts.append("Ctrl")
+        if modifiers & Qt.ShiftModifier:
+            parts.append("Shift")
+        if modifiers & Qt.AltModifier:
+            parts.append("Alt")
+        if modifiers & Qt.MetaModifier:
+            parts.append("Meta")
 
         key_text = QKeySequence(key).toString(QKeySequence.NativeText)
-        if not key_text: return
+        if not key_text:
+            return None
 
         parts.append(key_text)
         new_sequence = "+".join(parts)
 
         self.current_seq = new_sequence
         self.setText(new_sequence)
+        return None
 
     def keyReleaseEvent(self, event):
         """按键释放时完成录制"""
@@ -191,22 +213,24 @@ class KeyCaptureEdit(QLineEdit):
         # 如果是修饰键释放，检查是否所有修饰键都已释放
         if event.key() in [Qt.Key_Control, Qt.Key_Shift, Qt.Key_Alt, Qt.Key_Meta]:
             modifiers = event.modifiers()
-            # 检查是否还有修饰键按下（注意：刚释放的键在modifiers中可能还存在）
-            if not (modifiers & (Qt.ControlModifier | Qt.ShiftModifier | Qt.AltModifier | Qt.MetaModifier)):
-                # 所有修饰键都已释放，恢复录制状态
-                if self._is_pressing:
-                    self._is_pressing = False
-                    self.setStyleSheet(self.STYLE_RECORDING)
-                    self.style().unpolish(self)
-                    self.style().polish(self)
-                    # 清除临时显示
-                    self.setText(self.current_seq)
-            return
+            # 检查是否还有修饰键按下
+            if self._is_pressing and not (
+                modifiers & (Qt.ControlModifier | Qt.ShiftModifier | Qt.AltModifier | Qt.MetaModifier)
+            ):
+                self._is_pressing = False
+                self.setStyleSheet(self.STYLE_RECORDING)
+                self.style().unpolish(self)
+                self.style().polish(self)
+                # 清除临时显示
+                self.setText(self.current_seq)
+            return None
 
         # 普通按键释放，完成录制
         if self._is_pressing:
             self._is_pressing = False
             self.recordingFinished.emit(self)
+            return None
+        return None
 
     def reset_to_original(self):
         """重置为初始值"""
@@ -225,23 +249,23 @@ class KeybindingDialog(QDialog):
         self.current_active_editor = None  # 中央状态指针
 
         self.ACTION_MAP = {
-            'open_code_file': self.app.action_open_code_file,
-            'open_project': self.app.action_open_project,
-            'new_project': self.app.action_new_project,
-            'build_project': self.app.action_build_project,
-            'save_current_file': self.app.action_save_current_file,
-            'save_code_file': self.app.action_save_code_file,
-            'undo': self.app.action_undo,
-            'redo': self.app.action_redo,
-            'find_replace': self.app.action_find_replace,
-            'copy_original': self.app.action_copy_original,
-            'paste_translation': self.app.action_paste_translation,
-            'ai_translate_selected': self.app.action_ai_translate_selected,
-            'toggle_reviewed': {'text': _("Toggle Reviewed Status")},
-            'toggle_fuzzy': {'text': _("Toggle Fuzzy Status")},
-            'toggle_ignored': {'text': _("Toggle Ignored Status")},
-            'apply_and_next': {'text': _("Apply and Go to Next Untranslated")},
-            'refresh_sort': {'text': _("Refresh View")},
+            "open_code_file": self.app.action_open_code_file,
+            "open_project": self.app.action_open_project,
+            "new_project": self.app.action_new_project,
+            "build_project": self.app.action_build_project,
+            "save_current_file": self.app.action_save_current_file,
+            "save_code_file": self.app.action_save_code_file,
+            "undo": self.app.action_undo,
+            "redo": self.app.action_redo,
+            "find_replace": self.app.action_find_replace,
+            "copy_original": self.app.action_copy_original,
+            "paste_translation": self.app.action_paste_translation,
+            "ai_translate_selected": self.app.action_ai_translate_selected,
+            "toggle_reviewed": {"text": _("Toggle Reviewed Status")},
+            "toggle_fuzzy": {"text": _("Toggle Fuzzy Status")},
+            "toggle_ignored": {"text": _("Toggle Ignored Status")},
+            "apply_and_next": {"text": _("Apply and Go to Next Untranslated")},
+            "refresh_sort": {"text": _("Refresh View")},
         }
 
         self.setWindowTitle(title)
@@ -264,19 +288,13 @@ class KeybindingDialog(QDialog):
             row_layout = QHBoxLayout(row_widget)
             row_layout.setContentsMargins(0, 0, 0, 0)
 
-            if isinstance(action_obj, QAction):
-                description = action_obj.text().replace('&', '')
-            else:
-                description = action_obj['text']
+            description = action_obj.text().replace("&", "") if isinstance(action_obj, QAction) else action_obj["text"]
 
             label = QLabel(description + ":")
             label.setMinimumWidth(200)
             row_layout.addWidget(label)
 
-            current_key = self.app.config['keybindings'].get(
-                action_name,
-                DEFAULT_KEYBINDINGS.get(action_name, '')
-            )
+            current_key = self.app.config["keybindings"].get(action_name, DEFAULT_KEYBINDINGS.get(action_name, ""))
 
             editor = KeyCaptureEdit(action_name, current_key)
             # 连接信号到中央调度函数
@@ -339,9 +357,13 @@ class KeybindingDialog(QDialog):
             self.current_active_editor.set_recording_state(False)
             self.current_active_editor = None
 
-        reply = QMessageBox.question(self, _("Confirm"),
-                                     _("Are you sure you want to reset all keybindings to their default settings?"),
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(
+            self,
+            _("Confirm"),
+            _("Are you sure you want to reset all keybindings to their default settings?"),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
         if reply == QMessageBox.Yes:
             for editor in self.editors:
                 default_val = DEFAULT_KEYBINDINGS.get(editor.action_key, "")
@@ -374,21 +396,21 @@ class KeybindingDialog(QDialog):
                 conflict_name = conflict_action_key
                 if conflict_action_key in self.ACTION_MAP:
                     obj = self.ACTION_MAP[conflict_action_key]
-                    if isinstance(obj, QAction):
-                        conflict_name = obj.text().replace('&', '')
-                    else:
-                        conflict_name = obj['text']
+                    conflict_name = obj.text().replace("&", "") if isinstance(obj, QAction) else obj["text"]
 
-                QMessageBox.warning(self, _("Keybinding Conflict"),
-                                    _("The key '{key}' is already assigned to '{action}'.\nPlease resolve the conflict.").format(
-                                        key=key_seq, action=conflict_name
-                                    ))
+                QMessageBox.warning(
+                    self,
+                    _("Keybinding Conflict"),
+                    _("The key '{key}' is already assigned to '{action}'.\nPlease resolve the conflict.").format(
+                        key=key_seq, action=conflict_name
+                    ),
+                )
                 return
 
             seen_keys[key_seq] = action_name
             new_bindings[action_name] = key_seq
 
-        self.app.config['keybindings'] = new_bindings
+        self.app.config["keybindings"] = new_bindings
         self.app.save_config()
         self.app.update_statusbar(_("Keybindings have been updated."))
         super().accept()

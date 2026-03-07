@@ -1,24 +1,32 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTextEdit, QFrame, QProgressBar, QSplitter, QWidget,
-    QMessageBox, QCheckBox, QGraphicsOpacityEffect,
-    QApplication,
-)
-from PySide6.QtCore import Qt, QTimer, Signal, QObject, QSize, QPropertyAnimation, QEasingCurve
-from PySide6.QtGui import QKeySequence, QColor, QFont, QTextCursor, QShortcut
-
-from services.ai_worker import AIWorker
-from utils.enums import AIOperationType, WarningType
-from services.validation_service import validate_string
-from models.translatable_string import TranslatableString
-from ui_components.tooltip import Tooltip
-from ui_components.styled_button import StyledButton
-from utils.localization import _
 import collections
 import logging
+
+from PySide6.QtCore import QObject, Qt, QTimer, Signal
+from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QProgressBar,
+    QSplitter,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
+from models.translatable_string import TranslatableString
+from services.ai_worker import AIWorker
+from services.validation_service import validate_string
+from ui_components.styled_button import StyledButton
+from utils.enums import AIOperationType
+from utils.localization import _
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +90,10 @@ class ReviewController(QObject):
         # 获取目标语言名称
         target_lang_code = self.app.current_target_language
         from utils.constants import SUPPORTED_LANGUAGES
-        target_lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code),
-                                target_lang_code)
+
+        target_lang_name = next(
+            (name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code), target_lang_code
+        )
 
         worker = AIWorker(
             self.app,
@@ -127,7 +137,8 @@ class ReviewController(QObject):
             return result
 
         logger.warning(
-            f"[ReviewDebug] get_result MISS for ID: {ts_id[:8]}. Buffer keys: {[k[:8] for k in self.result_buffer.keys()]}")
+            f"[ReviewDebug] get_result MISS for ID: {ts_id[:8]}. Buffer keys: {[k[:8] for k in self.result_buffer]}"
+        )
         # 如果 MISS，强制检查一下是否需要补充（防止死锁）
         self._fill_buffer()
         return None
@@ -213,12 +224,14 @@ class InteractiveReviewDialog(QDialog):
 
         lbl_context = QLabel(_("Context Reference"))
         lbl_context.setStyleSheet(
-            "color: #666; font-weight: bold; text-transform: uppercase; font-size: 11px; margin-top: 20px;")
+            "color: #666; font-weight: bold; text-transform: uppercase; font-size: 11px; margin-top: 20px;"
+        )
 
         self.context_view = QTextEdit()
         self.context_view.setReadOnly(True)
         self.context_view.setStyleSheet(
-            "border: 1px solid #EEE; border-radius: 6px; background-color: #FAFAFA; padding: 10px; font-size: 13px;")
+            "border: 1px solid #EEE; border-radius: 6px; background-color: #FAFAFA; padding: 10px; font-size: 13px;"
+        )
 
         left_layout.addWidget(lbl_source)
         left_layout.addWidget(self.source_view, 1)
@@ -237,8 +250,8 @@ class InteractiveReviewDialog(QDialog):
         self.editor = QTextEdit()
         self.editor.setStyleSheet("""
             QTextEdit {
-                border: 2px solid #E0E0E0; 
-                border-radius: 6px; 
+                border: 2px solid #E0E0E0;
+                border-radius: 6px;
                 background-color: #FAFAFA;
                 font-size: 18px;
                 padding: 15px;
@@ -281,7 +294,7 @@ class InteractiveReviewDialog(QDialog):
         self.chk_auto_run = QCheckBox(_("Auto-Run (Stop on Error)"))
         self.chk_auto_run.setStyleSheet("""
             QCheckBox {
-                font-weight: bold; 
+                font-weight: bold;
                 color: #555;
                 spacing: 8px;
             }
@@ -385,25 +398,25 @@ class InteractiveReviewDialog(QDialog):
         html = ""
 
         # 1. Glossary
-        if ctx.get('[Glossary]'):
+        if ctx.get("[Glossary]"):
             html += f"<h4 style='color:#673AB7'>{_('Glossary Matches')}</h4>"
-            lines = ctx['[Glossary]'].split('\n')
+            lines = ctx["[Glossary]"].split("\n")
             for line in lines:
                 if line.strip():
                     html += f"<div style='margin-bottom:4px; color:#333;'>{line}</div>"
             html += "<hr>"
 
         # 2. TM / Semantic
-        if ctx.get('[Semantic Context]'):
+        if ctx.get("[Semantic Context]"):
             html += f"<h4 style='color:#009688'>{_('Similar Texts (TM/RAG)')}</h4>"
-            content = ctx['[Semantic Context]'].replace('\n', '<br>')
+            content = ctx["[Semantic Context]"].replace("\n", "<br>")
             html += f"<div style='color:#555; font-size:12px;'>{content}</div>"
             html += "<hr>"
 
         # 3. Neighbors
-        if ctx.get('original_context'):
+        if ctx.get("original_context"):
             html += f"<h4 style='color:#607D8B'>{_('Nearby Text')}</h4>"
-            content = ctx['original_context'].replace('\n', '<br>')
+            content = ctx["original_context"].replace("\n", "<br>")
             html += f"<div style='color:#777; font-style:italic;'>{content}</div>"
 
         self.context_view.setHtml(html)
@@ -425,24 +438,25 @@ class InteractiveReviewDialog(QDialog):
         validate_string(temp_ts, self.app.config, self.app)
 
         errors = []
-        for wt, msg in temp_ts.warnings:
+        for _wt, msg in temp_ts.warnings:
             errors.append(f"• {msg}")
 
         # 长度检查等 Minor Warnings 也可以视为阻断自动运行的理由
-        for wt, msg in temp_ts.minor_warnings:
+        for _wt, msg in temp_ts.minor_warnings:
             errors.append(f"• {msg}")
 
         if errors:
             self.validation_banner.setText("\n".join(errors))
             self.validation_banner.show()
             self.editor.setStyleSheet(
-                "border: 2px solid #F44336; background-color: #FAFAFA; font-size: 18px; padding: 15px;")
+                "border: 2px solid #F44336; background-color: #FAFAFA; font-size: 18px; padding: 15px;"
+            )
             return False
-        else:
-            self.validation_banner.hide()
-            self.editor.setStyleSheet(
-                "border: 2px solid #4CAF50; background-color: #FAFAFA; font-size: 18px; padding: 15px;")
-            return True
+        self.validation_banner.hide()
+        self.editor.setStyleSheet(
+            "border: 2px solid #4CAF50; background-color: #FAFAFA; font-size: 18px; padding: 15px;"
+        )
+        return True
 
     def _toggle_auto_run(self, checked):
         """切换自动运行模式"""
@@ -471,9 +485,7 @@ class InteractiveReviewDialog(QDialog):
         else:
             # 有错误，暂停自动运行
             self.chk_auto_run.setChecked(False)
-            self.validation_banner.setText(
-                self.validation_banner.text() + f"\n\n[{_('Auto-Run Paused due to Error')}]"
-            )
+            self.validation_banner.setText(self.validation_banner.text() + f"\n\n[{_('Auto-Run Paused due to Error')}]")
             QApplication.alert(self)  # 闪烁任务栏
 
     def accept_current(self):

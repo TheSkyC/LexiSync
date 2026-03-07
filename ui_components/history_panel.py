@@ -1,16 +1,27 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem,
-                               QLabel, QToolBar, QLineEdit, QSizePolicy, QHBoxLayout,
-                               QMenu)
-from PySide6.QtCore import Qt, Signal, QSize, QEvent
-from PySide6.QtGui import QIcon, QCursor, QAction
-import os
 import datetime
-from utils.path_utils import get_resource_path
-from utils.localization import _
+import os
+
+from PySide6.QtCore import QEvent, QSize, Qt, Signal
+from PySide6.QtGui import QAction, QCursor, QIcon
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMenu,
+    QSizePolicy,
+    QToolBar,
+    QVBoxLayout,
+    QWidget,
+)
+
 from ui_components.tooltip import Tooltip
+from utils.localization import _
+from utils.path_utils import get_resource_path
 
 
 def get_relative_time_from_hms(time_str):
@@ -19,8 +30,7 @@ def get_relative_time_from_hms(time_str):
     try:
         now = datetime.datetime.now()
         t_struct = datetime.datetime.strptime(time_str, "%H:%M:%S")
-        record_time = now.replace(hour=t_struct.hour, minute=t_struct.minute,
-                                  second=t_struct.second, microsecond=0)
+        record_time = now.replace(hour=t_struct.hour, minute=t_struct.minute, second=t_struct.second, microsecond=0)
 
         if record_time > now:
             record_time -= datetime.timedelta(days=1)
@@ -30,14 +40,13 @@ def get_relative_time_from_hms(time_str):
 
         if seconds < 1:
             return _("Just now")
-        elif seconds < 60:
+        if seconds < 60:
             return _("{s} seconds ago").format(s=seconds)
-        elif seconds < 3600:
+        if seconds < 3600:
             minutes = seconds // 60
             return _("{m} mins ago").format(m=minutes) if minutes > 1 else _("1 min ago")
-        else:
-            hours = seconds // 3600
-            return _("{h} hours ago").format(h=hours) if hours > 1 else _("1 hour ago")
+        hours = seconds // 3600
+        return _("{h} hours ago").format(h=hours) if hours > 1 else _("1 hour ago")
     except Exception:
         return time_str
 
@@ -56,7 +65,7 @@ class HistoryItemWidget(QWidget):
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(10)
 
-        icon_name = record.get('icon_type', 'layers.svg')
+        icon_name = record.get("icon_type", "layers.svg")
         icon_path = get_resource_path(f"icons/{icon_name}")
         self.icon_label = QLabel()
         if os.path.exists(icon_path):
@@ -66,7 +75,7 @@ class HistoryItemWidget(QWidget):
         text_layout = QVBoxLayout()
         text_layout.setSpacing(4)
 
-        self.desc_label = QLabel(record.get('description', _("Unknown Action")))
+        self.desc_label = QLabel(record.get("description", _("Unknown Action")))
         font = self.desc_label.font()
         if is_current:
             font.setBold(True)
@@ -76,7 +85,7 @@ class HistoryItemWidget(QWidget):
         bottom_row = QHBoxLayout()
         bottom_row.setContentsMargins(0, 0, 0, 0)
 
-        self.time_label = QLabel(record.get('timestamp', ''))
+        self.time_label = QLabel(record.get("timestamp", ""))
         self.time_label.setStyleSheet("font-size: 10px;")
         bottom_row.addWidget(self.time_label)
 
@@ -89,7 +98,7 @@ class HistoryItemWidget(QWidget):
         text_layout.addLayout(bottom_row)
         layout.addLayout(text_layout, 1)
 
-        record_file_id = record.get('file_id')
+        record_file_id = record.get("file_id")
         if record_file_id and current_file_id and record_file_id != current_file_id:
             jump_icon_path = get_resource_path("icons/corner-right-up.svg")
             self.jump_label = QLabel()
@@ -101,10 +110,10 @@ class HistoryItemWidget(QWidget):
         self._update_item_style(is_current, is_redoable)
 
     def _build_tooltip_html(self, record):
-        action_type = record.get('type', '')
-        data = record.get('data', {})
-        desc = record.get('description', _("Unknown Action"))
-        time_str = record.get('timestamp', '')
+        action_type = record.get("type", "")
+        data = record.get("data", {})
+        desc = record.get("description", _("Unknown Action"))
+        time_str = record.get("timestamp", "")
         rel_time = get_relative_time_from_hms(time_str)
 
         html = f"<b style='color:#409EFF; font-size:13px;'>{desc}</b>"
@@ -112,33 +121,39 @@ class HistoryItemWidget(QWidget):
         html += "<hr style='border-color: #555; margin: 6px 0;'>"
 
         def truncate(text, length=60):
-            if not text: return "<i>Empty</i>"
-            text = str(text).replace('\n', '↵').replace('<', '&lt;').replace('>', '&gt;')
+            if not text:
+                return "<i>Empty</i>"
+            text = str(text).replace("\n", "↵").replace("<", "&lt;").replace(">", "&gt;")
             return text[:length] + "..." if len(text) > length else text
 
-        if action_type == 'single_change':
-            field = data.get('field', 'unknown')
-            old_val = data.get('old_value', '')
-            new_val = data.get('new_value', '')
+        if action_type == "single_change":
+            field = data.get("field", "unknown")
+            old_val = data.get("old_value", "")
+            new_val = data.get("new_value", "")
 
             html += f"<div style='color:#CCCCCC; margin-bottom:2px;'><b>{_('Field')}:</b> {field}</div>"
             html += f"<div style='color:#F56C6C;'><b>-</b> {truncate(old_val)}</div>"
             html += f"<div style='color:#67C23A;'><b>+</b> {truncate(new_val)}</div>"
 
-        elif action_type in ['bulk_change', 'bulk_ai_translate', 'bulk_excel_import', 'bulk_context_menu',
-                             'bulk_replace_all']:
-            changes = data.get('changes', [])
+        elif action_type in [
+            "bulk_change",
+            "bulk_ai_translate",
+            "bulk_excel_import",
+            "bulk_context_menu",
+            "bulk_replace_all",
+        ]:
+            changes = data.get("changes", [])
             count = len(changes)
             html += f"<div style='color:#CCCCCC; margin-bottom:4px;'>{_('Affected items')}: {count}</div>"
 
             preview_limit = 3
-            for i, change in enumerate(changes[:preview_limit]):
-                old_val = change.get('old_value', '')
-                new_val = change.get('new_value', '')
-                html += f"<div style='margin-bottom:4px;'>"
+            for _i, change in enumerate(changes[:preview_limit]):
+                old_val = change.get("old_value", "")
+                new_val = change.get("new_value", "")
+                html += "<div style='margin-bottom:4px;'>"
                 html += f"<div style='color:#F56C6C; font-size:11px;'><b>-</b> {truncate(old_val, 40)}</div>"
                 html += f"<div style='color:#67C23A; font-size:11px;'><b>+</b> {truncate(new_val, 40)}</div>"
-                html += f"</div>"
+                html += "</div>"
 
             if count > preview_limit:
                 html += f"<div style='color:#888888; font-style:italic; font-size:11px;'>... {_('and {n} more').format(n=count - preview_limit)}</div>"
@@ -231,17 +246,17 @@ class HistoryPanel(QWidget):
         self.list_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.list_widget.customContextMenuRequested.connect(self._show_context_menu)
         self.list_widget.setStyleSheet("""
-            QListWidget { 
-                border: none; 
-                background-color: #FFFFFF; 
+            QListWidget {
+                border: none;
+                background-color: #FFFFFF;
                 outline: 0;
             }
-            QListWidget::item { 
-                border-bottom: 1px solid #F0F0F0; 
+            QListWidget::item {
+                border-bottom: 1px solid #F0F0F0;
                 padding: 0px;
             }
-            QListWidget::item:hover { 
-                background-color: #F5F7FA; 
+            QListWidget::item:hover {
+                background-color: #F5F7FA;
             }
             QListWidget::item:selected {
                 background-color: transparent;
@@ -254,35 +269,41 @@ class HistoryPanel(QWidget):
     def _get_current_state_index(self):
         for i in range(self.list_widget.count()):
             widget = self.list_widget.itemWidget(self.list_widget.item(i))
-            if widget and hasattr(widget, 'record') and widget.record.get('is_current'):
+            if widget and hasattr(widget, "record") and widget.record.get("is_current"):
                 return i
         return -1
 
     def _extract_target_id(self, record):
-        action_type = record.get('type', '')
-        data = record.get('data', {})
-        file_id = record.get('file_id')
+        action_type = record.get("type", "")
+        data = record.get("data", {})
+        file_id = record.get("file_id")
 
         target_id = None
-        if action_type == 'single_change':
-            target_id = data.get('string_id')
-        elif action_type in ['bulk_change', 'bulk_ai_translate', 'bulk_excel_import', 'bulk_context_menu',
-                             'bulk_replace_all']:
-            changes = data.get('changes', [])
+        if action_type == "single_change":
+            target_id = data.get("string_id")
+        elif action_type in [
+            "bulk_change",
+            "bulk_ai_translate",
+            "bulk_excel_import",
+            "bulk_context_menu",
+            "bulk_replace_all",
+        ]:
+            changes = data.get("changes", [])
             if changes:
-                target_id = changes[0].get('string_id')
+                target_id = changes[0].get("string_id")
         return target_id, file_id
 
     def _on_item_double_clicked(self, item):
         widget = self.list_widget.itemWidget(item)
-        if widget and hasattr(widget, 'record'):
+        if widget and hasattr(widget, "record"):
             target_id, file_id = self._extract_target_id(widget.record)
             if target_id:
                 self.locate_requested.emit(target_id, file_id)
 
     def _show_context_menu(self, pos):
         item = self.list_widget.itemAt(pos)
-        if not item: return
+        if not item:
+            return
 
         index = item.data(Qt.UserRole)
         current_state_index = self._get_current_state_index()
@@ -308,9 +329,11 @@ class HistoryPanel(QWidget):
             jump_action = QAction(jump_icon, _("Undo to here"), self)
             jump_action.triggered.connect(lambda: self.jump_requested.emit(index))
             jump_action.hovered.connect(
-                lambda: self.preview_jump(index, current_state_index, is_redo=False, is_previewing=True))
+                lambda: self.preview_jump(index, current_state_index, is_redo=False, is_previewing=True)
+            )
             menu.aboutToHide.connect(
-                lambda: self.preview_jump(index, current_state_index, is_redo=False, is_previewing=False))
+                lambda: self.preview_jump(index, current_state_index, is_redo=False, is_previewing=False)
+            )
             menu.addAction(jump_action)
 
         elif index < current_state_index:
@@ -319,9 +342,11 @@ class HistoryPanel(QWidget):
             jump_action = QAction(jump_icon, _("Redo to here"), self)
             jump_action.triggered.connect(lambda: self.jump_requested.emit(index))
             jump_action.hovered.connect(
-                lambda: self.preview_jump(index, current_state_index, is_redo=True, is_previewing=True))
+                lambda: self.preview_jump(index, current_state_index, is_redo=True, is_previewing=True)
+            )
             menu.aboutToHide.connect(
-                lambda: self.preview_jump(index, current_state_index, is_redo=True, is_previewing=False))
+                lambda: self.preview_jump(index, current_state_index, is_redo=True, is_previewing=False)
+            )
             menu.addAction(jump_action)
 
         # 破坏性还原操作 (Revert selected and subsequent)
@@ -341,7 +366,7 @@ class HistoryPanel(QWidget):
         for i in range(self.list_widget.count()):
             widget = self.list_widget.itemWidget(self.list_widget.item(i))
             if widget:
-                widget._update_item_style(widget.record.get('is_current'), widget.record.get('is_redoable'))
+                widget._update_item_style(widget.record.get("is_current"), widget.record.get("is_redoable"))
 
     def preview_jump(self, target_index, current_state_index, is_redo, is_previewing):
         """预览指针跳转 (黄色/绿色)"""
@@ -351,7 +376,8 @@ class HistoryPanel(QWidget):
 
         for i in range(self.list_widget.count()):
             widget = self.list_widget.itemWidget(self.list_widget.item(i))
-            if not widget: continue
+            if not widget:
+                continue
 
             if not is_redo and current_state_index <= i < target_index:
                 # 撤销预览：黄色 (不包含目标项)
@@ -368,7 +394,8 @@ class HistoryPanel(QWidget):
 
         for i in range(self.list_widget.count()):
             widget = self.list_widget.itemWidget(self.list_widget.item(i))
-            if not widget: continue
+            if not widget:
+                continue
 
             if 0 <= i <= target_index:
                 # 破坏性还原：红色 (包含目标项及之上所有项)
@@ -394,14 +421,14 @@ class HistoryPanel(QWidget):
             is_redoable = i < current_state_index
             is_current = i == current_state_index
 
-            record['is_current'] = is_current
-            record['is_redoable'] = is_redoable
+            record["is_current"] = is_current
+            record["is_redoable"] = is_redoable
 
             seq_num = total_items - i
 
             item = QListWidgetItem(self.list_widget)
             item.setData(Qt.UserRole, i)
-            item.setData(Qt.UserRole + 1, record.get('description', '').lower())
+            item.setData(Qt.UserRole + 1, record.get("description", "").lower())
 
             widget = HistoryItemWidget(record, is_current, is_redoable, current_file_id, seq_num)
             item.setSizeHint(widget.sizeHint())
@@ -413,6 +440,7 @@ class HistoryPanel(QWidget):
 
         if v_scrollbar:
             from PySide6.QtCore import QTimer
+
             QTimer.singleShot(0, lambda: v_scrollbar.setValue(saved_scroll_value))
 
     def update_ui_texts(self):

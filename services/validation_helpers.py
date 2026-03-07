@@ -1,85 +1,252 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import regex as re
 from collections import Counter
 import html
+
+import regex as re
+
 from utils.localization import _
 
-PUNCTUATION_MAP = {'.': '。', ',': '，', '?': '？', '!': '！', ':': '：', ';': '；', '(': '（', ')': '）'}
+PUNCTUATION_MAP = {".": "。", ",": "，", "?": "？", "!": "！", ":": "：", ";": "；", "(": "（", ")": "）"}
 ALL_PUNC_KEYS = set(PUNCTUATION_MAP.keys())
 ALL_PUNC_VALUES = set(PUNCTUATION_MAP.values())
 
 # --- 正则表达式 ---
-RE_PRINTF = re.compile(r'%%|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]|%\d+')
-RE_PYTHON_BRACE = re.compile(r'\{\s*([_a-zA-Z0-9.:\[\]]+)\s*}')
-RE_REPEATED_WORD = re.compile(r'\b(\w+)\s+\1\b', re.IGNORECASE)
-RE_URL = re.compile(r'(?:ht|f)tps?://[^"<> \t\n\r]+|www\.[^"<> \t\n\r]+|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/[^"<> \t\n\r]*')
-RE_EMAIL = re.compile(r'[\w\.-]+@[\w\.-]+')
-RE_NUMBER = re.compile(r'\d+(?:\.\d+)?')
-RE_HTML_ENTITY_NUM = re.compile(r'&#(x[0-9a-fA-F]+|\d+);')
-RE_CJK = (
-    r'[\u2e80-\u2eff\u2f00-\u2fdf\u3040-\u309f\u30a0-\u30fa\u30fc-\u30ff'
-    r'\u3100-\u312f\u3200-\u32ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]'
+RE_PRINTF = re.compile(r"%%|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]|%\d+")
+RE_PYTHON_BRACE = re.compile(r"\{\s*([_a-zA-Z0-9.:\[\]]+)\s*}")
+RE_REPEATED_WORD = re.compile(r"\b(\w+)\s+\1\b", re.IGNORECASE)
+RE_URL = re.compile(
+    r'(?:ht|f)tps?://[^"<> \t\n\r]+|www\.[^"<> \t\n\r]+|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/[^"<> \t\n\r]*'
 )
-RE_LATIN = r'[a-zA-Z0-9]'
+RE_EMAIL = re.compile(r"[\w\.-]+@[\w\.-]+")
+RE_NUMBER = re.compile(r"\d+(?:\.\d+)?")
+RE_HTML_ENTITY_NUM = re.compile(r"&#(x[0-9a-fA-F]+|\d+);")
+RE_CJK = (
+    r"[\u2e80-\u2eff\u2f00-\u2fdf\u3040-\u309f\u30a0-\u30fa\u30fc-\u30ff"
+    r"\u3100-\u312f\u3200-\u32ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]"
+)
+RE_LATIN = r"[a-zA-Z0-9]"
 
-RE_PANGU_CJK_LATIN = re.compile(f'({RE_CJK})({RE_LATIN})')
-RE_PANGU_LATIN_CJK = re.compile(f'({RE_LATIN})({RE_CJK})')
+RE_PANGU_CJK_LATIN = re.compile(f"({RE_CJK})({RE_LATIN})")
+RE_PANGU_LATIN_CJK = re.compile(f"({RE_LATIN})({RE_CJK})")
 
 STRFTIME_EQUIVALENCE = {
     # 月份：全称(B)、缩写(b/h) -> 映射为 数字(m)
-    'B': 'm', 'b': 'm', 'h': 'm',
+    "B": "m",
+    "b": "m",
+    "h": "m",
     # 年份：全称(Y) -> 映射为 缩写(y)
-    'Y': 'y',
+    "Y": "y",
     # 日期：不补零(e) -> 映射为 补零(d)
-    'e': 'd',
+    "e": "d",
     # 小时：12小时(I/l)、24小时(k) -> 映射为 24小时(H)
-    'I': 'H', 'k': 'H', 'l': 'H',
+    "I": "H",
+    "k": "H",
+    "l": "H",
     # 上下午：大写(P) -> 映射为 小写(p)
-    'P': 'p'
+    "P": "p",
 }
 HTML_TAGS_WHITELIST = {
-    'a', 'abbr', 'acronym', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo',
-    'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col', 'colgroup', 'data',
-    'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset',
-    'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr',
-    'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map',
-    'mark', 'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param',
-    'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small',
-    'source', 'span', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template',
-    'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr'
+    "a",
+    "abbr",
+    "acronym",
+    "address",
+    "area",
+    "article",
+    "aside",
+    "audio",
+    "b",
+    "base",
+    "bdi",
+    "bdo",
+    "blockquote",
+    "body",
+    "br",
+    "button",
+    "canvas",
+    "caption",
+    "cite",
+    "code",
+    "col",
+    "colgroup",
+    "data",
+    "datalist",
+    "dd",
+    "del",
+    "details",
+    "dfn",
+    "dialog",
+    "div",
+    "dl",
+    "dt",
+    "em",
+    "embed",
+    "fieldset",
+    "figcaption",
+    "figure",
+    "footer",
+    "form",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "head",
+    "header",
+    "hr",
+    "html",
+    "i",
+    "iframe",
+    "img",
+    "input",
+    "ins",
+    "kbd",
+    "label",
+    "legend",
+    "li",
+    "link",
+    "main",
+    "map",
+    "mark",
+    "meta",
+    "meter",
+    "nav",
+    "noscript",
+    "object",
+    "ol",
+    "optgroup",
+    "option",
+    "output",
+    "p",
+    "param",
+    "picture",
+    "pre",
+    "progress",
+    "q",
+    "rp",
+    "rt",
+    "ruby",
+    "s",
+    "samp",
+    "script",
+    "section",
+    "select",
+    "small",
+    "source",
+    "span",
+    "strong",
+    "style",
+    "sub",
+    "summary",
+    "sup",
+    "svg",
+    "table",
+    "tbody",
+    "td",
+    "template",
+    "textarea",
+    "tfoot",
+    "th",
+    "thead",
+    "time",
+    "title",
+    "tr",
+    "track",
+    "u",
+    "ul",
+    "var",
+    "video",
+    "wbr",
 }
-RE_HTML_TAG = re.compile(r'</?(' + '|'.join(HTML_TAGS_WHITELIST) + r')\b[^>]*>', re.IGNORECASE)
+RE_HTML_TAG = re.compile(r"</?(" + "|".join(HTML_TAGS_WHITELIST) + r")\b[^>]*>", re.IGNORECASE)
 NUMBER_WORD_MAP = {
-    '0': {
-        'zero', 'null', 'cero', 'zéro', 'ноль', '零', '〇', 'rei', 'zero', '영', '공'},
-    '1': {
-        'one', 'first', '1st', 'eins', 'uno', 'un', 'une', 'um', 'один', '一', '壹', '①', '❶', 'ichi', 'hana', 'il'},
-    '2': {
-        'two', 'second', '2nd', 'zwei', 'dos', 'deux', 'dois', 'два', '二', '贰', '②', '❷', '两', 'ni', 'dul', 'i'},
-    '3': {
-        'three', 'third', '3rd', 'drei', 'tres', 'trois', 'três', 'три', '三', '叁', '③', '❸', 'san', 'set', 'sam'},
-    '4': {
-        'four', 'fourth', '4th', 'vier', 'cuatro', 'quatre', 'quatro', 'четыре', '四', '肆', '④', '❹', 'shi', 'yon', 'net', 'sa'},
-    '5': {
-        'five', 'fifth', '5th', 'fünf', 'cinco', 'cinq', 'пять', '五', '伍', '⑤', '❺', 'go', 'daseot', 'o'},
-    '6': {
-        'six', 'sixth', '6th', 'sechs', 'seis', 'six', 'шесть', '六', '陆', '⑥', '❻', 'roku', 'yeoseot', 'yuk'},
-    '7': {
-        'seven', 'seventh', '7th', 'sieben', 'siete', 'sept', 'sete', 'семь', '七', '柒', '⑦', '❼', 'shichi', 'nana', 'ilgop', 'chil'},
-    '8': {
-        'eight', 'eighth', '8th', 'acht', 'ocho', 'huit', 'oito', 'восемь', '八', '捌', '⑧', '❽', 'hachi', 'yeodeol', 'pal'},
-    '9': {
-        'nine', 'ninth', '9th', 'neun', 'nueve', 'neuf', 'nove', 'девять', '九', '玖', '⑨', '❾', 'kyu', 'ku', 'ahop', 'gu'},
-    '10': {
-        'ten', 'tenth', '10th', 'zehn', 'diez', 'dix', 'dez', 'десять', '十', '拾', '⑩', '❿', 'ju', 'yeol', 'sip'}
+    "0": {"zero", "null", "cero", "zéro", "ноль", "零", "〇", "rei", "영", "공"},
+    "1": {"one", "first", "1st", "eins", "uno", "un", "une", "um", "один", "一", "壹", "①", "❶", "ichi", "hana", "il"},
+    "2": {"two", "second", "2nd", "zwei", "dos", "deux", "dois", "два", "二", "贰", "②", "❷", "两", "ni", "dul", "i"},
+    "3": {"three", "third", "3rd", "drei", "tres", "trois", "três", "три", "三", "叁", "③", "❸", "san", "set", "sam"},
+    "4": {
+        "four",
+        "fourth",
+        "4th",
+        "vier",
+        "cuatro",
+        "quatre",
+        "quatro",
+        "четыре",
+        "四",
+        "肆",
+        "④",
+        "❹",
+        "shi",
+        "yon",
+        "net",
+        "sa",
+    },
+    "5": {"five", "fifth", "5th", "fünf", "cinco", "cinq", "пять", "五", "伍", "⑤", "❺", "go", "daseot", "o"},
+    "6": {"six", "sixth", "6th", "sechs", "seis", "шесть", "六", "陆", "⑥", "❻", "roku", "yeoseot", "yuk"},
+    "7": {
+        "seven",
+        "seventh",
+        "7th",
+        "sieben",
+        "siete",
+        "sept",
+        "sete",
+        "семь",
+        "七",
+        "柒",
+        "⑦",
+        "❼",
+        "shichi",
+        "nana",
+        "ilgop",
+        "chil",
+    },
+    "8": {
+        "eight",
+        "eighth",
+        "8th",
+        "acht",
+        "ocho",
+        "huit",
+        "oito",
+        "восемь",
+        "八",
+        "捌",
+        "⑧",
+        "❽",
+        "hachi",
+        "yeodeol",
+        "pal",
+    },
+    "9": {
+        "nine",
+        "ninth",
+        "9th",
+        "neun",
+        "nueve",
+        "neuf",
+        "nove",
+        "девять",
+        "九",
+        "玖",
+        "⑨",
+        "❾",
+        "kyu",
+        "ku",
+        "ahop",
+        "gu",
+    },
+    "10": {"ten", "tenth", "10th", "zehn", "diez", "dix", "dez", "десять", "十", "拾", "⑩", "❿", "ju", "yeol", "sip"},
 }
 
 if False:
-    _('Parentheses ()')
-    _('Square Brackets []')
-    _('Curly Braces {}')
+    _("Parentheses ()")
+    _("Square Brackets []")
+    _("Curly Braces {}")
+
 
 def _has_case(char):
     return char.lower() != char.upper()
@@ -94,7 +261,7 @@ def _get_starting_cased_char(s):
 
 def check_leading_whitespace(source, target):
     """检查开头空格"""
-    whitespace_chars = ' \t'
+    whitespace_chars = " \t"
     src_has = source.lstrip(whitespace_chars) != source
     tgt_has = target.lstrip(whitespace_chars) != target
 
@@ -107,21 +274,21 @@ def check_leading_whitespace(source, target):
 
 def check_trailing_whitespace(source, target):
     """检查结尾空格"""
-    whitespace_chars = ' \t'
-    src_has = source.rstrip('\n\r').endswith(' ') or source.rstrip('\n\r').endswith('\t')
-    tgt_has = target.rstrip('\n\r').endswith(' ') or target.rstrip('\n\r').endswith('\t')
+    src_has = source.rstrip("\n\r").endswith(" ") or source.rstrip("\n\r").endswith("\t")
+    tgt_has = target.rstrip("\n\r").endswith(" ") or target.rstrip("\n\r").endswith("\t")
 
     if src_has and not tgt_has:
         tgt_stripped = target.rstrip()
         if tgt_stripped:
             last_char = tgt_stripped[-1]
-            full_width_puncts = {'：', '。', '？', '！', '，', '；'}
+            full_width_puncts = {"：", "。", "？", "！", "，", "；"}
             if last_char in full_width_puncts:
                 return None
         return _("Translation should end with whitespace")
     if not src_has and tgt_has:
         return _("Translation should not end with whitespace")
     return None
+
 
 def check_starting_punctuation(source, target):
     """检查开头标点"""
@@ -138,14 +305,13 @@ def check_starting_punctuation(source, target):
 
     if s_is_punc != t_is_punc:
         if s_is_punc:
-             expected_t = PUNCTUATION_MAP.get(s_char, s_char)
-             return _("Translation should start with '{char}'").format(char=expected_t)
-        else:
-             return _("Translation should not start with '{char}'").format(char=t_char)
+            expected_t = PUNCTUATION_MAP.get(s_char, s_char)
+            return _("Translation should start with '{char}'").format(char=expected_t)
+        return _("Translation should not start with '{char}'").format(char=t_char)
 
     if s_is_punc:
         expected_t = PUNCTUATION_MAP.get(s_char, s_char)
-        if t_char != expected_t and t_char != s_char:
+        if t_char not in (expected_t, s_char):
             return _("Translation should start with '{char}'").format(char=expected_t)
 
     return None
@@ -159,7 +325,7 @@ def check_ending_punctuation(source, target):
         return None
 
     temp_s = s_strip
-    if temp_s.lower().endswith('(s)'):
+    if temp_s.lower().endswith("(s)"):
         temp_s = temp_s[:-3].rstrip()
         if not temp_s:
             temp_s = s_strip
@@ -171,7 +337,11 @@ def check_ending_punctuation(source, target):
     if src_has_ellipsis and tgt_has_ellipsis:
         return None
     if src_has_ellipsis != tgt_has_ellipsis:
-        return _("Translation should end with an ellipsis") if src_has_ellipsis else _("Translation should not end with an ellipsis")
+        return (
+            _("Translation should end with an ellipsis")
+            if src_has_ellipsis
+            else _("Translation should not end with an ellipsis")
+        )
 
     s_char = temp_s[-1]
     t_char = t_strip[-1]
@@ -181,12 +351,9 @@ def check_ending_punctuation(source, target):
 
     if s_is_punc != t_is_punc:
         if not s_is_punc and t_is_punc:
-            allowed_closing_brackets = {')', ']', '}', '）', '】', '>', '》'}
+            allowed_closing_brackets = {")", "]", "}", "）", "】", ">", "》"}
             if t_char in allowed_closing_brackets:
-                opening_brackets = {
-                    '(': ')', '[': ']', '{': '}',
-                    '（': '）', '【': '】', '<': '>', '《': '》'
-                }
+                opening_brackets = {"(": ")", "[": "]", "{": "}", "（": "）", "【": "】", "<": ">", "《": "》"}
                 reverse_map = {v: k for k, v in opening_brackets.items()}
                 expected_open = reverse_map.get(t_char)
 
@@ -204,7 +371,7 @@ def check_ending_punctuation(source, target):
 
     if s_is_punc:
         expected_t = PUNCTUATION_MAP.get(s_char, s_char)
-        if t_char != expected_t and t_char != s_char:
+        if t_char not in (expected_t, s_char):
             return _("Translation should end with '{char}'").format(char=expected_t)
 
     return None
@@ -218,7 +385,7 @@ def check_capitalization(source, target):
     if s_char and t_char:
         if s_char.isupper() and t_char.islower():
             return _("Translation should start with a capital letter")
-        elif s_char.islower() and t_char.isupper():
+        if s_char.islower() and t_char.isupper():
             return _("Translation should start with a lowercase letter")
     return None
 
@@ -233,11 +400,12 @@ def check_repeated_words(source, target):
 
 def check_newline_count(source, target):
     """检查换行符数量是否一致"""
-    src_count = source.count('\n') + 1
-    tgt_count = target.count('\n') + 1
+    src_count = source.count("\n") + 1
+    tgt_count = target.count("\n") + 1
     if src_count != tgt_count:
         return _("Translation has {tgt} Lines, expected {src} Lines").format(tgt=tgt_count, src=src_count)
     return None
+
 
 def check_pangu_spacing(target):
     """盘古之白：检查中文字符与拉丁字符之间是否缺少空格"""
@@ -255,14 +423,15 @@ def check_pangu_spacing(target):
 
     return None
 
-def check_quotes(source, target, mode='flexible'):
+
+def check_quotes(source, target, mode="flexible"):
     """检查单引号和双引号"""
     single_quote_variants = {"'", "‘", "’", "「", "」"}
     double_quote_variants = {'"', "“", "”", "『", "』", "«", "»", "„"}
 
     def get_quote_counts(text):
         apostrophe_pattern = re.compile(r"(?<!['’])\b\w+(?:['’]\w+|s['’])(?![\w'’])", re.IGNORECASE)
-        text_without_apostrophes = apostrophe_pattern.sub('', text)
+        text_without_apostrophes = apostrophe_pattern.sub("", text)
         single_count = sum(text_without_apostrophes.count(q) for q in single_quote_variants)
         double_count = sum(text_without_apostrophes.count(q) for q in double_quote_variants)
         return single_count, double_count
@@ -270,21 +439,31 @@ def check_quotes(source, target, mode='flexible'):
     src_single_count, src_double_count = get_quote_counts(source)
     tgt_single_count, tgt_double_count = get_quote_counts(target)
 
-    if mode == 'strict':
+    if mode == "strict":
         errors = []
         if src_single_count != tgt_single_count:
-            errors.append(_("Single quotes mismatch (source: {src_count}, target: {tgt_count})").format(src_count=src_single_count, tgt_count=tgt_single_count))
+            errors.append(
+                _("Single quotes mismatch (source: {src_count}, target: {tgt_count})").format(
+                    src_count=src_single_count, tgt_count=tgt_single_count
+                )
+            )
         if src_double_count != tgt_double_count:
-            errors.append(_("Double quotes mismatch (source: {src_count}, target: {tgt_count})").format(src_count=src_double_count, tgt_count=tgt_double_count))
+            errors.append(
+                _("Double quotes mismatch (source: {src_count}, target: {tgt_count})").format(
+                    src_count=src_double_count, tgt_count=tgt_double_count
+                )
+            )
         return " | ".join(errors) if errors else None
 
-    elif mode == 'flexible':
+    if mode == "flexible":
         # 灵活模式：只比较引号总数
         src_total_quotes = src_single_count + src_double_count
         tgt_total_quotes = tgt_single_count + tgt_double_count
 
         if src_total_quotes != tgt_total_quotes:
-            return _("Quote count mismatch (source: {src_total}, target: {tgt_total})").format(src_total=src_total_quotes, tgt_total=tgt_total_quotes)
+            return _("Quote count mismatch (source: {src_total}, target: {tgt_total})").format(
+                src_total=src_total_quotes, tgt_total=tgt_total_quotes
+            )
 
     return None
 
@@ -301,12 +480,12 @@ def strip_accelerators(text, markers):
     for marker in markers:
         if marker in cleaned_text:
             # Remove pattern in parens: "File (&F)" -> "File "
-            pattern_in_parens = re.compile(r'\s*\(' + re.escape(marker) + r'.\)')
-            cleaned_text = pattern_in_parens.sub('', cleaned_text)
+            pattern_in_parens = re.compile(r"\s*\(" + re.escape(marker) + r".\)")
+            cleaned_text = pattern_in_parens.sub("", cleaned_text)
 
             # Remove prefix pattern: "&File" -> "File"
-            pattern_prefix = re.compile(r'(?<!' + re.escape(marker) + r')' + re.escape(marker) + r'(\w)')
-            cleaned_text = pattern_prefix.sub(r'\1', cleaned_text)
+            pattern_prefix = re.compile(r"(?<!" + re.escape(marker) + r")" + re.escape(marker) + r"(\w)")
+            cleaned_text = pattern_prefix.sub(r"\1", cleaned_text)
     return cleaned_text
 
 
@@ -316,7 +495,7 @@ def check_accelerators(source, target, markers):
         return None
     errors = []
     for marker in markers:
-        pattern = re.compile(r'(?<!' + re.escape(marker) + r')' + re.escape(marker) + r'\w')
+        pattern = re.compile(r"(?<!" + re.escape(marker) + r")" + re.escape(marker) + r"\w")
 
         src_count = len(pattern.findall(source))
         tgt_count = len(pattern.findall(target))
@@ -348,13 +527,13 @@ def _compare_counts(src_list, tgt_list):
 def _format_missing_extra(missing, extra, label):
     parts = []
     if missing:
-        parts.append(_("Missing {label}: {items}").format(label=label, items=', '.join(missing)))
+        parts.append(_("Missing {label}: {items}").format(label=label, items=", ".join(missing)))
     if extra:
-        parts.append(_("Extra {label}: {items}").format(label=label, items=', '.join(extra)))
+        parts.append(_("Extra {label}: {items}").format(label=label, items=", ".join(extra)))
     return " | ".join(parts)
 
 
-def check_printf(source, target, mode='loose'):
+def check_printf(source, target, mode="loose"):
     def get_normalized_printf_matches(text, label=_("Text")):
         matches = []
         raw_matches = []  # For logging
@@ -363,27 +542,28 @@ def check_printf(source, target, mode='loose'):
             full_match = m.group(0)
 
             # 过滤误判
-            if not full_match.startswith('%') or (
-                    len(full_match) > 1 and full_match[1].isdigit() and '$' not in full_match and full_match != '%%'):
+            if not full_match.startswith("%") or (
+                len(full_match) > 1 and full_match[1].isdigit() and "$" not in full_match and full_match != "%%"
+            ):
                 pass
-            elif re.fullmatch(r'%\s+[a-zA-Z]', full_match):
+            elif re.fullmatch(r"%\s+[a-zA-Z]", full_match):
                 if m.end() < len(text) and text[m.end()].isalpha():
                     continue
 
             normalized_match = full_match
 
-            if mode == 'loose':
-                if full_match == '%%':
-                    normalized_match = '%%'
-                elif full_match[1:].isdigit() and '$' not in full_match:
+            if mode == "loose":
+                if full_match == "%%":
+                    normalized_match = "%%"
+                elif full_match[1:].isdigit() and "$" not in full_match:
                     normalized_match = full_match
                 else:
                     # 1. 移除位置参数 (例如 %1$s -> %s)
-                    normalized_match = re.sub(r'\d+\$', '', normalized_match)
+                    normalized_match = re.sub(r"\d+\$", "", normalized_match)
                     # 2. 移除修饰符 (-+ 0#)
-                    normalized_match = re.sub(r'[-+ 0#]', '', normalized_match)
+                    normalized_match = re.sub(r"[-+ 0#]", "", normalized_match)
                     # 3. 移除宽度和精度 (例如 %2d -> %d, %.2f -> %f)
-                    normalized_match = re.sub(r'\d+(\.\d+)?', '', normalized_match)
+                    normalized_match = re.sub(r"\d+(\.\d+)?", "", normalized_match)
                     # 4. 归一化时间格式字符
                     type_char = normalized_match[-1]
                     if type_char in STRFTIME_EQUIVALENCE:
@@ -403,8 +583,8 @@ def check_printf(source, target, mode='loose'):
 
 
 def check_python_brace(source, target):
-    src_clean = source.replace('{{', '').replace('}}', '')
-    tgt_clean = target.replace('{{', '').replace('}}', '')
+    src_clean = source.replace("{{", "").replace("}}", "")
+    tgt_clean = target.replace("{{", "").replace("}}", "")
     src_fmt = RE_PYTHON_BRACE.findall(src_clean)
     tgt_fmt = RE_PYTHON_BRACE.findall(tgt_clean)
     missing, extra = _compare_counts(src_fmt, tgt_fmt)
@@ -414,7 +594,7 @@ def check_python_brace(source, target):
 
 
 def check_icu_placeholders(source, target):
-    pattern = re.compile(r'\{(?:[^{}]|(?R))*\}')
+    pattern = re.compile(r"\{(?:[^{}]|(?R))*\}")
 
     def extract_vars(text):
         vars_list = []
@@ -422,8 +602,8 @@ def check_icu_placeholders(source, target):
             block = match.group(0)
             inner = block[1:-1].strip()
 
-            if re.search(r'^[a-zA-Z0-9_]+\s*,\s*(plural|select|gender)\s*,', inner):
-                var_match = re.match(r'^([a-zA-Z0-9_]+)', inner)
+            if re.search(r"^[a-zA-Z0-9_]+\s*,\s*(plural|select|gender)\s*,", inner):
+                var_match = re.match(r"^([a-zA-Z0-9_]+)", inner)
                 if var_match:
                     vars_list.append(var_match.group(1))
         return vars_list
@@ -435,6 +615,7 @@ def check_icu_placeholders(source, target):
     if missing or extra:
         return _format_missing_extra(missing, extra, _("ICU placeholder"))
     return None
+
 
 def check_urls_emails(source, target):
     """检查 URL 和 Email 是否匹配"""
@@ -465,25 +646,25 @@ def check_urls_emails(source, target):
     return " | ".join(errors) if errors else None
 
 
-def check_numbers(source, target, mode='loose'):
+def check_numbers(source, target, mode="loose"):
     # 1. 预处理：清理干扰项
-    icu_selector_pattern = re.compile(r'=\d+\s*\{')
-    src_clean = icu_selector_pattern.sub('', source)
-    tgt_clean = icu_selector_pattern.sub('', target)
+    icu_selector_pattern = re.compile(r"=\d+\s*\{")
+    src_clean = icu_selector_pattern.sub("", source)
+    tgt_clean = icu_selector_pattern.sub("", target)
 
-    src_clean = RE_PYTHON_BRACE.sub('', src_clean)
-    src_clean = RE_PRINTF.sub('', src_clean)
-    src_clean = RE_HTML_ENTITY_NUM.sub('', src_clean)
+    src_clean = RE_PYTHON_BRACE.sub("", src_clean)
+    src_clean = RE_PRINTF.sub("", src_clean)
+    src_clean = RE_HTML_ENTITY_NUM.sub("", src_clean)
 
-    tgt_clean = RE_PYTHON_BRACE.sub('', tgt_clean)
-    tgt_clean = RE_PRINTF.sub('', tgt_clean)
-    tgt_clean = RE_HTML_ENTITY_NUM.sub('', tgt_clean)
+    tgt_clean = RE_PYTHON_BRACE.sub("", tgt_clean)
+    tgt_clean = RE_PRINTF.sub("", tgt_clean)
+    tgt_clean = RE_HTML_ENTITY_NUM.sub("", tgt_clean)
 
     # 2. 提取阿拉伯数字
     # 即使在严格模式下，也先处理一下英文序数词后缀(1st->1)，防止误报
-    ordinal_re = re.compile(r'(\d+)(st|nd|rd|th)\b', re.IGNORECASE)
-    src_clean = ordinal_re.sub(r'\1', src_clean)
-    tgt_clean = ordinal_re.sub(r'\1', tgt_clean)
+    ordinal_re = re.compile(r"(\d+)(st|nd|rd|th)\b", re.IGNORECASE)
+    src_clean = ordinal_re.sub(r"\1", src_clean)
+    tgt_clean = ordinal_re.sub(r"\1", tgt_clean)
 
     src_nums = RE_NUMBER.findall(src_clean)
     tgt_nums = RE_NUMBER.findall(tgt_clean)
@@ -510,7 +691,7 @@ def check_numbers(source, target, mode='loose'):
             # 情况 A: Missing (原文有，译文缺)
             # 检查豁免：是否将数字翻译成了单词 (例如: "1" -> "One")
             is_exempt = False
-            if mode == 'loose' and num in NUMBER_WORD_MAP:
+            if mode == "loose" and num in NUMBER_WORD_MAP:
                 for word in NUMBER_WORD_MAP[num]:
                     if word.lower() in target.lower():
                         is_exempt = True
@@ -523,7 +704,7 @@ def check_numbers(source, target, mode='loose'):
             # 情况 B: Extra (译文多，原文缺)
             # 检查豁免：是否将单词翻译成了数字 (例如: "Zero" -> "0")
             is_exempt = False
-            if mode == 'loose' and num in NUMBER_WORD_MAP:
+            if mode == "loose" and num in NUMBER_WORD_MAP:
                 for word in NUMBER_WORD_MAP[num]:
                     if word.lower() in source.lower():
                         is_exempt = True
@@ -540,21 +721,19 @@ def check_numbers(source, target, mode='loose'):
 def check_brackets(source, target):
     """检查括号是否成对且数量一致"""
     bracket_groups = [
-        ('(', ')', '（', '）', 'Parentheses ()'),
-        ('[', ']', '【', '】', 'Square Brackets []'),
-        ('{', '}', None, None, 'Curly Braces {}'),
+        ("(", ")", "（", "）", "Parentheses ()"),
+        ("[", "]", "【", "】", "Square Brackets []"),
+        ("{", "}", None, None, "Curly Braces {}"),
     ]
 
     # 使用全局正则移除 HTML 标签
-    s_plural_re = re.compile(r'\(s\)', re.IGNORECASE)
-    source_clean = s_plural_re.sub('', source)
-    target_clean = s_plural_re.sub('', target)
+    s_plural_re = re.compile(r"\(s\)", re.IGNORECASE)
+    source_clean = s_plural_re.sub("", source)
+    target_clean = s_plural_re.sub("", target)
 
     errors = []
 
     for en_open, en_close, cn_open, cn_close, desc in bracket_groups:
-
-
         # 1. 计算原文中的括号总数
         src_open_count = source_clean.count(en_open) + (source_clean.count(cn_open) if cn_open else 0)
 
@@ -573,6 +752,7 @@ def check_brackets(source, target):
 
     return " | ".join(errors) if errors else None
 
+
 def check_double_space(source, target):
     if "  " in target and "  " not in source:
         return _("Translation contains double spaces")
@@ -585,8 +765,8 @@ def check_html_tags(source, target):
         for m in RE_HTML_TAG.finditer(text):
             tag_content = m.group(0)
             inner_content = tag_content[1:-1]
-            if ' ' in inner_content and '=' not in inner_content:
-                if not inner_content.strip().endswith('/'):
+            if " " in inner_content and "=" not in inner_content:
+                if not inner_content.strip().endswith("/"):
                     continue
 
             tags.append(html.escape(tag_content))

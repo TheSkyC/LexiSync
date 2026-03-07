@@ -1,16 +1,30 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QComboBox, QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox,
-    QAbstractItemView, QMenu, QGroupBox, QGridLayout, QSizePolicy
-)
+import logging
+import os
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction, QCursor
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QComboBox,
+    QDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QSizePolicy,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+)
+
 from utils.localization import _
-import os
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +40,7 @@ class ResourceViewerDialog(QDialog):
     COLUMN_TGT_LANG = 4
     COLUMN_SOURCE_FILE = 5
 
-    def __init__(self, parent, app_instance, mode='tm', initial_source_key=None, initial_db_type=None):
+    def __init__(self, parent, app_instance, mode="tm", initial_source_key=None, initial_db_type=None):
         super().__init__(parent)
         self.app = app_instance
         self.mode = mode
@@ -50,21 +64,21 @@ class ResourceViewerDialog(QDialog):
 
     def _init_service(self):
         """初始化服务"""
-        if hasattr(self.app, 'plugin_manager'):
-            viewers = self.app.plugin_manager.run_hook('register_resource_viewers')
+        if hasattr(self.app, "plugin_manager"):
+            viewers = self.app.plugin_manager.run_hook("register_resource_viewers")
             if viewers:
                 for v in viewers:
-                    self.custom_services[v['id']] = v
+                    self.custom_services[v["id"]] = v
 
-        if self.mode == 'tm':
+        if self.mode == "tm":
             self.service = self.app.tm_service
             self.title_prefix = _("Translation Memory Viewer")
-        elif self.mode == 'glossary':
+        elif self.mode == "glossary":
             self.service = self.app.glossary_service
             self.title_prefix = _("Glossary Viewer")
         elif self.mode in self.custom_services:
-            self.service = self.custom_services[self.mode]['service']
-            self.title_prefix = self.custom_services[self.mode]['name']
+            self.service = self.custom_services[self.mode]["service"]
+            self.title_prefix = self.custom_services[self.mode]["name"]
 
         self.db_path = None
 
@@ -75,25 +89,17 @@ class ResourceViewerDialog(QDialog):
         self.setWindowFlags(Qt.Window)
 
     def _load_initial_data(self):
-
         try:
             self.on_db_changed(self.db_selector.currentIndex())
         except Exception as e:
             logger.error(f"Failed to load initial data: {e}", exc_info=True)
-            QMessageBox.warning(
-                self,
-                _("Error"),
-                _("Failed to load data: {error}").format(error=str(e))
-            )
+            QMessageBox.warning(self, _("Error"), _("Failed to load data: {error}").format(error=str(e)))
 
     def on_db_changed(self, index):
         try:
             # 更新数据库路径
             db_type = self.db_selector.itemData(index)
-            self.db_path = (
-                self.service.project_db_path if db_type == "project"
-                else self.service.global_db_path
-            )
+            self.db_path = self.service.project_db_path if db_type == "project" else self.service.global_db_path
 
             if not self.db_path or not os.path.exists(self.db_path):
                 logger.warning(f"Database path does not exist: {self.db_path}")
@@ -110,11 +116,7 @@ class ResourceViewerDialog(QDialog):
 
         except Exception as e:
             logger.error(f"Failed to change database: {e}", exc_info=True)
-            QMessageBox.warning(
-                self,
-                _("Error"),
-                _("Failed to switch database: {error}").format(error=str(e))
-            )
+            QMessageBox.warning(self, _("Error"), _("Failed to switch database: {error}").format(error=str(e)))
 
     def _reset_all_filters(self):
         for combo in [self.source_combo, self.src_lang_combo, self.tgt_lang_combo]:
@@ -162,7 +164,7 @@ class ResourceViewerDialog(QDialog):
         self.mode_selector.addItem(_("Glossary"), "glossary")
 
         for mode_id, info in self.custom_services.items():
-            self.mode_selector.addItem(info['name'], mode_id)
+            self.mode_selector.addItem(info["name"], mode_id)
 
         initial_index = self.mode_selector.findData(self.mode)
         if initial_index != -1:
@@ -260,14 +262,9 @@ class ResourceViewerDialog(QDialog):
         """创建数据表格"""
         self.table = QTableWidget()
         self.table.setColumnCount(6)
-        self.table.setHorizontalHeaderLabels([
-            "ID",
-            _("Source Text"),
-            _("Target Text"),
-            _("Src"),
-            _("Tgt"),
-            _("Source File")
-        ])
+        self.table.setHorizontalHeaderLabels(
+            ["ID", _("Source Text"), _("Target Text"), _("Src"), _("Tgt"), _("Source File")]
+        )
         self.table.hideColumn(self.COLUMN_ID)
 
         # 设置列宽策略
@@ -336,18 +333,16 @@ class ResourceViewerDialog(QDialog):
                 manual_key = None
             else:
                 manifest_path = os.path.join(os.path.dirname(self.db_path), "manifest.json")
-                if self.mode == 'tm':
+                if self.mode == "tm":
                     manifest = self.app.tm_service._read_manifest(manifest_path)
-                    manual_key = 'manual'
+                    manual_key = "manual"
                 else:
                     manifest = self.app.glossary_service._read_manifest(manifest_path)
-                    manual_key = 'manual_project' if self.app.is_project_mode else 'manual_global'
+                    manual_key = "manual_project" if self.app.is_project_mode else "manual_global"
 
             sources = list(manifest.get("imported_sources", {}).keys())
 
-            if manual_key and self.service.get_entry_count_by_source(
-                    os.path.dirname(self.db_path), manual_key
-            ) > 0:
+            if manual_key and self.service.get_entry_count_by_source(os.path.dirname(self.db_path), manual_key) > 0:
                 sources.insert(0, manual_key)
 
             self.source_combo.addItems(sources)
@@ -388,43 +383,22 @@ class ResourceViewerDialog(QDialog):
             self._update_pagination_ui()
 
             # 获取当前页数据
-            rows = self.service.query_entries(
-                self.db_path,
-                self.current_page,
-                self.page_size,
-                **filters
-            )
+            rows = self.service.query_entries(self.db_path, self.current_page, self.page_size, **filters)
 
             # 填充表格
             self._populate_table(rows)
 
         except Exception as e:
             logger.error(f"Failed to load data: {e}", exc_info=True)
-            QMessageBox.warning(
-                self,
-                _("Error"),
-                _("Failed to load data: {error}").format(error=str(e))
-            )
+            QMessageBox.warning(self, _("Error"), _("Failed to load data: {error}").format(error=str(e)))
 
     def _get_current_filters(self):
         """获取当前筛选条件"""
         return {
-            'source_key': (
-                self.source_combo.currentText()
-                if self.source_combo.currentData() != "All"
-                else None
-            ),
-            'src_lang': (
-                self.src_lang_combo.currentText()
-                if self.src_lang_combo.currentData() != "All"
-                else None
-            ),
-            'tgt_lang': (
-                self.tgt_lang_combo.currentText()
-                if self.tgt_lang_combo.currentData() != "All"
-                else None
-            ),
-            'search_term': self.search_edit.text().strip()
+            "source_key": (self.source_combo.currentText() if self.source_combo.currentData() != "All" else None),
+            "src_lang": (self.src_lang_combo.currentText() if self.src_lang_combo.currentData() != "All" else None),
+            "tgt_lang": (self.tgt_lang_combo.currentText() if self.tgt_lang_combo.currentData() != "All" else None),
+            "search_term": self.search_edit.text().strip(),
         }
 
     def _update_pagination_ui(self):
@@ -436,16 +410,10 @@ class ResourceViewerDialog(QDialog):
         total_pages = max(1, (self.total_count + self.page_size - 1) // self.page_size)
 
         # 确保当前页在有效范围内
-        if self.current_page > total_pages:
-            self.current_page = total_pages
+        self.current_page = min(self.current_page, total_pages)
 
         # 更新页码标签
-        self.page_label.setText(
-            _("Page {current} / {total}").format(
-                current=self.current_page,
-                total=total_pages
-            )
-        )
+        self.page_label.setText(_("Page {current} / {total}").format(current=self.current_page, total=total_pages))
 
         # 更新按钮状态
         self.prev_btn.setEnabled(self.current_page > 1)
@@ -469,47 +437,27 @@ class ResourceViewerDialog(QDialog):
     def _populate_table_row(self, row_index, row_data):
         """填充单行数据"""
         # ID列
-        self.table.setItem(
-            row_index,
-            self.COLUMN_ID,
-            QTableWidgetItem(str(row_data['id']))
-        )
+        self.table.setItem(row_index, self.COLUMN_ID, QTableWidgetItem(str(row_data["id"])))
 
         # 源文本
-        src_item = QTableWidgetItem(row_data['source_text'])
-        src_item.setToolTip(row_data['source_text'])
+        src_item = QTableWidgetItem(row_data["source_text"])
+        src_item.setToolTip(row_data["source_text"])
         self.table.setItem(row_index, self.COLUMN_SOURCE, src_item)
 
         # 目标文本
-        tgt_item = QTableWidgetItem(row_data['target_text'])
-        tgt_item.setToolTip(row_data['target_text'])
+        tgt_item = QTableWidgetItem(row_data["target_text"])
+        tgt_item.setToolTip(row_data["target_text"])
         self.table.setItem(row_index, self.COLUMN_TARGET, tgt_item)
 
         # 元数据列
-        self.table.setItem(
-            row_index,
-            self.COLUMN_SRC_LANG,
-            QTableWidgetItem(row_data['source_lang'])
-        )
-        self.table.setItem(
-            row_index,
-            self.COLUMN_TGT_LANG,
-            QTableWidgetItem(row_data['target_lang'])
-        )
-        self.table.setItem(
-            row_index,
-            self.COLUMN_SOURCE_FILE,
-            QTableWidgetItem(row_data['source_manifest_key'])
-        )
+        self.table.setItem(row_index, self.COLUMN_SRC_LANG, QTableWidgetItem(row_data["source_lang"]))
+        self.table.setItem(row_index, self.COLUMN_TGT_LANG, QTableWidgetItem(row_data["target_lang"]))
+        self.table.setItem(row_index, self.COLUMN_SOURCE_FILE, QTableWidgetItem(row_data["source_manifest_key"]))
         from PySide6.QtGui import QColor
+
         read_only_bg = QColor("#EFEFEF")
 
-        read_only_cols = [
-            self.COLUMN_ID,
-            self.COLUMN_SRC_LANG,
-            self.COLUMN_TGT_LANG,
-            self.COLUMN_SOURCE_FILE
-        ]
+        read_only_cols = [self.COLUMN_ID, self.COLUMN_SRC_LANG, self.COLUMN_TGT_LANG, self.COLUMN_SOURCE_FILE]
 
         for col in read_only_cols:
             item = self.table.item(row_index, col)
@@ -533,14 +481,14 @@ class ResourceViewerDialog(QDialog):
 
             success = False
 
-            if self.mode == 'tm':
+            if self.mode == "tm":
                 if column == self.COLUMN_TARGET:
                     success = self.service.update_entry_target(self.db_path, entry_id, new_text)
                 elif column == self.COLUMN_SOURCE:
                     success = self.service.update_entry_source(self.db_path, entry_id, new_text)
 
-            elif self.mode == 'glossary':
-                is_source_col = (column == self.COLUMN_SOURCE)
+            elif self.mode == "glossary":
+                is_source_col = column == self.COLUMN_SOURCE
                 success = self.service.update_term_text(self.db_path, entry_id, is_source_col, new_text)
 
             if success:
@@ -552,8 +500,9 @@ class ResourceViewerDialog(QDialog):
 
         except Exception as e:
             logger.error(f"Failed to update entry: {e}", exc_info=True)
-            QMessageBox.warning(self, _("Error"),
-                                _("Failed to update entry.\nIt might be a duplicate or database is locked."))
+            QMessageBox.warning(
+                self, _("Error"), _("Failed to update entry.\nIt might be a duplicate or database is locked.")
+            )
             # 刷新回滚
             self.load_data()
 
@@ -582,10 +531,8 @@ class ResourceViewerDialog(QDialog):
             reply = QMessageBox.question(
                 self,
                 _("Confirm Delete"),
-                _("Are you sure you want to delete this entry?\n\n{src}").format(
-                    src=src_text[:50]
-                ),
-                QMessageBox.Yes | QMessageBox.No
+                _("Are you sure you want to delete this entry?\n\n{src}").format(src=src_text[:50]),
+                QMessageBox.Yes | QMessageBox.No,
             )
 
             if reply == QMessageBox.Yes:

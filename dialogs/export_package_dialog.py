@@ -1,14 +1,26 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-                               QCheckBox, QLineEdit, QProgressBar, QMessageBox,
-                               QGroupBox, QPushButton, QFileDialog, QWidget)
-from PySide6.QtCore import Qt, QThread
-from services.package_service import PackageWorker, HAS_PYZIPPER
+import os
+
+from PySide6.QtCore import QThread
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+from services.package_service import HAS_PYZIPPER, PackageWorker
 from ui_components.password_edit import PasswordEdit
 from utils.localization import _
-import os
 
 
 class ExportPackageDialog(QDialog):
@@ -32,7 +44,7 @@ class ExportPackageDialog(QDialog):
         lang_layout = QVBoxLayout(lang_group)
 
         self.lang_checkboxes = {}
-        langs = self.app.project_config.get('target_languages', [])
+        langs = self.app.project_config.get("target_languages", [])
         for lang in langs:
             cb = QCheckBox(lang)
             cb.setChecked(True)
@@ -115,18 +127,18 @@ class ExportPackageDialog(QDialog):
         pwd = self.pwd_input.text() if self.cb_encrypt.isChecked() else None
 
         return {
-            'langs': selected_langs,
-            'include_tm': self.cb_tm.isChecked(),
-            'include_glossary': self.cb_glossary.isChecked(),
-            'password': pwd
+            "langs": selected_langs,
+            "include_tm": self.cb_tm.isChecked(),
+            "include_glossary": self.cb_glossary.isChecked(),
+            "password": pwd,
         }
 
     def validate_inputs(self, options):
-        if not options['langs']:
+        if not options["langs"]:
             QMessageBox.warning(self, _("Warning"), _("Please select at least one language to export."))
             return False
 
-        if self.cb_encrypt.isChecked() and len(options['password']) < 4:
+        if self.cb_encrypt.isChecked() and len(options["password"]) < 4:
             QMessageBox.warning(self, _("Warning"), _("Password must be at least 4 characters long."))
             return False
 
@@ -139,9 +151,10 @@ class ExportPackageDialog(QDialog):
 
         default_name = f"{self.app.project_config.get('name', 'Project')}.lexipack"
         export_path, __ = QFileDialog.getSaveFileName(
-            self, _("Save Package As"),
-            os.path.join(self.app.config.get('last_dir', ''), default_name),
-            "LexiSync Package (*.lexipack)"
+            self,
+            _("Save Package As"),
+            os.path.join(self.app.config.get("last_dir", ""), default_name),
+            "LexiSync Package (*.lexipack)",
         )
 
         if not export_path:
@@ -150,7 +163,8 @@ class ExportPackageDialog(QDialog):
         # Disable UI during export
         self.btn_export.setEnabled(False)
         self.btn_cancel.setEnabled(False)
-        for cb in self.lang_checkboxes.values(): cb.setEnabled(False)
+        for cb in self.lang_checkboxes.values():
+            cb.setEnabled(False)
         self.cb_tm.setEnabled(False)
         self.cb_glossary.setEnabled(False)
         self.cb_encrypt.setEnabled(False)
@@ -196,7 +210,8 @@ class ExportPackageDialog(QDialog):
 
             # Re-enable UI for retry
             self.btn_export.setEnabled(True)
-            for cb in self.lang_checkboxes.values(): cb.setEnabled(True)
+            for cb in self.lang_checkboxes.values():
+                cb.setEnabled(True)
             self.cb_tm.setEnabled(True)
             self.cb_glossary.setEnabled(True)
             self.cb_encrypt.setEnabled(HAS_PYZIPPER)

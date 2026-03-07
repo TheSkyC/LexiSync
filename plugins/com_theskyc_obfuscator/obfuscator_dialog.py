@@ -1,12 +1,12 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QCheckBox, QDialogButtonBox, QGroupBox, QSlider, QLabel, QHBoxLayout
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QGroupBox, QHBoxLayout, QLabel, QSlider, QVBoxLayout
 
 
 class ObfuscatorDialog(QDialog):
-    def __init__(self, parent, config, translator, is_settings_only = False):
+    def __init__(self, parent, config, translator, is_settings_only=False):
         super().__init__(parent)
         self._ = translator
         self.config = config.copy()
@@ -26,20 +26,20 @@ class ObfuscatorDialog(QDialog):
         options_layout = QVBoxLayout(options_group)
 
         self.options_map = {
-            'obfuscate_rules': self._("Pad with Fake Rules"),
-            'obfuscate_strings': self._("Obfuscate Strings"),
-            'remove_comments': self._("Remove Comments"),
-            'remove_rule_names': self._("Remove Rule Names"),
-            'obfuscate_variables': self._("Obfuscate Variables & Subroutines (UNSTABLE)")
+            "obfuscate_rules": self._("Pad with Fake Rules"),
+            "obfuscate_strings": self._("Obfuscate Strings"),
+            "remove_comments": self._("Remove Comments"),
+            "remove_rule_names": self._("Remove Rule Names"),
+            "obfuscate_variables": self._("Obfuscate Variables & Subroutines (UNSTABLE)"),
         }
 
         self.checkboxes = {}
         defaults = {
-            'obfuscate_rules': True,
-            'obfuscate_strings': True,
-            'remove_comments': True,
-            'remove_rule_names': True,
-            'obfuscate_variables': False
+            "obfuscate_rules": True,
+            "obfuscate_strings": True,
+            "remove_comments": True,
+            "remove_rule_names": True,
+            "obfuscate_variables": False,
         }
 
         for key, text in self.options_map.items():
@@ -55,7 +55,7 @@ class ObfuscatorDialog(QDialog):
 
         self.complexity_slider = QSlider(Qt.Horizontal)
         self.complexity_slider.setRange(1, 100)
-        self.complexity_slider.setValue(self.config.get('complexity', 50))
+        self.complexity_slider.setValue(self.config.get("complexity", 50))
 
         self.complexity_label = QLabel(f"{self.complexity_slider.value()}%")
         self.complexity_label.setFixedWidth(40)
@@ -77,5 +77,5 @@ class ObfuscatorDialog(QDialog):
 
     def get_options(self):
         selected = {key: cb.isChecked() for key, cb in self.checkboxes.items()}
-        selected['complexity'] = self.complexity_slider.value()
+        selected["complexity"] = self.complexity_slider.value()
         return selected

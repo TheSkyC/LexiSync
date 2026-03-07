@@ -1,12 +1,21 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QCheckBox, QWidget, QMessageBox, QGroupBox, QAbstractItemView, QApplication
+    QApplication,
+    QCheckBox,
+    QDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, QItemSelectionModel, QEvent
-import re
+
 from utils.localization import _
 
 
@@ -121,7 +130,7 @@ class AdvancedSearchDialog(QDialog):
         if not self.search_term_entry.text():
             clipboard = QApplication.clipboard()
             clipboard_text = clipboard.text()
-            if clipboard_text and '\n' not in clipboard_text and 0 < len(clipboard_text) < 40:
+            if clipboard_text and "\n" not in clipboard_text and 0 < len(clipboard_text) < 40:
                 self.search_term_entry.setText(clipboard_text)
                 self.search_term_entry.selectAll()
 
@@ -135,9 +144,8 @@ class AdvancedSearchDialog(QDialog):
             "case": self.case_sensitive_checkbox.isChecked(),
             "in_orig": self.search_in_original_checkbox.isChecked(),
             "in_trans": self.search_in_translation_checkbox.isChecked(),
-            "in_comment": self.search_in_comment_checkbox.isChecked()
+            "in_comment": self.search_in_comment_checkbox.isChecked(),
         }
-
 
     def eventFilter(self, obj, event):
         if obj is self.search_term_entry and event.type() == QEvent.Type.KeyPress:
@@ -148,7 +156,8 @@ class AdvancedSearchDialog(QDialog):
 
     def _find_next(self):
         term = self.search_term_entry.text()
-        if not term: return
+        if not term:
+            return
 
         opts = self._get_current_search_options()
         count = self.service.perform_search(term, opts)
@@ -162,7 +171,8 @@ class AdvancedSearchDialog(QDialog):
 
     def _find_prev(self):
         term = self.search_term_entry.text()
-        if not term: return
+        if not term:
+            return
 
         opts = self._get_current_search_options()
         count = self.service.perform_search(term, opts)
@@ -177,14 +187,16 @@ class AdvancedSearchDialog(QDialog):
     def _replace_current(self):
         term = self.search_term_entry.text()
         replace_with = self.replace_term_entry.text()
-        if not term: return
+        if not term:
+            return
 
         opts = self._get_current_search_options()
         self.service.perform_search(term, opts)
 
         if self.service.current_result_index == -1:
             self._find_next()  # Highlight first match
-            if self.service.current_result_index == -1: return
+            if self.service.current_result_index == -1:
+                return
 
         success = self.service.replace_current(replace_with)
 
@@ -196,7 +208,8 @@ class AdvancedSearchDialog(QDialog):
     def _replace_all(self):
         term = self.search_term_entry.text()
         replace_with = self.replace_term_entry.text()
-        if not term: return
+        if not term:
+            return
 
         opts = self._get_current_search_options()
         self.service.perform_search(term, opts)
@@ -204,8 +217,9 @@ class AdvancedSearchDialog(QDialog):
         count = self.service.replace_all(replace_with)
 
         if count > 0:
-            QMessageBox.information(self, _("Replace All Complete"),
-                                    _("Replaced occurrences in {count} item(s).").format(count=count))
+            QMessageBox.information(
+                self, _("Replace All Complete"), _("Replaced occurrences in {count} item(s).").format(count=count)
+            )
         else:
             QMessageBox.information(self, _("Info"), _("No matches found to replace."))
 

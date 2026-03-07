@@ -1,10 +1,12 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import os
-import requests
-import shutil
 import logging
+import os
+import shutil
+
+import requests
+
 from .constants import SUPPORTED_MODELS
 
 logger = logging.getLogger(__name__)
@@ -50,14 +52,14 @@ class ModelManager:
             try:
                 self._download_file(url, save_path)
             except Exception as e:
-                raise Exception(f"Failed to download {filename}: {e}")
+                raise Exception(f"Failed to download {filename}: {e}") from e
 
         progress_callback(100, "Download Complete")
 
     def _download_file(self, url, save_path):
         with requests.get(url, stream=True, timeout=30) as r:
             r.raise_for_status()
-            with open(save_path, 'wb') as f:
+            with open(save_path, "wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
@@ -66,8 +68,10 @@ class ModelManager:
         复制本地文件夹到模型目录
         """
         # 验证
-        if not (os.path.exists(os.path.join(src_path, "model.onnx")) or
-                os.path.exists(os.path.join(src_path, "model_quantized.onnx"))):
+        if not (
+            os.path.exists(os.path.join(src_path, "model.onnx"))
+            or os.path.exists(os.path.join(src_path, "model_quantized.onnx"))
+        ):
             raise ValueError("Source folder must contain 'model.onnx' or 'model_quantized.onnx'")
 
         if not os.path.exists(os.path.join(src_path, "tokenizer.json")):

@@ -1,15 +1,23 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton,
-    QGroupBox, QSplitter, QWidget, QMessageBox, QProgressBar
-)
-from PySide6.QtCore import Qt, QThread, Signal
-from utils.localization import _
-from services.smart_translation_service import SmartTranslationService
 import json
 import re
+
+from PySide6.QtCore import QThread, Signal
+from PySide6.QtWidgets import (
+    QDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+)
+
+from utils.localization import _
 
 
 class RegexGenWorker(QThread):
@@ -33,9 +41,7 @@ class RegexGenWorker(QThread):
                 return
 
             prompt = self._build_prompt()
-            response = self.app.ai_translator.translate(
-                self.sample, prompt, temperature=0.1
-            )
+            response = self.app.ai_translator.translate(self.sample, prompt, temperature=0.1)
 
             if self._is_cancelled:
                 return
@@ -61,19 +67,19 @@ class RegexGenWorker(QThread):
             re.compile(data["left"])
             re.compile(data["right"])
         except re.error as e:
-            raise ValueError(f"Invalid regex syntax: {str(e)}")
+            raise ValueError(f"Invalid regex syntax: {e!s}") from e
 
     def _parse_json(self, text):
         """改进的JSON解析,支持多种格式"""
         original_text = text
 
         # 1. 移除 Markdown 代码块
-        text = re.sub(r'^```(?:json)?\s*', '', text.strip(), flags=re.MULTILINE)
-        text = re.sub(r'\s*```$', '', text.strip())
+        text = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.MULTILINE)
+        text = re.sub(r"\s*```$", "", text.strip())
 
         # 2. 移除可能的前导/尾随文本说明
         # AI有时会添加 "Here's the result:" 之类的说明
-        json_match = re.search(r'\{[\s\S]*\}', text)
+        json_match = re.search(r"\{[\s\S]*\}", text)
         if json_match:
             text = json_match.group(0)
 
@@ -107,17 +113,12 @@ class RegexGenWorker(QThread):
 
         return (
             "You are a Regex Pattern Expert. Generate Python regular expressions to extract specific content.\n\n"
-
             "### Task\n"
             "Identify patterns that appear immediately BEFORE and AFTER the target content.\n"
             "We'll use these as delimiters: LEFT_PATTERN + [TARGET_CONTENT] + RIGHT_PATTERN\n\n"
-
             f"### Sample Text\n```\n{self.sample}\n```\n\n"
-
             f"### Target Content to Extract\n```\n{self.target}\n```\n"
-
             f"{context_section}\n"
-
             "### Requirements\n"
             "1. **left**: Regex matching text immediately BEFORE target\n"
             "2. **right**: Regex matching text immediately AFTER target\n"
@@ -128,7 +129,6 @@ class RegexGenWorker(QThread):
             "   - For digit: use `\\\\d`\n"
             "   - For whitespace: use `\\\\s`\n"
             "   - For literal dot: use `\\\\.`\n\n"
-
             "### Output Format (JSON only, no explanations)\n"
             "```json\n"
             "{\n"
@@ -137,7 +137,6 @@ class RegexGenWorker(QThread):
             '  "multiline": false\n'
             "}\n"
             "```\n\n"
-
             "Return ONLY the JSON object. No markdown fences, no explanations."
         )
 
@@ -164,7 +163,7 @@ class AIRegexGeneratorDialog(QDialog):
         # Sample
         input_layout.addWidget(QLabel(_("1. Paste Sample Text (The full content):")))
         self.sample_edit = QTextEdit()
-        self.sample_edit.setPlaceholderText(_("e.g. var myString = \"Hello World\";"))
+        self.sample_edit.setPlaceholderText(_('e.g. var myString = "Hello World";'))
         self.sample_edit.setFixedHeight(150)
         input_layout.addWidget(self.sample_edit)
 
@@ -253,11 +252,7 @@ class AIRegexGeneratorDialog(QDialog):
         target = self.target_edit.toPlainText().strip()
 
         if not sample or not target:
-            QMessageBox.warning(
-                self,
-                _("Missing Input"),
-                _("Please provide both Sample Text and Target Content.")
-            )
+            QMessageBox.warning(self, _("Missing Input"), _("Please provide both Sample Text and Target Content."))
             return
 
         # 规范化比较 (忽略首尾空白)
@@ -265,17 +260,12 @@ class AIRegexGeneratorDialog(QDialog):
             QMessageBox.warning(
                 self,
                 _("Invalid Input"),
-                _("The Target Content must exist within the Sample Text.\n"
-                  "Please make sure you copied the exact text.")
+                _("The Target Content must exist within the Sample Text.\nPlease make sure you copied the exact text."),
             )
             return
 
         if not self.app.config.get("ai_api_key"):
-            QMessageBox.critical(
-                self,
-                _("AI Error"),
-                _("AI API Key is missing. Please configure it in Settings.")
-            )
+            QMessageBox.critical(self, _("AI Error"), _("AI API Key is missing. Please configure it in Settings."))
             return
 
         # UI状态
@@ -286,12 +276,7 @@ class AIRegexGeneratorDialog(QDialog):
         self.btn_apply.setEnabled(False)
 
         # 启动worker
-        self.worker = RegexGenWorker(
-            self.app,
-            sample,
-            target,
-            self.hint_edit.toPlainText()
-        )
+        self.worker = RegexGenWorker(self.app, sample, target, self.hint_edit.toPlainText())
         self.worker.finished.connect(self.on_generation_finished)
         self.worker.start()
 
@@ -354,9 +339,7 @@ class AIRegexGeneratorDialog(QDialog):
                 extracted = match.group(2)
                 # 更宽松的比较:去除首尾空白
                 if extracted.strip() == target.strip():
-                    self.lbl_validation.setText(
-                        f"<font color='green'><b>✓ {_('Perfect Match!')}</b></font>"
-                    )
+                    self.lbl_validation.setText(f"<font color='green'><b>✓ {_('Perfect Match!')}</b></font>")
                 else:
                     # 显示差异
                     self.lbl_validation.setText(
@@ -371,35 +354,24 @@ class AIRegexGeneratorDialog(QDialog):
                 )
 
         except re.error as e:
-            self.lbl_validation.setText(
-                f"<font color='red'><b>✗ {_('Invalid Regex')}</b><br>{str(e)}</font>"
-            )
+            self.lbl_validation.setText(f"<font color='red'><b>✗ {_('Invalid Regex')}</b><br>{e!s}</font>")
         except Exception as e:
-            self.lbl_validation.setText(
-                f"<font color='red'><b>✗ {_('Validation Error')}</b><br>{str(e)}</font>"
-            )
+            self.lbl_validation.setText(f"<font color='red'><b>✗ {_('Validation Error')}</b><br>{e!s}</font>")
 
     def _escape_html(self, text):
         """转义HTML特殊字符"""
-        return (text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace('"', "&quot;"))
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
     def apply_result(self):
         """应用结果"""
         if not self.generated_data or not self.res_left.toPlainText():
-            QMessageBox.warning(
-                self,
-                _("No Result"),
-                _("Please generate a regex pattern first.")
-            )
+            QMessageBox.warning(self, _("No Result"), _("Please generate a regex pattern first."))
             return
 
         self.result = {
             "left": self.res_left.toPlainText(),
             "right": self.res_right.toPlainText(),
-            "multiline": "ON" in self.lbl_multiline.text()
+            "multiline": "ON" in self.lbl_multiline.text(),
         }
         self.accept()
 

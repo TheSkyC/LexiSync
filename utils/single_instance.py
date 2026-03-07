@@ -1,14 +1,16 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtNetwork import QTcpServer, QTcpSocket, QHostAddress
-from PySide6.QtCore import QObject, Signal
 import logging
+
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtNetwork import QHostAddress, QTcpServer, QTcpSocket
 
 logger = logging.getLogger(__name__)
 
 SINGLE_INSTANCE_PORT = 20454
 ACTIVATE_MSG = b"ACTIVATE_LEXISYNC"
+
 
 class SingleInstanceServer(QObject):
     request_activation = Signal()

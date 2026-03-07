@@ -1,16 +1,27 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QCheckBox, QSpinBox, QMessageBox, QGroupBox, QFontComboBox,
-    QDialogButtonBox, QListWidget, QListWidgetItem, QFrame
-)
-from PySide6.QtGui import QFont
 from PySide6.QtCore import Qt, Signal
-from utils.localization import _
-from utils.config_manager import get_default_font_settings
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QFontComboBox,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QSpinBox,
+    QVBoxLayout,
+)
+
 from ui_components.styled_button import StyledButton
+from utils.config_manager import get_default_font_settings
+from utils.localization import _
 
 
 class FontPickerWidget(QGroupBox):
@@ -19,11 +30,7 @@ class FontPickerWidget(QGroupBox):
     def __init__(self, title, initial_family_str, initial_size, parent=None):
         super().__init__(title, parent)
         # Parse initial string "Font A, Font B" -> ["Font A", "Font B"]
-        self.font_families = [
-            f.strip().strip('"').strip("'")
-            for f in initial_family_str.split(',')
-            if f.strip()
-        ]
+        self.font_families = [f.strip().strip('"').strip("'") for f in initial_family_str.split(",") if f.strip()]
         self.initial_size = initial_size
 
         self.setup_ui()
@@ -57,7 +64,8 @@ class FontPickerWidget(QGroupBox):
         self.font_list = QListWidget()
         self.font_list.setMaximumHeight(120)
         self.font_list.setToolTip(
-            _("Fonts are used in order. If the first font doesn't support a character, the next one is used."))
+            _("Fonts are used in order. If the first font doesn't support a character, the next one is used.")
+        )
         self.font_list.currentRowChanged.connect(self._on_selection_changed)
         self.font_list.setStyleSheet("""
             QListWidget {
@@ -85,12 +93,15 @@ class FontPickerWidget(QGroupBox):
         btn_col = QVBoxLayout()
         btn_col.setSpacing(5)
 
-        self.move_up_btn = StyledButton("↑", on_click=self._move_up, size="small",
-                                        tooltip=_("Move Up (Higher Priority)"))
-        self.move_down_btn = StyledButton("↓", on_click=self._move_down, size="small",
-                                          tooltip=_("Move Down (Lower Priority)"))
-        self.remove_btn = StyledButton("✕", on_click=self._remove_font, btn_type="danger", size="small",
-                                       tooltip=_("Remove Font"))
+        self.move_up_btn = StyledButton(
+            "↑", on_click=self._move_up, size="small", tooltip=_("Move Up (Higher Priority)")
+        )
+        self.move_down_btn = StyledButton(
+            "↓", on_click=self._move_down, size="small", tooltip=_("Move Down (Lower Priority)")
+        )
+        self.remove_btn = StyledButton(
+            "✕", on_click=self._remove_font, btn_type="danger", size="small", tooltip=_("Remove Font")
+        )
 
         btn_col.addWidget(self.move_up_btn)
         btn_col.addWidget(self.move_down_btn)
@@ -206,10 +217,7 @@ class FontPickerWidget(QGroupBox):
     def get_data(self):
         # Join with commas. We don't add quotes here to keep data clean.
         # Quotes are only needed when generating CSS strings.
-        return {
-            "family": ", ".join(self.font_families),
-            "size": self.size_spin.value()
-        }
+        return {"family": ", ".join(self.font_families), "size": self.size_spin.value()}
 
     def set_enabled_state(self, enabled):
         self.font_combo.setEnabled(enabled)
@@ -263,9 +271,7 @@ class FontSettingsDialog(QDialog):
         # UI Font Picker
         ui_conf = self.settings.get("ui_font", {})
         self.ui_picker = FontPickerWidget(
-            _("Application UI Font"),
-            ui_conf.get("family", "Segoe UI"),
-            ui_conf.get("size", 9)
+            _("Application UI Font"), ui_conf.get("family", "Segoe UI"), ui_conf.get("size", 9)
         )
         self.ui_picker.fontChanged.connect(self._mark_changed)
         layout.addWidget(self.ui_picker)
@@ -273,9 +279,7 @@ class FontSettingsDialog(QDialog):
         # Editor Font Picker
         editor_conf = self.settings.get("editor_font", {})
         self.editor_picker = FontPickerWidget(
-            _("Translation Editor Font"),
-            editor_conf.get("family", "Consolas"),
-            editor_conf.get("size", 10)
+            _("Translation Editor Font"), editor_conf.get("family", "Consolas"), editor_conf.get("size", 10)
         )
         self.editor_picker.fontChanged.connect(self._mark_changed)
         layout.addWidget(self.editor_picker)
@@ -316,7 +320,7 @@ class FontSettingsDialog(QDialog):
             _("Reset to Defaults"),
             _("Are you sure you want to reset all font settings to defaults?"),
             QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
+            QMessageBox.No,
         )
 
         if reply == QMessageBox.Yes:
@@ -325,14 +329,14 @@ class FontSettingsDialog(QDialog):
 
             # Reset UI Picker
             d_ui = defaults["ui_font"]
-            self.ui_picker.font_families = [f.strip() for f in d_ui["family"].split(',')]
+            self.ui_picker.font_families = [f.strip() for f in d_ui["family"].split(",")]
             self.ui_picker.size_spin.setValue(d_ui["size"])
             self.ui_picker.refresh_list()
             self.ui_picker._update_preview()
 
             # Reset Editor Picker
             d_ed = defaults["editor_font"]
-            self.editor_picker.font_families = [f.strip() for f in d_ed["family"].split(',')]
+            self.editor_picker.font_families = [f.strip() for f in d_ed["family"].split(",")]
             self.editor_picker.size_spin.setValue(d_ed["size"])
             self.editor_picker.refresh_list()
             self.editor_picker._update_preview()
@@ -343,16 +347,16 @@ class FontSettingsDialog(QDialog):
         new_settings = {
             "enable_custom_fonts": self.enable_check.isChecked(),
             "ui_font": self.ui_picker.get_data(),
-            "editor_font": self.editor_picker.get_data()
+            "editor_font": self.editor_picker.get_data(),
         }
 
         self.config["font_settings"] = new_settings
         self.app.save_config()
 
         # Apply changes immediately
-        if hasattr(self.app, '_apply_custom_fonts'):
+        if hasattr(self.app, "_apply_custom_fonts"):
             self.app._apply_custom_fonts()
-        if hasattr(self.app, '_update_editor_fonts'):
+        if hasattr(self.app, "_update_editor_fonts"):
             self.app._update_editor_fonts()
 
         self.settings_changed = False
@@ -369,7 +373,7 @@ class FontSettingsDialog(QDialog):
                 _("Unsaved Changes"),
                 _("You have unsaved changes. Do you want to discard them?"),
                 QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
+                QMessageBox.No,
             )
             if reply == QMessageBox.Yes:
                 super().reject()

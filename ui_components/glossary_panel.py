@@ -1,12 +1,12 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem,
-                               QToolBar, QSizePolicy)
-from PySide6.QtCore import Qt, Signal, QSize
-from PySide6.QtGui import QAction, QIcon, QColor
-from utils.path_utils import get_resource_path
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QAction, QColor, QIcon
+from PySide6.QtWidgets import QListWidget, QListWidgetItem, QSizePolicy, QToolBar, QVBoxLayout, QWidget
+
 from utils.localization import _
+from utils.path_utils import get_resource_path
 
 
 class GlossaryPanel(QWidget):
@@ -84,13 +84,13 @@ class GlossaryPanel(QWidget):
             self.glossary_list.addItem(item)
             return
 
-        sorted_matches = sorted(matches, key=lambda m: len(m['source']), reverse=True)
+        sorted_matches = sorted(matches, key=lambda m: len(m["source"]), reverse=True)
 
         for match in sorted_matches:
-            source_term = match['source']
-            translations = match['translations']
+            source_term = match["source"]
+            translations = match["translations"]
 
-            target_str = " / ".join([t['target'] for t in translations])
+            target_str = " / ".join([t["target"] for t in translations])
 
             item_text = f"({source_term}) → {target_str}"
             item = QListWidgetItem(item_text)
@@ -103,7 +103,7 @@ class GlossaryPanel(QWidget):
             tooltip_parts = [f"<b>{_('Source Term')}:</b> {source_term}"]
             tooltip_parts.append(f"<b>{_('Recommended Translation(s)')}:</b>")
             for t in translations:
-                if t.get('comment'):
+                if t.get("comment"):
                     tooltip_parts.append(f"- {t['target']} ({t['comment']})")
                 else:
                     tooltip_parts.append(f"- {t['target']}")

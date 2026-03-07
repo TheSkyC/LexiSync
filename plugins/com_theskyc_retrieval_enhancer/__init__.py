@@ -1,16 +1,20 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
+import os
+
+from PySide6.QtWidgets import QMessageBox
+
 from plugins.plugin_base import PluginBase
+from utils.path_utils import get_app_data_path
+
 from .core import RetrievalCore
 from .ui.settings_dialog import SettingsDialog
 from .utils.cache_service import CacheViewerService
-from utils.path_utils import get_app_data_path
-from PySide6.QtWidgets import QMessageBox
-import os
-import logging
 
 logger = logging.getLogger(__name__)
+
 
 class RetrievalEnhancerPlugin(PluginBase):
     def __init__(self):
@@ -39,15 +43,11 @@ class RetrievalEnhancerPlugin(PluginBase):
         return "1.3"
 
     def external_dependencies(self) -> dict:
-        return {
-            'scikit-learn': '>=1.0',
-            'numpy': '',
-            'onnxruntime': '',
-            'tokenizers': ''
-        }
+        return {"scikit-learn": ">=1.0", "numpy": "", "onnxruntime": "", "tokenizers": ""}
 
     def get_default_config(self) -> dict:
         from .utils.constants import DEFAULT_CONFIG
+
         return DEFAULT_CONFIG
 
     def setup(self, main_window, plugin_manager):
@@ -68,8 +68,10 @@ class RetrievalEnhancerPlugin(PluginBase):
             QMessageBox.information(
                 parent_widget,
                 self._("Model Changed"),
-                self._("The active model has been changed.\n"
-                       "Please re-open the 'Smart Translation' dialog to rebuild the index with the new model.")
+                self._(
+                    "The active model has been changed.\n"
+                    "Please re-open the 'Smart Translation' dialog to rebuild the index with the new model."
+                ),
             )
             return True
 
@@ -79,11 +81,13 @@ class RetrievalEnhancerPlugin(PluginBase):
 
     # --- Hooks ---
     def register_resource_viewers(self) -> list:
-        return [{
-            'id': 'retrieval_cache',
-            'name': self._("Retrieval Cache Viewer"),
-            'service': CacheViewerService(self.core.cache_db_path)
-        }]
+        return [
+            {
+                "id": "retrieval_cache",
+                "name": self._("Retrieval Cache Viewer"),
+                "service": CacheViewerService(self.core.cache_db_path),
+            }
+        ]
 
     def build_retrieval_index(self, data_list: list, progress_callback=None, check_cancel=None):
         """Hook called by SmartTranslationDialog to build index."""
@@ -102,7 +106,7 @@ class RetrievalEnhancerPlugin(PluginBase):
         results = self.core.retrieve(query_text, limit, mode)
 
         if results:
-            top_score = results[0].get('score', 0)
+            top_score = results[0].get("score", 0)
             logger.info(f"[RetrievalPlugin] Found {len(results)} matches. Top score: {top_score:.4f}")
         else:
             logger.info("[RetrievalPlugin] No matches found.")
@@ -110,7 +114,4 @@ class RetrievalEnhancerPlugin(PluginBase):
 
     def get_available_backends(self) -> dict:
         """Returns status of backends: {'tfidf': bool, 'onnx': bool}"""
-        return {
-            'tfidf': self.core.tfidf_backend.is_available(),
-            'onnx': self.core.onnx_backend.is_available()
-        }
+        return {"tfidf": self.core.tfidf_backend.is_available(), "onnx": self.core.onnx_backend.is_available()}

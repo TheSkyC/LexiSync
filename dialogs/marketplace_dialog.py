@@ -1,21 +1,34 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QListWidget, QListWidgetItem, QWidget, QTextBrowser, QFrame,
-    QMessageBox, QSplitter
-)
-from PySide6.QtCore import Qt, QSize, QThread, Signal, QUrl
-from PySide6.QtGui import QFont, QDesktopServices, QMouseEvent
-import requests
 import os
-import tempfile
 import re
-from ui_components.elided_label import ElidedLabel
-from utils.localization import _
-from utils.constants import APP_VERSION
+import tempfile
+
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtGui import QFont, QMouseEvent
+from PySide6.QtWidgets import (
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QSplitter,
+    QTextBrowser,
+    QVBoxLayout,
+    QWidget,
+)
+import requests
+
 from layouts.flow_layout import FlowLayout
+from ui_components.elided_label import ElidedLabel
+from utils.constants import APP_VERSION
+from utils.localization import _
+
 
 class FetchIndexThread(QThread):
     finished = Signal(dict, str)
@@ -30,14 +43,16 @@ class FetchIndexThread(QThread):
             response.raise_for_status()
             data = response.json()
             self.finished.emit(data, None)
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError:
             error_msg = _("Network connection failed. Please check your internet connection and firewall settings.")
             self.finished.emit(None, error_msg)
         except requests.exceptions.Timeout:
             error_msg = _("The request timed out. The server might be busy or your connection is slow.")
             self.finished.emit(None, error_msg)
         except requests.exceptions.HTTPError as e:
-            error_msg = _("Failed to fetch data (HTTP {status_code}). The marketplace file might be missing or the server is down.").format(status_code=e.response.status_code)
+            error_msg = _(
+                "Failed to fetch data (HTTP {status_code}). The marketplace file might be missing or the server is down."
+            ).format(status_code=e.response.status_code)
             self.finished.emit(None, error_msg)
         except Exception as e:
             self.finished.emit(None, str(e))
@@ -56,28 +71,26 @@ class DownloadPluginThread(QThread):
             response = requests.get(self.url, stream=True, timeout=60)
             response.raise_for_status()
 
-            if 'content-disposition' in response.headers:
-                disposition = response.headers['content-disposition']
+            if "content-disposition" in response.headers:
+                disposition = response.headers["content-disposition"]
                 filenames = re.findall('filename="(.+)"', disposition)
-                if filenames:
-                    filename = filenames[0]
-                else:
-                    filename = self.url.split('/')[-1]
+                filename = filenames[0] if filenames else self.url.split("/")[-1]
             else:
-                filename = self.url.split('/')[-1]
+                filename = self.url.split("/")[-1]
 
-            if not filename.endswith('.zip'):
-                filename += '.zip'
+            if not filename.endswith(".zip"):
+                filename += ".zip"
 
             temp_filepath = os.path.join(self.temp_dir, filename)
 
-            with open(temp_filepath, 'wb') as f:
+            with open(temp_filepath, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
 
             self.finished.emit(temp_filepath, None)
         except Exception as e:
             self.finished.emit(None, str(e))
+
 
 class ClickableLabel(QLabel):
     clicked = Signal(str)
@@ -103,6 +116,7 @@ class ClickableLabel(QLabel):
             self.clicked.emit(self.text())
         super().mousePressEvent(event)
 
+
 class PluginMarketplaceItem(QWidget):
     tag_clicked = Signal(str)
 
@@ -126,7 +140,7 @@ class PluginMarketplaceItem(QWidget):
         self.author_label = QLabel(f"<small>{_('by')} {plugin_data['author']}</small>")
         self.author_label.setStyleSheet("color: #666;")
 
-        self.desc_label = QLabel(plugin_data['description'])
+        self.desc_label = QLabel(plugin_data["description"])
         self.desc_label.setWordWrap(True)
 
         info_layout.addWidget(self.name_label)
@@ -143,22 +157,22 @@ class PluginMarketplaceItem(QWidget):
 
         main_layout.addLayout(top_layout)
 
-        if plugin_data.get('tags'):
+        if plugin_data.get("tags"):
             self.tags_layout = FlowLayout()
             self.tags_layout.setContentsMargins(0, 5, 0, 0)
             self.tags_layout.setSpacing(5)
-            for tag in plugin_data['tags']:
+            for tag in plugin_data["tags"]:
                 tag_label = ClickableLabel(tag)
                 tag_label.clicked.connect(self.tag_clicked.emit)
                 self.tags_layout.addWidget(tag_label)
             main_layout.addLayout(self.tags_layout)
 
     def set_status(self, status, version_info=""):
-        if status == 'installed':
+        if status == "installed":
             self.install_button.setText(_("Installed"))
             self.install_button.setEnabled(False)
             self.install_button.setProperty("status", "installed")
-        elif status == 'update_available':
+        elif status == "update_available":
             self.install_button.setText(_("Update"))
             self.install_button.setEnabled(True)
             self.install_button.setProperty("status", "update")
@@ -169,6 +183,7 @@ class PluginMarketplaceItem(QWidget):
 
         self.install_button.style().unpolish(self.install_button)
         self.install_button.style().polish(self.install_button)
+
 
 class PluginMarketplaceDialog(QDialog):
     def __init__(self, parent):
@@ -299,7 +314,8 @@ class PluginMarketplaceDialog(QDialog):
         self.populate_tags_bar()
         self.populate_plugin_list()
         self.status_label.setText(
-            _("Marketplace loaded. Found {count} plugins.").format(count=len(data.get('plugins', []))))
+            _("Marketplace loaded. Found {count} plugins.").format(count=len(data.get("plugins", [])))
+        )
 
     def refresh_installed_plugins_map(self):
         self.installed_plugins_map = {p.plugin_id(): p.version() for p in self.manager.plugins}
@@ -311,12 +327,12 @@ class PluginMarketplaceDialog(QDialog):
                 widget.deleteLater()
         self.tag_buttons.clear()
 
-        if not self.market_data or 'plugins' not in self.market_data:
+        if not self.market_data or "plugins" not in self.market_data:
             return
 
         all_tags = set()
-        for plugin in self.market_data['plugins']:
-            for tag in plugin.get('tags', []):
+        for plugin in self.market_data["plugins"]:
+            for tag in plugin.get("tags", []):
                 all_tags.add(tag)
 
         all_btn = QPushButton(_("All"))
@@ -325,9 +341,9 @@ class PluginMarketplaceDialog(QDialog):
         all_btn.setChecked(True)
         all_btn.toggled.connect(self.on_all_tag_toggled)
         self.tags_bar.addWidget(all_btn)
-        self.tag_buttons['All'] = all_btn
+        self.tag_buttons["All"] = all_btn
 
-        for tag in sorted(list(all_tags)):
+        for tag in sorted(all_tags):
             btn = QPushButton(tag)
             btn.setObjectName("tagButton")
             btn.setCheckable(True)
@@ -339,19 +355,19 @@ class PluginMarketplaceDialog(QDialog):
         if checked:
             self.active_tags.clear()
             for tag, btn in self.tag_buttons.items():
-                if tag != 'All' and btn.isChecked():
+                if tag != "All" and btn.isChecked():
                     btn.setChecked(False)
             self.filter_plugins()
 
     def on_tag_toggled(self, tag, checked):
         if checked:
             self.active_tags.add(tag)
-            if self.tag_buttons['All'].isChecked():
-                self.tag_buttons['All'].setChecked(False)
+            if self.tag_buttons["All"].isChecked():
+                self.tag_buttons["All"].setChecked(False)
         else:
             self.active_tags.discard(tag)
             if not self.active_tags:
-                self.tag_buttons['All'].setChecked(True)
+                self.tag_buttons["All"].setChecked(True)
 
         self.filter_plugins()
 
@@ -365,22 +381,22 @@ class PluginMarketplaceDialog(QDialog):
 
     def populate_plugin_list(self):
         self.plugin_list.clear()
-        if not self.market_data or 'plugins' not in self.market_data:
+        if not self.market_data or "plugins" not in self.market_data:
             return
 
-        for plugin_data in self.market_data['plugins']:
+        for plugin_data in self.market_data["plugins"]:
             item = QListWidgetItem(self.plugin_list)
             widget = PluginMarketplaceItem(plugin_data)
             widget.tag_clicked.connect(self.on_item_tag_clicked)
 
-            plugin_id = plugin_data['id']
+            plugin_id = plugin_data["id"]
             if plugin_id in self.installed_plugins_map:
-                if self.installed_plugins_map[plugin_id] < plugin_data['version']:
-                    widget.set_status('update_available')
+                if self.installed_plugins_map[plugin_id] < plugin_data["version"]:
+                    widget.set_status("update_available")
                 else:
-                    widget.set_status('installed')
+                    widget.set_status("installed")
             else:
-                widget.set_status('not_installed')
+                widget.set_status("not_installed")
 
             widget.install_button.clicked.connect(lambda checked=False, p=plugin_data: self.install_plugin(p))
 
@@ -396,17 +412,14 @@ class PluginMarketplaceDialog(QDialog):
             plugin_data = widget.plugin_data
 
             text_match = (
-                    not search_text or
-                    search_text in plugin_data['name'].lower() or
-                    search_text in plugin_data['author'].lower() or
-                    search_text in plugin_data['description'].lower()
+                not search_text
+                or search_text in plugin_data["name"].lower()
+                or search_text in plugin_data["author"].lower()
+                or search_text in plugin_data["description"].lower()
             )
 
-            plugin_tags = set(plugin_data.get('tags', []))
-            tag_match = (
-                    not self.active_tags or
-                    self.active_tags.issubset(plugin_tags)
-            )
+            plugin_tags = set(plugin_data.get("tags", []))
+            tag_match = not self.active_tags or self.active_tags.issubset(plugin_tags)
 
             item.setHidden(not (text_match and tag_match))
 
@@ -426,22 +439,24 @@ class PluginMarketplaceDialog(QDialog):
 
         self.detail_name.setText(f"<h2>{plugin_data['name']}</h2>")
         self.detail_author_version.setText(
-            f"{_('by')} {plugin_data['author']} | {_('Version')}: {plugin_data['version']}")
+            f"{_('by')} {plugin_data['author']} | {_('Version')}: {plugin_data['version']}"
+        )
 
-        if APP_VERSION.startswith(plugin_data['compatible_app_version']):
+        if APP_VERSION.startswith(plugin_data["compatible_app_version"]):
             self.detail_compat.setText(f"<b style='color:green;'>{_('Compatible')}</b> {_('with your app version.')}")
         else:
             self.detail_compat.setText(
-                f"<b style='color:orange;'>{_('Incompatible')}</b> {_('Requires v{req}').format(req=plugin_data['compatible_app_version'])}")
+                f"<b style='color:orange;'>{_('Incompatible')}</b> {_('Requires v{req}').format(req=plugin_data['compatible_app_version'])}"
+            )
 
         links = []
-        if 'homepage_url' in plugin_data:
+        if "homepage_url" in plugin_data:
             links.append(f"<a href='{plugin_data['homepage_url']}'>{_('Homepage')}</a>")
-        if 'issue_tracker_url' in plugin_data:
+        if "issue_tracker_url" in plugin_data:
             links.append(f"<a href='{plugin_data['issue_tracker_url']}'>{_('Report Issue')}</a>")
         self.detail_links.setText(" | ".join(links))
 
-        self.detail_desc.setMarkdown(plugin_data.get('description_long_md', plugin_data['description']))
+        self.detail_desc.setMarkdown(plugin_data.get("description_long_md", plugin_data["description"]))
 
         try:
             self.detail_install_button.clicked.disconnect()
@@ -464,11 +479,11 @@ class PluginMarketplaceDialog(QDialog):
         pass
 
     def install_plugin(self, plugin_data):
-        self.status_label.setText(_("Downloading {plugin_name}...").format(plugin_name=plugin_data['name']))
+        self.status_label.setText(_("Downloading {plugin_name}...").format(plugin_name=plugin_data["name"]))
 
         self.temp_dir_for_download = tempfile.TemporaryDirectory()
 
-        self.download_thread = DownloadPluginThread(plugin_data['download_url'], self.temp_dir_for_download.name)
+        self.download_thread = DownloadPluginThread(plugin_data["download_url"], self.temp_dir_for_download.name)
         self.download_thread.finished.connect(lambda path, err: self.on_download_finished(path, err, plugin_data))
         self.download_thread.start()
 
@@ -480,7 +495,7 @@ class PluginMarketplaceDialog(QDialog):
                 self.temp_dir_for_download.cleanup()
             return
 
-        self.status_label.setText(_("Installing {plugin_name}...").format(plugin_name=plugin_data['name']))
+        self.status_label.setText(_("Installing {plugin_name}...").format(plugin_name=plugin_data["name"]))
 
         installed_id, install_error = self.manager.install_plugin_from_zip(temp_filepath)
 
@@ -492,18 +507,20 @@ class PluginMarketplaceDialog(QDialog):
             QMessageBox.critical(self, _("Installation Error"), install_error)
         else:
             self.status_label.setText(
-                _("Successfully installed {plugin_name}.").format(plugin_name=plugin_data['name']))
-            QMessageBox.information(self, _("Success"),
-                                    _("Plugin installed successfully. Please restart the application to take effect."))
+                _("Successfully installed {plugin_name}.").format(plugin_name=plugin_data["name"])
+            )
+            QMessageBox.information(
+                self, _("Success"), _("Plugin installed successfully. Please restart the application to take effect.")
+            )
 
             self.refresh_installed_plugins_map()
             self.populate_plugin_list()
             self.update_details_panel(self.plugin_list.currentItem(), None)
 
     def closeEvent(self, event):
-        if hasattr(self, 'fetch_thread') and self.fetch_thread.isRunning():
+        if hasattr(self, "fetch_thread") and self.fetch_thread.isRunning():
             self.fetch_thread.terminate()
-        if hasattr(self, 'download_thread') and self.download_thread.isRunning():
+        if hasattr(self, "download_thread") and self.download_thread.isRunning():
             self.download_thread.terminate()
         if self.temp_dir_for_download:
             self.temp_dir_for_download.cleanup()

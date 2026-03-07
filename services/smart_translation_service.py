@@ -1,40 +1,57 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import re
-import random
-import json
 from collections import Counter
+import json
 import logging
+import random
+import re
 
 logger = logging.getLogger(__name__)
 
 
 class SmartTranslationService:
-
     # 配置常量
     SAMPLING_CONFIG = {
-        'default_size': 100,
-        'bucket_ratios': {
-            'long': 0.4,
-            'medium': 0.4,
-            'short': 0.2
+        "default_size": 100,
+        "bucket_ratios": {"long": 0.4, "medium": 0.4, "short": 0.2},
+        "importance_weights": {
+            "length_optimal": 3,
+            "length_good": 2,
+            "length_basic": 1,
+            "special_chars": 2,
+            "ui_verbs": 2,
+            "capitalized": 1,
         },
-        'importance_weights': {
-            'length_optimal': 3,
-            'length_good': 2,
-            'length_basic': 1,
-            'special_chars': 2,
-            'ui_verbs': 2,
-            'capitalized': 1
-        }
     }
 
     UI_VERBS = {
-        'click', 'save', 'load', 'open', 'close', 'delete', 'add',
-        'remove', 'edit', 'create', 'update', 'submit', 'cancel',
-        'start', 'stop', 'play', 'pause', 'search', 'find', 'view',
-        'select', 'choose', 'enable', 'disable', 'upload', 'download'
+        "click",
+        "save",
+        "load",
+        "open",
+        "close",
+        "delete",
+        "add",
+        "remove",
+        "edit",
+        "create",
+        "update",
+        "submit",
+        "cancel",
+        "start",
+        "stop",
+        "play",
+        "pause",
+        "search",
+        "find",
+        "view",
+        "select",
+        "choose",
+        "enable",
+        "disable",
+        "upload",
+        "download",
     }
 
     @staticmethod
@@ -70,9 +87,7 @@ class SmartTranslationService:
 
         # 5. 补充不足（如果需要）
         if len(final_samples) < sample_size:
-            final_samples = SmartTranslationService._fill_remaining(
-                candidates, final_samples, sample_size
-            )
+            final_samples = SmartTranslationService._fill_remaining(candidates, final_samples, sample_size)
 
         logger.info(f"Sampling completed: {len(final_samples)}/{len(translatable_objects)} items selected")
         return final_samples
@@ -100,7 +115,7 @@ class SmartTranslationService:
             seen_texts.add(text)
             seen_texts_lower.add(text_lower)
 
-            tokens = set(re.findall(r'\w+', text_lower))
+            tokens = set(re.findall(r"\w+", text_lower))
 
             if not tokens:
                 continue
@@ -108,43 +123,39 @@ class SmartTranslationService:
             # 计算重要性分数
             importance = SmartTranslationService._calculate_importance(text, tokens)
 
-            candidates.append({
-                'obj': ts,
-                'text': text,
-                'tokens': tokens,
-                'length': len(tokens),
-                'importance': importance
-            })
+            candidates.append(
+                {"obj": ts, "text": text, "tokens": tokens, "length": len(tokens), "importance": importance}
+            )
 
         return candidates
 
     @staticmethod
     def _calculate_importance(text, tokens):
         """计算文本重要性分数"""
-        weights = SmartTranslationService.SAMPLING_CONFIG['importance_weights']
+        weights = SmartTranslationService.SAMPLING_CONFIG["importance_weights"]
         importance = 0
         word_count = len(tokens)
 
         # 因素1: 长度适中性（UI文本通常在3-15词之间）
         if 3 <= word_count <= 15:
-            importance += weights['length_optimal']
+            importance += weights["length_optimal"]
         elif word_count > 15 or word_count == 2:
-            importance += weights['length_good']
+            importance += weights["length_good"]
         else:
-            importance += weights['length_basic']
+            importance += weights["length_basic"]
 
         # 因素2: 包含特殊字符（技术术语或格式化文本）
-        if re.search(r'[%{}\[\]<>]', text):
-            importance += weights['special_chars']
+        if re.search(r"[%{}\[\]<>]", text):
+            importance += weights["special_chars"]
 
         # 因素3: 首字母大写（可能是标题或重要UI元素）
         if text[0].isupper():
-            importance += weights['capitalized']
+            importance += weights["capitalized"]
 
         # 因素4: 包含UI动词（功能性文本）
         text_lower = text.lower()
         if any(verb in text_lower for verb in SmartTranslationService.UI_VERBS):
-            importance += weights['ui_verbs']
+            importance += weights["ui_verbs"]
 
         return importance
 
@@ -152,34 +163,36 @@ class SmartTranslationService:
     def _create_dynamic_buckets(candidates):
         """根据实际分布创建动态分桶"""
         if not candidates:
-            return {'long': [], 'medium': [], 'short': []}
+            return {"long": [], "medium": [], "short": []}
 
-        lengths = [c['length'] for c in candidates]
+        lengths = [c["length"] for c in candidates]
         avg_len = sum(lengths) / len(lengths)
 
         buckets = {
-            'long': [c for c in candidates if c['length'] > avg_len * 1.5],
-            'medium': [c for c in candidates if avg_len * 0.5 <= c['length'] <= avg_len * 1.5],
-            'short': [c for c in candidates if c['length'] < avg_len * 0.5]
+            "long": [c for c in candidates if c["length"] > avg_len * 1.5],
+            "medium": [c for c in candidates if avg_len * 0.5 <= c["length"] <= avg_len * 1.5],
+            "short": [c for c in candidates if c["length"] < avg_len * 0.5],
         }
 
-        logger.debug(f"Bucket distribution - Long: {len(buckets['long'])}, "
-                     f"Medium: {len(buckets['medium'])}, Short: {len(buckets['short'])}")
+        logger.debug(
+            f"Bucket distribution - Long: {len(buckets['long'])}, "
+            f"Medium: {len(buckets['medium'])}, Short: {len(buckets['short'])}"
+        )
 
         return buckets
 
     @staticmethod
     def _calculate_quotas(buckets, sample_size):
         """计算各桶的配额"""
-        ratios = SmartTranslationService.SAMPLING_CONFIG['bucket_ratios']
+        ratios = SmartTranslationService.SAMPLING_CONFIG["bucket_ratios"]
 
         quotas = {
-            'long': max(
-                int(sample_size * ratios['long']),
-                min(10, len(buckets['long']))  # 至少10个长文本
+            "long": max(
+                int(sample_size * ratios["long"]),
+                min(10, len(buckets["long"])),  # 至少10个长文本
             ),
-            'medium': int(sample_size * ratios['medium']),
-            'short': int(sample_size * ratios['short'])
+            "medium": int(sample_size * ratios["medium"]),
+            "short": int(sample_size * ratios["short"]),
         }
 
         return quotas
@@ -190,7 +203,7 @@ class SmartTranslationService:
         final_samples = []
         global_seen_tokens = set()
 
-        for bucket_name in ['long', 'medium', 'short']:
+        for bucket_name in ["long", "medium", "short"]:
             pool = buckets[bucket_name][:]
             quota = quotas[bucket_name]
 
@@ -200,8 +213,8 @@ class SmartTranslationService:
             # 如果池子小于配额，全部取出
             if len(pool) <= quota:
                 for c in pool:
-                    final_samples.append(c['obj'])
-                    global_seen_tokens.update(c['tokens'])
+                    final_samples.append(c["obj"])
+                    global_seen_tokens.update(c["tokens"])
                 continue
 
             # 贪心选择
@@ -214,25 +227,24 @@ class SmartTranslationService:
 
                 for cand in pool:
                     # 新词数量
-                    new_tokens = len(cand['tokens'] - global_seen_tokens)
+                    new_tokens = len(cand["tokens"] - global_seen_tokens)
 
                     # 综合分数 = 词汇多样性(×2) + 重要性权重
-                    score = new_tokens * 2 + cand['importance']
+                    score = new_tokens * 2 + cand["importance"]
 
                     if score > best_score:
                         best_score = score
                         best_candidate = cand
 
                 if best_candidate:
-                    final_samples.append(best_candidate['obj'])
-                    global_seen_tokens.update(best_candidate['tokens'])
+                    final_samples.append(best_candidate["obj"])
+                    global_seen_tokens.update(best_candidate["tokens"])
                     pool.remove(best_candidate)
-                else:
-                    # 如果所有候选都没有新词，随机选一个
-                    if pool:
-                        fallback = random.choice(pool)
-                        final_samples.append(fallback['obj'])
-                        pool.remove(fallback)
+                # 如果所有候选都没有新词，随机选一个
+                elif pool:
+                    fallback = random.choice(pool)
+                    final_samples.append(fallback["obj"])
+                    pool.remove(fallback)
 
         return final_samples
 
@@ -242,7 +254,7 @@ class SmartTranslationService:
         if len(current_samples) >= target_size:
             return current_samples
 
-        remaining = [c['obj'] for c in candidates if c['obj'] not in current_samples]
+        remaining = [c["obj"] for c in candidates if c["obj"] not in current_samples]
         needed = min(target_size - len(current_samples), len(remaining))
 
         if needed > 0:
@@ -254,17 +266,17 @@ class SmartTranslationService:
     def find_context_snippets(term, all_items, max_snippets=2, window_size=30):
         """为术语查找上下文例句。"""
         snippets = []
-        term_lower = term.lower()
+        term.lower()
 
         try:
-            pattern = re.compile(r'\b' + re.escape(term) + r'\b', re.IGNORECASE)
-        except:
+            pattern = re.compile(r"\b" + re.escape(term) + r"\b", re.IGNORECASE)
+        except Exception:
             pattern = re.compile(re.escape(term), re.IGNORECASE)
 
         for ts in all_items:
             text = ts.original_semantic
             if pattern.search(text):
-                clean_text = text.replace('\n', ' ').strip()
+                clean_text = text.replace("\n", " ").strip()
                 if len(clean_text) > 40:
                     match = pattern.search(clean_text)
                     start = max(0, match.start() - window_size)
@@ -288,11 +300,8 @@ class SmartTranslationService:
             f"You are a Senior Localization Lead analyzing {len(samples)} software/game UI texts.\n"
             f"Source Language: {source_lang}\n"
             f"Target Language: {target_lang}\n\n"
-
             f"Sample Texts:\n{sample_text}\n\n"
-
             "Create a concise Translation Style Guide (100-150 words) in this EXACT format:\n\n"
-
             "## Style Guide\n"
             "- **Tone**: [emotional tone, e.g., 'casual and friendly', 'formal and professional']\n"
             "- **Domain**: [specific domain, e.g., 'Gaming RPG', 'Business SaaS', 'Social Media']\n"
@@ -300,7 +309,6 @@ class SmartTranslationService:
             "- **Key Rules**: [2-3 specific translation rules]\n"
             "- **Terminology**: [strategy for proper nouns, e.g., 'Keep brand names in English']\n\n"
             "- **Recommended Temperature**: [0.1 - 1.0] (e.g., 0.3 for UI, 0.8 for creative text)\n\n"
-
             "## Critical Constraints:\n"
             "1. Focus ONLY on linguistic style and cultural adaptation\n"
             "2. Do NOT mention technical aspects (placeholders, HTML, variables, formatting)\n"
@@ -316,11 +324,27 @@ class SmartTranslationService:
         """
         all_text = " ".join([ts.original_semantic for ts in translatable_objects])
 
-        words = re.findall(r'\b[a-zA-Z]{3,}\b', all_text.lower())
+        words = re.findall(r"\b[a-zA-Z]{3,}\b", all_text.lower())
 
         stopwords = {
-            'the', 'and', 'for', 'that', 'this', 'with', 'you', 'not', 'are',
-            'from', 'have', 'will', 'can', 'all', 'one', 'has', 'but', 'into'
+            "the",
+            "and",
+            "for",
+            "that",
+            "this",
+            "with",
+            "you",
+            "not",
+            "are",
+            "from",
+            "have",
+            "will",
+            "can",
+            "all",
+            "one",
+            "has",
+            "but",
+            "into",
         }
 
         filtered_words = [w for w in words if w not in stopwords]
@@ -339,9 +363,7 @@ class SmartTranslationService:
 
     @staticmethod
     def extract_terms_batch_prompt(text_batch, existing_terms_str=""):
-        prompt = (
-            f"Analyze these UI texts and extract domain-specific terms:\n{text_batch}\n\n"
-        )
+        prompt = f"Analyze these UI texts and extract domain-specific terms:\n{text_batch}\n\n"
 
         if existing_terms_str:
             prompt += (
@@ -355,24 +377,20 @@ class SmartTranslationService:
             "1. **Term Length**: Each term must be 1-4 words MAXIMUM (e.g., 'Apply TM', 'Add File', 'Dashboard')\n"
             "2. **No Descriptions in Term**: The 'term' field must contain ONLY the term itself, NO parentheses, NO explanations\n"
             "3. **Context Separation**: Put explanations ONLY in the 'context' field, never in 'term'\n\n"
-
             "## What to Extract:\n"
             "- UI action labels (e.g., 'Apply Comment', 'Add Entry')\n"
             "- Feature names (e.g., 'Memory', 'Glossary')\n"
             "- Technical terms (e.g., 'API Key', 'TM', 'Source File')\n"
             "- Product-specific terms (avoid generic words like 'click', 'button', 'file' alone)\n\n"
-
             "## What to EXCLUDE:\n"
             "- Common verbs alone ('add', 'delete', 'save')\n"
             "- Generic UI words ('button', 'window', 'dialog')\n"
             "- Complete sentences or phrases longer than 4 words\n"
             "- Terms with parentheses or inline descriptions\n\n"
-
             "## Output Format (MANDATORY):\n"
             "Return a valid JSON array of objects. Each object must have:\n"
             "- 'term': The exact term (1-4 words, no parentheses)\n"
             "- 'context': Brief explanation or usage context\n\n"
-
             "Output ONLY the JSON array."
         )
         return prompt
@@ -385,27 +403,23 @@ class SmartTranslationService:
         return (
             f"Analyze these UI texts and extract domain-specific terms:\n\n"
             f"{sample_text}\n\n"
-
             "Task: Identify 10-25 key terms that require consistent translation:\n"
             "- Technical terms (API, Database, Server, etc.)\n"
             "- Domain-specific jargon\n"
             "- Proper nouns (product names, feature names)\n"
             "- UI elements that appear frequently\n"
             "- Acronyms and abbreviations\n\n"
-
             "Exclusions (DO NOT include):\n"
             "- Common words (the, is, click, button, etc.)\n"
             "- Generic verbs (open, close, save, etc.)\n"
             "- Single-character strings\n"
             "- Numbers or pure symbols\n\n"
-
             "Output Format Requirements:\n"
             "1. Return ONLY a valid JSON array of strings\n"
-            "2. Format: [\"Term1\", \"Term2\", \"Term3\"]\n"
+            '2. Format: ["Term1", "Term2", "Term3"]\n'
             "3. Do NOT wrap in markdown code blocks\n"
             "4. Do NOT add any explanatory text\n"
             "5. Output the raw JSON array only\n\n"
-
             "Example output:\n"
             '["Dashboard", "Authentication", "API Key", "User Profile"]'
         )
@@ -415,21 +429,18 @@ class SmartTranslationService:
         return (
             f"Translate these domain-specific terms into {target_lang}.\n\n"
             f"Terms to translate: {terms_list_str}\n\n"
-
             "Translation Requirements:\n"
             "1. Maintain professional terminology standards\n"
             "2. Keep proper nouns unchanged if commonly used internationally\n"
             "3. Use industry-standard translations where applicable\n"
             "4. Consider UI space constraints (prefer concise alternatives)\n"
             "5. Ensure consistency with common localization practices\n\n"
-
             "Output Format (MANDATORY):\n"
             "Create a markdown table with this EXACT format:\n\n"
             "| Source | Target |\n"
             "|--------|--------|\n"
             "| term1  | 翻译1  |\n"
             "| term2  | 翻译2  |\n\n"
-
             "Critical Rules:\n"
             "- Output ONLY the table, no preamble\n"
             "- No explanations before or after the table\n"
@@ -462,18 +473,15 @@ class SmartTranslationService:
             f"{style_instruction}"
             f"{glossary_instruction}"
             f"Input Data: {terms_data_json}\n\n"
-
             "Translation Requirements:\n"
             "1. Use the provided 'context' to choose the correct meaning.\n"
             "2. Maintain professional terminology standards.\n"
             "3. If a term contains words from the 'Reference Glossary', combine them naturally.\n\n"
-
             "Output Format (MANDATORY):\n"
             "Create a markdown table with this EXACT format:\n"
             "| Source | Target |\n"
             "|--------|--------|\n"
             "| term1  | 翻译1  |\n\n"
-
             "Output ONLY the table."
         )
 
@@ -486,31 +494,31 @@ class SmartTranslationService:
 
         try:
             if expected_format == "json":
-                text = re.sub(r'^```(?:json)?\s*', '', text, flags=re.IGNORECASE)
-                text = re.sub(r'\s*```$', '', text)
+                text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+                text = re.sub(r"\s*```$", "", text)
                 # 移除可能的前缀文本，定位到第一个 [
-                if '[' in text:
-                    start_idx = text.index('[')
+                if "[" in text:
+                    start_idx = text.index("[")
                     text = text[start_idx:]
                 # 截断到最后一个 ]
-                if ']' in text:
-                    end_idx = text.rindex(']') + 1
+                if "]" in text:
+                    end_idx = text.rindex("]") + 1
                     text = text[:end_idx]
                 # 验证是否为有效JSON
                 json.loads(text)
 
             elif expected_format == "markdown":
-                text = re.sub(r'^```(?:markdown|md)?\s*', '', text, flags=re.IGNORECASE)
-                text = re.sub(r'\s*```$', '', text)
-                lines = text.split('\n')
+                text = re.sub(r"^```(?:markdown|md)?\s*", "", text, flags=re.IGNORECASE)
+                text = re.sub(r"\s*```$", "", text)
+                lines = text.split("\n")
                 table_start = 0
                 for i, line in enumerate(lines):
-                    if '|' in line:
+                    if "|" in line:
                         table_start = i
                         break
 
                 if table_start > 0:
-                    text = '\n'.join(lines[table_start:])
+                    text = "\n".join(lines[table_start:])
 
         except Exception as e:
             logger.warning(f"Failed to clean AI response: {e}")
@@ -546,6 +554,6 @@ class SmartTranslationService:
             return True, valid_terms
 
         except json.JSONDecodeError as e:
-            return False, f"Invalid JSON: {str(e)}"
+            return False, f"Invalid JSON: {e!s}"
         except Exception as e:
-            return False, f"Validation error: {str(e)}"
+            return False, f"Validation error: {e!s}"

@@ -1,22 +1,38 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
-    QLabel, QLineEdit, QPushButton, QGroupBox, QFormLayout, QComboBox,
-    QSpinBox, QSplitter, QMessageBox, QApplication, QDialogButtonBox
-)
-from PySide6.QtCore import Qt
-import uuid
 import copy
+import uuid
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QSplitter,
+    QVBoxLayout,
+    QWidget,
+)
+
 from services.ai_translator import AITranslator
 from ui_components.help_button import HelpButton
-from ui_components.styled_button import StyledButton
-from ui_components.password_edit import PasswordEdit
 from ui_components.option_selector import OptionSelector
-from utils.path_utils import get_resource_path
+from ui_components.password_edit import PasswordEdit
+from ui_components.styled_button import StyledButton
 from utils.constants import AI_PROVIDER_PRESETS
 from utils.localization import _
+from utils.path_utils import get_resource_path
 
 
 class AIModelManagerDialog(QDialog):
@@ -161,8 +177,8 @@ class AIModelManagerDialog(QDialog):
         self.is_loading_ui = False
 
         self.merged_presets = AI_PROVIDER_PRESETS.copy()
-        if hasattr(self.app, 'plugin_manager'):
-            plugin_presets = self.app.plugin_manager.run_hook('register_ai_providers')
+        if hasattr(self.app, "plugin_manager"):
+            plugin_presets = self.app.plugin_manager.run_hook("register_ai_providers")
             if plugin_presets and isinstance(plugin_presets, dict):
                 self.merged_presets.update(plugin_presets)
 
@@ -223,7 +239,7 @@ class AIModelManagerDialog(QDialog):
         preset_layout = QHBoxLayout(preset_group)
         self.preset_combo = QComboBox()
         self.preset_combo.addItem(_("Select a provider template..."), "")
-        for provider in self.merged_presets.keys():
+        for provider in self.merged_presets:
             self.preset_combo.addItem(provider, provider)
         self.preset_combo.currentIndexChanged.connect(self.apply_preset)
 
@@ -280,7 +296,7 @@ class AIModelManagerDialog(QDialog):
         self.cap_options = [
             ("vision", _("Vision"), "eye.svg", "#409EFF"),
             ("reasoning", _("Reasoning"), "cpu.svg", "#409EFF"),
-            ("tools", _("Tools"), "tool.svg", "#409EFF")
+            ("tools", _("Tools"), "tool.svg", "#409EFF"),
         ]
         self.cap_selector = OptionSelector(self.cap_options)
         self.cap_selector.selectionChanged.connect(self.on_capabilities_changed)
@@ -289,7 +305,13 @@ class AIModelManagerDialog(QDialog):
 
         # 2. Enhancements
         self.enhance_options = [
-            ("cot_injection", _("CoT Injection"), "pencil.svg", "#9C27B0", _("Injects 'Chain of Thought' instructions to force deep thinking for non-reasoning models."))
+            (
+                "cot_injection",
+                _("CoT Injection"),
+                "pencil.svg",
+                "#9C27B0",
+                _("Injects 'Chain of Thought' instructions to force deep thinking for non-reasoning models."),
+            )
         ]
         self.enhance_selector = OptionSelector(self.enhance_options)
         self.enhance_selector.selectionChanged.connect(self.save_current_form_to_buffer)
@@ -398,7 +420,7 @@ class AIModelManagerDialog(QDialog):
             self.concurrency_spin.setValue(model_data.get("concurrency", 1))
             self.timeout_spin.setValue(model_data.get("timeout", 60))
 
-            is_active = (model_id == self.active_model_id)
+            is_active = model_id == self.active_model_id
             self.btn_set_active.setChecked(is_active)
             self.btn_set_active.setText(_("Active") if is_active else _("Set as Active"))
             self.btn_set_active.setEnabled(not is_active)
@@ -439,7 +461,7 @@ class AIModelManagerDialog(QDialog):
     def update_url_tooltip(self, text):
         final_url = AITranslator._normalize_url(text) if text else ""
 
-        if text.strip().endswith('#'):
+        if text.strip().endswith("#"):
             mode_text = f"<span style='color:#E6A23C'>[{_('Raw Mode')}]</span>"
         else:
             mode_text = f"<span style='color:#67C23A'>[{_('Auto')}]</span>"
@@ -451,7 +473,8 @@ class AIModelManagerDialog(QDialog):
         self.btn_help.set_tooltip_text(full_tooltip)
 
     def apply_preset(self, index):
-        if self.is_loading_ui or index <= 0: return
+        if self.is_loading_ui or index <= 0:
+            return
         provider_name = self.preset_combo.currentText()
         preset = self.merged_presets.get(provider_name)
         if preset:
@@ -473,7 +496,7 @@ class AIModelManagerDialog(QDialog):
             "model_name": "",
             "capabilities": [],
             "concurrency": 1,
-            "timeout": 60
+            "timeout": 60,
         }
         self.models_buffer.append(new_model)
         self.refresh_model_list()
@@ -483,21 +506,25 @@ class AIModelManagerDialog(QDialog):
 
     def delete_model(self):
         row = self.model_list_widget.currentRow()
-        if row < 0: return
+        if row < 0:
+            return
         item = self.model_list_widget.item(row)
         model_id = item.data(Qt.UserRole)
         if model_id == self.active_model_id:
-            QMessageBox.warning(self, _("Warning"),
-                                _("Cannot delete the active model. Please activate another model first."))
+            QMessageBox.warning(
+                self, _("Warning"), _("Cannot delete the active model. Please activate another model first.")
+            )
             return
-        reply = QMessageBox.question(self, _("Confirm Delete"),
-                                     _("Are you sure you want to delete this model configuration?"))
+        reply = QMessageBox.question(
+            self, _("Confirm Delete"), _("Are you sure you want to delete this model configuration?")
+        )
         if reply == QMessageBox.Yes:
             self.models_buffer = [m for m in self.models_buffer if m["id"] != model_id]
             self.refresh_model_list()
 
     def duplicate_model(self):
-        if not self.current_editing_item: return
+        if not self.current_editing_item:
+            return
         new_model = self.current_editing_item.copy()
         new_model["id"] = str(uuid.uuid4())
         new_model["name"] = new_model["name"] + " (Copy)"
@@ -506,7 +533,8 @@ class AIModelManagerDialog(QDialog):
         self.model_list_widget.setCurrentRow(self.model_list_widget.count() - 1)
 
     def set_current_as_active(self):
-        if not self.current_editing_item: return
+        if not self.current_editing_item:
+            return
         self.active_model_id = self.current_editing_item["id"]
         self.refresh_model_list()
         self.on_model_selected(self.model_list_widget.currentRow())
@@ -522,6 +550,7 @@ class AIModelManagerDialog(QDialog):
         self.btn_test.setText(_("Testing..."))
         QApplication.processEvents()
         from services.ai_translator import AITranslator
+
         temp_translator = AITranslator(api_key, model, url)
         try:
             success, message = temp_translator.test_connection()

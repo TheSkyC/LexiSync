@@ -2,34 +2,35 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Dict
-from models.translatable_string import TranslatableString
 import json
-import os
 import logging
+from typing import TYPE_CHECKING
+
+from models.translatable_string import TranslatableString
+
 logger = logging.getLogger(__name__)
 
 
 if TYPE_CHECKING:
+    from PySide6.QtWidgets import QHBoxLayout
+
     from main_window import LexiSyncApp
     from plugins.plugin_manager import PluginManager
-    from PySide6.QtGui import QPainter
-    from PySide6.QtWidgets import QStyleOptionViewItem, QHBoxLayout
-    from PySide6.QtCore import QModelIndex
 
 
 class PluginBase(ABC):
     """
     The base class for all LexiSync plugins.
     """
+
     def __init__(self):
-        self.main_window: 'LexiSyncApp' = None
-        self.plugin_manager: 'PluginManager' = None
+        self.main_window: LexiSyncApp = None
+        self.plugin_manager: PluginManager = None
         self._ = lambda s: s
         self.config = {}
         self.config_path = ""
 
-    def setup(self, main_window: 'LexiSyncApp', plugin_manager: 'PluginManager'):
+    def setup(self, main_window: "LexiSyncApp", plugin_manager: "PluginManager"):
         """
         Called when the plugin is loaded..
         """
@@ -80,9 +81,9 @@ class PluginBase(ABC):
         Uses a simple prefix match. E.g., "1.1" matches "1.1.3", "1.1.4", etc.
         Return an empty string or None to indicate compatibility with all versions.
         """
-        return "" # 确保有默认返回值
+        return ""  # 确保有默认返回值
 
-    def plugin_dependencies(self) -> Dict[str, str]:
+    def plugin_dependencies(self) -> dict[str, str]:
         """
         Return a dictionary of plugin dependencies.
         Format: {'plugin_id': 'version_specifier', ...}
@@ -90,7 +91,7 @@ class PluginBase(ABC):
         """
         return {}
 
-    def external_dependencies(self) -> Dict[str, str]:
+    def external_dependencies(self) -> dict[str, str]:
         """
         Return a dictionary of external Python library dependencies.
         Format: {'library_name': 'version_specifier', ...}
@@ -133,7 +134,7 @@ class PluginBase(ABC):
         """
         return []
 
-    def on_main_toolbar_setup(self, toolbar_layout: 'QHBoxLayout') -> None:
+    def on_main_toolbar_setup(self, toolbar_layout: "QHBoxLayout") -> None:
         """
         (Notification Hook) Called when the main toolbar (filter bar) is being set up.
         Plugins can add their own widgets (buttons, labels, etc.) to the toolbar layout.
@@ -169,7 +170,7 @@ class PluginBase(ABC):
         """
         return []
 
-    def on_table_context_menu(self, selected_ts_objects: list['TranslatableString']) -> list:
+    def on_table_context_menu(self, selected_ts_objects: list["TranslatableString"]) -> list:
         """
         (Collecting Hook) Called when the context menu for the main strings table is about to be shown.
         Plugins can return a list of menu items to be added to the menu.
@@ -189,7 +190,7 @@ class PluginBase(ABC):
         """
         return []
 
-    def on_selection_changed(self, selected_ts_objects: list['TranslatableString']):
+    def on_selection_changed(self, selected_ts_objects: list["TranslatableString"]):
         """
         (Notification Hook) Called when the selection in the main strings table changes.
 
@@ -278,7 +279,7 @@ class PluginBase(ABC):
         """
         return text
 
-    def on_string_saved(self, ts_object: 'TranslatableString', column: str, new_value: str, old_value: str):
+    def on_string_saved(self, ts_object: "TranslatableString", column: str, new_value: str, old_value: str):
         """
         (Notification Hook) Called after a string's property (e.g., translation, comment)
         has been successfully updated in the data model.
@@ -334,7 +335,9 @@ class PluginBase(ABC):
         """
         pass
 
-    def process_ai_translate_list(self, ts_objects_to_translate: list['TranslatableString']) -> list['TranslatableString']:
+    def process_ai_translate_list(
+        self, ts_objects_to_translate: list["TranslatableString"]
+    ) -> list["TranslatableString"]:
         """
         (Processing Hook) Called before sending a list of strings to the AI for translation.
         Allows plugins to filter or modify the list of TranslatableString objects.
@@ -344,7 +347,7 @@ class PluginBase(ABC):
         """
         return ts_objects_to_translate
 
-    def process_ai_translated_text(self, translated_text: str, ts_object: 'TranslatableString') -> str:
+    def process_ai_translated_text(self, translated_text: str, ts_object: "TranslatableString") -> str:
         """
         (Processing Hook) Called after receiving a translation from the AI, but before applying it.
         Allows plugins to perform post-processing on the translated text.
@@ -367,7 +370,7 @@ class PluginBase(ABC):
         """
         return None
 
-    def get_supported_file_patterns(self) -> List[str]:
+    def get_supported_file_patterns(self) -> list[str]:
         """
         Return a list of file patterns (e.g., ['*.mo', '*.custom']) that this
         plugin adds to the file explorer's default filter.
@@ -429,7 +432,7 @@ class PluginBase(ABC):
         """Loads the plugin's configuration from its config.json file."""
         defaults = self.get_default_config()
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
+            with open(self.config_path, encoding="utf-8") as f:
                 user_config = json.load(f)
             defaults.update(user_config)
             self.config = defaults
@@ -441,8 +444,7 @@ class PluginBase(ABC):
         if not self.config_path:
             return
         try:
-            with open(self.config_path, 'w', encoding='utf-8') as f:
+            with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error saving config for plugin {self.plugin_id()}: {e}")
-

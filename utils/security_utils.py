@@ -1,17 +1,19 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import os
-import sys
 import base64
 import hashlib
 import hmac
 import logging
+import os
+import platform
+import sys
+
 import keyring
 import keyring.errors
-import platform
-from utils.path_utils import get_app_data_path
+
 from utils.localization import _
+from utils.path_utils import get_app_data_path
 
 logger = logging.getLogger(__name__)
 
@@ -22,20 +24,25 @@ KEYRING_USER = "master_key"
 COLOR_WARN = "\033[93m"  # Yellow
 COLOR_RESET = "\033[0m"  # Reset
 
+
 def _init_keyring_backend():
     """锁定平台特定的后端以加速启动，失败时回退至自动扫描"""
     try:
         system = platform.system()
         if system == "Windows":
             from keyring.backends.Windows import WinVaultKeyring
+
             keyring.set_keyring(WinVaultKeyring())
         elif system == "Darwin":
             from keyring.backends.macOS import Keyring
+
             keyring.set_keyring(Keyring())
     except Exception as e:
         logger.debug(f"Explicit keyring init failed, falling back to auto-scan: {e}")
 
+
 _init_keyring_backend()
+
 
 def _get_or_create_master_key() -> bytes:
     """
@@ -62,7 +69,7 @@ def _get_or_create_master_key() -> bytes:
 
     if os.path.exists(key_path):
         try:
-            with open(key_path, 'rb') as f:
+            with open(key_path, "rb") as f:
                 read_data = f.read()
                 if len(read_data) == 32:
                     key = read_data
@@ -88,11 +95,11 @@ def _get_or_create_master_key() -> bytes:
     # 如果 Keyring 保存失败，则保存到文件
     if not saved_to_keyring:
         try:
-            with open(key_path, 'wb') as f:
+            with open(key_path, "wb") as f:
                 f.write(key)
 
             # 设置文件权限 (仅限 Unix/Linux)
-            if sys.platform != 'win32':
+            if sys.platform != "win32":
                 os.chmod(key_path, 0o600)
             logger.warning(
                 f"{COLOR_WARN}[SECURITY WARNING] Master key saved to UNENCRYPTED local file (Keyring unavailable): {key_path}{COLOR_RESET}"
@@ -103,28 +110,29 @@ def _get_or_create_master_key() -> bytes:
                 "Path: {path}\n"
                 "Error: {error}"
             ).format(path=key_path, error=str(e))
-            raise IOError(error_message) from e
+            raise OSError(error_message) from e
 
     return key
 
 
 def encrypt_text(text: str) -> str:
-    if not text: return ""
+    if not text:
+        return ""
 
     try:
         master_key = _get_or_create_master_key()
 
-        text_bytes = text.encode('utf-8')
+        text_bytes = text.encode("utf-8")
         salt = os.urandom(16)
 
         # 扩展密钥
         keystream = hashlib.shake_256(master_key + salt).digest(len(text_bytes))
-        encrypted_bytes = bytes(a ^ b for a, b in zip(text_bytes, keystream))
+        encrypted_bytes = bytes(a ^ b for a, b in zip(text_bytes, keystream, strict=False))
         signature = hmac.new(master_key, salt + encrypted_bytes, hashlib.sha256).digest()
 
         payload = salt + signature + encrypted_bytes
 
-        return "ENC:" + base64.b64encode(payload).decode('utf-8')
+        return "ENC:" + base64.b64encode(payload).decode("utf-8")
     except Exception as e:
         logger.error(f"Encryption failed: {e}")
         return ""
@@ -155,9 +163,9 @@ def decrypt_text(text: str) -> str:
             return ""
 
         keystream = hashlib.shake_256(master_key + salt).digest(len(encrypted_bytes))
-        decrypted_bytes = bytes(a ^ b for a, b in zip(encrypted_bytes, keystream))
+        decrypted_bytes = bytes(a ^ b for a, b in zip(encrypted_bytes, keystream, strict=False))
 
-        return decrypted_bytes.decode('utf-8')
+        return decrypted_bytes.decode("utf-8")
     except Exception as e:
         logger.error(f"Decryption failed: {e}")
         return ""

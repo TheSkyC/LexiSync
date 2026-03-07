@@ -1,33 +1,48 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSplitter,
-    QTextEdit, QProgressBar, QStackedWidget, QWidget,
-    QGroupBox, QCheckBox, QSpinBox, QComboBox, QMessageBox,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
-    QDoubleSpinBox, QGridLayout, QButtonGroup ,QRadioButton
-)
-from PySide6.QtCore import Qt, QThread, Signal, QObject, QEvent
-from dialogs.test_translation_dialog import TestTranslationDialog
-from dialogs.interactive_review_dialog import InteractiveReviewDialog
-from dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
-from dialogs.resource_conflict_dialog import ResourceConflictDialog
-from services.smart_translation_service import SmartTranslationService
-from services.ai_worker import AIWorker
-from utils.enums import AIOperationType
-from utils.keyword_matcher import KeywordMatcher
-from utils.localization import _
-from ui_components.tooltip import Tooltip
-from ui_components.styled_button import StyledButton
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
+import logging
 import os
 import re
-import json
-import uuid
-from datetime import datetime
 import threading
-import logging
+
+from PySide6.QtCore import QEvent, QObject, Qt, QThread, Signal
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QButtonGroup,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDoubleSpinBox,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QMessageBox,
+    QProgressBar,
+    QRadioButton,
+    QSpinBox,
+    QSplitter,
+    QStackedWidget,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
+from dialogs.interactive_review_dialog import InteractiveReviewDialog
+from dialogs.resource_conflict_dialog import ResourceConflictDialog
+from dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
+from dialogs.test_translation_dialog import TestTranslationDialog
+from services.smart_translation_service import SmartTranslationService
+from ui_components.styled_button import StyledButton
+from ui_components.tooltip import Tooltip
+from utils.keyword_matcher import KeywordMatcher
+from utils.localization import _
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +64,10 @@ class IndexBuildWorker(QObject):
         try:
             if self.knowledge_base:
                 self.app.plugin_manager.run_hook(
-                    'build_retrieval_index',
+                    "build_retrieval_index",
                     self.knowledge_base,
                     progress_callback=self.progress.emit,
-                    check_cancel=lambda: self._is_cancelled
+                    check_cancel=lambda: self._is_cancelled,
                 )
         except Exception as e:
             logger.error(f"Index build failed: {e}")
@@ -62,14 +77,27 @@ class IndexBuildWorker(QObject):
 
 class AnalysisWorker(QObject):
     """Phase 1 分析工作线程"""
+
     progress = Signal(str)
-    finished = Signal(str, str, float, list)   # style_guide, glossary_md, recommended_temp, context_list
+    finished = Signal(str, str, float, list)  # style_guide, glossary_md, recommended_temp, context_list
     error = Signal(str)
 
-    def __init__(self, app, samples, all_items, source_lang, target_lang,
-                 term_mode="fast", max_threads=1, use_context=True,
-                 batch_size=50, orphan_ratio=0.2, inject_glossary=False,
-                 do_style_analysis=True, do_term_extraction=True):
+    def __init__(
+        self,
+        app,
+        samples,
+        all_items,
+        source_lang,
+        target_lang,
+        term_mode="fast",
+        max_threads=1,
+        use_context=True,
+        batch_size=50,
+        orphan_ratio=0.2,
+        inject_glossary=False,
+        do_style_analysis=True,
+        do_term_extraction=True,
+    ):
         super().__init__()
         self.app = app
         self.samples = samples
@@ -100,14 +128,16 @@ class AnalysisWorker(QObject):
 
             # 步骤1: 风格分析
             if self.do_style_analysis:
-                if self._is_cancelled: return
+                if self._is_cancelled:
+                    return
                 self.progress.emit(_("Analyzing style and tone..."))
                 raw_style_guide = self._analyze_style(translator)
                 clean_style_guide, rec_temp = self._parse_and_strip_temperature(raw_style_guide)
 
             # 步骤2: 术语提取
             if self.do_term_extraction:
-                if self._is_cancelled: return
+                if self._is_cancelled:
+                    return
                 self.progress.emit(_("Extracting key terminology..."))
 
                 terms_data = self._extract_terms(translator)
@@ -117,20 +147,22 @@ class AnalysisWorker(QObject):
                 if self.term_mode == "deep" and self.use_context:
                     self.progress.emit(_("Augmenting AI explanations with source snippets..."))
                     total_c = len(terms_data)
-                    for i, item in enumerate(terms_data):
-                        if self._is_cancelled: return
+                    for __, item in enumerate(terms_data):
+                        if self._is_cancelled:
+                            return
                         # 查找原文例句
-                        snippet = SmartTranslationService.find_context_snippets(item['term'], self.all_items)
+                        snippet = SmartTranslationService.find_context_snippets(item["term"], self.all_items)
                         if snippet:
                             # 组合 AI 解释和原文例句
-                            ai_explanation = item.get('context', '')
+                            ai_explanation = item.get("context", "")
                             if ai_explanation:
-                                item['context'] = f"<b>[AI]:</b> {ai_explanation}<br><b>[Ref]:</b> {snippet}"
+                                item["context"] = f"<b>[AI]:</b> {ai_explanation}<br><b>[Ref]:</b> {snippet}"
                             else:
-                                item['context'] = snippet
+                                item["context"] = snippet
 
                 # 步骤3: 术语翻译
-                if self._is_cancelled: return
+                if self._is_cancelled:
+                    return
                 glossary_md = ""
                 if self.term_mode == "fast":
                     self.progress.emit(_("Running frequency analysis (Fast Mode)..."))
@@ -144,12 +176,13 @@ class AnalysisWorker(QObject):
                         self.progress.emit(_("Scanning context snippets for terms..."))
                         total_c = len(terms_data)
                         for i, item in enumerate(terms_data):
-                            if self._is_cancelled: return
+                            if self._is_cancelled:
+                                return
                             if i % 10 == 0:
                                 self.progress.emit(_("Scanning context: {i}/{t}").format(i=i + 1, t=total_c))
 
-                            snippet = SmartTranslationService.find_context_snippets(item['term'], self.all_items)
-                            item['context'] = snippet
+                            snippet = SmartTranslationService.find_context_snippets(item["term"], self.all_items)
+                            item["context"] = snippet
 
                     self.progress.emit(_("Translating terms with context..."))
                     glossary_md = self._translate_terms(translator, terms_data, style_guide=clean_style_guide)
@@ -171,7 +204,8 @@ class AnalysisWorker(QObject):
         则将其合并到倒数第二批中，防止产生过小的孤立批次。
         """
         total = len(items)
-        if total == 0: return []
+        if total == 0:
+            return []
 
         # 如果总量本身就只比一个批次多一点点 (例如 55 个，阈值是 60)，直接作为一个批次
         # 50 * (1 + 0.2) = 60
@@ -179,7 +213,7 @@ class AnalysisWorker(QObject):
             return [items]
 
         # 标准分批
-        batches = [items[i:i + batch_size] for i in range(0, total, batch_size)]
+        batches = [items[i : i + batch_size] for i in range(0, total, batch_size)]
 
         # 检查最后一批
         if len(batches) > 1:
@@ -196,10 +230,11 @@ class AnalysisWorker(QObject):
     def _parse_and_strip_temperature(self, text):
         """从风格指南中提取温度并将其从文本中移除"""
         import re
+
         rec_temp = 0.3  # 默认值
 
         # 匹配 "Recommended Temperature" 后面的第一个数字 (如 0.5, .5, 1.0)
-        pattern = r'[\-\*]*\s*(\*\*)?Recommended Temperature(\*\*)?:\s*([0-1]?\.?\d+)'
+        pattern = r"[\-\*]*\s*(\*\*)?Recommended Temperature(\*\*)?:\s*([0-1]?\.?\d+)"
 
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
@@ -208,7 +243,9 @@ class AnalysisWorker(QObject):
                 val = float(val_str)
                 rec_temp = max(0.1, min(1.0, val))
                 # 移除整行
-                text = re.sub(r'[\-\*]*\s*(\*\*)?Recommended Temperature(\*\*)?:\s*.*(\n|$)', '', text, flags=re.IGNORECASE)
+                text = re.sub(
+                    r"[\-*]*\s*(\*\*)?Recommended Temperature(\*\*)?:\s*.*(\n|$)", "", text, flags=re.IGNORECASE
+                )
             except ValueError:
                 pass
 
@@ -230,14 +267,17 @@ class AnalysisWorker(QObject):
         self.progress.emit(_("Loading existing glossary for consistency..."))
         try:
             all_terms = {}
+
             def load_from_db(db_path):
-                if not db_path or not os.path.exists(db_path): return
+                if not db_path or not os.path.exists(db_path):
+                    return
                 import sqlite3
+
                 try:
                     conn = sqlite3.connect(db_path)
                     cursor = conn.cursor()
                     query = """
-                        SELECT t_source.term_text, t_target.term_text 
+                        SELECT t_source.term_text, t_target.term_text
                         FROM term_translations tt
                         JOIN terms t_source ON tt.source_term_id = t_source.id
                         JOIN terms t_target ON tt.target_term_id = t_target.id
@@ -269,21 +309,20 @@ class AnalysisWorker(QObject):
             seen_terms_lower = set()
 
             batches = self._create_smart_batches(
-                self.all_items,
-                batch_size=self.batch_size,
-                merge_threshold_ratio=self.orphan_ratio
+                self.all_items, batch_size=self.batch_size, merge_threshold_ratio=self.orphan_ratio
             )
             total_batches = len(batches)
             completed_batches = 0
             lock = threading.Lock()
 
             def process_batch(batch_items):
-                if self._is_cancelled: return []
+                if self._is_cancelled:
+                    return []
                 batch_text = "\n".join([t.original_semantic for t in batch_items])
                 existing_terms_str = ""
                 if self.glossary_matcher:
                     found = self.glossary_matcher.extract_keywords(batch_text)
-                    found_terms = sorted(list(set([f['term'] for f in found])))
+                    found_terms = sorted({f["term"] for f in found})
                     if found_terms:
                         existing_terms_str = "- " + "\n- ".join(found_terms[:50])
 
@@ -310,16 +349,18 @@ class AnalysisWorker(QObject):
                         result_items = future.result()
                         with lock:
                             for item in result_items:
-                                t = item['term'].strip()
+                                t = item["term"].strip()
                                 # Length check
-                                if len(t.split()) > 5 or len(t) > 25: continue
+                                if len(t.split()) > 5 or len(t) > 25:
+                                    continue
                                 # Punctuation check
-                                if t.endswith(('。', '.', '!', '！', '?', '？', ':', '：')): continue
+                                if t.endswith(("。", ".", "!", "！", "?", "？", ":", "：")):
+                                    continue
                                 t_lower = t.lower()
 
                                 if self.glossary_matcher:
                                     matches = self.glossary_matcher.extract_keywords(t)
-                                    if any(m['term'].lower() == t_lower for m in matches):
+                                    if any(m["term"].lower() == t_lower for m in matches):
                                         continue
 
                                 if t_lower not in seen_terms_lower:
@@ -328,12 +369,13 @@ class AnalysisWorker(QObject):
                                 else:
                                     existing_key = next((k for k in all_terms_dict if k.lower() == t_lower), None)
                                     if existing_key:
-                                        if not all_terms_dict[existing_key].get('context') and item.get('context'):
-                                            all_terms_dict[existing_key]['context'] = item['context']
+                                        if not all_terms_dict[existing_key].get("context") and item.get("context"):
+                                            all_terms_dict[existing_key]["context"] = item["context"]
 
                             completed_batches += 1
                             self.progress.emit(
-                                _("Deep Scan: Batch {c}/{t}...").format(c=completed_batches, t=total_batches))
+                                _("Deep Scan: Batch {c}/{t}...").format(c=completed_batches, t=total_batches)
+                            )
                     except Exception as e:
                         logger.error(f"Error processing batch result: {e}")
 
@@ -347,33 +389,33 @@ class AnalysisWorker(QObject):
 
         # 配置批次大小
         batches = self._create_smart_batches(
-            terms_data_list,
-            batch_size=self.batch_size,
-            merge_threshold_ratio=self.orphan_ratio
+            terms_data_list, batch_size=self.batch_size, merge_threshold_ratio=self.orphan_ratio
         )
         total_batches = len(batches)
 
-        self.progress.emit(_("Translating terms in {t} batches (Threads: {n})...").format(
-            t=total_batches, n=self.max_threads))
+        self.progress.emit(
+            _("Translating terms in {t} batches (Threads: {n})...").format(t=total_batches, n=self.max_threads)
+        )
 
         results = ["| Source | Target |\n|--------|--------|"]
         completed_batches = 0
         lock = threading.Lock()
 
         def process_batch(batch_items):
-            if self._is_cancelled: return ""
+            if self._is_cancelled:
+                return ""
             try:
                 # Find sub-terms for consistency
                 reference_glossary_str = ""
                 if self.glossary_matcher:
-                    batch_text_blob = " ".join([item['term'] for item in batch_items])
+                    batch_text_blob = " ".join([item["term"] for item in batch_items])
                     found_refs = self.glossary_matcher.extract_keywords(batch_text_blob)
 
                     # Deduplicate and format
                     unique_refs = {}
                     for ref in found_refs:
-                        term = ref['term']
-                        translation = ref['data']
+                        term = ref["term"]
+                        translation = ref["data"]
                         if term not in unique_refs:
                             unique_refs[term] = translation
 
@@ -449,7 +491,6 @@ class SmartTranslationDialog(QDialog):
         self.setup_ui()
         self.check_plugins()
 
-
     def setup_ui(self):
         """设置UI布局"""
         layout = QVBoxLayout(self)
@@ -493,11 +534,7 @@ class SmartTranslationDialog(QDialog):
         scope_layout = QVBoxLayout(scope_group)
 
         self.scope_combo = QComboBox()
-        self.scope_combo.addItems([
-            _("All Untranslated Items"),
-            _("All Items"),
-            _("Selected Items")
-        ])
+        self.scope_combo.addItems([_("All Untranslated Items"), _("All Items"), _("Selected Items")])
         scope_layout.addWidget(self.scope_combo)
 
         return scope_group
@@ -522,7 +559,8 @@ class SmartTranslationDialog(QDialog):
         self.chk_neighbors = QCheckBox(_("Neighboring Text"))
         self.chk_neighbors.setChecked(True)
         self.chk_neighbors.setToolTip(
-            _("Include nearby original and translated text to help AI understand the context."))
+            _("Include nearby original and translated text to help AI understand the context.")
+        )
 
         self.spin_neighbors = QSpinBox()
         self.spin_neighbors.setRange(1, 20)
@@ -537,7 +575,8 @@ class SmartTranslationDialog(QDialog):
         self.chk_retrieval = QCheckBox(_("Semantic Retrieval"))
         self.chk_retrieval.setChecked(True)
         self.chk_retrieval.setToolTip(
-            _("Search for semantically similar texts in the project to maintain consistency."))
+            _("Search for semantically similar texts in the project to maintain consistency.")
+        )
 
         self.spin_retrieval = QSpinBox()
         self.spin_retrieval.setRange(1, 20)
@@ -556,8 +595,10 @@ class SmartTranslationDialog(QDialog):
         if plugin:
             status = plugin.get_available_backends()
             model = self.combo_retrieval_mode.model()
-            if not status.get('tfidf'): model.item(1).setEnabled(False)
-            if not status.get('onnx'): model.item(2).setEnabled(False)
+            if not status.get("tfidf"):
+                model.item(1).setEnabled(False)
+            if not status.get("onnx"):
+                model.item(2).setEnabled(False)
         else:
             self.combo_retrieval_mode.setEnabled(False)
 
@@ -649,8 +690,10 @@ class SmartTranslationDialog(QDialog):
         self.term_mode_combo.addItem(_("Fast (Frequency-based)"), "fast")
         self.term_mode_combo.addItem(_("Deep (AI-Scan)"), "deep")
         self.term_mode_combo.setToolTip(
-            _("Fast: Scans high-frequency words locally, then AI filters them. Cheap & Fast.\n"
-              "Deep: AI reads ALL texts to find terms. Expensive & Slow but thorough.")
+            _(
+                "Fast: Scans high-frequency words locally, then AI filters them. Cheap & Fast.\n"
+                "Deep: AI reads ALL texts to find terms. Expensive & Slow but thorough."
+            )
         )
         method_layout.addWidget(self.term_mode_combo)
         method_layout.addStretch()
@@ -660,7 +703,9 @@ class SmartTranslationDialog(QDialog):
         self.chk_inject_glossary = QCheckBox(_("Reference Existing Terms"))
         self.chk_inject_glossary.setChecked(True)
         self.chk_inject_glossary.setToolTip(
-            _("During analysis, check against the existing glossary to avoid duplicates and ensure compound word consistency (e.g., 'File Manager' uses 'File').")
+            _(
+                "During analysis, check against the existing glossary to avoid duplicates and ensure compound word consistency (e.g., 'File Manager' uses 'File')."
+            )
         )
         analysis_options_layout.addWidget(self.chk_inject_glossary)
 
@@ -668,7 +713,9 @@ class SmartTranslationDialog(QDialog):
         self.chk_term_context = QCheckBox(_("Enhance Terms with Contextual Examples"))
         self.chk_term_context.setChecked(False)
         self.chk_term_context.setToolTip(
-            _("Provide example sentences for each extracted term to help the AI disambiguate meanings (e.g., 'Home' as 'Base' vs 'Menu').")
+            _(
+                "Provide example sentences for each extracted term to help the AI disambiguate meanings (e.g., 'Home' as 'Base' vs 'Menu')."
+            )
         )
         analysis_options_layout.addWidget(self.chk_term_context)
 
@@ -762,7 +809,8 @@ class SmartTranslationDialog(QDialog):
         self.temp_spinbox.setSingleStep(0.1)
         self.temp_spinbox.setValue(0.3)  # 默认值
         self.temp_spinbox.setToolTip(
-            _("Lower values (0.1) are more deterministic/precise.\nHigher values (0.8) are more creative."))
+            _("Lower values (0.1) are more deterministic/precise.\nHigher values (0.8) are more creative.")
+        )
         top_bar.addWidget(self.temp_spinbox)
         top_bar.addStretch()
 
@@ -788,11 +836,12 @@ class SmartTranslationDialog(QDialog):
         btn_test = StyledButton(_("Test Lab"), on_click=self.open_test_lab, btn_type="purple")
 
         # Interactive Review Button
-        btn_review = StyledButton(_("Start Interactive Review"), on_click=self.start_interactive_review, btn_type="primary")
+        btn_review = StyledButton(
+            _("Start Interactive Review"), on_click=self.start_interactive_review, btn_type="primary"
+        )
 
         # Batch Translation
         btn_start = StyledButton(_("Start Batch Translation"), on_click=self.start_translation, btn_type="success")
-
 
         btn_layout.addWidget(btn_back)
         btn_layout.addWidget(btn_test)
@@ -825,8 +874,9 @@ class SmartTranslationDialog(QDialog):
         header_layout.addWidget(QLabel(_("Extracted Glossary:")))
         header_layout.addStretch()
 
-        self.btn_save_glossary = StyledButton(_("Save to Glossary..."), on_click=self.on_save_glossary_clicked,
-                                              btn_type="primary", size="small")
+        self.btn_save_glossary = StyledButton(
+            _("Save to Glossary..."), on_click=self.on_save_glossary_clicked, btn_type="primary", size="small"
+        )
         header_layout.addWidget(self.btn_save_glossary)
 
         layout.addLayout(header_layout)
@@ -867,10 +917,7 @@ class SmartTranslationDialog(QDialog):
 
         self.log_view = QTextEdit()
         self.log_view.setReadOnly(True)
-        self.log_view.setStyleSheet(
-            "background-color: #1E1E1E; color: #D4D4D4; "
-            "font-family: Consolas, monospace;"
-        )
+        self.log_view.setStyleSheet("background-color: #1E1E1E; color: #D4D4D4; font-family: Consolas, monospace;")
         layout.addWidget(self.log_view)
 
         self.btn_stop = StyledButton(_("Stop"), on_click=self.stop_translation, btn_type="danger")
@@ -901,9 +948,7 @@ class SmartTranslationDialog(QDialog):
                             # 3. 正则替换
                             try:
                                 highlighted_context = re.sub(
-                                    f"(?i)({escaped_term})",
-                                    f"<span style='{hl_style}'>\\1</span>",
-                                    context
+                                    f"(?i)({escaped_term})", f"<span style='{hl_style}'>\\1</span>", context
                                 )
                             except Exception:
                                 highlighted_context = context
@@ -950,25 +995,30 @@ class SmartTranslationDialog(QDialog):
                     tgt = tgt_item.text().strip()
                     ctx = src_item.data(Qt.UserRole) or ""
                     if src and tgt:
-                        entries_to_save.append({'source': src, 'target': tgt, 'context': ctx})
+                        entries_to_save.append({"source": src, "target": tgt, "context": ctx})
 
         if not entries_to_save:
             QMessageBox.warning(self, _("Warning"), _("No terms selected to save."))
             return
 
         # 2. Show Generic Options Dialog
-        opt_dialog = ResourceSaveOptionsDialog(self, resource_type='glossary', has_project=self.app.is_project_mode,
-                                               count=len(entries_to_save))
+        opt_dialog = ResourceSaveOptionsDialog(
+            self, resource_type="glossary", has_project=self.app.is_project_mode, count=len(entries_to_save)
+        )
         if not opt_dialog.exec():
             return
 
         options = opt_dialog.get_data()
-        target_db = options['target_db']
-        strategy = options['strategy']
-        save_context = options.get('save_context', False)
+        target_db = options["target_db"]
+        strategy = options["strategy"]
+        save_context = options.get("save_context", False)
 
         # 3. Determine DB Path
-        db_path = self.app.glossary_service.project_db_path if target_db == 'project' else self.app.glossary_service.global_db_path
+        db_path = (
+            self.app.glossary_service.project_db_path
+            if target_db == "project"
+            else self.app.glossary_service.global_db_path
+        )
         if not db_path:
             QMessageBox.critical(self, _("Error"), _("Target database not available."))
             return
@@ -979,25 +1029,23 @@ class SmartTranslationDialog(QDialog):
         current_filename = "Unknown File"
         if self.app.is_project_mode:
             current_filename = self.app.get_current_active_filename()
-        elif self.app.current_file_path:
-            current_filename = os.path.basename(self.app.current_file_path)
-        elif self.app.current_file_path:
+        elif self.app.current_file_path or self.app.current_file_path:
             current_filename = os.path.basename(self.app.current_file_path)
 
         source_key = f"smart_extract::{current_filename}"
         display_name = f"{current_filename} (Smart Extract)"
 
         # 4. Check Conflicts
-        src_terms = [e['source'] for e in entries_to_save]
+        src_terms = [e["source"] for e in entries_to_save]
         all_conflicts = self.app.glossary_service.find_conflicts(db_path, src_terms, source_lang, target_lang)
 
         real_conflicts = {}
         for entry in entries_to_save:
-            src_key = entry['source'].strip().lower()
-            new_target = entry['target'].strip()
+            src_key = entry["source"].strip().lower()
+            new_target = entry["target"].strip()
 
             if src_key in all_conflicts:
-                existing_targets = all_conflicts[src_key]['existing_targets']
+                existing_targets = all_conflicts[src_key]["existing_targets"]
                 is_identical = any(t.strip() == new_target for t in existing_targets)
 
                 if not is_identical:
@@ -1005,8 +1053,8 @@ class SmartTranslationDialog(QDialog):
 
         # 5. Resolve Conflicts
         resolutions = {}
-        if strategy == 'manual' and real_conflicts:
-            conflict_dialog = ResourceConflictDialog(self, real_conflicts, entries_to_save, resource_type='glossary')
+        if strategy == "manual" and real_conflicts:
+            conflict_dialog = ResourceConflictDialog(self, real_conflicts, entries_to_save, resource_type="glossary")
             if not conflict_dialog.exec():
                 return
             resolutions = conflict_dialog.resolutions
@@ -1014,29 +1062,28 @@ class SmartTranslationDialog(QDialog):
         # 6. Prepare Final List
         final_entries = []
         for entry in entries_to_save:
-            src_key = entry['source'].strip().lower()
-            action = 'new'
+            src_key = entry["source"].strip().lower()
+            action = "new"
             term_id = None
 
             if src_key in real_conflicts:
                 conflict_info = real_conflicts[src_key]
-                term_id = conflict_info['id']
-                if strategy == 'manual':
-                    action = resolutions.get(src_key, 'skip')
-                else:
-                    action = strategy
+                term_id = conflict_info["id"]
+                action = resolutions.get(src_key, "skip") if strategy == "manual" else strategy
             elif src_key in all_conflicts:
                 conflict_info = all_conflicts[src_key]
-                term_id = conflict_info['id']
-                action = 'overwrite'
+                term_id = conflict_info["id"]
+                action = "overwrite"
 
-            final_entries.append({
-                'source': entry['source'],
-                'target': entry['target'],
-                'comment': entry['context'] if save_context else "",
-                'action': action,
-                'term_id': term_id
-            })
+            final_entries.append(
+                {
+                    "source": entry["source"],
+                    "target": entry["target"],
+                    "comment": entry["context"] if save_context else "",
+                    "action": action,
+                    "term_id": term_id,
+                }
+            )
 
         # 7. Execute Save
         success, msg = self.app.glossary_service.batch_save_entries(
@@ -1044,7 +1091,7 @@ class SmartTranslationDialog(QDialog):
         )
 
         if success:
-            saved_count = len([e for e in final_entries if e['action'] != 'skip'])
+            len([e for e in final_entries if e["action"] != "skip"])
             glossary_dir = os.path.dirname(db_path)
             total_count = self.app.glossary_service.get_entry_count_by_source(glossary_dir, source_key)
 
@@ -1074,7 +1121,7 @@ class SmartTranslationDialog(QDialog):
         if plugin:
             # Check if at least one backend is available
             backends = plugin.get_available_backends()
-            if backends.get('tfidf') or backends.get('onnx'):
+            if backends.get("tfidf") or backends.get("onnx"):
                 is_available = True
 
         if is_available:
@@ -1090,17 +1137,11 @@ class SmartTranslationDialog(QDialog):
         self.target_items = self._determine_scope()
 
         if not self.target_items:
-            QMessageBox.warning(
-                self,
-                _("Warning"),
-                _("No items found in the selected scope.")
-            )
+            QMessageBox.warning(self, _("Warning"), _("No items found in the selected scope."))
             return
 
         # 2. 智能采样
-        self.analysis_samples = SmartTranslationService.intelligent_sampling(
-            self.target_items, 100
-        )
+        self.analysis_samples = SmartTranslationService.intelligent_sampling(self.target_items, 100)
 
         # 3. 如果都不需要分析，直接跳到预览页
         analyze_style = self.chk_analyze_style.isChecked()
@@ -1111,7 +1152,6 @@ class SmartTranslationDialog(QDialog):
 
         # 4. 启动分析线程
         self._start_analysis_thread()
-
 
     def _cache_glossary_from_ui(self):
         self._cached_glossary_dict = {}
@@ -1138,9 +1178,9 @@ class SmartTranslationDialog(QDialog):
 
         if scope_idx == 0:  # 未翻译项
             return [ts for ts in all_objs if not ts.translation.strip() and not ts.is_ignored]
-        elif scope_idx == 1:  # 所有项
+        if scope_idx == 1:  # 所有项
             return [ts for ts in all_objs if not ts.is_ignored]
-        elif scope_idx == 2:  # 选中项
+        if scope_idx == 2:  # 选中项
             return self.app._get_selected_ts_objects_from_sheet()
 
         return []
@@ -1160,7 +1200,7 @@ class SmartTranslationDialog(QDialog):
             "tm_limit": self.spin_retrieval.value(),
             "use_glossary_db": self.chk_use_glossary_db.isChecked(),
             "style_guide_text": self.edit_style.toPlainText(),
-            "cached_glossary": self._cached_glossary_dict.copy()
+            "cached_glossary": self._cached_glossary_dict.copy(),
         }
 
     def _generate_local_neighbor_context(self, current_ts_id, config=None):
@@ -1193,7 +1233,8 @@ class SmartTranslationDialog(QDialog):
             # Preceding
             count = 0
             for i in range(current_idx - 1, -1, -1):
-                if count >= max_neighbors: break
+                if count >= max_neighbors:
+                    break
                 ts = all_objs[i]
                 if not ts.is_ignored:
                     context_items.insert(0, ts.original_semantic)
@@ -1201,14 +1242,15 @@ class SmartTranslationDialog(QDialog):
             # Succeeding
             count = 0
             for i in range(current_idx + 1, len(all_objs)):
-                if count >= max_neighbors: break
+                if count >= max_neighbors:
+                    break
                 ts = all_objs[i]
                 if not ts.is_ignored:
                     context_items.append(ts.original_semantic)
                     count += 1
 
             if context_items:
-                formatted_items = [f"- \"{item.replace(chr(10), ' ').strip()}\"" for item in context_items]
+                formatted_items = [f'- "{item.replace(chr(10), " ").strip()}"' for item in context_items]
                 contexts["original_context"] = "\n".join(formatted_items)
 
             # 2. Translated Context
@@ -1216,7 +1258,8 @@ class SmartTranslationDialog(QDialog):
             # Preceding
             count = 0
             for i in range(current_idx - 1, -1, -1):
-                if count >= max_neighbors: break
+                if count >= max_neighbors:
+                    break
                 ts = all_objs[i]
                 if ts.translation.strip() and not ts.is_ignored:
                     context_pairs.insert(0, (ts.original_semantic, ts.get_translation_for_ui()))
@@ -1224,7 +1267,8 @@ class SmartTranslationDialog(QDialog):
             # Succeeding
             count = 0
             for i in range(current_idx + 1, len(all_objs)):
-                if count >= max_neighbors: break
+                if count >= max_neighbors:
+                    break
                 ts = all_objs[i]
                 if ts.translation.strip() and not ts.is_ignored:
                     context_pairs.append((ts.original_semantic, ts.get_translation_for_ui()))
@@ -1234,7 +1278,8 @@ class SmartTranslationDialog(QDialog):
                 header = f"| {_('Original')} | {_('Translation')} |\n|---|---|\n"
                 rows = [
                     f"| {orig.replace('|', '\\|').replace(chr(10), ' ')} | {trans.replace('|', '\\|').replace(chr(10), ' ')} |"
-                    for orig, trans in context_pairs]
+                    for orig, trans in context_pairs
+                ]
                 contexts["translation_context"] = header + "\n".join(rows)
 
         except Exception as e:
@@ -1248,7 +1293,9 @@ class SmartTranslationDialog(QDialog):
         if self.analysis_thread:
             try:
                 if self.analysis_thread.isRunning():
-                    QMessageBox.warning(self, _("Warning"), _("Analysis is already running. Please wait or stop it first."))
+                    QMessageBox.warning(
+                        self, _("Warning"), _("Analysis is already running. Please wait or stop it first.")
+                    )
                     return
             except RuntimeError:
                 self.analysis_thread = None
@@ -1280,7 +1327,7 @@ class SmartTranslationDialog(QDialog):
             orphan_ratio=self.orphan_ratio_spinbox.value(),
             inject_glossary=self.chk_inject_glossary.isChecked(),
             do_style_analysis=analyze_style,
-            do_term_extraction=extract_terms
+            do_term_extraction=extract_terms,
         )
         self.analysis_worker.moveToThread(self.analysis_thread)
 
@@ -1330,11 +1377,7 @@ class SmartTranslationDialog(QDialog):
     def _on_analysis_error(self, error_msg):
         """分析错误回调"""
         self.log(_("Analysis failed: {error}").format(error=error_msg), "ERROR")
-        QMessageBox.critical(
-            self,
-            _("Error"),
-            _("Analysis failed:\n") + error_msg
-        )
+        QMessageBox.critical(self, _("Error"), _("Analysis failed:\n") + error_msg)
         self.stack.setCurrentIndex(0)
 
     def _populate_glossary_table(self, markdown_text, terms_data=None):
@@ -1348,21 +1391,21 @@ class SmartTranslationDialog(QDialog):
         if terms_data:
             for item in terms_data:
                 if isinstance(item, dict):
-                    context_map[item.get('term')] = item.get('context', '')
+                    context_map[item.get("term")] = item.get("context", "")
 
         if not markdown_text or not markdown_text.strip():
             self.table_glossary.setSortingEnabled(True)
             return
 
-        lines = markdown_text.strip().split('\n')
+        lines = markdown_text.strip().split("\n")
         parsed_entries = []
         for line in lines:
             # 跳过分隔线和空行
-            if not line.strip() or '---' in line or '===' in line:
+            if not line.strip() or "---" in line or "===" in line:
                 continue
 
             # 解析表格行
-            parts = [p.strip() for p in line.split('|') if p.strip()]
+            parts = [p.strip() for p in line.split("|") if p.strip()]
 
             if len(parts) < 2:
                 continue
@@ -1395,7 +1438,7 @@ class SmartTranslationDialog(QDialog):
         source_lower = source.lower()
         target_lower = target.lower()
 
-        header_keywords = ['source', 'term', 'original', 'target', 'translation']
+        header_keywords = ["source", "term", "original", "target", "translation"]
 
         return source_lower in header_keywords and target_lower in header_keywords
 
@@ -1463,7 +1506,8 @@ class SmartTranslationDialog(QDialog):
         config_snapshot = self._capture_context_config()
 
         # 创建 Context Provider
-        context_provider = lambda ts_id: self.app._generate_universal_context(ts_id, config_snapshot)
+        def context_provider(ts_id):
+            return self.app._generate_universal_context(ts_id, config_snapshot)
 
         # 启动对话框
         if not self.target_items:
@@ -1494,10 +1538,7 @@ class SmartTranslationDialog(QDialog):
             knowledge_base = []
             for ts in self.app.translatable_objects:
                 if ts.translation.strip() and not ts.is_ignored:
-                    knowledge_base.append({
-                        'source': ts.original_semantic,
-                        'target': ts.translation
-                    })
+                    knowledge_base.append({"source": ts.original_semantic, "target": ts.translation})
 
             if knowledge_base:
                 self.log(_("Building retrieval index with {count} items...").format(count=len(knowledge_base)), "INFO")
@@ -1517,8 +1558,7 @@ class SmartTranslationDialog(QDialog):
                 self.index_thread.start()
                 return
 
-            else:
-                self.log(_("No translated items found for index. Skipping RAG."), "WARNING")
+            self.log(_("No translated items found for index. Skipping RAG."), "WARNING")
 
         self._execute_batch_translation()
 
@@ -1537,16 +1577,14 @@ class SmartTranslationDialog(QDialog):
         knowledge_base = []
         for ts in self.app.translatable_objects:
             if ts.translation.strip() and not ts.is_ignored:
-                knowledge_base.append({
-                    'source': ts.original_semantic,
-                    'target': ts.translation
-                })
+                knowledge_base.append({"source": ts.original_semantic, "target": ts.translation})
 
         if not knowledge_base:
             return
 
-        self.log(_("Background: Updating retrieval index with {count} items...").format(count=len(knowledge_base)),
-                 "INFO")
+        self.log(
+            _("Background: Updating retrieval index with {count} items...").format(count=len(knowledge_base)), "INFO"
+        )
 
         # 启动后台线程
         self._bg_thread = QThread()
@@ -1582,7 +1620,9 @@ class SmartTranslationDialog(QDialog):
         timeout = self.timeout_spinbox.value()
 
         config_snapshot = self._capture_context_config()
-        context_provider = lambda ts_id: self.app._generate_universal_context(ts_id, config_snapshot)
+
+        def context_provider(ts_id):
+            return self.app._generate_universal_context(ts_id, config_snapshot)
 
         # 开始批量翻译
         self.app.ai_manager.start_batch(
@@ -1591,7 +1631,7 @@ class SmartTranslationDialog(QDialog):
             concurrency_override=concurrency,
             temperature=current_temp,
             self_repair_limit=repair_limit,
-            api_timeout=timeout
+            api_timeout=timeout,
         )
 
     def _connect_ai_manager_signals(self):
@@ -1648,7 +1688,7 @@ class SmartTranslationDialog(QDialog):
         # 断开停止按钮的原有连接
         try:
             self.btn_stop.clicked.disconnect()
-        except:
+        except Exception:
             pass
 
         self.btn_stop.clicked.connect(self.accept)
@@ -1658,10 +1698,7 @@ class SmartTranslationDialog(QDialog):
 
         # 显示统计信息
         success_rate = (completed / total * 100) if total > 0 else 0
-        self.log(
-            f"✓ Completed: {completed}/{total} ({success_rate:.1f}%)",
-            "SUCCESS"
-        )
+        self.log(f"✓ Completed: {completed}/{total} ({success_rate:.1f}%)", "SUCCESS")
 
     def stop_translation(self):
         """停止操作 (分析、翻译)"""
@@ -1673,12 +1710,12 @@ class SmartTranslationDialog(QDialog):
             self.log("Translation task manager stopped.", "INFO")
 
         # 停止分析阶段 (Phase 1)
-        if hasattr(self, 'analysis_worker') and self.analysis_worker:
+        if hasattr(self, "analysis_worker") and self.analysis_worker:
             self.analysis_worker.cancel()
             self.log("Analysis worker cancellation requested.", "INFO")
 
         # 强制终止分析线程
-        if hasattr(self, 'analysis_thread') and self.analysis_thread and self.analysis_thread.isRunning():
+        if hasattr(self, "analysis_thread") and self.analysis_thread and self.analysis_thread.isRunning():
             self.analysis_thread.requestInterruption()
             self.analysis_thread.quit()
             self.analysis_thread.wait(500)
@@ -1689,7 +1726,7 @@ class SmartTranslationDialog(QDialog):
             self.analysis_thread = None
             self.analysis_worker = None
 
-        if hasattr(self, 'index_worker') and self.index_worker:
+        if hasattr(self, "index_worker") and self.index_worker:
             self.index_worker.cancel()
             self.log("Index build cancellation requested.", "INFO")
 
@@ -1702,12 +1739,11 @@ class SmartTranslationDialog(QDialog):
         self.btn_stop.setText(_("Close"))
         try:
             self.btn_stop.clicked.disconnect()
-        except:
+        except Exception:
             pass
         self.btn_stop.clicked.connect(self.accept)
 
         self.btn_stop.setEnabled(True)
-
 
     def log(self, message, level="INFO"):
         """
@@ -1717,25 +1753,14 @@ class SmartTranslationDialog(QDialog):
             message: 日志消息
             level: 日志级别 (INFO/SUCCESS/ERROR/WARNING)
         """
-        color_map = {
-            "INFO": "#D4D4D4",
-            "SUCCESS": "#4CAF50",
-            "ERROR": "#F44336",
-            "WARNING": "#FFC107"
-        }
+        color_map = {"INFO": "#D4D4D4", "SUCCESS": "#4CAF50", "ERROR": "#F44336", "WARNING": "#FFC107"}
 
-        display_map = {
-            "INFO": _("INFO"),
-            "SUCCESS": _("SUCCESS"),
-            "ERROR": _("ERROR"),
-            "WARNING": _("WARNING")
-        }
+        display_map = {"INFO": _("INFO"), "SUCCESS": _("SUCCESS"), "ERROR": _("ERROR"), "WARNING": _("WARNING")}
 
         display_level = display_map.get(level, level)
         color = color_map.get(level, "#D4D4D4")
         html = f'<span style="color: {color}">[{display_level}] {message}</span>'
         self.log_view.append(html)
-
 
     def closeEvent(self, event):
         """对话框关闭事件"""

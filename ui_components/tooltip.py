@@ -1,9 +1,9 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QLabel, QApplication
-from PySide6.QtCore import Qt, QPoint, QPropertyAnimation, QEasingCurve, QRectF, QTimer
-from PySide6.QtGui import QPainter, QColor, QBrush, QPen, QCursor
+from PySide6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, QRectF, Qt, QTimer
+from PySide6.QtGui import QBrush, QColor, QPainter, QPen
+from PySide6.QtWidgets import QApplication, QLabel
 
 
 class Tooltip(QLabel):
@@ -54,7 +54,7 @@ class Tooltip(QLabel):
         # Draw text
         super().paintEvent(event)
 
-    def show_tooltip(self, pos: QPoint, text: str, delay: int = None):
+    def show_tooltip(self, pos: QPoint, text: str, delay: int | None = None):
         """
         Request to show the tooltip.
         :param pos: Global position to show.

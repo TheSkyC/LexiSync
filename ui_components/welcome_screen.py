@@ -1,18 +1,28 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import datetime
+import os
+
+from PySide6.QtCore import QEvent, QSize, Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QAction, QColor, QDesktopServices, QDragEnterEvent, QDropEvent, QIcon
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
-    QApplication, QMessageBox, QLabel, QMenu, QSizePolicy)
-from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QSize, QUrl
-from PySide6.QtGui import (
-    QDragEnterEvent, QDropEvent, QIcon, QColor, QAction, QDesktopServices)
-from ui_components.elided_label import ElidedLabel
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMenu,
+    QMessageBox,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
 from services.format_manager import FormatManager
-from utils.path_utils import get_resource_path
+from ui_components.elided_label import ElidedLabel
 from utils.localization import _
+from utils.path_utils import get_resource_path
 
 
 class BadgeLabel(QLabel):
@@ -53,10 +63,7 @@ def get_relative_time_string(iso_timestamp):
     try:
         dt = datetime.datetime.fromisoformat(iso_timestamp)
 
-        if dt.tzinfo is None:
-            now = datetime.datetime.now()
-        else:
-            now = datetime.datetime.now(dt.tzinfo)
+        now = datetime.datetime.now() if dt.tzinfo is None else datetime.datetime.now(dt.tzinfo)
 
         diff = now - dt
         seconds = diff.total_seconds()
@@ -72,47 +79,49 @@ def get_relative_time_string(iso_timestamp):
 
         if seconds < MINUTE:
             return _("Just now")
-        elif seconds < HOUR:
+        if seconds < HOUR:
             minutes = int(seconds / MINUTE)
             if minutes == 1:
                 return _("1 min ago")
             return _("{m} mins ago").format(m=minutes)
-        elif seconds < DAY:
+        if seconds < DAY:
             hours = int(seconds / HOUR)
             if hours == 1:
                 return _("1 hour ago")
             return _("{h} hours ago").format(h=hours)
-        elif seconds < WEEK:
+        if seconds < WEEK:
             days = int(seconds / DAY)
             if days == 1:
                 return _("Yesterday")
             return _("{d} days ago").format(d=days)
-        elif seconds < MONTH:
+        if seconds < MONTH:
             weeks = int(seconds / WEEK)
             if weeks == 1:
                 return _("1 week ago")
             return _("{w} weeks ago").format(w=weeks)
-        else:
-            return dt.strftime("%Y/%m/%d")
+        return dt.strftime("%Y/%m/%d")
 
     except ValueError as e:
         import logging
+
         logging.getLogger(__name__).warning(f"Invalid timestamp format: {iso_timestamp}, error: {e}")
         return ""
     except Exception as e:
         import logging
+
         logging.getLogger(__name__).error(f"Error parsing timestamp {iso_timestamp}: {e}")
         return ""
+
 
 def get_progress_color(percentage):
     if percentage >= 100:
         return "#E8F5E9", "#2E7D32"  # Dark Green
-    elif percentage >= 70:
+    if percentage >= 70:
         return "#F1F8E9", "#558B2F"  # Light Green
-    elif percentage >= 30:
+    if percentage >= 30:
         return "#FFF8E1", "#FBC02D"  # Yellow/Amber
-    else:
-        return "#FFEBEE", "#C62828"  # Red
+    return "#FFEBEE", "#C62828"  # Red
+
 
 class RecentFileWidget(QWidget):
     remove_requested = Signal()
@@ -167,7 +176,9 @@ class RecentFileWidget(QWidget):
             format_id = metadata.get("format_id")
 
             if ftype == "project":
-                top_row.addWidget(BadgeLabel("📁 Project", color="#E3F2FD", text_color="#0277BD", border_color="#0277BD"))
+                top_row.addWidget(
+                    BadgeLabel("📁 Project", color="#E3F2FD", text_color="#0277BD", border_color="#0277BD")
+                )
             else:
                 handler = None
                 if format_id:
@@ -176,8 +187,11 @@ class RecentFileWidget(QWidget):
                     handler = FormatManager.get_handler_by_extension(filename)
 
                 if handler:
-                    top_row.addWidget(BadgeLabel(handler.badge_text, color=handler.badge_bg_color,
-                                                 text_color=handler.badge_text_color))
+                    top_row.addWidget(
+                        BadgeLabel(
+                            handler.badge_text, color=handler.badge_bg_color, text_color=handler.badge_text_color
+                        )
+                    )
                 else:
                     top_row.addWidget(BadgeLabel("UNK", color="#E0E0E0", text_color="#444444"))
 
@@ -220,10 +234,7 @@ class RecentFileWidget(QWidget):
         self.path_label.setText(dirpath)
         self.path_label.setStyleSheet("color: #777; background-color: transparent; font-size: 12px;")
 
-        self.path_label.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Preferred
-        )
+        self.path_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.path_label.setMinimumWidth(100)
         bottom_row.addWidget(self.path_label)
         bottom_row.addStretch(1)
@@ -233,10 +244,7 @@ class RecentFileWidget(QWidget):
             count = metadata.get("count", 0)
             if count > 0:
                 label_suffix = metadata.get("count_label", "files" if metadata.get("type") == "project" else "items")
-                if label_suffix == "files":
-                    suffix_text = _("files")
-                else:
-                    suffix_text = _("items")
+                suffix_text = _("files") if label_suffix == "files" else _("items")
 
                 count_label = QLabel(f"{count} {suffix_text}")
                 count_label.setStyleSheet("color: #999; font-size: 11px; background-color: transparent;")
@@ -351,6 +359,7 @@ class RecentFileWidget(QWidget):
                         return
         if isinstance(event, QEvent):
             super().mouseReleaseEvent(event)
+
 
 class ActionButton(QWidget):
     clicked = Signal()
@@ -467,29 +476,19 @@ class WelcomeScreen(QWidget):
         action_layout.setAlignment(Qt.AlignTop)
 
         self.quick_edit_button = ActionButton(
-            get_resource_path("icons/file.svg"),
-            _("Quick Edit File"),
-            _("Open a single file for fast translation")
+            get_resource_path("icons/file.svg"), _("Quick Edit File"), _("Open a single file for fast translation")
         )
         self.new_project_button = ActionButton(
-            get_resource_path("icons/folder.svg"),
-            _("New Project"),
-            _("Create a structured project folder")
+            get_resource_path("icons/folder.svg"), _("New Project"), _("Create a structured project folder")
         )
         self.open_project_button = ActionButton(
-            get_resource_path("icons/folder-open.svg"),
-            _("Open Project"),
-            _("Open an existing project folder")
+            get_resource_path("icons/folder-open.svg"), _("Open Project"), _("Open an existing project folder")
         )
         self.market_button = ActionButton(
-            get_resource_path("icons/package.svg"),
-            _("Plugin Marketplace"),
-            _("Discover and install plugins")
+            get_resource_path("icons/package.svg"), _("Plugin Marketplace"), _("Discover and install plugins")
         )
         self.settings_button = ActionButton(
-            get_resource_path("icons/settings.svg"),
-            _("Settings"),
-            _("Configure the application")
+            get_resource_path("icons/settings.svg"), _("Settings"), _("Configure the application")
         )
 
         action_layout.addWidget(self.quick_edit_button)
@@ -579,7 +578,7 @@ class WelcomeScreen(QWidget):
         color_map = {
             "loading": "#F39C12",  # 黄色 - 加载中/预热中
             "ready": "#27AE60",  # 绿色 - 准备就绪
-            "error": "#E74C3C"  # 红色 - 错误
+            "error": "#E74C3C",  # 红色 - 错误
         }
 
         color = color_map.get(status_type, "#F39C12")
@@ -598,7 +597,7 @@ class WelcomeScreen(QWidget):
         if urls and urls[0].isLocalFile():
             filepath = urls[0].toLocalFile()
 
-            if filepath.lower().endswith('.lexipack'):
+            if filepath.lower().endswith(".lexipack"):
                 self.handle_lexipack_drop(filepath)
                 event.acceptProposedAction()
                 return
@@ -607,8 +606,8 @@ class WelcomeScreen(QWidget):
             event.acceptProposedAction()
 
     def handle_lexipack_drop(self, filepath):
-        from services.package_service import read_package_info
         from dialogs.import_package_dialog import ImportPackageDialog
+        from services.package_service import read_package_info
 
         pack_info = read_package_info(filepath)
         if not pack_info:
@@ -616,9 +615,8 @@ class WelcomeScreen(QWidget):
             return
 
         dialog = ImportPackageDialog(self, filepath, pack_info)
-        if dialog.exec():
-            if dialog.extracted_path:
-                self.on_action_triggered("open_specific_project", path=dialog.extracted_path)
+        if dialog.exec() and dialog.extracted_path:
+            self.on_action_triggered("open_specific_project", path=dialog.extracted_path)
 
     def start_prewarming(self):
         if self.is_prewarming:
@@ -630,21 +628,25 @@ class WelcomeScreen(QWidget):
         try:
             self.set_status(_("Loading core libraries..."), "loading")
             QApplication.processEvents()
-            if self.is_closed: return
+            if self.is_closed:
+                return
+            import sys
+
             from main_window import LexiSyncApp
             from utils.path_utils import get_plugin_libs_path
-            import sys
 
             self.set_status(_("Setting up plugin environment..."), "loading")
             QApplication.processEvents()
-            if self.is_closed: return
+            if self.is_closed:
+                return
             plugin_libs_path = get_plugin_libs_path()
             if plugin_libs_path not in sys.path:
                 sys.path.insert(0, plugin_libs_path)
 
             self.set_status(_("Initializing main window and plugins..."), "loading")
             QApplication.processEvents()
-            if self.is_closed: return
+            if self.is_closed:
+                return
             self.main_window_instance = LexiSyncApp(self.config)
             self.main_window_instance.hide()
             if self.is_closed:
@@ -660,8 +662,9 @@ class WelcomeScreen(QWidget):
 
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).error(f"Failed to prewarm main window: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to initialize the main application:\n{str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to initialize the main application:\n{e!s}")
             self.set_status(_("Initialization Failed!"), "error")
         finally:
             self.is_prewarming = False
@@ -692,8 +695,9 @@ class WelcomeScreen(QWidget):
             self.pending_action = (action, path)
             self.show_loading_message()
             if path:
-                self.set_status(_("Initializing to open {filename}...").format(filename=os.path.basename(path)),
-                                "loading")
+                self.set_status(
+                    _("Initializing to open {filename}...").format(filename=os.path.basename(path)), "loading"
+                )
             else:
                 self.set_status(_("Waiting for initialization to complete..."), "loading")
             return
@@ -705,7 +709,6 @@ class WelcomeScreen(QWidget):
         self.execute_main_window_action(action, path)
 
     def execute_main_window_action(self, action, path):
-
         if self.is_loading:
             return
         self.is_loading = True
@@ -713,7 +716,7 @@ class WelcomeScreen(QWidget):
             success = self.main_window_instance.execute_action(action, path)
             if success:
                 if action in ["show_marketplace", "show_settings"]:
-                    self.main_window_instance.hide() # 确保主窗口不显示
+                    self.main_window_instance.hide()  # 确保主窗口不显示
                     self.show()
                     self.setDisabled(False)
                     self.set_status(_("Ready"), "ready")
@@ -755,7 +758,8 @@ class WelcomeScreen(QWidget):
 
         for i, entry in enumerate(recent_files):
             path = entry.get("path", "")
-            if not path: continue
+            if not path:
+                continue
 
             item = QListWidgetItem()
             item.setData(Qt.UserRole, path)
@@ -775,20 +779,24 @@ class WelcomeScreen(QWidget):
     def remove_recent_file(self, path_to_remove):
         recent_files = self.config.get("recent_files", [])
         new_list = [
-            f for f in recent_files
-            if (isinstance(f, str) and f != path_to_remove) or
-               (isinstance(f, dict) and f.get("path") != path_to_remove)
+            f
+            for f in recent_files
+            if (isinstance(f, str) and f != path_to_remove) or (isinstance(f, dict) and f.get("path") != path_to_remove)
         ]
         self.config["recent_files"] = new_list
         from utils.config_manager import save_config
+
         class DummyApp:
-            def __init__(self, cfg): self.config = cfg
+            def __init__(self, cfg):
+                self.config = cfg
 
             @property
-            def current_project_path(self): return None
+            def current_project_path(self):
+                return None
 
             @property
-            def current_file_path(self): return None
+            def current_file_path(self):
+                return None
 
         save_config(DummyApp(self.config))
         self.populate_recent_files()
@@ -820,25 +828,27 @@ class WelcomeScreen(QWidget):
 
     def clear_all_history(self):
         reply = QMessageBox.question(
-            self, _("Confirm"),
+            self,
+            _("Confirm"),
             _("Are you sure you want to clear all recent file history?"),
-            QMessageBox.Yes | QMessageBox.No
+            QMessageBox.Yes | QMessageBox.No,
         )
         if reply == QMessageBox.Yes:
             self.config["recent_files"] = []
 
             from utils.config_manager import save_config
+
             class DummyApp:
-                def __init__(self, cfg): self.config = cfg
+                def __init__(self, cfg):
+                    self.config = cfg
 
                 @property
-                def current_project_path(self): return None
+                def current_project_path(self):
+                    return None
 
                 @property
-                def current_file_path(self): return None
-
-                @property
-                def current_file_path(self): return None
+                def current_file_path(self):
+                    return None
 
             save_config(DummyApp(self.config))
             self.populate_recent_files()

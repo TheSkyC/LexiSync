@@ -1,13 +1,24 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QComboBox,
-                               QPushButton, QDialogButtonBox, QMessageBox, QTableWidget,
-                               QTableWidgetItem, QHeaderView, QCheckBox, QGroupBox, QLabel)
 from PySide6.QtCore import Qt
-from utils.localization import _
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QGroupBox,
+    QHeaderView,
+    QLabel,
+    QMessageBox,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+)
+
 from utils.constants import SUPPORTED_LANGUAGES
-from services import language_service
+from utils.localization import _
 
 
 class ImportConfigurationDialog(QDialog):
@@ -16,7 +27,7 @@ class ImportConfigurationDialog(QDialog):
         self.filename = filename
         self.detected_languages = detected_languages
         self.resource_type = resource_type
-        self.lexisync_langs = {name: code for name, code in sorted(SUPPORTED_LANGUAGES.items())}
+        self.lexisync_langs = dict(sorted(SUPPORTED_LANGUAGES.items()))
 
         self.setWindowTitle(_("{resource_type} Import Configuration").format(resource_type=self.resource_type))
         self.setModal(True)
@@ -30,7 +41,8 @@ class ImportConfigurationDialog(QDialog):
 
         intro_label = QLabel(
             _("LexiSync has analyzed <b>{filename}</b>. Please configure the import settings below.").format(
-                filename=self.filename)
+                filename=self.filename
+            )
         )
         intro_label.setWordWrap(True)
         layout.addWidget(intro_label)
@@ -91,7 +103,7 @@ class ImportConfigurationDialog(QDialog):
             combo = QComboBox()
             best_guess_index = 0
 
-            base_lang = lang_in_file.split('-')[0].split('_')[0].lower()
+            base_lang = lang_in_file.split("-")[0].split("_")[0].lower()
             for idx, (name, code) in enumerate(self.lexisync_langs.items()):
                 combo.addItem(name, code)
                 if code == base_lang:
@@ -101,7 +113,7 @@ class ImportConfigurationDialog(QDialog):
             self.mapping_table.setCellWidget(i, 1, combo)
             mapped_lexisync_langs.append((combo.currentText(), combo.currentData()))
 
-        unique_langs = sorted(list(dict.fromkeys(mapped_lexisync_langs)))
+        unique_langs = sorted(dict.fromkeys(mapped_lexisync_langs))
         for name, code in unique_langs:
             self.source_lang_combo.addItem(name, code)
             self.target_lang_combo.addItem(name, code)
@@ -121,12 +133,12 @@ class ImportConfigurationDialog(QDialog):
             "source_lang": self.source_lang_combo.currentData(),
             "target_langs": [self.target_lang_combo.currentData()],
             "is_bidirectional": self.bidirectional_checkbox.isChecked(),
-            "lang_mapping": lang_mapping
+            "lang_mapping": lang_mapping,
         }
 
     def accept(self):
         data = self.get_data()
-        if data['source_lang'] == data['target_langs']:
+        if data["source_lang"] == data["target_langs"]:
             QMessageBox.warning(self, _("Invalid Languages"), _("Source and target languages cannot be the same."))
             return
         super().accept()

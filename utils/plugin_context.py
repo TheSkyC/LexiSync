@@ -1,24 +1,28 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
+from contextlib import contextmanager
 import sys
 import threading
-from contextlib import contextmanager
-from typing import Set
+
 from .path_utils import get_plugin_libs_path
 
 _thread_local = threading.local()
 
+
 def _get_context_depth() -> int:
-    return getattr(_thread_local, 'context_depth', 0)
+    return getattr(_thread_local, "context_depth", 0)
+
 
 def _set_context_depth(depth: int):
     _thread_local.context_depth = depth
 
-def _get_added_paths() -> Set[str]:
-    if not hasattr(_thread_local, 'added_paths'):
+
+def _get_added_paths() -> set[str]:
+    if not hasattr(_thread_local, "added_paths"):
         _thread_local.added_paths = set()
     return _thread_local.added_paths
+
 
 @contextmanager
 def plugin_libs_context():

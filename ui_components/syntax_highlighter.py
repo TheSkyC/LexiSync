@@ -1,10 +1,12 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
-from PySide6.QtCore import QRegularExpression
-import re
 from logging import getLogger
+import re
+
+from PySide6.QtCore import QRegularExpression
+from PySide6.QtGui import QColor, QSyntaxHighlighter, QTextCharFormat
+
 logger = getLogger(__name__)
 
 
@@ -35,15 +37,15 @@ class TranslationHighlighter(QSyntaxHighlighter):
         # 提取 Token
         self.token_patterns = [
             # Python/General Brace {var}
-            QRegularExpression(r'\{[^{}]+\}'),
+            QRegularExpression(r"\{[^{}]+\}"),
             # HTML Tags (Generic)
-            QRegularExpression(r'</?[a-zA-Z0-9]+\b[^>]*>'),
+            QRegularExpression(r"</?[a-zA-Z0-9]+\b[^>]*>"),
             # Printf (%s, %d, %1$s)
-            QRegularExpression(r'%%|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]|%\d+'),
+            QRegularExpression(r"%%|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]|%\d+"),
             # HTML Entities (&#123;, &#xAB;)
-            QRegularExpression(r'&#\d+;|&#x[0-9a-fA-F]+;'),
+            QRegularExpression(r"&#\d+;|&#x[0-9a-fA-F]+;"),
             # Accelerators (&F)
-            QRegularExpression(r'&[a-zA-Z0-9]')
+            QRegularExpression(r"&[a-zA-Z0-9]"),
         ]
 
     def update_data(self, valid_placeholders, missing_placeholders=None):
@@ -62,7 +64,7 @@ class TranslationHighlighter(QSyntaxHighlighter):
     def highlightBlock(self, text):
         if self.glossary_matches:
             for match in self.glossary_matches:
-                term = match['source']
+                term = match["source"]
                 try:
                     pattern = re.compile(re.escape(term), re.IGNORECASE)
                     for m in pattern.finditer(text):
@@ -71,18 +73,18 @@ class TranslationHighlighter(QSyntaxHighlighter):
                     pass
 
         # 1. 高亮多重空格 (中间)
-        expression = QRegularExpression(r'\s{2,}')
+        expression = QRegularExpression(r"\s{2,}")
         it = expression.globalMatch(text)
         while it.hasNext():
             match = it.next()
             self.setFormat(match.capturedStart(), match.capturedLength(), self.fmt_multi_space)
 
         # 2. 高亮首尾空格
-        leading_match = re.match(r'^\s+', text)
+        leading_match = re.match(r"^\s+", text)
         if leading_match:
             self.setFormat(0, leading_match.end(), self.fmt_whitespace)
 
-        trailing_match = re.search(r'\s+$', text)
+        trailing_match = re.search(r"\s+$", text)
         if trailing_match:
             self.setFormat(trailing_match.start(), len(text) - trailing_match.start(), self.fmt_whitespace)
 

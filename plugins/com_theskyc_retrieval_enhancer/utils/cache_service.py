@@ -1,10 +1,10 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import sqlite3
-import os
-import logging
 from contextlib import contextmanager
+import logging
+import os
+import sqlite3
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,8 @@ class CacheViewerService:
             logger.error(f"Cache viewer db error: {e}")
             raise
         finally:
-            if conn: conn.close()
+            if conn:
+                conn.close()
 
     def get_distinct_languages(self, db_path):
         # Cache doesn't have languages, return dummy
@@ -43,7 +44,7 @@ class CacheViewerService:
             with self._get_db_connection() as conn:
                 cursor = conn.execute("SELECT COUNT(*) FROM embeddings WHERE model_name = ?", (source_key,))
                 return cursor.fetchone()[0]
-        except:
+        except Exception:
             return 0
 
     def count_entries(self, db_path, source_key=None, src_lang=None, tgt_lang=None, search_term=None):
@@ -63,11 +64,12 @@ class CacheViewerService:
             with self._get_db_connection() as conn:
                 cursor = conn.execute(query, params)
                 return cursor.fetchone()[0]
-        except:
+        except Exception:
             return 0
 
-    def query_entries(self, db_path, page=1, page_size=50, source_key=None, src_lang=None, tgt_lang=None,
-                      search_term=None):
+    def query_entries(
+        self, db_path, page=1, page_size=50, source_key=None, src_lang=None, tgt_lang=None, search_term=None
+    ):
         offset = (page - 1) * page_size
         query = "SELECT hash, model_name, text, length(vector) as vec_len FROM embeddings WHERE 1=1"
         params = []
@@ -96,17 +98,19 @@ class CacheViewerService:
                     # source_lang -> "Text"
                     # target_lang -> "Vector"
 
-                    display_text = row['text'] if row['text'] else f"Hash: {row['hash']}"
+                    display_text = row["text"] if row["text"] else f"Hash: {row['hash']}"
                     vec_info = f"Blob ({row['vec_len']} bytes)"
 
-                    results.append({
-                        'id': row['hash'][:8],
-                        'source_text': display_text,
-                        'target_text': vec_info,
-                        'source_lang': "Text",
-                        'target_lang': "Vector",
-                        'source_manifest_key': row['model_name']
-                    })
+                    results.append(
+                        {
+                            "id": row["hash"][:8],
+                            "source_text": display_text,
+                            "target_text": vec_info,
+                            "source_lang": "Text",
+                            "target_lang": "Vector",
+                            "source_manifest_key": row["model_name"],
+                        }
+                    )
         except Exception as e:
             logger.error(f"Cache query failed: {e}")
 
@@ -120,6 +124,6 @@ class CacheViewerService:
                     cursor = conn.execute("SELECT DISTINCT model_name FROM embeddings")
                     for row in cursor:
                         models[row[0]] = {}
-        except:
+        except Exception:
             pass
         return {"imported_sources": models}

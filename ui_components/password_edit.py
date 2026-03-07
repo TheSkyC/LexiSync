@@ -1,11 +1,13 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QLineEdit, QAbstractButton
-from PySide6.QtGui import Qt, QPainter, QColor, QPen, QCursor
-from PySide6.QtCore import QSize, QPropertyAnimation, QEasingCurve, Property, QRectF, QPointF, Slot
-from .tooltip import Tooltip
+from PySide6.QtCore import Property, QEasingCurve, QPointF, QPropertyAnimation, QRectF, QSize, Slot
+from PySide6.QtGui import QColor, QCursor, QPainter, QPen, Qt
+from PySide6.QtWidgets import QAbstractButton, QLineEdit
+
 from utils.localization import _
+
+from .tooltip import Tooltip
 
 
 class EyeButton(QAbstractButton):
@@ -94,36 +96,27 @@ class EyeButton(QAbstractButton):
         # 眼睛外轮廓参数
         eye_width = 16
         eye_height = 10
-        eye_rect = QRectF(
-            center_x - eye_width / 2,
-            center_y - eye_height / 2,
-            eye_width,
-            eye_height
-        )
+        eye_rect = QRectF(center_x - eye_width / 2, center_y - eye_height / 2, eye_width, eye_height)
 
         # 眼睛外轮廓
         # 上弧线
         painter.drawArc(
             eye_rect,
             0 * 16,  # 起始角度
-            180 * 16  # 跨越角度
+            180 * 16,  # 跨越角度
         )
         # 下弧线
         painter.drawArc(
             eye_rect,
             180 * 16,  # 起始角度
-            180 * 16  # 跨越角度
+            180 * 16,  # 跨越角度
         )
 
         # 瞳孔
         pupil_size = 4 * (1 - self._anim_progress * 0.7)  # 从4缩小到1.2
         if pupil_size > 0.5:
             painter.setBrush(color)
-            painter.drawEllipse(
-                QPointF(center_x, center_y),
-                pupil_size / 2,
-                pupil_size / 2
-            )
+            painter.drawEllipse(QPointF(center_x, center_y), pupil_size / 2, pupil_size / 2)
 
         # 斜线
         if self._anim_progress > 0.01:
@@ -136,8 +129,7 @@ class EyeButton(QAbstractButton):
             line_length = 18 * self._anim_progress
             offset = line_length / 2
             painter.drawLine(
-                QPointF(center_x - offset, center_y - offset),
-                QPointF(center_x + offset, center_y + offset)
+                QPointF(center_x - offset, center_y - offset), QPointF(center_x + offset, center_y + offset)
             )
 
     def sizeHint(self):
@@ -151,10 +143,7 @@ class PasswordEdit(QLineEdit):
         self.setEchoMode(QLineEdit.Password)
 
         self.setInputMethodHints(
-            Qt.ImhHiddenText |
-            Qt.ImhNoPredictiveText |
-            Qt.ImhNoAutoUppercase |
-            Qt.ImhSensitiveData
+            Qt.ImhHiddenText | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase | Qt.ImhSensitiveData
         )
 
         # 使用自定义眼睛按钮
@@ -168,7 +157,7 @@ class PasswordEdit(QLineEdit):
 
         self.setStyleSheet("""
             QLineEdit {
-                padding-right: 32px; 
+                padding-right: 32px;
             }
         """)
 
@@ -179,10 +168,7 @@ class PasswordEdit(QLineEdit):
         padding = 4
 
         self._toggle_button.setGeometry(
-            self.width() - button_size - padding,
-            (self.height() - button_size) // 2,
-            button_size,
-            button_size
+            self.width() - button_size - padding, (self.height() - button_size) // 2, button_size, button_size
         )
 
     @Slot()

@@ -1,21 +1,35 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QLineEdit,
-                               QPushButton, QFileDialog, QLabel, QGroupBox,
-                               QListWidgetItem, QHBoxLayout, QTabWidget,
-                               QComboBox, QMessageBox, QCheckBox, QWidget,
-                               QTreeWidget, QTreeWidgetItem, QHeaderView)
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDragMoveEvent
-import os
 from datetime import datetime
-from ui_components.styled_button import StyledButton
+import logging
+import os
+
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QFileDialog,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLineEdit,
+    QMessageBox,
+    QTabWidget,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
 from services.format_manager import FormatManager
-from utils.text_utils import format_file_size
+from ui_components.styled_button import StyledButton
 from utils.constants import SUPPORTED_LANGUAGES
 from utils.localization import _
-import logging
+from utils.text_utils import format_file_size
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +48,7 @@ class DropTreeWidget(QTreeWidget):
         self.setStyleSheet("QTreeWidget { border: 1px solid #ccc; border-radius: 4px; }")
 
         header = self.header()
-        if widget_type == 'source':
+        if widget_type == "source":
             self.setHeaderLabels([_("File Name"), _("Type"), _("Size"), _("Path")])
             header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
             header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -60,9 +74,9 @@ class DropTreeWidget(QTreeWidget):
             item = QTreeWidgetItem()
             item.setText(0, filename)
 
-            if self.widget_type == 'source':
+            if self.widget_type == "source":
                 handler = FormatManager.get_handler_by_extension(filepath)
-                type_display = handler.badge_text if handler else 'UNK'
+                type_display = handler.badge_text if handler else "UNK"
 
                 item.setText(1, type_display)
                 item.setText(2, size_str)
@@ -87,14 +101,13 @@ class DropTreeWidget(QTreeWidget):
                 if url.isLocalFile():
                     filepath = url.toLocalFile()
                     ext = os.path.splitext(filepath)[1].lower()
-                    if self.widget_type == 'source':
+                    if self.widget_type == "source":
                         if FormatManager.get_handler_by_extension(filepath):
                             can_accept = True
                             break
-                    elif self.widget_type == 'glossary' and ext == '.tbx':
-                        can_accept = True
-                        break
-                    elif self.widget_type == 'tm' and ext == '.xlsx':
+                    elif (self.widget_type == "glossary" and ext == ".tbx") or (
+                        self.widget_type == "tm" and ext == ".xlsx"
+                    ):
                         can_accept = True
                         break
 
@@ -118,17 +131,17 @@ class DropTreeWidget(QTreeWidget):
         self.setStyleSheet("QTreeWidget { border: 1px solid #ccc; border-radius: 4px; }")
         if event.mimeData().hasUrls():
             urls = event.mimeData().urls()
-            valid_files =[]
+            valid_files = []
             for url in urls:
                 if url.isLocalFile():
                     filepath = url.toLocalFile()
                     ext = os.path.splitext(filepath)[1].lower()
-                    if self.widget_type == 'source':
+                    if self.widget_type == "source":
                         if FormatManager.get_handler_by_extension(filepath):
                             valid_files.append(filepath)
-                    elif self.widget_type == 'glossary' and ext == '.tbx':
-                        valid_files.append(filepath)
-                    elif self.widget_type == 'tm' and ext == '.xlsx':
+                    elif (self.widget_type == "glossary" and ext == ".tbx") or (
+                        self.widget_type == "tm" and ext == ".xlsx"
+                    ):
                         valid_files.append(filepath)
 
             if valid_files:
@@ -172,14 +185,18 @@ class NewProjectDialog(QDialog):
         source_files_layout = QVBoxLayout(source_files_widget)
         source_files_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.source_files_tree = DropTreeWidget('source')
+        self.source_files_tree = DropTreeWidget("source")
         self.source_files_tree.setToolTip(_("Drag and drop files here"))
         self.source_files_tree.setMinimumHeight(150)
         self.source_files_tree.files_dropped.connect(self.handle_files_dropped)
 
         source_buttons_layout = QHBoxLayout()
         add_file_button = StyledButton(_("Add..."), on_click=self.add_source_files)
-        remove_file_button = StyledButton(_("Remove"), on_click=lambda: self._remove_item(self.source_files_tree, self.source_files), btn_type="danger")
+        remove_file_button = StyledButton(
+            _("Remove"),
+            on_click=lambda: self._remove_item(self.source_files_tree, self.source_files),
+            btn_type="danger",
+        )
 
         source_buttons_layout.addStretch()
         source_buttons_layout.addWidget(add_file_button)
@@ -202,7 +219,7 @@ class NewProjectDialog(QDialog):
 
         glossary_group = QGroupBox(_("Project Glossary"))
         glossary_layout = QVBoxLayout(glossary_group)
-        self.glossary_files_tree = DropTreeWidget('glossary')
+        self.glossary_files_tree = DropTreeWidget("glossary")
         self.glossary_files_tree.setToolTip(_("Drag and drop .tbx files here"))
         self.glossary_files_tree.setMaximumHeight(120)
         self.glossary_files_tree.files_dropped.connect(self.handle_files_dropped)
@@ -211,7 +228,11 @@ class NewProjectDialog(QDialog):
         self.use_global_glossary_checkbox = QCheckBox(_("Use Global Glossary"))
         self.use_global_glossary_checkbox.setChecked(True)
         add_glossary_button = StyledButton(_("Add..."), on_click=self.add_glossary_files)
-        remove_glossary_button = StyledButton(_("Remove"), on_click=lambda: self._remove_item(self.glossary_files_tree, self.glossary_files), btn_type="danger")
+        remove_glossary_button = StyledButton(
+            _("Remove"),
+            on_click=lambda: self._remove_item(self.glossary_files_tree, self.glossary_files),
+            btn_type="danger",
+        )
 
         glossary_bottom_layout.addWidget(self.use_global_glossary_checkbox)
         glossary_bottom_layout.addStretch()
@@ -224,7 +245,7 @@ class NewProjectDialog(QDialog):
 
         tm_group = QGroupBox(_("Project Translation Memory"))
         tm_layout = QVBoxLayout(tm_group)
-        self.tm_files_tree = DropTreeWidget('tm')
+        self.tm_files_tree = DropTreeWidget("tm")
         self.tm_files_tree.setToolTip(_("Drag and drop .xlsx files here"))
         self.tm_files_tree.setMaximumHeight(120)
         self.tm_files_tree.files_dropped.connect(self.handle_files_dropped)
@@ -233,7 +254,9 @@ class NewProjectDialog(QDialog):
         self.use_global_tm_checkbox = QCheckBox(_("Use Global Translation Memory"))
         self.use_global_tm_checkbox.setChecked(True)
         add_tm_button = StyledButton(_("Add..."), on_click=self.add_tm_files)
-        remove_tm_button = StyledButton(_("Remove"), on_click=lambda: self._remove_item(self.tm_files_tree, self.tm_files), btn_type="danger")
+        remove_tm_button = StyledButton(
+            _("Remove"), on_click=lambda: self._remove_item(self.tm_files_tree, self.tm_files), btn_type="danger"
+        )
 
         tm_bottom_layout.addWidget(self.use_global_tm_checkbox)
         tm_bottom_layout.addStretch()
@@ -262,16 +285,15 @@ class NewProjectDialog(QDialog):
 
         main_layout.addLayout(button_layout)
 
-
     def dragMoveEvent(self, event: QDragMoveEvent):
         pass
 
     def handle_files_dropped(self, files, widget_type):
-        if widget_type == 'source':
+        if widget_type == "source":
             self._process_source_files(files)
-        elif widget_type == 'glossary':
+        elif widget_type == "glossary":
             self._process_generic_files(files, self.glossary_files, self.glossary_files_tree)
-        elif widget_type == 'tm':
+        elif widget_type == "tm":
             self._process_generic_files(files, self.tm_files, self.tm_files_tree)
 
     def _populate_lang_combos(self):
@@ -288,48 +310,40 @@ class NewProjectDialog(QDialog):
 
     def add_source_files(self):
         file_filters = FormatManager.get_file_dialog_filters()
-        filepaths, __ = QFileDialog.getOpenFileNames(
-            self, _("Select Source Files"), "", file_filters
-        )
+        filepaths, __ = QFileDialog.getOpenFileNames(self, _("Select Source Files"), "", file_filters)
         if filepaths:
             self._process_source_files(filepaths)
 
     def add_glossary_files(self):
-        filepaths, __ = QFileDialog.getOpenFileNames(
-            self, _("Select Glossary Files"), "", f"{_('TBX Files')} (*.tbx)"
-        )
+        filepaths, __ = QFileDialog.getOpenFileNames(self, _("Select Glossary Files"), "", f"{_('TBX Files')} (*.tbx)")
         if filepaths:
             self._process_generic_files(filepaths, self.glossary_files, self.glossary_files_tree)
 
     def add_tm_files(self):
-        filepaths, __ = QFileDialog.getOpenFileNames(
-            self, _("Select TM Files"), "", f"{_('Excel Files')} (*.xlsx)"
-        )
+        filepaths, __ = QFileDialog.getOpenFileNames(self, _("Select TM Files"), "", f"{_('Excel Files')} (*.xlsx)")
         if filepaths:
             self._process_generic_files(filepaths, self.tm_files, self.tm_files_tree)
 
     def _process_source_files(self, filepaths):
         for path in filepaths:
-            if not any(f['path'] == path for f in self.source_files):
-                normalized_path = path.replace('\\', '/')
+            if not any(f["path"] == path for f in self.source_files):
+                normalized_path = path.replace("\\", "/")
 
                 from services.format_manager import FormatManager
-                handler = FormatManager.get_handler_by_extension(normalized_path)
-                if not handler: continue
 
-                file_info = {
-                    'path': normalized_path,
-                    'format_id': handler.format_id
-                }
+                handler = FormatManager.get_handler_by_extension(normalized_path)
+                if not handler:
+                    continue
+
+                file_info = {"path": normalized_path, "format_id": handler.format_id}
                 if self.source_files_tree.add_file_item(path, file_info):
                     self.source_files.append(file_info)
 
     def _process_generic_files(self, filepaths, data_list, tree_widget):
         for path in filepaths:
-            normalized_path = path.replace('\\', '/')
-            if normalized_path not in data_list:
-                if tree_widget.add_file_item(normalized_path):
-                    data_list.append(normalized_path)
+            normalized_path = path.replace("\\", "/")
+            if normalized_path not in data_list and tree_widget.add_file_item(normalized_path):
+                data_list.append(normalized_path)
 
     def _remove_item(self, tree_widget, data_list):
         current_item = tree_widget.currentItem()
@@ -339,7 +353,7 @@ class NewProjectDialog(QDialog):
         filepath = current_item.text(tree_widget.columnCount() - 1)
 
         if data_list is self.source_files:
-            data_list[:] = [f for f in data_list if f['path'] != filepath]
+            data_list[:] = [f for f in data_list if f["path"] != filepath]
         else:
             data_list[:] = [p for p in data_list if p != filepath]
 
@@ -356,17 +370,18 @@ class NewProjectDialog(QDialog):
             "glossary_files": self.glossary_files,
             "tm_files": self.tm_files,
             "use_global_tm": self.use_global_tm_checkbox.isChecked(),
-            "use_global_glossary": self.use_global_glossary_checkbox.isChecked()
+            "use_global_glossary": self.use_global_glossary_checkbox.isChecked(),
         }
 
     def accept(self):
         data = self.get_data()
-        if not data['name'] or not data['location'] or not data['source_files']:
-            QMessageBox.warning(self, _("Missing Information"),
-                                _("Project name, location, and at least one source file are required."))
+        if not data["name"] or not data["location"] or not data["source_files"]:
+            QMessageBox.warning(
+                self, _("Missing Information"), _("Project name, location, and at least one source file are required.")
+            )
             self.tab_widget.setCurrentIndex(0)
             return
-        if data['source_lang'] == data['target_langs'][0]:
+        if data["source_lang"] == data["target_langs"][0]:
             QMessageBox.warning(self, _("Invalid Languages"), _("Source and target languages cannot be the same."))
             self.tab_widget.setCurrentIndex(0)
             return

@@ -1,10 +1,10 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QComboBox,
-                               QPushButton, QDialogButtonBox, QMessageBox)
-from utils.localization import _
+from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFormLayout, QMessageBox, QVBoxLayout
+
 from utils.constants import SUPPORTED_LANGUAGES
+from utils.localization import _
 
 
 class TMImportDialog(QDialog):
@@ -41,12 +41,12 @@ class TMImportDialog(QDialog):
     def get_data(self):
         return {
             "source_lang": self.source_lang_combo.currentData(),
-            "target_lang": self.target_lang_combo.currentData()
+            "target_lang": self.target_lang_combo.currentData(),
         }
 
     def accept(self):
         data = self.get_data()
-        if data['source_lang'] == data['target_lang']:
+        if data["source_lang"] == data["target_lang"]:
             QMessageBox.warning(self, _("Invalid Languages"), _("Source and target languages cannot be the same."))
             return
         super().accept()

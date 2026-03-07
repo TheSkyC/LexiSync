@@ -1,10 +1,13 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QTabWidget, QLabel
-from .settings_pages import BaseSettingsPage
-from .management_tabs import GlossaryManagementTab, TMManagementTab
+from PySide6.QtWidgets import QTabWidget
+
 from utils.localization import _
+
+from .management_tabs import GlossaryManagementTab, TMManagementTab
+from .settings_pages import BaseSettingsPage
+
 
 class ResourcesSettingsPage(BaseSettingsPage):
     def __init__(self, app_instance, context: str):

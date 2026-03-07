@@ -1,18 +1,19 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import sqlite3
-import re
-import os
-import json
-import hashlib
-import logging
-import threading
-from rapidfuzz import fuzz
-from datetime import datetime
-from typing import List, Dict, Tuple, Optional
 from contextlib import contextmanager
+from datetime import datetime
+import hashlib
+import json
+import logging
+import os
+import re
+import sqlite3
+import threading
+
 from openpyxl import load_workbook
+from rapidfuzz import fuzz
+
 from utils.localization import _
 
 logger = logging.getLogger(__name__)
@@ -23,11 +24,11 @@ DB_FILE = "tm.db"
 
 class TMService:
     def __init__(self):
-        self.project_db_path: Optional[str] = None
-        self.global_db_path: Optional[str] = None
+        self.project_db_path: str | None = None
+        self.global_db_path: str | None = None
         self._lock = threading.RLock()
 
-    def connect_databases(self, global_tm_path: Optional[str], project_tm_path: Optional[str] = None):
+    def connect_databases(self, global_tm_path: str | None, project_tm_path: str | None = None):
         with self._lock:
             self.disconnect_databases()
 
@@ -52,12 +53,7 @@ class TMService:
     def _get_db_connection(self, db_path: str):
         conn = None
         try:
-            conn = sqlite3.connect(
-                db_path,
-                timeout=30.0,
-                check_same_thread=False,
-                isolation_level=None
-            )
+            conn = sqlite3.connect(db_path, timeout=30.0, check_same_thread=False, isolation_level=None)
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
             conn.row_factory = sqlite3.Row
@@ -66,7 +62,7 @@ class TMService:
             if conn:
                 try:
                     conn.rollback()
-                except:
+                except Exception:
                     pass
             logger.error(f"TM Database connection error for {db_path}: {e}")
             raise
@@ -74,7 +70,7 @@ class TMService:
             if conn:
                 try:
                     conn.close()
-                except:
+                except Exception:
                     pass
 
     def _create_schema(self, conn: sqlite3.Connection):
@@ -94,15 +90,17 @@ class TMService:
                 );
             """)
             cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_tm_source ON translation_units (source_lang, target_lang, source_text);")
+                "CREATE INDEX IF NOT EXISTS idx_tm_source ON translation_units (source_lang, target_lang, source_text);"
+            )
             cursor.execute("COMMIT")
         except Exception as e:
             cursor.execute("ROLLBACK")
             logger.error(f"TM Schema creation failed: {e}")
             raise
 
-    def find_conflicts(self, db_path: str, source_texts: List[str], source_lang: str, target_lang: str) -> Dict[
-        str, dict]:
+    def find_conflicts(
+        self, db_path: str, source_texts: list[str], source_lang: str, target_lang: str
+    ) -> dict[str, dict]:
         """
         Batch check for existing TM entries.
         Returns: { 'source_text': {'id': id, 'original_text': source_text, 'existing_targets': ['target_text']} }
@@ -119,8 +117,8 @@ class TMService:
                 cursor = conn.cursor()
                 chunk_size = 900
                 for i in range(0, len(unique_sources), chunk_size):
-                    chunk = unique_sources[i:i + chunk_size]
-                    placeholders = ','.join('?' for _ in chunk)
+                    chunk = unique_sources[i : i + chunk_size]
+                    placeholders = ",".join("?" for _ in chunk)
 
                     query = f"""
                         SELECT id, source_text, target_text
@@ -129,23 +127,19 @@ class TMService:
                           AND source_lang = ?
                           AND target_lang = ?
                     """
-                    cursor.execute(query, chunk + [source_lang, target_lang])
+                    cursor.execute(query, [*chunk, source_lang, target_lang])
 
                     rows = cursor.fetchall()
                     for row in rows:
-                        term_id = row['id']
-                        src_text = row['source_text']
-                        tgt_text = row['target_text']
+                        term_id = row["id"]
+                        src_text = row["source_text"]
+                        tgt_text = row["target_text"]
 
                         # Use exact source text as key
                         if src_text not in conflicts:
-                            conflicts[src_text] = {
-                                'id': term_id,
-                                'original_text': src_text,
-                                'existing_targets': []
-                            }
+                            conflicts[src_text] = {"id": term_id, "original_text": src_text, "existing_targets": []}
 
-                        conflicts[src_text]['existing_targets'].append(tgt_text)
+                        conflicts[src_text]["existing_targets"].append(tgt_text)
 
         except Exception as e:
             logger.error(f"Failed to find TM conflicts: {e}")
@@ -161,26 +155,29 @@ class TMService:
                 with self._get_db_connection(db_path) as conn:
                     cursor = conn.cursor()
                     cursor.execute("BEGIN IMMEDIATE TRANSACTION")
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         DELETE FROM translation_units
                         WHERE source_text = ? AND source_lang = ? AND target_lang = ?
-                    """, (source_text, source_lang, target_lang))
+                    """,
+                        (source_text, source_lang, target_lang),
+                    )
                     rowcount = cursor.rowcount
                     cursor.execute("COMMIT")
 
                     if rowcount > 0:
                         logger.info(f"Deleted TM entry for '{source_text}'")
                         return True
-                    else:
-                        return False
+                    return False
             except Exception as e:
                 logger.error(f"Failed to delete TM entry: {e}", exc_info=True)
                 return False
 
-    def get_translation(self, source_text: str, source_lang: str, target_lang: str, db_to_check: str = 'all') -> \
-    Optional[str]:
+    def get_translation(
+        self, source_text: str, source_lang: str, target_lang: str, db_to_check: str = "all"
+    ) -> str | None:
         with self._lock:
-            if db_to_check in ('all', 'project') and self.project_db_path:
+            if db_to_check in ("all", "project") and self.project_db_path:
                 try:
                     with self._get_db_connection(self.project_db_path) as conn:
                         result = self._query_translation_in_db(conn, source_text, source_lang, target_lang)
@@ -189,7 +186,7 @@ class TMService:
                 except Exception:
                     pass
 
-            if db_to_check in ('all', 'global') and self.global_db_path:
+            if db_to_check in ("all", "global") and self.global_db_path:
                 try:
                     with self._get_db_connection(self.global_db_path) as conn:
                         return self._query_translation_in_db(conn, source_text, source_lang, target_lang)
@@ -198,24 +195,23 @@ class TMService:
             return None
 
     def get_entry_count_by_source(self, dir_path: str, source_key: str) -> int:
-        if not dir_path or not os.path.exists(dir_path): return 0
+        if not dir_path or not os.path.exists(dir_path):
+            return 0
         db_path = os.path.join(dir_path, DB_FILE)
-        if not os.path.exists(db_path): return 0
+        if not os.path.exists(db_path):
+            return 0
 
         try:
             with self._get_db_connection(db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT COUNT(*) FROM translation_units WHERE source_manifest_key = ?",
-                    (source_key,)
-                )
+                cursor.execute("SELECT COUNT(*) FROM translation_units WHERE source_manifest_key = ?", (source_key,))
                 result = cursor.fetchone()
                 return result[0] if result else 0
         except Exception as e:
             logger.error(f"Failed to get entry count: {e}")
             return 0
 
-    def get_translations_batch(self, words: List[str], source_lang: str, target_lang: str) -> Dict[str, str]:
+    def get_translations_batch(self, words: list[str], source_lang: str, target_lang: str) -> dict[str, str]:
         """
         Batch query for translations. Returns a dictionary mapping source_text to target_text.
         """
@@ -243,26 +239,29 @@ class TMService:
                 if remaining_words:
                     try:
                         with self._get_db_connection(self.global_db_path) as conn:
-                            matches = self._query_translations_batch_in_db(conn, remaining_words, source_lang,
-                                                                           target_lang)
+                            matches = self._query_translations_batch_in_db(
+                                conn, remaining_words, source_lang, target_lang
+                            )
                             all_matches.update(matches)
                     except Exception as e:
                         logger.warning(f"Global TM batch query failed: {e}")
 
             return all_matches
 
-    def _query_translation_in_db(self, conn: sqlite3.Connection, source_text: str, source_lang: str,
-                                 target_lang: str) -> Optional[str]:
+    def _query_translation_in_db(
+        self, conn: sqlite3.Connection, source_text: str, source_lang: str, target_lang: str
+    ) -> str | None:
         cursor = conn.cursor()
         cursor.execute(
             "SELECT target_text FROM translation_units WHERE source_text = ? AND source_lang = ? AND target_lang = ?",
-            (source_text, source_lang, target_lang)
+            (source_text, source_lang, target_lang),
         )
         row = cursor.fetchone()
-        return row['target_text'] if row else None
+        return row["target_text"] if row else None
 
-    def _query_translations_batch_in_db(self, conn: sqlite3.Connection, words: List[str], source_lang: str,
-                                        target_lang: str) -> Dict[str, str]:
+    def _query_translations_batch_in_db(
+        self, conn: sqlite3.Connection, words: list[str], source_lang: str, target_lang: str
+    ) -> dict[str, str]:
         """Helper for batch querying a single DB file."""
         if not words:
             return {}
@@ -271,47 +270,59 @@ class TMService:
         chunk_size = 900
 
         for i in range(0, len(words), chunk_size):
-            chunk = words[i:i + chunk_size]
-            placeholders = ','.join('?' for _ in chunk)
+            chunk = words[i : i + chunk_size]
+            placeholders = ",".join("?" for _ in chunk)
 
             query = f"""
-                SELECT source_text, target_text 
-                FROM translation_units 
-                WHERE source_text IN ({placeholders}) 
-                  AND source_lang = ? 
+                SELECT source_text, target_text
+                FROM translation_units
+                WHERE source_text IN ({placeholders})
+                  AND source_lang = ?
                   AND target_lang = ?
             """
 
-            params = chunk + [source_lang, target_lang]
+            params = [*chunk, source_lang, target_lang]
 
             cursor = conn.cursor()
             cursor.execute(query, params)
 
             for row in cursor.fetchall():
-                matches[row['source_text']] = row['target_text']
+                matches[row["source_text"]] = row["target_text"]
 
         return matches
 
-    def update_tm_entry(self, db_path: str, source_text: str, target_text: str, source_lang: str, target_lang: str,
-                        source_key: str = "manual"):
-        if not source_text.strip() or not db_path: return
+    def update_tm_entry(
+        self,
+        db_path: str,
+        source_text: str,
+        target_text: str,
+        source_lang: str,
+        target_lang: str,
+        source_key: str = "manual",
+    ):
+        if not source_text.strip() or not db_path:
+            return
 
         with self._lock:
             try:
                 with self._get_db_connection(db_path) as conn:
                     cursor = conn.cursor()
                     cursor.execute("BEGIN IMMEDIATE TRANSACTION")
-                    cursor.execute("""
-                        INSERT OR REPLACE INTO translation_units 
+                    cursor.execute(
+                        """
+                        INSERT OR REPLACE INTO translation_units
                         (source_lang, target_lang, source_text, target_text, source_manifest_key)
                         VALUES (?, ?, ?, ?, ?)
-                    """, (source_lang, target_lang, source_text, target_text, source_key))
+                    """,
+                        (source_lang, target_lang, source_text, target_text, source_key),
+                    )
                     cursor.execute("COMMIT")
             except Exception as e:
                 logger.error(f"Failed to update TM entry: {e}")
 
-    def import_from_file(self, source_filepath: str, tm_dir_path: str, source_lang: str, target_lang: str,
-                         progress_callback=None) -> Tuple[bool, str]:
+    def import_from_file(
+        self, source_filepath: str, tm_dir_path: str, source_lang: str, target_lang: str, progress_callback=None
+    ) -> tuple[bool, str]:
         with self._lock:
             db_path = os.path.join(tm_dir_path, DB_FILE)
             manifest_path = os.path.join(tm_dir_path, MANIFEST_FILE)
@@ -324,22 +335,25 @@ class TMService:
 
                 if filename in manifest.get("imported_sources", {}):
                     existing_stats = manifest["imported_sources"][filename]
-                    if all(existing_stats.get(k) == file_stats.get(k) for k in
-                           ["filesize", "last_modified", "checksum"]):
+                    if all(
+                        existing_stats.get(k) == file_stats.get(k) for k in ["filesize", "last_modified", "checksum"]
+                    ):
                         return True, _("This TM file has already been imported and has not changed.")
 
-                if progress_callback: progress_callback(_("Parsing TM file..."))
+                if progress_callback:
+                    progress_callback(_("Parsing TM file..."))
                 tus_to_import = self._parse_tm_file(source_filepath, source_lang, target_lang)
 
-                if progress_callback: progress_callback(_("Connecting to database..."))
+                if progress_callback:
+                    progress_callback(_("Connecting to database..."))
                 with self._get_db_connection(db_path) as conn:
                     self._create_schema(conn)
                     self._merge_tus_into_db(conn, tus_to_import, filename, progress_callback)
 
-                file_stats['import_date'] = datetime.now().isoformat() + "Z"
-                file_stats['tu_count'] = len(tus_to_import)
-                file_stats['source_lang'] = source_lang
-                file_stats['target_lang'] = target_lang
+                file_stats["import_date"] = datetime.now().isoformat() + "Z"
+                file_stats["tu_count"] = len(tus_to_import)
+                file_stats["source_lang"] = source_lang
+                file_stats["target_lang"] = target_lang
                 manifest.setdefault("imported_sources", {})[filename] = file_stats
                 self._write_manifest(manifest_path, manifest)
 
@@ -348,8 +362,9 @@ class TMService:
                 logger.error(f"Failed to import TM file '{source_filepath}': {e}", exc_info=True)
                 return False, str(e)
 
-    def get_fuzzy_matches(self, source_text: str, source_lang: str, target_lang: str, limit: int = 5,
-                          threshold: float = 0.7) -> List[Dict]:
+    def get_fuzzy_matches(
+        self, source_text: str, source_lang: str, target_lang: str, limit: int = 5, threshold: float = 0.7
+    ) -> list[dict]:
         all_matches = []
         with self._lock:
             if self.project_db_path:
@@ -372,24 +387,23 @@ class TMService:
             return []
 
         # Deduplicate and score
-        unique_matches = {(m['source_text'], m['target_text']): m for m in all_matches}.values()
+        unique_matches = {(m["source_text"], m["target_text"]): m for m in all_matches}.values()
         scored_matches = []
         for match in unique_matches:
-            score = fuzz.ratio(source_text, match['source_text']) / 100.0
+            score = fuzz.ratio(source_text, match["source_text"]) / 100.0
             if score >= threshold:
-                scored_matches.append({
-                    "score": score,
-                    "source_text": match['source_text'],
-                    "target_text": match['target_text']
-                })
-        scored_matches.sort(key=lambda x: x['score'], reverse=True)
+                scored_matches.append(
+                    {"score": score, "source_text": match["source_text"], "target_text": match["target_text"]}
+                )
+        scored_matches.sort(key=lambda x: x["score"], reverse=True)
 
         return scored_matches[:limit]
 
-    def _query_fuzzy_in_db(self, conn: sqlite3.Connection, source_text: str, source_lang: str, target_lang: str,
-                           limit: int) -> List[Dict]:
+    def _query_fuzzy_in_db(
+        self, conn: sqlite3.Connection, source_text: str, source_lang: str, target_lang: str, limit: int
+    ) -> list[dict]:
         cursor = conn.cursor()
-        keywords = [word for word in re.findall(r'\b\w+\b', source_text) if len(word) > 3]
+        keywords = [word for word in re.findall(r"\b\w+\b", source_text) if len(word) > 3]
         if not keywords:
             keywords = [source_text[:10]]
 
@@ -404,20 +418,19 @@ class TMService:
             WHERE source_lang = ? AND target_lang = ? AND ({like_clauses})
             LIMIT ?
         """
-        params = [source_lang, target_lang] + like_params + [limit * 10]
+        params = [source_lang, target_lang, *like_params, limit * 10]
         cursor.execute(query, params)
         return [dict(row) for row in cursor.fetchall()]
 
-    def _parse_tm_file(self, filepath: str, source_lang: str, target_lang: str) -> List[Dict]:
+    def _parse_tm_file(self, filepath: str, source_lang: str, target_lang: str) -> list[dict]:
         __, ext = os.path.splitext(filepath)
         ext = ext.lower()
 
-        if ext == '.xlsx':
+        if ext == ".xlsx":
             return self._parse_xlsx(filepath, source_lang, target_lang)
-        else:
-            raise ValueError(_.format(ext=ext))
+        raise ValueError(_.format(ext=ext))
 
-    def _parse_xlsx(self, filepath: str, source_lang: str, target_lang: str) -> List[Dict]:
+    def _parse_xlsx(self, filepath: str, source_lang: str, target_lang: str) -> list[dict]:
         tus = []
         wb = load_workbook(filepath, read_only=True)
         ws = wb.active
@@ -425,22 +438,22 @@ class TMService:
             if len(row) >= 2 and row[0] is not None and row[1] is not None:
                 source_text = str(row[0])
                 target_text = str(row[1])
-                tus.append({
-                    "source_lang": source_lang,
-                    "target_lang": target_lang,
-                    "source_text": source_text,
-                    "target_text": target_text
-                })
+                tus.append(
+                    {
+                        "source_lang": source_lang,
+                        "target_lang": target_lang,
+                        "source_text": source_text,
+                        "target_text": target_text,
+                    }
+                )
         return tus
 
-    def _merge_tus_into_db(self, conn: sqlite3.Connection, tus: List[Dict], source_key: str, progress_callback=None):
+    def _merge_tus_into_db(self, conn: sqlite3.Connection, tus: list[dict], source_key: str, progress_callback=None):
         cursor = conn.cursor()
         data_to_insert = [
-            (
-                tu['source_lang'], tu['target_lang'], tu['source_text'],
-                tu['target_text'], source_key
-            )
-            for tu in tus if tu.get('source_text') and tu.get('target_text')
+            (tu["source_lang"], tu["target_lang"], tu["source_text"], tu["target_text"], source_key)
+            for tu in tus
+            if tu.get("source_text") and tu.get("target_text")
         ]
 
         if not data_to_insert:
@@ -448,21 +461,24 @@ class TMService:
 
         try:
             cursor.execute("BEGIN IMMEDIATE TRANSACTION;")
-            if progress_callback: progress_callback(
-                _("Inserting {count} TM entries...").format(count=len(data_to_insert)))
+            if progress_callback:
+                progress_callback(_("Inserting {count} TM entries...").format(count=len(data_to_insert)))
 
-            cursor.executemany("""
-                INSERT OR REPLACE INTO translation_units 
+            cursor.executemany(
+                """
+                INSERT OR REPLACE INTO translation_units
                 (source_lang, target_lang, source_text, target_text, source_manifest_key)
                 VALUES (?, ?, ?, ?, ?)
-            """, data_to_insert)
+            """,
+                data_to_insert,
+            )
 
             cursor.execute("COMMIT")
         except Exception as e:
             cursor.execute("ROLLBACK")
-            raise IOError(f"Database operation failed: {e}")
+            raise OSError(f"Database operation failed: {e}") from e
 
-    def remove_source(self, source_key: str, tm_dir_path: str) -> Tuple[bool, str]:
+    def remove_source(self, source_key: str, tm_dir_path: str) -> tuple[bool, str]:
         with self._lock:
             db_path = os.path.join(tm_dir_path, DB_FILE)
             manifest_path = os.path.join(tm_dir_path, MANIFEST_FILE)
@@ -481,15 +497,24 @@ class TMService:
                     self._write_manifest(manifest_path, manifest)
 
                 return True, _("Successfully removed {count} TM entries from source '{source}'.").format(
-                    count=rows_deleted, source=source_key)
+                    count=rows_deleted, source=source_key
+                )
             except Exception as e:
                 logger.error(f"Failed to remove TM source '{source_key}': {e}", exc_info=True)
                 return False, str(e)
 
-    def query_entries(self, db_path: str, page: int = 1, page_size: int = 50,
-                      source_key: str = None, src_lang: str = None, tgt_lang: str = None,
-                      search_term: str = None) -> List[Dict]:
-        if not db_path or not os.path.exists(db_path): return []
+    def query_entries(
+        self,
+        db_path: str,
+        page: int = 1,
+        page_size: int = 50,
+        source_key: str | None = None,
+        src_lang: str | None = None,
+        tgt_lang: str | None = None,
+        search_term: str | None = None,
+    ) -> list[dict]:
+        if not db_path or not os.path.exists(db_path):
+            return []
 
         offset = (page - 1) * page_size
         query = "SELECT id, source_text, target_text, source_lang, target_lang, source_manifest_key, created_at FROM translation_units WHERE 1=1"
@@ -522,9 +547,16 @@ class TMService:
                 logger.error(f"TM query failed: {e}")
                 return []
 
-    def count_entries(self, db_path: str, source_key: str = None, src_lang: str = None,
-                      tgt_lang: str = None, search_term: str = None) -> int:
-        if not db_path or not os.path.exists(db_path): return 0
+    def count_entries(
+        self,
+        db_path: str,
+        source_key: str | None = None,
+        src_lang: str | None = None,
+        tgt_lang: str | None = None,
+        search_term: str | None = None,
+    ) -> int:
+        if not db_path or not os.path.exists(db_path):
+            return 0
 
         query = "SELECT COUNT(*) FROM translation_units WHERE 1=1"
         params = []
@@ -594,8 +626,9 @@ class TMService:
                 logger.error(f"TM delete failed: {e}")
                 return False
 
-    def get_distinct_languages(self, db_path: str) -> Tuple[List[str], List[str]]:
-        if not db_path or not os.path.exists(db_path): return [], []
+    def get_distinct_languages(self, db_path: str) -> tuple[list[str], list[str]]:
+        if not db_path or not os.path.exists(db_path):
+            return [], []
         with self._lock:
             try:
                 with self._get_db_connection(db_path) as conn:
@@ -608,8 +641,16 @@ class TMService:
             except Exception:
                 return [], []
 
-    def batch_update_tm(self, db_path: str, entries: List[Dict], source_lang: str, target_lang: str,
-                        source_key: str, display_name: str, strategy: str = 'overwrite') -> Tuple[bool, str]:
+    def batch_update_tm(
+        self,
+        db_path: str,
+        entries: list[dict],
+        source_lang: str,
+        target_lang: str,
+        source_key: str,
+        display_name: str,
+        strategy: str = "overwrite",
+    ) -> tuple[bool, str]:
         """
         Batch update TM.
         entries: List of {'source': str, 'target': str, 'action': 'new'|'overwrite'|'skip'}
@@ -625,13 +666,11 @@ class TMService:
         data_to_insert = []
 
         for e in entries:
-            action = e.get('action', strategy)
-            if action == 'skip':
+            action = e.get("action", strategy)
+            if action == "skip":
                 continue
 
-            data_to_insert.append((
-                source_lang, target_lang, e['source'], e['target'], source_key
-            ))
+            data_to_insert.append((source_lang, target_lang, e["source"], e["target"], source_key))
 
         if not data_to_insert:
             return True, _("No entries to update (all skipped).")
@@ -643,7 +682,7 @@ class TMService:
                     cursor.execute("BEGIN IMMEDIATE TRANSACTION")
 
                     sql = """
-                        INSERT OR REPLACE INTO translation_units 
+                        INSERT OR REPLACE INTO translation_units
                         (source_lang, target_lang, source_text, target_text, source_manifest_key)
                         VALUES (?, ?, ?, ?, ?)
                     """
@@ -651,8 +690,7 @@ class TMService:
                     cursor.executemany(sql, data_to_insert)
 
                     cursor.execute(
-                        "SELECT COUNT(*) FROM translation_units WHERE source_manifest_key = ?",
-                        (source_key,)
+                        "SELECT COUNT(*) FROM translation_units WHERE source_manifest_key = ?", (source_key,)
                     )
                     actual_count = cursor.fetchone()[0]
 
@@ -668,7 +706,7 @@ class TMService:
                         "import_date": datetime.utcnow().isoformat() + "Z",
                         "tu_count": actual_count,
                         "source_lang": source_lang,
-                        "target_lang": target_lang
+                        "target_lang": target_lang,
                     }
 
                     self._write_manifest(manifest_path, manifest)
@@ -680,30 +718,30 @@ class TMService:
                 logger.error(f"Batch TM update failed: {e}", exc_info=True)
                 return False, str(e)
 
-    def _read_manifest(self, manifest_path: str) -> Dict:
+    def _read_manifest(self, manifest_path: str) -> dict:
         try:
-            with open(manifest_path, 'r', encoding='utf-8') as f:
+            with open(manifest_path, encoding="utf-8") as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             return {"version": 1, "imported_sources": {}}
 
-    def _write_manifest(self, manifest_path: str, manifest_data: Dict):
-        with open(manifest_path, 'w', encoding='utf-8') as f:
+    def _write_manifest(self, manifest_path: str, manifest_data: dict):
+        with open(manifest_path, "w", encoding="utf-8") as f:
             json.dump(manifest_data, f, indent=4, ensure_ascii=False)
 
-    def _get_file_stats(self, filepath: str) -> Dict:
+    def _get_file_stats(self, filepath: str) -> dict:
         stat = os.stat(filepath)
-        normalized_filepath = filepath.replace('\\', '/')
+        normalized_filepath = filepath.replace("\\", "/")
         return {
             "filepath": normalized_filepath,
             "filesize": stat.st_size,
             "last_modified": datetime.fromtimestamp(stat.st_mtime).isoformat() + "Z",
-            "checksum": self._calculate_checksum(filepath)
+            "checksum": self._calculate_checksum(filepath),
         }
 
     def _calculate_checksum(self, filepath: str, hash_algo="sha256") -> str:
         h = hashlib.new(hash_algo)
-        with open(filepath, 'rb') as f:
+        with open(filepath, "rb") as f:
             while chunk := f.read(8192):
                 h.update(chunk)
         return h.hexdigest()

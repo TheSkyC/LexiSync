@@ -1,12 +1,15 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, QSizePolicy
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
-from typing import List, Dict, Optional
-from .styled_button import StyledButton
+from PySide6.QtWidgets import QHBoxLayout, QListWidget, QListWidgetItem, QPushButton, QSizePolicy, QVBoxLayout, QWidget
+
 from utils.localization import _
+
+from .styled_button import StyledButton
+
 
 class TMPanel(QWidget):
     apply_tm_suggestion_signal = Signal(str)
@@ -29,7 +32,7 @@ class TMPanel(QWidget):
         self.tm_suggestions_listbox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.tm_suggestions_listbox.setStyleSheet("""
             QListWidget {
-                outline: 0; 
+                outline: 0;
             }
             QListWidget::item {
                 padding: 2px 5px;
@@ -40,12 +43,16 @@ class TMPanel(QWidget):
         tm_actions_frame = QWidget()
         tm_actions_layout = QHBoxLayout(tm_actions_frame)
         tm_actions_layout.setContentsMargins(0, 0, 0, 0)
-        self.update_selected_tm_btn = StyledButton(_("Update TM for Selected"), on_click=self.update_tm_signal.emit, btn_type="default", size="small")
+        self.update_selected_tm_btn = StyledButton(
+            _("Update TM for Selected"), on_click=self.update_tm_signal.emit, btn_type="default", size="small"
+        )
         self.update_selected_tm_btn.setObjectName("update_selected_tm_btn")
         self.update_selected_tm_btn.setEnabled(False)
         tm_actions_layout.addWidget(self.update_selected_tm_btn)
 
-        self.clear_selected_tm_btn = StyledButton(_("Clear TM for Selected"), on_click=self.clear_tm_signal.emit, btn_type="danger", size="small")
+        self.clear_selected_tm_btn = StyledButton(
+            _("Clear TM for Selected"), on_click=self.clear_tm_signal.emit, btn_type="danger", size="small"
+        )
         self.clear_selected_tm_btn.setObjectName("clear_selected_tm_btn")
         self.clear_selected_tm_btn.setEnabled(False)
         tm_actions_layout.addWidget(self.clear_selected_tm_btn)
@@ -57,7 +64,7 @@ class TMPanel(QWidget):
         if translation_text_ui is not None:
             self.apply_tm_suggestion_signal.emit(translation_text_ui)
 
-    def update_tm_suggestions(self, exact_match: Optional[str], fuzzy_matches: List[Dict]):
+    def update_tm_suggestions(self, exact_match: str | None, fuzzy_matches: list[dict]):
         self.tm_suggestions_listbox.clear()
 
         has_results = False
@@ -72,9 +79,9 @@ class TMPanel(QWidget):
         if fuzzy_matches:
             has_results = True
             for match in fuzzy_matches:
-                score = match['score']
-                orig_text = match['source_text']
-                trans_text = match['target_text']
+                score = match["score"]
+                orig_text = match["source_text"]
+                trans_text = match["target_text"]
 
                 suggestion_for_ui = trans_text.replace("\\n", "\n")
                 display_orig = orig_text[:40].replace("\n", "↵") + ("..." if len(orig_text) > 40 else "")

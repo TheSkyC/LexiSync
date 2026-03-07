@@ -1,8 +1,9 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QDialogButtonBox, QLabel, QSplitter, QWidget
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QSplitter, QTextEdit, QVBoxLayout, QWidget
+
 
 class PreviewDialog(QDialog):
     def __init__(self, parent, original_text, preview_text, translator):

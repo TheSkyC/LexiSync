@@ -1,9 +1,9 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import QStyledItemDelegate, QStyleOptionViewItem, QStyle
-from PySide6.QtGui import QPainter, QColor, QPen, QFont
-from PySide6.QtCore import Qt, QModelIndex
+from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtGui import QColor, QFont, QPainter, QPen
+from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 
 
 class CustomCellDelegate(QStyledItemDelegate):
@@ -44,7 +44,7 @@ class CustomCellDelegate(QStyledItemDelegate):
         is_find_match = False
         is_current_find_focus = False
 
-        if hasattr(self.app, 'search_service'):
+        if hasattr(self.app, "search_service"):
             is_find_match = current_proxy_index_tuple in self.app.search_service.highlight_indices
             is_current_find_focus = current_proxy_index_tuple == self.app.search_service.current_focus_index
 
@@ -56,7 +56,7 @@ class CustomCellDelegate(QStyledItemDelegate):
         ts_obj = index.data(Qt.UserRole)
         if ts_obj:
             is_selected = display_option.state & self.parent().style().StateFlag.State_Selected
-            is_focused = (self.app and ts_obj.id == self.app.current_focused_ts_id)
+            is_focused = self.app and ts_obj.id == self.app.current_focused_ts_id
 
             pen_to_use = None
             if is_focused:
@@ -70,22 +70,25 @@ class CustomCellDelegate(QStyledItemDelegate):
                 painter.setPen(pen_to_use)
                 rect = display_option.rect
                 painter.drawLine(rect.topLeft(), rect.topRight())
-                painter.drawLine(rect.bottomLeft().x(), rect.bottomLeft().y() - 1, rect.bottomRight().x(),
-                                 rect.bottomRight().y() - 1)
+                painter.drawLine(
+                    rect.bottomLeft().x(), rect.bottomLeft().y() - 1, rect.bottomRight().x(), rect.bottomRight().y() - 1
+                )
                 if index.column() == 0:
-                    painter.drawLine(rect.topLeft().x(), rect.topLeft().y(), rect.bottomLeft().x(),
-                                     rect.bottomLeft().y() - 1)
+                    painter.drawLine(
+                        rect.topLeft().x(), rect.topLeft().y(), rect.bottomLeft().x(), rect.bottomLeft().y() - 1
+                    )
                 if index.column() == index.model().columnCount() - 1:
-                    painter.drawLine(rect.topRight().x(), rect.topRight().y(), rect.bottomRight().x(),
-                                     rect.bottomRight().y() - 1)
+                    painter.drawLine(
+                        rect.topRight().x(), rect.topRight().y(), rect.bottomRight().x(), rect.bottomRight().y() - 1
+                    )
 
         # 绘制换行符颜色标识
         if index.column() in [2, 3] and ts_obj:
             symbol_color = None
             if index.column() == 2:
-                symbol_color = ts_obj.ui_style_cache.get('original_newline_color')
+                symbol_color = ts_obj.ui_style_cache.get("original_newline_color")
             elif index.column() == 3:
-                symbol_color = ts_obj.ui_style_cache.get('translation_newline_color')
+                symbol_color = ts_obj.ui_style_cache.get("translation_newline_color")
 
             if symbol_color and isinstance(symbol_color, QColor):
                 symbol_font = QFont(display_option.font)

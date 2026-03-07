@@ -1,28 +1,46 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QCheckBox, QTreeWidget, QTreeWidgetItem, QHeaderView, QMessageBox,
-    QFileDialog, QWidget, QTextEdit, QComboBox, QSplitter, QTableView,
-    QGroupBox, QRadioButton, QButtonGroup, QMenu, QAbstractItemView,
-    QSizePolicy, QPlainTextEdit
-)
-from PySide6.QtCore import Qt, Signal, QTimer, QAbstractTableModel, QModelIndex, QEvent
-from PySide6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QAction, QTextCursor
-import json
-import uuid
-import re
-import time
 import bisect
 from copy import deepcopy
+import json
+import re
+import time
+import uuid
 
+from PySide6.QtCore import QAbstractTableModel, QEvent, QModelIndex, Qt, QTimer
+from PySide6.QtGui import QAction, QColor, QFont, QSyntaxHighlighter, QTextCharFormat, QTextCursor
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QButtonGroup,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QRadioButton,
+    QSizePolicy,
+    QSplitter,
+    QTableView,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
-from ui_components.tooltip import Tooltip
 from dialogs.ai_regex_generator_dialog import AIRegexGeneratorDialog
-from utils.constants import EXTRACTION_PATTERN_PRESET_EXTENSION, DEFAULT_EXTRACTION_PATTERNS
-from utils.localization import _
 from services.code_file_service import unescape_overwatch_string
+from ui_components.tooltip import Tooltip
+from utils.constants import DEFAULT_EXTRACTION_PATTERNS, EXTRACTION_PATTERN_PRESET_EXTENSION
+from utils.localization import _
 
 
 # --- 语法高亮器 ---
@@ -43,7 +61,7 @@ class RegexHighlighter(QSyntaxHighlighter):
 
     def set_matches(self, matches):
         self.matches = matches
-        self.match_starts = [m['start'] for m in matches]
+        self.match_starts = [m["start"] for m in matches]
         self.rehighlight()
 
     def highlightBlock(self, text):
@@ -60,8 +78,8 @@ class RegexHighlighter(QSyntaxHighlighter):
 
         for i in range(start_index, len(self.matches)):
             m = self.matches[i]
-            m_start = m['start']
-            m_end = m['end']
+            m_start = m["start"]
+            m_end = m["end"]
 
             if m_start >= block_end:
                 break
@@ -73,7 +91,7 @@ class RegexHighlighter(QSyntaxHighlighter):
             length = rel_end - rel_start
 
             if length > 0:
-                fmt = self.fmt_conflict if m.get('is_conflict') else self.fmt_match
+                fmt = self.fmt_conflict if m.get("is_conflict") else self.fmt_match
                 self.setFormat(rel_start, length, fmt)
 
 
@@ -104,22 +122,25 @@ class ExtractionResultModel(QAbstractTableModel):
         item = self._data[row]
 
         if role == Qt.DisplayRole:
-            if col == 0: return item['rule_name']
+            if col == 0:
+                return item["rule_name"]
             if col == 1:
-                raw = item['raw']
+                raw = item["raw"]
                 return raw[:50] + "..." if len(raw) > 50 else raw
             if col == 2:
-                proc = item['processed']
+                proc = item["processed"]
                 return proc[:50] + "..." if len(proc) > 50 else proc
-            if col == 3: return f"{item['start']}-{item['end']}"
-            if col == 4: return _("Conflict") if item['is_conflict'] else _("OK")
+            if col == 3:
+                return f"{item['start']}-{item['end']}"
+            if col == 4:
+                return _("Conflict") if item["is_conflict"] else _("OK")
 
         elif role == Qt.ForegroundRole:
             if col == 4:
-                return QColor("red") if item['is_conflict'] else QColor("green")
+                return QColor("red") if item["is_conflict"] else QColor("green")
 
         elif role == Qt.FontRole:
-            if col == 4 and item['is_conflict']:
+            if col == 4 and item["is_conflict"]:
                 font = QFont()
                 font.setBold(True)
                 return font
@@ -292,14 +313,16 @@ class ExtractionPatternTestDialog(QDialog):
             return
 
         match_data = self.result_model.data(index, Qt.UserRole)
-        if not match_data: return
+        if not match_data:
+            return
 
-        text = match_data['raw'] if col == 1 else match_data['processed']
+        text = match_data["raw"] if col == 1 else match_data["processed"]
 
         # Format content
         display_text = text[:2000] + "..." if len(text) > 2000 else text
         import html
-        safe_text = html.escape(display_text).replace('\n', '<br>')
+
+        safe_text = html.escape(display_text).replace("\n", "<br>")
 
         title = _("Raw Match") if col == 1 else _("Processed Value")
         color = "#2E7D32" if col == 2 else "#0277BD"
@@ -318,7 +341,8 @@ class ExtractionPatternTestDialog(QDialog):
         self.run_test()
 
     def trigger_run_test(self):
-        if self._is_highlighting: return
+        if self._is_highlighting:
+            return
         self.debounce_timer.start()
 
     def run_test(self):
@@ -345,13 +369,15 @@ class ExtractionPatternTestDialog(QDialog):
         limit_reached = False
 
         for rule in active_rules:
-            if limit_reached: break
+            if limit_reached:
+                break
 
             left = rule.get("left_delimiter", "")
             right = rule.get("right_delimiter", "")
             is_multiline = rule.get("multiline", True)
 
-            if not left or not right: continue
+            if not left or not right:
+                continue
 
             try:
                 flags = re.DOTALL if is_multiline else 0
@@ -367,29 +393,30 @@ class ExtractionPatternTestDialog(QDialog):
                     full_start = m.start()
                     full_end = m.end()
 
-                    all_matches.append({
-                        'rule_name': rule.get("name", "Unknown"),
-                        'raw': raw_content,
-                        'processed': unescape_overwatch_string(raw_content),
-                        'start': full_start,
-                        'end': full_end,
-                        'content_start': m.start(2),
-                        'content_end': m.end(2),
-                        'is_conflict': False
-                    })
+                    all_matches.append(
+                        {
+                            "rule_name": rule.get("name", "Unknown"),
+                            "raw": raw_content,
+                            "processed": unescape_overwatch_string(raw_content),
+                            "start": full_start,
+                            "end": full_end,
+                            "content_start": m.start(2),
+                            "content_end": m.end(2),
+                            "is_conflict": False,
+                        }
+                    )
             except re.error:
                 pass
 
-        all_matches.sort(key=lambda x: x['start'])
+        all_matches.sort(key=lambda x: x["start"])
 
         last_end = -1
         conflict_count = 0
         for m in all_matches:
-            if m['start'] < last_end:
-                m['is_conflict'] = True
+            if m["start"] < last_end:
+                m["is_conflict"] = True
                 conflict_count += 1
-            if m['end'] > last_end:
-                last_end = m['end']
+            last_end = max(last_end, m["end"])
 
         end_time = time.perf_counter()
         duration_ms = (end_time - start_time) * 1000
@@ -401,11 +428,9 @@ class ExtractionPatternTestDialog(QDialog):
 
         if len(all_matches) <= HIGHLIGHT_LIMIT:
             for m in all_matches:
-                highlight_data.append({
-                    'start': m['content_start'],
-                    'end': m['content_end'],
-                    'is_conflict': m['is_conflict']
-                })
+                highlight_data.append(
+                    {"start": m["content_start"], "end": m["content_end"], "is_conflict": m["is_conflict"]}
+                )
 
         status_msg = _("Found {count} matches in {time:.1f}ms. Conflicts: {conflicts}").format(
             count=len(all_matches), time=duration_ms, conflicts=conflict_count
@@ -422,15 +447,16 @@ class ExtractionPatternTestDialog(QDialog):
         self._is_highlighting = False
 
     def _on_table_item_clicked(self, index):
-        if not index.isValid(): return
+        if not index.isValid():
+            return
 
         # Get data from model directly
         match_data = self.result_model.data(index, Qt.UserRole)
 
         if match_data:
             cursor = self.input_edit.textCursor()
-            cursor.setPosition(match_data['content_start'])
-            cursor.setPosition(match_data['content_end'], QTextCursor.KeepAnchor)
+            cursor.setPosition(match_data["content_start"])
+            cursor.setPosition(match_data["content_end"], QTextCursor.KeepAnchor)
             self.input_edit.setTextCursor(cursor)
             self.input_edit.setFocus()
 
@@ -438,15 +464,16 @@ class ExtractionPatternTestDialog(QDialog):
         filepath, __ = QFileDialog.getSaveFileName(
             self, _("Export Test Results"), "extraction_results.json", "JSON Files (*.json)"
         )
-        if not filepath: return
+        if not filepath:
+            return
 
         results = []
         for m in self.result_model._data:
-            clean_data = {k: v for k, v in m.items() if k != 'is_conflict'}
+            clean_data = {k: v for k, v in m.items() if k != "is_conflict"}
             results.append(clean_data)
 
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(results, f, indent=4, ensure_ascii=False)
             QMessageBox.information(self, _("Success"), _("Results exported successfully."))
         except Exception as e:
@@ -498,7 +525,9 @@ class ExtractionPatternManagerDialog(QDialog):
 
         # Tree View
         self.tree = QTreeWidget()
-        self.tree.setHeaderLabels([_("Enabled"), _("Rule Name"), _("Category"), _("Left Delimiter"), _("Right Delimiter")])
+        self.tree.setHeaderLabels(
+            [_("Enabled"), _("Rule Name"), _("Category"), _("Left Delimiter"), _("Right Delimiter")]
+        )
         self.tree.setRootIsDecorated(False)
         self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -532,13 +561,16 @@ class ExtractionPatternManagerDialog(QDialog):
         self.tree.clear()
         for pattern in self.patterns_buffer:
             enabled_char = "✔" if pattern.get("enabled", True) else "✖"
-            item = QTreeWidgetItem(self.tree, [
-                enabled_char,
-                pattern.get("name", _("Unnamed Rule")),
-                pattern.get("string_type", _("Custom")),
-                pattern.get("left_delimiter", ""),
-                pattern.get("right_delimiter", "")
-            ])
+            item = QTreeWidgetItem(
+                self.tree,
+                [
+                    enabled_char,
+                    pattern.get("name", _("Unnamed Rule")),
+                    pattern.get("string_type", _("Custom")),
+                    pattern.get("left_delimiter", ""),
+                    pattern.get("right_delimiter", ""),
+                ],
+            )
             item.setData(0, Qt.UserRole, pattern["id"])
             item.setFlags(item.flags() & ~Qt.ItemIsDropEnabled)
             if not pattern.get("enabled", True):
@@ -548,7 +580,8 @@ class ExtractionPatternManagerDialog(QDialog):
 
     def show_context_menu(self, pos):
         item = self.tree.itemAt(pos)
-        if not item: return
+        if not item:
+            return
 
         menu = QMenu(self)
         edit_action = QAction(_("Edit"), self)
@@ -589,7 +622,7 @@ class ExtractionPatternManagerDialog(QDialog):
             "string_type": _("Custom"),
             "left_delimiter": "",
             "right_delimiter": '"',
-            "multiline": True
+            "multiline": True,
         }
 
         dialog = ExtractionPatternItemEditor(self, _("Add Extraction Rule"), new_pattern, self.patterns_buffer)
@@ -608,9 +641,14 @@ class ExtractionPatternManagerDialog(QDialog):
         if not selected_items:
             return
 
-        reply = QMessageBox.question(self, _("Confirm Delete"), _("Are you sure you want to delete the selected rule?"),
-                                     QMessageBox.Yes | QMessageBox.No)
-        if reply == QMessageBox.No: return
+        reply = QMessageBox.question(
+            self,
+            _("Confirm Delete"),
+            _("Are you sure you want to delete the selected rule?"),
+            QMessageBox.Yes | QMessageBox.No,
+        )
+        if reply == QMessageBox.No:
+            return
 
         selected_id = selected_items[0].data(0, Qt.UserRole)
         self.patterns_buffer = [p for p in self.patterns_buffer if p["id"] != selected_id]
@@ -650,9 +688,15 @@ class ExtractionPatternManagerDialog(QDialog):
         dialog.exec()
 
     def reset_to_defaults(self):
-        reply = QMessageBox.question(self, _("Confirm"),
-                                     _("Are you sure you want to reset extraction rules to their default settings?\nAll current custom rules will be lost."),
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(
+            self,
+            _("Confirm"),
+            _(
+                "Are you sure you want to reset extraction rules to their default settings?\nAll current custom rules will be lost."
+            ),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
         if reply == QMessageBox.Yes:
             self.patterns_buffer = deepcopy(DEFAULT_EXTRACTION_PATTERNS)
             self.populate_tree()
@@ -662,18 +706,23 @@ class ExtractionPatternManagerDialog(QDialog):
             self,
             _("Import Extraction Rule Preset"),
             "",
-            _("Extraction Pattern Files (*{ext});;All Files (*.*)").format(ext=EXTRACTION_PATTERN_PRESET_EXTENSION)
+            _("Extraction Pattern Files (*{ext});;All Files (*.*)").format(ext=EXTRACTION_PATTERN_PRESET_EXTENSION),
         )
-        if not filepath: return
+        if not filepath:
+            return
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, encoding="utf-8") as f:
                 preset = json.load(f)
             if isinstance(preset, list) and all("name" in p and "left_delimiter" in p for p in preset):
                 for p_item in preset:
-                    if "id" not in p_item: p_item["id"] = str(uuid.uuid4())
-                    if "enabled" not in p_item: p_item["enabled"] = True
-                    if "string_type" not in p_item: p_item["string_type"] = _("Custom")
-                    if "right_delimiter" not in p_item: p_item["right_delimiter"] = '"'
+                    if "id" not in p_item:
+                        p_item["id"] = str(uuid.uuid4())
+                    if "enabled" not in p_item:
+                        p_item["enabled"] = True
+                    if "string_type" not in p_item:
+                        p_item["string_type"] = _("Custom")
+                    if "right_delimiter" not in p_item:
+                        p_item["right_delimiter"] = '"'
                 self.patterns_buffer = preset
                 QMessageBox.information(self, _("Success"), _("Preset imported successfully."))
                 self.populate_tree()
@@ -687,12 +736,13 @@ class ExtractionPatternManagerDialog(QDialog):
             self,
             _("Export Extraction Rule Preset"),
             "my_extraction_patterns.extract",
-            _("Extraction Pattern Files (*{ext});;All Files (*.*)").format(ext=EXTRACTION_PATTERN_PRESET_EXTENSION)
+            _("Extraction Pattern Files (*{ext});;All Files (*.*)").format(ext=EXTRACTION_PATTERN_PRESET_EXTENSION),
         )
-        if not filepath: return
+        if not filepath:
+            return
         try:
             self.get_current_order_from_tree()
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(self.patterns_buffer, f, indent=4, ensure_ascii=False)
             QMessageBox.information(self, _("Success"), _("Preset exported successfully."))
         except Exception as e:
@@ -764,7 +814,7 @@ class ExtractionPatternItemEditor(QDialog):
         left_header_layout.addStretch()
         escape_left_btn = QPushButton(_("Escape Special Chars"))
         escape_left_btn.setToolTip(_("Automatically escape characters like ( ) [ ] . * ? for literal matching."))
-        escape_left_btn.clicked.connect(lambda: self.convert_to_regex('left'))
+        escape_left_btn.clicked.connect(lambda: self.convert_to_regex("left"))
         left_header_layout.addWidget(escape_left_btn)
         main_layout.addLayout(left_header_layout, 0)
 
@@ -778,7 +828,7 @@ class ExtractionPatternItemEditor(QDialog):
         right_header_layout.addStretch()
         escape_right_btn = QPushButton(_("Escape Special Chars"))
         escape_right_btn.setToolTip(_("Automatically escape characters like ( ) [ ] . * ? for literal matching."))
-        escape_right_btn.clicked.connect(lambda: self.convert_to_regex('right'))
+        escape_right_btn.clicked.connect(lambda: self.convert_to_regex("right"))
         right_header_layout.addWidget(escape_right_btn)
         main_layout.addLayout(right_header_layout, 0)
 
@@ -791,7 +841,8 @@ class ExtractionPatternItemEditor(QDialog):
         self.multiline_checkbox = QCheckBox(_("Dot Matches Newline (DOTALL)"))
         self.multiline_checkbox.setChecked(self.initial_data.get("multiline", True))
         self.multiline_checkbox.setToolTip(
-            _("If checked, the dot (.) in regex matches newline characters. Essential for multi-line content."))
+            _("If checked, the dot (.) in regex matches newline characters. Essential for multi-line content.")
+        )
         options_layout.addWidget(self.multiline_checkbox)
         options_layout.addStretch()
         main_layout.addLayout(options_layout, 0)
@@ -823,7 +874,7 @@ class ExtractionPatternItemEditor(QDialog):
         main_layout.addLayout(dialog_buttons, 0)
 
     def convert_to_regex(self, target):
-        text_edit = self.left_text_edit if target == 'left' else self.right_text_edit
+        text_edit = self.left_text_edit if target == "left" else self.right_text_edit
         current_text = text_edit.toPlainText().strip()
         escaped_text = re.escape(current_text)
         text_edit.setPlainText(escaped_text)
@@ -838,11 +889,11 @@ class ExtractionPatternItemEditor(QDialog):
             "description": self.desc_entry.text().strip(),
             "left_delimiter": self.left_text_edit.toPlainText().strip(),
             "right_delimiter": self.right_text_edit.toPlainText().strip(),
-            "multiline": self.multiline_checkbox.isChecked()
+            "multiline": self.multiline_checkbox.isChecked(),
         }
 
     def open_ai_generator(self):
-        dialog = AIRegexGeneratorDialog(self, self.parent().app) # Need app instance for AI
+        dialog = AIRegexGeneratorDialog(self, self.parent().app)  # Need app instance for AI
         if dialog.exec():
             data = dialog.result
             if data:
@@ -867,11 +918,7 @@ class ExtractionPatternItemEditor(QDialog):
         else:
             rules_to_pass = [current_rule]
 
-        dialog = ExtractionPatternTestDialog(
-            self,
-            rules_to_pass,
-            initial_rule_id=current_rule["id"]
-        )
+        dialog = ExtractionPatternTestDialog(self, rules_to_pass, initial_rule_id=current_rule["id"])
         dialog.exec()
 
     def accept(self):

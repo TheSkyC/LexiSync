@@ -1,20 +1,34 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QTreeView, QFileSystemModel,
-                               QMenu, QToolBar, QLineEdit, QCheckBox, QMessageBox,
-                               QAbstractItemView, QApplication, QHeaderView,
-                               QHBoxLayout, QWidgetAction, QSizePolicy, QToolButton)
-from PySide6.QtCore import (Qt, QDir, QModelIndex, Signal, QUrl, QSortFilterProxyModel,
-                            QSize, QTimer)
-from PySide6.QtGui import QAction, QDesktopServices, QIcon, QColor, QFont
+from collections import deque
+import logging
 import os
 from pathlib import Path
-from collections import deque
+
+from PySide6.QtCore import QDir, QModelIndex, QSize, QSortFilterProxyModel, Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QAction, QColor, QDesktopServices, QFont, QIcon
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QApplication,
+    QFileSystemModel,
+    QHBoxLayout,
+    QHeaderView,
+    QLineEdit,
+    QMenu,
+    QMessageBox,
+    QSizePolicy,
+    QToolBar,
+    QToolButton,
+    QTreeView,
+    QVBoxLayout,
+    QWidget,
+)
+
 from services.format_manager import FormatManager
 from utils.localization import _
 from utils.path_utils import get_resource_path
-import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,6 +61,7 @@ class CustomTreeView(QTreeView):
     def setPreventHorizontalScroll(self, prevent):
         self._prevent_horizontal_scroll = prevent
 
+
 class FileFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -59,7 +74,7 @@ class FileFilterProxyModel(QSortFilterProxyModel):
 
     def setProjectFilePatterns(self, patterns):
         try:
-            if not isinstance(patterns, (list, tuple)):
+            if not isinstance(patterns, list | tuple):
                 logger.warning("Invalid patterns type, expected list or tuple")
                 patterns = []
 
@@ -79,7 +94,7 @@ class FileFilterProxyModel(QSortFilterProxyModel):
         except Exception as e:
             logger.error(f"Error setting show all types: {e}")
 
-    def setProjectMode(self, enabled: bool, source_paths: list = None):
+    def setProjectMode(self, enabled: bool, source_paths: list | None = None):
         self._project_mode_enabled = enabled
         if enabled and source_paths:
             self._project_source_paths = {os.path.normpath(p) for p in source_paths}
@@ -127,17 +142,15 @@ class FileFilterProxyModel(QSortFilterProxyModel):
                 return True
 
             from fnmatch import fnmatch
+
             file_name = file_info.fileName()
-            for pattern in self.project_file_patterns:
-                if fnmatch(file_name, pattern):
-                    return True
-            return False
+            return any(fnmatch(file_name, pattern) for pattern in self.project_file_patterns)
         except Exception as e:
             logger.error(f"Error in filterAcceptsRow: {e}")
             return True
 
     def data(self, index, role=Qt.DisplayRole):
-        if role != Qt.ForegroundRole and role != Qt.FontRole:
+        if role not in (Qt.ForegroundRole, Qt.FontRole):
             return super().data(index, role)
 
         source_model = self.sourceModel()
@@ -229,7 +242,7 @@ class FileExplorerPanel(QWidget):
 
     def _apply_initial_settings(self):
         try:
-            if hasattr(self, 'show_all_checkbox'):
+            if hasattr(self, "show_all_checkbox"):
                 self.toggle_show_all(self.show_all_checkbox.isChecked())
             self._update_nav_buttons_state()
         except Exception as e:
@@ -358,7 +371,7 @@ class FileExplorerPanel(QWidget):
             ("forward_action", "arrow-right.svg", _("Forward")),
             ("up_action", "arrow-up.svg", _("Up")),
             ("refresh_action", "refresh.svg", _("Refresh")),
-            ("home_action", "home.svg", _("Home"))
+            ("home_action", "home.svg", _("Home")),
         ]
 
         for attr_name, icon_file, text in action_configs:
@@ -394,21 +407,21 @@ class FileExplorerPanel(QWidget):
                     alternate-background-color: #F8F9FA;
                     outline: 0;
                 }
-                QTreeView::item { 
-                    padding: 4px; 
-                    border-radius: 3px; 
+                QTreeView::item {
+                    padding: 4px;
+                    border-radius: 3px;
                     min-height: 20px;
                 }
-                QTreeView::item:selected:active { 
-                    background-color: #D4E6F1; 
-                    color: black; 
+                QTreeView::item:selected:active {
+                    background-color: #D4E6F1;
+                    color: black;
                 }
-                QTreeView::item:selected:!active { 
-                    background-color: #EAF2F8; 
-                    color: black; 
+                QTreeView::item:selected:!active {
+                    background-color: #EAF2F8;
+                    color: black;
                 }
-                QTreeView::item:hover:!selected { 
-                    background-color: #F5F5F5; 
+                QTreeView::item:hover:!selected {
+                    background-color: #F5F5F5;
                 }
             """)
             self._configure_tree_view_columns()
@@ -440,7 +453,7 @@ class FileExplorerPanel(QWidget):
             (self.forward_action.triggered, self.go_forward),
             (self.up_action.triggered, self.go_up),
             (self.refresh_action.triggered, self.refresh),
-            (self.home_action.triggered, self.go_home)
+            (self.home_action.triggered, self.go_home),
         ]
 
         for signal, slot in connection_configs:
@@ -450,11 +463,11 @@ class FileExplorerPanel(QWidget):
                 logger.error(f"Error connecting signal to slot {slot.__name__}: {e}")
 
         try:
-            if hasattr(self, 'filter_edit'):
+            if hasattr(self, "filter_edit"):
                 self.filter_edit.textChanged.connect(self.filter_changed)
-            if hasattr(self, 'project_mode_checkbox'):
+            if hasattr(self, "project_mode_checkbox"):
                 self.project_mode_checkbox.toggled.connect(self.toggle_project_mode)
-            if hasattr(self, 'show_all_checkbox'):
+            if hasattr(self, "show_all_checkbox"):
                 self.show_all_checkbox.toggled.connect(self.toggle_show_all)
 
         except Exception as e:
@@ -462,17 +475,17 @@ class FileExplorerPanel(QWidget):
 
     def _update_nav_buttons_state(self):
         try:
-            if hasattr(self, 'back_action'):
+            if hasattr(self, "back_action"):
                 self.back_action.setEnabled(len(self.history_stack) > 0)
-            if hasattr(self, 'forward_action'):
+            if hasattr(self, "forward_action"):
                 self.forward_action.setEnabled(len(self.forward_stack) > 0)
 
             current_path = self.source_model.rootPath()
             is_root = QDir(current_path).isRoot() if current_path else True
 
-            if hasattr(self, 'up_action'):
+            if hasattr(self, "up_action"):
                 self.up_action.setEnabled(not is_root)
-            if hasattr(self, 'home_action'):
+            if hasattr(self, "home_action"):
                 self.home_action.setEnabled(self.home_path is not None)
 
         except Exception as e:
@@ -531,8 +544,8 @@ class FileExplorerPanel(QWidget):
                 self._is_navigating = False
 
             try:
-                if hasattr(self.app, 'config') and hasattr(self.app, 'save_config'):
-                    self.app.config['last_file_explorer_path'] = normalized_path
+                if hasattr(self.app, "config") and hasattr(self.app, "save_config"):
+                    self.app.config["last_file_explorer_path"] = normalized_path
             except Exception as e:
                 logger.error(f"Error saving configuration: {e}")
 
@@ -607,7 +620,7 @@ class FileExplorerPanel(QWidget):
                     proxy_root_index = self.sheet_model.mapFromSource(root_index)
                     self.tree_view.setRootIndex(proxy_root_index)
 
-                    if hasattr(self.app, 'update_statusbar'):
+                    if hasattr(self.app, "update_statusbar"):
                         self.app.update_statusbar(_("File explorer refreshed."))
                 else:
                     logger.warning("Invalid root index during refresh")
@@ -698,10 +711,10 @@ class FileExplorerPanel(QWidget):
 
             plugin_patterns = []
 
-            if hasattr(self.app, 'plugin_manager'):
+            if hasattr(self.app, "plugin_manager"):
                 try:
                     plugin_patterns = self.app.plugin_manager.get_all_supported_file_patterns()
-                    if not isinstance(plugin_patterns, (list, tuple)):
+                    if not isinstance(plugin_patterns, list | tuple):
                         plugin_patterns = []
                 except Exception as e:
                     logger.error(f"Error getting plugin file patterns: {e}")
@@ -733,6 +746,7 @@ class FileExplorerPanel(QWidget):
                 self.filter_menu.exec(button_pos)
             else:
                 from PySide6.QtGui import QCursor
+
                 self.filter_menu.exec(QCursor.pos())
 
         except Exception as e:
@@ -743,7 +757,7 @@ class FileExplorerPanel(QWidget):
         self.project_mode_checkbox.setChecked(True)
 
         project_root = self.app.current_project_path
-        abs_source_paths = [os.path.join(project_root, f['project_path']) for f in source_files_info]
+        abs_source_paths = [os.path.join(project_root, f["project_path"]) for f in source_files_info]
 
         self.sheet_model.setProjectMode(True, abs_source_paths)
 
@@ -758,16 +772,16 @@ class FileExplorerPanel(QWidget):
         self.project_mode_checkbox.setChecked(False)
         self.project_mode_checkbox.setEnabled(False)
         self.sheet_model.setProjectMode(False)
-        last_path = self.app.config.get('last_file_explorer_path', QDir.homePath())
+        last_path = self.app.config.get("last_file_explorer_path", QDir.homePath())
         if self.app.current_project_path and last_path.startswith(self.app.current_project_path):
-             last_path = QDir.homePath()
+            last_path = QDir.homePath()
         self.set_root_path(last_path)
 
     def toggle_project_mode(self, checked):
         if checked:
-            source_files_info = self.app.project_config.get('source_files', [])
+            source_files_info = self.app.project_config.get("source_files", [])
             project_root = self.app.current_project_path
-            abs_source_paths = [os.path.join(project_root, f['project_path']) for f in source_files_info]
+            abs_source_paths = [os.path.join(project_root, f["project_path"]) for f in source_files_info]
             self.sheet_model.setProjectMode(True, abs_source_paths)
         else:
             self.sheet_model.setProjectMode(False)
@@ -833,7 +847,9 @@ class FileExplorerPanel(QWidget):
                     font = open_proj_action.font()
                     font.setBold(True)
                     open_proj_action.setFont(font)
-                    open_proj_action.triggered.connect(lambda checked=False, p=path: self.open_project_requested.emit(p))
+                    open_proj_action.triggered.connect(
+                        lambda checked=False, p=path: self.open_project_requested.emit(p)
+                    )
                     menu.addSeparator()
             # Open action
             if len(selected_paths) == 1:
@@ -888,10 +904,7 @@ class FileExplorerPanel(QWidget):
                 self._show_error(_("File Error"), _("File or directory does not exist."))
                 return
 
-            if os.path.isfile(path):
-                directory = os.path.dirname(path)
-            else:
-                directory = path
+            directory = os.path.dirname(path) if os.path.isfile(path) else path
 
             url = QUrl.fromLocalFile(directory)
             if not QDesktopServices.openUrl(url):
@@ -906,16 +919,14 @@ class FileExplorerPanel(QWidget):
             copy_path_action = menu.addAction(_("Copy Full Path"))
             copy_path_action.triggered.connect(
                 lambda checked=False, paths=selected_paths: self._copy_to_clipboard(
-                    '\n'.join(paths),
-                    _("Copied {count} full path(s) to clipboard.").format(count=len(paths))
+                    "\n".join(paths), _("Copied {count} full path(s) to clipboard.").format(count=len(paths))
                 )
             )
             selected_names = [os.path.basename(p) for p in selected_paths]
             copy_name_action = menu.addAction(_("Copy File Name"))
             copy_name_action.triggered.connect(
                 lambda checked=False, names=selected_names: self._copy_to_clipboard(
-                    '\n'.join(names),
-                    _("Copied {count} file name(s) to clipboard.").format(count=len(names))
+                    "\n".join(names), _("Copied {count} file name(s) to clipboard.").format(count=len(names))
                 )
             )
         except Exception as e:
@@ -923,9 +934,9 @@ class FileExplorerPanel(QWidget):
 
     def _add_plugin_actions(self, menu, selected_paths):
         try:
-            if hasattr(self.app, 'plugin_manager'):
+            if hasattr(self.app, "plugin_manager"):
                 try:
-                    plugin_menu_items = self.app.plugin_manager.run_hook('on_file_tree_context_menu', selected_paths)
+                    plugin_menu_items = self.app.plugin_manager.run_hook("on_file_tree_context_menu", selected_paths)
                     if plugin_menu_items:
                         menu.addSeparator()
                         self.app.plugin_manager._create_menu_from_structure(menu, plugin_menu_items)
@@ -939,7 +950,7 @@ class FileExplorerPanel(QWidget):
             clipboard = QApplication.clipboard()
             if clipboard:
                 clipboard.setText(text)
-                if hasattr(self.app, 'update_statusbar'):
+                if hasattr(self.app, "update_statusbar"):
                     self.app.update_statusbar(status_message)
             else:
                 self._show_error(_("Clipboard Error"), _("Failed to access system clipboard."))
@@ -962,11 +973,13 @@ class FileExplorerPanel(QWidget):
                 self._show_error(_("Delete Error"), _("No valid items to delete."))
                 return
             reply = QMessageBox.warning(
-                self, _("Confirm Deletion"),
+                self,
+                _("Confirm Deletion"),
                 _("Are you sure you want to permanently delete the following item(s)?\n\n- {items}").format(
-                    items='\n- '.join(os.path.basename(p) for p in valid_paths)
+                    items="\n- ".join(os.path.basename(p) for p in valid_paths)
                 ),
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
             )
 
             if reply != QMessageBox.Yes:
@@ -978,6 +991,7 @@ class FileExplorerPanel(QWidget):
                 try:
                     if os.path.isdir(path):
                         import shutil
+
                         shutil.rmtree(path)
                     else:
                         os.remove(path)
@@ -998,15 +1012,13 @@ class FileExplorerPanel(QWidget):
                 error_text = "\n".join(errors)
                 if success_count > 0:
                     message = _(
-                        "Partially completed deletion. {success} item(s) deleted, but encountered errors:\n\n{errors}").format(
-                        success=success_count, errors=error_text
-                    )
+                        "Partially completed deletion. {success} item(s) deleted, but encountered errors:\n\n{errors}"
+                    ).format(success=success_count, errors=error_text)
                 else:
                     message = _("Deletion failed with errors:\n\n{errors}").format(errors=error_text)
                 self._show_error(_("Deletion Results"), message)
-            else:
-                if hasattr(self.app, 'update_statusbar'):
-                    self.app.update_statusbar(_("Successfully deleted {count} item(s).").format(count=success_count))
+            elif hasattr(self.app, "update_statusbar"):
+                self.app.update_statusbar(_("Successfully deleted {count} item(s).").format(count=success_count))
             self.refresh()
 
         except Exception as e:
@@ -1015,20 +1027,20 @@ class FileExplorerPanel(QWidget):
 
     def update_ui_texts(self):
         try:
-            if hasattr(self, 'filter_edit'):
+            if hasattr(self, "filter_edit"):
                 self.filter_edit.setPlaceholderText(_("Filter files..."))
-            if hasattr(self, 'project_mode_checkbox'):
+            if hasattr(self, "project_mode_checkbox"):
                 self.project_mode_checkbox.setText(_("Project Mode"))
-            if hasattr(self, 'show_all_checkbox'):
+            if hasattr(self, "show_all_checkbox"):
                 self.show_all_checkbox.setText(_("Show All Files"))
 
             action_texts = {
-                'back_action': _("Back"),
-                'forward_action': _("Forward"),
-                'up_action': _("Up"),
-                'refresh_action': _("Refresh"),
-                'home_action': _("Home"),
-                'filter_settings_action': _("Filter Settings")
+                "back_action": _("Back"),
+                "forward_action": _("Forward"),
+                "up_action": _("Up"),
+                "refresh_action": _("Refresh"),
+                "home_action": _("Home"),
+                "filter_settings_action": _("Filter Settings"),
             }
 
             for action_name, text in action_texts.items():
@@ -1046,7 +1058,6 @@ class FileExplorerPanel(QWidget):
 
         except Exception as e:
             logger.critical(f"Failed to show error dialog: {e}")
-            print(f"ERROR - {title}: {message}")
 
     def get_current_path(self):
         try:
@@ -1057,29 +1068,31 @@ class FileExplorerPanel(QWidget):
 
     def is_valid_state(self):
         try:
-            return (hasattr(self, 'source_model') and
-                    hasattr(self, 'sheet_model') and
-                    hasattr(self, 'tree_view') and
-                    self.source_model is not None and
-                    self.sheet_model is not None and
-                    self.tree_view is not None)
+            return (
+                hasattr(self, "source_model")
+                and hasattr(self, "sheet_model")
+                and hasattr(self, "tree_view")
+                and self.source_model is not None
+                and self.sheet_model is not None
+                and self.tree_view is not None
+            )
         except Exception as e:
             logger.error(f"Error checking widget state: {e}")
             return False
 
     def cleanup(self):
         try:
-            if hasattr(self, 'tree_view') and self.tree_view:
+            if hasattr(self, "tree_view") and self.tree_view:
                 try:
                     self.tree_view.doubleClicked.disconnect()
                     self.tree_view.customContextMenuRequested.disconnect()
                 except (RuntimeError, TypeError):
                     pass
 
-            if hasattr(self, 'sheet_model') and self.sheet_model:
+            if hasattr(self, "sheet_model") and self.sheet_model:
                 self.sheet_model.setSourceModel(None)
 
-            if hasattr(self, 'source_model') and self.source_model:
+            if hasattr(self, "source_model") and self.source_model:
                 self.source_model = None
 
             logger.debug("File explorer panel cleaned up")
@@ -1090,5 +1103,5 @@ class FileExplorerPanel(QWidget):
     def __del__(self):
         try:
             self.cleanup()
-        except Exception as e:
-            print(f"Error in FileExplorerPanel destructor: {e}")
+        except Exception:
+            pass

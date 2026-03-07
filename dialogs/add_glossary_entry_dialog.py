@@ -1,14 +1,24 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QLineEdit,
-                               QPushButton, QDialogButtonBox, QComboBox, QTextEdit,
-                               QMessageBox, QApplication, QLabel, QWidget)
-from PySide6.QtCore import Qt, QEvent
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QLineEdit,
+    QMessageBox,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
 from ui_components.banner_overlay import BannerOverlay
-from utils.localization import _
 from utils.constants import SUPPORTED_LANGUAGES
+from utils.localization import _
 from utils.path_utils import get_resource_path
 
 
@@ -51,11 +61,13 @@ class AddGlossaryEntryDialog(QDialog):
 
         if default_source_lang:
             index = self.source_lang_combo.findData(default_source_lang)
-            if index != -1: self.source_lang_combo.setCurrentIndex(index)
+            if index != -1:
+                self.source_lang_combo.setCurrentIndex(index)
 
         if default_target_lang:
             index = self.target_lang_combo.findData(default_target_lang)
-            if index != -1: self.target_lang_combo.setCurrentIndex(index)
+            if index != -1:
+                self.target_lang_combo.setCurrentIndex(index)
 
         form_layout.addRow(_("Source Term:"), self.source_term_edit)
         form_layout.addRow(_("Source Language:"), self.source_lang_combo)
@@ -72,7 +84,8 @@ class AddGlossaryEntryDialog(QDialog):
 
     def auto_fill_from_editors(self):
         """首次打开时，自动填充已选中的文本，若无选中则填充全部"""
-        if not self.app or not hasattr(self.app, 'details_panel'): return
+        if not self.app or not hasattr(self.app, "details_panel"):
+            return
         orig_edit = self.app.details_panel.original_text_display
         trans_edit = self.app.details_panel.translation_edit_text
 
@@ -95,8 +108,11 @@ class AddGlossaryEntryDialog(QDialog):
             self.target_term_edit.setText(trans_edit.toPlainText())
 
     def _on_crosshair_clicked(self, is_source):
-        if not self.app or not hasattr(self.app, 'details_panel'): return
-        target_edit = self.app.details_panel.original_text_display if is_source else self.app.details_panel.translation_edit_text
+        if not self.app or not hasattr(self.app, "details_panel"):
+            return
+        target_edit = (
+            self.app.details_panel.original_text_display if is_source else self.app.details_panel.translation_edit_text
+        )
         target_line_edit = self.source_term_edit if is_source else self.target_term_edit
 
         cursor = target_edit.textCursor()
@@ -110,22 +126,17 @@ class AddGlossaryEntryDialog(QDialog):
             self._enter_picker_mode(is_source)
 
     def _enter_picker_mode(self, is_source):
-        self._picker_mode = 'source' if is_source else 'target'
+        self._picker_mode = "source" if is_source else "target"
 
         if not self._picker_banner:
             self._picker_banner = BannerOverlay(self.app.details_panel)
 
         side_text = _("Original") if is_source else _("Translation")
         msg = _("Picker Mode: Select text in the {side} box... (Press ESC or click elsewhere to cancel)").format(
-            side=side_text)
-
-        self._picker_banner.show_message(
-            msg,
-            preset="warning",
-            layout_mode="bottom",
-            margin=5,
-            fixed_height=36
+            side=side_text
         )
+
+        self._picker_banner.show_message(msg, preset="warning", layout_mode="bottom", margin=5, fixed_height=36)
 
         QApplication.instance().installEventFilter(self)
 
@@ -138,12 +149,16 @@ class AddGlossaryEntryDialog(QDialog):
 
             # 2. 鼠标松开事件
             if event.type() == QEvent.MouseButtonRelease and event.button() == Qt.LeftButton:
-                target_edit = self.app.details_panel.original_text_display if self._picker_mode == 'source' else self.app.details_panel.translation_edit_text
+                target_edit = (
+                    self.app.details_panel.original_text_display
+                    if self._picker_mode == "source"
+                    else self.app.details_panel.translation_edit_text
+                )
 
                 if obj is target_edit.viewport() or obj is target_edit:
                     cursor = target_edit.textCursor()
                     if cursor.hasSelection():
-                        line_edit = self.source_term_edit if self._picker_mode == 'source' else self.target_term_edit
+                        line_edit = self.source_term_edit if self._picker_mode == "source" else self.target_term_edit
                         line_edit.setText(cursor.selectedText())
                         cursor.clearSelection()
                         target_edit.setTextCursor(cursor)
@@ -176,17 +191,17 @@ class AddGlossaryEntryDialog(QDialog):
             "target_term": self.target_term_edit.text().strip(),
             "source_lang": self.source_lang_combo.currentData(),
             "target_lang": self.target_lang_combo.currentData(),
-            "comment": self.comment_edit.toPlainText().strip()
+            "comment": self.comment_edit.toPlainText().strip(),
         }
 
     def accept(self):
         self._exit_picker_mode()
 
         data = self.get_data()
-        if not data['source_term'] or not data['target_term']:
+        if not data["source_term"] or not data["target_term"]:
             QMessageBox.warning(self, _("Missing Information"), _("Source term and target term cannot be empty."))
             return
-        if data['source_lang'] == data['target_lang']:
+        if data["source_lang"] == data["target_lang"]:
             QMessageBox.warning(self, _("Invalid Languages"), _("Source and target languages cannot be the same."))
             return
         super().accept()

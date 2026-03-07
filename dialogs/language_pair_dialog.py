@@ -1,13 +1,25 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QDialogButtonBox, QLineEdit, QListWidget, QListWidgetItem,
-    QGroupBox, QTabWidget, QWidget, QMessageBox, QFrame
-)
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QPushButton,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
 from utils.constants import SUPPORTED_LANGUAGES
 from utils.localization import _
 
@@ -96,7 +108,7 @@ DIALOG_STYLESHEET = """
         font-weight: 500;
         min-width: 80px;
     }
-    
+
     QPushButton:hover {
         background-color: #f9fafb;
     }
@@ -143,6 +155,7 @@ DIALOG_STYLESHEET = """
         margin: 8px 0;
     }
 """
+
 
 class LanguageListWidget(QListWidget):
     def __init__(self, parent=None):
@@ -191,7 +204,7 @@ class LanguagePairDialog(QDialog):
         self.target_lang = current_target_lang
 
         self.lang_map = SUPPORTED_LANGUAGES
-        self.lang_name_list = sorted(list(self.lang_map.keys()))
+        self.lang_name_list = sorted(self.lang_map.keys())
         self.common_languages = [
             "English",
             "简体中文",
@@ -204,7 +217,7 @@ class LanguagePairDialog(QDialog):
             "Turkish",
             "Arabic",
             "日本語",
-            "한국어"
+            "한국어",
         ]
 
         self.setup_ui()
@@ -226,7 +239,6 @@ class LanguagePairDialog(QDialog):
 
         self.setup_buttons()
         main_layout.addLayout(self.button_box)
-
 
     def setup_advanced_tab(self):
         advanced_widget = QWidget()
@@ -298,7 +310,8 @@ class LanguagePairDialog(QDialog):
         self.current_selection_frame.setFrameShape(QFrame.StyledPanel)
         self.current_selection_frame.setObjectName("currentSelectionFrame")
         self.current_selection_frame.setStyleSheet(
-            "#CurrentSelectionFrame { background-color: #f0f8ff; border: 1px solid #d1e5f7; border-radius: 5px; }")
+            "#CurrentSelectionFrame { background-color: #f0f8ff; border: 1px solid #d1e5f7; border-radius: 5px; }"
+        )
 
         layout = QHBoxLayout(self.current_selection_frame)
         layout.setContentsMargins(15, 10, 15, 10)
@@ -355,7 +368,7 @@ class LanguagePairDialog(QDialog):
 
     def populate_favorites_list(self):
         self.favorites_list.clear()
-        pairs = self.app.config.get('favorite_language_pairs', [])
+        pairs = self.app.config.get("favorite_language_pairs", [])
         for src_code, tgt_code in pairs:
             src_name = self.get_language_name(src_code, src_code)
             tgt_name = self.get_language_name(tgt_code, tgt_code)
@@ -370,8 +383,8 @@ class LanguagePairDialog(QDialog):
         self.source_list.currentItemChanged.connect(self._on_source_item_changed)
         self.target_list.currentItemChanged.connect(self._on_target_item_changed)
 
-        self.source_detect_btn.clicked.connect(lambda: self._on_auto_detect('source'))
-        self.target_detect_btn.clicked.connect(lambda: self._on_auto_detect('target'))
+        self.source_detect_btn.clicked.connect(lambda: self._on_auto_detect("source"))
+        self.target_detect_btn.clicked.connect(lambda: self._on_auto_detect("target"))
         self.apply_favorite_btn.clicked.connect(self._on_apply_favorite)
         self.add_favorite_btn.clicked.connect(self._on_add_favorite)
         self.remove_favorite_btn.clicked.connect(self._on_remove_favorite)
@@ -394,7 +407,7 @@ class LanguagePairDialog(QDialog):
     def _on_auto_detect(self, text_type):
         detected_code = self.app.detect_language_from_data(text_type)
         if detected_code:
-            if text_type == 'source':
+            if text_type == "source":
                 self.source_lang = detected_code
             else:
                 self.target_lang = detected_code
@@ -412,10 +425,10 @@ class LanguagePairDialog(QDialog):
 
     def _on_add_favorite(self):
         pair = [self.source_lang, self.target_lang]
-        favorites = self.app.config.get('favorite_language_pairs', [])
+        favorites = self.app.config.get("favorite_language_pairs", [])
         if pair not in favorites:
             favorites.append(pair)
-            self.app.config['favorite_language_pairs'] = favorites
+            self.app.config["favorite_language_pairs"] = favorites
             self.app.save_config()
             self.populate_favorites_list()
 
@@ -425,10 +438,10 @@ class LanguagePairDialog(QDialog):
             return
         item_to_remove = selected_items[0]
         pair_to_remove = list(item_to_remove.data(Qt.UserRole))
-        favorites = self.app.config.get('favorite_language_pairs', [])
+        favorites = self.app.config.get("favorite_language_pairs", [])
         if pair_to_remove in favorites:
             favorites.remove(pair_to_remove)
-            self.app.config['favorite_language_pairs'] = favorites
+            self.app.config["favorite_language_pairs"] = favorites
             self.app.save_config()
             self.populate_favorites_list()
 
@@ -459,8 +472,8 @@ class LanguagePairDialog(QDialog):
         list_widget.blockSignals(False)
 
     def reset_to_initial(self):
-        self.source_lang = self.initial_source_lang or 'en'
-        self.target_lang = self.initial_target_lang or 'zh'
+        self.source_lang = self.initial_source_lang or "en"
+        self.target_lang = self.initial_target_lang or "zh"
         self._update_all_displays()
 
     def accept(self):
