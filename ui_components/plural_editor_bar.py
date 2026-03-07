@@ -1,12 +1,43 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, QSize, Qt, Signal
-from PySide6.QtGui import QIcon, QPainter
+from PySide6.QtCore import QEasingCurve, QEvent, QParallelAnimationGroup, QPropertyAnimation, QSize, Qt, Signal
+from PySide6.QtGui import QCursor, QIcon, QPainter
 from PySide6.QtWidgets import QButtonGroup, QComboBox, QHBoxLayout, QPushButton, QStyle, QStyledItemDelegate, QWidget
 
+from ui_components.tooltip import Tooltip
 from utils.localization import _
 from utils.path_utils import get_resource_path
+
+
+class _PluralFlatButton(QPushButton):
+    def __init__(self, category, examples, parent_bar):
+        super().__init__(category, parent_bar)
+        self.category = category
+        self.examples = examples
+        self.parent_bar = parent_bar
+        self.setProperty("flat_btn", "true")
+        self.setCheckable(True)
+        self.setFixedHeight(28)
+        self.setCursor(Qt.PointingHandCursor)
+
+        self.setToolTip("")
+
+    def event(self, event):
+        if event.type() == QEvent.Enter:
+            title_color = "#409EFF" if self.isChecked() else "#FFFFFF"
+            html = (
+                f"<b style='color:{title_color}; font-size:12px;'>{self.category}</b>"
+                f"<hr style='border-color: #666; margin: 4px 0;'>"
+                f"<div style='font-family:Consolas; color:#DDD;'>n → {self.examples}</div>"
+            )
+            self.parent_bar.tooltip.show_tooltip(QCursor.pos(), html, delay=300)
+            return True
+
+        if event.type() == QEvent.Leave or event.type() == QEvent.MouseButtonPress:
+            self.parent_bar.tooltip.hide()
+
+        return super().event(event)
 
 
 class PluralComboBoxDelegate(QStyledItemDelegate):
@@ -59,6 +90,8 @@ class PluralEditorBar(QWidget):
         self.plural_info = []
         self.current_index = 0
         self.is_compact_mode = False
+
+        self.tooltip = Tooltip(self)
 
         self.setFixedHeight(28)
 
@@ -187,11 +220,7 @@ class PluralEditorBar(QWidget):
                 ex = info["examples"]
 
                 # Flat Button
-                btn = QPushButton(f"{cat}")
-                btn.setProperty("flat_btn", "true")
-                btn.setCheckable(True)
-                btn.setToolTip(f"n → {ex}")
-                btn.setFixedHeight(28)
+                btn = _PluralFlatButton(cat, ex, self)
                 self.btn_group.addButton(btn, id=idx)
                 self.flat_layout.addWidget(btn)
 
