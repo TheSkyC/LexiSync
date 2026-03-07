@@ -13,119 +13,165 @@ logger = logging.getLogger(__name__)
 
 _PLURAL_TEST_NUMBERS = [*list(range(101)), 111, 121, 200, 201, 500, 1000, 10000, 100000, 1000000]
 
+_TAG_ORDER = ["zero", "one", "two", "few", "many", "other"]
 
-def get_plural_info(lang_code: str, num_plurals_from_file: int | None = None, plural_expr_from_file: str | None = None):
+
+def _get_tag_names() -> list[str]:
+    """动态获取复数标签名"""
+    return [_("Zero"), _("One"), _("Two"), _("Few"), _("Many"), _("Other")]
+
+
+def _get_tag_map() -> dict[str, str]:
+    """动态获取 CLDR tag → 本地化名称映射"""
+    return {
+        "zero": _("Zero"),
+        "one": _("One"),
+        "two": _("Two"),
+        "few": _("Few"),
+        "many": _("Many"),
+        "other": _("Other"),
+    }
+
+
+def _collect_examples(buckets: dict, key_func) -> dict:
+    """
+    通用采样函数。
+    遍历 _PLURAL_TEST_NUMBERS，用 key_func(n) 确定分组键，
+    每组最多收集 5 个不重复的样本字符串。
+    """
+    for n in _PLURAL_TEST_NUMBERS:
+        key = key_func(n)
+        bucket = buckets.get(key)
+        if bucket is not None and len(bucket) < 5:
+            s = str(n)
+            if s not in bucket:
+                bucket.append(s)
+    return buckets
+
+
+def _format_examples(bucket: list) -> str:
+    """将样本列表格式化为可读字符串。"""
+    if not bucket:
+        return _("No typical examples found")
+    s = ", ".join(bucket)
+    return s + "..." if len(bucket) == 5 else s
+
+
+def _fill_missing_forms(results: list, target_count: int, has_file_info: bool) -> list:
+    tag_names = _get_tag_names()
+    placeholder = _("Unknown") if has_file_info else _("N/A")
+    while len(results) < target_count:
+        i = len(results)
+        cat_name = tag_names[i] if i < len(tag_names) else f"Form {i}"
+        results.append({"index": i, "category": cat_name, "examples": placeholder})
+    return results
+
+
+@lru_cache(maxsize=256)
+def get_plural_info(
+    lang_code: str,
+    num_plurals_from_file: int | None = None,
+    plural_expr_from_file: str | None = None,
+) -> list[dict]:
     """
     获取目标语言的复数规则信息。
+
     :param lang_code: 语言代码，如 'ar'
-    :param num_plurals_from_file: po文件头中的 nplurals 值
-    :param plural_expr_from_file: po文件头中的 plural 表达式
+    :param num_plurals_from_file: po 文件头中的 nplurals 值
+    :param plural_expr_from_file: po 文件头中的 plural 表达式
+    :returns: 形如 [{"index": int, "category": str, "examples": str}, ...] 的列表
     """
     results = []
+    tag_names = _get_tag_names()
 
-    tag_names = [_("Zero"), _("One"), _("Two"), _("Few"), _("Many"), _("Other")]
-
-    # 1. 优先尝试使用 PO 文件自带的公式动态计算
+    # 1. 优先使用 PO 文件自带的公式动态计算
     if num_plurals_from_file and plural_expr_from_file:
         try:
             plural_func = gettext.c2py(plural_expr_from_file)
-            examples_map = {i: [] for i in range(num_plurals_from_file)}
+            buckets = {i: [] for i in range(num_plurals_from_file)}
+            _collect_examples(buckets, plural_func)
 
-            # 采样
-            for n in _PLURAL_TEST_NUMBERS:
-                idx = plural_func(n)
-                if 0 <= idx < num_plurals_from_file and len(examples_map[idx]) < 5:
-                    n_str = str(n)
-                    if n_str not in examples_map[idx]:
-                        examples_map[idx].append(n_str)
+            index_to_cldr: dict[int, str] = {}
+            try:
+                parsed_locale = Locale.parse(lang_code, sep="_")
+                babel_plural = parsed_locale.plural_form
+                for idx, examples in buckets.items():
+                    if examples:
+                        index_to_cldr[idx] = babel_plural(int(examples[0]))
+            except Exception:
+                pass
 
+            tag_map = _get_tag_map()
             for i in range(num_plurals_from_file):
-                examples_str = ", ".join(examples_map[i])
-                if len(examples_map[i]) == 5:
-                    examples_str += "..."
-                elif not examples_map[i]:
-                    examples_str = _("No typical examples found")
-
-                cat_name = tag_names[i] if i < len(tag_names) else f"Form {i}"
-                results.append({"index": i, "category": cat_name, "examples": examples_str})
-
+                cldr_tag = index_to_cldr.get(i)
+                if cldr_tag and cldr_tag in tag_map:
+                    cat_name = tag_map[cldr_tag]
+                else:
+                    cat_name = tag_names[i] if i < len(tag_names) else f"Form {i}"
+                results.append(
+                    {
+                        "index": i,
+                        "category": cat_name,
+                        "examples": _format_examples(buckets[i]),
+                    }
+                )
             return results
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to parse plural expr '{plural_expr_from_file}': {e}")
             results = []
 
-    # 2. 如果文件里没有公式，或者解析失败，降级使用 Babel
+    # 2. 降级使用 Babel
     if not results:
         try:
             parsed_locale = Locale.parse(lang_code, sep="_")
             plural_form = parsed_locale.plural_form
 
-            examples_map = {tag: [] for tag in plural_form.tags}
+            buckets = {tag: [] for tag in plural_form.tags}
+            _collect_examples(buckets, plural_form)
 
-            for i in _PLURAL_TEST_NUMBERS:
-                tag = plural_form(i)
-                if tag in examples_map and len(examples_map[tag]) < 5:
-                    i_str = str(i)
-                    if i_str not in examples_map[tag]:
-                        examples_map[tag].append(i_str)
-
-            order = ["zero", "one", "two", "few", "many", "other"]
-            sorted_tags = sorted(plural_form.tags, key=lambda x: order.index(x) if x in order else 99)
-
-            tag_map = {
-                "zero": _("Zero"),
-                "one": _("One"),
-                "two": _("Two"),
-                "few": _("Few"),
-                "many": _("Many"),
-                "other": _("Other"),
-            }
+            tag_map = _get_tag_map()
+            sorted_tags = sorted(
+                plural_form.tags,
+                key=lambda x: _TAG_ORDER.index(x) if x in _TAG_ORDER else 99,
+            )
 
             for i, tag in enumerate(sorted_tags):
-                examples_str = ", ".join(examples_map[tag])
-                if len(examples_map[tag]) == 5:
-                    examples_str += "..."
                 category_name = tag_map.get(tag, tag.capitalize())
-                results.append({"index": i, "category": category_name, "examples": examples_str})
-
+                results.append(
+                    {
+                        "index": i,
+                        "category": category_name,
+                        "examples": _format_examples(buckets[tag]),
+                    }
+                )
         except Exception as e:
             logger.warning(f"Babel failed to parse plural rules for '{lang_code}': {e}")
 
-    # 3. 检查并补充缺失的复数形态 (兜底逻辑)
-    if num_plurals_from_file and len(results) < num_plurals_from_file:
-        start_idx = len(results)
-        for i in range(start_idx, num_plurals_from_file):
-            cat_name = tag_names[i] if i < len(tag_names) else f"Form {i}"
-            results.append({"index": i, "category": cat_name, "examples": _("Unknown")})
-
-    # 4. 极致兜底
-    if not results:
-        num = num_plurals_from_file if num_plurals_from_file else 1
-        for i in range(num):
-            cat_name = tag_names[i] if i < len(tag_names) else f"Form {i}"
-            results.append({"index": i, "category": cat_name, "examples": _("N/A")})
+    # 3. 统一兜底：补全不足的复数形态
+    target = num_plurals_from_file or 1
+    _fill_missing_forms(results, target, has_file_info=bool(num_plurals_from_file))
 
     return results
 
 
 def get_plural_form_description(
-    lang_code: str, index: int, num_plurals: int | None = None, plural_expr: str | None = None
+    lang_code: str,
+    index: int,
+    num_plurals: int | None = None,
+    plural_expr: str | None = None,
 ) -> str:
     """
     获取指定语言和索引的复数形式描述。
     支持传入文件特定的 nplurals 和 expression 以提高准确性。
     """
     all_forms = get_plural_info(lang_code, num_plurals, plural_expr)
-
     form_info = next((f for f in all_forms if f["index"] == index), None)
 
     if form_info:
         category = form_info["category"]
-        examples = form_info["examples"]
-        if not examples:
-            examples = _("N/A")
+        examples = form_info["examples"] or _("N/A")
         return f"Category: **{category}**\nApplicable to numbers like: {examples}"
 
-    # 兜底
     return f"Category: Form {index} (Specific rule not found for {lang_code})"
 
 
