@@ -180,8 +180,8 @@ class PluralEditorBar(QWidget):
         self.toggle_btn = QPushButton()
         self.toggle_btn.setObjectName("toggleBtn")
         self.toggle_btn.setFixedSize(22, 22)
-        self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-right.svg")))
-        self.toggle_btn.setToolTip(_("Toggle View Mode"))
+        self.toggle_btn.setIcon(QIcon(get_resource_path("icons/list.svg")))
+        self.toggle_btn.setToolTip(_("Switch to list view"))
         self.toggle_btn.clicked.connect(self._toggle_mode)
 
         self.layout.addWidget(self.flat_container)
@@ -237,12 +237,14 @@ class PluralEditorBar(QWidget):
             if self.is_compact_mode:
                 self.flat_container.hide()
                 self.compact_combo.show()
-                self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-left.svg")))
+                self.toggle_btn.setIcon(QIcon(get_resource_path("icons/grid.svg")))
+                self.toggle_btn.setToolTip(_("Switch to grid view"))
                 self._sync_combo_index(0)
             else:
                 self.compact_combo.hide()
                 self.flat_container.show()
-                self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-right.svg")))
+                self.toggle_btn.setIcon(QIcon(get_resource_path("icons/list.svg")))
+                self.toggle_btn.setToolTip(_("Switch to list view"))
 
         finally:
             self.setUpdatesEnabled(True)
@@ -292,7 +294,7 @@ class PluralEditorBar(QWidget):
         anim_flat = QPropertyAnimation(self.flat_container, b"maximumWidth")
         anim_compact = QPropertyAnimation(self.compact_combo, b"maximumWidth")
 
-        # 设定动画时长 (250毫秒) 和 缓动曲线 (InOutQuad 看起来比较平滑自然)
+        # 设定动画时长 (250毫秒) 和 缓动曲线
         duration = 250
         easing = QEasingCurve.InOutQuad
 
@@ -337,19 +339,19 @@ class PluralEditorBar(QWidget):
         self.anim_group.start()
 
     def _on_anim_to_compact_finished(self):
-        """动画结束后的清理工作：真正隐藏旧组件，恢复最大宽度限制，切换图标"""
+        """动画结束后的清理工作"""
         self.flat_container.hide()
         self.compact_combo.setMaximumWidth(16777215)  # 恢复 Qt 默认的无限制宽度
-        self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-left.svg")))
+        self.toggle_btn.setIcon(QIcon(get_resource_path("icons/grid.svg")))
+        self.toggle_btn.setToolTip(_("Switch to grid view"))
         self._sync_combo_index(self.current_index)
-
-        # 解除槽函数绑定，防止下次切换时重复触发
         self.anim_group.finished.disconnect(self._on_anim_to_compact_finished)
 
     def _on_anim_to_flat_finished(self):
         self.compact_combo.hide()
         self.flat_container.setMaximumWidth(16777215)
-        self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-right.svg")))
+        self.toggle_btn.setIcon(QIcon(get_resource_path("icons/list.svg")))
+        self.toggle_btn.setToolTip(_("Switch to list view"))
         if self.btn_group.button(self.current_index):
             self.btn_group.button(self.current_index).setChecked(True)
 
@@ -359,11 +361,13 @@ class PluralEditorBar(QWidget):
         if self.is_compact_mode:
             self.flat_container.hide()
             self.compact_combo.show()
-            self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-left.svg")))
+            self.toggle_btn.setIcon(QIcon(get_resource_path("icons/grid.svg")))
+            self.toggle_btn.setToolTip(_("Switch to grid view"))
             self._sync_combo_index(self.current_index)
         else:
             self.flat_container.show()
             self.compact_combo.hide()
-            self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-right.svg")))
+            self.toggle_btn.setIcon(QIcon(get_resource_path("icons/list.svg")))
+            self.toggle_btn.setToolTip(_("Switch to list view"))
             if self.btn_group.button(self.current_index):
                 self.btn_group.button(self.current_index).setChecked(True)
