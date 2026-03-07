@@ -1502,12 +1502,12 @@ class SmartTranslationDialog(QDialog):
         if self.chk_retrieval.isChecked() and self.retrieval_enabled:
             self._build_retrieval_index_async()
 
-        # 捕获配置快照 (包含最新的 Style Guide 和 Glossary)
+        # 捕获配置快照
         config_snapshot = self._capture_context_config()
 
         # 创建 Context Provider
-        def context_provider(ts_id):
-            return self.app._generate_universal_context(ts_id, config_snapshot)
+        def context_provider(ts_id, p_idx=0):
+            return self.app._generate_universal_context(ts_id, config_snapshot, plural_index=p_idx)
 
         # 启动对话框
         if not self.target_items:
@@ -1517,7 +1517,7 @@ class SmartTranslationDialog(QDialog):
         dialog = InteractiveReviewDialog(self, self.app, self.target_items, context_provider, config_snapshot)
         dialog.exec()
 
-        # 6. 刷新主界面
+        # 刷新主界面
         self.app.refresh_sheet_preserve_selection()
         self.app.update_counts_display()
 
@@ -1621,8 +1621,8 @@ class SmartTranslationDialog(QDialog):
 
         config_snapshot = self._capture_context_config()
 
-        def context_provider(ts_id):
-            return self.app._generate_universal_context(ts_id, config_snapshot)
+        def context_provider(ts_id, p_idx=0):
+            return self.app._generate_universal_context(ts_id, config_snapshot, plural_index=p_idx)
 
         # 开始批量翻译
         self.app.ai_manager.start_batch(

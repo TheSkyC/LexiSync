@@ -126,7 +126,10 @@ class AITaskManager(QObject):
                 (name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code), target_lang_code
             )
 
-            original_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
+            original_text = ts_obj.original_semantic
+            if ts_obj.is_plural and p_idx > 0:
+                original_text = ts_obj.original_plural or ts_obj.original_semantic
+
             current_translation = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
 
             worker = AIWorker(

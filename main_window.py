@@ -4776,7 +4776,7 @@ class LexiSyncApp(QMainWindow):
                 tasks_to_fix.append((ts, p_idx))
 
         def context_provider(ts_id, p_idx=0):
-            ts_obj = self._find_ts_obj_by_id(ts_id)
+            ts_obj = self.app._find_ts_obj_by_id(ts_id)
             if not ts_obj:
                 return {}
 
@@ -4785,7 +4785,7 @@ class LexiSyncApp(QMainWindow):
                 from utils.plural_utils import get_plural_form_description
 
                 plural_context_str = get_plural_form_description(
-                    self.current_target_language,
+                    self.app.current_target_language,
                     p_idx,
                     num_plurals=len(ts_obj.plural_translations),
                     plural_expr=getattr(ts_obj, "plural_expr", None),
@@ -4803,7 +4803,7 @@ class LexiSyncApp(QMainWindow):
                 else ts_obj.translation,
             }
 
-        self.ai_manager.start_batch(tasks_to_fix, context_provider, operation_type=AIOperationType.BATCH_FIX)
+        self.app.ai_manager.start_batch(tasks_to_fix, context_provider, operation_type=AIOperationType.BATCH_FIX)
         self.update_ai_related_ui_state()
 
     def _build_glossary_context(self, ts_obj):
@@ -4885,7 +4885,10 @@ class LexiSyncApp(QMainWindow):
             (name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code), target_lang_code
         )
 
-        source_text_to_fix = ts_obj.original_semantic if current_p_idx == 0 else ts_obj.original_plural
+        source_text_to_fix = ts_obj.original_semantic
+        if ts_obj.is_plural and current_p_idx > 0:
+            source_text_to_fix = ts_obj.original_plural or ts_obj.original_semantic
+
         current_trans_to_fix = (
             ts_obj.plural_translations.get(current_p_idx, "") if ts_obj.is_plural else ts_obj.translation
         )
@@ -6945,7 +6948,7 @@ class LexiSyncApp(QMainWindow):
             "cached_glossary": {},
         }
 
-    def _generate_universal_context(self, ts_id, config=None):
+    def _generate_universal_context(self, ts_id, config=None, plural_index=0):
         if config is None:
             config = self._get_global_context_config()
 
@@ -6954,6 +6957,8 @@ class LexiSyncApp(QMainWindow):
             return {}
 
         original_text = ts_obj.original_semantic
+        if ts_obj.is_plural and plural_index > 0:
+            original_text = ts_obj.original_plural or ts_obj.original_semantic
 
         # 1. Neighboring Context
         base_context = self._generate_local_neighbor_context(ts_id, config)
@@ -7245,8 +7250,12 @@ class LexiSyncApp(QMainWindow):
                 _('AI is translating: "{text}..."').format(text=ts_obj.original_semantic[:30].replace(chr(10), "↵"))
             )
 
+        source_text_to_translate = ts_obj.original_semantic
+        if ts_obj.is_plural and current_p_idx > 0:
+            source_text_to_translate = ts_obj.original_plural or ts_obj.original_semantic
+
         # Prepare Data
-        context_dict = self._generate_universal_context(ts_id_to_translate)
+        context_dict = self._generate_universal_context(ts_id_to_translate, plural_index=current_p_idx)
         plugin_placeholders = self.plugin_manager.run_hook("get_ai_translation_context") or {}
         target_lang_code = self.current_target_language
         target_lang_name = next(
@@ -7257,7 +7266,7 @@ class LexiSyncApp(QMainWindow):
             self,
             ts_id=ts_obj.id,
             operation_type=AIOperationType.TRANSLATION,
-            original_text=ts_obj.original_semantic,
+            original_text=source_text_to_translate,
             target_lang=target_lang_name,
             context_dict=context_dict,
             plugin_placeholders=plugin_placeholders,
@@ -7520,7 +7529,9 @@ class LexiSyncApp(QMainWindow):
 
         unique_tasks = {}
         for ts, p_idx in tasks_to_process:
-            source_text = ts.original_semantic if p_idx == 0 else ts.original_plural
+            source_text = ts.original_semantic
+            if ts.is_plural and p_idx > 0:
+                source_text = ts.original_plural or ts.original_semantic
             if not source_text:
                 continue
 
@@ -7575,7 +7586,11 @@ class LexiSyncApp(QMainWindow):
         )
 
         self.ai_batch_successful_translations_for_undo = []
-        self.ai_manager.start_batch(items_queue, self._generate_universal_context)
+
+        def batch_context_provider(ts_id, p_idx=0):
+            return self._generate_universal_context(ts_id, plural_index=p_idx)
+
+        self.ai_manager.start_batch(items_queue, batch_context_provider)
 
     def _handle_ai_translation_result(self, ts_id, translated_text, error_message, op_type, plural_index=0):
         """

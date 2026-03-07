@@ -85,7 +85,13 @@ class ReviewController(QObject):
         self.processing_ids.add(ts_obj.id)
 
         # 获取上下文
-        context_dict = self.context_provider(ts_obj.id)
+        import inspect
+
+        sig = inspect.signature(self.context_provider)
+        if len(sig.parameters) >= 2:
+            context_dict = self.context_provider(ts_obj.id, 0)
+        else:
+            context_dict = self.context_provider(ts_obj.id)
 
         # 获取目标语言名称
         target_lang_code = self.app.current_target_language
