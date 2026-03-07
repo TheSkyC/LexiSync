@@ -3928,58 +3928,67 @@ class LexiSyncApp(QMainWindow):
         # Case A: Single Selection
         if len(selected_objs) == 1:
             ts_obj = selected_objs[0]
-            if not ((ts_obj.warnings or ts_obj.minor_warnings or ts_obj.infos) and not ts_obj.is_warning_ignored):
-                if not self.config.get("ai_api_key"):
-                    return None
+            # 检查是否有可修复的问题
+            has_issues = (ts_obj.warnings or ts_obj.minor_warnings or ts_obj.infos) and not ts_obj.is_warning_ignored
+            ai_ready = bool(self.config.get("ai_api_key"))
+
+            if not has_issues and not ai_ready:
                 return None
 
-            all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos]
+            fix_menu = QMenu(_("Auto Fix"), self)
             fixable_actions = []
 
-            for wt in all_warnings:
-                suggestion = fix_service.get_fix_for_warning(ts_obj, wt, target_lang)
-                if suggestion:
+            # 只有有问题的项才显示规则修复
+            if has_issues:
+                all_warnings = [w[0] for w in ts_obj.warnings + ts_obj.minor_warnings + ts_obj.infos]
+                for wt in all_warnings:
+                    suggestion = fix_service.get_fix_for_warning(ts_obj, wt, target_lang)
+                    if suggestion:
 
-                    def make_fix_slot(text):
-                        return lambda: self._apply_translation_to_model(ts_obj, text, source="quick_fix")
+                        def make_fix_slot(obj=ts_obj, text=suggestion):
+                            return lambda: self._apply_translation_to_model(obj, text, source="quick_fix")
 
-                    readable_name = wt.name.replace("_", " ").title()
-                    action_text = f"{_('Fix')}: {readable_name}"
-                    fixable_actions.append(QAction(action_text, self, triggered=make_fix_slot(suggestion)))
+                        readable_name = wt.name.replace("_", " ").title()
+                        action = QAction(f"{_('Fix')}: {readable_name}", self)
+                        action.triggered.connect(make_fix_slot())
+                        fixable_actions.append(action)
 
-            fix_menu = QMenu(_("Auto Fix"), self)
+                for action in fixable_actions:
+                    fix_menu.addAction(action)
 
-            for action in fixable_actions:
-                fix_menu.addAction(action)
+                if len(fixable_actions) > 1:
+                    fix_menu.addSeparator()
 
-            if len(fixable_actions) > 1:
-                fix_menu.addSeparator()
+                    def fix_all_slot(obj=ts_obj):
+                        final_text = fix_service.apply_all_fixes(obj, target_lang)
+                        if final_text:
+                            self._apply_translation_to_model(obj, final_text, source="quick_fix_all")
 
-                def fix_all_slot():
-                    final_text = fix_service.apply_all_fixes(ts_obj, target_lang)
-                    if final_text:
-                        self._apply_translation_to_model(ts_obj, final_text, source="quick_fix_all")
+                    act_all = QAction(_("Fix with Rules"), self)
+                    act_all.triggered.connect(fix_all_slot)
+                    fix_menu.addAction(act_all)
 
-                fix_menu.addAction(QAction(_("Fix with Rules"), self, triggered=fix_all_slot))
-
-            if self.config.get("ai_api_key"):
+            # AI 修复选项
+            if ai_ready:
                 if fixable_actions:
                     fix_menu.addSeparator()
                 ai_fix_action = QAction(_("Fix with AI"), self)
                 ai_fix_action.triggered.connect(self.ai_fix_current_item)
                 fix_menu.addAction(ai_fix_action)
 
-            return fix_menu
+            return fix_menu if not fix_menu.isEmpty() else None
 
         # Case B: Multi Selection
         items_with_issues = []
         has_rule_fixable = False
 
-        for ts in selected_objs:
+        MAX_CHECK_LIMIT = 1000
+        for i, ts in enumerate(selected_objs):
             if (ts.warnings or ts.minor_warnings or ts.infos) and not ts.is_warning_ignored:
                 items_with_issues.append(ts)
-                if fix_service.apply_all_fixes(ts, target_lang):
-                    has_rule_fixable = True
+                if not has_rule_fixable and i < MAX_CHECK_LIMIT:
+                    if fix_service.apply_all_fixes(ts, target_lang):
+                        has_rule_fixable = True
 
         if not items_with_issues:
             return None
@@ -3987,15 +3996,13 @@ class LexiSyncApp(QMainWindow):
         fix_menu = QMenu(_("Auto Fix"), self)
         ai_ready = bool(self.config.get("ai_api_key"))
 
-        # --- Option 1: Smart Fix ---
+        # 1. Smart Fix (Rules + AI)
         if ai_ready:
 
             def batch_smart_fix():
-                # Apply rules
                 rule_fixed_count = 0
                 bulk_changes = []
                 ids_to_update = set()
-
                 for ts in selected_objs:
                     fixed_text = fix_service.apply_all_fixes(ts, target_lang)
                     if fixed_text and fixed_text != ts.translation:
@@ -4011,36 +4018,30 @@ class LexiSyncApp(QMainWindow):
                         )
                         ids_to_update.add(ts.id)
                         rule_fixed_count += 1
-
                 if bulk_changes:
                     self.add_to_undo_history("bulk_change", {"changes": bulk_changes})
                     self.mark_modified()
                     self._update_view_for_ids(ids_to_update)
 
-                # 2. Re-evaluate for AI
-                remaining_issues = []
-                for ts in items_with_issues:
-                    if (ts.warnings or ts.minor_warnings or ts.infos) and not ts.is_warning_ignored:
-                        remaining_issues.append(ts)
-
-                if remaining_issues:
-                    msg = _(
-                        "Fixed {count} items with rules.\n\nProceed to fix {remaining} remaining items with AI?"
-                    ).format(count=rule_fixed_count, remaining=len(remaining_issues))
+                # 检查是否还有剩余问题需要 AI 修复
+                remaining = [
+                    ts for ts in items_with_issues if (ts.warnings or ts.minor_warnings) and not ts.is_warning_ignored
+                ]
+                if remaining:
+                    msg = _("Fixed {count} items with rules. Proceed with AI for {rem} items?").format(
+                        count=rule_fixed_count, rem=len(remaining)
+                    )
                     if (
                         QMessageBox.question(self, _("Smart Fix"), msg, QMessageBox.Yes | QMessageBox.No)
                         == QMessageBox.Yes
                     ):
-                        self._start_ai_batch_fix(remaining_issues)
-                else:
-                    self.update_statusbar(_("Smart Fix complete. All issues resolved by rules."))
+                        self._start_ai_batch_fix(remaining)
 
-            action_smart = QAction(_("Smart Fix"), self)
-            action_smart.setToolTip(_("Apply rules first, then use AI for remaining issues."))
-            action_smart.triggered.connect(batch_smart_fix)
-            fix_menu.addAction(action_smart)
+            act_smart = QAction(_("Smart Fix"), self)
+            act_smart.triggered.connect(batch_smart_fix)
+            fix_menu.addAction(act_smart)
 
-        # --- Option 2: Fix with Rules ---
+        # 2. Fix with Rules Only
         if has_rule_fixable:
 
             def batch_rule_fix():
@@ -4060,33 +4061,34 @@ class LexiSyncApp(QMainWindow):
                             }
                         )
                         ids_to_update.add(ts.id)
-
                 if bulk_changes:
                     self.add_to_undo_history("bulk_change", {"changes": bulk_changes})
                     self.mark_modified()
                     self._update_view_for_ids(ids_to_update)
                     self.update_statusbar(_("Fixed {count} items with rules.").format(count=len(bulk_changes)))
 
-            action_rule = QAction(_("Fix with Rules"), self)
-            action_rule.triggered.connect(batch_rule_fix)
-            fix_menu.addAction(action_rule)
+            act_rule = QAction(_("Fix with Rules"), self)
+            act_rule.triggered.connect(batch_rule_fix)
+            fix_menu.addAction(act_rule)
 
-        # --- Option 3: Fix with AI ---
-        if ai_ready and items_with_issues:
+        # 3. Fix with AI Only
+        if ai_ready:
 
             def batch_ai_fix():
-                reply = QMessageBox.question(
-                    self,
-                    _("Confirm AI Fix"),
-                    _("Use AI to fix {count} selected items?").format(count=len(items_with_issues)),
-                    QMessageBox.Yes | QMessageBox.No,
-                )
-                if reply == QMessageBox.Yes:
+                if (
+                    QMessageBox.question(
+                        self,
+                        _("AI Fix"),
+                        _("Fix {count} items with AI?").format(count=len(items_with_issues)),
+                        QMessageBox.Yes | QMessageBox.No,
+                    )
+                    == QMessageBox.Yes
+                ):
                     self._start_ai_batch_fix(items_with_issues)
 
-            action_ai = QAction(_("Fix with AI"), self)
-            action_ai.triggered.connect(batch_ai_fix)
-            fix_menu.addAction(action_ai)
+            act_ai = QAction(_("Fix with AI"), self)
+            act_ai.triggered.connect(batch_ai_fix)
+            fix_menu.addAction(act_ai)
 
         return fix_menu
 
@@ -7773,21 +7775,32 @@ class LexiSyncApp(QMainWindow):
         self.update_counts_display()
 
     def _get_selected_ts_objects_from_sheet(self):
-        selected_objs = []
-        selected_rows = self.table_view.selectionModel().selectedRows()
-        if not selected_rows:
+        selection_model = self.table_view.selectionModel()
+        if not selection_model.hasSelection():
             if self.current_selected_ts_id:
                 ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
                 if ts_obj:
                     return [ts_obj]
             return []
 
-        added_ids = set()
-        for index in selected_rows:
-            ts_obj = self.sheet_model.data(index, Qt.UserRole)
-            if ts_obj and ts_obj.id not in added_ids:
-                selected_objs.append(ts_obj)
-                added_ids.add(ts_obj.id)
+        selected_indexes = selection_model.selectedIndexes()
+        if not selected_indexes:
+            return []
+
+        selected_rows = {idx.row() for idx in selected_indexes if idx.column() == 0}
+
+        if not selected_rows:
+            selected_rows = {idx.row() for idx in selected_indexes}
+
+        selected_objs = []
+        visible_indices = self.sheet_model._visible_indices
+        all_data = self.sheet_model._all_data
+
+        for row in selected_rows:
+            if 0 <= row < len(visible_indices):
+                raw_index = visible_indices[row]
+                selected_objs.append(all_data[raw_index])
+
         return selected_objs
 
     def select_sheet_row_by_id(self, ts_id, see=False):

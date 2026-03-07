@@ -281,7 +281,16 @@ class MarkerBar(QWidget):
     def _update_selection_ranges_from_model(self):
         if not self._selection_model:
             return
-        rows = sorted([i.row() for i in self._selection_model.selectedRows()])
+
+        selected_indexes = self._selection_model.selectedIndexes()
+        if not selected_indexes:
+            self.set_ranges("selection", [])
+            return
+
+        # 提取行号并排序
+        unique_rows = {idx.row() for idx in selected_indexes}
+        rows = sorted(list(unique_rows))
+
         ranges = []
         if rows:
             start = end = rows[0]
@@ -292,4 +301,5 @@ class MarkerBar(QWidget):
                     ranges.append((start, end))
                     start = end = rows[i]
             ranges.append((start, end))
+
         self.set_ranges("selection", ranges)

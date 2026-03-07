@@ -49,7 +49,7 @@ class TranslatableStringsModel(QAbstractTableModel):
             "fg_default": QColor("#000000"),
             "bg_read_only": QColor("#EFEFEF"),
         }
-
+        self._column_count = len(self.headers)
         self.current_search_term = ""
 
     def set_translatable_objects(self, new_data):
@@ -66,7 +66,7 @@ class TranslatableStringsModel(QAbstractTableModel):
         return len(self._visible_indices)
 
     def columnCount(self, parent=QModelIndex()):
-        return len(self.headers)
+        return self._column_count
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal and section < len(self.headers):
@@ -77,8 +77,6 @@ class TranslatableStringsModel(QAbstractTableModel):
         return None
 
     def flags(self, index):
-        if not index.isValid():
-            return Qt.NoItemFlags
         return self._default_flags
 
     def data(self, index, role=Qt.DisplayRole):
