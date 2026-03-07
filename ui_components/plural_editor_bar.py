@@ -121,17 +121,6 @@ class PluralEditorBar(QWidget):
                 padding: 2px;
                 border-radius: 3px;
             }}
-            QPushButton#compactBtn {{
-                background-color: #FFFFFF;
-                border: 1px solid #DCDFE6;
-                border-radius: 4px;
-                padding: 4px 24px 4px 10px;
-                text-align: left;
-                background-image: url("{icon_down}");
-                background-repeat: no-repeat;
-                background-position: right 6px center;
-                background-origin: padding;
-            }}
             QPushButton#compactBtn:hover {{
                 border-color: #409EFF;
             }}
@@ -170,54 +159,66 @@ class PluralEditorBar(QWidget):
 
     def setup_plurals(self, plural_info, saved_mode=False):
         """
-        plural_info: [{'index': 0, 'category': 'One', 'examples': '1'}, ...]
+        配置复数表单。
         """
-        self.plural_info = plural_info
-        self.is_compact_mode = saved_mode
-        self.current_index = 0
+        self.setUpdatesEnabled(False)
 
-        for btn in self.btn_group.buttons():
-            self.btn_group.removeButton(btn)
-            btn.deleteLater()
+        try:
+            self.plural_info = plural_info
+            self.is_compact_mode = saved_mode
+            self.current_index = 0
 
-        self.compact_combo.blockSignals(True)
-        self.compact_combo.clear()
+            while self.flat_layout.count():
+                item = self.flat_layout.takeAt(0)
+                if item.widget():
+                    item.widget().hide()
+                    item.widget().deleteLater()
 
-        # 生成新UI
-        for info in plural_info:
-            idx = info['index']
-            cat = info['category']
-            ex = info['examples']
+            # 清理按钮组
+            for btn in self.btn_group.buttons():
+                self.btn_group.removeButton(btn)
 
-            # 1. Flat Button
-            btn = QPushButton(f"{cat}")
-            btn.setProperty("flat_btn", "true")
-            btn.setCheckable(True)
-            btn.setToolTip(f"n → {ex}")
-            # 高度填满父容器
-            btn.setFixedHeight(28)
-            self.btn_group.addButton(btn, id=idx)
-            self.flat_layout.addWidget(btn)
+            # 清理组合框
+            self.compact_combo.blockSignals(True)
+            self.compact_combo.clear()
 
-            # 2. Compact ComboBox Item
-            self.compact_combo.addItem(f"Index {idx}: {cat}", userData=ex)
-            self.compact_combo.setItemData(self.compact_combo.count() - 1, idx, Qt.UserRole + 1)
+            for info in plural_info:
+                idx = info['index']
+                cat = info['category']
+                ex = info['examples']
 
-        self.compact_combo.blockSignals(False)
+                # Flat Button
+                btn = QPushButton(f"{cat}")
+                btn.setProperty("flat_btn", "true")
+                btn.setCheckable(True)
+                btn.setToolTip(f"n → {ex}")
+                btn.setFixedHeight(28)
+                self.btn_group.addButton(btn, id=idx)
+                self.flat_layout.addWidget(btn)
 
-        # 默认选中第一项
-        if self.btn_group.button(0):
-            self.btn_group.button(0).setChecked(True)
+                # Compact ComboBox Item
+                self.compact_combo.addItem(f"Index {idx}: {cat}", userData=ex)
+                self.compact_combo.setItemData(self.compact_combo.count() - 1, idx, Qt.UserRole + 1)
 
-        if self.is_compact_mode:
-            self.flat_container.hide()
-            self.compact_combo.show()
-            self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-left.svg")))
-            self._sync_combo_index(self.current_index)
-        else:
-            self.compact_combo.hide()
-            self.flat_container.show()
-            self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-right.svg")))
+            self.compact_combo.blockSignals(False)
+
+            # 默认选中
+            if self.btn_group.button(0):
+                self.btn_group.button(0).setChecked(True)
+
+            if self.is_compact_mode:
+                self.flat_container.hide()
+                self.compact_combo.show()
+                self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-left.svg")))
+                self._sync_combo_index(0)
+            else:
+                self.compact_combo.hide()
+                self.flat_container.show()
+                self.toggle_btn.setIcon(QIcon(get_resource_path("icons/chevron-right.svg")))
+
+        finally:
+            self.setUpdatesEnabled(True)
+            self.update()
 
     def _on_flat_btn_clicked(self, btn):
         idx = self.btn_group.id(btn)

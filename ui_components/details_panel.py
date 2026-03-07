@@ -487,8 +487,11 @@ class DetailsPanel(QWidget):
             self.original_text_display.setPlainText(self.current_ts_obj.original_semantic)
 
     def update_ui_for_ts(self, ts_obj):
+        self.plural_bar.hide()
+        self.translation_edit_text.setViewportMargins(0, 0, 0, 0)
+
         self.current_ts_obj = ts_obj
-        self.current_plural_index = 0  # 依然默认从第一个 Tab 开始
+        self.current_plural_index = 0
 
         if ts_obj.is_plural:
             self.plural_toggle_btn.setVisible(True)
