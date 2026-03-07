@@ -11,6 +11,8 @@ from utils.localization import _
 
 logger = logging.getLogger(__name__)
 
+_PLURAL_TEST_NUMBERS = [*list(range(101)), 111, 121, 200, 201, 500, 1000, 10000, 100000, 1000000]
+
 
 def get_plural_info(lang_code: str, num_plurals_from_file: int | None = None, plural_expr_from_file: str | None = None):
     """
@@ -27,13 +29,15 @@ def get_plural_info(lang_code: str, num_plurals_from_file: int | None = None, pl
     if num_plurals_from_file and plural_expr_from_file:
         try:
             plural_func = gettext.c2py(plural_expr_from_file)
-
             examples_map = {i: [] for i in range(num_plurals_from_file)}
 
-            for n in range(201):
+            # 采样
+            for n in _PLURAL_TEST_NUMBERS:
                 idx = plural_func(n)
                 if 0 <= idx < num_plurals_from_file and len(examples_map[idx]) < 5:
-                    examples_map[idx].append(str(n))
+                    n_str = str(n)
+                    if n_str not in examples_map[idx]:
+                        examples_map[idx].append(n_str)
 
             for i in range(num_plurals_from_file):
                 examples_str = ", ".join(examples_map[i])
@@ -46,7 +50,6 @@ def get_plural_info(lang_code: str, num_plurals_from_file: int | None = None, pl
                 results.append({"index": i, "category": cat_name, "examples": examples_str})
 
             return results
-
         except Exception:
             results = []
 
@@ -57,10 +60,13 @@ def get_plural_info(lang_code: str, num_plurals_from_file: int | None = None, pl
             plural_form = parsed_locale.plural_form
 
             examples_map = {tag: [] for tag in plural_form.tags}
-            for i in range(201):
+
+            for i in _PLURAL_TEST_NUMBERS:
                 tag = plural_form(i)
                 if tag in examples_map and len(examples_map[tag]) < 5:
-                    examples_map[tag].append(str(i))
+                    i_str = str(i)
+                    if i_str not in examples_map[tag]:
+                        examples_map[tag].append(i_str)
 
             order = ["zero", "one", "two", "few", "many", "other"]
             sorted_tags = sorted(plural_form.tags, key=lambda x: order.index(x) if x in order else 99)
@@ -116,7 +122,7 @@ def get_plural_form_description(
         category = form_info["category"]
         examples = form_info["examples"]
         if not examples:
-            examples = "N/A"
+            examples = _("N/A")
         return f"Category: **{category}**\nApplicable to numbers like: {examples}"
 
     # 兜底
