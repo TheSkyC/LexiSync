@@ -3,6 +3,7 @@
 
 from contextlib import contextmanager
 from datetime import datetime
+from functools import lru_cache
 import hashlib
 import json
 import logging
@@ -24,9 +25,23 @@ DB_FILE = "tm.db"
 
 class TMService:
     def __init__(self):
-        self.project_db_path: str | None = None
-        self.global_db_path: str | None = None
+        self.project_db_path = None
+        self.global_db_path = None
         self._lock = threading.RLock()
+        self._conns = {}
+
+        self.get_fuzzy_matches = lru_cache(maxsize=128)(self._do_actual_search)
+
+    def _get_conn(self, db_path):
+        """获取或创建持久化连接"""
+        if db_path not in self._conns:
+            conn = sqlite3.connect(db_path, timeout=10.0, check_same_thread=False)
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            conn.execute("PRAGMA cache_size=-2000")  # 2MB 缓存
+            conn.row_factory = sqlite3.Row
+            self._conns[db_path] = conn
+        return self._conns[db_path]
 
     def connect_databases(self, global_tm_path: str | None, project_tm_path: str | None = None):
         with self._lock:
@@ -77,6 +92,8 @@ class TMService:
         try:
             cursor = conn.cursor()
             cursor.execute("BEGIN IMMEDIATE TRANSACTION")
+
+            # 原始数据表
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS translation_units (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,14 +106,44 @@ class TMService:
                     UNIQUE(source_lang, target_lang, source_text)
                 );
             """)
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_tm_source ON translation_units (source_lang, target_lang, source_text);"
-            )
+
+            # FTS5 全文搜索虚拟表
+            # 使用 unicode61 分词器，支持多语言
+            cursor.execute("""
+                CREATE VIRTUAL TABLE IF NOT EXISTS tm_search_index USING fts5(
+                    source_text,
+                    content='translation_units',
+                    content_rowid='id',
+                    tokenize='unicode61'
+                );
+            """)
+
+            # 创建触发器
+            cursor.execute("""
+                CREATE TRIGGER IF NOT EXISTS trg_tm_insert AFTER INSERT ON translation_units BEGIN
+                    INSERT INTO tm_search_index(rowid, source_text) VALUES (new.id, new.source_text);
+                END;
+            """)
+
+            # UPDATE 触发器
+            cursor.execute("""
+                CREATE TRIGGER IF NOT EXISTS trg_tm_update AFTER UPDATE ON translation_units BEGIN
+                    INSERT INTO tm_search_index(tm_search_index, rowid, source_text) VALUES('delete', old.id, old.source_text);
+                    INSERT INTO tm_search_index(rowid, source_text) VALUES (new.id, new.source_text);
+                END;
+            """)
+
+            cursor.execute("""
+                CREATE TRIGGER IF NOT EXISTS trg_tm_delete AFTER DELETE ON translation_units BEGIN
+                    INSERT INTO tm_search_index(tm_search_index, rowid, source_text)
+                    VALUES('delete', old.id, old.source_text);
+                END;
+            """)
+
             cursor.execute("COMMIT")
         except Exception as e:
             cursor.execute("ROLLBACK")
             logger.error(f"TM Schema creation failed: {e}")
-            raise
 
     def find_conflicts(
         self, db_path: str, source_texts: list[str], source_lang: str, target_lang: str
@@ -114,6 +161,8 @@ class TMService:
 
         try:
             with self._get_db_connection(db_path) as conn:
+                self._create_schema(conn)
+
                 cursor = conn.cursor()
                 chunk_size = 900
                 for i in range(0, len(unique_sources), chunk_size):
@@ -320,6 +369,8 @@ class TMService:
             except Exception as e:
                 logger.error(f"Failed to update TM entry: {e}")
 
+        self.get_fuzzy_matches.cache_clear()
+
     def import_from_file(
         self, source_filepath: str, tm_dir_path: str, source_lang: str, target_lang: str, progress_callback=None
     ) -> tuple[bool, str]:
@@ -356,71 +407,88 @@ class TMService:
                 file_stats["target_lang"] = target_lang
                 manifest.setdefault("imported_sources", {})[filename] = file_stats
                 self._write_manifest(manifest_path, manifest)
-
+                self.get_fuzzy_matches.cache_clear()
                 return True, _("Successfully imported {count} TM entries.").format(count=len(tus_to_import))
             except Exception as e:
                 logger.error(f"Failed to import TM file '{source_filepath}': {e}", exc_info=True)
                 return False, str(e)
 
-    def get_fuzzy_matches(
+    def _query_fuzzy_in_db(self, conn, source_text, source_lang, target_lang, limit):
+        tokens = [t for t in re.findall(r"\w+", source_text) if len(t) > 1]
+        if not tokens:
+            return []
+        fts_query = " OR ".join(tokens[:10])
+
+        query = """
+            SELECT u.source_text, u.target_text
+            FROM tm_search_index i
+            JOIN translation_units u ON i.rowid = u.id
+            WHERE i.source_text MATCH ?
+              AND u.source_lang = ?
+              AND u.target_lang = ?
+            ORDER BY bm25(tm_search_index)
+            LIMIT 100;
+        """
+        cursor = conn.cursor()
+        cursor.execute(query, (fts_query, source_lang, target_lang))
+        return cursor.fetchall()
+
+    def _do_actual_search(
         self, source_text: str, source_lang: str, target_lang: str, limit: int = 5, threshold: float = 0.7
     ) -> list[dict]:
-        all_matches = []
+        all_candidates = []
         with self._lock:
-            if self.project_db_path:
+            for db_path in filter(None, [self.project_db_path, self.global_db_path]):
                 try:
-                    with self._get_db_connection(self.project_db_path) as conn:
-                        matches = self._query_fuzzy_in_db(conn, source_text, source_lang, target_lang, limit)
-                        all_matches.extend(matches)
-                except Exception:
-                    pass
+                    with self._get_db_connection(db_path) as conn:
+                        all_candidates.extend(
+                            self._query_fuzzy_in_db(conn, source_text, source_lang, target_lang, limit)
+                        )
+                except sqlite3.Error as e:
+                    logger.warning(f"Database error at {db_path}: {e}")
+                    continue
 
-            if self.global_db_path:
-                try:
-                    with self._get_db_connection(self.global_db_path) as conn:
-                        matches = self._query_fuzzy_in_db(conn, source_text, source_lang, target_lang, limit)
-                        all_matches.extend(matches)
-                except Exception:
-                    pass
-
-        if not all_matches:
+        if not all_candidates:
             return []
 
-        # Deduplicate and score
-        unique_matches = {(m["source_text"], m["target_text"]): m for m in all_matches}.values()
+        # 2. 精排阶段
         scored_matches = []
-        for match in unique_matches:
-            score = fuzz.ratio(source_text, match["source_text"]) / 100.0
-            if score >= threshold:
+        query_len = len(source_text)
+
+        # 打分逻辑
+        for cand in all_candidates:
+            cand_src = cand["source_text"]
+            cand_len = len(cand_src)
+
+            # A. 计算基础相似度
+            base_score = fuzz.token_set_ratio(source_text, cand_src) / 100.0
+
+            # B. 快速长度惩罚公式
+            # 惩罚因子 alpha = 0.5 (值越大对长度差异越敏感)
+            ratio = min(query_len, cand_len) / max(query_len, cand_len)
+            penalty = ratio**0.5
+
+            final_score = base_score * penalty
+
+            if final_score >= threshold:
                 scored_matches.append(
-                    {"score": score, "source_text": match["source_text"], "target_text": match["target_text"]}
+                    {"score": final_score, "source_text": cand_src, "target_text": cand["target_text"]}
                 )
+
+        # 排序并
         scored_matches.sort(key=lambda x: x["score"], reverse=True)
 
-        return scored_matches[:limit]
+        # 去重
+        seen = set()
+        unique_results = []
+        for m in scored_matches:
+            if m["target_text"] not in seen:
+                unique_results.append(m)
+                seen.add(m["target_text"])
+            if len(unique_results) >= limit:
+                break
 
-    def _query_fuzzy_in_db(
-        self, conn: sqlite3.Connection, source_text: str, source_lang: str, target_lang: str, limit: int
-    ) -> list[dict]:
-        cursor = conn.cursor()
-        keywords = [word for word in re.findall(r"\b\w+\b", source_text) if len(word) > 3]
-        if not keywords:
-            keywords = [source_text[:10]]
-
-        keywords = keywords[:10]
-
-        like_clauses = " OR ".join(["source_text LIKE ?"] * len(keywords))
-        like_params = [f"%{kw}%" for kw in keywords]
-
-        query = f"""
-            SELECT source_text, target_text
-            FROM translation_units
-            WHERE source_lang = ? AND target_lang = ? AND ({like_clauses})
-            LIMIT ?
-        """
-        params = [source_lang, target_lang, *like_params, limit * 10]
-        cursor.execute(query, params)
-        return [dict(row) for row in cursor.fetchall()]
+        return unique_results
 
     def _parse_tm_file(self, filepath: str, source_lang: str, target_lang: str) -> list[dict]:
         __, ext = os.path.splitext(filepath)
@@ -428,7 +496,7 @@ class TMService:
 
         if ext == ".xlsx":
             return self._parse_xlsx(filepath, source_lang, target_lang)
-        raise ValueError(_.format(ext=ext))
+        raise ValueError(_("Unsupported file extension: {ext}").format(ext=ext))
 
     def _parse_xlsx(self, filepath: str, source_lang: str, target_lang: str) -> list[dict]:
         tus = []
