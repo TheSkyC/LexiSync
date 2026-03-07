@@ -36,7 +36,7 @@ class MarkerBar(QWidget):
             "error": {"color": QColor(237, 28, 36, 200), "priority": 10, "label": _("Error")},
             "warning": {"color": QColor(255, 193, 7, 200), "priority": 9, "label": _("Warning")},
             "info": {"color": QColor(33, 150, 243, 200), "priority": 8, "label": _("Info")},
-            "search": {"color": QColor(147, 112, 219, 180), "priority": 7, "label": _("Search Match")},
+            "search": {"color": QColor(147, 112, 219, 180), "priority": 30, "label": _("Search Match")},
             "selection": {"color": QColor(0, 120, 215, 180), "priority": 20, "label": _("Selection")},
             "git_modified": {"color": QColor(255, 193, 7, 150), "priority": 5, "label": _("Git Modified")},
             "git_added": {"color": QColor(76, 175, 80, 150), "priority": 4, "label": _("Git Added")},
