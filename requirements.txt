@@ -6,6 +6,8 @@
 #
 --index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
+babel==2.18.0
+    # via -r requirements.in
 certifi==2026.2.25
     # via requests
 charset-normalizer==3.4.5
