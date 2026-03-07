@@ -136,7 +136,14 @@ class AddGlossaryEntryDialog(QDialog):
             side=side_text
         )
 
-        self._picker_banner.show_message(msg, preset="warning", layout_mode="bottom", margin=5, fixed_height=36)
+        self._picker_banner.show_message(
+            msg,
+            preset="warning",
+            layout_mode="bottom",
+            margin=5,
+            fixed_height=36,
+            interactive=False,
+        )
 
         QApplication.instance().installEventFilter(self)
 

@@ -8,7 +8,7 @@
 
 certifi==2026.2.25
     # via requests
-charset-normalizer==3.4.4
+charset-normalizer==3.4.5
     # via requests
 et-xmlfile==2.0.0
     # via openpyxl
@@ -69,5 +69,7 @@ tomlkit==0.14.0
     # via -r requirements.in
 urllib3==2.6.3
     # via requests
+watchdog==6.0.0
+    # via -r requirements.in
 xxhash==3.6.0
     # via -r requirements.in

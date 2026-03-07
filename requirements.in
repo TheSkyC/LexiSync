@@ -12,3 +12,4 @@ keyring>=25.6.0
 xxhash>=3.6.0
 tomlkit>=0.14.0
 pyzipper>=0.3.6
+watchdog>=6.0.0

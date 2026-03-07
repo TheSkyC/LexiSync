@@ -225,8 +225,11 @@ def save_project(project_path: str, app_instance):
     translation_data = [ts.to_dict() for ts in app_instance.all_project_strings]
 
     temp_file = translation_file.with_suffix(".json.tmp")
-    with open(temp_file, "w", encoding="utf-8") as f:
-        json.dump(translation_data, f, indent=4, ensure_ascii=False)
+    with app_instance.file_monitor.ignore_changes():
+        temp_file = translation_file.with_suffix(".json.tmp")
+        with open(temp_file, "w", encoding="utf-8") as f:
+            json.dump(translation_data, f, indent=4, ensure_ascii=False)
+        shutil.move(temp_file, translation_file)
     shutil.move(temp_file, translation_file)
 
     project_config_to_save = app_instance.project_config

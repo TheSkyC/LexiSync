@@ -93,6 +93,7 @@ from services.build_service import BuildWorker
 from services.code_file_service import extract_translatable_strings, save_translated_code
 from services.expansion_ratio_service import ExpansionRatioService
 from services.export_service import export_qa_report
+from services.file_monitor_service import FileMonitorService
 from services.format_manager import FormatManager
 from services.glossary_service import GlossaryService
 from services.glossary_worker import GlossaryAnalysisWorker
@@ -195,6 +196,9 @@ class LexiSyncApp(QMainWindow):
         self.search_service.navigate_to.connect(self._on_search_navigate)
 
         self.project_manager = ProjectManager(self)
+
+        self.file_monitor = FileMonitorService(self)
+        self.file_monitor.file_changed_on_disk.connect(self.on_file_changed_externally)
 
         self.drop_target_widget = None
 
@@ -751,6 +755,41 @@ class LexiSyncApp(QMainWindow):
             project_glossary_dir = os.path.join(self.current_project_path, "glossary")
 
         self.glossary_service.connect_databases(global_glossary_dir, project_glossary_dir)
+
+    def on_file_changed_externally(self, filepath):
+        """当监控的文件在外部被修改时触发。"""
+        if not self.translatable_objects:
+            return
+
+        filename = os.path.basename(filepath)
+
+        if hasattr(self, "drop_overlay"):
+            self.drop_overlay.clear_actions()
+
+            self.drop_overlay.add_action(
+                _("Reload"), lambda: self._reload_from_external_change(filepath), btn_type="success"
+            )
+            self.drop_overlay.add_action(_("Dismiss"), self.drop_overlay.hide_banner, btn_type="default")
+
+            self.drop_overlay.show_message(
+                _("File modified externally: {filename}").format(filename=filename),
+                preset="warning",
+                layout_mode="top",
+                margin=5,
+                fixed_height=45,
+                interactive=True,
+            )
+
+    def _reload_from_external_change(self, filepath):
+        self.drop_overlay.hide_banner()
+        self.is_modified = False
+
+        if self.is_project_mode:
+            self.open_project(self.current_project_path)
+        else:
+            self.open_file_by_path(filepath)
+
+        self.update_statusbar(_("File reloaded from disk."), persistent=True)
 
     def update_ui_texts(self):
         self.setWindowTitle(_("LexiSync - v{version}").format(version=APP_VERSION))
@@ -2589,7 +2628,8 @@ class LexiSyncApp(QMainWindow):
                 self.drop_overlay.set_target(target_widget)
 
             # 显示横幅
-            self.drop_overlay.show_message(message, preset=preset, layout_mode="fill")
+            self.drop_overlay.clear_actions()
+            self.drop_overlay.show_message(message, preset=preset, layout_mode="fill", interactive=False)
             event.accept()
         else:
             self.drop_overlay.hide_banner()
@@ -2758,6 +2798,7 @@ class LexiSyncApp(QMainWindow):
             )
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
             self.project_toolbar.setVisible(True)
+            self.file_monitor.start_monitoring(str(config_path))
 
         except Exception as e:
             logger.error(f"Error opening project from '{project_path}': {e}", exc_info=True)
@@ -2994,6 +3035,7 @@ class LexiSyncApp(QMainWindow):
             content = content.replace("\r\n", "\n")
             self.original_raw_code_content = content
 
+            self.file_monitor.start_monitoring(filepath)
             self.file_explorer_panel.exit_project_mode()
             self._update_file_explorer(filepath)
             self.current_file_path = filepath
@@ -3354,6 +3396,8 @@ class LexiSyncApp(QMainWindow):
                 logger.warning(f"Object with ID {ts_in_view.id} from view was not in cache index. Appended as new.")
 
     def _reset_app_state(self):
+        self.file_monitor.stop_monitoring()
+
         if self.is_project_mode:
             self.file_explorer_panel.exit_project_mode()
 
@@ -5532,13 +5576,14 @@ class LexiSyncApp(QMainWindow):
 
             original_file_name = os.path.basename(self.current_file_path or "source_code")
 
-            handler.save(
-                filepath,
-                self.translatable_objects,
-                self.current_file_metadata,
-                original_file_name=original_file_name,
-                app_instance=self,
-            )
+            with self.file_monitor.ignore_changes():
+                handler.save(
+                    filepath,
+                    self.translatable_objects,
+                    self.current_file_metadata,
+                    original_file_name=original_file_name,
+                    app_instance=self,
+                )
 
             self.current_file_path = filepath
             self.current_format_handler = handler
@@ -6062,6 +6107,7 @@ class LexiSyncApp(QMainWindow):
             logger.info(f"  TOTAL TIME:         {t_end - t_start:.4f}s")
             logger.info("======================================================")
 
+            self.file_monitor.start_monitoring(filepath)
             self.update_statusbar(
                 _("Loaded {count} entries from {filename}.").format(
                     count=len(self.translatable_objects), filename=os.path.basename(filepath)

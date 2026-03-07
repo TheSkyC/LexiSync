@@ -19,7 +19,6 @@ known-first-party = ["dialogs", "models", "services", "ui_components", "utils", 
 known-third-party = ["PySide6"]
 force-sort-within-sections = true
 combine-as-imports = true
-lines-after-imports = 1
 
 [lint.flake8-quotes]
 inline-quotes = "double"

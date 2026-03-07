@@ -47,7 +47,6 @@ class BannerOverlay(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WA_StyledBackground, True)
 
         self._target_widget = parent
@@ -79,8 +78,14 @@ class BannerOverlay(QWidget):
         self.text_label.setAlignment(Qt.AlignCenter)
         self.text_label.setWordWrap(True)
 
+        self.action_container = QWidget()
+        self.action_layout = QHBoxLayout(self.action_container)
+        self.action_layout.setContentsMargins(0, 0, 0, 0)
+        self.action_layout.setSpacing(8)
+
         self.main_layout.addWidget(self.icon_label)
-        self.main_layout.addWidget(self.text_label)
+        self.main_layout.addWidget(self.text_label, 1)
+        self.main_layout.addWidget(self.action_container)
 
         self.hide()
         if self._target_widget:
@@ -101,6 +106,19 @@ class BannerOverlay(QWidget):
         if obj == self._target_widget and event.type() == QEvent.Resize:
             self._update_geometry()
         return super().eventFilter(obj, event)
+
+    def clear_actions(self):
+        while self.action_layout.count():
+            item = self.action_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+    def add_action(self, label, callback, btn_type="default"):
+        from ui_components.styled_button import StyledButton
+
+        btn = StyledButton(label, on_click=callback, btn_type=btn_type, size="small")
+        self.action_layout.addWidget(btn)
+        return btn
 
     def _update_geometry(self):
         if not self._target_widget:
@@ -124,7 +142,16 @@ class BannerOverlay(QWidget):
             elif self._layout_mode == "center":
                 self.setGeometry((tw - w) // 2, (th - h) // 2, w, h)
 
-    def show_message(self, text: str, preset="info", layout_mode="fill", margin=10, fixed_height=None, **custom_styles):
+    def show_message(
+        self,
+        text: str,
+        preset="info",
+        layout_mode="fill",
+        margin=10,
+        fixed_height=None,
+        interactive=False,
+        **custom_styles,
+    ):
         """
         显示横幅。
         :param text: 显示的文本
@@ -133,10 +160,18 @@ class BannerOverlay(QWidget):
         :param margin: 边缘边距 (仅在非 fill 模式下生效)
         :param fixed_height: 强制指定高度
         :param custom_styles: 覆盖预设的样式 (如 bg_color, text_color 等)
+        :param interactive: 如果为 True，横幅将接收鼠标点击（用于按钮）；
+                            如果为 False，鼠标事件将穿透（用于拖放提示）。
         """
         self._layout_mode = layout_mode
         self._margin = margin
         self._fixed_height = fixed_height
+
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, not interactive)
+        if interactive:
+            self.action_container.show()
+        else:
+            self.action_container.hide()
 
         # 合并样式
         style = self.PRESETS.get(preset, self.PRESETS["info"]).copy()
@@ -176,6 +211,8 @@ class BannerOverlay(QWidget):
     def hide_banner(self):
         if not self.isVisible() or self.anim.endValue() == 0.0:
             return
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+
         self.anim.stop()
         self.anim.setStartValue(self.opacity_effect.opacity())
         self.anim.setEndValue(0.0)
