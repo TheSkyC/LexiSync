@@ -2380,13 +2380,26 @@ class LexiSyncApp(QMainWindow):
         config_manager.save_config(self)
 
     def save_window_state(self):
+        if not self.isVisible() or self.isMinimized():
+            logger.info("Window not visible or minimized, skipping state save to prevent corruption.")
+            return
+
         self.config["window_state"] = self.saveState().toBase64().data().decode("utf-8")
         self.config["window_geometry"] = self.saveGeometry().toBase64().data().decode("utf-8")
         config_manager.save_config(self)
 
     def restore_window_state(self):
-        if self.config.get("window_state"):
-            self.restoreState(QByteArray.fromBase64(self.config["window_state"].encode("utf-8")))
+        state_data = self.config.get("window_state")
+        geometry_data = self.config.get("window_geometry")
+
+        if geometry_data:
+            self.restoreGeometry(QByteArray.fromBase64(geometry_data.encode("utf-8")))
+
+        if state_data:
+            success = self.restoreState(QByteArray.fromBase64(state_data.encode("utf-8")))
+            if not success:
+                logger.warning("Failed to restore window state, applying default layout.")
+                QTimer.singleShot(0, self.restore_default_layout)
         else:
             QTimer.singleShot(0, self.restore_default_layout)
 
