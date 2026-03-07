@@ -12,6 +12,24 @@ from utils.localization import _
 
 logger = logging.getLogger(__name__)
 
+_COLOR_IGNORED_BG = QColor(220, 220, 220, 200)
+_COLOR_IGNORED_FG = QColor("#707070")
+_FONT_IGNORED = QFont()
+_FONT_IGNORED.setItalic(True)
+
+_COLOR_REVIEWED_BG = QColor("#E8F5E9")
+_COLOR_BLACK = QColor("#000000")
+
+_COLOR_ERROR_BG = QColor("#FFDDDD")
+_COLOR_ERROR_FG = QColor("#D32F2F")
+
+_COLOR_WARN_BG = QColor("#FFFACD")
+
+_COLOR_UNTRANS_FG = QColor("darkred")
+
+_COLOR_NL_GREEN = QColor(34, 177, 76, 180)
+_COLOR_NL_RED = QColor(237, 28, 36, 180)
+
 
 class TranslatableString:
     __slots__ = [
@@ -333,34 +351,32 @@ class TranslatableString:
 
         # 1. 已忽略
         if self.is_ignored:
-            self.ui_style_cache["background"] = QColor(220, 220, 220, 200)
-            self.ui_style_cache["foreground"] = QColor("#707070")
-            font = QFont()
-            font.setItalic(True)
-            self.ui_style_cache["font"] = font
+            self.ui_style_cache["background"] = _COLOR_IGNORED_BG
+            self.ui_style_cache["foreground"] = _COLOR_IGNORED_FG
+            self.ui_style_cache["font"] = _FONT_IGNORED
 
-        # 2. 已审阅 (绿色背景，黑色字)
+        # 2. 已审阅
         elif self.is_reviewed:
-            self.ui_style_cache["background"] = QColor("#E8F5E9")
-            self.ui_style_cache["foreground"] = QColor("#000000")
+            self.ui_style_cache["background"] = _COLOR_REVIEWED_BG
+            self.ui_style_cache["foreground"] = _COLOR_BLACK
 
-        # 3. 严重错误 (红色背景，红色字)
+        # 3. 严重错误
         elif self.warnings and not self.is_warning_ignored:
-            self.ui_style_cache["background"] = QColor("#FFDDDD")
-            self.ui_style_cache["foreground"] = QColor("#D32F2F")
+            self.ui_style_cache["background"] = _COLOR_ERROR_BG
+            self.ui_style_cache["foreground"] = _COLOR_ERROR_FG
 
-        # 4. 次级警告 (黄色背景，黑色字)
+        # 4. 次级警告
         elif self.minor_warnings and not self.is_warning_ignored:
-            self.ui_style_cache["background"] = QColor("#FFFACD")
-            self.ui_style_cache["foreground"] = QColor("#000000")
+            self.ui_style_cache["background"] = _COLOR_WARN_BG
+            self.ui_style_cache["foreground"] = _COLOR_BLACK
 
-        # 5. 未翻译 (透明背景，暗红色字)
+        # 5. 未翻译
         elif not self.translation.strip():
-            self.ui_style_cache["foreground"] = QColor("darkred")
+            self.ui_style_cache["foreground"] = _COLOR_UNTRANS_FG
 
-        # 6. 普通已翻译 (透明背景，黑色字)
+        # 6. 普通已翻译
         else:
-            self.ui_style_cache["foreground"] = QColor("#000000")
+            self.ui_style_cache["foreground"] = _COLOR_BLACK
 
         # 换行符
         orig_nl_count = self.original_semantic.count("\n")
@@ -371,16 +387,12 @@ class TranslatableString:
 
         if orig_nl_count > 0 or trans_nl_count > 0:
             if orig_nl_count == trans_nl_count:
-                # 数量严致 -> 绿色
-                green_color = QColor(34, 177, 76, 180)
                 if orig_nl_count > 0:
-                    self.ui_style_cache["original_newline_color"] = green_color
+                    self.ui_style_cache["original_newline_color"] = _COLOR_NL_GREEN
                 if trans_nl_count > 0:
-                    self.ui_style_cache["translation_newline_color"] = green_color
+                    self.ui_style_cache["translation_newline_color"] = _COLOR_NL_GREEN
             else:
-                # 数量不一致 -> 红色
-                red_color = QColor(237, 28, 36, 180)
                 if orig_nl_count > 0:
-                    self.ui_style_cache["original_newline_color"] = red_color
+                    self.ui_style_cache["original_newline_color"] = _COLOR_NL_RED
                 if trans_nl_count > 0:
-                    self.ui_style_cache["translation_newline_color"] = red_color
+                    self.ui_style_cache["translation_newline_color"] = _COLOR_NL_RED

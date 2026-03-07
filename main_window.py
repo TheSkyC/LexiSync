@@ -211,6 +211,7 @@ class LexiSyncApp(QMainWindow):
         self.project_config = {}
         self.all_project_strings = []
         self._id_to_index_map = {}
+        self._ts_obj_map = {}
         self.loaded_file_ids = set()
         self.current_active_source_file_id = None
 
@@ -1981,17 +1982,7 @@ class LexiSyncApp(QMainWindow):
         self._update_history_panel()
 
     def _find_ts_obj_by_id(self, obj_id):
-        if self.is_project_mode:
-            # 项目模式下，数据源是 all_project_strings
-            index = self._id_to_index_map.get(obj_id)
-            if index is not None and index < len(self.all_project_strings):
-                return self.all_project_strings[index]
-        else:
-            # 单文件模式下，数据源是 translatable_objects
-            for ts_obj in self.translatable_objects:
-                if ts_obj.id == obj_id:
-                    return ts_obj
-        return None
+        return self._ts_obj_map.get(obj_id)
 
     def _do_undo_core(self):
         if not self.undo_history:
@@ -2735,6 +2726,13 @@ class LexiSyncApp(QMainWindow):
     def _rebuild_string_cache_indexes(self):
         self._id_to_index_map = {ts.id: i for i, ts in enumerate(self.all_project_strings)}
 
+    def _rebuild_string_cache_indexes(self):
+        self._id_to_index_map = {ts.id: i for i, ts in enumerate(self.all_project_strings)}
+        self._ts_obj_map = {ts.id: ts for ts in self.all_project_strings}
+
+    def _rebuild_single_file_map(self):
+        self._ts_obj_map = {ts.id: ts for ts in self.translatable_objects}
+
     def open_project(self, project_path):
         if self.is_ai_translating_batch:
             QMessageBox.warning(self, _("Operation Restricted"), _("AI batch translation is in progress."))
@@ -3059,6 +3057,7 @@ class LexiSyncApp(QMainWindow):
             self.translatable_objects = extract_translatable_strings(
                 self.original_raw_code_content, extraction_patterns, app_instance=self
             )
+            self._rebuild_single_file_map()
             self.plugin_manager.run_hook("on_project_loaded", self.translatable_objects)
             detected_lang = language_service.detect_source_language(
                 [ts.original_semantic for ts in self.translatable_objects]
@@ -3413,6 +3412,7 @@ class LexiSyncApp(QMainWindow):
         self.project_config = {}
         self.all_project_strings = []
         self._id_to_index_map = {}
+        self._ts_obj_map = {}
         self.loaded_file_ids = set()
         self.current_active_source_file_id = None
 
@@ -6043,6 +6043,7 @@ class LexiSyncApp(QMainWindow):
             self.translatable_objects, self.current_file_metadata, lang_full = handler.load(
                 filepath, app_instance=self, force_dialog=force_dialog
             )
+            self._rebuild_single_file_map()
 
             # 自动检测源语言 (Source Language)
             sample_texts = [ts.original_semantic for ts in self.translatable_objects if ts.original_semantic.strip()]
@@ -6239,6 +6240,7 @@ class LexiSyncApp(QMainWindow):
                     restored_count += 1
 
             self.translatable_objects = new_strings
+            self._rebuild_single_file_map()
             self._run_and_refresh_with_validation()
 
             # 重置状态
@@ -8178,6 +8180,7 @@ class LexiSyncApp(QMainWindow):
                 final_list.sort(key=lambda x: x.line_num_in_file if x.line_num_in_file > 0 else 999999)
 
                 self.translatable_objects = final_list
+                self._rebuild_single_file_map()
 
                 if not self.is_translation_mode and new_code_content is not None:
                     self.original_raw_code_content = new_code_content
