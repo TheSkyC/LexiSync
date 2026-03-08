@@ -1,1 +1,5 @@
+# style(global): apply Ruff auto-formatting to all Python files
 5e9dc3d59f06e3a7c92ed07a1b7b280977c7271f
+
+# refactor: move source code to src/lexisync directory
+0087f65a8a90503dd54216a4e0cb9067192d38a7
