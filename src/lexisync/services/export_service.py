@@ -36,20 +36,28 @@ def export_to_html(filepath, translatable_objects, app_instance):
     # 生成行内容
     rows_html = ""
     for ts in translatable_objects:
-        # 状态标签
+        # 状态标签与 CSS 类名分配
         status_badge = ""
-        row_class = ""
+        row_classes = []
+
         if ts.is_ignored:
             status_badge = f'<span class="badge badge-gray">{_("Ignored")}</span>'
-            row_class = "row-ignored"
+            row_classes.extend(["row-ignored", "status-ignored"])
         elif ts.is_reviewed:
             status_badge = f'<span class="badge badge-green">{_("Reviewed")}</span>'
+            row_classes.append("status-reviewed")
         elif ts.is_fuzzy:
             status_badge = f'<span class="badge badge-orange">{_("Fuzzy")}</span>'
+            row_classes.append("status-fuzzy")
         elif not ts.translation.strip():
             status_badge = f'<span class="badge badge-red">{_("Untranslated")}</span>'
+            row_classes.append("status-untranslated")
         else:
             status_badge = f'<span class="badge badge-blue">{_("Translated")}</span>'
+            row_classes.append("status-translated")
+
+        # 将列表转换为以空格分隔的字符串
+        row_class_str = " ".join(row_classes)
 
         # 上下文标签
         context_html = f'<div class="context-tag">{html.escape(ts.context)}</div>' if ts.context else ""
@@ -76,12 +84,15 @@ def export_to_html(filepath, translatable_objects, app_instance):
         # 注释处理
         comment_html = ""
         if ts.comment or ts.po_comment:
-            full_comment = (ts.po_comment + "\n" + ts.comment).strip()
-            comment_html = f'<div class="comment-box">{html.escape(full_comment).replace(chr(10), "<br>")}</div>'
+            po_c = ts.po_comment if ts.po_comment else ""
+            normal_c = ts.comment if ts.comment else ""
+            full_comment = (po_c + "\n" + normal_c).strip()
+            if full_comment:
+                comment_html = f'<div class="comment-box">{html.escape(full_comment).replace(chr(10), "<br>")}</div>'
 
         # HTML 拼接
         rows_html += f"""
-        <tr class="{row_class}">
+        <tr class="{row_class_str}">
             <td class="col-source">
                 <div class="col-source-inner">
                     {context_html}
@@ -127,6 +138,14 @@ def export_to_html(filepath, translatable_objects, app_instance):
             "{lbl_ignored}": _("Ignored"),
             "{lbl_source_text}": _("Source Text"),
             "{lbl_translation}": _("Translation"),
+            # 交互组件本地化
+            "{ph_search}": _("Search source, translation or comments..."),
+            "{lbl_all}": _("All"),
+            "{lbl_untranslated}": _("Untranslated"),
+            "{lbl_fuzzy}": _("Fuzzy"),
+            "{lbl_comment}": _("Comments"),
+            "{lbl_context}": _("Context"),
+            "{lbl_status}": _("Status"),
         }
 
         final_html = template_content
