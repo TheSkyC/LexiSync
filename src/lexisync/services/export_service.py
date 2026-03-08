@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import datetime
-import html
 import json
 
 from openpyxl import Workbook
@@ -33,89 +32,68 @@ def export_to_html(filepath, translatable_objects, app_instance):
     reviewed = len([ts for ts in translatable_objects if ts.is_reviewed])
     progress = int(translated / total * 100) if total > 0 else 0
 
-    # 生成行内容
-    rows_html = ""
+    # 字段说明：
+    #   status  : 'untranslated' | 'fuzzy' | 'translated' | 'reviewed' | 'ignored'
+    #   lbl     : 本地化后的状态标签文字
+    #   src     : 原文
+    #   tgt     : 译文
+    #   ctx     : 上下文 key（可选）
+    #   cmt     : 注释（可选）
+    #   plural  : 是否复数条目
+    #   src_plural    : 复数原文（plural=True 时有效）
+    #   plural_trans  : 复数译文列表（plural=True 时有效）
+    rows_data = []
     for ts in translatable_objects:
-        # 状态标签与 CSS 类名分配
-        status_badge = ""
-        row_classes = []
-
+        # 确定状态与标签
         if ts.is_ignored:
-            status_badge = f'<span class="badge badge-gray">{_("Ignored")}</span>'
-            row_classes.extend(["row-ignored", "status-ignored"])
+            status = "ignored"
+            lbl = _("Ignored")
         elif ts.is_reviewed:
-            status_badge = f'<span class="badge badge-green">{_("Reviewed")}</span>'
-            row_classes.append("status-reviewed")
+            status = "reviewed"
+            lbl = _("Reviewed")
         elif ts.is_fuzzy:
-            status_badge = f'<span class="badge badge-orange">{_("Fuzzy")}</span>'
-            row_classes.append("status-fuzzy")
+            status = "fuzzy"
+            lbl = _("Fuzzy")
         elif not ts.translation.strip():
-            status_badge = f'<span class="badge badge-red">{_("Untranslated")}</span>'
-            row_classes.append("status-untranslated")
+            status = "untranslated"
+            lbl = _("Untranslated")
         else:
-            status_badge = f'<span class="badge badge-blue">{_("Translated")}</span>'
-            row_classes.append("status-translated")
+            status = "translated"
+            lbl = _("Translated")
 
-        # 将列表转换为以空格分隔的字符串
-        row_class_str = " ".join(row_classes)
-
-        # 上下文标签
-        context_html = f'<div class="context-tag">{html.escape(ts.context)}</div>' if ts.context else ""
-
-        # 处理复数
-        source_display = html.escape(ts.original_semantic).replace("\n", "<br>")
-        target_display = html.escape(ts.translation).replace("\n", "<br>")
-
-        if ts.is_plural:
-            # 原文复数排版
-            source_display = (
-                f'<div class="plural-row"><span class="plural-tag">Singular</span><span class="plural-text">{source_display}</span></div>'
-                f'<div class="plural-row"><span class="plural-tag">Plural</span><span class="plural-text">{html.escape(ts.original_plural).replace(chr(10), "<br>")}</span></div>'
-            )
-            # 译文复数排版
-            plural_parts = []
-            for idx, trans in ts.plural_translations.items():
-                escaped_trans = html.escape(trans).replace("\n", "<br>")
-                plural_parts.append(
-                    f'<div class="plural-row"><span class="plural-tag">Form {idx}</span><span class="plural-text">{escaped_trans}</span></div>'
-                )
-            target_display = "".join(plural_parts)
-
-        # 注释处理
-        comment_html = ""
+        entry = {
+            "status": status,
+            "lbl": lbl,
+            "src": ts.original_semantic,
+            "tgt": ts.translation,
+        }
+        if ts.context:
+            entry["ctx"] = ts.context
         if ts.comment or ts.po_comment:
             po_c = ts.po_comment if ts.po_comment else ""
             normal_c = ts.comment if ts.comment else ""
             full_comment = (po_c + "\n" + normal_c).strip()
             if full_comment:
-                comment_html = f'<div class="comment-box">{html.escape(full_comment).replace(chr(10), "<br>")}</div>'
+                entry["cmt"] = full_comment
+        if ts.is_plural:
+            entry["plural"] = True
+            entry["src_plural"] = ts.original_plural or ""
+            # plural_translations 是 {idx: str} 的字典，转为列表
+            if ts.plural_translations:
+                max_idx = max(ts.plural_translations.keys()) if ts.plural_translations else 0
+                entry["plural_trans"] = [ts.plural_translations.get(i, "") for i in range(max_idx + 1)]
 
-        # HTML 拼接
-        rows_html += f"""
-        <tr class="{row_class_str}">
-            <td class="col-source">
-                <div class="col-source-inner">
-                    {context_html}
-                    <div class="text-content">{source_display}</div>
-                </div>
-                {comment_html}
-            </td>
-            <td class="col-target">
-                <div class="status-wrapper">{status_badge}</div>
-                <div class="text-content">{target_display}</div>
-            </td>
-        </tr>
-        """
+        rows_data.append(entry)
 
-    # 读取并渲染模板
+    report_data_json = json.dumps(rows_data, ensure_ascii=False, separators=(",", ":"))
     template_path = get_resource_path("resources/templates/report_template.html")
-
     try:
         with open(template_path, encoding="utf-8") as f:
             template_content = f.read()
 
-        # 准备要替换的变量字典
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        # 将所有占位符加入到替换字典中
         replacements = {
             "{project_name}": str(project_name),
             "{source_lang}": str(source_lang),
@@ -127,8 +105,9 @@ def export_to_html(filepath, translatable_objects, app_instance):
             "{reviewed}": str(reviewed),
             "{ignored}": str(ignored),
             "{version}": app_instance.config.get("version", "1.3.0"),
-            "{rows_html}": rows_html,
-            # 本地化标签
+            # 数据注入
+            "{report_data_json}": report_data_json,
+            # 基础本地化标签
             "{lbl_source_lang}": _("Source Language"),
             "{lbl_target_lang}": _("Target Language"),
             "{lbl_export_date}": _("Export Date"),
@@ -138,7 +117,7 @@ def export_to_html(filepath, translatable_objects, app_instance):
             "{lbl_ignored}": _("Ignored"),
             "{lbl_source_text}": _("Source Text"),
             "{lbl_translation}": _("Translation"),
-            # 交互组件本地化
+            # 交互组件与状态本地化
             "{ph_search}": _("Search source, translation or comments..."),
             "{lbl_all}": _("All"),
             "{lbl_untranslated}": _("Untranslated"),
@@ -146,6 +125,21 @@ def export_to_html(filepath, translatable_objects, app_instance):
             "{lbl_comment}": _("Comments"),
             "{lbl_context}": _("Context"),
             "{lbl_status}": _("Status"),
+            "{lbl_toggle_theme}": _("Toggle Theme"),
+            "{lbl_scroll_to_top}": _("Scroll to Top"),
+            "{lbl_virtual}": _("Virtual"),
+            "{lbl_pages}": _("Pages"),
+            "{lbl_showing}": _("Showing"),
+            "{lbl_of}": _("of"),
+            "{lbl_entries}": _("entries"),
+            "{lbl_no_entries}": _("No entries match the current filter."),
+            "{lbl_singular}": _("Singular"),
+            "{lbl_plural}": _("Plural"),
+            "{lbl_form}": _("Form"),
+            "{lbl_prev}": _("Prev"),
+            "{lbl_next}": _("Next"),
+            "{lbl_rows}": _("Rows"),
+            "{lbl_page}": _("page"),
         }
 
         final_html = template_content
