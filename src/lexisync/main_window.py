@@ -6536,7 +6536,7 @@ class LexiSyncApp(QMainWindow):
         current_translation_ui = self.details_panel.translation_edit_text.toPlainText()
         p_idx = getattr(self.details_panel, "current_plural_index", 0)
 
-        source_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
+        source_text = ts_obj.original_semantic if p_idx == ts_obj.singular_index else ts_obj.original_plural
 
         db_path_to_use = self.tm_service.project_db_path if self.is_project_mode else self.tm_service.global_db_path
         self.tm_service.update_tm_entry(
@@ -6635,7 +6635,7 @@ class LexiSyncApp(QMainWindow):
                 if only_if_empty and current_trans.strip() != "":
                     continue
 
-                source_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
+                source_text = ts_obj.original_semantic if p_idx == ts_obj.singular_index else ts_obj.original_plural
                 if source_text:
                     texts_to_query.append(source_text)
 
@@ -6665,7 +6665,7 @@ class LexiSyncApp(QMainWindow):
 
             indices = ts_obj.plural_translations.keys() if ts_obj.is_plural else [0]
             for p_idx in indices:
-                source_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
+                source_text = ts_obj.original_semantic if p_idx == ts_obj.singular_index else ts_obj.original_plural
 
                 if source_text in tm_results:
                     current_trans = (
@@ -6989,7 +6989,7 @@ class LexiSyncApp(QMainWindow):
             return {}
 
         original_text = ts_obj.original_semantic
-        if ts_obj.is_plural and plural_index > 0:
+        if ts_obj.is_plural and plural_index != ts_obj.singular_index:
             original_text = ts_obj.original_plural or ts_obj.original_semantic
 
         # 1. Neighboring Context
@@ -7283,7 +7283,7 @@ class LexiSyncApp(QMainWindow):
             )
 
         source_text_to_translate = ts_obj.original_semantic
-        if ts_obj.is_plural and current_p_idx > 0:
+        if ts_obj.is_plural and current_p_idx != ts_obj.singular_index:
             source_text_to_translate = ts_obj.original_plural or ts_obj.original_semantic
 
         # Prepare Data
@@ -7562,8 +7562,9 @@ class LexiSyncApp(QMainWindow):
         unique_tasks = {}
         for ts, p_idx in tasks_to_process:
             source_text = ts.original_semantic
-            if ts.is_plural and p_idx > 0:
+            if ts.is_plural and p_idx != ts.singular_index:
                 source_text = ts.original_plural or ts.original_semantic
+
             if not source_text:
                 continue
 
@@ -8015,8 +8016,7 @@ class LexiSyncApp(QMainWindow):
 
             indices = ts_obj.plural_translations.keys() if ts_obj.is_plural else [0]
             for p_idx in indices:
-                # index 0 使用单数原文，index > 0 使用复数原文
-                source_text = ts_obj.original_semantic if p_idx == 0 else ts_obj.original_plural
+                source_text = ts_obj.original_semantic if p_idx == ts_obj.singular_index else ts_obj.original_plural
                 if not source_text:
                     continue
 

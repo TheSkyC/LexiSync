@@ -134,9 +134,12 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
 def apply_all_fixes(ts_obj, target_lang, plural_index=0):
     """尝试自动修复所有可修复的问题"""
     # 1. 根据索引获取对应的原文和当前译文
-    original_text = ts_obj.original_plural if (ts_obj.is_plural and plural_index > 0) else ts_obj.original_semantic
+    original_text = (
+        ts_obj.original_plural
+        if (ts_obj.is_plural and plural_index != ts_obj.singular_index)
+        else ts_obj.original_semantic
+    )
     current_translation = ts_obj.plural_translations.get(plural_index, "") if ts_obj.is_plural else ts_obj.translation
-
     # 2. 获取该索引下的所有警告
     # 过滤逻辑：只获取属于当前 p_idx 的警告
     prefix = f"[Form {plural_index}]"
