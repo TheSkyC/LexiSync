@@ -54,7 +54,12 @@ class MarkerBar(QWidget):
         if self.table_view and self.table_view.verticalScrollBar():
             v_scroll = self.table_view.verticalScrollBar()
             v_scroll.valueChanged.connect(self.update)
-            v_scroll.sliderReleased.connect(self.force_sync)
+            v_scroll.rangeChanged.connect(self.update)
+
+            if hasattr(self.table_view, "scrollFinished"):
+                self.table_view.scrollFinished.connect(self.update)
+            else:
+                v_scroll.sliderReleased.connect(self.force_sync)
 
     def set_model(self, model):
         self.sheet_model = model
@@ -165,11 +170,15 @@ class MarkerBar(QWidget):
         for pt in self._cached_points:
             painter.fillRect(0, pt["y"], 8, marker_h, pt["color"])
 
-        first_vis = self.table_view.rowAt(0)
-        last_vis = self.table_view.rowAt(self.table_view.viewport().height() - 1)
-        if first_vis != -1:
+        v_scroll = self.table_view.verticalScrollBar()
+
+        first_vis = v_scroll.value()
+        page_step = v_scroll.pageStep()
+        last_vis = min(first_vis + page_step, total)
+
+        if first_vis >= 0:
             y1 = int(first_vis * ratio)
-            y2 = int((last_vis + 1) * ratio) if last_vis != -1 else height
+            y2 = int(last_vis * ratio)
             painter.fillRect(0, y1, self.width(), max(2, y2 - y1), QColor(128, 128, 128, 60))
 
     def _find_marker_at_y(self, y_pos: int):
