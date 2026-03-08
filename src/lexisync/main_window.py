@@ -471,6 +471,11 @@ class LexiSyncApp(QMainWindow):
         self.export_menu = QMenu(_("Export"), self)
         self.file_menu.addMenu(self.export_menu)
 
+        self.action_export_html = QAction(_("Export HTML Report"), self)
+        self.action_export_html.triggered.connect(self.export_html_report)
+        self.action_export_html.setEnabled(False)
+        self.export_menu.addAction(self.action_export_html)
+
         self.action_export_excel = QAction(_("Export to Excel"), self)
         self.action_export_excel.triggered.connect(self.export_project_translations_to_excel)
         self.action_export_excel.setEnabled(False)
@@ -827,6 +832,7 @@ class LexiSyncApp(QMainWindow):
             self.export_menu.setTitle(_("Export"))
 
         self.action_import_excel.setText(_("Import Translations from Excel"))
+        self.action_export_html.setText(_("Export HTML Report"))
         self.action_export_excel.setText(_("Export to Excel"))
         self.action_export_json.setText(_("Export to JSON"))
         self.action_export_yaml.setText(_("Export to YAML"))
@@ -1726,6 +1732,7 @@ class LexiSyncApp(QMainWindow):
             self.action_export_translation.setEnabled(False)
 
         self.action_import_excel.setEnabled(has_content)
+        self.action_export_html.setEnabled(has_content)
         self.action_export_excel.setEnabled(has_content)
         self.action_export_json.setEnabled(has_content)
         self.action_export_yaml.setEnabled(has_content)
@@ -5657,6 +5664,22 @@ class LexiSyncApp(QMainWindow):
         if filepath:
             return self.save_translation_file(filepath)
         return False
+
+    def export_html_report(self):
+        if not self.translatable_objects:
+            return
+
+        default_name = f"Report_{datetime.datetime.now().strftime('%Y%m%d')}.html"
+        filepath, __ = QFileDialog.getSaveFileName(self, _("Export HTML Report"), default_name, "HTML Files (*.html)")
+
+        if filepath:
+            try:
+                from lexisync.services.export_service import export_to_html
+
+                export_to_html(filepath, self.translatable_objects, self)
+                self.update_statusbar(_("HTML report exported successfully."))
+            except Exception as e:
+                QMessageBox.critical(self, _("Export Error"), str(e))
 
     def export_project_translations_to_excel(self):
         if not self.translatable_objects:
