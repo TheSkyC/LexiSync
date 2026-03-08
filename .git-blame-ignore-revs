@@ -3,3 +3,6 @@
 
 # refactor: move source code to src/lexisync directory
 0087f65a8a90503dd54216a4e0cb9067192d38a7
+
+# refactor: update all internal imports to use absolute lexisync package path
+eccd93a2946ac1a2bd850bb1145203ecc8bd59bf
