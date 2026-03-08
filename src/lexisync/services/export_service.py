@@ -407,7 +407,11 @@ def export_to_html(filepath, translatable_objects, app_instance):
                 <div class="progress-bar-bg">
                     <div class="progress-bar-fill" style="width: {progress}%"></div>
                 </div>
-                <span class="progress-text">{translated} / {total} ({progress}%) {_("Translated")} | {reviewed} {_("Reviewed")}</span>
+                <span class="progress-text">
+                    {translated} / {total} ({progress}%) {_("Translated")} |
+                    {reviewed} {_("Reviewed")} |
+                    {ignored} {_("Ignored")}
+                </span>
             </div>
         </header>
 
