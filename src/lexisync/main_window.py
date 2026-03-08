@@ -1874,8 +1874,10 @@ class LexiSyncApp(QMainWindow):
             if self.current_selected_ts_id:
                 ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
                 if ts_obj:
-                    self.glossary_analysis_cache.pop(ts_obj.id, None)
-                    self.trigger_glossary_analysis(ts_obj)
+                    current_p_idx = getattr(self.details_panel, "current_plural_index", 0)
+                    cache_key = f"{ts_obj.id}_{current_p_idx}"
+                    self.glossary_analysis_cache.pop(cache_key, None)
+                    self.trigger_glossary_analysis(ts_obj, plural_index=current_p_idx)
         else:
             QMessageBox.critical(self, _("Error"), _("Failed to add glossary entry: {error}").format(error=message))
 
@@ -4519,26 +4521,41 @@ class LexiSyncApp(QMainWindow):
         worker_thread.start()
         progress_dialog.show()
 
-    def trigger_glossary_analysis(self, ts_obj, is_manual=False):
-        if ts_obj.id in self.glossary_analysis_cache:
-            self._handle_glossary_analysis_result(ts_obj.id, self.glossary_analysis_cache[ts_obj.id], is_manual)
+    def trigger_glossary_analysis(self, ts_obj, is_manual=False, plural_index=0):
+        # 使用组合键缓存，区分单复数
+        cache_key = f"{ts_obj.id}_{plural_index}"
+        if cache_key in self.glossary_analysis_cache:
+            self._handle_glossary_analysis_result(
+                ts_obj.id, plural_index, self.glossary_analysis_cache[cache_key], is_manual
+            )
             return
 
         self.glossary_panel.clear_matches()
-        worker = GlossaryAnalysisWorker(self, ts_obj.id, ts_obj.original_semantic, is_manual=is_manual)
+
+        # 根据索引确定要分析的文本
+        text_to_analyze = ts_obj.original_semantic
+        if ts_obj.is_plural and plural_index != ts_obj.singular_index:
+            text_to_analyze = ts_obj.original_plural or ts_obj.original_semantic
+
+        worker = GlossaryAnalysisWorker(
+            self, ts_obj.id, text_to_analyze, is_manual=is_manual, plural_index=plural_index
+        )
         worker.signals.finished.connect(self._handle_glossary_analysis_result)
         self.ai_thread_pool.start(worker)
 
-    def _handle_glossary_analysis_result(self, ts_id, matches, is_manual):
-        self.glossary_analysis_cache[ts_id] = matches
+    def _handle_glossary_analysis_result(self, ts_id, plural_index, matches, is_manual):
+        cache_key = f"{ts_id}_{plural_index}"
+        self.glossary_analysis_cache[cache_key] = matches
 
         if self.current_selected_ts_id == ts_id:
-            self.glossary_panel.update_matches(matches)
-            if hasattr(self, "details_panel"):
-                self.details_panel.update_glossary_highlights(matches)
+            current_ui_idx = getattr(self.details_panel, "current_plural_index", 0)
+            if current_ui_idx == plural_index:
+                self.glossary_panel.update_matches(matches)
+                if hasattr(self, "details_panel"):
+                    self.details_panel.update_glossary_highlights(matches)
 
-            if is_manual:
-                self.update_statusbar(_("Glossary matches updated."), persistent=False)
+                if is_manual:
+                    self.update_statusbar(_("Glossary matches updated."), persistent=False)
 
     def clear_details_pane(self):
         self.details_panel.reset_ui()
@@ -4789,16 +4806,16 @@ class LexiSyncApp(QMainWindow):
                 tasks_to_fix.append((ts, p_idx))
 
         def context_provider(ts_id, p_idx=0):
-            ts_obj = self.app._find_ts_obj_by_id(ts_id)
+            ts_obj = self._find_ts_obj_by_id(ts_id)
             if not ts_obj:
                 return {}
 
             plural_context_str = ""
             if ts_obj.is_plural:
-                from lexisync.utils.plural_utils import get_plural_form_description
+                from utils.plural_utils import get_plural_form_description
 
                 plural_context_str = get_plural_form_description(
-                    self.app.current_target_language,
+                    self.current_target_language,
                     p_idx,
                     num_plurals=len(ts_obj.plural_translations),
                     plural_expr=getattr(ts_obj, "plural_expr", None),
@@ -4809,8 +4826,8 @@ class LexiSyncApp(QMainWindow):
 
             return {
                 "[Error List]": error_list_str,
-                "[Plural Context]": plural_context_str,  # 注入
-                "[Glossary]": self._build_glossary_context(ts_obj),
+                "[Plural Context]": plural_context_str,
+                "[Glossary]": self._build_glossary_context(ts_obj, p_idx),
                 "current_translation": ts_obj.plural_translations.get(p_idx, "")
                 if ts_obj.is_plural
                 else ts_obj.translation,
@@ -4819,9 +4836,10 @@ class LexiSyncApp(QMainWindow):
         self.app.ai_manager.start_batch(tasks_to_fix, context_provider, operation_type=AIOperationType.BATCH_FIX)
         self.update_ai_related_ui_state()
 
-    def _build_glossary_context(self, ts_obj):
-        if ts_obj.id in self.glossary_analysis_cache:
-            matches = self.glossary_analysis_cache[ts_obj.id]
+    def _build_glossary_context(self, ts_obj, p_idx=0):
+        cache_key = f"{ts_obj.id}_{p_idx}"
+        if cache_key in self.glossary_analysis_cache:
+            matches = self.glossary_analysis_cache[cache_key]
             if matches:
                 lines = [f"- {m['source']}: {', '.join(t['target'] for t in m['translations'])}" for m in matches]
                 return "\n".join(lines)
@@ -4878,8 +4896,9 @@ class LexiSyncApp(QMainWindow):
 
         # 构建术语表上下文
         glossary_text = ""
-        if ts_obj.id in self.glossary_analysis_cache:
-            matches = self.glossary_analysis_cache[ts_obj.id]
+        cache_key = f"{ts_obj.id}_{current_p_idx}"
+        if cache_key in self.glossary_analysis_cache:
+            matches = self.glossary_analysis_cache[cache_key]
             if matches:
                 lines = [f"| {_('Source')} | {_('Target')} |", "|---|---|"]
                 for m in matches:
@@ -7905,12 +7924,15 @@ class LexiSyncApp(QMainWindow):
         if not ts_obj:
             return
 
-        if ts_obj.id in self.glossary_analysis_cache:
-            del self.glossary_analysis_cache[ts_obj.id]
+        current_p_idx = getattr(self.details_panel, "current_plural_index", 0)
+        cache_key = f"{ts_obj.id}_{current_p_idx}"
+
+        if cache_key in self.glossary_analysis_cache:
+            del self.glossary_analysis_cache[cache_key]
 
         self.update_statusbar(_("Refreshing glossary matches..."))
 
-        self.trigger_glossary_analysis(ts_obj, is_manual=True)
+        self.trigger_glossary_analysis(ts_obj, is_manual=True, plural_index=current_p_idx)
 
     def schedule_tm_update(self, original_text):
         self.last_tm_query = original_text

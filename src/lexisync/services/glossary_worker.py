@@ -10,29 +10,30 @@ from lexisync.utils.text_utils import generate_ngrams
 
 
 class GlossarySignals(QObject):
-    finished = Signal(str, list, bool)
+    finished = Signal(str, int, list, bool)
 
 
 class GlossaryAnalysisWorker(QRunnable):
-    def __init__(self, app_instance, ts_id: str, text_to_analyze: str, is_manual: bool = False):
+    def __init__(self, app_instance, ts_id: str, text_to_analyze: str, is_manual: bool = False, plural_index: int = 0):
         super().__init__()
         self.app_ref = weakref.ref(app_instance)
         self.ts_id = ts_id
         self.text = text_to_analyze
         self.is_manual = is_manual
+        self.plural_index = plural_index
         self.signals = GlossarySignals()
 
     def run(self):
         app = self.app_ref()
         if not app or not self.text:
-            self.signals.finished.emit(self.ts_id, [], self.is_manual)
+            self.signals.finished.emit(self.ts_id, self.plural_index, [], self.is_manual)
             return
 
         # 生成 N-gram 候选项
         candidates = generate_ngrams(self.text.lower(), min_n=1, max_n=5)
 
         if not candidates:
-            self.signals.finished.emit(self.ts_id, [], self.is_manual)
+            self.signals.finished.emit(self.ts_id, self.plural_index, [], self.is_manual)
             return
 
         source_lang = app.source_language
@@ -74,4 +75,4 @@ class GlossaryAnalysisWorker(QRunnable):
                 ui_translations = [{"target": t["target"], "comment": t["comment"]} for t in term_info["translations"]]
                 matches.append({"source": term, "translations": ui_translations})
 
-        self.signals.finished.emit(self.ts_id, matches, self.is_manual)
+        self.signals.finished.emit(self.ts_id, self.plural_index, matches, self.is_manual)

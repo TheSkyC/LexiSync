@@ -481,6 +481,15 @@ class DetailsPanel(QWidget):
         self.plural_toggle_btn.setChecked(not is_singular_tab)
         self._toggle_original_plural_view(not is_singular_tab)
 
+        # 6. 触发 TM 和 Glossary 刷新
+        if self.app_instance:
+            source_text = self.current_ts_obj.original_semantic
+            if self.current_ts_obj.is_plural and new_index != self.current_ts_obj.singular_index:
+                source_text = self.current_ts_obj.original_plural or self.current_ts_obj.original_semantic
+
+            self.app_instance.schedule_tm_update(source_text)
+            self.app_instance.trigger_glossary_analysis(self.current_ts_obj, plural_index=new_index)
+
     def _toggle_original_plural_view(self, checked):
         if not self.current_ts_obj:
             return
