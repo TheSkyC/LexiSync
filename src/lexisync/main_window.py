@@ -2830,6 +2830,8 @@ class LexiSyncApp(QMainWindow):
         self.update_counts_display()
 
     def _switch_active_file(self, file_id: str):
+        if hasattr(self, "notification_banner"):
+            self.notification_banner.force_hide()
         self.current_selected_ts_id = None
         self.current_focused_ts_id = None
         if self.table_view.selectionModel():
@@ -3416,6 +3418,9 @@ class LexiSyncApp(QMainWindow):
 
     def _reset_app_state(self):
         self.file_monitor.stop_monitoring()
+
+        if hasattr(self, "notification_banner"):
+            self.notification_banner.force_hide()
 
         if self.is_project_mode:
             self.file_explorer_panel.exit_project_mode()
@@ -6098,9 +6103,40 @@ class LexiSyncApp(QMainWindow):
 
             self.current_format_handler = handler
 
-            self.translatable_objects, self.current_file_metadata, lang_full = handler.load(
-                filepath, app_instance=self, force_dialog=force_dialog
-            )
+            result = handler.load(filepath, app_instance=self, force_dialog=force_dialog)
+
+            self.translatable_objects = result[0]
+            self.current_file_metadata = result[1]
+            lang_full = result[2]
+
+            metadata_status = result[3] if len(result) > 3 else "ok"
+
+            if metadata_status == "corrupt":
+                # 红色横幅：彻底损坏
+                self.notification_banner.clear_actions()
+                self.notification_banner.add_action(_("Got it"), self.notification_banner.hide_banner)
+                self.notification_banner.show_message(
+                    _("CRITICAL: Metadata lost! PO header is missing or unreadable."),
+                    preset="warning",
+                    layout_mode="top",
+                    fixed_height=45,
+                    interactive=True,
+                    bg_color="rgba(220, 53, 69, 240)",
+                    text_color="#FFFFFF",
+                )
+            elif metadata_status == "recovered":
+                # 橙色横幅：已自动修复
+                self.notification_banner.clear_actions()
+                self.notification_banner.add_action(_("Got it"), self.notification_banner.hide_banner)
+                self.notification_banner.show_message(
+                    _("WARNING: Malformed PO header detected. Metadata was manually recovered."),
+                    preset="warning",
+                    layout_mode="top",
+                    fixed_height=45,
+                    interactive=True,
+                    bg_color="rgba(255, 152, 0, 240)",
+                    text_color="#FFFFFF",
+                )
             self._rebuild_single_file_map()
 
             # 自动检测源语言 (Source Language)

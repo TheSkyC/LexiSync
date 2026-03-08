@@ -12,7 +12,7 @@ import xxhash
 
 from lexisync.models.translatable_string import TranslatableString
 from lexisync.services.code_file_service import extract_translatable_strings
-from lexisync.utils.constants import APP_VERSION, SUPPORTED_LANGUAGES
+from lexisync.utils.constants import APP_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -207,6 +207,33 @@ def load_from_po(filepath, relative_path=None):
     logger.debug(f"[load_from_po] Starting to load PO file: {filepath}")
     po_file = polib.pofile(filepath, encoding="utf-8", wrapwidth=0)
 
+    polib_failed = not po_file.metadata
+    header_recovered = False
+
+    if polib_failed:
+        logger.warning("polib failed to parse metadata. Attempting manual recovery...")
+        for entry in po_file:
+            if entry.msgid == "":
+                lines = entry.msgstr.splitlines()
+                for line in lines:
+                    if ":" in line:
+                        key, val = line.split(":", 1)
+                        po_file.metadata[key.strip()] = val.strip()
+
+                if po_file.metadata:
+                    header_recovered = True
+                    logger.info(f"Manually recovered {len(po_file.metadata)} metadata keys.")
+
+                entry.obsolete = True
+                break
+
+    # "ok": 完美解析
+    # "recovered": polib失败但手动救回来了
+    # "corrupt": 彻底没救了
+    metadata_status = "ok"
+    if polib_failed:
+        metadata_status = "recovered" if header_recovered else "corrupt"
+
     nplurals = None
     plural_expr = None
     plural_forms_str = None
@@ -233,6 +260,8 @@ def load_from_po(filepath, relative_path=None):
     project_root = _find_project_root(filepath)
     file_content_cache = {}
     path_exists_cache = {}
+
+    metadata_is_corrupt = len(po_file.metadata) == 0
 
     def cached_is_file(path_str):
         if path_str not in path_exists_cache:
@@ -306,46 +335,57 @@ def load_from_po(filepath, relative_path=None):
 
     po_lang = po_file.metadata.get("Language", None)
     logger.debug(f"[load_from_po] Finished loading. Found {len(translatable_objects)} entries.")
-    return translatable_objects, po_file.metadata, po_lang
+    return translatable_objects, po_file.metadata, po_lang, metadata_status
 
 
 def save_to_po(filepath, translatable_objects, metadata=None, original_file_name="source_code", app_instance=None):
+    logger.info(f"--- Starting save_to_po for: {os.path.basename(filepath)} ---")
+
     po_file = polib.POFile(wrapwidth=78)
 
+    # 准备元数据
+    final_metadata = {}
     if metadata:
-        po_file.metadata = metadata
-        now = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M%z")
-        po_file.metadata["PO-Revision-Date"] = now
-    else:
-        now = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M%z")
+        final_metadata = metadata.copy()
 
-        # 获取语言信息
-        lang_code = "en"
-        lang_name_full = "English"
-        if app_instance:
-            lang_code = app_instance.current_target_language
-            lang_name_full = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == lang_code), lang_code)
+    now = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M%z")
 
-        # 获取项目名称
+    # 只有在原始元数据缺失时，才使进行补全
+    current_version = final_metadata.get("Project-Id-Version", "")
+    if not current_version or current_version == "PACKAGE VERSION":
         project_name = "LexiSync Project"
         if app_instance and app_instance.is_project_mode:
             project_name = app_instance.project_config.get("name", "LexiSync Project")
         elif original_file_name:
-            project_name = os.path.splitext(original_file_name)[0]
+            project_name = os.path.splitext(os.path.basename(original_file_name))[0]
 
-        po_file.metadata = {
-            "Project-Id-Version": f"{project_name}",
-            "Report-Msgid-Bugs-To": "https://github.com/TheSkyC/lexisync/issues",
-            "POT-Creation-Date": now,
-            "PO-Revision-Date": now,
-            "Last-Translator": "LexiSync User",
-            "Language-Team": f"{lang_name_full} <{lang_code}@li.org>",
-            "Language": lang_code,
-            "MIME-Version": "1.0",
-            "Content-Type": "text/plain; charset=UTF-8",
-            "Content-Transfer-Encoding": "8bit",
-            "X-Generator": f"LexiSync {APP_VERSION}",
-        }
+        logger.info(f"Setting default Project-Id-Version: {project_name}")
+        final_metadata["Project-Id-Version"] = project_name
+    else:
+        logger.info(f"Preserving existing Project-Id-Version: {current_version}")
+
+    # 强制更新的字段
+    final_metadata["PO-Revision-Date"] = now
+    final_metadata["X-Generator"] = f"LexiSync {APP_VERSION}"
+
+    # 补全其他缺失的必要字段
+    final_metadata.setdefault("Report-Msgid-Bugs-To", "https://github.com/TheSkyC/lexisync/issues")
+    final_metadata.setdefault("POT-Creation-Date", now)
+    final_metadata.setdefault("MIME-Version", "1.0")
+    final_metadata.setdefault("Content-Type", "text/plain; charset=UTF-8")
+    final_metadata.setdefault("Content-Transfer-Encoding", "8bit")
+
+    # 复数公式保护
+    if "Plural-Forms" not in final_metadata:
+        logger.info("Plural-Forms missing in metadata, searching in objects...")
+        for ts in translatable_objects:
+            if ts.is_plural and getattr(ts, "plural_expr", None):
+                nplurals = len(ts.plural_translations)
+                expr = ts.plural_expr
+                final_metadata["Plural-Forms"] = f"nplurals={nplurals}; plural={expr};"
+                break
+
+    po_file.metadata = final_metadata
 
     for ts_obj in translatable_objects:
         if not ts_obj.original_semantic or ts_obj.id == "##NEW_ENTRY##":
@@ -358,38 +398,14 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
 
         if ts_obj.is_reviewed or ts_obj.is_warning_ignored:
             ts_obj.is_fuzzy = False
+
         entry_flags = []
         if ts_obj.is_fuzzy:
             entry_flags.append("fuzzy")
 
         po_comment_lines = ts_obj.po_comment.splitlines()
 
-        flags_line = next((line for line in po_comment_lines if line.strip().startswith("#,")), None)
-        if flags_line:
-            flags_str = flags_line.replace("#,", "").strip()
-            existing_flags = [f.strip() for f in flags_str.split(",") if f.strip()]
-            for f in existing_flags:
-                if f not in entry_flags and f != "fuzzy":
-                    entry_flags.append(f)
-
-        entry_flags = sorted(set(entry_flags))
-
-        entry_occurrences = []
-        location_lines = [line for line in po_comment_lines if line.strip().startswith("#:")]
-        for line in location_lines:
-            content = line.replace("#:", "").strip()
-            parts = content.split()
-            for part in parts:
-                if ":" in part:
-                    try:
-                        fpath, lineno = part.rsplit(":", 1)
-                        entry_occurrences.append((fpath, lineno))
-                    except ValueError:
-                        pass
-        if not entry_occurrences and ts_obj.line_num_in_file > 0 and ts_obj.string_type != "PO Import":
-            entry_occurrences = [(original_file_name, str(ts_obj.line_num_in_file))]
-
-        # 提取 extracted comments (#.)
+        # 提取注释和 Previous 属性
         for line in po_comment_lines:
             stripped_line = line.strip()
             if stripped_line.startswith("#."):
@@ -404,15 +420,31 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
 
         tcomment_str = "\n".join(extracted_comments) if extracted_comments else None
 
-        # 构造 translator comments (#)
+        # 构造引用位置
+        entry_occurrences = []
+        location_lines = [line for line in po_comment_lines if line.strip().startswith("#:")]
+        for line in location_lines:
+            content = line.replace("#:", "").strip()
+            for part in content.split():
+                if ":" in part:
+                    try:
+                        fpath, lineno = part.rsplit(":", 1)
+                        entry_occurrences.append((fpath, lineno))
+                    except ValueError:
+                        pass
+
+        if not entry_occurrences and ts_obj.line_num_in_file > 0 and ts_obj.string_type != "PO Import":
+            entry_occurrences = [(original_file_name, str(ts_obj.line_num_in_file))]
+
+        # 构造译员注释
         user_comment_lines = ts_obj.comment.splitlines()
         if ts_obj.is_reviewed:
-            user_comment_lines.append("#LexiSync:reviewed")
+            user_comment_lines.append("LexiSync:reviewed")
         if ts_obj.is_ignored and not getattr(ts_obj, "is_obsolete", False):
-            user_comment_lines.append("#LexiSync:ignored")
-
+            user_comment_lines.append("LexiSync:ignored")
         translator_comment = "\n".join(user_comment_lines)
 
+        # 构造 POEntry
         entry_kwargs = {
             "msgid": ts_obj.original_semantic,
             "msgctxt": ts_obj.context if ts_obj.context else None,
@@ -431,17 +463,16 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
             entry_kwargs["previous_msgid_plural"] = prev_msgid_plural
 
         if ts_obj.is_plural:
-            msgstr_plural_dict = {str(k): v for k, v in ts_obj.plural_translations.items()}
             entry_kwargs["msgid_plural"] = ts_obj.original_plural
-            entry_kwargs["msgstr_plural"] = msgstr_plural_dict
+            entry_kwargs["msgstr_plural"] = {str(k): v for k, v in ts_obj.plural_translations.items()}
         else:
             entry_kwargs["msgstr"] = ts_obj.translation
 
-        entry = polib.POEntry(**entry_kwargs)
-        po_file.append(entry)
+        po_file.append(polib.POEntry(**entry_kwargs))
 
     try:
         po_file.save(filepath)
+        logger.info(f"Successfully saved PO file to: {filepath}")
     except Exception as e:
-        logger.error(f"Error saving PO file to {filepath}: {e}")
+        logger.error(f"Error saving PO file to {filepath}: {e}", exc_info=True)
         raise e
