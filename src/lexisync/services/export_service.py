@@ -223,6 +223,7 @@ def export_to_html(filepath, translatable_objects, app_instance):
             border-radius: 8px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.05);
             overflow: hidden;
+            table-layout: fixed;
         }}
 
         th {{
