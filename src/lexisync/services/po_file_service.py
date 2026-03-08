@@ -38,8 +38,6 @@ def po_entry_to_translatable_string(
     #
     # The original occurrences are preserved in 'po_comment' for reference, but for
     # internal logic, the "source" of this string is the PO file.
-    if getattr(entry, "obsolete", False):
-        return None
     po_line_num = entry.linenum
     source_line_num = 0
     if entry.occurrences:
@@ -207,8 +205,12 @@ def load_from_po(filepath, relative_path=None):
     logger.debug(f"[load_from_po] Starting to load PO file: {filepath}")
     po_file = polib.pofile(filepath, encoding="utf-8", wrapwidth=0)
 
+    # 标记状态
     polib_failed = not po_file.metadata
     header_recovered = False
+
+    # 存储头部注释
+    header_comment = po_file.header
 
     if polib_failed:
         logger.warning("polib failed to parse metadata. Attempting manual recovery...")
@@ -219,17 +221,21 @@ def load_from_po(filepath, relative_path=None):
                     if ":" in line:
                         key, val = line.split(":", 1)
                         po_file.metadata[key.strip()] = val.strip()
-
+                header_comment = (entry.comment + "\n" + entry.tcomment).strip()
                 if po_file.metadata:
                     header_recovered = True
-                    logger.info(f"Manually recovered {len(po_file.metadata)} metadata keys.")
-
-                entry.obsolete = True
+                    po_file.metadata["_header_comment"] = header_comment if header_comment else None
+                    logger.info("Manually recovered metadata and header comment.")
+                # 移除这个条目
+                po_file.remove(entry)
                 break
+    else:
+        # 如果 polib 正常解析，也把 header 存入隐藏键
+        po_file.metadata["_header_comment"] = po_file.header
 
-    # "ok": 完美解析
-    # "recovered": polib失败但手动救回来了
-    # "corrupt": 彻底没救了
+    # "ok": 解析成功
+    # "recovered": polib解析失败但自动修复了
+    # "corrupt": 无法修复
     metadata_status = "ok"
     if polib_failed:
         metadata_status = "recovered" if header_recovered else "corrupt"
@@ -348,15 +354,20 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
     if metadata:
         final_metadata = metadata.copy()
 
+    # 处理头部注释
+    raw_header_comment = final_metadata.pop("_header_comment", None)
+
+    po_file.header = str(raw_header_comment).strip() if raw_header_comment else ""
+
     now = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M%z")
 
-    # 只有在原始元数据缺失时，才使进行补全
+    # 补全逻辑
     current_version = final_metadata.get("Project-Id-Version", "")
     if not current_version or current_version == "PACKAGE VERSION":
         project_name = "LexiSync Project"
         if app_instance and app_instance.is_project_mode:
             project_name = app_instance.project_config.get("name", "LexiSync Project")
-        elif original_file_name:
+        elif original_file_name and original_file_name != "source_code":
             project_name = os.path.splitext(os.path.basename(original_file_name))[0]
 
         logger.info(f"Setting default Project-Id-Version: {project_name}")
@@ -471,8 +482,20 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         po_file.append(polib.POEntry(**entry_kwargs))
 
     try:
-        po_file.save(filepath)
-        logger.info(f"Successfully saved PO file to: {filepath}")
+        po_content = po_file.__unicode__()
+
+        if not raw_header_comment:
+            if po_content.startswith("#\n"):
+                po_content = po_content[2:]
+            elif po_content.startswith("# \n"):
+                po_content = po_content[3:]
+
+        from lexisync.utils.file_utils import atomic_open
+
+        with atomic_open(filepath, "w", encoding="utf-8") as f:
+            f.write(po_content)
+
+        logger.info(f"Successfully saved PO file (with header fix) to: {filepath}")
     except Exception as e:
         logger.error(f"Error saving PO file to {filepath}: {e}", exc_info=True)
         raise e
