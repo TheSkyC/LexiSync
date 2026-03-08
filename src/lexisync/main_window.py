@@ -389,6 +389,7 @@ class LexiSyncApp(QMainWindow):
         self._setup_dock_widgets()
         self._setup_keybindings()
         self.drop_overlay = BannerOverlay(self.centralWidget())
+        self.notification_banner = BannerOverlay(self.centralWidget())
 
     def _setup_toolbars(self):
         self.project_toolbar = self.addToolBar(_("Project"))
@@ -764,15 +765,15 @@ class LexiSyncApp(QMainWindow):
 
         filename = os.path.basename(filepath)
 
-        if hasattr(self, "drop_overlay"):
-            self.drop_overlay.clear_actions()
+        if hasattr(self, "notification_banner"):
+            self.notification_banner.clear_actions()
 
-            self.drop_overlay.add_action(
+            self.notification_banner.add_action(
                 _("Reload"), lambda: self._reload_from_external_change(filepath), btn_type="success"
             )
-            self.drop_overlay.add_action(_("Dismiss"), self.drop_overlay.hide_banner, btn_type="default")
+            self.notification_banner.add_action(_("Dismiss"), self.notification_banner.hide_banner, btn_type="default")
 
-            self.drop_overlay.show_message(
+            self.notification_banner.show_message(
                 _("File modified externally: {filename}").format(filename=filename),
                 preset="warning",
                 layout_mode="top",
@@ -782,7 +783,9 @@ class LexiSyncApp(QMainWindow):
             )
 
     def _reload_from_external_change(self, filepath):
-        self.drop_overlay.hide_banner()
+        if hasattr(self, "notification_banner"):
+            self.notification_banner.hide_banner()
+
         self.is_modified = False
 
         if self.is_project_mode:
@@ -2330,11 +2333,6 @@ class LexiSyncApp(QMainWindow):
                 self._update_history_panel()
 
         QTimer.singleShot(0, do_redo)
-
-    def resizeEvent(self, event):
-        if hasattr(self, "drop_overlay"):
-            self.drop_overlay.resize(self.centralWidget().size())
-        super().resizeEvent(event)
 
     def showEvent(self, event):
         super().showEvent(event)
