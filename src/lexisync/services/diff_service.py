@@ -3,7 +3,7 @@
 
 from difflib import SequenceMatcher
 
-from utils.localization import _  # Import _ for localization
+from lexisync.utils.localization import _  # Import _ for localization
 
 
 def diff_and_merge_strings(old_strings, new_strings, similarity_threshold=0.95):

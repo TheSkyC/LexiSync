@@ -13,8 +13,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from ui_components.styled_button import StyledButton
-from utils.localization import _
+from lexisync.ui_components.styled_button import StyledButton
+from lexisync.utils.localization import _
 
 from .resources_page import ResourcesSettingsPage
 from .settings_pages import AISettingsPage, AppearanceSettingsPage, GeneralSettingsPage, ValidationSettingsPage

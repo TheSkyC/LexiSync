@@ -32,12 +32,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from services import project_service
-from services.code_file_service import extract_translatable_strings
-from services.format_manager import FormatManager
-from utils.constants import SUPPORTED_LANGUAGES
-from utils.localization import _
-from utils.text_utils import format_file_size
+from lexisync.services import project_service
+from lexisync.services.code_file_service import extract_translatable_strings
+from lexisync.services.format_manager import FormatManager
+from lexisync.utils.constants import SUPPORTED_LANGUAGES
+from lexisync.utils.localization import _
+from lexisync.utils.text_utils import format_file_size
 
 from .management_tabs import GlossaryManagementTab, TMManagementTab
 from .settings_pages import BaseSettingsPage

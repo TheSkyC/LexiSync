@@ -8,9 +8,9 @@ import os
 import re
 import shutil
 
-from models.translatable_string import TranslatableString
-from utils.file_utils import atomic_open
-from utils.localization import _
+from lexisync.models.translatable_string import TranslatableString
+from lexisync.utils.file_utils import atomic_open
+from lexisync.utils.localization import _
 
 logger = logging.getLogger(__name__)
 

@@ -25,9 +25,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from services.format_manager import FormatManager
-from utils.localization import _
-from utils.path_utils import get_resource_path
+from lexisync.services.format_manager import FormatManager
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_resource_path
 
 logger = logging.getLogger(__name__)
 

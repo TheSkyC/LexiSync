@@ -10,10 +10,10 @@ import uuid
 
 from rapidfuzz import fuzz
 
-from services.code_file_service import extract_translatable_strings
-from services.format_manager import FormatManager
-from utils.constants import APP_VERSION, DEFAULT_EXTRACTION_PATTERNS
-from utils.localization import _
+from lexisync.services.code_file_service import extract_translatable_strings
+from lexisync.services.format_manager import FormatManager
+from lexisync.utils.constants import APP_VERSION, DEFAULT_EXTRACTION_PATTERNS
+from lexisync.utils.localization import _
 
 logger = logging.getLogger(__package__)
 
@@ -161,7 +161,7 @@ def load_project_data(
         extracted_strings = []
 
         format_id = file_info.get("format_id")
-        from services.format_manager import FormatManager
+        from lexisync.services.format_manager import FormatManager
 
         handler = FormatManager.get_handler(format_id)
 
@@ -382,7 +382,7 @@ def rebuild_project_structure(project_path: str, target_langs: list, new_pattern
     all_new_strings = []
 
     # 统一使用 FormatManager 加载所有源文件
-    from services.format_manager import FormatManager
+    from lexisync.services.format_manager import FormatManager
 
     for file_info in source_files:
         file_abs_path = proj_path / file_info["project_path"]

@@ -6,7 +6,7 @@ import weakref
 
 from PySide6.QtCore import QObject, QRunnable, Signal
 
-from utils.text_utils import generate_ngrams
+from lexisync.utils.text_utils import generate_ngrams
 
 
 class GlossarySignals(QObject):

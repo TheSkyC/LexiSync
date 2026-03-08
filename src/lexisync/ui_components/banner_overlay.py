@@ -114,7 +114,7 @@ class BannerOverlay(QWidget):
                 item.widget().deleteLater()
 
     def add_action(self, label, callback, btn_type="default"):
-        from ui_components.styled_button import StyledButton
+        from lexisync.ui_components.styled_button import StyledButton
 
         btn = StyledButton(label, on_click=callback, btn_type=btn_type, size="small")
         self.action_layout.addWidget(btn)

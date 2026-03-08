@@ -5,7 +5,7 @@ from PySide6.QtCore import Property, QEasingCurve, QPointF, QPropertyAnimation, 
 from PySide6.QtGui import QColor, QCursor, QPainter, QPen, Qt
 from PySide6.QtWidgets import QAbstractButton, QLineEdit
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 from .tooltip import Tooltip
 

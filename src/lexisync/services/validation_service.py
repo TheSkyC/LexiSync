@@ -3,12 +3,12 @@
 
 import regex as re
 
-from services import validation_helpers
-from services.expansion_ratio_service import ExpansionRatioService
-from utils.constants import DEFAULT_VALIDATION_RULES
-from utils.enums import WarningType
-from utils.localization import _
-from utils.text_utils import generate_ngrams, get_linguistic_length
+from lexisync.services import validation_helpers
+from lexisync.services.expansion_ratio_service import ExpansionRatioService
+from lexisync.utils.constants import DEFAULT_VALIDATION_RULES
+from lexisync.utils.enums import WarningType
+from lexisync.utils.localization import _
+from lexisync.utils.text_utils import generate_ngrams, get_linguistic_length
 
 placeholder_regex = re.compile(r"\{([^{}]+)\}")
 

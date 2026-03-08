@@ -66,59 +66,59 @@ from PySide6.QtWidgets import (
 )
 from rapidfuzz import fuzz
 
-from dialogs.add_glossary_entry_dialog import AddGlossaryEntryDialog
-from dialogs.diff_dialog import DiffDialog
-from dialogs.export_qa_dialog import ExportQADialog
-from dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
-from dialogs.font_settings_dialog import FontSettingsDialog
-from dialogs.keybinding_dialog import KeybindingDialog
-from dialogs.language_pair_dialog import LanguagePairDialog
-from dialogs.new_project_dialog import NewProjectDialog
-from dialogs.pot_drop_dialog import POTDropDialog
-from dialogs.project_settings_dialog import ProjectSettingsDialog
-from dialogs.prompt_manager_dialog import PromptManagerDialog
-from dialogs.resource_conflict_dialog import ResourceConflictDialog
-from dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
-from dialogs.search_dialog import AdvancedSearchDialog
-from dialogs.settings_dialog import SettingsDialog
-from dialogs.statistics_dialog import StatisticsDialog
-from models.translatable_string import TranslatableString
-from models.translatable_strings_model import TranslatableStringsModel
-from plugins.plugin_manager import PluginManager
-from services import export_service, fix_service, language_service, po_file_service, validation_helpers
-from services.ai_task_manager import AITaskManager
-from services.ai_translator import AITranslator
-from services.ai_worker import AIWorker
-from services.build_service import BuildWorker
-from services.code_file_service import extract_translatable_strings, save_translated_code
-from services.expansion_ratio_service import ExpansionRatioService
-from services.export_service import export_qa_report
-from services.file_monitor_service import FileMonitorService
-from services.format_manager import FormatManager
-from services.glossary_service import GlossaryService
-from services.glossary_worker import GlossaryAnalysisWorker
-from services.project_manager import ProjectManager
-from services.project_service import create_project, load_project_data, save_project
-from services.prompt_service import generate_prompt_from_structure
-from services.search_service import SearchService
-from services.tm_service import TMService
-from services.validation_service import placeholder_regex, run_validation_on_all
-from ui_components.banner_overlay import BannerOverlay
-from ui_components.comment_status_panel import CommentStatusPanel
-from ui_components.context_panel import ContextPanel
-from ui_components.custom_cell_delegate import CustomCellDelegate
-from ui_components.custom_table_view import CustomTableView
-from ui_components.details_panel import DetailsPanel
-from ui_components.elided_label import ElidedLabel
-from ui_components.file_explorer_panel import FileExplorerPanel
-from ui_components.glossary_panel import GlossaryPanel
-from ui_components.history_panel import HistoryPanel
-from ui_components.marker_bar import MarkerBar
-from ui_components.scrollable_menu_list import ScrollableRecentFileList
-from ui_components.styled_button import StyledButton
-from ui_components.tm_panel import TMPanel
-from utils import config_manager
-from utils.constants import (
+from lexisync.dialogs.add_glossary_entry_dialog import AddGlossaryEntryDialog
+from lexisync.dialogs.diff_dialog import DiffDialog
+from lexisync.dialogs.export_qa_dialog import ExportQADialog
+from lexisync.dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
+from lexisync.dialogs.font_settings_dialog import FontSettingsDialog
+from lexisync.dialogs.keybinding_dialog import KeybindingDialog
+from lexisync.dialogs.language_pair_dialog import LanguagePairDialog
+from lexisync.dialogs.new_project_dialog import NewProjectDialog
+from lexisync.dialogs.pot_drop_dialog import POTDropDialog
+from lexisync.dialogs.project_settings_dialog import ProjectSettingsDialog
+from lexisync.dialogs.prompt_manager_dialog import PromptManagerDialog
+from lexisync.dialogs.resource_conflict_dialog import ResourceConflictDialog
+from lexisync.dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
+from lexisync.dialogs.search_dialog import AdvancedSearchDialog
+from lexisync.dialogs.settings_dialog import SettingsDialog
+from lexisync.dialogs.statistics_dialog import StatisticsDialog
+from lexisync.models.translatable_string import TranslatableString
+from lexisync.models.translatable_strings_model import TranslatableStringsModel
+from lexisync.plugins.plugin_manager import PluginManager
+from lexisync.services import export_service, fix_service, language_service, po_file_service, validation_helpers
+from lexisync.services.ai_task_manager import AITaskManager
+from lexisync.services.ai_translator import AITranslator
+from lexisync.services.ai_worker import AIWorker
+from lexisync.services.build_service import BuildWorker
+from lexisync.services.code_file_service import extract_translatable_strings, save_translated_code
+from lexisync.services.expansion_ratio_service import ExpansionRatioService
+from lexisync.services.export_service import export_qa_report
+from lexisync.services.file_monitor_service import FileMonitorService
+from lexisync.services.format_manager import FormatManager
+from lexisync.services.glossary_service import GlossaryService
+from lexisync.services.glossary_worker import GlossaryAnalysisWorker
+from lexisync.services.project_manager import ProjectManager
+from lexisync.services.project_service import create_project, load_project_data, save_project
+from lexisync.services.prompt_service import generate_prompt_from_structure
+from lexisync.services.search_service import SearchService
+from lexisync.services.tm_service import TMService
+from lexisync.services.validation_service import placeholder_regex, run_validation_on_all
+from lexisync.ui_components.banner_overlay import BannerOverlay
+from lexisync.ui_components.comment_status_panel import CommentStatusPanel
+from lexisync.ui_components.context_panel import ContextPanel
+from lexisync.ui_components.custom_cell_delegate import CustomCellDelegate
+from lexisync.ui_components.custom_table_view import CustomTableView
+from lexisync.ui_components.details_panel import DetailsPanel
+from lexisync.ui_components.elided_label import ElidedLabel
+from lexisync.ui_components.file_explorer_panel import FileExplorerPanel
+from lexisync.ui_components.glossary_panel import GlossaryPanel
+from lexisync.ui_components.history_panel import HistoryPanel
+from lexisync.ui_components.marker_bar import MarkerBar
+from lexisync.ui_components.scrollable_menu_list import ScrollableRecentFileList
+from lexisync.ui_components.styled_button import StyledButton
+from lexisync.ui_components.tm_panel import TMPanel
+from lexisync.utils import config_manager
+from lexisync.utils.constants import (
     APP_VERSION,
     DEFAULT_API_URL,
     DEFAULT_EXTRACTION_PATTERNS,
@@ -126,10 +126,10 @@ from utils.constants import (
     MAX_UNDO_HISTORY,
     SUPPORTED_LANGUAGES,
 )
-from utils.enums import AIOperationType, WarningType
-from utils.localization import _, lang_manager
-from utils.path_utils import get_app_data_path
-from utils.text_utils import generate_ngrams, get_linguistic_length
+from lexisync.utils.enums import AIOperationType, WarningType
+from lexisync.utils.localization import _, lang_manager
+from lexisync.utils.path_utils import get_app_data_path
+from lexisync.utils.text_utils import generate_ngrams, get_linguistic_length
 
 logger = logging.getLogger(__name__)
 
@@ -1765,14 +1765,14 @@ class LexiSyncApp(QMainWindow):
         if not self.prompt_save_if_modified():
             return
 
-        from dialogs.export_package_dialog import ExportPackageDialog
+        from lexisync.dialogs.export_package_dialog import ExportPackageDialog
 
         wizard = ExportPackageDialog(self, self)
         wizard.exec()
 
     def handle_lexipack_drop(self, filepath):
-        from dialogs.import_package_dialog import ImportPackageDialog
-        from services.package_service import read_package_info
+        from lexisync.dialogs.import_package_dialog import ImportPackageDialog
+        from lexisync.services.package_service import read_package_info
 
         pack_info = read_package_info(filepath)
         if not pack_info:
@@ -2864,7 +2864,7 @@ class LexiSyncApp(QMainWindow):
             self.update_statusbar(_("Loading file..."), persistent=True)
             QApplication.processEvents()
 
-            from services.project_service import load_project_data
+            from lexisync.services.project_service import load_project_data
 
             __, newly_loaded_strings = load_project_data(
                 self.current_project_path, self.current_target_language, app_instance=self, file_id_to_load=file_id
@@ -3234,7 +3234,7 @@ class LexiSyncApp(QMainWindow):
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         try:
-            from services.project_service import TRANSLATION_DIR, rebuild_project_structure
+            from lexisync.services.project_service import TRANSLATION_DIR, rebuild_project_structure
 
             # 2. 调用服务层执行全量重构
             target_langs = self.project_config.get("target_languages", [])
@@ -3283,7 +3283,7 @@ class LexiSyncApp(QMainWindow):
             QApplication.restoreOverrideCursor()
 
             # 4. 弹出 Diff 对话框
-            from dialogs.diff_dialog import DiffDialog
+            from lexisync.dialogs.diff_dialog import DiffDialog
 
             confirm_dialog = DiffDialog(
                 self, _("Rebuild Results (Preview: {lang})").format(lang=current_lang), diff_results
@@ -3346,7 +3346,7 @@ class LexiSyncApp(QMainWindow):
 
                     # 4. 保存
                     data_to_save = [ts.to_dict() for ts in final_lang_list]
-                    from utils.file_utils import atomic_open
+                    from lexisync.utils.file_utils import atomic_open
 
                     with atomic_open(str(old_lang_file), "w", encoding="utf-8") as f:
                         json.dump(data_to_save, f, indent=4, ensure_ascii=False)
@@ -3354,7 +3354,7 @@ class LexiSyncApp(QMainWindow):
                 self.update_statusbar(_("Synchronizing data..."), persistent=True)
 
                 # 1. 重新加载全量项目数据
-                from services import project_service
+                from lexisync.services import project_service
 
                 __, all_strings = project_service.load_project_data(
                     self.current_project_path, self.current_target_language, self, all_files=True
@@ -4421,9 +4421,9 @@ class LexiSyncApp(QMainWindow):
         if is_project_import and not self.is_project_mode:
             QMessageBox.critical(self, _("Error"), _("Cannot import to a project glossary when no project is open."))
             return
-        from dialogs.import_configuration_dialog import ImportConfigurationDialog
-        from dialogs.management_tabs import SimpleProgressDialog, TbxImportWorker
-        from utils.tbx_parser import TBXParser
+        from lexisync.dialogs.import_configuration_dialog import ImportConfigurationDialog
+        from lexisync.dialogs.management_tabs import SimpleProgressDialog, TbxImportWorker
+        from lexisync.utils.tbx_parser import TBXParser
 
         try:
             parser = TBXParser()
@@ -4795,7 +4795,7 @@ class LexiSyncApp(QMainWindow):
 
             plural_context_str = ""
             if ts_obj.is_plural:
-                from utils.plural_utils import get_plural_form_description
+                from lexisync.utils.plural_utils import get_plural_form_description
 
                 plural_context_str = get_plural_form_description(
                     self.app.current_target_language,
@@ -4838,7 +4838,7 @@ class LexiSyncApp(QMainWindow):
 
         plural_context_str = ""
         if ts_obj.is_plural:
-            from utils.plural_utils import get_plural_form_description
+            from lexisync.utils.plural_utils import get_plural_form_description
 
             plural_context_str = get_plural_form_description(
                 self.current_target_language,
@@ -4892,7 +4892,7 @@ class LexiSyncApp(QMainWindow):
         if not glossary_text and hasattr(self, "glossary_service"):
             pass
         target_lang_code = self.current_target_language
-        from utils.constants import SUPPORTED_LANGUAGES
+        from lexisync.utils.constants import SUPPORTED_LANGUAGES
 
         target_lang_name = next(
             (name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code), target_lang_code
@@ -5396,7 +5396,7 @@ class LexiSyncApp(QMainWindow):
             ts_obj = self._find_ts_obj_by_id(ts_id)
             if ts_obj:
                 if not skip_validation:
-                    from services.validation_service import validate_string
+                    from lexisync.services.validation_service import validate_string
 
                     validate_string(ts_obj, self.config, self)
                 ts_obj.update_style_cache()
@@ -6066,7 +6066,7 @@ class LexiSyncApp(QMainWindow):
             # 自动检测源语言 (Source Language)
             sample_texts = [ts.original_semantic for ts in self.translatable_objects if ts.original_semantic.strip()]
             if sample_texts:
-                from services import language_service
+                from lexisync.services import language_service
 
                 self.source_language = language_service.detect_source_language(sample_texts)
 
@@ -6075,7 +6075,7 @@ class LexiSyncApp(QMainWindow):
             else:
                 sample_translations = [ts.translation for ts in self.translatable_objects if ts.translation.strip()]
                 if sample_translations:
-                    from services import language_service
+                    from lexisync.services import language_service
 
                     self.current_target_language = language_service.detect_source_language(sample_translations)
                 else:
@@ -6284,13 +6284,13 @@ class LexiSyncApp(QMainWindow):
         self.update_counts_display()
 
     def show_ai_model_manager(self):
-        from dialogs.ai_model_manager_dialog import AIModelManagerDialog
+        from lexisync.dialogs.ai_model_manager_dialog import AIModelManagerDialog
 
         dialog = AIModelManagerDialog(self, self)
         dialog.exec()
 
     def show_resource_viewer(self):
-        from dialogs.resource_viewer_dialog import ResourceViewerDialog
+        from lexisync.dialogs.resource_viewer_dialog import ResourceViewerDialog
 
         dialog = ResourceViewerDialog(self, self, mode="tm")
         dialog.show()
@@ -6317,7 +6317,7 @@ class LexiSyncApp(QMainWindow):
             # 1. 收集数据
             if config["scope"] == "project":
                 # 全项目扫描
-                from services.project_service import load_project_data
+                from lexisync.services.project_service import load_project_data
 
                 # 加载所有文件（这可能需要一点时间）
                 __, all_strings = load_project_data(
@@ -7794,7 +7794,7 @@ class LexiSyncApp(QMainWindow):
         if not self._check_ai_prerequisites():
             return
 
-        from dialogs.smart_translation_dialog import SmartTranslationDialog
+        from lexisync.dialogs.smart_translation_dialog import SmartTranslationDialog
 
         dialog = SmartTranslationDialog(self)
         dialog.exec()

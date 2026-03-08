@@ -5,9 +5,9 @@ from PySide6.QtCore import QEasingCurve, QEvent, QParallelAnimationGroup, QPrope
 from PySide6.QtGui import QCursor, QIcon, QPainter
 from PySide6.QtWidgets import QButtonGroup, QComboBox, QHBoxLayout, QPushButton, QStyle, QStyledItemDelegate, QWidget
 
-from ui_components.tooltip import Tooltip
-from utils.localization import _
-from utils.path_utils import get_resource_path
+from lexisync.ui_components.tooltip import Tooltip
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_resource_path
 
 
 class _PluralFlatButton(QPushButton):

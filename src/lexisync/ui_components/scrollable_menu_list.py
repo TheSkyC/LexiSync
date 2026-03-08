@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from services.format_manager import FormatManager
+from lexisync.services.format_manager import FormatManager
 
 
 class RecentFileItemWidget(QWidget):

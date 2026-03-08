@@ -6,8 +6,8 @@ from pathlib import Path
 import shutil
 import uuid
 
-from services.format_manager import FormatManager
-from utils.localization import _
+from lexisync.services.format_manager import FormatManager
+from lexisync.utils.localization import _
 
 from . import project_service
 

@@ -45,7 +45,7 @@ class WarningType(Enum):
     UNUSUAL_EXPANSION_RATIO = auto()  # 膨胀率差异大
 
     def get_display_text(self):
-        from utils.localization import _
+        from lexisync.utils.localization import _
 
         if self == WarningType.PLACEHOLDER_MISSING:
             return _("Placeholder Missing")

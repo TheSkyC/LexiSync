@@ -5,8 +5,8 @@ from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QAction, QColor, QIcon
 from PySide6.QtWidgets import QListWidget, QListWidgetItem, QSizePolicy, QToolBar, QVBoxLayout, QWidget
 
-from utils.localization import _
-from utils.path_utils import get_resource_path
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_resource_path
 
 
 class GlossaryPanel(QWidget):

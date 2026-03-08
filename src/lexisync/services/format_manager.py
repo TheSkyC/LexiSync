@@ -16,10 +16,10 @@ from rapidfuzz import fuzz
 import regex as re
 import xxhash
 
-from models.translatable_string import TranslatableString
-from services import code_file_service, po_file_service
-from utils.file_utils import atomic_open
-from utils.localization import _
+from lexisync.models.translatable_string import TranslatableString
+from lexisync.services import code_file_service, po_file_service
+from lexisync.utils.file_utils import atomic_open
+from lexisync.utils.localization import _
 
 logger = logging.getLogger(__name__)
 
@@ -3963,7 +3963,7 @@ class CsvFormatHandler(BaseFormatHandler):
 
         # 2. 如果缺少原文列，或者强制交互，弹出对话框
         if force_dialog or is_guessed_fuzzy or "source" not in mapping:
-            from dialogs.column_mapper_dialog import ColumnMapperDialog
+            from lexisync.dialogs.column_mapper_dialog import ColumnMapperDialog
 
             dialog = ColumnMapperDialog(
                 app.main_window if hasattr(app, "main_window") else app, headers, data_rows[:5], mapping
@@ -4130,7 +4130,7 @@ class XlsxFormatHandler(BaseFormatHandler):
         mapping, is_guessed_fuzzy = _guess_column_mapping(headers, app.config)
 
         if force_dialog or is_guessed_fuzzy or "source" not in mapping:
-            from dialogs.column_mapper_dialog import ColumnMapperDialog
+            from lexisync.dialogs.column_mapper_dialog import ColumnMapperDialog
 
             dialog = ColumnMapperDialog(
                 app.main_window if hasattr(app, "main_window") else app, headers, data_rows[:5], mapping

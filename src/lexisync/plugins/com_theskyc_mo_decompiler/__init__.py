@@ -7,7 +7,7 @@ import os
 import polib
 from PySide6.QtWidgets import QCheckBox, QFileDialog, QMessageBox
 
-from plugins.plugin_base import PluginBase
+from lexisync.plugins.plugin_base import PluginBase
 
 
 class MODecompilerPlugin(PluginBase):

@@ -4,7 +4,7 @@
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 from .newline_text_edit import NewlineTextEdit
 from .po_comment_highlighter import PoCommentHighlighter

@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QMouseEvent, QPainter
 from PySide6.QtWidgets import QTableView, QWidget
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 from .tooltip import Tooltip
 
@@ -289,7 +289,7 @@ class MarkerBar(QWidget):
 
         # 提取行号并排序
         unique_rows = {idx.row() for idx in selected_indexes}
-        rows = sorted(list(unique_rows))
+        rows = sorted(unique_rows)
 
         ranges = []
         if rows:

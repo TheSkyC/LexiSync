@@ -12,15 +12,15 @@ import zipfile
 
 from PySide6.QtWidgets import QMessageBox
 
-from dialogs.marketplace_dialog import PluginMarketplaceDialog
-from plugins.plugin_base import PluginBase
-from plugins.plugin_dialog import PluginManagerDialog
-from services.dependency_service import DependencyManager
-from services.format_manager import FormatManager
-from utils.constants import APP_VERSION
-from utils.localization import _
-from utils.path_utils import get_app_data_path
-from utils.plugin_context import plugin_libs_context
+from lexisync.dialogs.marketplace_dialog import PluginMarketplaceDialog
+from lexisync.plugins.plugin_base import PluginBase
+from lexisync.plugins.plugin_dialog import PluginManagerDialog
+from lexisync.services.dependency_service import DependencyManager
+from lexisync.services.format_manager import FormatManager
+from lexisync.utils.constants import APP_VERSION
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_app_data_path
+from lexisync.utils.plugin_context import plugin_libs_context
 
 logger = logging.getLogger(__package__)
 
@@ -159,7 +159,7 @@ class PluginManager:
         if not os.path.exists(plugin_file):
             return None
 
-        spec = importlib.util.spec_from_file_location(f"plugins.{dir_name}", plugin_file)
+        spec = importlib.util.spec_from_file_location(f"lexisync.plugins.{dir_name}", plugin_file)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 

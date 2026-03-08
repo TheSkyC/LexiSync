@@ -3,7 +3,7 @@
 
 import re
 
-from utils.constants import DYNAMIC, STATIC, STRUCTURAL
+from lexisync.utils.constants import DYNAMIC, STATIC, STRUCTURAL
 
 
 def generate_prompt_from_structure(prompt_structure, placeholders):

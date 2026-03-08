@@ -12,8 +12,8 @@ import sys
 import keyring
 import keyring.errors
 
-from utils.localization import _
-from utils.path_utils import get_app_data_path
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_app_data_path
 
 logger = logging.getLogger(__name__)
 

@@ -10,8 +10,8 @@ import os
 import sqlite3
 import threading
 
-from utils.localization import _
-from utils.tbx_parser import TBXParser
+from lexisync.utils.localization import _
+from lexisync.utils.tbx_parser import TBXParser
 
 logger = logging.getLogger(__name__)
 

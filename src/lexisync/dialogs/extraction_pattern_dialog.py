@@ -36,11 +36,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from dialogs.ai_regex_generator_dialog import AIRegexGeneratorDialog
-from services.code_file_service import unescape_overwatch_string
-from ui_components.tooltip import Tooltip
-from utils.constants import DEFAULT_EXTRACTION_PATTERNS, EXTRACTION_PATTERN_PRESET_EXTENSION
-from utils.localization import _
+from lexisync.dialogs.ai_regex_generator_dialog import AIRegexGeneratorDialog
+from lexisync.services.code_file_service import unescape_overwatch_string
+from lexisync.ui_components.tooltip import Tooltip
+from lexisync.utils.constants import DEFAULT_EXTRACTION_PATTERNS, EXTRACTION_PATTERN_PRESET_EXTENSION
+from lexisync.utils.localization import _
 
 
 # --- 语法高亮器 ---

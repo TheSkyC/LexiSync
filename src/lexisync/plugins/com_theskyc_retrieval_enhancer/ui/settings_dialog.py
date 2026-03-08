@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from ui_components.styled_button import StyledButton
+from lexisync.ui_components.styled_button import StyledButton
 
 from ..utils.constants import SUPPORTED_MODELS
 

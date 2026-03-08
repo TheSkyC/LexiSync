@@ -7,9 +7,9 @@ from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QCursor, QTextCursor
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QSplitter, QVBoxLayout, QWidget
 
-from services import fix_service
-from utils.localization import _
-from utils.plural_utils import get_plural_info
+from lexisync.services import fix_service
+from lexisync.utils.localization import _
+from lexisync.utils.plural_utils import get_plural_info
 
 from .elided_label import ElidedLabel
 from .newline_text_edit import NewlineTextEdit

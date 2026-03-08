@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from PySide6.QtCore import QObject, Signal
-from services import project_service
+from lexisync.services import project_service
 import logging
 
 logger = logging.getLogger(__name__)

@@ -3,8 +3,8 @@
 
 import regex as re
 
-from services.validation_helpers import RE_PANGU_CJK_LATIN, RE_PANGU_LATIN_CJK
-from utils.enums import WarningType
+from lexisync.services.validation_helpers import RE_PANGU_CJK_LATIN, RE_PANGU_LATIN_CJK
+from lexisync.utils.enums import WarningType
 
 # 标点映射表
 PUNCTUATION_MAP = {
@@ -157,7 +157,7 @@ def apply_all_fixes(ts_obj, target_lang, plural_index=0):
     ]
 
     # 4. 创建一个临时的 ts_obj 用于链式修复
-    from models.translatable_string import TranslatableString
+    from lexisync.models.translatable_string import TranslatableString
 
     temp_ts = TranslatableString("", original_text, 0, 0, 0, [])
     temp_ts.translation = current_translation

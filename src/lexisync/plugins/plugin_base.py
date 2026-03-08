@@ -6,7 +6,7 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-from models.translatable_string import TranslatableString
+from lexisync.models.translatable_string import TranslatableString
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QHBoxLayout
 
-    from main_window import LexiSyncApp
-    from plugins.plugin_manager import PluginManager
+    from lexisync.main_window import LexiSyncApp
+    from lexisync.plugins.plugin_manager import PluginManager
 
 
 class PluginBase(ABC):

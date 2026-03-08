@@ -6,9 +6,9 @@ import threading
 
 from PySide6.QtCore import QObject, QThreadPool, QTimer, Signal
 
-from services.ai_worker import AIWorker
-from utils.constants import SUPPORTED_LANGUAGES
-from utils.enums import AIOperationType
+from lexisync.services.ai_worker import AIWorker
+from lexisync.utils.constants import SUPPORTED_LANGUAGES
+from lexisync.utils.enums import AIOperationType
 
 logger = logging.getLogger(__name__)
 

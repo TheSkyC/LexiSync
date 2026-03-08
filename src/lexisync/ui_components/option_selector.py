@@ -14,8 +14,8 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor, QCursor, QIcon
 from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
-from ui_components.tooltip import Tooltip
-from utils.path_utils import get_resource_path
+from lexisync.ui_components.tooltip import Tooltip
+from lexisync.utils.path_utils import get_resource_path
 
 
 class OptionButton(QPushButton):

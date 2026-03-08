@@ -34,15 +34,15 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from dialogs.interactive_review_dialog import InteractiveReviewDialog
-from dialogs.resource_conflict_dialog import ResourceConflictDialog
-from dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
-from dialogs.test_translation_dialog import TestTranslationDialog
-from services.smart_translation_service import SmartTranslationService
-from ui_components.styled_button import StyledButton
-from ui_components.tooltip import Tooltip
-from utils.keyword_matcher import KeywordMatcher
-from utils.localization import _
+from lexisync.dialogs.interactive_review_dialog import InteractiveReviewDialog
+from lexisync.dialogs.resource_conflict_dialog import ResourceConflictDialog
+from lexisync.dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
+from lexisync.dialogs.test_translation_dialog import TestTranslationDialog
+from lexisync.services.smart_translation_service import SmartTranslationService
+from lexisync.ui_components.styled_button import StyledButton
+from lexisync.ui_components.tooltip import Tooltip
+from lexisync.utils.keyword_matcher import KeywordMatcher
+from lexisync.utils.localization import _
 
 logger = logging.getLogger(__name__)
 

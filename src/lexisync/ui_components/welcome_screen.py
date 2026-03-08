@@ -19,10 +19,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from services.format_manager import FormatManager
-from ui_components.elided_label import ElidedLabel
-from utils.localization import _
-from utils.path_utils import get_resource_path
+from lexisync.services.format_manager import FormatManager
+from lexisync.ui_components.elided_label import ElidedLabel
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_resource_path
 
 
 class BadgeLabel(QLabel):
@@ -606,8 +606,8 @@ class WelcomeScreen(QWidget):
             event.acceptProposedAction()
 
     def handle_lexipack_drop(self, filepath):
-        from dialogs.import_package_dialog import ImportPackageDialog
-        from services.package_service import read_package_info
+        from lexisync.dialogs.import_package_dialog import ImportPackageDialog
+        from lexisync.services.package_service import read_package_info
 
         pack_info = read_package_info(filepath)
         if not pack_info:
@@ -632,8 +632,8 @@ class WelcomeScreen(QWidget):
                 return
             import sys
 
-            from main_window import LexiSyncApp
-            from utils.path_utils import get_plugin_libs_path
+            from lexisync.main_window import LexiSyncApp
+            from lexisync.utils.path_utils import get_plugin_libs_path
 
             self.set_status(_("Setting up plugin environment..."), "loading")
             QApplication.processEvents()
@@ -784,7 +784,7 @@ class WelcomeScreen(QWidget):
             if (isinstance(f, str) and f != path_to_remove) or (isinstance(f, dict) and f.get("path") != path_to_remove)
         ]
         self.config["recent_files"] = new_list
-        from utils.config_manager import save_config
+        from lexisync.utils.config_manager import save_config
 
         class DummyApp:
             def __init__(self, cfg):
@@ -836,7 +836,7 @@ class WelcomeScreen(QWidget):
         if reply == QMessageBox.Yes:
             self.config["recent_files"] = []
 
-            from utils.config_manager import save_config
+            from lexisync.utils.config_manager import save_config
 
             class DummyApp:
                 def __init__(self, cfg):

@@ -10,8 +10,8 @@ import sys
 from packaging.specifiers import SpecifierSet
 from packaging.version import parse as parse_version
 
-from utils.path_utils import get_plugin_libs_path
-from utils.plugin_context import plugin_libs_context
+from lexisync.utils.path_utils import get_plugin_libs_path
+from lexisync.utils.plugin_context import plugin_libs_context
 
 logger = logging.getLogger(__name__)
 

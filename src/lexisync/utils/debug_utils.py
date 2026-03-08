@@ -12,7 +12,6 @@ def setup_debug_mode():
     debug_env_var = os.getenv("DEBUG", "0").lower()
     if debug_env_var in ("1", "true", "on", "yes"):
         IS_DEBUG_MODE = True
-        print("--- DEBUG MODE IS ON ---")
 
 
 def get_logger(name):

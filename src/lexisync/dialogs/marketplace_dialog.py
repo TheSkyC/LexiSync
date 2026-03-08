@@ -24,10 +24,10 @@ from PySide6.QtWidgets import (
 )
 import requests
 
-from layouts.flow_layout import FlowLayout
-from ui_components.elided_label import ElidedLabel
-from utils.constants import APP_VERSION
-from utils.localization import _
+from lexisync.layouts.flow_layout import FlowLayout
+from lexisync.ui_components.elided_label import ElidedLabel
+from lexisync.utils.constants import APP_VERSION
+from lexisync.utils.localization import _
 
 
 class FetchIndexThread(QThread):

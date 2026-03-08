@@ -5,7 +5,7 @@ import json
 import logging
 import os
 
-from utils.path_utils import get_resource_path
+from lexisync.utils.path_utils import get_resource_path
 
 logger = logging.getLogger(__name__)
 

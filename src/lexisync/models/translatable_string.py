@@ -6,9 +6,9 @@ import logging
 from PySide6.QtGui import QColor, QFont
 import xxhash
 
-from utils.constants import MAX_UNDO_HISTORY
-from utils.enums import WarningType
-from utils.localization import _
+from lexisync.utils.constants import MAX_UNDO_HISTORY
+from lexisync.utils.enums import WarningType
+from lexisync.utils.localization import _
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +206,7 @@ class TranslatableString:
 
     @property
     def singular_index(self) -> int:
-        from utils.plural_utils import get_singular_index_from_expr
+        from lexisync.utils.plural_utils import get_singular_index_from_expr
 
         return get_singular_index_from_expr(self.plural_expr)
 

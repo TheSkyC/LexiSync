@@ -6,7 +6,7 @@ import os
 
 from PySide6.QtWidgets import QInputDialog, QMessageBox
 
-from plugins.plugin_base import PluginBase
+from lexisync.plugins.plugin_base import PluginBase
 
 GLOBAL_SETTINGS_KEY = "__GLOBAL__"
 

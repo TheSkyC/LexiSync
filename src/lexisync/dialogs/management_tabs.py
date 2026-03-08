@@ -23,10 +23,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from services.glossary_service import MANIFEST_FILE as GLOSSARY_MANIFEST_FILE
-from utils.localization import _
-from utils.path_utils import get_app_data_path
-from utils.tbx_parser import TBXParser
+from lexisync.services.glossary_service import MANIFEST_FILE as GLOSSARY_MANIFEST_FILE
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_app_data_path
+from lexisync.utils.tbx_parser import TBXParser
 
 from .import_configuration_dialog import ImportConfigurationDialog
 from .resource_viewer_dialog import ResourceViewerDialog

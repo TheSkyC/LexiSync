@@ -6,7 +6,7 @@ import html
 
 import regex as re
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 PUNCTUATION_MAP = {".": "。", ",": "，", "?": "？", "!": "！", ":": "：", ";": "；", "(": "（", ")": "）"}
 ALL_PUNC_KEYS = set(PUNCTUATION_MAP.keys())

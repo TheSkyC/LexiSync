@@ -15,7 +15,7 @@ import threading
 from openpyxl import load_workbook
 from rapidfuzz import fuzz
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 logger = logging.getLogger(__name__)
 

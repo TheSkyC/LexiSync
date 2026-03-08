@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QHeaderView, QLabel, QPushButton, QTextEdit, QTreeView, QVBoxLayout
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 
 class DiffDialog(QDialog):

@@ -5,7 +5,7 @@ import logging
 
 from PySide6.QtWidgets import QApplication, QFileDialog, QInputDialog, QMessageBox
 
-from plugins.plugin_base import PluginBase
+from lexisync.plugins.plugin_base import PluginBase
 
 from .element_dialog import ElementDialog
 from .obfuscator_dialog import ObfuscatorDialog

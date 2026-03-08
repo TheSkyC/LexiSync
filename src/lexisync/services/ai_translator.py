@@ -4,8 +4,8 @@
 import json
 from urllib.parse import urlparse, urlunparse
 
-from utils.constants import DEFAULT_API_URL
-from utils.localization import _, lang_manager
+from lexisync.utils.constants import DEFAULT_API_URL
+from lexisync.utils.localization import _, lang_manager
 
 try:
     import requests

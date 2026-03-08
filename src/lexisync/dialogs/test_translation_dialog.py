@@ -20,9 +20,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from services.ai_worker import AIWorker
-from utils.enums import AIOperationType
-from utils.localization import _
+from lexisync.services.ai_worker import AIWorker
+from lexisync.utils.enums import AIOperationType
+from lexisync.utils.localization import _
 
 logger = logging.getLogger(__name__)
 

@@ -5,8 +5,8 @@ from PySide6.QtCore import QEvent, QSize, Qt
 from PySide6.QtGui import QCursor, QIcon
 from PySide6.QtWidgets import QToolButton
 
-from ui_components.tooltip import Tooltip
-from utils.path_utils import get_resource_path
+from lexisync.ui_components.tooltip import Tooltip
+from lexisync.utils.path_utils import get_resource_path
 
 
 class HelpButton(QToolButton):

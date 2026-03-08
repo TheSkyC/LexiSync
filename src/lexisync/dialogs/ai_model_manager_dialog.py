@@ -25,14 +25,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from services.ai_translator import AITranslator
-from ui_components.help_button import HelpButton
-from ui_components.option_selector import OptionSelector
-from ui_components.password_edit import PasswordEdit
-from ui_components.styled_button import StyledButton
-from utils.constants import AI_PROVIDER_PRESETS
-from utils.localization import _
-from utils.path_utils import get_resource_path
+from lexisync.services.ai_translator import AITranslator
+from lexisync.ui_components.help_button import HelpButton
+from lexisync.ui_components.option_selector import OptionSelector
+from lexisync.ui_components.password_edit import PasswordEdit
+from lexisync.ui_components.styled_button import StyledButton
+from lexisync.utils.constants import AI_PROVIDER_PRESETS
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_resource_path
 
 
 class AIModelManagerDialog(QDialog):
@@ -549,7 +549,7 @@ class AIModelManagerDialog(QDialog):
         self.btn_test.setEnabled(False)
         self.btn_test.setText(_("Testing..."))
         QApplication.processEvents()
-        from services.ai_translator import AITranslator
+        from lexisync.services.ai_translator import AITranslator
 
         temp_translator = AITranslator(api_key, model, url)
         try:

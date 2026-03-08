@@ -21,8 +21,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utils.enums import WarningType
-from utils.localization import _
+from lexisync.utils.enums import WarningType
+from lexisync.utils.localization import _
 
 
 class StatisticsCalculationThread(QThread):

@@ -4,7 +4,7 @@
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PySide6.QtGui import QColor
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 NewlineColorRole = Qt.UserRole + 1
 

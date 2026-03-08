@@ -6,8 +6,8 @@ import sys
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QApplication
 
-from utils import debug_utils
-from utils.single_instance import SingleInstanceServer, raise_existing_instance
+from lexisync.utils import debug_utils
+from lexisync.utils.single_instance import SingleInstanceServer, raise_existing_instance
 
 debug_utils.setup_debug_mode()
 app_controller = None
@@ -27,7 +27,7 @@ class AppController(QObject):
             self.instance_server.request_activation.connect(self.bring_to_front)
 
     def start(self):
-        from ui_components.welcome_screen import WelcomeScreen
+        from lexisync.ui_components.welcome_screen import WelcomeScreen
 
         self.welcome_screen = WelcomeScreen(self.config)
         self.welcome_screen.request_main_window.connect(self.handle_welcome_request)
@@ -90,8 +90,8 @@ if __name__ == "__main__":
             color: #C0C4CC;
         }
     """)
-    from utils.config_manager import load_config
-    from utils.localization import lang_manager
+    from lexisync.utils.config_manager import load_config
+    from lexisync.utils.localization import lang_manager
 
     config = load_config()
     language_code = config.get("language")

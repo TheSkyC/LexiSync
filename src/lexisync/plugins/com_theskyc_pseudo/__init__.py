@@ -4,9 +4,9 @@
 import logging
 import re
 
-from plugins.com_theskyc_pseudo.preview_dialog import PreviewDialog
-from plugins.com_theskyc_pseudo.settings_dialog import SettingsDialog
-from plugins.plugin_base import PluginBase
+from lexisync.plugins.com_theskyc_pseudo.preview_dialog import PreviewDialog
+from lexisync.plugins.com_theskyc_pseudo.settings_dialog import SettingsDialog
+from lexisync.plugins.plugin_base import PluginBase
 
 
 class PseudoLocalizationPlugin(PluginBase):

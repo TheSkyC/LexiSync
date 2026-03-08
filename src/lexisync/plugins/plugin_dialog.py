@@ -20,10 +20,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from plugins.plugin_base import PluginBase
-from services.dependency_service import DependencyManager
-from ui_components.styled_button import StyledButton
-from utils.localization import _
+from lexisync.plugins.plugin_base import PluginBase
+from lexisync.services.dependency_service import DependencyManager
+from lexisync.ui_components.styled_button import StyledButton
+from lexisync.utils.localization import _
 
 
 def create_icon(color1, color2=None):

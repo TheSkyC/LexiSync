@@ -10,17 +10,17 @@ import uuid
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from utils.constants import (
+from lexisync.utils.constants import (
     DEFAULT_CORRECTION_PROMPT_STRUCTURE,
     DEFAULT_EXTRACTION_PATTERNS,
     DEFAULT_KEYBINDINGS,
     DEFAULT_PROMPT_STRUCTURE,
     DEFAULT_VALIDATION_RULES,
 )
-from utils.file_utils import atomic_open
-from utils.localization import _
-from utils.path_utils import get_app_data_path
-from utils.security_utils import decrypt_text, encrypt_text
+from lexisync.utils.file_utils import atomic_open
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_app_data_path
+from lexisync.utils.security_utils import decrypt_text, encrypt_text
 
 logger = logging.getLogger(__name__)
 CONFIG_FILE = os.path.join(get_app_data_path(), "config.json")

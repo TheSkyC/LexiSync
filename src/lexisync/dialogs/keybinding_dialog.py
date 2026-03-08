@@ -16,8 +16,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utils.constants import DEFAULT_KEYBINDINGS
-from utils.localization import _
+from lexisync.utils.constants import DEFAULT_KEYBINDINGS
+from lexisync.utils.localization import _
 
 
 class KeyCaptureEdit(QLineEdit):

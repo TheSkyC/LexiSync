@@ -7,18 +7,18 @@ import weakref
 
 from PySide6.QtCore import QObject, QRunnable, Signal
 
-from models.translatable_string import TranslatableString
-from services.prompt_service import generate_prompt_from_structure
-from services.validation_service import validate_string
-from utils.constants import (
+from lexisync.models.translatable_string import TranslatableString
+from lexisync.services.prompt_service import generate_prompt_from_structure
+from lexisync.services.validation_service import validate_string
+from lexisync.utils.constants import (
     COT_INJECTION_PROMPT,
     DEFAULT_CORRECTION_PROMPT_STRUCTURE,
     DEFAULT_PROMPT_STRUCTURE,
 )
-from utils.enums import AIOperationType
-from utils.localization import _
-from utils.plural_utils import get_plural_form_description
-from utils.text_utils import generate_ngrams
+from lexisync.utils.enums import AIOperationType
+from lexisync.utils.localization import _
+from lexisync.utils.plural_utils import get_plural_form_description
+from lexisync.utils.text_utils import generate_ngrams
 
 logger = logging.getLogger(__name__)
 

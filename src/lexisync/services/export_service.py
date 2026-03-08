@@ -7,7 +7,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 import yaml
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 
 def export_to_json(filepath, translatable_objects, displayed_ids_order=None, app_instance=None):

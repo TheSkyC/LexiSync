@@ -17,8 +17,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from utils.constants import SUPPORTED_LANGUAGES
-from utils.localization import _
+from lexisync.utils.constants import SUPPORTED_LANGUAGES
+from lexisync.utils.localization import _
 
 
 class ImportConfigurationDialog(QDialog):

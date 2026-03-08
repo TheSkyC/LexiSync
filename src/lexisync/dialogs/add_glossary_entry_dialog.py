@@ -16,10 +16,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ui_components.banner_overlay import BannerOverlay
-from utils.constants import SUPPORTED_LANGUAGES
-from utils.localization import _
-from utils.path_utils import get_resource_path
+from lexisync.ui_components.banner_overlay import BannerOverlay
+from lexisync.utils.constants import SUPPORTED_LANGUAGES
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_resource_path
 
 
 class AddGlossaryEntryDialog(QDialog):

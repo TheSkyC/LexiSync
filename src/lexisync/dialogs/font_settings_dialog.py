@@ -19,9 +19,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from ui_components.styled_button import StyledButton
-from utils.config_manager import get_default_font_settings
-from utils.localization import _
+from lexisync.ui_components.styled_button import StyledButton
+from lexisync.utils.config_manager import get_default_font_settings
+from lexisync.utils.localization import _
 
 
 class FontPickerWidget(QGroupBox):

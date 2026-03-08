@@ -25,11 +25,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from services.format_manager import FormatManager
-from ui_components.styled_button import StyledButton
-from utils.constants import SUPPORTED_LANGUAGES
-from utils.localization import _
-from utils.text_utils import format_file_size
+from lexisync.services.format_manager import FormatManager
+from lexisync.ui_components.styled_button import StyledButton
+from lexisync.utils.constants import SUPPORTED_LANGUAGES
+from lexisync.utils.localization import _
+from lexisync.utils.text_utils import format_file_size
 
 logger = logging.getLogger(__name__)
 
@@ -329,7 +329,7 @@ class NewProjectDialog(QDialog):
             if not any(f["path"] == path for f in self.source_files):
                 normalized_path = path.replace("\\", "/")
 
-                from services.format_manager import FormatManager
+                from lexisync.services.format_manager import FormatManager
 
                 handler = FormatManager.get_handler_by_extension(normalized_path)
                 if not handler:

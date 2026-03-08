@@ -23,10 +23,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from services.package_service import ExtractWorker
-from ui_components.password_edit import PasswordEdit
-from utils.localization import _
-from utils.text_utils import format_file_size
+from lexisync.services.package_service import ExtractWorker
+from lexisync.ui_components.password_edit import PasswordEdit
+from lexisync.utils.localization import _
+from lexisync.utils.text_utils import format_file_size
 
 
 class ImportPackageDialog(QDialog):

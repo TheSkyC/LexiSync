@@ -19,9 +19,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ui_components.tooltip import Tooltip
-from utils.localization import _
-from utils.path_utils import get_resource_path
+from lexisync.ui_components.tooltip import Tooltip
+from lexisync.utils.localization import _
+from lexisync.utils.path_utils import get_resource_path
 
 
 def get_relative_time_from_hms(time_str):

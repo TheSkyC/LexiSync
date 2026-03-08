@@ -10,9 +10,9 @@ import re
 import polib
 import xxhash
 
-from models.translatable_string import TranslatableString
-from services.code_file_service import extract_translatable_strings
-from utils.constants import APP_VERSION, SUPPORTED_LANGUAGES
+from lexisync.models.translatable_string import TranslatableString
+from lexisync.services.code_file_service import extract_translatable_strings
+from lexisync.utils.constants import APP_VERSION, SUPPORTED_LANGUAGES
 
 logger = logging.getLogger(__name__)
 

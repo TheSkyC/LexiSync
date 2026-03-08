@@ -3,7 +3,7 @@
 
 from PySide6.QtWidgets import QTabWidget
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 from .management_tabs import GlossaryManagementTab, TMManagementTab
 from .settings_pages import BaseSettingsPage

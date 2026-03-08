@@ -6,8 +6,8 @@ import os
 
 from PySide6.QtWidgets import QMessageBox
 
-from plugins.plugin_base import PluginBase
-from utils.path_utils import get_app_data_path
+from lexisync.plugins.plugin_base import PluginBase
+from lexisync.utils.path_utils import get_app_data_path
 
 from .core import RetrievalCore
 from .ui.settings_dialog import SettingsDialog

@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 
 class ResourceSaveOptionsDialog(QDialog):

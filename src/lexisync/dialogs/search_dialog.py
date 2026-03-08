@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 
 class AdvancedSearchDialog(QDialog):

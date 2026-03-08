@@ -18,9 +18,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from services.package_service import HAS_PYZIPPER, PackageWorker
-from ui_components.password_edit import PasswordEdit
-from utils.localization import _
+from lexisync.services.package_service import HAS_PYZIPPER, PackageWorker
+from lexisync.ui_components.password_edit import PasswordEdit
+from lexisync.utils.localization import _
 
 
 class ExportPackageDialog(QDialog):

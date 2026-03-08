@@ -8,7 +8,7 @@ from PySide6.QtCore import QMimeData, Signal
 from PySide6.QtGui import QAction, QColor, QFont, QFontMetricsF, QPainter, QTextCursor
 from PySide6.QtWidgets import QMessageBox, QTextEdit
 
-from utils.localization import _
+from lexisync.utils.localization import _
 
 from .tooltip import Tooltip
 

@@ -27,8 +27,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from ui_components.tooltip import Tooltip
-from utils.constants import (
+from lexisync.ui_components.tooltip import Tooltip
+from lexisync.utils.constants import (
     DEFAULT_CORRECTION_PROMPT_STRUCTURE,
     DEFAULT_PROMPT_STRUCTURE,
     DYNAMIC,
@@ -36,7 +36,7 @@ from utils.constants import (
     STATIC,
     STRUCTURAL,
 )
-from utils.localization import _
+from lexisync.utils.localization import _
 
 
 class WrappingTextBrowser(QTextBrowser):

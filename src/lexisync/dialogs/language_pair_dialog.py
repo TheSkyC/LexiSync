@@ -20,8 +20,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utils.constants import SUPPORTED_LANGUAGES
-from utils.localization import _
+from lexisync.utils.constants import SUPPORTED_LANGUAGES
+from lexisync.utils.localization import _
 
 DIALOG_STYLESHEET = """
     /* 选项卡样式 */

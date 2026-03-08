@@ -26,9 +26,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utils.constants import DEFAULT_VALIDATION_RULES
-from utils.localization import _, lang_manager
-from utils.path_utils import get_resource_path
+from lexisync.utils.constants import DEFAULT_VALIDATION_RULES
+from lexisync.utils.localization import _, lang_manager
+from lexisync.utils.path_utils import get_resource_path
 
 
 class BaseSettingsPage(QWidget):
@@ -435,7 +435,7 @@ class AISettingsPage(BaseSettingsPage):
         self.lbl_active_model_name = QLabel()
         self.lbl_active_model_name.setStyleSheet("font-size: 14px; margin-bottom: 2px;")
 
-        from ui_components.elided_label import ElidedLabel
+        from lexisync.ui_components.elided_label import ElidedLabel
 
         self.lbl_active_model_detail = ElidedLabel()
         self.lbl_active_model_detail.setStyleSheet("color: gray; font-size: 12px;")
@@ -633,7 +633,7 @@ class AISettingsPage(BaseSettingsPage):
             self.lbl_active_model_detail.setToolTip("")
 
     def open_model_manager(self):
-        from dialogs.ai_model_manager_dialog import AIModelManagerDialog
+        from lexisync.dialogs.ai_model_manager_dialog import AIModelManagerDialog
 
         dialog = AIModelManagerDialog(self, self.app)
         if dialog.exec():
