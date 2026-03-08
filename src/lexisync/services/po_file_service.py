@@ -52,6 +52,7 @@ def po_entry_to_translatable_string(
 
     context_slice_line_num = source_line_num if source_line_num > 0 else po_line_num
 
+    is_obsolete = getattr(entry, "obsolete", False)
     msgctxt = entry.msgctxt or ""
     msgid = entry.msgid
 
@@ -86,7 +87,7 @@ def po_entry_to_translatable_string(
         char_pos_start_in_file=0,
         char_pos_end_in_file=0,
         full_code_lines=full_code_lines or [],
-        string_type="PO Import",
+        string_type="PO Obsolete" if is_obsolete else "PO Import",
         source_file_path=po_file_rel_path,
         occurrences=occurrences,
         occurrence_index=occurrence_index,
@@ -97,7 +98,9 @@ def po_entry_to_translatable_string(
     ts.original_plural = msgid_plural
     ts.plural_translations = plural_translations
     ts.plural_expr = plural_expr_from_file
-
+    ts.is_obsolete = is_obsolete
+    if is_obsolete:
+        ts.is_ignored = True
     ts.update_search_cache()
     ts.update_sort_weight()
 
@@ -145,13 +148,13 @@ def po_entry_to_translatable_string(
 
     # 5. 处理旧翻译 (Previous, #|)
     if hasattr(entry, "previous_msgctxt") and entry.previous_msgctxt:
-        po_meta_comment_lines.append(f'#| msgctxt "{entry.previous_msgctxt}"')
+        po_meta_comment_lines.append(f"#|msgctxt: {entry.previous_msgctxt}")
 
     if hasattr(entry, "previous_msgid") and entry.previous_msgid:
-        po_meta_comment_lines.append(f'#| msgid "{entry.previous_msgid}"')
+        po_meta_comment_lines.append(f"#|msgid: {entry.previous_msgid}")
 
     if hasattr(entry, "previous_msgid_plural") and entry.previous_msgid_plural:
-        po_meta_comment_lines.append(f'#| msgid_plural "{entry.previous_msgid_plural}"')
+        po_meta_comment_lines.append(f"#|msgid_plural: {entry.previous_msgid_plural}")
 
     ts.comment = "\n".join(user_comment_lines) if user_comment_lines else ""
     ts.po_comment = "\n".join(po_meta_comment_lines) if po_meta_comment_lines else ""
@@ -348,6 +351,11 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         if not ts_obj.original_semantic or ts_obj.id == "##NEW_ENTRY##":
             continue
 
+        prev_msgctxt = None
+        prev_msgid = None
+        prev_msgid_plural = None
+        extracted_comments = []
+
         if ts_obj.is_reviewed or ts_obj.is_warning_ignored:
             ts_obj.is_fuzzy = False
         entry_flags = []
@@ -382,11 +390,17 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
             entry_occurrences = [(original_file_name, str(ts_obj.line_num_in_file))]
 
         # 提取 extracted comments (#.)
-        extracted_comments = []
         for line in po_comment_lines:
-            if line.strip().startswith("#."):
-                clean_line = line.strip()[2:].strip()
+            stripped_line = line.strip()
+            if stripped_line.startswith("#."):
+                clean_line = stripped_line[2:].strip()
                 extracted_comments.append(clean_line)
+            elif stripped_line.startswith("#|msgctxt:"):
+                prev_msgctxt = stripped_line.replace("#|msgctxt:", "").strip()
+            elif stripped_line.startswith("#|msgid:"):
+                prev_msgid = stripped_line.replace("#|msgid:", "").strip()
+            elif stripped_line.startswith("#|msgid_plural:"):
+                prev_msgid_plural = stripped_line.replace("#|msgid_plural:", "").strip()
 
         tcomment_str = "\n".join(extracted_comments) if extracted_comments else None
 
@@ -394,33 +408,36 @@ def save_to_po(filepath, translatable_objects, metadata=None, original_file_name
         user_comment_lines = ts_obj.comment.splitlines()
         if ts_obj.is_reviewed:
             user_comment_lines.append("#LexiSync:reviewed")
-        if ts_obj.is_ignored:
+        if ts_obj.is_ignored and not getattr(ts_obj, "is_obsolete", False):
             user_comment_lines.append("#LexiSync:ignored")
 
         translator_comment = "\n".join(user_comment_lines)
 
+        entry_kwargs = {
+            "msgid": ts_obj.original_semantic,
+            "msgctxt": ts_obj.context if ts_obj.context else None,
+            "tcomment": tcomment_str,
+            "comment": translator_comment,
+            "occurrences": entry_occurrences,
+            "flags": entry_flags,
+            "obsolete": getattr(ts_obj, "is_obsolete", False),
+        }
+
+        if prev_msgctxt:
+            entry_kwargs["previous_msgctxt"] = prev_msgctxt
+        if prev_msgid:
+            entry_kwargs["previous_msgid"] = prev_msgid
+        if prev_msgid_plural:
+            entry_kwargs["previous_msgid_plural"] = prev_msgid_plural
+
         if ts_obj.is_plural:
             msgstr_plural_dict = {str(k): v for k, v in ts_obj.plural_translations.items()}
-            entry = polib.POEntry(
-                msgid=ts_obj.original_semantic,
-                msgid_plural=ts_obj.original_plural,
-                msgstr_plural=msgstr_plural_dict,
-                msgctxt=ts_obj.context if ts_obj.context else None,
-                tcomment=tcomment_str,
-                comment=translator_comment,
-                occurrences=entry_occurrences,
-                flags=entry_flags,
-            )
+            entry_kwargs["msgid_plural"] = ts_obj.original_plural
+            entry_kwargs["msgstr_plural"] = msgstr_plural_dict
         else:
-            entry = polib.POEntry(
-                msgid=ts_obj.original_semantic,
-                msgstr=ts_obj.translation,
-                msgctxt=ts_obj.context if ts_obj.context else None,
-                tcomment=tcomment_str,
-                comment=translator_comment,
-                occurrences=entry_occurrences,
-                flags=entry_flags,
-            )
+            entry_kwargs["msgstr"] = ts_obj.translation
+
+        entry = polib.POEntry(**entry_kwargs)
         po_file.append(entry)
 
     try:

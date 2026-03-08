@@ -48,6 +48,7 @@ class TranslatableString:
         "infos",
         "is_fuzzy",
         "is_ignored",
+        "is_obsolete",
         "is_plural",
         "is_reviewed",
         "is_warning_ignored",
@@ -108,6 +109,7 @@ class TranslatableString:
         self.infos = []
 
         self.is_warning_ignored = False
+        self.is_obsolete = False
         self.string_type = string_type
         self.comment = ""
         self.is_reviewed = False
@@ -270,6 +272,7 @@ class TranslatableString:
             "is_fuzzy": self.is_fuzzy,
             "po_comment": self.po_comment,
             "is_warning_ignored": self.is_warning_ignored,
+            "is_obsolete": self.is_obsolete,
             "warnings": serializable_warnings,
             "minor_warnings": serializable_minor_warnings,
             "infos": serializable_infos,
@@ -302,7 +305,7 @@ class TranslatableString:
         ts.is_fuzzy = data.get("is_fuzzy", False)
         ts.po_comment = data.get("po_comment", "")
         ts.is_warning_ignored = data.get("is_warning_ignored", False)
-
+        ts.is_obsolete = data.get("is_obsolete", False)
         ts.is_plural = data.get("is_plural", False)
         ts.original_plural = data.get("original_plural", "")
         saved_plurals = data.get("plural_translations", {0: data.get("translation", "")})
