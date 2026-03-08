@@ -103,6 +103,7 @@ jobs:
           --noconfirm `
           --hidden-import "rapidfuzz" `
           --add-data "src/lexisync/locales;lexisync/locales" `
+          --add-data "src/lexisync/resources;lexisync/resources" `
           --add-data "src/lexisync/expansion_data;lexisync/expansion_data" `
           --add-data "src/lexisync/plugins;lexisync/plugins" `
           --add-data "src/lexisync/icons;lexisync/icons" `
@@ -148,6 +149,7 @@ jobs:
           --noconfirm \
           --hidden-import "rapidfuzz" \
           --add-data "src/lexisync/locales:lexisync/locales" \
+          --add-data "src/lexisync/resources:lexisync/resources" \
           --add-data "src/lexisync/expansion_data:lexisync/expansion_data" \
           --add-data "src/lexisync/plugins:lexisync/plugins" \
           --add-data "src/lexisync/icons:lexisync/icons" \
