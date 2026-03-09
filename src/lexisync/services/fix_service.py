@@ -3,43 +3,13 @@
 
 import regex as re
 
-from lexisync.services.validation_helpers import RE_PANGU_CJK_LATIN, RE_PANGU_LATIN_CJK
+from lexisync.services.validation_helpers import (
+    ALL_PUNC_CHARS,
+    RE_PANGU_CJK_LATIN,
+    RE_PANGU_LATIN_CJK,
+    get_expected_punctuation,
+)
 from lexisync.utils.enums import WarningType
-
-# 标点映射表
-PUNCTUATION_MAP = {
-    "zh": {".": "。", ",": "，", ":": "：", ";": "；", "?": "？", "!": "！", "(": "（", ")": "）"},
-    "zh_CN": {".": "。", ",": "，", ":": "：", ";": "；", "?": "？", "!": "！", "(": "（", ")": "）"},
-    "zh_TW": {".": "。", ",": "，", ":": "：", ";": "；", "?": "？", "!": "！", "(": "（", ")": "）"},
-    "ja": {".": "。", ",": "、", ":": "：", ";": "；", "?": "？", "!": "！", "(": "（", ")": "）"},
-}
-
-ALL_ENDING_PUNCTS = {
-    ".",
-    ",",
-    ":",
-    ";",
-    "?",
-    "!",
-    ")",
-    "]",
-    "}",
-    ">",
-    '"',
-    "'",
-    "。",
-    "，",
-    "：",
-    "；",
-    "？",
-    "！",
-    "）",
-    "】",
-    "》",
-    "”",
-    "’",
-    "、",
-}
 
 
 def get_fix_for_warning(ts_obj, warning_type, target_lang):
@@ -94,8 +64,8 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
         tgt_has_ellipsis = any(tgt_strip.endswith(e) for e in ellipses)
 
         if src_has_ellipsis and not tgt_has_ellipsis:
-            ellipsis_to_add = "……" if target_lang.startswith("zh") else "..."
-            if tgt_strip[-1] in ALL_ENDING_PUNCTS:
+            ellipsis_to_add = "……" if target_lang.startswith(("zh", "ja")) else "..."
+            if tgt_strip[-1] in ALL_PUNC_CHARS:
                 return tgt_strip[:-1] + ellipsis_to_add
             return tgt_strip + ellipsis_to_add
 
@@ -107,21 +77,21 @@ def get_fix_for_warning(ts_obj, warning_type, target_lang):
         src_last = src_strip[-1]
         tgt_last = tgt_strip[-1]
 
-        is_src_punct = src_last in ALL_ENDING_PUNCTS
-        is_tgt_punct = tgt_last in ALL_ENDING_PUNCTS
+        is_src_punct = src_last in ALL_PUNC_CHARS
+        is_tgt_punct = tgt_last in ALL_PUNC_CHARS
 
         if not is_src_punct and is_tgt_punct:
             return current_translation.rstrip()[:-1]
 
         if is_src_punct:
-            lang_map = PUNCTUATION_MAP.get(target_lang, {})
-            expected_punct = lang_map.get(src_last, src_last)
+            expected_punct = get_expected_punctuation(src_last, target_lang)
 
             base_text = current_translation.rstrip()
             if is_tgt_punct:
                 base_text = base_text[:-1]
 
             return base_text + expected_punct
+
     # 6. 盘古之白修复
     if warning_type == WarningType.PANGU_SPACING:
         new_text = RE_PANGU_CJK_LATIN.sub(r"\1 \2", current_translation)

@@ -8,9 +8,21 @@ import regex as re
 
 from lexisync.utils.localization import _
 
-PUNCTUATION_MAP = {".": "。", ",": "，", "?": "？", "!": "！", ":": "：", ";": "；", "(": "（", ")": "）"}
-ALL_PUNC_KEYS = set(PUNCTUATION_MAP.keys())
-ALL_PUNC_VALUES = set(PUNCTUATION_MAP.values())
+PUNCTUATION_PAIRS = [
+    (".", "。"),
+    (",", "，"),
+    ("?", "？"),
+    ("!", "！"),
+    (":", "："),
+    (";", "；"),
+    ("(", "（"),
+    (")", "）"),
+]
+
+ALL_PUNC_CHARS = set()
+for half, full in PUNCTUATION_PAIRS:
+    ALL_PUNC_CHARS.add(half)
+    ALL_PUNC_CHARS.add(full)
 
 # --- 正则表达式 ---
 RE_PRINTF = re.compile(r"%%|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]|%\d+")
@@ -259,6 +271,21 @@ def _get_starting_cased_char(s):
     return None
 
 
+def get_expected_punctuation(source_char, target_lang):
+    """根据目标语言，智能返回期望的半角或全角标点"""
+    if not target_lang:
+        return source_char
+
+    # 中文和日文使用全角标点 (韩语现代排版多用半角，故不计入)
+    is_target_cjk = target_lang.startswith(("zh", "ja"))
+
+    for half, full in PUNCTUATION_PAIRS:
+        if source_char == half or source_char == full:
+            return full if is_target_cjk else half
+
+    return source_char
+
+
 def check_leading_whitespace(source, target):
     """检查开头空格"""
     whitespace_chars = " \t"
@@ -290,7 +317,7 @@ def check_trailing_whitespace(source, target):
     return None
 
 
-def check_starting_punctuation(source, target):
+def check_starting_punctuation(source, target, target_lang):
     """检查开头标点"""
     s_strip = source.strip()
     t_strip = target.strip()
@@ -300,24 +327,24 @@ def check_starting_punctuation(source, target):
     s_char = s_strip[0]
     t_char = t_strip[0]
 
-    s_is_punc = s_char in ALL_PUNC_KEYS or s_char in ALL_PUNC_VALUES
-    t_is_punc = t_char in ALL_PUNC_KEYS or t_char in ALL_PUNC_VALUES
+    s_is_punc = s_char in ALL_PUNC_CHARS
+    t_is_punc = t_char in ALL_PUNC_CHARS
 
     if s_is_punc != t_is_punc:
         if s_is_punc:
-            expected_t = PUNCTUATION_MAP.get(s_char, s_char)
+            expected_t = get_expected_punctuation(s_char, target_lang)
             return _("Translation should start with '{char}'").format(char=expected_t)
         return _("Translation should not start with '{char}'").format(char=t_char)
 
     if s_is_punc:
-        expected_t = PUNCTUATION_MAP.get(s_char, s_char)
-        if t_char not in (expected_t, s_char):
+        expected_t = get_expected_punctuation(s_char, target_lang)
+        if t_char != expected_t:
             return _("Translation should start with '{char}'").format(char=expected_t)
 
     return None
 
 
-def check_ending_punctuation(source, target):
+def check_ending_punctuation(source, target, target_lang):
     """检查结尾标点"""
     s_strip = source.strip()
     t_strip = target.strip()
@@ -346,8 +373,8 @@ def check_ending_punctuation(source, target):
     s_char = temp_s[-1]
     t_char = t_strip[-1]
 
-    s_is_punc = s_char in ALL_PUNC_KEYS or s_char in ALL_PUNC_VALUES
-    t_is_punc = t_char in ALL_PUNC_KEYS or t_char in ALL_PUNC_VALUES
+    s_is_punc = s_char in ALL_PUNC_CHARS
+    t_is_punc = t_char in ALL_PUNC_CHARS
 
     if s_is_punc != t_is_punc:
         if not s_is_punc and t_is_punc:
@@ -366,12 +393,12 @@ def check_ending_punctuation(source, target):
             return _("Translation should not end with '{char}'").format(char=t_char)
 
         if s_is_punc and not t_is_punc:
-            expected_t = PUNCTUATION_MAP.get(s_char, s_char)
+            expected_t = get_expected_punctuation(s_char, target_lang)
             return _("Translation should end with '{char}'").format(char=expected_t)
 
     if s_is_punc:
-        expected_t = PUNCTUATION_MAP.get(s_char, s_char)
-        if t_char not in (expected_t, s_char):
+        expected_t = get_expected_punctuation(s_char, target_lang)
+        if t_char != expected_t:
             return _("Translation should end with '{char}'").format(char=expected_t)
 
     return None

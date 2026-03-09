@@ -77,6 +77,8 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
         original_clean = validation_helpers.strip_accelerators(original, markers)
         translation_clean = validation_helpers.strip_accelerators(translation, markers)
 
+        target_lang = app_instance.current_target_language if app_instance else "en"
+
         # --- 1. 代码安全检查 ---
         printf_mode = rules.get("printf", {}).get("mode", "loose")
         if err := validation_helpers.check_printf(original, translation, mode=printf_mode):
@@ -149,10 +151,10 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
             _report(ts_obj, config, "whitespace", WarningType.TRAILING_WHITESPACE_MISMATCH, format_msg(_(err)))
 
         # 标点检查
-        if err := validation_helpers.check_starting_punctuation(original_clean, translation_clean):
+        if err := validation_helpers.check_starting_punctuation(original_clean, translation_clean, target_lang):
             _report(ts_obj, config, "punctuation", WarningType.PUNCTUATION_MISMATCH_START, format_msg(_(err)))
 
-        if err := validation_helpers.check_ending_punctuation(original_clean, translation_clean):
+        if err := validation_helpers.check_ending_punctuation(original_clean, translation_clean, target_lang):
             _report(ts_obj, config, "punctuation", WarningType.PUNCTUATION_MISMATCH_END, format_msg(_(err)))
 
         # 大小写检查
