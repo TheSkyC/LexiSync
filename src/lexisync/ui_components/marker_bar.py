@@ -45,6 +45,9 @@ class MarkerBar(QWidget):
         self._cached_points = []
         self._cache_valid = False
 
+        self._static_bg_pixmap = None
+        self._bg_cache_valid = False
+
         self.setFixedWidth(14)
         self.setMouseTracking(True)
 
@@ -73,6 +76,7 @@ class MarkerBar(QWidget):
 
     def _invalidate_cache(self):
         self._cache_valid = False
+        self._bg_cache_valid = False
         self.update()
 
     def _get_total_rows(self):
@@ -95,6 +99,7 @@ class MarkerBar(QWidget):
 
     def set_ranges(self, range_type: str, ranges: list):
         self._range_markers[range_type] = ranges
+        self._bg_cache_valid = False
         self.update()
 
     def clear_ranges(self, range_type: str | None = None):
@@ -102,6 +107,7 @@ class MarkerBar(QWidget):
             self._range_markers.pop(range_type, None)
         else:
             self._range_markers.clear()
+        self._bg_cache_valid = False
         self.update()
 
     def _row_to_y(self, source_row: int) -> int:
@@ -151,25 +157,52 @@ class MarkerBar(QWidget):
         self._cached_points = [{"y": y, **data} for y, data in pixel_map.items()]
         self._cache_valid = True
 
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.fillRect(self.rect(), self.palette().window())
+    def _render_static_background(self):
+        from PySide6.QtGui import QPixmap
+
+        self._static_bg_pixmap = QPixmap(self.size())
+        self._static_bg_pixmap.fill(self.palette().window().color())
+
+        painter = QPainter(self._static_bg_pixmap)
+
         total = self._get_total_rows()
         if total <= 0:
+            painter.end()
+            self._bg_cache_valid = True
             return
+
         height, ratio = self.height(), self.height() / total
 
+        # 画范围标记
         for r_type, ranges in self._range_markers.items():
             color = self._marker_configs[r_type]["color"]
             for start, end in ranges:
                 y1, y2 = int(start * ratio), int((end + 1) * ratio)
                 painter.fillRect(8, y1, 6, max(1, y2 - y1), color)
 
+        # 画点标记
         self._build_cache()
         marker_h = max(2, int(height / total))
         for pt in self._cached_points:
             painter.fillRect(0, pt["y"], 8, marker_h, pt["color"])
 
+        painter.end()
+        self._bg_cache_valid = True
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+
+        if not self._bg_cache_valid or self._static_bg_pixmap is None:
+            self._render_static_background()
+
+        if self._static_bg_pixmap and not self._static_bg_pixmap.isNull():
+            painter.drawPixmap(0, 0, self._static_bg_pixmap)
+
+        total = self._get_total_rows()
+        if total <= 0:
+            return
+
+        ratio = self.height() / total
         v_scroll = self.table_view.verticalScrollBar()
 
         first_vis = v_scroll.value()
@@ -180,6 +213,10 @@ class MarkerBar(QWidget):
             y1 = int(first_vis * ratio)
             y2 = int(last_vis * ratio)
             painter.fillRect(0, y1, self.width(), max(2, y2 - y1), QColor(128, 128, 128, 60))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._bg_cache_valid = False
 
     def _find_marker_at_y(self, y_pos: int):
         if not self._cached_points:
