@@ -62,11 +62,14 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
                 continue
             orig = ts_obj.original_semantic if idx == s_idx else ts_obj.original_plural
             forms_to_check.append((idx, orig, trans))
-
+    else:
+        forms_to_check.append((None, ts_obj.original_semantic, ts_obj.translation))
     if not forms_to_check:
         return
 
     for idx, original, translation in forms_to_check:
+        if not translation.strip():
+            continue
 
         def format_msg(msg, current_idx=idx):
             return f"[Form {current_idx}] {msg}" if current_idx is not None else msg

@@ -5039,6 +5039,8 @@ class LexiSyncApp(QMainWindow):
             self._update_view_for_ids({ts_obj.id})
 
             self._update_toggle_labels_style(ts_obj)
+            if hasattr(self, "details_panel"):
+                self.details_panel.update_warnings(ts_obj)
 
     def on_reviewed_toggled(self, checked):
         if not self.current_selected_ts_id:
@@ -5066,6 +5068,8 @@ class LexiSyncApp(QMainWindow):
             self._update_view_for_ids({ts_obj.id})
 
             self._update_toggle_labels_style(ts_obj)
+            if hasattr(self, "details_panel"):
+                self.details_panel.update_warnings(ts_obj)
 
     def _apply_translation_to_model(
         self,
