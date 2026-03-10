@@ -8,6 +8,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 import yaml
 
+from lexisync.utils.constants import APP_VERSION
 from lexisync.utils.localization import _
 from lexisync.utils.path_utils import get_resource_path
 
@@ -104,7 +105,7 @@ def export_to_html(filepath, translatable_objects, app_instance):
             "{translated}": str(translated),
             "{reviewed}": str(reviewed),
             "{ignored}": str(ignored),
-            "{version}": app_instance.config.get("version", "1.3.0"),
+            "{version}": APP_VERSION,
             # 数据注入
             "{report_data_json}": report_data_json,
             # 基础本地化标签
