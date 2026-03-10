@@ -8,21 +8,20 @@ import regex as re
 
 from lexisync.utils.localization import _
 
-PUNCTUATION_PAIRS = [
-    (".", "。"),
-    (",", "，"),
-    ("?", "？"),
-    ("!", "！"),
-    (":", "："),
-    (";", "；"),
-    ("(", "（"),
-    (")", "）"),
+PUNCTUATION_EQUIVALENCE = [
+    {".", "。"},
+    {",", "，"},
+    {"?", "？"},
+    {"!", "！"},
+    {":", "："},
+    {";", "；"},
+    {"(", "（"},
+    {")", "）"},
 ]
 
 ALL_PUNC_CHARS = set()
-for half, full in PUNCTUATION_PAIRS:
-    ALL_PUNC_CHARS.add(half)
-    ALL_PUNC_CHARS.add(full)
+for group in PUNCTUATION_EQUIVALENCE:
+    ALL_PUNC_CHARS.update(group)
 
 # --- 正则表达式 ---
 RE_PRINTF = re.compile(r"%%|%(\d+\$)?[-+ 0#]*(\d+|\*)?(\.(\d+|\*))?[hlLzZjpt]*[a-zA-Z]|%\d+")
@@ -271,16 +270,24 @@ def _get_starting_cased_char(s):
     return None
 
 
+def get_equivalent_group(char):
+    """获取字符所在的等价组"""
+    for group in PUNCTUATION_EQUIVALENCE:
+        if char in group:
+            return group
+    return None
+
+
 def get_expected_punctuation(source_char, target_lang):
-    """根据目标语言，智能返回期望的半角或全角标点"""
     if not target_lang:
         return source_char
 
-    # 中文和日文使用全角标点 (韩语现代排版多用半角，故不计入)
     is_target_cjk = target_lang.startswith(("zh", "ja"))
 
-    for half, full in PUNCTUATION_PAIRS:
-        if source_char == half or source_char == full:
+    for group in PUNCTUATION_EQUIVALENCE:
+        if source_char in group:
+            half = next(c for c in group if ord(c) < 128)
+            full = next(c for c in group if ord(c) >= 128)
             return full if is_target_cjk else half
 
     return source_char
@@ -330,15 +337,18 @@ def check_starting_punctuation(source, target, target_lang):
     s_is_punc = s_char in ALL_PUNC_CHARS
     t_is_punc = t_char in ALL_PUNC_CHARS
 
+    # 1. 一个有标点，一个没标点
     if s_is_punc != t_is_punc:
         if s_is_punc:
             expected_t = get_expected_punctuation(s_char, target_lang)
             return _("Translation should start with '{char}'").format(char=expected_t)
         return _("Translation should not start with '{char}'").format(char=t_char)
 
+    # 2. 都有标点
     if s_is_punc:
-        expected_t = get_expected_punctuation(s_char, target_lang)
-        if t_char != expected_t:
+        s_group = get_equivalent_group(s_char)
+        if t_char not in s_group:
+            expected_t = get_expected_punctuation(s_char, target_lang)
             return _("Translation should start with '{char}'").format(char=expected_t)
 
     return None
@@ -376,6 +386,7 @@ def check_ending_punctuation(source, target, target_lang):
     s_is_punc = s_char in ALL_PUNC_CHARS
     t_is_punc = t_char in ALL_PUNC_CHARS
 
+    # 1. 一个有标点，一个没标点
     if s_is_punc != t_is_punc:
         if not s_is_punc and t_is_punc:
             allowed_closing_brackets = {")", "]", "}", "）", "】", ">", "》"}
@@ -396,9 +407,11 @@ def check_ending_punctuation(source, target, target_lang):
             expected_t = get_expected_punctuation(s_char, target_lang)
             return _("Translation should end with '{char}'").format(char=expected_t)
 
+    # 2. 都有标点
     if s_is_punc:
-        expected_t = get_expected_punctuation(s_char, target_lang)
-        if t_char != expected_t:
+        s_group = get_equivalent_group(s_char)
+        if t_char not in s_group:
+            expected_t = get_expected_punctuation(s_char, target_lang)
             return _("Translation should end with '{char}'").format(char=expected_t)
 
     return None
