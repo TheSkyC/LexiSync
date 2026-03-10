@@ -849,6 +849,7 @@ class LexiSyncApp(QMainWindow):
         self.action_find_replace.setText(_("Find/Replace..."))
         self.action_copy_original.setText(_("Copy Original"))
         self.action_paste_translation.setText(_("Paste to Translation"))
+        self.action_remap_columns.setText(_("Remap Table Columns..."))
 
         # View Menu
         self.action_show_ignored.setText(_("Show Ignored"))
@@ -884,6 +885,7 @@ class LexiSyncApp(QMainWindow):
         self.action_ai_fix_all.setText(_("Fix with AI"))
 
         self.action_run_validation_on_all.setText(_("Re-validate All Entries"))
+        self.action_export_qa_report.setText(_("Export QA Report"))
         self.action_show_statistics.setText(_("Project Statistics..."))
 
         # Data Menu Actions
@@ -923,6 +925,12 @@ class LexiSyncApp(QMainWindow):
         self.search_entry.setText("")
         self.search_entry.textChanged.connect(self.search_filter_changed)
         self.search_entry.setPlaceholderText(_("Quick search..."))
+
+        # Update the description text stored in the history stack
+        for stack in [self.undo_history, self.redo_history]:
+            for record in stack:
+                new_desc, __ = self._generate_history_meta(record["type"], record["data"])
+                record["description"] = new_desc
 
         # Update Child Panels
         if hasattr(self, "file_explorer_dock"):
