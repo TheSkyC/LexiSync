@@ -134,7 +134,7 @@ jobs:
           --exclude-module "IPython" `
           --exclude-module "jupyter" `
           --optimize 2 `
-          main.py
+          src/lexisync/main.py
 
     - name: Build with PyInstaller (Unix)
       if: runner.os != 'Windows'
@@ -180,7 +180,7 @@ jobs:
           --exclude-module "IPython" \
           --exclude-module "jupyter" \
           --optimize 2 \
-          main.py
+          src/lexisync/main.py
 
     - name: Cleanup Translation Source Files (Windows)
       if: runner.os == 'Windows'
