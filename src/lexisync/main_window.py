@@ -4843,7 +4843,7 @@ class LexiSyncApp(QMainWindow):
                 else ts_obj.translation,
             }
 
-        self.app.ai_manager.start_batch(tasks_to_fix, context_provider, operation_type=AIOperationType.BATCH_FIX)
+        self.ai_manager.start_batch(tasks_to_fix, context_provider, operation_type=AIOperationType.BATCH_FIX)
         self.update_ai_related_ui_state()
 
     def _build_glossary_context(self, ts_obj, p_idx=0):
