@@ -1,7 +1,8 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-from PySide6.QtCore import Qt
+
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
@@ -727,6 +728,82 @@ class AISettingsPage(BaseSettingsPage):
             self.app.ai_translator.api_key = old_key
             self.app.ai_translator.api_url = old_url
             self.app.ai_translator.model_name = old_model
+
+
+class CloudSettingsPage(BaseSettingsPage):
+    def __init__(self, app_instance):
+        super().__init__()
+        self.app = app_instance
+        self.setup_ui()
+        self.apply_widget_policies()
+
+    def setup_ui(self):
+        layout = self.page_layout
+
+        # 1. 服务控制
+        server_group = QGroupBox(_("Cloud Server Control"))
+        server_layout = QVBoxLayout(server_group)
+
+        status_hbox = QHBoxLayout()
+        self.status_dot = QLabel("●")
+        self.status_dot.setFixedWidth(15)
+        self.status_label = QLabel(_("Status: Offline"))
+        status_hbox.addWidget(self.status_dot)
+        status_hbox.addWidget(self.status_label)
+        status_hbox.addStretch()
+
+        self.toggle_btn = QPushButton(_("Start Cloud Service"))
+        self.toggle_btn.setMinimumHeight(32)
+        self.toggle_btn.clicked.connect(self._on_toggle_clicked)
+
+        server_layout.addLayout(status_hbox)
+        server_layout.addWidget(self.toggle_btn)
+        layout.addWidget(server_group)
+
+        # 2. 权限管理入口
+        auth_group = QGroupBox(_("Access Management"))
+        auth_layout = QVBoxLayout(auth_group)
+
+        auth_desc = QLabel(
+            _("Manage user accounts, passwords, roles, and generate temporary access tokens for collaborators.")
+        )
+        auth_desc.setStyleSheet("color: gray; font-size: 12px; margin-bottom: 10px;")
+        auth_layout.addWidget(auth_desc)
+
+        self.manage_btn = QPushButton(_("Manage Users & Tokens..."))
+        self.manage_btn.setMinimumHeight(36)
+        self.manage_btn.clicked.connect(self._open_user_manager)
+        auth_layout.addWidget(self.manage_btn)
+
+        layout.addWidget(auth_group)
+        layout.addStretch()
+        self._update_ui_state()
+
+    def _open_user_manager(self):
+        from lexisync.dialogs.cloud_user_manager_dialog import CloudUserManagerDialog
+
+        dialog = CloudUserManagerDialog(self, self.app)
+        dialog.exec()
+
+    def _on_toggle_clicked(self):
+        self.app.toggle_cloud_service()
+        QTimer.singleShot(200, self._update_ui_state)
+
+    def _update_ui_state(self):
+        is_running = self.app.web_service and self.app.web_service.isRunning()
+        if is_running:
+            self.status_dot.setStyleSheet("color: #67C23A;")
+            self.status_label.setText(_("Status: Online (Port 20455)"))
+            self.toggle_btn.setText(_("Stop Cloud Service"))
+            self.toggle_btn.setStyleSheet("background-color: #FEF0F0; color: #F56C6C; border-color: #F5C6CB;")
+        else:
+            self.status_dot.setStyleSheet("color: #909399;")
+            self.status_label.setText(_("Status: Offline"))
+            self.toggle_btn.setText(_("Start Cloud Service"))
+            self.toggle_btn.setStyleSheet("")
+
+    def save_settings(self):
+        return False
 
 
 class ValidationRuleWidget(QWidget):

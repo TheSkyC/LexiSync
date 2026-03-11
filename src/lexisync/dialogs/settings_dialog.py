@@ -17,7 +17,13 @@ from lexisync.ui_components.styled_button import StyledButton
 from lexisync.utils.localization import _
 
 from .resources_page import ResourcesSettingsPage
-from .settings_pages import AISettingsPage, AppearanceSettingsPage, GeneralSettingsPage, ValidationSettingsPage
+from .settings_pages import (
+    AISettingsPage,
+    AppearanceSettingsPage,
+    CloudSettingsPage,
+    GeneralSettingsPage,
+    ValidationSettingsPage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +130,9 @@ class SettingsDialog(QDialog):
 
         ai_page = AISettingsPage(self.app)
         self._add_page(ai_page, _("AI Assistance"))
+
+        cloud_page = CloudSettingsPage(self.app)
+        self._add_page(cloud_page, _("Cloud Collaboration"))
 
         validation_page = ValidationSettingsPage(self.app)
         self._add_page(validation_page, _("Validation"))

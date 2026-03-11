@@ -11,6 +11,7 @@ import re
 import shutil
 import threading
 import time
+import uuid
 
 from openpyxl import Workbook, load_workbook
 from PySide6.QtCore import (
@@ -103,6 +104,7 @@ from lexisync.services.prompt_service import generate_prompt_from_structure
 from lexisync.services.search_service import SearchService
 from lexisync.services.tm_service import TMService
 from lexisync.services.validation_service import placeholder_regex, run_validation_on_all
+from lexisync.services.web_server_service import WebServerService
 from lexisync.ui_components.banner_overlay import BannerOverlay
 from lexisync.ui_components.comment_status_panel import CommentStatusPanel
 from lexisync.ui_components.context_panel import ContextPanel
@@ -174,6 +176,9 @@ class LexiSyncApp(QMainWindow):
                 border-color: #409EFF;
             }
         """
+
+        self.web_service = None
+        self.cloud_token = self.config.get("cloud_token", str(uuid.uuid4())[:8])
 
         # AI
         self.thread_signals = ThreadSafeSignals()
@@ -762,6 +767,148 @@ class LexiSyncApp(QMainWindow):
             project_glossary_dir = os.path.join(self.current_project_path, "glossary")
 
         self.glossary_service.connect_databases(global_glossary_dir, project_glossary_dir)
+
+    def _setup_cloud_service(self):
+        self.web_service = WebServerService(self)
+        self.web_service.signals.update_requested.connect(self._handle_web_update)
+        self.web_service.signals.server_started.connect(self._on_cloud_started)
+        self.web_service.signals.server_stopped.connect(self._on_cloud_stopped)
+
+    def toggle_cloud_service(self):
+        if self.web_service and self.web_service.isRunning():
+            self.web_service.stop()
+            self.web_service.wait()
+            self.web_service = None
+        else:
+            if not self.web_service:
+                self.web_service = WebServerService(self)
+                self.web_service.signals.update_requested.connect(self._handle_web_update)
+                self.web_service.signals.focus_changed.connect(self._handle_web_focus)
+                self.web_service.signals.server_started.connect(self._on_cloud_started)
+                self.web_service.signals.server_stopped.connect(self._on_cloud_stopped)
+                self.web_service.signals.ai_translate_requested.connect(self._handle_web_ai_translate)
+
+            if "cloud_users" not in self.config:
+                from lexisync.dialogs.cloud_user_manager_dialog import hash_password
+
+                self.config["cloud_users"] = [
+                    {"username": "admin", "password_hash": hash_password("admin"), "role": "admin"}
+                ]
+                self.save_config()
+
+            self.web_service.start()
+
+    def _handle_web_ai_translate(self, ts_id):
+        logger.info(f"Received AI translation request from Web for ID: {ts_id}")
+        self._initiate_single_ai_translation(ts_id, called_from_cm=True, silent=True)
+
+    def _on_cloud_started(self, url):
+        full_url = f"{url}?token={self.cloud_token}"
+        self.notification_banner.clear_actions()
+        self.notification_banner.show_message(
+            _("Cloud Collaboration Active: {url}").format(url=full_url),
+            preset="success",
+            layout_mode="top",
+            margin=10,
+            fixed_height=45,
+            interactive=True,
+        )
+        self.notification_banner.add_action(_("Copy Link"), lambda: self._copy_and_notify(full_url), btn_type="success")
+        self.notification_banner.add_action(_("Dismiss"), self.notification_banner.hide_banner, btn_type="default")
+        QTimer.singleShot(10000, self.notification_banner.hide_banner)
+
+    def _copy_and_notify(self, text):
+        QApplication.clipboard().setText(text)
+        self.update_statusbar(_("Collaboration link copied to clipboard."))
+
+    def _on_cloud_stopped(self):
+        self.update_statusbar(_("Cloud service stopped."))
+
+    def _handle_web_update(self, data):
+        """处理来自 Web 端的修改请求 (data 是 TranslationUpdate 对象)"""
+        logger.debug(f"Received web update for ts_id: {data.ts_id} by {data.user}")
+
+        ts_obj = self._find_ts_obj_by_id(data.ts_id)
+        if not ts_obj:
+            logger.error(f"Web update failed: ID {data.ts_id} not found in current project/file.")
+            return
+
+        # 1. 捕获原始状态
+        original_reviewed = ts_obj.is_reviewed
+        original_fuzzy = ts_obj.is_fuzzy
+        original_text = (
+            ts_obj.plural_translations.get(data.plural_index, "") if ts_obj.is_plural else ts_obj.translation
+        )
+
+        # 2. 应用所有请求的变更
+        if data.new_text is not None:
+            self._apply_translation_to_model(
+                ts_obj, data.new_text, source=f"cloud_user:{data.user}", plural_index=data.plural_index
+            )
+
+        if data.is_reviewed is not None:
+            self._apply_status_change_from_web(ts_obj, "is_reviewed", data.is_reviewed)
+
+        if data.is_fuzzy is not None:
+            self._apply_status_change_from_web(ts_obj, "is_fuzzy", data.is_fuzzy)
+
+        # 3. 比较原始状态和最终状态，确定实际发生了什么变化
+        final_text = ts_obj.plural_translations.get(data.plural_index, "") if ts_obj.is_plural else ts_obj.translation
+        changed_fields = []
+        if final_text != original_text:
+            changed_fields.append("translation")
+        if ts_obj.is_reviewed != original_reviewed:
+            changed_fields.append("is_reviewed")
+        if ts_obj.is_fuzzy != original_fuzzy:
+            changed_fields.append("is_fuzzy")
+
+        # 4. 根据实际变化执行后续操作
+        if changed_fields:
+            self._update_view_for_ids({ts_obj.id})
+            if ts_obj.id == self.current_selected_ts_id:
+                self.force_refresh_ui_for_current_selection()
+
+            log_msg = _("Cloud update from {user} on {id}: {fields}").format(
+                user=data.user, id=data.ts_id[:8], fields=", ".join(changed_fields)
+            )
+            self.update_statusbar(log_msg)
+            logger.info(log_msg)
+
+            # 将最终确认的变更广播给所有客户端
+            if self.web_service and self.web_service.isRunning():
+                self.web_service.broadcast_data_change(
+                    ts_id=ts_obj.id,
+                    new_text=final_text if "translation" in changed_fields else None,
+                    is_reviewed=ts_obj.is_reviewed,
+                    is_fuzzy=ts_obj.is_fuzzy,
+                    plural_index=data.plural_index,
+                    user=data.user,
+                )
+        else:
+            logger.debug(f"No actual change detected for ts_id: {data.ts_id}")
+
+    def _apply_status_change_from_web(self, ts_obj, field, new_value):
+        """一个内部辅助方法，用于从 Web 端应用状态更改，并记录历史"""
+        old_value = getattr(ts_obj, field)
+        if old_value == new_value:
+            return
+
+        changes = [{"string_id": ts_obj.id, "field": field, "old_value": old_value, "new_value": new_value}]
+        setattr(ts_obj, field, new_value)
+
+        # 自动取消关联状态
+        if field == "is_reviewed" and new_value and ts_obj.is_fuzzy:
+            changes.append({"string_id": ts_obj.id, "field": "is_fuzzy", "old_value": True, "new_value": False})
+            ts_obj.is_fuzzy = False
+        elif field == "is_fuzzy" and new_value and ts_obj.is_reviewed:
+            changes.append({"string_id": ts_obj.id, "field": "is_reviewed", "old_value": True, "new_value": False})
+            ts_obj.is_reviewed = False
+
+        self.add_to_undo_history("bulk_context_menu", {"changes": changes})
+        self.mark_modified()
+
+    def _handle_web_focus(self, ts_id, user):
+        self.update_statusbar(_("{user} is editing...").format(user=user))
 
     def on_file_changed_externally(self, filepath):
         """当监控的文件在外部被修改时触发。"""
@@ -2008,100 +2155,59 @@ class LexiSyncApp(QMainWindow):
         if not self.undo_history:
             return False, set(), None
 
-        action_log_peek = self.undo_history[-1]
-        target_file_id = action_log_peek.get("file_id")
-        if target_file_id and target_file_id != self.current_active_source_file_id:
-            self._switch_active_file(target_file_id)
-
-        action_to_undo = self.undo_history[-1]
-        was_handled_by_plugin = self.plugin_manager.run_hook(
-            "on_before_undo_redo", action_type=action_to_undo["type"], is_undo=True, action_data=action_to_undo["data"]
-        )
-        if was_handled_by_plugin:
-            return False, set(), None
-
         action_log = self.undo_history.pop()
         action_type, action_data = action_log["type"], action_log["data"]
         redo_payload_data = None
         changed_ids = set()
 
+        changes_to_process = []
         if action_type == "single_change":
-            obj_id = action_data["string_id"]
-            field = action_data["field"]
-            val_to_restore = action_data["old_value"]
-            p_idx = action_data.get("plural_index", 0)
+            changes_to_process.append(action_data)
+        elif "changes" in action_data:
+            changes_to_process.extend(action_data["changes"])
 
+        temp_redo_changes = []
+        for item_change in changes_to_process:
+            obj_id, field, val_to_restore = item_change["string_id"], item_change["field"], item_change["old_value"]
+            p_idx = item_change.get("plural_index", 0)
             ts_obj = self._find_ts_obj_by_id(obj_id)
             if ts_obj:
-                current_val_before_undo = (
-                    getattr(ts_obj, field) if field != "translation" else ts_obj.get_translation_for_storage_and_tm()
-                )
                 if field == "translation":
-                    current_val_before_undo = (
-                        ts_obj.plural_translations.get(p_idx, "")
-                        if ts_obj.is_plural
-                        else ts_obj.get_translation_for_storage_and_tm()
-                    )
+                    current_val = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
                     ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"), plural_index=p_idx)
                 else:
-                    current_val_before_undo = getattr(ts_obj, field)
+                    current_val = getattr(ts_obj, field)
                     setattr(ts_obj, field, val_to_restore)
 
-                redo_payload_data = {
-                    "string_id": obj_id,
-                    "field": field,
-                    "old_value": val_to_restore,
-                    "new_value": current_val_before_undo,
-                    "plural_index": p_idx,
-                }
+                temp_redo_changes.append(
+                    {
+                        "string_id": obj_id,
+                        "field": field,
+                        "old_value": val_to_restore,
+                        "new_value": current_val,
+                        "plural_index": p_idx,
+                    }
+                )
                 changed_ids.add(obj_id)
 
-        elif action_type in [
-            "bulk_change",
-            "bulk_excel_import",
-            "bulk_ai_translate",
-            "bulk_context_menu",
-            "bulk_replace_all",
-        ]:
-            temp_redo_changes = []
-            for item_change in action_data["changes"]:
-                obj_id, field, val_to_restore = item_change["string_id"], item_change["field"], item_change["old_value"]
-                p_idx = item_change.get("plural_index", 0)
-                ts_obj = self._find_ts_obj_by_id(obj_id)
-                if ts_obj:
+                # #[ADD] 广播撤销后的状态
+                if self.web_service and self.web_service.isRunning():
+                    broadcast_payload = {"ts_id": obj_id}
                     if field == "translation":
-                        current_val_before_undo = (
-                            ts_obj.plural_translations.get(p_idx, "")
-                            if ts_obj.is_plural
-                            else ts_obj.get_translation_for_storage_and_tm()
-                        )
-                        ts_obj.set_translation_internal(val_to_restore.replace("\\n", "\n"), plural_index=p_idx)
-                    else:
-                        current_val_before_undo = getattr(ts_obj, field)
-                        setattr(ts_obj, field, val_to_restore)
+                        broadcast_payload["new_text"] = val_to_restore.replace("\\n", "\n")
+                        broadcast_payload["plural_index"] = p_idx
+                    elif field == "is_reviewed":
+                        broadcast_payload["is_reviewed"] = val_to_restore
+                    elif field == "is_fuzzy":
+                        broadcast_payload["is_fuzzy"] = val_to_restore
+                    self.web_service.broadcast_data_change(**broadcast_payload)
 
-                    temp_redo_changes.append(
-                        {
-                            "string_id": obj_id,
-                            "field": field,
-                            "old_value": val_to_restore,
-                            "new_value": current_val_before_undo,
-                            "plural_index": p_idx,
-                        }
-                    )
-                    changed_ids.add(obj_id)
-            redo_payload_data = {"changes": temp_redo_changes}
-
-        if redo_payload_data:
-            redo_record = {
-                "type": action_type,
-                "data": redo_payload_data,
-                "timestamp": action_log.get("timestamp"),
-                "description": action_log.get("description"),
-                "icon_type": action_log.get("icon_type"),
-                "file_id": action_log.get("file_id"),
-            }
-            self.redo_history.append(redo_record)
+        if temp_redo_changes:
+            if action_type == "single_change":
+                redo_payload_data = temp_redo_changes[0]
+            else:
+                redo_payload_data = {"changes": temp_redo_changes}
+            self.redo_history.append({"type": action_type, "data": redo_payload_data, **action_log})
 
         return True, changed_ids, action_log
 
@@ -2109,103 +2215,59 @@ class LexiSyncApp(QMainWindow):
         if not self.redo_history:
             return False, set(), None
 
-        action_log_peek = self.redo_history[-1]
-        target_file_id = action_log_peek.get("file_id")
-        if target_file_id and target_file_id != self.current_active_source_file_id:
-            self._switch_active_file(target_file_id)
-
-        action_to_redo = self.redo_history[-1]
-        was_handled_by_plugin = self.plugin_manager.run_hook(
-            "on_before_undo_redo", action_type=action_to_redo["type"], is_undo=False, action_data=action_to_redo["data"]
-        )
-        if was_handled_by_plugin:
-            return False, set(), None
-
         action_log = self.redo_history.pop()
-        action_type, action_data_to_apply = action_log["type"], action_log["data"]
+        action_type, action_data = action_log["type"], action_log["data"]
         undo_payload_data = None
         changed_ids = set()
 
+        changes_to_process = []
         if action_type == "single_change":
-            obj_id = action_data_to_apply["string_id"]
-            field = action_data_to_apply["field"]
-            val_to_set = action_data_to_apply["new_value"]
-            p_idx = action_data_to_apply.get("plural_index", 0)
+            changes_to_process.append(action_data)
+        elif "changes" in action_data:
+            changes_to_process.extend(action_data["changes"])
 
+        temp_undo_changes = []
+        for item_change in changes_to_process:
+            obj_id, field, val_to_set = item_change["string_id"], item_change["field"], item_change["new_value"]
+            p_idx = item_change.get("plural_index", 0)
             ts_obj = self._find_ts_obj_by_id(obj_id)
             if ts_obj:
-                current_val_before_redo = (
-                    getattr(ts_obj, field) if field != "translation" else ts_obj.get_translation_for_storage_and_tm()
-                )
                 if field == "translation":
-                    current_val_before_redo = (
-                        ts_obj.plural_translations.get(p_idx, "")
-                        if ts_obj.is_plural
-                        else ts_obj.get_translation_for_storage_and_tm()
-                    )
+                    current_val = ts_obj.plural_translations.get(p_idx, "") if ts_obj.is_plural else ts_obj.translation
                     ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"), plural_index=p_idx)
                 else:
-                    current_val_before_redo = getattr(ts_obj, field)
+                    current_val = getattr(ts_obj, field)
                     setattr(ts_obj, field, val_to_set)
-                undo_payload_data = {
-                    "string_id": obj_id,
-                    "field": field,
-                    "old_value": current_val_before_redo,
-                    "new_value": val_to_set,
-                    "plural_index": p_idx,
-                }
+
+                temp_undo_changes.append(
+                    {
+                        "string_id": obj_id,
+                        "field": field,
+                        "old_value": current_val,
+                        "new_value": val_to_set,
+                        "plural_index": p_idx,
+                    }
+                )
                 changed_ids.add(obj_id)
 
-        elif action_type in [
-            "bulk_change",
-            "bulk_excel_import",
-            "bulk_ai_translate",
-            "bulk_context_menu",
-            "bulk_replace_all",
-        ]:
-            temp_undo_changes = []
-            for item_change in action_data_to_apply["changes"]:
-                obj_id = item_change["string_id"]
-                field = item_change["field"]
-                val_to_set = item_change["new_value"]
-                p_idx = item_change.get("plural_index", 0)
-
-                ts_obj = self._find_ts_obj_by_id(obj_id)
-                if ts_obj:
+                # #[ADD] 广播重做后的状态
+                if self.web_service and self.web_service.isRunning():
+                    broadcast_payload = {"ts_id": obj_id}
                     if field == "translation":
-                        current_val_before_redo = (
-                            ts_obj.plural_translations.get(p_idx, "")
-                            if ts_obj.is_plural
-                            else ts_obj.get_translation_for_storage_and_tm()
-                        )
-                        ts_obj.set_translation_internal(val_to_set.replace("\\n", "\n"), plural_index=p_idx)
-                    else:
-                        current_val_before_redo = getattr(ts_obj, field)
-                        setattr(ts_obj, field, val_to_set)
-                    temp_undo_changes.append(
-                        {
-                            "string_id": obj_id,
-                            "field": field,
-                            "old_value": current_val_before_redo,
-                            "new_value": val_to_set,
-                            "plural_index": p_idx,
-                        }
-                    )
-                    changed_ids.add(obj_id)
-            undo_payload_data = {"changes": temp_undo_changes}
+                        broadcast_payload["new_text"] = val_to_set.replace("\\n", "\n")
+                        broadcast_payload["plural_index"] = p_idx
+                    elif field == "is_reviewed":
+                        broadcast_payload["is_reviewed"] = val_to_set
+                    elif field == "is_fuzzy":
+                        broadcast_payload["is_fuzzy"] = val_to_set
+                    self.web_service.broadcast_data_change(**broadcast_payload)
 
-        if undo_payload_data:
-            undo_record = {
-                "type": action_type,
-                "data": undo_payload_data,
-                "timestamp": action_log.get("timestamp"),
-                "description": action_log.get("description"),
-                "icon_type": action_log.get("icon_type"),
-                "file_id": action_log.get("file_id"),
-            }
-            self.undo_history.append(undo_record)
-            if len(self.undo_history) > MAX_UNDO_HISTORY:
-                self.undo_history.pop(0)
+        if temp_undo_changes:
+            if action_type == "single_change":
+                undo_payload_data = temp_undo_changes[0]
+            else:
+                undo_payload_data = {"changes": temp_undo_changes}
+            self.undo_history.append({"type": action_type, "data": undo_payload_data, **action_log})
 
         return True, changed_ids, action_log
 
@@ -2382,6 +2444,9 @@ class LexiSyncApp(QMainWindow):
         self.clear_search_markers()
         if hasattr(self, "plugin_manager"):
             self.plugin_manager.run_hook("on_app_shutdown")
+        if self.web_service and self.web_service.isRunning():
+            self.web_service.stop()
+            self.web_service.wait()
         event.accept()
 
     def save_config(self):
@@ -5049,6 +5114,10 @@ class LexiSyncApp(QMainWindow):
             self._update_toggle_labels_style(ts_obj)
             if hasattr(self, "details_panel"):
                 self.details_panel.update_warnings(ts_obj)
+            if self.web_service and self.web_service.isRunning():
+                self.web_service.broadcast_data_change(
+                    ts_id=ts_obj.id, is_reviewed=ts_obj.is_reviewed, is_fuzzy=ts_obj.is_fuzzy
+                )
 
     def on_reviewed_toggled(self, checked):
         if not self.current_selected_ts_id:
@@ -5078,6 +5147,10 @@ class LexiSyncApp(QMainWindow):
             self._update_toggle_labels_style(ts_obj)
             if hasattr(self, "details_panel"):
                 self.details_panel.update_warnings(ts_obj)
+            if self.web_service and self.web_service.isRunning():
+                self.web_service.broadcast_data_change(
+                    ts_id=ts_obj.id, is_reviewed=ts_obj.is_reviewed, is_fuzzy=ts_obj.is_fuzzy
+                )
 
     def _apply_translation_to_model(
         self,
@@ -5120,7 +5193,7 @@ class LexiSyncApp(QMainWindow):
             "ai_translation",
         ]
 
-        if ts_obj.is_fuzzy and source in sources_clearing_fuzzy:
+        if ts_obj.is_fuzzy and (source in sources_clearing_fuzzy or source.startswith("cloud_user")):
             ts_obj.is_fuzzy = False
             is_fuzzy_changed = True
 
@@ -5250,6 +5323,17 @@ class LexiSyncApp(QMainWindow):
 
             self.details_panel.update_warnings(ts_obj)
             self.details_panel.update_fuzzy_status(ts_obj.is_fuzzy)
+
+        if self.web_service and self.web_service.isRunning():
+            if not source.startswith("cloud_user"):
+                self.web_service.broadcast_data_change(
+                    ts_id=ts_obj.id,
+                    new_text=processed_translation,
+                    is_reviewed=ts_obj.is_reviewed,
+                    is_fuzzy=ts_obj.is_fuzzy,
+                    plural_index=plural_index,
+                    user="Host",
+                )
         return processed_translation, True
 
     def apply_translation_from_button(self):
@@ -7289,7 +7373,7 @@ class LexiSyncApp(QMainWindow):
             logger.warning(f"Failed to fetch glossary context: {e}")
             return []
 
-    def _initiate_single_ai_translation(self, ts_id_to_translate, called_from_cm=False):
+    def _initiate_single_ai_translation(self, ts_id_to_translate, called_from_cm=False, silent=False):
         if not ts_id_to_translate:
             return False
 
@@ -7331,20 +7415,21 @@ class LexiSyncApp(QMainWindow):
 
         current_trans = ts_obj.plural_translations.get(current_p_idx, "") if ts_obj.is_plural else ts_obj.translation
         if current_trans.strip():
-            if called_from_cm and len(self._get_selected_ts_objects_from_sheet()) > 1:
-                return False
+            if not silent:
+                if called_from_cm and len(self._get_selected_ts_objects_from_sheet()) > 1:
+                    return False
 
-            reply = QMessageBox.question(
-                self,
-                _("Overwrite Confirmation"),
-                _('String "{text}..." already has a translation. Overwrite with AI translation?').format(
-                    text=ts_obj.original_semantic[:50]
-                ),
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No,
-            )
-            if reply == QMessageBox.No:
-                return False
+                reply = QMessageBox.question(
+                    self,
+                    _("Overwrite Confirmation"),
+                    _('String "{text}..." already has a translation. Overwrite with AI translation?').format(
+                        text=ts_obj.original_semantic[:50]
+                    ),
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No,
+                )
+                if reply == QMessageBox.No:
+                    return False
 
         if not called_from_cm:
             self.update_statusbar(
@@ -7436,6 +7521,10 @@ class LexiSyncApp(QMainWindow):
                 )
                 ts_obj.is_fuzzy = False
                 changed_ids.add(ts_obj.id)
+            if self.web_service and self.web_service.isRunning():
+                self.web_service.broadcast_data_change(
+                    ts_id=ts_obj.id, is_reviewed=ts_obj.is_reviewed, is_fuzzy=ts_obj.is_fuzzy
+                )
 
         if bulk_changes:
             self.add_to_undo_history("bulk_context_menu", {"changes": bulk_changes})
@@ -7526,18 +7615,23 @@ class LexiSyncApp(QMainWindow):
             if ts_obj.is_fuzzy != fuzzy_flag:
                 old_val = ts_obj.is_fuzzy
                 ts_obj.is_fuzzy = fuzzy_flag
-
-                if fuzzy_flag and ts_obj.is_reviewed:
-                    bulk_changes.append(
-                        {"string_id": ts_obj.id, "field": "is_reviewed", "old_value": True, "new_value": False}
-                    )
-                    ts_obj.is_reviewed = False
-
-                ts_obj.update_style_cache()
                 bulk_changes.append(
                     {"string_id": ts_obj.id, "field": "is_fuzzy", "old_value": old_val, "new_value": fuzzy_flag}
                 )
                 changed_ids.add(ts_obj.id)
+
+            # 如果设为模糊，自动取消已审阅
+            if fuzzy_flag and ts_obj.is_reviewed:
+                ts_obj.is_reviewed = False
+                bulk_changes.append(
+                    {"string_id": ts_obj.id, "field": "is_reviewed", "old_value": True, "new_value": False}
+                )
+                changed_ids.add(ts_obj.id)
+
+            if self.web_service and self.web_service.isRunning():
+                self.web_service.broadcast_data_change(
+                    ts_id=ts_obj.id, is_reviewed=ts_obj.is_reviewed, is_fuzzy=ts_obj.is_fuzzy
+                )
 
         if bulk_changes:
             self.add_to_undo_history("bulk_context_menu", {"changes": bulk_changes})

@@ -1,0 +1,181 @@
+/*
+ * Copyright (c) 2025, TheSkyC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* ════════════════════════════════════════════════════
+   1. CSS VARIABLES — LIGHT & DARK
+════════════════════════════════════════════════════ */
+:root {
+    --bg-main:       #f0f2f6;
+    --card-bg:       #ffffff;
+    --card-bg-alt:   #f8f9fb;
+    --text-main:     #1c1f26;
+    --text-sec:      #64748b;
+    --text-muted:    #94a3b8;
+    --border:        #e2e8f0;
+    --border-light:  #f1f5f9;
+    --hover-bg:      rgba(64,158,255,0.05);
+    --sh-sm:         0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --sh-md:         0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+    --sh-lg:         0 10px 30px rgba(0,0,0,.12);
+
+    --st-reviewed:    #22c55e;
+    --st-translated:  #3b82f6;
+    --st-fuzzy:       #f59e0b;
+    --st-untranslated:#ef4444;
+
+    --hl-bg:  rgba(239,68,68,.08);
+    --hl-txt: #dc2626;
+    --navbar-h:    60px;
+}
+
+html.dark {
+    --bg-main:      #0d0f14;
+    --card-bg:      #161920;
+    --card-bg-alt:  #1a1d26;
+    --text-main:    #e2e8f0;
+    --text-sec:     #7c8fa6;
+    --text-muted:   #3d4a5c;
+    --border:       #252b38;
+    --border-light: #1e2330;
+    --hl-bg:  rgba(255,100,60,.14);
+    --hl-txt: #ff7a50;
+}
+
+/* ════════════════════════════════════════════════════
+   2. ELEMENT-PLUS DARK OVERRIDES
+════════════════════════════════════════════════════ */
+html.dark {
+    --el-bg-color:              #161920;
+    --el-bg-color-page:         #0d0f14;
+    --el-bg-color-overlay:      #1e2330;
+    --el-text-color-primary:    #e2e8f0;
+    --el-text-color-regular:    #c5ccd8;
+    --el-text-color-secondary:  #7c8fa6;
+    --el-text-color-placeholder:#3d4a5c;
+    --el-border-color:          #252b38;
+    --el-fill-color:            #1e2330;
+    --el-fill-color-blank:      #161920;
+    --el-color-primary:         #409EFF;
+    --el-mask-color:            rgba(0,0,0,.8);
+}
+
+html.dark .el-table {
+    --el-table-bg-color:              #161920;
+    --el-table-tr-bg-color:           #161920;
+    --el-table-header-bg-color:       #1a1d26;
+    --el-table-border-color:          #252b38;
+    --el-table-row-hover-bg-color:    #1e2330;
+    --el-table-text-color:            #c5ccd8;
+    --el-table-header-text-color:     #7c8fa6;
+}
+html.dark .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell { background: #161920 !important; }
+html.dark .el-textarea__inner, html.dark .el-input__inner { background: #1a1d26 !important; color: #e2e8f0 !important; border-color: #252b38 !important; }
+html.dark .el-textarea__inner:focus, html.dark .el-input__inner:focus { border-color: #409EFF !important; background: #161920 !important; }
+html.dark .el-input__wrapper { background: #1a1d26 !important; box-shadow: 0 0 0 1px #252b38 inset !important; }
+html.dark .el-input__wrapper.is-focus { box-shadow: 0 0 0 1px #409EFF inset !important; }
+html.dark .el-dialog { background: #161920 !important; border: 1px solid #252b38; }
+html.dark .el-dialog__title { color: #e2e8f0 !important; }
+html.dark .el-dialog__body  { color: #c5ccd8 !important; }
+html.dark .el-dialog__header { border-bottom: 1px solid #252b38 !important; }
+html.dark .el-pagination { --el-pagination-bg-color: #161920; --el-pagination-button-bg-color: #1e2330; }
+html.dark .el-tag--info { background: #1e2330 !important; color: #7c8fa6 !important; border-color: #252b38 !important; }
+html.dark .el-tabs__item { color: #7c8fa6; }
+html.dark .el-tabs__item.is-active { color: #409EFF; }
+
+/* ════════════════════════════════════════════════════
+   3. BASE RESET & LAYOUT
+════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+    height: auto; 
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    transition: background-color 0.3s;
+}
+
+.app-wrap {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    min-height: 100vh;
+}
+
+/* 工具栏 */
+.toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: background .3s;
+}
+
+/* 分页栏 */
+.pagination-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    flex-shrink: 0;
+    height: 60px;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 1000;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.06);
+}
+
+.back-to-top-btn {
+    position: absolute;
+    right: 20px;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 16px 20px 80px 20px; 
+    background: var(--bg-main);
+}
+
+.translation-card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    box-shadow: var(--sh-md);
+    margin-bottom: 20px;
+}
+html.dark .el-pagination {
+    --el-pagination-bg-color: var(--card-bg);
+}
+
+/* ════════════════════════════════════════════════════
+   4. 移动端全局适配
+════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 12px 10px 72px 10px;
+    }
+    .pagination-bar {
+        padding: 0 10px;
+    }
+    .back-to-top-btn {
+        right: 10px;
+    }
+    .el-pagination__total, 
+    .el-pagination__sizes, 
+    .el-pagination__jump {
+        display: none !important;
+    }
+}

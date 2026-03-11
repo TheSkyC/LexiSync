@@ -68,3 +68,4 @@ plugins/*/config.json
 /identifier.sqlite
 *.prompt
 *.extract
+/web_src/node_modules/

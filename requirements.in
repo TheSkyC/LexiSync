@@ -1,5 +1,6 @@
 babel>=2.18.0
 keyring>=25.6.0
+fastapi>=0.135.0
 langid>=1.1.6
 numpy>=2.3.0
 openpyxl~=3.1.5
@@ -12,5 +13,6 @@ rapidfuzz>=3.13.0
 regex>=2024.11.6
 requests>=2.32.4
 tomlkit>=0.14.0
+uvicorn[standard]>=0.41.0
 watchdog>=6.0.0
 xxhash>=3.6.0
