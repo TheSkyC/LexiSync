@@ -9,7 +9,6 @@ from PySide6.QtCore import QObject, QRunnable, Signal
 
 from lexisync.models.translatable_string import TranslatableString
 from lexisync.services.prompt_service import generate_prompt_from_structure
-from lexisync.services.validation_service import validate_string
 from lexisync.utils.constants import (
     COT_INJECTION_PROMPT,
     DEFAULT_CORRECTION_PROMPT_STRUCTURE,
@@ -327,7 +326,9 @@ class AIWorker(QRunnable):
                 if current_attempt < max_attempts:
                     temp_ts = TranslatableString("", self.original_text, 0, 0, 0, [])
                     temp_ts.translation = final_translated_text
-                    validate_string(temp_ts, app.config, app)
+                    from lexisync.services.validation_service import validate_single_string
+
+                    validate_single_string(temp_ts, app.config, app)
 
                     # 如果有错误
                     if temp_ts.warnings:

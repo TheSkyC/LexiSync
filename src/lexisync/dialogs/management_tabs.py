@@ -441,6 +441,8 @@ class GlossaryManagementTab(QWidget):
         success, message = self.glossary_service.remove_source(source_key, self.glossary_dir)
 
         if success:
+            if hasattr(self.app, "invalidate_glossary_cache"):
+                self.app.invalidate_glossary_cache()
             QMessageBox.information(self, _("Removal Successful"), message)
             self.load_sources_into_table()
         else:

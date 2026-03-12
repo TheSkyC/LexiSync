@@ -328,17 +328,14 @@ def validate_string(ts_obj, ctx_env):
                             ts_obj.minor_warnings.append((WarningType.LENGTH_DEVIATION_MINOR, msg))
 
 
-def run_validation_on_all(translatable_objects, config, app_instance=None):
+def build_validation_context(config, app_instance=None):
     target_lang = app_instance.current_target_language if app_instance else "en"
     source_lang = app_instance.source_language if app_instance else "en"
 
-    # 预计算全局参数
     accelerator_markers_str = config.get("accelerator_marker", "&")
     markers = [m.strip() for m in accelerator_markers_str.split(",") if m.strip()] or ["&"]
 
-    # 预计算所有规则的 kwargs 和 level
     active_rules_pack = []
-
     init_ctx = {
         "config": config,
         "target_lang": target_lang,
@@ -351,37 +348,42 @@ def run_validation_on_all(translatable_objects, config, app_instance=None):
                 {"rule": rule, "kwargs": rule["kwargs_gen"](init_ctx), "level": get_rule_level(config, rule["key"])}
             )
 
-    # 预计算长度检查参数
     check_length = config.get("check_length", True)
     len_major_up = config.get("length_threshold_major", 2.5)
-    len_minor_up = config.get("length_threshold_minor", 2.0)
 
-    # 术语库初始化
     matcher = None
     if config.get("check_glossary", True) and app_instance:
-        all_words = set()
-        seen_semantics = set()
-        for ts_obj in translatable_objects:
-            if not ts_obj.is_ignored and ts_obj.translation.strip():
-                sem = ts_obj.original_semantic.lower()
-                if sem not in seen_semantics:
-                    seen_semantics.add(sem)
+        if (
+            hasattr(app_instance, "_validation_glossary_matcher")
+            and app_instance._validation_glossary_matcher is not None
+        ):
+            matcher = app_instance._validation_glossary_matcher
+        else:
+            all_words = set()
+            source_pool = (
+                app_instance.all_project_strings if app_instance.is_project_mode else app_instance.translatable_objects
+            )
+
+            for ts_obj in source_pool:
+                if not ts_obj.is_ignored:
+                    sem = ts_obj.original_semantic.lower()
                     if re.search(r"\w", sem):
                         all_words.update(generate_ngrams(sem, min_n=1, max_n=5))
 
-        if all_words:
-            term_cache_dict = app_instance.glossary_service.get_translations_batch(
-                words=list(all_words), source_lang=source_lang, target_lang=target_lang, include_reverse=False
-            )
-            if term_cache_dict:
-                from lexisync.utils.keyword_matcher import KeywordMatcher
+            if all_words:
+                term_cache_dict = app_instance.glossary_service.get_translations_batch(
+                    words=list(all_words), source_lang=source_lang, target_lang=target_lang, include_reverse=False
+                )
+                if term_cache_dict:
+                    from lexisync.utils.keyword_matcher import KeywordMatcher
 
-                matcher = KeywordMatcher(case_sensitive=False)
-                for term, info in term_cache_dict.items():
-                    matcher.add_keyword(term, info)
+                    matcher = KeywordMatcher(case_sensitive=False)
+                    for term, info in term_cache_dict.items():
+                        matcher.add_keyword(term, info)
 
-    # 构建上下文环境
-    ctx_env = {
+                    app_instance._validation_glossary_matcher = matcher
+
+    return {
         "active_rules": active_rules_pack,
         "markers": markers,
         "fuzzy_enabled": is_rule_enabled(config, "fuzzy"),
@@ -395,10 +397,19 @@ def run_validation_on_all(translatable_objects, config, app_instance=None):
         "target_lang": target_lang,
         "len_major_up": len_major_up,
         "len_major_down": 1 / len_major_up if len_major_up else 0,
-        "len_minor_up": len_minor_up,
-        "len_minor_down": 1 / len_minor_up if len_minor_up else 0,
+        "len_minor_up": config.get("length_threshold_minor", 2.0),
+        "len_minor_down": 1 / config.get("length_threshold_minor", 2.0)
+        if config.get("length_threshold_minor", 2.0)
+        else 0,
     }
 
-    # 执行验证
+
+def validate_single_string(ts_obj, config, app_instance=None):
+    ctx_env = build_validation_context(config, app_instance)
+    validate_string(ts_obj, ctx_env)
+
+
+def run_validation_on_all(translatable_objects, config, app_instance=None):
+    ctx_env = build_validation_context(config, app_instance)
     for ts_obj in translatable_objects:
         validate_string(ts_obj, ctx_env)

@@ -258,6 +258,7 @@ class LexiSyncApp(QMainWindow):
         self.glossary_service = GlossaryService()
         self.setup_glossary_service()
         self.glossary_analysis_cache = {}
+        self._validation_glossary_matcher = None
 
         self.build_thread = None
         self.build_worker = None
@@ -1968,6 +1969,10 @@ class LexiSyncApp(QMainWindow):
         else:
             self.progress_bar.setVisible(False)
 
+    def invalidate_glossary_cache(self):
+        """当术语库内容、目标语言或项目文件发生变化时调用"""
+        self._validation_glossary_matcher = None
+
     def add_glossary_entry(self, from_editor=False):
         if hasattr(self, "_add_glossary_dialog") and self._add_glossary_dialog:
             try:
@@ -2035,6 +2040,7 @@ class LexiSyncApp(QMainWindow):
         )
 
         if success:
+            self.invalidate_glossary_cache()
             self.update_statusbar(message)
             if self.current_selected_ts_id:
                 ts_obj = self._find_ts_obj_by_id(self.current_selected_ts_id)
@@ -2818,9 +2824,6 @@ class LexiSyncApp(QMainWindow):
 
     def _rebuild_string_cache_indexes(self):
         self._id_to_index_map = {ts.id: i for i, ts in enumerate(self.all_project_strings)}
-
-    def _rebuild_string_cache_indexes(self):
-        self._id_to_index_map = {ts.id: i for i, ts in enumerate(self.all_project_strings)}
         self._ts_obj_map = {ts.id: ts for ts in self.all_project_strings}
 
     def _rebuild_single_file_map(self):
@@ -3032,6 +3035,7 @@ class LexiSyncApp(QMainWindow):
             return
         if self.is_modified:
             save_project(self.current_project_path, self)
+        self.invalidate_glossary_cache()
         self.current_target_language = new_lang
         self.open_project(self.current_project_path)
 
@@ -3445,6 +3449,7 @@ class LexiSyncApp(QMainWindow):
                 )
                 self.all_project_strings = all_strings
                 self.loaded_file_ids = {f["id"] for f in self.project_config.get("source_files", [])}
+                self.invalidate_glossary_cache()
 
                 # 2. 重建索引并刷新视图
                 self._rebuild_string_cache_indexes()
@@ -3500,6 +3505,7 @@ class LexiSyncApp(QMainWindow):
         if self.is_project_mode:
             self.file_explorer_panel.exit_project_mode()
 
+        self.invalidate_glossary_cache()
         # 重置模式
         self.is_project_mode = False
         self.is_translation_mode = False
@@ -4561,6 +4567,7 @@ class LexiSyncApp(QMainWindow):
 
             if success:
                 logger.debug("Import successful. Showing information message box.")
+                self.invalidate_glossary_cache()
                 QMessageBox.information(self, _("Import Successful"), message)
                 logger.debug("Information message box closed.")
 
@@ -5519,14 +5526,24 @@ class LexiSyncApp(QMainWindow):
             return
 
         # 1. 更新数据
-        for ts_id in changed_ids:
-            ts_obj = self._find_ts_obj_by_id(ts_id)
-            if ts_obj:
-                if not skip_validation:
-                    from lexisync.services.validation_service import validate_string
+        if len(changed_ids) > 1 and not skip_validation:
+            from lexisync.services.validation_service import build_validation_context, validate_string
 
-                    validate_string(ts_obj, self.config, self)
-                ts_obj.update_style_cache()
+            ctx_env = build_validation_context(self.config, self)
+            for ts_id in changed_ids:
+                ts_obj = self._find_ts_obj_by_id(ts_id)
+                if ts_obj:
+                    validate_string(ts_obj, ctx_env)
+                    ts_obj.update_style_cache()
+        else:
+            for ts_id in changed_ids:
+                ts_obj = self._find_ts_obj_by_id(ts_id)
+                if ts_obj:
+                    if not skip_validation:
+                        from lexisync.services.validation_service import validate_single_string
+
+                        validate_single_string(ts_obj, self.config, self)
+                    ts_obj.update_style_cache()
 
         # 2. UI 刷新逻辑
         if len(changed_ids) > 200:
