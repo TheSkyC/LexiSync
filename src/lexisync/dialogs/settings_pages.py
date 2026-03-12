@@ -738,9 +738,21 @@ class CloudSettingsPage(BaseSettingsPage):
         self.apply_widget_policies()
 
     def setup_ui(self):
-        layout = self.page_layout
+        # 1. 严格模仿其他页面的滚动区域配置
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.NoFrame)
 
-        # 1. 服务控制
+        content_widget = QWidget()
+        content_widget.setObjectName("cloudContent")
+        # 必须设置背景色为白色，否则在滚动时背景会透明或显示异常
+        content_widget.setStyleSheet("#cloudContent { background-color: #FFFFFF; }")
+
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(15)
+
+        # --- 1. 服务控制组 ---
         server_group = QGroupBox(_("Cloud Server Control"))
         server_layout = QVBoxLayout(server_group)
 
@@ -758,25 +770,80 @@ class CloudSettingsPage(BaseSettingsPage):
 
         server_layout.addLayout(status_hbox)
         server_layout.addWidget(self.toggle_btn)
-        layout.addWidget(server_group)
+        content_layout.addWidget(server_group)
 
-        # 2. 权限管理入口
+        # --- 2. 穿透设置组 ---
+        tunnel_group = QGroupBox(_("Public Access (Tunneling)"))
+        tunnel_layout = QFormLayout(tunnel_group)
+
+        self.chk_enable_tunnel = QCheckBox(_("Enable Public URL via Tunnel"))
+        self.chk_enable_tunnel.setChecked(self.app.config.get("tunnel_settings", {}).get("active", False))
+
+        self.combo_provider = QComboBox()
+        self.combo_provider.addItem("Cloudflare", "cloudflare")
+
+        self.combo_cf_mode = QComboBox()
+        self.combo_cf_mode.addItem(_("Quick (Random URL)"), "quick")
+        self.combo_cf_mode.addItem(_("Named (Custom Domain)"), "named")
+
+        self.edit_cf_token = QLineEdit()
+        self.edit_cf_token.setPlaceholderText(_("Enter Cloudflare Tunnel Token..."))
+        self.edit_cf_token.setEchoMode(QLineEdit.Password)
+
+        cf_config = self.app.config.get("tunnel_settings", {}).get("cloudflare", {})
+        idx = self.combo_cf_mode.findData(cf_config.get("mode", "quick"))
+        if idx != -1:
+            self.combo_cf_mode.setCurrentIndex(idx)
+        self.edit_cf_token.setText(cf_config.get("token", ""))
+
+        tunnel_layout.addRow(self.chk_enable_tunnel)
+        tunnel_layout.addRow(_("Provider:"), self.combo_provider)
+        tunnel_layout.addRow(_("Mode:"), self.combo_cf_mode)
+        tunnel_layout.addRow(_("Token:"), self.edit_cf_token)
+
+        # 联动逻辑
+        self.chk_enable_tunnel.toggled.connect(self.combo_provider.setEnabled)
+        self.chk_enable_tunnel.toggled.connect(self.combo_cf_mode.setEnabled)
+        self.combo_cf_mode.currentIndexChanged.connect(
+            lambda: self.edit_cf_token.setEnabled(self.combo_cf_mode.currentData() == "named")
+        )
+
+        # 初始化状态
+        self.combo_provider.setEnabled(self.chk_enable_tunnel.isChecked())
+        self.combo_cf_mode.setEnabled(self.chk_enable_tunnel.isChecked())
+        self.edit_cf_token.setEnabled(
+            self.chk_enable_tunnel.isChecked() and self.combo_cf_mode.currentData() == "named"
+        )
+
+        content_layout.addWidget(tunnel_group)
+
+        # --- 3. 安全设置组 ---
+        sec_group = QGroupBox(_("Security"))
+        sec_layout = QVBoxLayout(sec_group)
+        self.chk_require_approval = QCheckBox(_("Require manual approval for new IP connections"))
+        self.chk_require_approval.setChecked(self.app.config.get("cloud_require_approval", True))
+        sec_layout.addWidget(self.chk_require_approval)
+        content_layout.addWidget(sec_group)
+
+        # --- 4. 权限管理入口 ---
         auth_group = QGroupBox(_("Access Management"))
         auth_layout = QVBoxLayout(auth_group)
-
-        auth_desc = QLabel(
-            _("Manage user accounts, passwords, roles, and generate temporary access tokens for collaborators.")
-        )
-        auth_desc.setStyleSheet("color: gray; font-size: 12px; margin-bottom: 10px;")
+        auth_desc = QLabel(_("Manage user accounts, roles, and generate temporary access tokens."))
+        auth_desc.setStyleSheet("color: gray; font-size: 12px; margin-bottom: 5px;")
         auth_layout.addWidget(auth_desc)
-
         self.manage_btn = QPushButton(_("Manage Users & Tokens..."))
         self.manage_btn.setMinimumHeight(36)
         self.manage_btn.clicked.connect(self._open_user_manager)
         auth_layout.addWidget(self.manage_btn)
+        content_layout.addWidget(auth_group)
 
-        layout.addWidget(auth_group)
-        layout.addStretch()
+        # 2. 尾部添加弹簧，确保内容靠上对齐
+        content_layout.addStretch(1)
+
+        # 3. 装载并添加到页面主布局
+        scroll_area.setWidget(content_widget)
+        self.page_layout.addWidget(scroll_area)
+
         self._update_ui_state()
 
     def _open_user_manager(self):
@@ -803,6 +870,17 @@ class CloudSettingsPage(BaseSettingsPage):
             self.toggle_btn.setStyleSheet("")
 
     def save_settings(self):
+        tunnel_settings = {
+            "active": self.chk_enable_tunnel.isChecked(),
+            "provider": self.combo_provider.currentData(),
+            "cloudflare": {"mode": self.combo_cf_mode.currentData(), "token": self.edit_cf_token.text()},
+        }
+        self.app.config["tunnel_settings"] = tunnel_settings
+        self.app.config["cloud_require_approval"] = self.chk_require_approval.isChecked()
+
+        if self.app.web_service:
+            self.app.web_service.require_approval = self.chk_require_approval.isChecked()
+
         return False
 
 

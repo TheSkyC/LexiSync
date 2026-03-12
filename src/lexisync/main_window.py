@@ -161,6 +161,7 @@ class LexiSyncApp(QMainWindow):
         """
 
         self.web_service = None
+        self._current_cloud_url_type = "none"  # "none", "local", "public"
         self.cloud_token = self.config.get("cloud_token", str(uuid.uuid4())[:8])
 
         # AI
@@ -756,60 +757,107 @@ class LexiSyncApp(QMainWindow):
         from lexisync.services.web_server_service import WebServerService
 
         self.web_service = WebServerService(self)
+
+        # 基础服务信号
         self.web_service.signals.update_requested.connect(self._handle_web_update)
+        self.web_service.signals.focus_changed.connect(self._handle_web_focus)
         self.web_service.signals.server_started.connect(self._on_cloud_started)
         self.web_service.signals.server_stopped.connect(self._on_cloud_stopped)
+        self.web_service.signals.approval_requested.connect(self._handle_connection_approval)
+        self.web_service.signals.ai_translate_requested.connect(self._handle_web_ai_translate)
+
+        # 穿透服务信号
+        self.web_service.tunnel_manager.status_changed.connect(self._on_tunnel_status_changed)
+        self.web_service.tunnel_manager.download_progress.connect(self._on_tunnel_download_progress)
+
+    def _handle_connection_approval(self, req_id, ip, context):
+        reply = QMessageBox.question(
+            self,
+            _("Connection Request"),
+            _(
+                "A new device is trying to connect to your project.\n\nIP Address: {ip}\nContext: {ctx}\n\nDo you want to allow this connection?"
+            ).format(ip=ip, ctx=context),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        approved = reply == QMessageBox.Yes
+        if self.web_service:
+            self.web_service.resolve_approval(req_id, approved)
+
+    def _on_tunnel_download_progress(self, percent):
+        self.update_statusbar(_("Downloading tunnel component: {p}%").format(p=percent), persistent=True)
 
     def toggle_cloud_service(self):
         if self.web_service and self.web_service.isRunning():
             self.web_service.stop()
-            self.web_service.wait()
-            self.web_service = None
-        else:
-            if not self.web_service:
-                from lexisync.services.web_server_service import WebServerService
+            return
 
-                self.web_service = WebServerService(self)
-                self.web_service.signals.update_requested.connect(self._handle_web_update)
-                self.web_service.signals.focus_changed.connect(self._handle_web_focus)
-                self.web_service.signals.server_started.connect(self._on_cloud_started)
-                self.web_service.signals.server_stopped.connect(self._on_cloud_stopped)
-                self.web_service.signals.ai_translate_requested.connect(self._handle_web_ai_translate)
+        if not self.web_service:
+            self._setup_cloud_service()
 
-            if "cloud_users" not in self.config:
-                from lexisync.dialogs.cloud_user_manager_dialog import hash_password
+        if "cloud_users" not in self.config:
+            from lexisync.dialogs.cloud_user_manager_dialog import hash_password
 
-                self.config["cloud_users"] = [
-                    {"username": "admin", "password_hash": hash_password("admin"), "role": "admin"}
-                ]
-                self.save_config()
+            self.config["cloud_users"] = [
+                {"username": "admin", "password_hash": hash_password("admin"), "role": "admin"}
+            ]
+            self.save_config()
 
-            self.web_service.start()
+        self.web_service.start()
 
     def _handle_web_ai_translate(self, ts_id):
         logger.info(f"Received AI translation request from Web for ID: {ts_id}")
         self._initiate_single_ai_translation(ts_id, called_from_cm=True, silent=True)
 
     def _on_cloud_started(self, url):
+        if self._current_cloud_url_type == "public":
+            logger.debug("Cloud server started, but public tunnel is already active. Skipping banner update.")
+            return
+        self._current_cloud_url_type = "local"
         full_url = f"{url}?token={self.cloud_token}"
+        logger.info(f"Cloud server started at {full_url}")
+        self._show_cloud_banner(_("Local Collaboration Active: {url}").format(url=full_url), full_url, is_public=False)
+
+    def _on_tunnel_status_changed(self, status, info):
+        from lexisync.services.tunnel.base import TunnelStatus
+
+        if status == TunnelStatus.ONLINE:
+            self._current_cloud_url_type = "public"
+            full_url = f"{info}?token={self.cloud_token}"
+            logger.info(f"Public tunnel is ONLINE: {full_url}")
+
+            # 更新横幅
+            self._show_cloud_banner(_("Public Tunnel Active: {url}").format(url=full_url), full_url, is_public=True)
+
+        elif status == TunnelStatus.ERROR:
+            logger.error(f"Tunnel Error: {info}")
+            self.update_statusbar(_("Tunnel Error: {err}").format(err=info))
+            if self._current_cloud_url_type != "public":
+                QMessageBox.warning(self, _("Tunnel Error"), info)
+
+    def _show_cloud_banner(self, message, url, is_public=False):
+        if not hasattr(self, "notification_banner"):
+            return
+
+        preset = "success" if is_public else "info"
+
+        self.notification_banner.hide_banner()
+
         self.notification_banner.clear_actions()
         self.notification_banner.show_message(
-            _("Cloud Collaboration Active: {url}").format(url=full_url),
-            preset="success",
-            layout_mode="top",
-            margin=10,
-            fixed_height=45,
-            interactive=True,
+            message, preset=preset, layout_mode="top", interactive=True, margin=5, fixed_height=45
         )
-        self.notification_banner.add_action(_("Copy Link"), lambda: self._copy_and_notify(full_url), btn_type="success")
+        self.notification_banner.add_action(_("Copy Link"), lambda: self._copy_and_notify(url), btn_type="success")
         self.notification_banner.add_action(_("Dismiss"), self.notification_banner.hide_banner, btn_type="default")
-        QTimer.singleShot(10000, self.notification_banner.hide_banner)
 
     def _copy_and_notify(self, text):
         QApplication.clipboard().setText(text)
         self.update_statusbar(_("Collaboration link copied to clipboard."))
 
     def _on_cloud_stopped(self):
+        self._current_cloud_url_type = "none"
+        if hasattr(self, "notification_banner"):
+            self.notification_banner.hide_banner()
         self.update_statusbar(_("Cloud service stopped."))
 
     def _handle_web_update(self, data):
@@ -5331,6 +5379,7 @@ class LexiSyncApp(QMainWindow):
             )
         )
         self.mark_modified()
+
         if self.current_selected_ts_id == ts_obj.id and hasattr(self, "details_panel"):
             self.details_panel.translation_edit_text.blockSignals(True)
             self.details_panel.translation_edit_text.setPlainText(processed_translation)

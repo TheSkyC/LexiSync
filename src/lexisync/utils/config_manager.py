@@ -109,6 +109,7 @@ def load_config():
                 config_data["active_ai_model_id"] = default_id
 
             config_data.setdefault("ai_api_interval", 100)
+
             # Global AI Context Settings
             config_data.setdefault("ai_use_neighbors", True)
             config_data.setdefault("ai_context_neighbors", 3)
@@ -155,6 +156,13 @@ def load_config():
 
             # Extraction patterns
             config_data.setdefault("extraction_patterns", deepcopy(DEFAULT_EXTRACTION_PATTERNS))
+
+            # Cloud Settings
+            config_data.setdefault("cloud_require_approval", True)
+            config_data.setdefault(
+                "tunnel_settings",
+                {"active": False, "provider": "cloudflare", "cloudflare": {"mode": "quick", "token": ""}},
+            )
 
             # Keybindings
             if "keybindings" not in config_data:

@@ -10,7 +10,7 @@ import time
 import uuid
 import weakref
 
-from fastapi import Depends, FastAPI, HTTPException, Security, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, HTTPException, Request, Security, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import APIKeyQuery
@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from PySide6.QtCore import QObject, QThread, Signal
 import uvicorn
 
+from lexisync.services.tunnel import TunnelManager
 from lexisync.utils.localization import _
 from lexisync.utils.path_utils import get_resource_path
 
@@ -120,6 +121,7 @@ class WebServerSignals(QObject):
     server_started = Signal(str)
     server_stopped = Signal()
     ai_translate_requested = Signal(str)
+    approval_requested = Signal(str, str, str)  # req_id, ip, context
 
 
 # ─── Web Server Service ────────────────────────────────────────────────────────
@@ -138,17 +140,18 @@ class WebServerService(QThread):
         # 内存 Session 存储: session_id -> {"name": "...", "role": "..."}
         self.sessions = {}
 
+        self.require_approval = app_instance.config.get("cloud_require_approval", True)
+        self.approved_ips = set()
+        self.pending_approvals = {}
+        self.approval_results = {}
+
+        self.tunnel_manager = TunnelManager()
+
         self.update_auth_data(app_instance.config.get("cloud_users", []), app_instance.config.get("cloud_tokens", []))
 
         self.ws_manager = ConnectionManager()
         self.fastapi_app = FastAPI()
-
-        self.fastapi_app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+        self.fastapi_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
         self._setup_routes()
 
     def update_auth_data(self, users: list, tokens: list):
@@ -182,6 +185,43 @@ class WebServerService(QThread):
             return [ts for ts in data if not ts.translation and not ts.is_reviewed and not ts.is_fuzzy]
         return data
 
+    def resolve_approval(self, req_id: str, approved: bool):
+        if req_id in self.pending_approvals:
+            self.approval_results[req_id] = approved
+            self.pending_approvals[req_id].set()
+
+    async def _check_approval(self, request: Request, context_info: str):
+        if not self.require_approval:
+            return
+
+        real_ip = (
+            request.headers.get("CF-Connecting-IP") or request.headers.get("X-Forwarded-For") or request.client.host
+        )
+        real_ip = real_ip.split(",")[0].strip()
+
+        if real_ip in ("127.0.0.1", "::1", "localhost"):
+            return
+
+        if real_ip in self.approved_ips:
+            return
+
+        req_id = str(uuid.uuid4())
+        event = asyncio.Event()
+        self.pending_approvals[req_id] = event
+
+        self.signals.approval_requested.emit(req_id, real_ip, context_info)
+
+        try:
+            await asyncio.wait_for(event.wait(), timeout=60.0)
+        except TimeoutError as e:
+            self.pending_approvals.pop(req_id, None)
+            raise HTTPException(status_code=403, detail="Approval request timed out.") from e
+
+        if not self.approval_results.pop(req_id, False):
+            raise HTTPException(status_code=403, detail="Connection rejected by host.")
+
+        self.approved_ips.add(real_ip)
+
     # ── Routes ─────────────────────────────────────────────────────────────────
 
     def _setup_routes(self):
@@ -195,7 +235,8 @@ class WebServerService(QThread):
         # ── Auth Endpoints ─────────────────────────────────────────────────────
 
         @app.post("/api/v1/login")
-        async def login_account(req: LoginRequest):
+        async def login_account(req: LoginRequest, request: Request):
+            await self._check_approval(request, f"Login attempt: {req.username}")
             for u in self.cloud_users:
                 if u["username"] == req.username:
                     if verify_password(req.password, u["password_hash"]):
@@ -205,7 +246,8 @@ class WebServerService(QThread):
             raise HTTPException(status_code=401, detail="Invalid username or password")
 
         @app.post("/api/v1/login-remembered")
-        async def login_remembered(req: RememberMeLoginRequest):
+        async def login_remembered(req: RememberMeLoginRequest, request: Request):
+            await self._check_approval(request, "Auto-login attempt")
             try:
                 username, host_token = req.remember_token.split(":", 1)
             except (ValueError, AttributeError) as e:
@@ -223,7 +265,8 @@ class WebServerService(QThread):
             return {"token": session_id, "name": user_data["username"], "role": user_data["role"]}
 
         @app.post("/api/v1/login-token")
-        async def login_token(req: TokenLoginRequest):
+        async def login_token(req: TokenLoginRequest, request: Request):
+            await self._check_approval(request, f"Token login: {req.display_name}")
             current_time = time.time()
             for t in self.cloud_tokens:
                 if t["token"] == req.token:
@@ -598,6 +641,7 @@ class WebServerService(QThread):
         config = uvicorn.Config(self.fastapi_app, host=self.host, port=self.port, log_level="warning", loop="asyncio")
         self.server = uvicorn.Server(config)
 
+        # 获取本地 IP
         ip = "127.0.0.1"
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -611,10 +655,9 @@ class WebServerService(QThread):
                 addrs = psutil.net_if_addrs()
                 for _interface_name, interface_addresses in addrs.items():
                     for address in interface_addresses:
-                        if address.family == socket.AF_INET:
-                            if address.address.startswith(("192.168.", "172.", "10.")):
-                                ip = address.address
-                                break
+                        if address.family == socket.AF_INET and address.address.startswith(("192.168.", "172.", "10.")):
+                            ip = address.address
+                            break
                     if ip != "127.0.0.1":
                         break
             else:
@@ -622,10 +665,20 @@ class WebServerService(QThread):
         except Exception:
             ip = "127.0.0.1"
 
-        self.signals.server_started.emit(f"http://{ip}:{self.port}")
+        local_url = f"http://{ip}:{self.port}"
+        self.signals.server_started.emit(local_url)
+
+        # 启动穿透
+        app_config = self._get_main_app().config
+        tunnel_cfg = app_config.get("tunnel_settings", {})
+        if tunnel_cfg.get("active"):
+            provider = tunnel_cfg.get("provider", "cloudflare")
+            self.tunnel_manager.start_tunnel(provider, self.port, tunnel_cfg.get(provider, {}))
+
         self.server.run()
 
     def stop(self):
+        self.tunnel_manager.stop_tunnel()
         if hasattr(self, "server"):
             self.server.should_exit = True
         self.is_running = False
