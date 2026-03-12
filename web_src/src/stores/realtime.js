@@ -4,8 +4,16 @@
  */
 
 import {ref, computed, nextTick} from 'vue'
-import {sessionToken, currentUser, t, checkSessionAndInit} from './auth.js'
-import {tableData, globalActiveEditors, fetchProjectStats, activeRowId} from './project.js'
+import {sessionToken, currentUser, t, checkSessionAndInit, authFetch} from './auth.js'
+import {
+    tableData,
+    globalActiveEditors,
+    stats,
+    getStatusKey,
+    fetchProjectStats,
+    fetchData,
+    activeRowId
+} from './project.js'
 import {toastShow} from './ui.js'
 import {registerWsSend} from './wsClient.js'
 
@@ -30,6 +38,8 @@ export const chatInput = ref('')
 let ws = null
 let wsReconnectTimer = null
 let wsAttempts = 0
+let hasConnectedOnce = false   // 区分首次连接与断线重连
+
 const MAX_WS_RETRY = 8
 const INITIAL_RECONNECT_DELAY = 2000
 
@@ -54,7 +64,7 @@ export const rebuildOnlineUsers = (list) => {
 
 export const fetchOnlineUsers = async () => {
     try {
-        const res = await fetch(`/api/v1/users?token=${sessionToken.value}`, {cache: 'no-store'})
+        const res = await authFetch('/api/v1/users', {cache: 'no-store'})
         if (res.ok) rebuildOnlineUsers((await res.json()).users || [])
     } catch (_) {
     }
@@ -65,27 +75,48 @@ const handleWsMsg = (msg) => {
         case 'DATA_UPDATE': {
             const item = tableData.value.find(r => r.id === msg.data.ts_id)
             if (item) {
+                // 记录变更前的状态，用于本地增量更新 stats，避免额外的 HTTP 请求
+                const oldStatus = getStatusKey(item)
+
                 if (msg.data.new_text != null) {
-                    if (activeRowId.value === item.id && msg.data.user !== currentUser.name)
-                        toastShow(`⚠️ ${msg.data.user || t('Someone')} ${t('just updated this entry. Your changes will overwrite theirs on save.')}`, 'warning', 5000)
-                    else if (item.is_plural) item.plural_translations[msg.data.plural_index] = msg.data.new_text
-                    else item.translation = msg.data.new_text
+                    if (activeRowId.value === item.id && msg.data.user !== currentUser.name) {
+                        toastShow(
+                            `⚠️ ${msg.data.user || t('Someone')} ${t('just updated this entry. Your changes will overwrite theirs on save.')}`,
+                            'warning', 5000
+                        )
+                    } else if (item.is_plural) {
+                        item.plural_translations[msg.data.plural_index] = msg.data.new_text
+                    } else {
+                        item.translation = msg.data.new_text
+                    }
                 }
                 if (msg.data.is_reviewed != null) item.is_reviewed = msg.data.is_reviewed
                 if (msg.data.is_fuzzy != null) item.is_fuzzy = msg.data.is_fuzzy
+
+                // 本地计算 stats 增量，无需再发起 fetchProjectStats HTTP 请求
+                const newStatus = getStatusKey(item)
+                if (oldStatus !== newStatus) {
+                    stats[oldStatus] = Math.max(0, (stats[oldStatus] ?? 0) - 1)
+                    stats[newStatus] = (stats[newStatus] ?? 0) + 1
+                }
+            } else {
+                // 被更新的条目不在当前页（其他页），无法本地推算，回退到请求服务端 stats
+                fetchProjectStats()
             }
-            fetchProjectStats()
             break
         }
         case 'FOCUS_UPDATE': {
             const editors = globalActiveEditors[msg.data.ts_id] ?? (globalActiveEditors[msg.data.ts_id] = [])
             if (msg.data.status === 'editing') {
                 if (!editors.includes(msg.data.user)) editors.push(msg.data.user)
-            } else globalActiveEditors[msg.data.ts_id] = editors.filter(u => u !== msg.data.user)
+            } else {
+                globalActiveEditors[msg.data.ts_id] = editors.filter(u => u !== msg.data.user)
+            }
             const item = tableData.value.find(r => r.id === msg.data.ts_id)
             if (item) item.active_editors = globalActiveEditors[msg.data.ts_id]
             if (onlineUsers.value[msg.data.user] !== undefined)
-                onlineUsers.value[msg.data.user].editingId = msg.data.status === 'editing' ? msg.data.ts_id : null
+                onlineUsers.value[msg.data.user].editingId =
+                    msg.data.status === 'editing' ? msg.data.ts_id : null
             break
         }
         case 'USER_CONNECTED':
@@ -96,7 +127,7 @@ const handleWsMsg = (msg) => {
             chatMessages.value.push(msg.data)
             if (!isChatOpen.value) toastShow(`${msg.data.user}: ${msg.data.text}`, 'info', 3000)
             nextTick(() => {
-                const el = document.getElementById('chatMessages');
+                const el = document.getElementById('chatMessages')
                 if (el) el.scrollTop = el.scrollHeight
             })
             break
@@ -111,31 +142,41 @@ export const connectWebSocket = () => {
         } catch (_) {
         }
     }
+
     wsState.value = 'connecting'
+    
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
     ws = new WebSocket(`${proto}//${location.host}/ws?token=${sessionToken.value}`)
+
     ws.onopen = () => {
-        wsState.value = 'connected';
-        wsAttempts = 0;
-        toastShow(t('Connected'), 'success', 2200);
+        wsState.value = 'connected'
+        wsAttempts = 0
+        toastShow(t('Connected'), 'success', 2200)
         fetchOnlineUsers()
+        
+        if (hasConnectedOnce) {
+            fetchData()
+        }
+        hasConnectedOnce = true
     }
+
     ws.onmessage = (ev) => {
         try {
             handleWsMsg(JSON.parse(ev.data))
         } catch (_) {
         }
     }
+
     ws.onclose = (ev) => {
         if (wsState.value === 'disconnected') return
         if (ev.code === 1008) {
-            wsState.value = 'disconnected';
-            checkSessionAndInit();
+            wsState.value = 'disconnected'
+            checkSessionAndInit()
             return
         }
         if (++wsAttempts > MAX_WS_RETRY) {
-            wsState.value = 'failed';
-            toastShow(t('Connection failed'), 'error', 0);
+            wsState.value = 'failed'
+            toastShow(t('Connection failed'), 'error', 0)
             return
         }
         const delay = Math.min(INITIAL_RECONNECT_DELAY * 2 ** (wsAttempts - 1), 30000)
@@ -147,6 +188,7 @@ export const connectWebSocket = () => {
 
 export const disconnectWebSocket = () => {
     wsState.value = 'disconnected'
+    hasConnectedOnce = false
     clearTimeout(wsReconnectTimer)
     onlineUsers.value = {}
     if (ws) {
@@ -160,7 +202,7 @@ export const disconnectWebSocket = () => {
 
 export const sendChatMessage = () => {
     if (chatInput.value.trim()) {
-        _wsSend({action: 'chat', message: chatInput.value});
+        _wsSend({action: 'chat', message: chatInput.value})
         chatInput.value = ''
     }
 }

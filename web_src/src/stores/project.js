@@ -4,7 +4,7 @@
  */
 
 import {ref, reactive, computed, nextTick} from 'vue'
-import {sessionToken, currentUser, t} from './auth.js'
+import {sessionToken, currentUser, t, authFetch} from './auth.js'
 import {loading, toastShow} from './ui.js'
 import {wsSend} from './wsClient.js'
 
@@ -48,7 +48,7 @@ export const hlPh = (text) => {
 
 export const fetchProjectStats = async () => {
     try {
-        const res = await fetch(`/api/v1/project?token=${sessionToken.value}`, {cache: 'no-store'})
+        const res = await authFetch('/api/v1/project', {cache: 'no-store'})
         if (res.ok) {
             const d = await res.json()
             Object.assign(stats, {
@@ -70,14 +70,14 @@ export const fetchData = async () => {
     const {signal} = fetchController
     loading.value = true
     try {
-        const qs = `token=${sessionToken.value}`
         const status = statusFilter.value === 'all' ? '' : statusFilter.value
         const [pRes, sRes] = await Promise.all([
-            fetch(`/api/v1/project?${qs}`, {signal, cache: 'no-store'}),
-            fetch(`/api/v1/strings?${qs}&page=${currentPage.value}&page_size=${pageSize.value}&search=${encodeURIComponent(searchQuery.value)}&status=${status}`, {
-                signal,
-                cache: 'no-store'
-            })
+            authFetch('/api/v1/project', {signal, cache: 'no-store'}),
+            authFetch(
+                `/api/v1/strings?page=${currentPage.value}&page_size=${pageSize.value}` +
+                `&search=${encodeURIComponent(searchQuery.value)}&status=${status}`,
+                {signal, cache: 'no-store'}
+            )
         ])
         if (!pRes.ok || !sRes.ok) throw new Error('Fetch failed')
         const pData = await pRes.json()
@@ -108,7 +108,7 @@ export const updateTranslation = async (item, pIdx = 0) => {
     activeRowId.value = null
     const text = item.is_plural ? item.plural_translations[pIdx] : item.translation
     try {
-        const res = await fetch(`/api/v1/update?token=${sessionToken.value}`, {
+        const res = await authFetch('/api/v1/update', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ts_id: item.id, new_text: text, plural_index: pIdx})
         })
@@ -127,14 +127,14 @@ export const toggleStatus = async (item, type) => {
     }
     const payload = {ts_id: item.id}
     if (type === 'reviewed') {
-        payload.is_reviewed = !item.is_reviewed;
+        payload.is_reviewed = !item.is_reviewed
         if (payload.is_reviewed) payload.is_fuzzy = false
     } else {
-        payload.is_fuzzy = !item.is_fuzzy;
+        payload.is_fuzzy = !item.is_fuzzy
         if (payload.is_fuzzy) payload.is_reviewed = false
     }
     try {
-        const res = await fetch(`/api/v1/update?token=${sessionToken.value}`, {
+        const res = await authFetch('/api/v1/update', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
         })
@@ -149,7 +149,7 @@ export const requestAITranslation = async (item) => {
     if (currentUser.role === 'viewer') return
     toastShow(t('AI Translate') + '...', 'info', 2000)
     try {
-        const res = await fetch(`/api/v1/ai-translate?token=${sessionToken.value}`, {
+        const res = await authFetch('/api/v1/ai-translate', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ts_id: item.id})
         })
@@ -161,7 +161,7 @@ export const requestAITranslation = async (item) => {
 
 export const onEditorFocus = (row) => {
     if (currentUser.role !== 'viewer') {
-        activeRowId.value = row.id;
+        activeRowId.value = row.id
         wsSend({action: 'focus', ts_id: row.id})
     }
 }
@@ -171,16 +171,14 @@ export const setFilter = (key) => {
     fetchData()
 }
 export const onPageChange = () => {
-    fetchData();
+    fetchData()
     document.getElementById('mainScroll')?.scrollTo(0, 0)
 }
-
 export const onPageSizeChange = (newSize) => {
     pageSize.value = newSize;
     currentPage.value = 1;
     fetchData()
 }
-
 export const handleSearch = () => {
     clearTimeout(searchTimer)
     searchTimer = setTimeout(() => {
@@ -189,25 +187,54 @@ export const handleSearch = () => {
     }, 450)
 }
 
-export const navigateNext = (mode = 'untranslated') => {
-    if (!tableData.value.length) return
-    const start = tableData.value.findIndex(r => r.id === activeRowId.value) + 1
-    for (let i = 0; i < tableData.value.length; i++) {
-        const item = tableData.value[(start + i) % tableData.value.length]
-        const match = mode === 'any'
-            || (mode === 'untranslated' && !item.translation)
-            || (mode === 'unreviewed' && !item.is_reviewed)
-        if (!match) continue
-        activeRowId.value = item.id
-        nextTick(() => {
-            const el = document.querySelector(`[data-row-id="${item.id}"]`)
-            if (!el) return
-            el.scrollIntoView({block: 'center', behavior: 'smooth'})
-            el.querySelector('textarea')?.focus()
-        })
+export const navigateNext = async (mode = 'untranslated') => {
+    const matchesMode = (item) =>
+        mode === 'any' ||
+        (mode === 'untranslated' && !item.translation) ||
+        (mode === 'unreviewed' && !item.is_reviewed)
+
+    if (!tableData.value.length) {
+        toastShow(t('No more items found'), 'info');
         return
     }
-    toastShow(t('No more items found'), 'info')
+
+    // 在当前页、当前位置之后向后搜索（不回绕）
+    const currentIdx = tableData.value.findIndex(r => r.id === activeRowId.value)
+    const startIdx = currentIdx + 1  // currentIdx === -1 时从 0 开始
+
+    for (let i = startIdx; i < tableData.value.length; i++) {
+        const item = tableData.value[i]
+        if (matchesMode(item)) {
+            _focusItem(item);
+            return
+        }
+    }
+
+    // 当前页后半段无匹配 —— 判断是否还有下一页
+    const totalPages = Math.ceil(total.value / pageSize.value)
+
+    if (currentPage.value >= totalPages) {
+        toastShow(t('Reached the last page, no more items found'), 'info');
+        return
+    }
+
+    // 跳转下一页，无论结果如何都通知用户
+    currentPage.value++
+    await fetchData()
+    toastShow(t('Jumped to next page'), 'info', 2500)
+
+    const firstMatch = tableData.value.find(matchesMode)
+    if (firstMatch) _focusItem(firstMatch)
+}
+
+const _focusItem = (item) => {
+    activeRowId.value = item.id
+    nextTick(() => {
+        const el = document.querySelector(`[data-row-id="${item.id}"]`)
+        if (!el) return
+        el.scrollIntoView({block: 'center', behavior: 'smooth'})
+        el.querySelector('textarea')?.focus()
+    })
 }
 
 export const toggleActiveStatus = (type) => {

@@ -23,12 +23,17 @@ export const i18n           = ref({})
 
 export const t = (key) => i18n.value[key] || key
 
+export const authFetch = (url, options = {}) => {
+  const separator = url.includes('?') ? '&' : '?'
+  const finalUrl = `${url}${separator}token=${sessionToken.value}`
+  return fetch(finalUrl, options)
+}
+
 export const saveSession = (token) => {
   sessionToken.value = token
   sessionStorage.setItem('cloud_session', token)
 }
 
-// store.js（组合根）在加载时注册 initApp，避免循环依赖
 let _onLoginSuccess = null
 export const registerLoginSuccessHandler = (fn) => { _onLoginSuccess = fn }
 
@@ -49,11 +54,14 @@ export const loginAccount = async () => {
     if (!res.ok) throw new Error('Invalid credentials')
     const data = await res.json()
     saveSession(data.token)
+      
     if (rememberMe.value) {
       localStorage.setItem('lexisync_auth', JSON.stringify({
         type: 'account', username: loginForm.username, password: btoa(loginForm.password)
       }))
-    } else { localStorage.removeItem('lexisync_auth') }
+    } else {
+      localStorage.removeItem('lexisync_auth')
+    }
     await afterLogin(data)
   } catch (e) { authError.value = e.message }
   finally { loading.value = false }
@@ -70,11 +78,16 @@ export const loginToken = async () => {
     if (!res.ok) throw new Error('Invalid or expired token')
     const data = await res.json()
     saveSession(data.token)
+
     if (rememberMe.value) {
       localStorage.setItem('lexisync_auth', JSON.stringify({
-        type: 'token', token: tokenForm.token, displayName: tokenForm.displayName
+        type: 'token',
+        token: tokenForm.token,
+        displayName: tokenForm.displayName
       }))
-    } else { localStorage.removeItem('lexisync_auth') }
+    } else {
+      localStorage.removeItem('lexisync_auth')
+    }
     await afterLogin(data)
   } catch (e) { authError.value = e.message }
   finally { loading.value = false }
@@ -84,32 +97,30 @@ export const checkSessionAndInit = async () => {
   const existing = sessionStorage.getItem('cloud_session')
   const saved    = localStorage.getItem('lexisync_auth')
 
-  // 有凭据就先显示 loading，避免空白闪烁
   if (existing || saved) loading.value = true
 
   if (existing) {
     sessionToken.value = existing
     try {
-      const res = await fetch(`/api/v1/me?token=${sessionToken.value}`, { cache: 'no-store' })
+      const res = await authFetch('/api/v1/me', { cache: 'no-store' })
       if (res.ok) { await afterLogin(await res.json()); return }
     } catch (_) {}
   }
-
+  
   if (saved) {
     try {
       const auth = JSON.parse(saved)
       if (auth.type === 'account') {
         loginForm.username = auth.username; loginForm.password = atob(auth.password); rememberMe.value = true
-        await loginAccount(); return  // loginAccount 的 finally 会重置 loading
+        await loginAccount(); return
       }
       if (auth.type === 'token') {
         tokenForm.token = auth.token; tokenForm.displayName = auth.displayName; rememberMe.value = true
-        await loginToken(); return    // loginToken 的 finally 会重置 loading
+        await loginToken(); return
       }
     } catch (_) { localStorage.removeItem('lexisync_auth') }
   }
 
-  // 所有凭据均失败，重置 loading 并展示登录框
   loading.value = false
   showAuthDialog.value = true
 }

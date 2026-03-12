@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { sessionToken, showAuthDialog, authError, i18n, registerLoginSuccessHandler } from './stores/auth.js'
+import { sessionToken, showAuthDialog, authError, i18n, registerLoginSuccessHandler, authFetch } from './stores/auth.js'
 import { fetchData, cleanupProject } from './stores/project.js'
 import { connectWebSocket, disconnectWebSocket, cleanupRealtime } from './stores/realtime.js'
 import { loading } from './stores/ui.js'
@@ -11,7 +11,7 @@ import { loading } from './stores/ui.js'
 const initApp = async () => {
   loading.value = true
   try {
-    const res = await fetch(`/api/v1/i18n?token=${sessionToken.value}`, { cache: 'no-store' })
+    const res = await authFetch('/api/v1/i18n', { cache: 'no-store' })
     if (res.ok) i18n.value = await res.json()
     await fetchData()
     showAuthDialog.value = false
