@@ -61,6 +61,8 @@ import TranslationTable from './components/TranslationTable.vue'
 import ChatDrawer from './components/ChatDrawer.vue'
 
 onMounted(() => {
+  checkSessionAndInit();
+  
   const setVHToken = () => {
     let vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);

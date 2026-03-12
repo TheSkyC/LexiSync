@@ -241,7 +241,7 @@ export const rebuildOnlineUsers = (list) => {
 
 export const fetchOnlineUsers = async () => {
     try {
-        const res = await fetch(`/api/v1/users?token=${sessionToken.value}`);
+        const res = await fetch(`/api/v1/users?token=${sessionToken.value}`, { cache: 'no-store' });
         if (res.ok) rebuildOnlineUsers((await res.json()).users || []);
     } catch (_) {
     }
@@ -367,7 +367,7 @@ export const checkSessionAndInit = async () => {
     if (existingToken) {
         sessionToken.value = existingToken
         try {
-            const res = await fetch(`/api/v1/me?token=${sessionToken.value}`)
+            const res = await fetch(`/api/v1/me?token=${sessionToken.value}`, { cache: 'no-store' })
             if (res.ok) {
                 const data = await res.json()
                 currentUser.name = data.name;
@@ -409,7 +409,7 @@ export const checkSessionAndInit = async () => {
 export const initApp = async () => {
     loading.value = true
     try {
-        const resI18n = await fetch(`/api/v1/i18n?token=${sessionToken.value}`)
+        const resI18n = await fetch(`/api/v1/i18n?token=${sessionToken.value}`, { cache: 'no-store' })
         if (resI18n.ok) i18n.value = await resI18n.json()
         await fetchData()
         showAuthDialog.value = false
@@ -446,8 +446,8 @@ export const fetchData = async () => {
     try {
         const qs = `token=${sessionToken.value}`
         const [pRes, sRes] = await Promise.all([
-            fetch(`/api/v1/project?${qs}`, {signal}),
-            fetch(`/api/v1/strings?${qs}&page=${currentPage.value}&page_size=${pageSize.value}&search=${encodeURIComponent(searchQuery.value)}&status=${statusFilter.value === 'all' ? '' : statusFilter.value}`, {signal})
+            fetch(`/api/v1/project?${qs}`, { signal, cache: 'no-store' }),
+            fetch(`/api/v1/strings?${qs}&page=${currentPage.value}&page_size=${pageSize.value}&search=${encodeURIComponent(searchQuery.value)}&status=${statusFilter.value === 'all' ? '' : statusFilter.value}`, { signal, cache: 'no-store' })
         ])
         if (!pRes.ok || !sRes.ok) throw new Error('Fetch')
 
