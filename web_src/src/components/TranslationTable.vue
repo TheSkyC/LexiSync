@@ -37,10 +37,11 @@ SPDX-License-Identifier: Apache-2.0
           <div
               class="editor-cell"
               :class="{
-              'has-others': othersEditing(row).length > 0,
-              'is-self-editing': activeRowId === row.id
-            }"
+                'has-others': othersEditing(row).length > 0,
+                'is-self-editing': activeRowId === row.id
+              }"
               :ref="el => { if (el) cellRefs[row.id] = el }"
+              :data-row-id="row.id"
               @mouseenter="onCellEnter(row)"
               @mouseleave="onCellLeave(row)"
           >

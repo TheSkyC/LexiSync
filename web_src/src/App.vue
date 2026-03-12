@@ -48,10 +48,12 @@ SPDX-License-Identifier: Apache-2.0
 import {onMounted, onBeforeUnmount} from 'vue'
 import {Top} from '@element-plus/icons-vue'
 import {
-  showAuthDialog, applyTheme, isDark, checkSessionAndInit, showFab, cleanupStore,
-  currentPage, pageSize, total, onPageChange, onPageSizeChange, scrollToTop, t
+  showAuthDialog, isDark, checkSessionAndInit, showFab, cleanupStore,
+  currentPage, pageSize, total, onPageChange, onPageSizeChange, scrollToTop, t,
+  activeRowId, toggleActiveStatus, requestActiveAI, navigateNext,
+  fetchData, searchQuery,
+  tableData, toastShow
 } from './store.js'
-
 import ToastContainer from './components/ToastContainer.vue'
 import AuthDialog from './components/AuthDialog.vue'
 import NavBar from './components/NavBar.vue'
@@ -61,31 +63,69 @@ import TranslationTable from './components/TranslationTable.vue'
 import ChatDrawer from './components/ChatDrawer.vue'
 
 onMounted(() => {
-  checkSessionAndInit();
+  checkSessionAndInit()
+  window.addEventListener('scroll', handleWindowScroll)
+  window.addEventListener('resize', setVHToken)
+  window.addEventListener('keydown', handleKeyDown)
+  setVHToken()
+})
 
-  window.addEventListener('scroll', handleWindowScroll);
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleWindowScroll)
+  window.removeEventListener('resize', setVHToken)
+  window.removeEventListener('keydown', handleKeyDown)
+  cleanupStore()
+})
 
-  const setVHToken = () => {
-    let vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-  };
-  window.addEventListener('resize', setVHToken);
-  setVHToken();
-});
+const setVHToken = () => {
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`)
+}
 
 const handleWindowScroll = () => {
   showFab.value = window.scrollY > 200
 }
 
-onBeforeUnmount(() => {
-  window.removeEventListener('scroll', handleWindowScroll)
-  cleanupStore()
-})
-
 const handleBackToTop = (e) => {
-  scrollToTop();
-  if (e.currentTarget) {
-    e.currentTarget.blur();
+  scrollToTop()
+  e.currentTarget?.blur()
+}
+
+const handleKeyDown = (e) => {
+  const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)
+  const isEditingTranslation = document.activeElement.classList.contains('el-textarea__inner') 
+  if (isInput && !isEditingTranslation) return
+  
+  const isCtrl = e.ctrlKey || e.metaKey
+  const isShift = e.shiftKey
+
+  if (isCtrl && e.key.toLowerCase() === 'r') {
+    e.preventDefault();
+    toggleActiveStatus('reviewed')
+  }
+  if (isCtrl && !isShift && e.key.toLowerCase() === 'f') {
+    e.preventDefault();
+    toggleActiveStatus('fuzzy')
+  }
+  if (isCtrl && e.key === 'Enter') {
+    e.preventDefault();
+    navigateNext('untranslated')
+  }
+  if (isCtrl && e.key.toLowerCase() === 't') {
+    e.preventDefault();
+    requestActiveAI()
+  }
+  if (e.key === 'F5') {
+    e.preventDefault();
+    fetchData()
+  }
+  
+  if (isCtrl && isShift && e.key.toLowerCase() === 'c') {
+    const item = tableData.value.find(r => r.id === activeRowId.value)
+    if (item) {
+      e.preventDefault();
+      navigator.clipboard.writeText(item.source);
+      toastShow(t('Source copied'), 'success')
+    }
   }
 }
 </script>
