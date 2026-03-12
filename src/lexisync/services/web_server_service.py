@@ -562,13 +562,31 @@ class WebServerService(QThread):
         self.is_running = True
         config = uvicorn.Config(self.fastapi_app, host=self.host, port=self.port, log_level="warning", loop="asyncio")
         self.server = uvicorn.Server(config)
+
+        ip = "127.0.0.1"
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
+            temp_ip = s.getsockname()[0]
             s.close()
+
+            if temp_ip.startswith("198.18.") or temp_ip.startswith("127."):
+                import psutil
+
+                addrs = psutil.net_if_addrs()
+                for _interface_name, interface_addresses in addrs.items():
+                    for address in interface_addresses:
+                        if address.family == socket.AF_INET:
+                            if address.address.startswith(("192.168.", "172.", "10.")):
+                                ip = address.address
+                                break
+                    if ip != "127.0.0.1":
+                        break
+            else:
+                ip = temp_ip
         except Exception:
             ip = "127.0.0.1"
+
         self.signals.server_started.emit(f"http://{ip}:{self.port}")
         self.server.run()
 
