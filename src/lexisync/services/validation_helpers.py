@@ -47,9 +47,10 @@ RE_ICU_SELECTOR = re.compile(r"=\d+\s*\{")
 RE_ORDINAL = re.compile(r"(\d+)(st|nd|rd|th)\b", re.IGNORECASE)
 RE_APOSTROPHE = re.compile(r"(?<!['’])\b\w+(?:['’]\w+|s['’])(?![\w'’])", re.IGNORECASE)
 RE_ICU_PLACEHOLDER = re.compile(r"\{(?:[^{}]|(?R))*\}")
+RE_ICU_INNER_TYPE = re.compile(r"^[a-zA-Z0-9_]+\s*,\s*(plural|select|gender)\s*,")
+RE_ICU_VAR_NAME = re.compile(r"^([a-zA-Z0-9_]+)")
 
 RE_HAS_DIGIT = re.compile(r"\d")
-RE_S_PLURAL = re.compile(r"\(s\)", re.IGNORECASE)
 RE_PRINTF_FALSE_POSITIVE = re.compile(r"%\s+[a-zA-Z]")
 
 QUOTE_CHARS = {"'", "‘", "’", "「", "」", '"', "“", "”", "『", "』", "«", "»", "„"}
@@ -319,15 +320,17 @@ def check_leading_whitespace(source, target):
 
 def check_trailing_whitespace(source, target):
     """检查结尾空格"""
-    src_has = source.rstrip("\n\r").endswith(" ") or source.rstrip("\n\r").endswith("\t")
-    tgt_has = target.rstrip("\n\r").endswith(" ") or target.rstrip("\n\r").endswith("\t")
+    src_stripped = source.rstrip("\n\r")
+    tgt_stripped = target.rstrip("\n\r")
+
+    src_has = src_stripped.endswith((" ", "\t"))
+    tgt_has = tgt_stripped.endswith((" ", "\t"))
 
     if src_has and not tgt_has:
-        tgt_stripped = target.rstrip()
-        if tgt_stripped:
-            last_char = tgt_stripped[-1]
-            full_width_puncts = {"：", "。", "？", "！", "，", "；"}
-            if last_char in full_width_puncts:
+        tgt_rstripped = target.rstrip()
+        if tgt_rstripped:
+            last_char = tgt_rstripped[-1]
+            if last_char in {"：", "。", "？", "！", "，", "；"}:
                 return None
         return _("Translation should end with whitespace")
     if not src_has and tgt_has:
@@ -373,7 +376,7 @@ def check_ending_punctuation(source, target, target_lang):
         return None
 
     temp_s = s_strip
-    if temp_s.lower().endswith("(s)"):
+    if temp_s.endswith(("(s)", "(S)")):
         temp_s = temp_s[:-3].rstrip()
         if not temp_s:
             temp_s = s_strip
@@ -458,7 +461,7 @@ def check_newline_count(source, target):
     return None
 
 
-def check_pangu_spacing(target):
+def check_pangu_spacing(source, target):
     """盘古之白：检查中文字符与拉丁字符之间是否缺少空格"""
     match_cjk_latin = RE_PANGU_CJK_LATIN.search(target)
     if match_cjk_latin:
@@ -644,11 +647,9 @@ def check_icu_placeholders(source, target):
     def extract_vars(text):
         vars_list = []
         for match in RE_ICU_PLACEHOLDER.finditer(text):
-            block = match.group(0)
-            inner = block[1:-1].strip()
-
-            if re.search(r"^[a-zA-Z0-9_]+\s*,\s*(plural|select|gender)\s*,", inner):
-                var_match = re.match(r"^([a-zA-Z0-9_]+)", inner)
+            inner = match.group(0)[1:-1].strip()
+            if RE_ICU_INNER_TYPE.search(inner):
+                var_match = RE_ICU_VAR_NAME.match(inner)
                 if var_match:
                     vars_list.append(var_match.group(1))
         return vars_list
@@ -760,8 +761,8 @@ def check_numbers(source, target, mode="loose"):
 
 def check_brackets(source, target):
     """检查括号是否成对且数量一致"""
-    source_clean = RE_S_PLURAL.sub("", source)
-    target_clean = RE_S_PLURAL.sub("", target)
+    source_clean = source.replace("(s)", "").replace("(S)", "")
+    target_clean = target.replace("(s)", "").replace("(S)", "")
 
     bracket_groups = [
         ("(", ")", "（", "）", "Parentheses ()"),

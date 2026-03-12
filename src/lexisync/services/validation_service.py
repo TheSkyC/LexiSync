@@ -22,24 +22,181 @@ def get_starting_cased_char(s):
     return None
 
 
-def _report(ts_obj, config, rule_key, warning_type, message):
+def _has_url_email(text):
+    return "@" in text or "/" in text or "www" in text or "WWW" in text
+
+
+def is_rule_enabled(config, rule_key):
+    """判断规则是否开启"""
     rules = config.get("validation_rules", {})
-    rule_cfg = rules.get(rule_key, DEFAULT_VALIDATION_RULES.get(rule_key, {"enabled": True, "level": "warning"}))
-
-    if not rule_cfg.get("enabled", True):
-        return
-
-    level = rule_cfg.get("level", "warning")
-
-    if level == "error":
-        ts_obj.warnings.append((warning_type, message))
-    elif level == "info":
-        ts_obj.infos.append((warning_type, message))
-    else:
-        ts_obj.minor_warnings.append((warning_type, message))
+    rule_cfg = rules.get(rule_key, DEFAULT_VALIDATION_RULES.get(rule_key, {"enabled": True}))
+    return rule_cfg.get("enabled", True)
 
 
-def validate_string(ts_obj, config, app_instance=None, term_cache=None):
+def get_rule_level(config, rule_key):
+    """获取警告级别"""
+    rules = config.get("validation_rules", {})
+    rule_cfg = rules.get(rule_key, DEFAULT_VALIDATION_RULES.get(rule_key, {"level": "warning"}))
+    return rule_cfg.get("level", "warning")
+
+
+# --- 构建规则注册表 ---
+VALIDATION_REGISTRY = [
+    # --- 代码安全检查 ---
+    {
+        "key": "printf",
+        "warning_type": WarningType.PRINTF_MISMATCH,
+        "fast_path": lambda ctx: ctx["has_percent"],
+        "check_func": validation_helpers.check_printf,
+        "kwargs_gen": lambda ctx: {
+            "mode": ctx["config"].get("validation_rules", {}).get("printf", {}).get("mode", "loose")
+        },
+        "use_clean_text": False,
+    },
+    {
+        "key": "python_brace",
+        "warning_type": WarningType.PYTHON_BRACE_MISMATCH,
+        "fast_path": lambda ctx: ctx["has_brace"],
+        "check_func": validation_helpers.check_python_brace,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": False,
+    },
+    {
+        "key": "icu_placeholder",
+        "warning_type": WarningType.ICU_PLACEHOLDER_MISMATCH,
+        "fast_path": lambda ctx: ctx["has_brace"],
+        "check_func": validation_helpers.check_icu_placeholders,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": False,
+    },
+    {
+        "key": "html_tags",
+        "warning_type": WarningType.PLACEHOLDER_MISSING,
+        "fast_path": lambda ctx: ctx["has_html"],
+        "check_func": validation_helpers.check_html_tags,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": False,
+    },
+    {
+        "key": "url_email",
+        "warning_type": WarningType.URL_MISMATCH,
+        "fast_path": lambda ctx: ctx["has_url_email"],
+        "check_func": validation_helpers.check_urls_emails,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": False,
+    },
+    # --- 内容一致性 ---
+    {
+        "key": "numbers",
+        "warning_type": WarningType.NUMBER_MISMATCH,
+        "fast_path": lambda ctx: True,  # 内部已优化 RE_HAS_DIGIT
+        "check_func": validation_helpers.check_numbers,
+        "kwargs_gen": lambda ctx: {
+            "mode": ctx["config"].get("validation_rules", {}).get("numbers", {}).get("mode", "loose")
+        },
+        "use_clean_text": False,
+    },
+    # --- 格式与标点 ---
+    {
+        "key": "pangu",
+        "warning_type": WarningType.PANGU_SPACING,
+        "fast_path": lambda ctx: True,
+        "check_func": validation_helpers.check_pangu_spacing,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": False,
+    },
+    {
+        "key": "brackets",
+        "warning_type": WarningType.BRACKET_MISMATCH,
+        "fast_path": lambda ctx: ctx["has_brackets"],
+        "check_func": validation_helpers.check_brackets,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": True,
+    },
+    {
+        "key": "double_space",
+        "warning_type": WarningType.DOUBLE_SPACE,
+        "fast_path": lambda ctx: True,
+        "check_func": validation_helpers.check_double_space,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": False,
+    },
+    {
+        "key": "whitespace",
+        "warning_type": WarningType.LEADING_WHITESPACE_MISMATCH,
+        "fast_path": lambda ctx: True,
+        "check_func": validation_helpers.check_leading_whitespace,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": True,
+    },
+    {
+        "key": "whitespace",
+        "warning_type": WarningType.TRAILING_WHITESPACE_MISMATCH,
+        "fast_path": lambda ctx: True,
+        "check_func": validation_helpers.check_trailing_whitespace,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": True,
+    },
+    {
+        "key": "punctuation",
+        "warning_type": WarningType.PUNCTUATION_MISMATCH_START,
+        "fast_path": lambda ctx: True,
+        "check_func": validation_helpers.check_starting_punctuation,
+        "kwargs_gen": lambda ctx: {"target_lang": ctx["target_lang"]},
+        "use_clean_text": True,
+    },
+    {
+        "key": "punctuation",
+        "warning_type": WarningType.PUNCTUATION_MISMATCH_END,
+        "fast_path": lambda ctx: True,
+        "check_func": validation_helpers.check_ending_punctuation,
+        "kwargs_gen": lambda ctx: {"target_lang": ctx["target_lang"]},
+        "use_clean_text": True,
+    },
+    {
+        "key": "capitalization",
+        "warning_type": WarningType.CAPITALIZATION_MISMATCH,
+        "fast_path": lambda ctx: True,
+        "check_func": validation_helpers.check_capitalization,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": True,
+    },
+    {
+        "key": "repeated_word",
+        "warning_type": WarningType.REPEATED_WORD,
+        "fast_path": lambda ctx: True,
+        "check_func": validation_helpers.check_repeated_words,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": True,
+    },
+    {
+        "key": "newline_count",
+        "warning_type": WarningType.NEWLINE_COUNT_MISMATCH,
+        "fast_path": lambda ctx: "\n" in ctx["original"] or "\n" in ctx["translation"],
+        "check_func": validation_helpers.check_newline_count,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": True,
+    },
+    {
+        "key": "quotes",
+        "warning_type": WarningType.QUOTE_MISMATCH,
+        "fast_path": lambda ctx: True,  # 内部已优化 isdisjoint
+        "check_func": validation_helpers.check_quotes,
+        "kwargs_gen": lambda ctx: {},
+        "use_clean_text": True,
+    },
+    {
+        "key": "accelerator",
+        "warning_type": WarningType.ACCELERATOR_MISMATCH,
+        "fast_path": lambda ctx: ctx["has_marker_orig"] or ctx["has_marker_trans"],
+        "check_func": validation_helpers.check_accelerators,
+        "kwargs_gen": lambda ctx: {"markers": ctx["markers"]},
+        "use_clean_text": False,
+    },
+]
+
+
+def validate_string(ts_obj, ctx_env):
     ts_obj.warnings = []
     ts_obj.minor_warnings = []
     ts_obj.infos = []
@@ -47,22 +204,20 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
     if ts_obj.is_ignored:
         return
 
-    rules = config.get("validation_rules", {})
-    accelerator_markers_str = config.get("accelerator_marker", "&")
-    markers = [m.strip() for m in accelerator_markers_str.split(",") if m.strip()] or ["&"]
-
     forms_to_check = []
     if ts_obj.is_plural:
         s_idx = ts_obj.singular_index
         for idx, trans in ts_obj.plural_translations.items():
-            if not trans:
-                continue
-            orig = ts_obj.original_semantic if idx == s_idx else ts_obj.original_plural
-            forms_to_check.append((idx, orig, trans))
+            if trans:
+                orig = ts_obj.original_semantic if idx == s_idx else ts_obj.original_plural
+                forms_to_check.append((idx, orig, trans))
     else:
         forms_to_check.append((None, ts_obj.original_semantic, ts_obj.translation))
+
     if not forms_to_check:
         return
+
+    markers = ctx_env["markers"]
 
     for idx, original, translation in forms_to_check:
         if not translation.strip():
@@ -79,166 +234,142 @@ def validate_string(ts_obj, config, app_instance=None, term_cache=None):
             validation_helpers.strip_accelerators(translation, markers) if has_marker_trans else translation
         )
 
-        target_lang = app_instance.current_target_language if app_instance else "en"
+        # 准备单次执行的上下文
+        ctx = {
+            "original": original,
+            "translation": translation,
+            "original_clean": original_clean,
+            "translation_clean": translation_clean,
+            "has_marker_orig": has_marker_orig,
+            "has_marker_trans": has_marker_trans,
+            "has_percent": "%" in original or "%" in translation,
+            "has_brace": "{" in original or "{" in translation,
+            "has_html": "<" in original or "<" in translation,
+            "has_url_email": _has_url_email(original) or _has_url_email(translation),
+            "has_brackets": not BRACKET_CHARS.isdisjoint(original_clean)
+            or not BRACKET_CHARS.isdisjoint(translation_clean),
+        }
 
-        # Fast paths
-        has_percent = "%" in original or "%" in translation
-        has_brace = "{" in original or "{" in translation
-        has_html = "<" in original or "<" in translation
-        has_url_email = (
-            "http" in original
-            or "HTTP" in original
-            or "@" in original
-            or "http" in translation
-            or "HTTP" in translation
-            or "@" in translation
-        )
+        for rule_pack in ctx_env["active_rules"]:
+            rule = rule_pack["rule"]
+            if not rule["fast_path"](ctx):
+                continue
 
-        # --- 1. 代码安全检查 ---
-        if has_percent:
-            printf_mode = rules.get("printf", {}).get("mode", "loose")
-            if err := validation_helpers.check_printf(original, translation, mode=printf_mode):
-                _report(ts_obj, config, "printf", WarningType.PRINTF_MISMATCH, format_msg(err))
+            src_text = ctx["original_clean"] if rule["use_clean_text"] else ctx["original"]
+            tgt_text = ctx["translation_clean"] if rule["use_clean_text"] else ctx["translation"]
 
-        if has_brace:
-            if err := validation_helpers.check_python_brace(original, translation):
-                _report(ts_obj, config, "python_brace", WarningType.PYTHON_BRACE_MISMATCH, format_msg(err))
+            err_msg = rule["check_func"](src_text, tgt_text, **rule_pack["kwargs"])
 
-            if err := validation_helpers.check_icu_placeholders(original, translation):
-                _report(ts_obj, config, "icu_placeholder", WarningType.ICU_PLACEHOLDER_MISMATCH, format_msg(err))
+            if err_msg:
+                level = rule_pack["level"]
+                formatted_msg = format_msg(err_msg)
+                if level == "error":
+                    ts_obj.warnings.append((rule["warning_type"], formatted_msg))
+                elif level == "info":
+                    ts_obj.infos.append((rule["warning_type"], formatted_msg))
+                else:
+                    ts_obj.minor_warnings.append((rule["warning_type"], formatted_msg))
 
-        if has_html:
-            if err := validation_helpers.check_html_tags(original, translation):
-                _report(ts_obj, config, "html_tags", WarningType.PLACEHOLDER_MISSING, format_msg(err))
+        # --- 特殊逻辑 ---
+        if ts_obj.is_fuzzy and ctx_env["fuzzy_enabled"]:
+            msg = format_msg(_("Translation is marked as fuzzy."))
+            target_list = (
+                ts_obj.warnings
+                if ctx_env["fuzzy_level"] == "error"
+                else (ts_obj.infos if ctx_env["fuzzy_level"] == "info" else ts_obj.minor_warnings)
+            )
+            target_list.append((WarningType.FUZZY_TRANSLATION, msg))
 
-        if has_url_email:
-            if err := validation_helpers.check_urls_emails(original, translation):
-                _report(ts_obj, config, "url_email", WarningType.URL_MISMATCH, format_msg(err))
-
-        # --- 2. 内容一致性 ---
-        numbers_mode = rules.get("numbers", {}).get("mode", "loose")
-        if err := validation_helpers.check_numbers(original, translation, mode=numbers_mode):
-            _report(ts_obj, config, "numbers", WarningType.NUMBER_MISMATCH, format_msg(err))
-
-        if ts_obj.is_fuzzy:
-            _report(ts_obj, config, "fuzzy", WarningType.FUZZY_TRANSLATION, _("Translation is marked as fuzzy."))
-
-        # 术语库检查
-        if term_cache:
-            matches = term_cache.extract_keywords(original)
+        if ctx_env["term_cache"] is not None and ctx_env["glossary_enabled"]:
+            matches = ctx_env["term_cache"].extract_keywords(original)
             if matches:
                 translation_lower = translation.lower()
                 for match in matches:
-                    term = match["term"]
-                    term_info = match["data"]
-                    required_targets = [t["target"].lower() for t in term_info["translations"]]
+                    required_targets = [t["target"].lower() for t in match["data"]["translations"]]
                     if not any(target in translation_lower for target in required_targets):
-                        msg = _("Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'.").format(
-                            term=term, targets=" / ".join(required_targets)
+                        msg = format_msg(
+                            _("Glossary Mismatch: Term '{term}' should be translated as one of '{targets}'.").format(
+                                term=match["term"], targets=" / ".join(required_targets)
+                            )
                         )
-                        _report(ts_obj, config, "glossary", WarningType.GLOSSARY_MISMATCH, format_msg(msg))
+                        target_list = (
+                            ts_obj.warnings
+                            if ctx_env["glossary_level"] == "error"
+                            else (ts_obj.infos if ctx_env["glossary_level"] == "info" else ts_obj.minor_warnings)
+                        )
+                        target_list.append((WarningType.GLOSSARY_MISMATCH, msg))
 
-        # --- 3. 格式与标点 ---
-        if err := validation_helpers.check_pangu_spacing(translation):
-            _report(ts_obj, config, "pangu", WarningType.PANGU_SPACING, format_msg(err))
-
-        if not BRACKET_CHARS.isdisjoint(original_clean) or not BRACKET_CHARS.isdisjoint(translation_clean):
-            if err := validation_helpers.check_brackets(original_clean, translation_clean):
-                _report(ts_obj, config, "brackets", WarningType.BRACKET_MISMATCH, format_msg(err))
-
-        if err := validation_helpers.check_double_space(original, translation):
-            _report(ts_obj, config, "double_space", WarningType.DOUBLE_SPACE, format_msg(_(err)))
-
-        # 空格检查
-        if err := validation_helpers.check_leading_whitespace(original_clean, translation_clean):
-            _report(ts_obj, config, "whitespace", WarningType.LEADING_WHITESPACE_MISMATCH, format_msg(_(err)))
-
-        if err := validation_helpers.check_trailing_whitespace(original_clean, translation_clean):
-            _report(ts_obj, config, "whitespace", WarningType.TRAILING_WHITESPACE_MISMATCH, format_msg(_(err)))
-
-        # 标点检查
-        if err := validation_helpers.check_starting_punctuation(original_clean, translation_clean, target_lang):
-            _report(ts_obj, config, "punctuation", WarningType.PUNCTUATION_MISMATCH_START, format_msg(_(err)))
-
-        if err := validation_helpers.check_ending_punctuation(original_clean, translation_clean, target_lang):
-            _report(ts_obj, config, "punctuation", WarningType.PUNCTUATION_MISMATCH_END, format_msg(_(err)))
-
-        # 大小写检查
-        if err := validation_helpers.check_capitalization(original_clean, translation_clean):
-            _report(ts_obj, config, "capitalization", WarningType.CAPITALIZATION_MISMATCH, format_msg(_(err)))
-
-        if err := validation_helpers.check_repeated_words(original_clean, translation_clean):
-            _report(ts_obj, config, "repeated_word", WarningType.REPEATED_WORD, format_msg(_(err)))
-
-        if err := validation_helpers.check_newline_count(original_clean, translation_clean):
-            _report(ts_obj, config, "newline_count", WarningType.NEWLINE_COUNT_MISMATCH, format_msg(_(err)))
-
-        if err := validation_helpers.check_quotes(original_clean, translation_clean):
-            _report(ts_obj, config, "quotes", WarningType.QUOTE_MISMATCH, format_msg(_(err)))
-
-        if err := validation_helpers.check_accelerators(original, translation, markers):
-            _report(ts_obj, config, "accelerator", WarningType.ACCELERATOR_MISMATCH, format_msg(err))
-
-        # --- 4. 长度检查 ---
-        if config.get("check_length", True):
-            # 逻辑条件：长度大于4 且 内容不同
+        if ctx_env["check_length"]:
             if len(original) > 4 and original != translation:
                 len_orig = get_linguistic_length(original)
                 len_trans = get_linguistic_length(translation)
 
                 if len_orig > 0:
                     actual_ratio = len_trans / len_orig
-                    service = ExpansionRatioService.get_instance()
-                    expected_ratio = service.get_expected_ratio(
-                        app_instance.source_language, app_instance.current_target_language, original, "none"
+                    expected_ratio = ctx_env["ratio_service"].get_expected_ratio(
+                        ctx_env["source_lang"], ctx_env["target_lang"], original, "none"
                     )
-
-                    # 优先从 config 读取，如果没有则使用硬编码默认值 (2.5, 0.4, 2.0, 0.5)
-                    major_upper_threshold_factor = config.get("length_threshold_major", 2.5)
-                    major_lower_threshold_factor = 1 / major_upper_threshold_factor
-                    minor_upper_threshold_factor = config.get("length_threshold_minor", 2.0)
-                    minor_lower_threshold_factor = 1 / minor_upper_threshold_factor
-
                     if expected_ratio is not None and expected_ratio > 0:
                         if (
-                            actual_ratio > expected_ratio * major_upper_threshold_factor
-                            or actual_ratio < expected_ratio * major_lower_threshold_factor
+                            actual_ratio > expected_ratio * ctx_env["len_major_up"]
+                            or actual_ratio < expected_ratio * ctx_env["len_major_down"]
                         ):
-                            warning_msg = _(
+                            msg = _(
                                 "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
                             ).format(actual=actual_ratio, expected=expected_ratio)
-                            ts_obj.warnings.append((WarningType.LENGTH_DEVIATION_MAJOR, warning_msg))
-
-                        # 轻微警告逻辑
+                            ts_obj.warnings.append((WarningType.LENGTH_DEVIATION_MAJOR, msg))
                         elif (
-                            actual_ratio > expected_ratio * minor_upper_threshold_factor
-                            or actual_ratio < expected_ratio * minor_lower_threshold_factor
+                            actual_ratio > expected_ratio * ctx_env["len_minor_up"]
+                            or actual_ratio < expected_ratio * ctx_env["len_minor_down"]
                         ):
-                            warning_msg = _(
+                            msg = _(
                                 "Length warning: Unusual expansion ratio ({actual:.1f}x), expected around {expected:.1f}x."
                             ).format(actual=actual_ratio, expected=expected_ratio)
-                            ts_obj.minor_warnings.append((WarningType.LENGTH_DEVIATION_MINOR, warning_msg))
+                            ts_obj.minor_warnings.append((WarningType.LENGTH_DEVIATION_MINOR, msg))
 
 
 def run_validation_on_all(translatable_objects, config, app_instance=None):
+    target_lang = app_instance.current_target_language if app_instance else "en"
+    source_lang = app_instance.source_language if app_instance else "en"
+
+    # 预计算全局参数
+    accelerator_markers_str = config.get("accelerator_marker", "&")
+    markers = [m.strip() for m in accelerator_markers_str.split(",") if m.strip()] or ["&"]
+
+    # 预计算所有规则的 kwargs 和 level
+    active_rules_pack = []
+
+    init_ctx = {
+        "config": config,
+        "target_lang": target_lang,
+        "markers": markers,
+    }
+
+    for rule in VALIDATION_REGISTRY:
+        if is_rule_enabled(config, rule["key"]):
+            active_rules_pack.append(
+                {"rule": rule, "kwargs": rule["kwargs_gen"](init_ctx), "level": get_rule_level(config, rule["key"])}
+            )
+
+    # 预计算长度检查参数
+    check_length = config.get("check_length", True)
+    len_major_up = config.get("length_threshold_major", 2.5)
+    len_minor_up = config.get("length_threshold_minor", 2.0)
+
+    # 术语库初始化
     matcher = None
     if config.get("check_glossary", True) and app_instance:
         all_words = set()
         seen_semantics = set()
-
         for ts_obj in translatable_objects:
             if not ts_obj.is_ignored and ts_obj.translation.strip():
                 sem = ts_obj.original_semantic.lower()
                 if sem not in seen_semantics:
                     seen_semantics.add(sem)
-                    # 仅对包含字母的原文提取 N-gram
                     if re.search(r"\w", sem):
-                        ngrams = generate_ngrams(sem, min_n=1, max_n=5)
-                        all_words.update(ngrams)
+                        all_words.update(generate_ngrams(sem, min_n=1, max_n=5))
 
         if all_words:
-            source_lang = app_instance.source_language
-            target_lang = app_instance.current_target_language
             term_cache_dict = app_instance.glossary_service.get_translations_batch(
                 words=list(all_words), source_lang=source_lang, target_lang=target_lang, include_reverse=False
             )
@@ -249,5 +380,25 @@ def run_validation_on_all(translatable_objects, config, app_instance=None):
                 for term, info in term_cache_dict.items():
                     matcher.add_keyword(term, info)
 
+    # 构建上下文环境
+    ctx_env = {
+        "active_rules": active_rules_pack,
+        "markers": markers,
+        "fuzzy_enabled": is_rule_enabled(config, "fuzzy"),
+        "fuzzy_level": get_rule_level(config, "fuzzy"),
+        "glossary_enabled": is_rule_enabled(config, "glossary"),
+        "glossary_level": get_rule_level(config, "glossary"),
+        "term_cache": matcher,
+        "check_length": check_length,
+        "ratio_service": ExpansionRatioService.get_instance() if check_length else None,
+        "source_lang": source_lang,
+        "target_lang": target_lang,
+        "len_major_up": len_major_up,
+        "len_major_down": 1 / len_major_up if len_major_up else 0,
+        "len_minor_up": len_minor_up,
+        "len_minor_down": 1 / len_minor_up if len_minor_up else 0,
+    }
+
+    # 执行验证
     for ts_obj in translatable_objects:
-        validate_string(ts_obj, config, app_instance, matcher)
+        validate_string(ts_obj, ctx_env)
