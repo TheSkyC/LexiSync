@@ -179,6 +179,7 @@ export const handleWsMsg = (msg) => {
                 if (msg.data.is_reviewed !== null && msg.data.is_reviewed !== undefined) item.is_reviewed = msg.data.is_reviewed
                 if (msg.data.is_fuzzy !== null && msg.data.is_fuzzy !== undefined) item.is_fuzzy = msg.data.is_fuzzy
             }
+            fetchProjectStats();
             break
         }
         case 'FOCUS_UPDATE': {
@@ -241,7 +242,7 @@ export const rebuildOnlineUsers = (list) => {
 
 export const fetchOnlineUsers = async () => {
     try {
-        const res = await fetch(`/api/v1/users?token=${sessionToken.value}`, { cache: 'no-store' });
+        const res = await fetch(`/api/v1/users?token=${sessionToken.value}`, {cache: 'no-store'});
         if (res.ok) rebuildOnlineUsers((await res.json()).users || []);
     } catch (_) {
     }
@@ -250,17 +251,6 @@ export const fetchOnlineUsers = async () => {
 export const saveSession = (token) => {
     sessionToken.value = token
     sessionStorage.setItem('cloud_session', token)
-}
-
-export const loadSession = () => {
-    const urlTok = new URLSearchParams(location.search).get('token')
-    if (urlTok) {
-        tokenForm.token = urlTok
-        authTab.value = 'token'
-        history.replaceState({}, document.title, location.pathname)
-        return null
-    }
-    return localStorage.getItem('cloud_session') || sessionStorage.getItem('cloud_session')
 }
 
 export const loginAccount = async () => {
@@ -367,7 +357,7 @@ export const checkSessionAndInit = async () => {
     if (existingToken) {
         sessionToken.value = existingToken
         try {
-            const res = await fetch(`/api/v1/me?token=${sessionToken.value}`, { cache: 'no-store' })
+            const res = await fetch(`/api/v1/me?token=${sessionToken.value}`, {cache: 'no-store'})
             if (res.ok) {
                 const data = await res.json()
                 currentUser.name = data.name;
@@ -409,7 +399,7 @@ export const checkSessionAndInit = async () => {
 export const initApp = async () => {
     loading.value = true
     try {
-        const resI18n = await fetch(`/api/v1/i18n?token=${sessionToken.value}`, { cache: 'no-store' })
+        const resI18n = await fetch(`/api/v1/i18n?token=${sessionToken.value}`, {cache: 'no-store'})
         if (resI18n.ok) i18n.value = await resI18n.json()
         await fetchData()
         showAuthDialog.value = false
@@ -446,8 +436,11 @@ export const fetchData = async () => {
     try {
         const qs = `token=${sessionToken.value}`
         const [pRes, sRes] = await Promise.all([
-            fetch(`/api/v1/project?${qs}`, { signal, cache: 'no-store' }),
-            fetch(`/api/v1/strings?${qs}&page=${currentPage.value}&page_size=${pageSize.value}&search=${encodeURIComponent(searchQuery.value)}&status=${statusFilter.value === 'all' ? '' : statusFilter.value}`, { signal, cache: 'no-store' })
+            fetch(`/api/v1/project?${qs}`, {signal, cache: 'no-store'}),
+            fetch(`/api/v1/strings?${qs}&page=${currentPage.value}&page_size=${pageSize.value}&search=${encodeURIComponent(searchQuery.value)}&status=${statusFilter.value === 'all' ? '' : statusFilter.value}`, {
+                signal,
+                cache: 'no-store'
+            })
         ])
         if (!pRes.ok || !sRes.ok) throw new Error('Fetch')
 
@@ -480,6 +473,24 @@ export const fetchData = async () => {
     }
 }
 
+export const fetchProjectStats = async () => {
+    try {
+        const res = await fetch(`/api/v1/project?token=${sessionToken.value}`, {cache: 'no-store'});
+        if (res.ok) {
+            const pData = await res.json();
+            Object.assign(stats, {
+                total: pData.total,
+                reviewed: pData.reviewed,
+                translated: pData.translated,
+                fuzzy: pData.fuzzy,
+                untranslated: pData.untranslated
+            });
+        }
+    } catch (e) {
+        console.error("Failed to sync stats:", e);
+    }
+}
+
 export const updateTranslation = async (item, pIdx = 0) => {
     if (currentUser.role === 'viewer') return
     wsSend({action: 'blur', ts_id: item.id})
@@ -500,7 +511,7 @@ export const updateTranslation = async (item, pIdx = 0) => {
 
 export const toggleStatus = async (item, type) => {
     if (currentUser.role === 'viewer') return
-    
+
     if (type === 'reviewed' && currentUser.role === 'translator') {
         toastShow(t('Permission Denied'), 'error');
         return
@@ -521,7 +532,7 @@ export const toggleStatus = async (item, type) => {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
         })
-        
+
         if (!res.ok) {
             if (res.status === 403) {
                 toastShow(t('Permission Denied'), 'error');
@@ -529,7 +540,7 @@ export const toggleStatus = async (item, type) => {
                 toastShow(t('Sync failed'), 'error');
             }
         }
-        
+
     } catch (e) {
         toastShow(t('Sync failed'), 'error');
         fetchData();

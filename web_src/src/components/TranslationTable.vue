@@ -286,7 +286,7 @@ onBeforeUnmount(() => {
   resize: none;
   box-shadow: none !important;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-  overflow: hidden !important; 
+  overflow: hidden !important;
   word-break: break-word;
 }
 
@@ -337,12 +337,14 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   /* 让原文不响应触摸滚动 */
   :deep(.source-input) {
-    pointer-events: none; 
+    pointer-events: none;
   }
+
   /* 让译文框在非聚焦状态下隐藏溢出 */
   :deep(.editor-input .el-textarea__inner:not(:focus)) {
     touch-action: pan-y;
   }
+
   .translation-card {
     background: transparent;
     border: none;

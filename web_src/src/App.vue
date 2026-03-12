@@ -28,17 +28,17 @@ SPDX-License-Identifier: Apache-2.0
           background
           size="small">
       </el-pagination>
-
-      <el-button
-          class="back-to-top-btn"
-          v-show="showFab"
-          @click="scrollToTop"
-          :icon="Top"
-          circle
-          size="small"
-          :title="t('Back to top')">
-      </el-button>
     </footer>
+
+    <el-button
+        class="back-to-top-btn"
+        v-show="showFab"
+        @click="handleBackToTop"
+        :icon="Top"
+        circle
+        size="default"
+        :title="t('Back to top')">
+    </el-button>
 
     <ChatDrawer/>
   </div>
@@ -62,7 +62,9 @@ import ChatDrawer from './components/ChatDrawer.vue'
 
 onMounted(() => {
   checkSessionAndInit();
-  
+
+  window.addEventListener('scroll', handleWindowScroll);
+
   const setVHToken = () => {
     let vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -79,4 +81,11 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleWindowScroll)
   cleanupStore()
 })
+
+const handleBackToTop = (e) => {
+  scrollToTop();
+  if (e.currentTarget) {
+    e.currentTarget.blur();
+  }
+}
 </script>
