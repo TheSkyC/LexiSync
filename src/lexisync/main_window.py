@@ -7835,6 +7835,9 @@ class LexiSyncApp(QMainWindow):
         """
         Central handler for all AI results.
         """
+        if self.web_service and self.web_service.isRunning():
+            self.web_service.broadcast_ai_status(ts_id, "finished")
+
         trigger_ts_obj = self._find_ts_obj_by_id(ts_id)
 
         if op_type in [AIOperationType.BATCH_TRANSLATION, AIOperationType.BATCH_FIX]:
@@ -7852,6 +7855,8 @@ class LexiSyncApp(QMainWindow):
 
         # 2. Handle Success
         if translated_text and translated_text.strip():
+            if self.web_service and self.web_service.isRunning():
+                self.web_service.broadcast_force_blur(ts_id, initiator="AI")
             self._apply_ai_result_to_model(trigger_ts_obj, translated_text, op_type, plural_index)
         elif op_type != AIOperationType.BATCH_TRANSLATION:
             self.update_statusbar(_("AI operation returned no result."), persistent=False)

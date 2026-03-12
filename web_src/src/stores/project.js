@@ -92,7 +92,10 @@ export const fetchData = async () => {
         const sData = await sRes.json()
         tableData.value = (sData.items || []).map(item => ({
             ...item,
-            active_editors: globalActiveEditors[item.id] || []
+            active_editors: globalActiveEditors[item.id] || [],
+            // Non-persistent UI state fields
+            isAiLoading: false,
+            conflictData: null,
         }))
         total.value = sData.total ?? 0
     } catch (e) {
@@ -106,6 +109,9 @@ export const updateTranslation = async (item, pIdx = 0) => {
     if (currentUser.role === 'viewer') return
     wsSend({action: 'blur', ts_id: item.id})
     activeRowId.value = null
+    
+    if (item.conflictData) return
+
     const text = item.is_plural ? item.plural_translations[pIdx] : item.translation
     try {
         const res = await authFetch('/api/v1/update', {
@@ -147,16 +153,7 @@ export const toggleStatus = async (item, type) => {
 
 export const requestAITranslation = async (item) => {
     if (currentUser.role === 'viewer') return
-    toastShow(t('AI Translate') + '...', 'info', 2000)
-    try {
-        const res = await authFetch('/api/v1/ai-translate', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ts_id: item.id})
-        })
-        if (!res.ok) throw new Error()
-    } catch (_) {
-        toastShow(t('Sync failed'), 'error')
-    }
+    wsSend({ action: 'ai_start', ts_id: item.id })
 }
 
 export const onEditorFocus = (row) => {
@@ -198,9 +195,8 @@ export const navigateNext = async (mode = 'untranslated') => {
         return
     }
 
-    // 在当前页、当前位置之后向后搜索（不回绕）
     const currentIdx = tableData.value.findIndex(r => r.id === activeRowId.value)
-    const startIdx = currentIdx + 1  // currentIdx === -1 时从 0 开始
+    const startIdx = currentIdx + 1
 
     for (let i = startIdx; i < tableData.value.length; i++) {
         const item = tableData.value[i]
@@ -210,7 +206,6 @@ export const navigateNext = async (mode = 'untranslated') => {
         }
     }
 
-    // 当前页后半段无匹配 —— 判断是否还有下一页
     const totalPages = Math.ceil(total.value / pageSize.value)
 
     if (currentPage.value >= totalPages) {
@@ -218,7 +213,6 @@ export const navigateNext = async (mode = 'untranslated') => {
         return
     }
 
-    // 跳转下一页，无论结果如何都通知用户
     currentPage.value++
     await fetchData()
     toastShow(t('Jumped to next page'), 'info', 2500)

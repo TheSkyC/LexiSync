@@ -273,6 +273,17 @@ class WebServerService(QThread):
                     data = await websocket.receive_json()
                     action = data.get("action")
 
+                    if action == "ai_start":
+                        ts_id = data.get("ts_id")
+                        if ts_id and role != "viewer":
+                            await self.ws_manager.broadcast_json(
+                                {
+                                    "type": "AI_STATUS_UPDATE",
+                                    "data": {"ts_id": ts_id, "status": "loading", "user": username},
+                                }
+                            )
+                            self.signals.ai_translate_requested.emit(ts_id)
+
                     if action == "focus":
                         ts_id = data.get("ts_id")
                         if ts_id and role != "viewer":
@@ -491,8 +502,12 @@ class WebServerService(QThread):
         async def ai_translate(req: AITranslateRequest, user: dict = Depends(self._verify_session)):
             if user["role"] == "viewer":
                 raise HTTPException(status_code=403, detail="Viewers cannot use AI translation.")
+
+            await self.ws_manager.broadcast_json(
+                {"type": "AI_STATUS_UPDATE", "data": {"ts_id": req.ts_id, "status": "loading", "user": user["name"]}}
+            )
             self.signals.ai_translate_requested.emit(req.ts_id)
-            return {"status": "ok"}
+            return {"status": "accepted"}
 
         @app.get("/api/v1/users")
         async def get_users(user: dict = Depends(self._verify_session)):
@@ -556,6 +571,25 @@ class WebServerService(QThread):
                 "plural_index": plural_index,
                 "user": user,
             },
+        }
+        asyncio.run_coroutine_threadsafe(self.ws_manager.broadcast_json(payload), self.loop)
+
+    def broadcast_ai_status(self, ts_id: str, status: str, user: str = "AI"):
+        if not self.is_running or not self.loop or not self.ws_manager.active_connections:
+            return
+        payload = {
+            "type": "AI_STATUS_UPDATE",
+            "data": {"ts_id": ts_id, "status": status, "user": user},
+        }
+        asyncio.run_coroutine_threadsafe(self.ws_manager.broadcast_json(payload), self.loop)
+
+    def broadcast_force_blur(self, ts_id: str, initiator: str = "System"):
+        if not self.is_running or not self.loop or not self.ws_manager.active_connections:
+            return
+        self.ws_manager.active_editors.pop(ts_id, None)
+        payload = {
+            "type": "FORCE_BLUR",
+            "data": {"ts_id": ts_id, "initiator": initiator},
         }
         asyncio.run_coroutine_threadsafe(self.ws_manager.broadcast_json(payload), self.loop)
 

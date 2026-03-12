@@ -38,13 +38,31 @@ SPDX-License-Identifier: Apache-2.0
               class="editor-cell"
               :class="{
                 'has-others': othersEditing(row).length > 0,
-                'is-self-editing': activeRowId === row.id
+                'is-self-editing': activeRowId === row.id,
+                'has-conflict': !!row.conflictData,
+                'is-ai-loading': row.isAiLoading,
               }"
               :ref="el => { if (el) cellRefs[row.id] = el }"
               :data-row-id="row.id"
               @mouseenter="onCellEnter(row)"
               @mouseleave="onCellLeave(row)"
           >
+            <!-- ── AI Loading Mask ─────────────────────────────────── -->
+            <div v-if="row.isAiLoading" class="ai-loading-mask">
+              <div class="ai-scan-line"></div>
+            </div>
+
+            <!-- ── Conflict Warning Badge ─────────────────────────── -->
+            <div
+                v-if="row.conflictData"
+                class="conflict-badge"
+                @click.stop="toggleConflict(row)"
+                :title="t('Conflict detected')"
+            >
+              <el-icon class="conflict-icon-blink"><WarningFilled /></el-icon>
+            </div>
+
+            <!-- ── Translation Inputs ─────────────────────────────── -->
             <div v-if="row.is_plural">
               <div v-for="(_, idx) in row.plural_translations" :key="idx" style="margin-bottom:10px">
                 <div class="plural-label">{{ t('Form') }} {{ idx }}</div>
@@ -55,7 +73,7 @@ SPDX-License-Identifier: Apache-2.0
                     class="editor-input"
                     @focus="onEditorFocus(row)"
                     @blur="updateTranslation(row, idx)"
-                    :disabled="currentUser.role === 'viewer'"
+                    :disabled="currentUser.role === 'viewer' || row.isAiLoading"
                 ></el-input>
               </div>
             </div>
@@ -67,8 +85,37 @@ SPDX-License-Identifier: Apache-2.0
                 class="editor-input"
                 @focus="onEditorFocus(row)"
                 @blur="updateTranslation(row)"
-                :disabled="currentUser.role === 'viewer'"
+                :disabled="currentUser.role === 'viewer' || row.isAiLoading"
             ></el-input>
+
+            <!-- ── Conflict Resolution Panel ──────────────────────── -->
+            <transition name="conflict-slide">
+              <div
+                  v-if="row.conflictData && conflictOpenMap[row.id]"
+                  class="conflict-panel"
+                  @click.stop
+              >
+                <div class="conflict-panel-header">
+                  <span class="conflict-panel-title">⚠️ {{ t('Conflict detected') }}</span>
+                  <span class="conflict-panel-sub">{{ row.conflictData.user }} {{ t('just updated this entry') }}</span>
+                </div>
+                <div class="conflict-cols">
+                  <div class="conflict-col">
+                    <div class="conflict-col-label conflict-col-label--mine">{{ t('Your version') }}</div>
+                    <div class="conflict-text" v-html="getConflictDiff(row).htmlA"></div>
+                  </div>
+                  <div class="conflict-divider"></div>
+                  <div class="conflict-col">
+                    <div class="conflict-col-label conflict-col-label--server">{{ t('Server version') }}</div>
+                    <div class="conflict-text" v-html="getConflictDiff(row).htmlB"></div>
+                  </div>
+                </div>
+                <div class="conflict-actions">
+                  <el-button size="small" @click="keepMine(row)">{{ t('Keep mine') }}</el-button>
+                  <el-button size="small" type="primary" @click="useServer(row)">{{ t('Use latest') }}</el-button>
+                </div>
+              </div>
+            </transition>
           </div>
         </template>
       </el-table-column>
@@ -78,7 +125,8 @@ SPDX-License-Identifier: Apache-2.0
           <div class="status-actions">
             <el-tooltip :content="t('AI Translate')" placement="top" v-if="currentUser.role !== 'viewer'">
               <el-button type="primary" plain :icon="MagicStick" circle size="small"
-                         @click="requestAITranslation(row)"></el-button>
+                         @click="requestAITranslation(row)"
+                         :loading="row.isAiLoading"></el-button>
             </el-tooltip>
 
             <el-tooltip :content="t('Reviewed')" placement="top"
@@ -108,6 +156,7 @@ SPDX-License-Identifier: Apache-2.0
       <p>{{ t(searchQuery || statusFilter !== 'all' ? 'No matching entries' : 'No entries available') }}</p>
     </div>
 
+    <!-- ── Editors Overlay (existing) ─────────────────────────────── -->
     <Teleport to="body">
       <transition name="overlay-fade">
         <div
@@ -124,11 +173,25 @@ SPDX-License-Identifier: Apache-2.0
         </div>
       </transition>
     </Teleport>
+
+    <!-- ── AI Chip Overlay ────────────────────────────────────────── -->
+    <Teleport to="body">
+      <transition name="overlay-fade">
+        <div
+            v-if="aiChipVisible"
+            class="ai-chip-fixed"
+            :style="aiChipStyle"
+        >
+          <span class="ai-chip-sparkle">✨</span>
+          <span class="ai-chip-label">AI</span>
+        </div>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import {ref, reactive, computed, onBeforeUnmount} from 'vue'
+import {ref, reactive, computed, watch, nextTick, onBeforeUnmount} from 'vue'
 import {MagicStick, CircleCheckFilled, WarningFilled} from '@element-plus/icons-vue'
 import {
   tableData, loading, tableRowClassName, hlPh, currentUser,
@@ -139,14 +202,13 @@ import {
 // ── Cell ref map: rowId → DOM element ──────────────────────────────────────
 const cellRefs = reactive({})
 
-// ── Overlay state ───────────────────────────────────────────────────────────
+// ── Editors Overlay (existing logic) ───────────────────────────────────────
 const hoveredRowId = ref(null)
 const overlayStyle = ref({top: '0px', left: '0px'})
 
 const othersEditing = (row) =>
     (row.active_editors || []).filter(name => name !== currentUser.name)
 
-// Which row should the overlay track?
 const overlayRow = computed(() => {
   if (activeRowId.value !== null) {
     const row = tableData.value.find(r => r.id === activeRowId.value)
@@ -166,10 +228,7 @@ const updateOverlayPosition = (rowId) => {
   const el = cellRefs[rowId]
   if (!el) return
   const rect = el.getBoundingClientRect()
-  overlayStyle.value = {
-    top: `${rect.top}px`,
-    left: `${rect.left}px`,
-  }
+  overlayStyle.value = {top: `${rect.top}px`, left: `${rect.left}px`}
 }
 
 const onCellEnter = (row) => {
@@ -181,9 +240,122 @@ const onCellLeave = (row) => {
   if (activeRowId.value !== row.id) hoveredRowId.value = null
 }
 
+// ── AI Chip Overlay ─────────────────────────────────────────────────────────
+const aiChipStyle = ref({top: '0px', left: '0px'})
+const aiLoadingRow = computed(() => tableData.value.find(r => r.isAiLoading))
+const aiChipVisible = computed(() => !!aiLoadingRow.value)
+
+const updateAiChipPosition = () => {
+  if (!aiLoadingRow.value) return
+  const el = cellRefs[aiLoadingRow.value.id]
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  aiChipStyle.value = {top: `${rect.top}px`, left: `${rect.left}px`}
+}
+
+watch(aiChipVisible, (visible) => {
+  if (visible) nextTick(updateAiChipPosition)
+})
+
+// ── Conflict Resolution ─────────────────────────────────────────────────────
+const conflictOpenMap = reactive({})
+
+const toggleConflict = (row) => {
+  conflictOpenMap[row.id] = !conflictOpenMap[row.id]
+}
+
+const keepMine = (row) => {
+  conflictOpenMap[row.id] = false
+  row.conflictData = null
+  updateTranslation(row)
+}
+
+const useServer = (row) => {
+  if (!row.conflictData) return
+  const pIdx = row.conflictData.plural_index ?? 0
+  if (row.is_plural) {
+    row.plural_translations[pIdx] = row.conflictData.serverText
+  } else {
+    row.translation = row.conflictData.serverText
+  }
+  conflictOpenMap[row.id] = false
+  row.conflictData = null
+}
+
+const computeDiff = (textA, textB) => {
+  const escape = (s) =>
+      String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>')
+
+  if (textA === textB) {
+    const e = escape(textA)
+    return {htmlA: e, htmlB: e}
+  }
+  
+  const tokenize = (s) => s.match(/\S+|\s+/g) || []
+  const tokA = tokenize(textA)
+  const tokB = tokenize(textB)
+  
+  if (tokA.length * tokB.length > 12000) {
+    return {
+      htmlA: `<mark class="diff-removed">${escape(textA)}</mark>`,
+      htmlB: `<mark class="diff-added">${escape(textB)}</mark>`,
+    }
+  }
+  
+  const n = tokA.length, m = tokB.length
+  const dp = Array.from({length: n + 1}, () => new Uint16Array(m + 1))
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      dp[i][j] = tokA[i - 1] === tokB[j - 1]
+          ? dp[i - 1][j - 1] + 1
+          : Math.max(dp[i - 1][j], dp[i][j - 1])
+    }
+  }
+
+  // Traceback
+  const opsA = [], opsB = []
+  let i = n, j = m
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && tokA[i - 1] === tokB[j - 1]) {
+      opsA.unshift({tok: tokA[i - 1], type: 'same'})
+      opsB.unshift({tok: tokB[j - 1], type: 'same'})
+      i--; j--
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      opsB.unshift({tok: tokB[j - 1], type: 'added'})
+      j--
+    } else {
+      opsA.unshift({tok: tokA[i - 1], type: 'removed'})
+      i--
+    }
+  }
+
+  const render = (ops) => ops.map(op => {
+    const e = escape(op.tok)
+    if (op.type === 'same') return e
+    if (op.type === 'removed') return `<mark class="diff-removed">${e}</mark>`
+    return `<mark class="diff-added">${e}</mark>`
+  }).join('')
+
+  return {htmlA: render(opsA), htmlB: render(opsB)}
+}
+
+const getConflictDiff = (row) => {
+  if (!row.conflictData) return {htmlA: '', htmlB: ''}
+  const yourText = row.is_plural
+      ? (row.plural_translations[row.conflictData.plural_index] ?? '')
+      : (row.translation ?? '')
+  return computeDiff(yourText, row.conflictData.serverText ?? '')
+}
+
+// ── Shared scroll/resize handler ────────────────────────────────────────────
 const handleScroll = () => {
   const rowId = activeRowId.value ?? hoveredRowId.value
   if (rowId != null && overlayVisible.value) updateOverlayPosition(rowId)
+  updateAiChipPosition()
 }
 
 window.addEventListener('scroll', handleScroll, {passive: true})
@@ -246,6 +418,8 @@ onBeforeUnmount(() => {
   resize: none;
   box-shadow: none !important;
   cursor: text;
+  overflow: hidden !important;
+  word-break: break-word;
 }
 
 :deep(.source-input .el-textarea__inner:focus) {
@@ -272,6 +446,12 @@ onBeforeUnmount(() => {
 .editor-cell.has-others :deep(.editor-input .el-textarea__inner) {
   border-color: var(--st-fuzzy) !important;
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15) !important;
+}
+
+/* Orange border when conflict */
+.editor-cell.has-conflict :deep(.editor-input .el-textarea__inner) {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2) !important;
 }
 
 /* Textarea */
@@ -332,16 +512,230 @@ onBeforeUnmount(() => {
   fill: var(--border);
 }
 
+/* ── AI Loading Mask ────────────────────────────────────────────────────── */
+.ai-loading-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(124, 58, 237, 0.07);
+  border: 1.5px solid rgba(124, 58, 237, 0.28);
+  border-radius: 6px;
+  z-index: 10;
+  pointer-events: all; /* block interaction */
+  overflow: hidden;
+  cursor: not-allowed;
+}
+
+.ai-scan-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 55%;
+  background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(124, 58, 237, 0.22) 40%,
+      rgba(167, 139, 250, 0.32) 50%,
+      rgba(124, 58, 237, 0.22) 60%,
+      transparent 100%
+  );
+  animation: ai-scan 1.6s ease-in-out infinite;
+}
+
+@keyframes ai-scan {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}
+
+html.dark .ai-loading-mask {
+  background: rgba(167, 139, 250, 0.1);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+/* ── Conflict Badge ──────────────────────────────────────────────────────── */
+.conflict-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 15;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  transition: background 0.2s;
+}
+
+.conflict-badge:hover {
+  background: rgba(245, 158, 11, 0.28);
+}
+
+.conflict-icon-blink {
+  color: #f59e0b;
+  font-size: 13px;
+  animation: conflict-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes conflict-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── Conflict Resolution Panel ──────────────────────────────────────────── */
+.conflict-panel {
+  margin-top: 8px;
+  background: var(--card-bg-alt);
+  border: 1.5px solid rgba(245, 158, 11, 0.45);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  z-index: 20;
+}
+
+.conflict-panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.conflict-panel-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #d97706;
+}
+
+.conflict-panel-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.conflict-cols {
+  display: flex;
+  gap: 0;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.conflict-col {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.conflict-col:first-child {
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.conflict-col:last-child {
+  background: rgba(34, 197, 94, 0.04);
+}
+
+.conflict-divider {
+  width: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.conflict-col-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 5px;
+}
+
+.conflict-col-label--mine {
+  color: #ef4444;
+}
+
+.conflict-col-label--server {
+  color: #22c55e;
+}
+
+.conflict-text {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-main);
+  word-break: break-word;
+  white-space: pre-wrap;
+  font-family: 'Inter', sans-serif;
+}
+
+.conflict-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Diff highlight marks */
+:deep(.diff-removed) {
+  background: rgba(239, 68, 68, 0.18);
+  color: #dc2626;
+  border-radius: 2px;
+  padding: 0 2px;
+  text-decoration: line-through;
+  text-decoration-color: rgba(220, 38, 38, 0.6);
+}
+
+:deep(.diff-added) {
+  background: rgba(34, 197, 94, 0.18);
+  color: #16a34a;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+html.dark :deep(.diff-removed) {
+  background: rgba(239, 68, 68, 0.22);
+  color: #f87171;
+}
+
+html.dark :deep(.diff-added) {
+  background: rgba(34, 197, 94, 0.22);
+  color: #4ade80;
+}
+
+/* Panel animation */
+.conflict-slide-enter-active {
+  animation: conflict-drop 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.conflict-slide-leave-active {
+  animation: conflict-drop 0.18s cubic-bezier(0.22, 1, 0.36, 1) reverse;
+}
+
+@keyframes conflict-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scaleY(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
 /* ════════════════════════════════════════════════════
    移动端卡片化布局重写 (Table-to-Card)
 ════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  /* 让原文不响应触摸滚动 */
   :deep(.source-input) {
     pointer-events: none;
   }
 
-  /* 让译文框在非聚焦状态下隐藏溢出 */
   :deep(.editor-input .el-textarea__inner:not(:focus)) {
     touch-action: pan-y;
   }
@@ -353,19 +747,16 @@ onBeforeUnmount(() => {
     margin-bottom: 0;
   }
 
-  /* 拆解表格布局 */
   :deep(.el-table), :deep(.el-table__inner-wrapper), :deep(.el-table__body-wrapper),
   :deep(.el-table__body), :deep(tbody), :deep(tr), :deep(td) {
     display: block !important;
     width: 100% !important;
   }
 
-  /* 隐藏表头 */
   :deep(.el-table__header-wrapper) {
     display: none !important;
   }
 
-  /* 行转为独立卡片 */
   :deep(.el-table__row) {
     margin-bottom: 16px;
     background: var(--card-bg) !important;
@@ -376,19 +767,16 @@ onBeforeUnmount(() => {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
-  /* 单元格占满宽度 */
   :deep(.el-table .el-table__cell) {
     padding: 12px !important;
     border-bottom: none !important;
   }
 
-  /* 原文单元格加虚线分隔 */
   :deep(.el-table .el-table__cell:nth-child(1)) {
     border-bottom: 1px dashed var(--border) !important;
     padding-bottom: 16px !important;
   }
 
-  /* 状态操作组（第三列）脱离文档流，悬浮右上角 */
   :deep(.el-table .el-table__cell:nth-child(3)) {
     position: absolute;
     top: 10px;
@@ -412,7 +800,6 @@ onBeforeUnmount(() => {
     margin: 0 2px;
   }
 
-  /* 状态边色转移到整行容器 */
   :deep(.el-table .el-table__row.row-reviewed) {
     border-left: 4px solid var(--st-reviewed) !important;
   }
@@ -429,14 +816,23 @@ onBeforeUnmount(() => {
     border-left: 4px solid var(--st-untranslated) !important;
   }
 
-  /* 抹除原子单元格的左边框 */
   :deep(.el-table .el-table__row > td:first-child) {
     border-left: none !important;
+  }
+
+  .conflict-cols {
+    flex-direction: column;
+  }
+
+  .conflict-divider {
+    width: 100%;
+    height: 1px;
   }
 }
 </style>
 
 <style>
+/* ── Editors Overlay (global, teleported) ────────────────────────────────── */
 .editors-overlay-fixed {
   position: fixed;
   z-index: 9000;
@@ -491,6 +887,53 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
+/* ── AI Chip (global, teleported) ────────────────────────────────────────── */
+.ai-chip-fixed {
+  position: fixed;
+  z-index: 9001;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.38);
+  color: #7c3aed;
+  border-radius: 20px;
+  padding: 3px 10px 3px 7px;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.18);
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translateY(calc(-100% - 4px));
+  font-size: 12px;
+  font-weight: 600;
+}
+
+html.dark .ai-chip-fixed {
+  background: rgba(167, 139, 250, 0.14);
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #a78bfa;
+}
+
+.ai-chip-sparkle {
+  display: inline-block;
+  animation: ai-sparkle 0.9s ease-in-out infinite alternate;
+}
+
+.ai-chip-label {
+  letter-spacing: 0.03em;
+}
+
+@keyframes ai-sparkle {
+  from {
+    opacity: 0.55;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+}
+
+/* ── Shared overlay animation ────────────────────────────────────────────── */
 .overlay-fade-enter-active, .overlay-fade-leave-active {
   transition: opacity 0.18s ease, transform 0.18s ease;
 }

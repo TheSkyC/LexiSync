@@ -38,7 +38,7 @@ export const chatInput = ref('')
 let ws = null
 let wsReconnectTimer = null
 let wsAttempts = 0
-let hasConnectedOnce = false   // 区分首次连接与断线重连
+let hasConnectedOnce = false
 
 const MAX_WS_RETRY = 8
 const INITIAL_RECONNECT_DELAY = 2000
@@ -75,33 +75,47 @@ const handleWsMsg = (msg) => {
         case 'DATA_UPDATE': {
             const item = tableData.value.find(r => r.id === msg.data.ts_id)
             if (item) {
-                // 记录变更前的状态，用于本地增量更新 stats，避免额外的 HTTP 请求
+                // Always clear AI loading state when an update arrives for this item
+                item.isAiLoading = false
+
                 const oldStatus = getStatusKey(item)
 
                 if (msg.data.new_text != null) {
-                    if (activeRowId.value === item.id && msg.data.user !== currentUser.name) {
-                        toastShow(
-                            `⚠️ ${msg.data.user || t('Someone')} ${t('just updated this entry. Your changes will overwrite theirs on save.')}`,
-                            'warning', 5000
-                        )
-                    } else if (item.is_plural) {
-                        item.plural_translations[msg.data.plural_index] = msg.data.new_text
-                    } else {
-                        item.translation = msg.data.new_text
+                    if (
+                        activeRowId.value === item.id &&
+                        msg.data.user !== currentUser.name
+                    ) {
+                        item.conflictData = {
+                            serverText: msg.data.new_text,
+                            user: msg.data.user || 'Someone',
+                            plural_index: msg.data.plural_index ?? 0,
+                        }
+                    } else if (!item.conflictData) {
+                        if (item.is_plural) {
+                            item.plural_translations[msg.data.plural_index ?? 0] = msg.data.new_text
+                        } else {
+                            item.translation = msg.data.new_text
+                        }
                     }
                 }
+                
                 if (msg.data.is_reviewed != null) item.is_reviewed = msg.data.is_reviewed
                 if (msg.data.is_fuzzy != null) item.is_fuzzy = msg.data.is_fuzzy
-
-                // 本地计算 stats 增量，无需再发起 fetchProjectStats HTTP 请求
+                
                 const newStatus = getStatusKey(item)
                 if (oldStatus !== newStatus) {
                     stats[oldStatus] = Math.max(0, (stats[oldStatus] ?? 0) - 1)
                     stats[newStatus] = (stats[newStatus] ?? 0) + 1
                 }
             } else {
-                // 被更新的条目不在当前页（其他页），无法本地推算，回退到请求服务端 stats
                 fetchProjectStats()
+            }
+            break
+        }
+        case 'AI_STATUS_UPDATE': {
+            const item = tableData.value.find(r => r.id === msg.data.ts_id)
+            if (item) {
+                item.isAiLoading = msg.data.status === 'loading'
             }
             break
         }
@@ -118,6 +132,27 @@ const handleWsMsg = (msg) => {
                 onlineUsers.value[msg.data.user].editingId =
                     msg.data.status === 'editing' ? msg.data.ts_id : null
             break
+        }
+        case 'FORCE_BLUR': {
+            const ts_id = msg.data.ts_id;
+            if (globalActiveEditors[ts_id]) {
+                delete globalActiveEditors[ts_id];
+            }
+            const item = tableData.value.find(r => r.id === ts_id);
+            if (item) {
+                item.active_editors = [];
+            }
+            if (activeRowId.value === ts_id) {
+                activeRowId.value = null;
+                const el = document.querySelector(`[data-row-id="${ts_id}"] textarea`);
+                el?.blur();
+            }
+            for (const user in onlineUsers.value) {
+                if (onlineUsers.value[user].editingId === ts_id) {
+                    onlineUsers.value[user].editingId = null;
+                }
+            }
+            break;
         }
         case 'USER_CONNECTED':
         case 'USER_DISCONNECTED':
@@ -144,7 +179,7 @@ export const connectWebSocket = () => {
     }
 
     wsState.value = 'connecting'
-    
+
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
     ws = new WebSocket(`${proto}//${location.host}/ws?token=${sessionToken.value}`)
 
@@ -153,7 +188,7 @@ export const connectWebSocket = () => {
         wsAttempts = 0
         toastShow(t('Connected'), 'success', 2200)
         fetchOnlineUsers()
-        
+
         if (hasConnectedOnce) {
             fetchData()
         }
