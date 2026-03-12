@@ -479,7 +479,8 @@ class WebServerService(QThread):
             role = user["role"]
             if role == "viewer":
                 raise HTTPException(status_code=403, detail="Viewers cannot edit.")
-            if data.is_reviewed is not None and role == "translator":
+
+            if data.is_reviewed is True and role == "translator":
                 raise HTTPException(status_code=403, detail="Translators cannot mark as reviewed.")
 
             data.user = user["name"]

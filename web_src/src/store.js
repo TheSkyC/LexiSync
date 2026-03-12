@@ -500,6 +500,7 @@ export const updateTranslation = async (item, pIdx = 0) => {
 
 export const toggleStatus = async (item, type) => {
     if (currentUser.role === 'viewer') return
+    
     if (type === 'reviewed' && currentUser.role === 'translator') {
         toastShow(t('Permission Denied'), 'error');
         return
@@ -514,18 +515,24 @@ export const toggleStatus = async (item, type) => {
         if (payload.is_fuzzy) payload.is_reviewed = false
     }
 
-    item.is_reviewed = payload.is_reviewed ?? item.is_reviewed
-    item.is_fuzzy = payload.is_fuzzy ?? item.is_fuzzy
-
     try {
-        await fetch(`/api/v1/update?token=${sessionToken.value}`, {
+        const res = await fetch(`/api/v1/update?token=${sessionToken.value}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
         })
+        
+        if (!res.ok) {
+            if (res.status === 403) {
+                toastShow(t('Permission Denied'), 'error');
+            } else {
+                toastShow(t('Sync failed'), 'error');
+            }
+        }
+        
     } catch (e) {
         toastShow(t('Sync failed'), 'error');
-        fetchData()
+        fetchData();
     }
 }
 
