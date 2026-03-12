@@ -286,6 +286,8 @@ onBeforeUnmount(() => {
   resize: none;
   box-shadow: none !important;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  overflow: hidden !important; 
+  word-break: break-word;
 }
 
 :deep(.editor-input:hover .el-textarea__inner) {
@@ -297,11 +299,6 @@ onBeforeUnmount(() => {
   background: var(--card-bg) !important;
   border-color: #409EFF !important;
   box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.12) !important;
-}
-
-:deep(.source-input .el-textarea__inner),
-:deep(.editor-input .el-textarea__inner) {
-  overflow-y: auto !important;
 }
 
 .plural-label {
@@ -338,6 +335,14 @@ onBeforeUnmount(() => {
    移动端卡片化布局重写 (Table-to-Card)
 ════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+  /* 让原文不响应触摸滚动 */
+  :deep(.source-input) {
+    pointer-events: none; 
+  }
+  /* 让译文框在非聚焦状态下隐藏溢出 */
+  :deep(.editor-input .el-textarea__inner:not(:focus)) {
+    touch-action: pan-y;
+  }
   .translation-card {
     background: transparent;
     border: none;
