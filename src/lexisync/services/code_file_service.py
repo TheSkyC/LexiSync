@@ -21,8 +21,9 @@ _REGEX_ONLY_SYMBOLS_AND_WHITESPACE = re.compile(f"^[{re.escape(_ALLOWED_SYMBOLS_
 _REGEX_PLACEHOLDER_LIKE = re.compile(r"\{\d+}")
 _REGEX_REPEATING_CHAR = re.compile(r"^(.)\1+$")
 _REGEX_PROGRESS_BAR_LIKE = re.compile(r"^[\[(|\-=<>#\s]*[]\s]*$")
-_REGEX_STRIP_SYMBOLS = re.compile(f"[{re.escape(_ALLOWED_SYMBOLS_CHARS)}]")
 _REGEX_NEWLINES = re.compile(r"\n")
+
+_SYMBOL_REMOVAL_TABLE = str.maketrans("", "", _ALLOWED_SYMBOLS_CHARS)
 
 _KNOWN_UNTRANSLATABLE_SHORT_WORDS = frozenset(
     {"ID", "HP", "MP", "XP", "LV", "CD", "UI", "OK", "X", "Y", "Z", "A", "B", "C", "N/A"}
@@ -66,7 +67,7 @@ def _is_auto_ignorable(s_semantic_stripped: str, semantic_content: str) -> bool:
     # 占位符检查及替换
     if _REGEX_PLACEHOLDER_LIKE.search(s_semantic_stripped):
         content_no_placeholders = _REGEX_PLACEHOLDER_LIKE.sub("", s_semantic_stripped)
-        content_text_only = _REGEX_STRIP_SYMBOLS.sub("", content_no_placeholders).strip()
+        content_text_only = content_no_placeholders.translate(_SYMBOL_REMOVAL_TABLE).strip()
         if len(content_text_only) < 2:
             return True
 

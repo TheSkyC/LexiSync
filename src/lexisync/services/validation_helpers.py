@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections import Counter
+from functools import lru_cache
 import html
 
 import regex as re
@@ -42,6 +43,16 @@ RE_LATIN = r"[a-zA-Z0-9]"
 RE_PANGU_CJK_LATIN = re.compile(f"({RE_CJK})({RE_LATIN})")
 RE_PANGU_LATIN_CJK = re.compile(f"({RE_LATIN})({RE_CJK})")
 
+RE_ICU_SELECTOR = re.compile(r"=\d+\s*\{")
+RE_ORDINAL = re.compile(r"(\d+)(st|nd|rd|th)\b", re.IGNORECASE)
+RE_APOSTROPHE = re.compile(r"(?<!['’])\b\w+(?:['’]\w+|s['’])(?![\w'’])", re.IGNORECASE)
+RE_ICU_PLACEHOLDER = re.compile(r"\{(?:[^{}]|(?R))*\}")
+
+RE_HAS_DIGIT = re.compile(r"\d")
+RE_S_PLURAL = re.compile(r"\(s\)", re.IGNORECASE)
+RE_PRINTF_FALSE_POSITIVE = re.compile(r"%\s+[a-zA-Z]")
+
+QUOTE_CHARS = {"'", "‘", "’", "「", "」", '"', "“", "”", "『", "』", "«", "»", "„"}
 STRFTIME_EQUIVALENCE = {
     # 月份：全称(B)、缩写(b/h) -> 映射为 数字(m)
     "B": "m",
@@ -451,27 +462,24 @@ def check_pangu_spacing(target):
     """盘古之白：检查中文字符与拉丁字符之间是否缺少空格"""
     match_cjk_latin = RE_PANGU_CJK_LATIN.search(target)
     if match_cjk_latin:
-        cjk_char = match_cjk_latin.group(1)
-        latin_char = match_cjk_latin.group(2)
-        return _("Missing space between '{c}' and '{l}'").format(c=cjk_char, l=latin_char)
-
+        return _("Missing space between '{c}' and '{l}'").format(c=match_cjk_latin.group(1), l=match_cjk_latin.group(2))
     match_latin_cjk = RE_PANGU_LATIN_CJK.search(target)
     if match_latin_cjk:
-        latin_char = match_latin_cjk.group(1)
-        cjk_char = match_latin_cjk.group(2)
-        return _("Missing space between '{l}' and '{c}'").format(l=latin_char, c=cjk_char)
-
+        return _("Missing space between '{l}' and '{c}'").format(l=match_latin_cjk.group(1), c=match_latin_cjk.group(2))
     return None
 
 
 def check_quotes(source, target, mode="flexible"):
     """检查单引号和双引号"""
+
+    if QUOTE_CHARS.isdisjoint(source) and QUOTE_CHARS.isdisjoint(target):
+        return None
+
     single_quote_variants = {"'", "‘", "’", "「", "」"}
     double_quote_variants = {'"', "“", "”", "『", "』", "«", "»", "„"}
 
     def get_quote_counts(text):
-        apostrophe_pattern = re.compile(r"(?<!['’])\b\w+(?:['’]\w+|s['’])(?![\w'’])", re.IGNORECASE)
-        text_without_apostrophes = apostrophe_pattern.sub("", text)
+        text_without_apostrophes = RE_APOSTROPHE.sub("", text)
         single_count = sum(text_without_apostrophes.count(q) for q in single_quote_variants)
         double_count = sum(text_without_apostrophes.count(q) for q in double_quote_variants)
         return single_count, double_count
@@ -508,6 +516,14 @@ def check_quotes(source, target, mode="flexible"):
     return None
 
 
+@lru_cache(maxsize=32)
+def _get_accelerator_patterns(marker):
+    pattern_in_parens = re.compile(r"\s*\(" + re.escape(marker) + r".\)")
+    pattern_prefix = re.compile(r"(?<!" + re.escape(marker) + r")" + re.escape(marker) + r"(\w)")
+    pattern_count = re.compile(r"(?<!" + re.escape(marker) + r")" + re.escape(marker) + r"\w")
+    return pattern_in_parens, pattern_prefix, pattern_count
+
+
 def strip_accelerators(text, markers):
     """
     Removes accelerator markers from text.
@@ -519,13 +535,9 @@ def strip_accelerators(text, markers):
     cleaned_text = text
     for marker in markers:
         if marker in cleaned_text:
-            # Remove pattern in parens: "File (&F)" -> "File "
-            pattern_in_parens = re.compile(r"\s*\(" + re.escape(marker) + r".\)")
-            cleaned_text = pattern_in_parens.sub("", cleaned_text)
-
-            # Remove prefix pattern: "&File" -> "File"
-            pattern_prefix = re.compile(r"(?<!" + re.escape(marker) + r")" + re.escape(marker) + r"(\w)")
-            cleaned_text = pattern_prefix.sub(r"\1", cleaned_text)
+            p_parens, p_prefix, _ = _get_accelerator_patterns(marker)
+            cleaned_text = p_parens.sub("", cleaned_text)
+            cleaned_text = p_prefix.sub(r"\1", cleaned_text)
     return cleaned_text
 
 
@@ -535,18 +547,13 @@ def check_accelerators(source, target, markers):
         return None
     errors = []
     for marker in markers:
-        pattern = re.compile(r"(?<!" + re.escape(marker) + r")" + re.escape(marker) + r"\w")
-
-        src_count = len(pattern.findall(source))
-        tgt_count = len(pattern.findall(target))
-
-        if src_count != tgt_count:
-            errors.append(_("Mismatched accelerator '{marker}'").format(marker=marker))
-
-    if errors:
-        return " | ".join(errors)
-
-    return None
+        if marker in source or marker in target:
+            __, __, p_count = _get_accelerator_patterns(marker)
+            src_count = len(p_count.findall(source))
+            tgt_count = len(p_count.findall(target))
+            if src_count != tgt_count:
+                errors.append(_("Mismatched accelerator '{marker}'").format(marker=marker))
+    return " | ".join(errors) if errors else None
 
 
 def _compare_counts(src_list, tgt_list):
@@ -576,8 +583,6 @@ def _format_missing_extra(missing, extra, label):
 def check_printf(source, target, mode="loose"):
     def get_normalized_printf_matches(text, label=_("Text")):
         matches = []
-        raw_matches = []  # For logging
-
         for m in RE_PRINTF.finditer(text):
             full_match = m.group(0)
 
@@ -586,7 +591,7 @@ def check_printf(source, target, mode="loose"):
                 len(full_match) > 1 and full_match[1].isdigit() and "$" not in full_match and full_match != "%%"
             ):
                 pass
-            elif re.fullmatch(r"%\s+[a-zA-Z]", full_match):
+            elif RE_PRINTF_FALSE_POSITIVE.fullmatch(full_match):
                 if m.end() < len(text) and text[m.end()].isalpha():
                     continue
 
@@ -610,7 +615,6 @@ def check_printf(source, target, mode="loose"):
                         normalized_match = normalized_match[:-1] + STRFTIME_EQUIVALENCE[type_char]
 
             matches.append(normalized_match)
-            raw_matches.append(full_match)
         return matches
 
     src_fmt = get_normalized_printf_matches(source, _("Source"))
@@ -634,11 +638,12 @@ def check_python_brace(source, target):
 
 
 def check_icu_placeholders(source, target):
-    pattern = re.compile(r"\{(?:[^{}]|(?R))*\}")
+    if ("{" not in source or "}" not in source) and ("{" not in target or "}" not in target):
+        return None
 
     def extract_vars(text):
         vars_list = []
-        for match in pattern.finditer(text):
+        for match in RE_ICU_PLACEHOLDER.finditer(text):
             block = match.group(0)
             inner = block[1:-1].strip()
 
@@ -687,10 +692,11 @@ def check_urls_emails(source, target):
 
 
 def check_numbers(source, target, mode="loose"):
+    if not RE_HAS_DIGIT.search(source) and not RE_HAS_DIGIT.search(target):
+        return None
     # 1. 预处理：清理干扰项
-    icu_selector_pattern = re.compile(r"=\d+\s*\{")
-    src_clean = icu_selector_pattern.sub("", source)
-    tgt_clean = icu_selector_pattern.sub("", target)
+    src_clean = RE_ICU_SELECTOR.sub("", source)
+    tgt_clean = RE_ICU_SELECTOR.sub("", target)
 
     src_clean = RE_PYTHON_BRACE.sub("", src_clean)
     src_clean = RE_PRINTF.sub("", src_clean)
@@ -702,9 +708,8 @@ def check_numbers(source, target, mode="loose"):
 
     # 2. 提取阿拉伯数字
     # 即使在严格模式下，也先处理一下英文序数词后缀(1st->1)，防止误报
-    ordinal_re = re.compile(r"(\d+)(st|nd|rd|th)\b", re.IGNORECASE)
-    src_clean = ordinal_re.sub(r"\1", src_clean)
-    tgt_clean = ordinal_re.sub(r"\1", tgt_clean)
+    src_clean = RE_ORDINAL.sub(r"\1", src_clean)
+    tgt_clean = RE_ORDINAL.sub(r"\1", tgt_clean)
 
     src_nums = RE_NUMBER.findall(src_clean)
     tgt_nums = RE_NUMBER.findall(tgt_clean)
@@ -712,21 +717,16 @@ def check_numbers(source, target, mode="loose"):
     # 3. 计数比较
     src_counter = Counter(src_nums)
     tgt_counter = Counter(tgt_nums)
-
     if src_counter == tgt_counter:
         return None
 
     missing = []
     extra = []
-
     all_nums = set(src_counter.keys()) | set(tgt_counter.keys())
-
     for num in all_nums:
         diff = src_counter[num] - tgt_counter[num]
-
         if diff == 0:
             continue
-
         if diff > 0:
             # 情况 A: Missing (原文有，译文缺)
             # 检查豁免：是否将数字翻译成了单词 (例如: "1" -> "One")
@@ -760,16 +760,14 @@ def check_numbers(source, target, mode="loose"):
 
 def check_brackets(source, target):
     """检查括号是否成对且数量一致"""
+    source_clean = RE_S_PLURAL.sub("", source)
+    target_clean = RE_S_PLURAL.sub("", target)
+
     bracket_groups = [
         ("(", ")", "（", "）", "Parentheses ()"),
         ("[", "]", "【", "】", "Square Brackets []"),
         ("{", "}", None, None, "Curly Braces {}"),
     ]
-
-    # 使用全局正则移除 HTML 标签
-    s_plural_re = re.compile(r"\(s\)", re.IGNORECASE)
-    source_clean = s_plural_re.sub("", source)
-    target_clean = s_plural_re.sub("", target)
 
     errors = []
 
@@ -800,6 +798,9 @@ def check_double_space(source, target):
 
 
 def check_html_tags(source, target):
+    if "<" not in source and "<" not in target:
+        return None
+
     def get_valid_tags(text):
         tags = []
         for m in RE_HTML_TAG.finditer(text):
