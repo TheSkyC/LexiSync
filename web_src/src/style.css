@@ -126,7 +126,6 @@ html, body {
     left: 0;
     right: 0;
     width: 100%;
-    flex-shrink: 0;
     height: 60px;
     background: var(--card-bg);
     border-top: 1px solid var(--border);
@@ -136,6 +135,7 @@ html, body {
     padding: 0 20px;
     z-index: 1000;
     box-shadow: 0 -4px 15px rgba(0,0,0,0.06);
+    backdrop-filter: blur(10px);
 }
 
 .back-to-top-btn {

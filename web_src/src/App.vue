@@ -61,10 +61,13 @@ import TranslationTable from './components/TranslationTable.vue'
 import ChatDrawer from './components/ChatDrawer.vue'
 
 onMounted(() => {
-  applyTheme(isDark.value)
-  checkSessionAndInit()
-  window.addEventListener('scroll', handleWindowScroll)
-})
+  const setVHToken = () => {
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  };
+  window.addEventListener('resize', setVHToken);
+  setVHToken();
+});
 
 const handleWindowScroll = () => {
   showFab.value = window.scrollY > 200
