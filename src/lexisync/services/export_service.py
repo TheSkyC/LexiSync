@@ -4,10 +4,6 @@
 import datetime
 import json
 
-from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
-import yaml
-
 from lexisync.utils.constants import APP_VERSION
 from lexisync.utils.localization import _
 from lexisync.utils.path_utils import get_resource_path
@@ -188,6 +184,8 @@ def export_to_json(filepath, translatable_objects, displayed_ids_order=None, app
 
 
 def export_to_yaml(filepath, translatable_objects, displayed_ids_order=None, app_instance=None):
+    import yaml
+
     items_to_export_data = []
 
     export_obj_list = []
@@ -226,6 +224,9 @@ def export_qa_report(filepath, issues, project_name="LexiSync Project"):
     生成带格式的 QA 报告
     issues: List of dicts {severity, file, line, source, translation, type, message, ignored}
     """
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+
     wb = Workbook()
     ws = wb.active
     ws.title = "QA Issues"

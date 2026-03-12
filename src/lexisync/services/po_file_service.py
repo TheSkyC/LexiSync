@@ -267,8 +267,6 @@ def load_from_po(filepath, relative_path=None):
     file_content_cache = {}
     path_exists_cache = {}
 
-    metadata_is_corrupt = len(po_file.metadata) == 0
-
     def cached_is_file(path_str):
         if path_str not in path_exists_cache:
             path_exists_cache[path_str] = os.path.isfile(path_str)

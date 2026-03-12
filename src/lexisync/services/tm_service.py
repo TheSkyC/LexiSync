@@ -12,7 +12,6 @@ import re
 import sqlite3
 import threading
 
-from openpyxl import load_workbook
 from rapidfuzz import fuzz
 
 from lexisync.utils.localization import _
@@ -499,6 +498,8 @@ class TMService:
         raise ValueError(_("Unsupported file extension: {ext}").format(ext=ext))
 
     def _parse_xlsx(self, filepath: str, source_lang: str, target_lang: str) -> list[dict]:
+        from openpyxl import load_workbook
+
         tus = []
         wb = load_workbook(filepath, read_only=True)
         ws = wb.active

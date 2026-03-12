@@ -67,22 +67,6 @@ from PySide6.QtWidgets import (
 )
 from rapidfuzz import fuzz
 
-from lexisync.dialogs.add_glossary_entry_dialog import AddGlossaryEntryDialog
-from lexisync.dialogs.diff_dialog import DiffDialog
-from lexisync.dialogs.export_qa_dialog import ExportQADialog
-from lexisync.dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
-from lexisync.dialogs.font_settings_dialog import FontSettingsDialog
-from lexisync.dialogs.keybinding_dialog import KeybindingDialog
-from lexisync.dialogs.language_pair_dialog import LanguagePairDialog
-from lexisync.dialogs.new_project_dialog import NewProjectDialog
-from lexisync.dialogs.pot_drop_dialog import POTDropDialog
-from lexisync.dialogs.project_settings_dialog import ProjectSettingsDialog
-from lexisync.dialogs.prompt_manager_dialog import PromptManagerDialog
-from lexisync.dialogs.resource_conflict_dialog import ResourceConflictDialog
-from lexisync.dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
-from lexisync.dialogs.search_dialog import AdvancedSearchDialog
-from lexisync.dialogs.settings_dialog import SettingsDialog
-from lexisync.dialogs.statistics_dialog import StatisticsDialog
 from lexisync.models.translatable_string import TranslatableString
 from lexisync.models.translatable_strings_model import TranslatableStringsModel
 from lexisync.plugins.plugin_manager import PluginManager
@@ -104,7 +88,6 @@ from lexisync.services.prompt_service import generate_prompt_from_structure
 from lexisync.services.search_service import SearchService
 from lexisync.services.tm_service import TMService
 from lexisync.services.validation_service import placeholder_regex, run_validation_on_all
-from lexisync.services.web_server_service import WebServerService
 from lexisync.ui_components.banner_overlay import BannerOverlay
 from lexisync.ui_components.comment_status_panel import CommentStatusPanel
 from lexisync.ui_components.context_panel import ContextPanel
@@ -770,6 +753,8 @@ class LexiSyncApp(QMainWindow):
         self.glossary_service.connect_databases(global_glossary_dir, project_glossary_dir)
 
     def _setup_cloud_service(self):
+        from lexisync.services.web_server_service import WebServerService
+
         self.web_service = WebServerService(self)
         self.web_service.signals.update_requested.connect(self._handle_web_update)
         self.web_service.signals.server_started.connect(self._on_cloud_started)
@@ -782,6 +767,8 @@ class LexiSyncApp(QMainWindow):
             self.web_service = None
         else:
             if not self.web_service:
+                from lexisync.services.web_server_service import WebServerService
+
                 self.web_service = WebServerService(self)
                 self.web_service.signals.update_requested.connect(self._handle_web_update)
                 self.web_service.signals.focus_changed.connect(self._handle_web_focus)
@@ -1297,6 +1284,8 @@ class LexiSyncApp(QMainWindow):
         return None
 
     def show_language_pair_dialog(self):
+        from lexisync.dialogs.language_pair_dialog import LanguagePairDialog
+
         dialog = LanguagePairDialog(self, self.source_language, self.current_target_language, self)
         if dialog.exec():
             if self.source_language != dialog.source_lang or self.current_target_language != dialog.target_lang:
@@ -1323,11 +1312,15 @@ class LexiSyncApp(QMainWindow):
                     )
 
     def show_keybinding_dialog(self):
+        from lexisync.dialogs.keybinding_dialog import KeybindingDialog
+
         dialog = KeybindingDialog(self, _("Keybinding Settings"), self)
         if dialog.exec():
             self._setup_keybindings()
 
     def show_font_settings_dialog(self):
+        from lexisync.dialogs.font_settings_dialog import FontSettingsDialog
+
         dialog = FontSettingsDialog(self, _("Font Settings"), self)
         if dialog.exec():
             QMessageBox.information(
@@ -1922,6 +1915,8 @@ class LexiSyncApp(QMainWindow):
         if not self.is_project_mode:
             QMessageBox.warning(self, _("Warning"), _("A project must be open to access project settings."))
             return
+        from lexisync.dialogs.project_settings_dialog import ProjectSettingsDialog
+
         dialog = ProjectSettingsDialog(self)
         dialog.exec()
 
@@ -1974,6 +1969,8 @@ class LexiSyncApp(QMainWindow):
         self._validation_glossary_matcher = None
 
     def add_glossary_entry(self, from_editor=False):
+        from lexisync.dialogs.add_glossary_entry_dialog import AddGlossaryEntryDialog
+
         if hasattr(self, "_add_glossary_dialog") and self._add_glossary_dialog:
             try:
                 if self._add_glossary_dialog.isVisible():
@@ -1984,7 +1981,6 @@ class LexiSyncApp(QMainWindow):
                     return
             except RuntimeError:
                 self._add_glossary_dialog = None
-
         source_lang = self.source_language
         target_lang = self.current_target_language
 
@@ -2054,6 +2050,8 @@ class LexiSyncApp(QMainWindow):
 
     def show_glossary_settings(self):
         if self.is_project_mode:
+            from lexisync.dialogs.project_settings_dialog import ProjectSettingsDialog
+
             dialog = ProjectSettingsDialog(self)
             for i in range(dialog.nav_list.count()):
                 item = dialog.nav_list.item(i)
@@ -2068,6 +2066,8 @@ class LexiSyncApp(QMainWindow):
                     break
             dialog.exec()
         else:
+            from lexisync.dialogs.settings_dialog import SettingsDialog
+
             dialog = SettingsDialog(self)
             resources_page_title = _("Global Resources")
             if resources_page_title in dialog.pages:
@@ -2774,6 +2774,8 @@ class LexiSyncApp(QMainWindow):
             if not filepath.lower().endswith(".xlsx"):
                 QMessageBox.warning(self, _("Invalid File"), _("Only .xlsx files can be imported into the TM."))
                 return
+            from lexisync.dialogs.settings_dialog import SettingsDialog
+
             self.settings_dialog_instance = SettingsDialog(self)
             tm_page = self.settings_dialog_instance.pages.get(_("Global Resources")).tm_tab
             tm_page.import_tm_file(filepath)
@@ -2793,6 +2795,7 @@ class LexiSyncApp(QMainWindow):
     def new_project_dialog(self):
         if not self.prompt_save_if_modified():
             return False
+        from lexisync.dialogs.new_project_dialog import NewProjectDialog
 
         dialog = NewProjectDialog(self, self)
         if dialog.exec():
@@ -3553,6 +3556,7 @@ class LexiSyncApp(QMainWindow):
             if self.prompt_save_if_modified():
                 self.import_po_file_dialog_with_path(pot_filepath)
             return
+        from lexisync.dialogs.pot_drop_dialog import POTDropDialog
 
         dialog = POTDropDialog(self)
         if dialog.exec():
@@ -3847,6 +3851,8 @@ class LexiSyncApp(QMainWindow):
                 unchanged=len(diff_results["unchanged"]),
             )
             diff_results["summary"] = summary
+
+            from lexisync.dialogs.diff_dialog import DiffDialog
 
             dialog = DiffDialog(self, _("Re-scan Results"), diff_results)
             if dialog.exec():
@@ -5690,6 +5696,7 @@ class LexiSyncApp(QMainWindow):
         if not self.translatable_objects:
             QMessageBox.information(self, _("Info"), _("There is no content to save as a project."))
             return False
+        from lexisync.dialogs.new_project_dialog import NewProjectDialog
 
         dialog = NewProjectDialog(self, self)
 
@@ -6356,6 +6363,8 @@ class LexiSyncApp(QMainWindow):
         self.open_translation_file_with_path(filepath)
 
     def show_extraction_pattern_dialog(self):
+        from lexisync.dialogs.extraction_pattern_dialog import ExtractionPatternManagerDialog
+
         dialog = ExtractionPatternManagerDialog(self, _("Extraction Rule Manager"), self)
         if dialog.exec():
             if dialog.result and self.original_raw_code_content:
@@ -6487,6 +6496,8 @@ class LexiSyncApp(QMainWindow):
         dialog.show()
 
     def show_export_qa_dialog(self):
+        from lexisync.dialogs.export_qa_dialog import ExportQADialog
+
         dialog = ExportQADialog(self, is_project_mode=self.is_project_mode)
         if not dialog.exec():
             return
@@ -6575,6 +6586,8 @@ class LexiSyncApp(QMainWindow):
         if not self.translatable_objects:
             QMessageBox.information(self, _("Statistics"), _("No project data loaded to generate statistics."))
             return
+        from lexisync.dialogs.statistics_dialog import StatisticsDialog
+
         dialog = StatisticsDialog(self, self.translatable_objects)
         dialog.locate_item_signal.connect(self.select_sheet_row_by_id_and_scroll)
         dialog.show()
@@ -6600,6 +6613,8 @@ class LexiSyncApp(QMainWindow):
             return
 
         # 2. Show Generic Options Dialog
+        from lexisync.dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
+
         dialog = ResourceSaveOptionsDialog(
             self, resource_type="tm", has_project=self.is_project_mode, count=len(valid_entries)
         )
@@ -6655,7 +6670,8 @@ class LexiSyncApp(QMainWindow):
         # 5. Resolve Conflicts
         resolutions = {}
         if strategy == "manual" and real_conflicts:
-            # Use Generic Conflict Dialog with filtered conflicts
+            from lexisync.dialogs.resource_conflict_dialog import ResourceConflictDialog
+
             conflict_dialog = ResourceConflictDialog(self, real_conflicts, valid_entries, resource_type="tm")
             if not conflict_dialog.exec():
                 self.update_statusbar(_("Save cancelled."))
@@ -6896,6 +6912,8 @@ class LexiSyncApp(QMainWindow):
             QMessageBox.information(self, _("Info"), _("Please load a file or project first."))
             return
         if self.search_dialog_instance is None:
+            from lexisync.dialogs.search_dialog import AdvancedSearchDialog
+
             self.search_dialog_instance = AdvancedSearchDialog(self, _("Find and Replace"), self)
             self.search_dialog_instance.finished.connect(self.on_search_dialog_closed)
         self.search_dialog_instance.show()
@@ -7014,10 +7032,14 @@ class LexiSyncApp(QMainWindow):
             self.open_translation_file_with_path(self.current_file_path, force_dialog=True)
 
     def show_prompt_manager(self):
+        from lexisync.dialogs.prompt_manager_dialog import PromptManagerDialog
+
         dialog = PromptManagerDialog(self, _("AI Prompt Manager"), self)
         dialog.exec()
 
     def show_settings_dialog(self):
+        from lexisync.dialogs.settings_dialog import SettingsDialog
+
         dialog = SettingsDialog(self)
         dialog.exec()
 
@@ -8406,6 +8428,7 @@ class LexiSyncApp(QMainWindow):
                 + _("and {modified} modified/inherited items.").format(modified=len(diff_results["modified"]))
             )
             diff_results["summary"] = summary
+            from lexisync.dialogs.diff_dialog import DiffDialog
 
             dialog = DiffDialog(self, _("Version Comparison Results"), diff_results)
             self.progress_bar.setVisible(False)

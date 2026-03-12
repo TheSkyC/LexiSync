@@ -1,8 +1,6 @@
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
-import langid
-
 
 def detect_source_language(strings: list[str]) -> str:
     if not strings:
@@ -17,8 +15,9 @@ def detect_source_language(strings: list[str]) -> str:
         return "en"
 
     try:
+        import langid
+
         lang_code, confidence = langid.classify(text_block)
-        # 统一中文代码
         if lang_code == "zh":
             return "zh"
         return lang_code

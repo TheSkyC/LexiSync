@@ -10,8 +10,6 @@ from lexisync.plugins.plugin_base import PluginBase
 from lexisync.utils.path_utils import get_app_data_path
 
 from .core import RetrievalCore
-from .ui.settings_dialog import SettingsDialog
-from .utils.cache_service import CacheViewerService
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +55,8 @@ class RetrievalEnhancerPlugin(PluginBase):
         self.config = self.core.config
 
     def show_settings_dialog(self, parent_widget) -> bool:
+        from .ui.settings_dialog import SettingsDialog
+
         dialog = SettingsDialog(parent_widget, self.core, self._)
         dialog.exec()
 
@@ -81,6 +81,8 @@ class RetrievalEnhancerPlugin(PluginBase):
 
     # --- Hooks ---
     def register_resource_viewers(self) -> list:
+        from .utils.cache_service import CacheViewerService
+
         return [
             {
                 "id": "retrieval_cache",

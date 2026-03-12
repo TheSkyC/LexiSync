@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 from lexisync.utils.localization import _
 
 
-def hash_password(password: str, salt: str = None) -> str:
+def hash_password(password: str, salt: str | None = None) -> str:
     if not salt:
         salt = secrets.token_hex(8)
     h = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()

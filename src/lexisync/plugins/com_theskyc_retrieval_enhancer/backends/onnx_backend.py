@@ -5,23 +5,17 @@ import gc
 import logging
 import os
 
-import numpy as np
-
 from .base import RetrievalBackend
 
 logger = logging.getLogger(__name__)
 
-try:
-    import onnxruntime as ort
-    from tokenizers import Tokenizer
-
-    ONNX_AVAILABLE = True
-except ImportError:
-    ONNX_AVAILABLE = False
-
 
 class OnnxBackend(RetrievalBackend):
     def __init__(self, cache_manager):
+        self._ort = None
+        self._tk = None
+        self._np = None
+
         self.cache_manager = cache_manager
         self.model_path = None
         self.model_id = "unknown"
@@ -33,11 +27,26 @@ class OnnxBackend(RetrievalBackend):
         self._is_ready = False
         self._use_token_type_ids = None
 
+    def _import_deps(self):
+        if self._ort is None:
+            import numpy as np
+            import onnxruntime as ort
+            from tokenizers import Tokenizer
+
+            self._np = np
+            self._ort = ort
+            self._tk = Tokenizer
+
     def name(self) -> str:
         return "Local LLM (ONNX)"
 
     def is_available(self) -> bool:
-        if not ONNX_AVAILABLE:
+        import importlib.util
+
+        has_ort = importlib.util.find_spec("onnxruntime") is not None
+        has_tk = importlib.util.find_spec("tokenizers") is not None
+
+        if not (has_ort and has_tk):
             return False
         if not self.model_path:
             return False
@@ -66,23 +75,24 @@ class OnnxBackend(RetrievalBackend):
     def _ensure_loaded(self):
         if self._is_ready:
             return True
-        if not self.is_available():
+        if not self.model_path:
             return False
 
         try:
+            self._import_deps()
             tok_file = os.path.join(self.model_path, "tokenizer.json")
             onnx_file = os.path.join(self.model_path, "model_quantized.onnx")
             if not os.path.exists(onnx_file):
                 onnx_file = os.path.join(self.model_path, "model.onnx")
 
-            temp_tokenizer = Tokenizer.from_file(tok_file)
+            temp_tokenizer = self._tk.from_file(tok_file)
             temp_tokenizer.enable_padding(pad_id=0, pad_token="[PAD]", length=512)
             temp_tokenizer.enable_truncation(max_length=512)
 
-            sess_options = ort.SessionOptions()
+            sess_options = self._ort.SessionOptions()
 
-            sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-            sess_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
+            sess_options.graph_optimization_level = self._ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            sess_options.execution_mode = self._ort.ExecutionMode.ORT_PARALLEL
             try:
                 num_threads = os.cpu_count()
                 if num_threads:
@@ -91,19 +101,19 @@ class OnnxBackend(RetrievalBackend):
                     logger.info(f"[OnnxBackend] Set ONNX threads to {num_threads}.")
             except Exception as e:
                 logger.warning(f"[OnnxBackend] Could not set thread count: {e}")
-            available_providers = ort.get_available_providers()
+            available_providers = self._ort.get_available_providers()
             providers_to_use = []
             if "DmlExecutionProvider" in available_providers:
                 providers_to_use.append("DmlExecutionProvider")
             providers_to_use.append("CPUExecutionProvider")
             logger.info(f"[OnnxBackend] Using ONNX providers: {providers_to_use}")
-            temp_session = ort.InferenceSession(onnx_file, sess_options, providers=providers_to_use)
+            temp_session = self._ort.InferenceSession(onnx_file, sess_options, providers=providers_to_use)
 
             if self._use_token_type_ids is None:
                 encoded = temp_tokenizer.encode_batch(["test"])
-                input_ids = np.array([e.ids for e in encoded], dtype=np.int64)
-                attention_mask = np.array([e.attention_mask for e in encoded], dtype=np.int64)
-                token_type_ids = np.array([e.type_ids for e in encoded], dtype=np.int64)
+                input_ids = self._np.array([e.ids for e in encoded], dtype=self._np.int64)
+                attention_mask = self._np.array([e.attention_mask for e in encoded], dtype=self._np.int64)
+                token_type_ids = self._np.array([e.type_ids for e in encoded], dtype=self._np.int64)
 
                 try:
                     temp_session.run(
@@ -137,23 +147,23 @@ class OnnxBackend(RetrievalBackend):
 
     def _mean_pooling(self, model_output, attention_mask):
         token_embeddings = model_output[0]
-        input_mask_expanded = np.expand_dims(attention_mask, -1)
+        input_mask_expanded = self._np.expand_dims(attention_mask, -1)
         masked_embeddings = token_embeddings * input_mask_expanded
-        sum_embeddings = np.sum(masked_embeddings, axis=1)
-        sum_mask = np.sum(attention_mask, axis=1, keepdims=True)
-        clipped_sum_mask = np.maximum(sum_mask, 1e-9)
+        sum_embeddings = self._np.sum(masked_embeddings, axis=1)
+        sum_mask = self._np.sum(attention_mask, axis=1, keepdims=True)
+        clipped_sum_mask = self._np.maximum(sum_mask, 1e-9)
         pooled_embeddings = sum_embeddings / clipped_sum_mask
-        return pooled_embeddings.astype(np.float32)
+        return pooled_embeddings.astype(self._np.float32)
 
     def _compute_embeddings_internal(self, tokenizer, session, texts: list):
         """Internal compute function for self-check, avoids recursion."""
         encoded = tokenizer.encode_batch(texts)
-        input_ids = np.array([e.ids for e in encoded], dtype=np.int64)
-        attention_mask = np.array([e.attention_mask for e in encoded], dtype=np.int64)
+        input_ids = self._np.array([e.ids for e in encoded], dtype=self._np.int64)
+        attention_mask = self._np.array([e.attention_mask for e in encoded], dtype=self._np.int64)
 
         inputs = {"input_ids": input_ids, "attention_mask": attention_mask}
         if self._use_token_type_ids:
-            inputs["token_type_ids"] = np.array([e.type_ids for e in encoded], dtype=np.int64)
+            inputs["token_type_ids"] = self._np.array([e.type_ids for e in encoded], dtype=self._np.int64)
 
         outputs = session.run(None, inputs)
         return self._mean_pooling(outputs, attention_mask)
@@ -162,8 +172,8 @@ class OnnxBackend(RetrievalBackend):
         if not self._ensure_loaded():
             return None
         embeddings = self._compute_embeddings_internal(self.tokenizer, self.session, texts)
-        norm = np.linalg.norm(embeddings, axis=1, keepdims=True)
-        return embeddings / np.clip(norm, a_min=1e-9, a_max=None)
+        norm = self._np.linalg.norm(embeddings, axis=1, keepdims=True)
+        return embeddings / self._np.clip(norm, a_min=1e-9, a_max=None)
 
     def build_index(self, data_list: list, progress_callback=None, check_cancel=None) -> bool:
         if not self.is_available():
@@ -219,7 +229,7 @@ class OnnxBackend(RetrievalBackend):
             query_emb = self._compute_embeddings([query])
             if query_emb is None:
                 return []
-            scores = np.dot(self.index_embeddings, query_emb.T).flatten()
+            scores = self._np.dot(self.index_embeddings, query_emb.T).flatten()
             related_indices = scores.argsort()[: -limit - 1 : -1]
             results = []
             for idx in related_indices:

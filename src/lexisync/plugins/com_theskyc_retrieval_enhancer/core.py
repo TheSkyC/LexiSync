@@ -33,7 +33,10 @@ class RetrievalCore:
         self.onnx_backend = OnnxBackend(self.cache_manager)
 
         self.active_backend = None
-        self._apply_config()
+
+    def _ensure_active_model_loaded(self):
+        if not self.onnx_backend._is_ready:
+            self._apply_config()
 
     def _load_config(self):
         if os.path.exists(self.config_path):
@@ -82,6 +85,7 @@ class RetrievalCore:
         logger.info("[RetrievalCore] All backend indexes have been cleared.")
 
     def build_index(self, data_list, progress_callback=None, check_cancel=None):
+        self._ensure_active_model_loaded()
         # 优先尝试 ONNX
         if self.onnx_backend.is_available():
             if self.onnx_backend.build_index(data_list, progress_callback, check_cancel):
@@ -99,7 +103,7 @@ class RetrievalCore:
         import logging
 
         logger = logging.getLogger(__name__)
-
+        self._ensure_active_model_loaded()
         backend = None
 
         if mode == "onnx":

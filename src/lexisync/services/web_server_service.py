@@ -243,7 +243,7 @@ class WebServerService(QThread):
         # ── WebSocket ──────────────────────────────────────────────────────────
 
         @app.websocket("/ws")
-        async def websocket_endpoint(websocket: WebSocket, token: str = None):
+        async def websocket_endpoint(websocket: WebSocket, token: str | None = None):
             await websocket.accept()
 
             if not token or token not in self.sessions:
@@ -537,9 +537,9 @@ class WebServerService(QThread):
     def broadcast_data_change(
         self,
         ts_id: str,
-        new_text: str = None,
-        is_reviewed: bool = None,
-        is_fuzzy: bool = None,
+        new_text: str | None = None,
+        is_reviewed: bool | None = None,
+        is_fuzzy: bool | None = None,
         plural_index: int = 0,
         user: str = "Host",
     ):
