@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {ref, computed, nextTick} from 'vue'
+import {ref, computed, nextTick, watch} from 'vue'
 import {sessionToken, currentUser, t, checkSessionAndInit, authFetch, hasPermission} from './auth.js'
 import {
+    project,
     tableData,
     globalActiveEditors,
     stats,
@@ -34,6 +35,7 @@ export const onlineUsersArray = computed(() =>
 export const isChatOpen = ref(false)
 export const chatMessages = ref([])
 export const chatInput = ref('')
+export const unreadChatCount = ref(0) 
 
 let ws = null
 let wsReconnectTimer = null
@@ -42,6 +44,49 @@ let hasConnectedOnce = false
 
 const MAX_WS_RETRY = 8
 const INITIAL_RECONNECT_DELAY = 2000
+
+// 监听聊天窗口打开，重置未读数
+watch(isChatOpen, (isOpen) => {
+    if (isOpen) unreadChatCount.value = 0
+})
+
+// 生成唯一的本地存储 Key，区分项目和用户
+const getChatStorageKey = () => {
+    const pName = project.name || 'default'
+    const uName = currentUser.name || 'anonymous'
+    return `lexisync_chat_${pName}_${uName}`
+}
+
+// 加载本地聊天记录
+const loadChatHistory = () => {
+    try {
+        const saved = localStorage.getItem(getChatStorageKey())
+        if (saved) chatMessages.value = JSON.parse(saved)
+    } catch (_) {
+        chatMessages.value = []
+    }
+}
+
+// 保存聊天记录到本地
+const saveChatHistory = () => {
+    try {
+        // 限制最多保存 200 条
+        if (chatMessages.value.length > 200) {
+            chatMessages.value = chatMessages.value.slice(-200)
+        }
+        localStorage.setItem(getChatStorageKey(), JSON.stringify(chatMessages.value))
+    } catch (_) {
+    }
+}
+
+// 清除聊天记录
+export const clearChatHistory = () => {
+    chatMessages.value = []
+    try {
+        localStorage.removeItem(getChatStorageKey())
+    } catch (_) {
+    }
+}
 
 const _wsSend = (obj) => {
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj))
@@ -75,9 +120,7 @@ const handleWsMsg = (msg) => {
         case 'DATA_UPDATE': {
             const item = tableData.value.find(r => r.id === msg.data.ts_id)
             if (item) {
-                // Always clear AI loading state when an update arrives for this item
                 item.isAiLoading = false
-
                 const oldStatus = getStatusKey(item)
 
                 if (msg.data.new_text != null) {
@@ -160,7 +203,11 @@ const handleWsMsg = (msg) => {
             break
         case 'CHAT_MESSAGE':
             chatMessages.value.push(msg.data)
-            if (!isChatOpen.value) toastShow(`${msg.data.user}: ${msg.data.text}`, 'info', 3000)
+            saveChatHistory() // 保存到本地
+            if (!isChatOpen.value && String(msg.data.user).trim() !== String(currentUser.name).trim()) {
+                unreadChatCount.value++ 
+                toastShow(`${msg.data.user}: ${msg.data.text}`, 'info', 3000)
+            }
             nextTick(() => {
                 const el = document.getElementById('chatMessages')
                 if (el) el.scrollTop = el.scrollHeight
@@ -188,6 +235,7 @@ export const connectWebSocket = () => {
         wsAttempts = 0
         toastShow(t('Connected'), 'success', 2200)
         fetchOnlineUsers()
+        loadChatHistory()
 
         if (hasConnectedOnce) {
             fetchData()
@@ -236,7 +284,6 @@ export const disconnectWebSocket = () => {
 }
 
 export const sendChatMessage = () => {
-    // Guard: silently abort if the user's effective permissions don't include chat
     if (!hasPermission('chat')) return
     if (chatInput.value.trim()) {
         _wsSend({action: 'chat', message: chatInput.value})

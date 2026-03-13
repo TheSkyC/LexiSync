@@ -12,7 +12,7 @@ SPDX-License-Identifier: Apache-2.0
       </div>
       <!-- Role tag -->
       <el-tag size="small" type="info" style="margin-left: 10px;">{{ t(currentUser.role) }}</el-tag>
-      <!-- Scope restriction indicator: shown when the session has non-null scope constraints -->
+      <!-- Scope restriction indicator -->
       <el-tooltip v-if="hasScopeRestriction" :content="scopeDescription" placement="bottom" :show-after="300">
         <el-tag size="small" type="warning" class="scope-badge">
           <el-icon style="margin-right:3px;">
@@ -40,18 +40,23 @@ SPDX-License-Identifier: Apache-2.0
         <span class="ws-dot"></span>
         <span class="ws-label">{{ t(wsStateLabel) }}</span>
       </div>
-      <el-button-group>
+      
+      <div class="nav-actions">
         <el-button @click="toggleTheme" circle :title="t(isDark ? 'Light Mode' : 'Dark Mode')">
           <el-icon>
             <Sunny v-if="isDark"/>
             <Moon v-else/>
           </el-icon>
         </el-button>
-        <el-button :icon="ChatDotRound" @click="isChatOpen = !isChatOpen" circle :title="t('Chat')"></el-button>
+        
+        <el-badge :value="unreadChatCount" :max="99" :hidden="unreadChatCount === 0" class="chat-badge">
+          <el-button :icon="ChatDotRound" @click="isChatOpen = !isChatOpen" circle :title="t('Chat')"></el-button>
+        </el-badge>
+        
         <el-button type="primary" :icon="RefreshRight" @click="fetchData" circle :loading="loading"
                    :title="t('Refresh')"></el-button>
         <el-button type="danger" :icon="SwitchButton" @click="logout" circle :title="t('Logout')"></el-button>
-      </el-button-group>
+      </div>
     </div>
   </nav>
 </template>
@@ -61,7 +66,7 @@ import {computed} from 'vue'
 import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon, Lock} from '@element-plus/icons-vue'
 import {project, fetchData} from '../stores/project.js'
 import {currentUser, logout, t} from '../stores/auth.js'
-import {onlineUsersArray, wsState, wsStateLabel, isChatOpen} from '../stores/realtime.js'
+import {onlineUsersArray, wsState, wsStateLabel, isChatOpen, unreadChatCount} from '../stores/realtime.js'
 import {loading, isDark, toggleTheme, avatarColor} from '../stores/ui.js'
 
 const hasScopeRestriction = computed(() => {
@@ -247,8 +252,24 @@ const scopeDescription = computed(() => {
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-shrink: 0;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-badge {
+  display: inline-flex;
+}
+
+.chat-badge :deep(.el-badge__content.is-fixed) {
+  top: 4px;
+  right: 4px;
+  transform: translateY(-50%) translateX(50%) scale(0.85);
 }
 
 @media (max-width: 768px) {
@@ -283,12 +304,11 @@ const scopeDescription = computed(() => {
     display: none;
   }
 
-  .navbar-right :deep(.el-button-group) {
-    display: flex;
-    flex-wrap: nowrap;
+  .nav-actions {
+    gap: 4px;
   }
 
-  .navbar-right :deep(.el-button) {
+  .nav-actions :deep(.el-button) {
     padding: 5px;
     margin: 0;
   }

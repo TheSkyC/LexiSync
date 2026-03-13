@@ -52,10 +52,6 @@ import StatusCell from './table_cells/StatusCell.vue'
 </script>
 
 <style scoped>
-/* Styles from the original TranslationTable.vue can be moved here, */
-/* but many have been moved to their respective child components. */
-/* This keeps the parent component's style minimal. */
-
 .translation-card {
   overflow: visible;
 }
@@ -115,14 +111,29 @@ import StatusCell from './table_cells/StatusCell.vue'
     margin-bottom: 0;
   }
 
-  :deep(.el-table), :deep(.el-table__inner-wrapper), :deep(.el-table__body-wrapper),
-  :deep(.el-table__body), :deep(tbody), :deep(tr), :deep(td) {
+  :deep(.el-table),
+  :deep(.el-table__inner-wrapper),
+  :deep(.el-table__body-wrapper) {
     display: block !important;
     width: 100% !important;
+    overflow-x: hidden !important;
   }
 
-  :deep(.el-table__header-wrapper) {
-    display: none !important;
+  :deep(.el-table__body),
+  :deep(tbody),
+  :deep(tr),
+  :deep(td) {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden;
+  }
+
+  :deep(.el-table .el-table__cell) {
+    padding: 12px !important;
+    border-bottom: none !important;
+    max-width: 100%;
   }
 
   :deep(.el-table__row) {
@@ -133,6 +144,9 @@ import StatusCell from './table_cells/StatusCell.vue'
     position: relative;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden;
   }
 
   :deep(.el-table .el-table__cell) {
@@ -173,6 +187,15 @@ import StatusCell from './table_cells/StatusCell.vue'
 
   :deep(.el-table .el-table__row > td:first-child) {
     border-left: none !important;
+  }
+
+  :deep(.el-table .cell) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    overflow: hidden !important;
   }
 }
 </style>

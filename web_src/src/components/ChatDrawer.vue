@@ -16,13 +16,16 @@ SPDX-License-Identifier: Apache-2.0
           </el-icon>
           <span>{{ t('Chat') }}</span>
         </div>
-        <el-button :icon="Close" link @click="isChatOpen = false"></el-button>
+        <div class="header-actions">
+          <el-button :icon="Delete" link @click="clearChatHistory" :title="t('Clear History')"></el-button>
+          <el-button :icon="Close" link @click="isChatOpen = false"></el-button>
+        </div>
       </div>
 
       <div id="chatMessages" class="chat-messages">
         <div v-for="(msg, i) in chatMessages" :key="i"
              :class="['chat-msg', msg.user === currentUser.name ? 'self' : 'other']">
-          <div class="chat-meta">{{ msg.user }} ({{ t(msg.role) }}) • {{ formatTime(msg.time) }}</div>
+          <div class="chat-meta">{{ msg.user }} ({{ t(msg.role) }}) • {{ formatTime(msg.time, t) }}</div>
           <div class="chat-bubble">{{ msg.text }}</div>
         </div>
       </div>
@@ -45,9 +48,9 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 
 <script setup>
-import {Close, Position, ChatDotRound, Lock} from '@element-plus/icons-vue'
+import {Close, Position, ChatDotRound, Lock, Delete} from '@element-plus/icons-vue'
 import {currentUser, t, hasPermission} from '../stores/auth.js'
-import {isChatOpen, chatMessages, chatInput, sendChatMessage} from '../stores/realtime.js'
+import {isChatOpen, chatMessages, chatInput, sendChatMessage, clearChatHistory} from '../stores/realtime.js'
 import {formatTime} from '../stores/ui.js'
 </script>
 
@@ -99,6 +102,12 @@ import {formatTime} from '../stores/ui.js'
   gap: 8px;
   font-weight: 600;
   color: var(--text-main);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .chat-messages {

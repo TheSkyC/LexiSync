@@ -43,9 +43,36 @@ export const avatarColor = (name) => {
     for (const c of (name || '?')) h = ((h * 31) + c.charCodeAt(0)) >>> 0
     return P[h % P.length]
 }
-export const formatTime = (iso) => {
+
+// 时间戳格式化
+export const formatTime = (iso, tFn = (k) => k) => {
+    if (!iso) return ''
     const d = new Date(iso)
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+    const now = new Date()
+    const diff = Math.max(0, Math.floor((now - d) / 1000)) // 相差秒数
+
+    // 1分钟内
+    if (diff < 60) return tFn('Just now')
+    // 1小时内
+    if (diff < 3600) return `${Math.floor(diff / 60)}${tFn('m ago')}`
+    
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yesterday = new Date(today.getTime() - 86400000)
+
+    const pad = (n) => String(n).padStart(2, '0')
+    const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+
+    // 今天
+    if (d >= today) return `${tFn('Today')} ${timeStr}`
+    // 昨天
+    if (d >= yesterday) return `${tFn('Yesterday')} ${timeStr}`
+
+    // 今年
+    if (d.getFullYear() === now.getFullYear()) {
+        return `${d.getMonth() + 1}-${pad(d.getDate())} ${timeStr}`
+    }
+    // 更早
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 applyTheme(isDark.value)
