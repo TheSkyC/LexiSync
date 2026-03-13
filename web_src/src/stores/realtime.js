@@ -35,7 +35,7 @@ export const onlineUsersArray = computed(() =>
 export const isChatOpen = ref(false)
 export const chatMessages = ref([])
 export const chatInput = ref('')
-export const unreadChatCount = ref(0) 
+export const unreadChatCount = ref(0)
 
 let ws = null
 let wsReconnectTimer = null
@@ -117,43 +117,49 @@ export const fetchOnlineUsers = async () => {
 
 const handleWsMsg = (msg) => {
     switch (msg.type) {
-        case 'DATA_UPDATE': {
-            const item = tableData.value.find(r => r.id === msg.data.ts_id)
-            if (item) {
-                item.isAiLoading = false
-                const oldStatus = getStatusKey(item)
+        case 'BULK_DATA_UPDATE': {
+            const {user, changes} = msg.data;
+            let needs_stats_refresh = false;
 
-                if (msg.data.new_text != null) {
-                    if (
-                        activeRowId.value === item.id &&
-                        msg.data.user !== currentUser.name
-                    ) {
-                        item.conflictData = {
-                            serverText: msg.data.new_text,
-                            user: msg.data.user || 'Someone',
-                            plural_index: msg.data.plural_index ?? 0,
-                        }
-                    } else if (!item.conflictData) {
-                        if (item.is_plural) {
-                            item.plural_translations[msg.data.plural_index ?? 0] = msg.data.new_text
+            const isFromMe = String(user).trim() === String(currentUser.name).trim();
+
+            changes.forEach(change => {
+                const item = tableData.value.find(r => r.id === change.ts_id);
+                if (item) {
+                    const oldStatus = getStatusKey(item);
+                    item.isAiLoading = false;
+                    if (change.new_text != null) {
+                        if (activeRowId.value === item.id && !isFromMe) {
+                            item.conflictData = {
+                                serverText: change.new_text,
+                                user: user || 'Someone',
+                                plural_index: change.plural_index ?? 0,
+                            };
                         } else {
-                            item.translation = msg.data.new_text
+                            if (item.is_plural) {
+                                item.plural_translations[change.plural_index ?? 0] = change.new_text;
+                            } else {
+                                item.translation = change.new_text;
+                            }
+                            item.conflictData = null;
                         }
                     }
+                    if (change.is_reviewed != null) item.is_reviewed = change.is_reviewed;
+                    if (change.is_fuzzy != null) item.is_fuzzy = change.is_fuzzy;
+                    const newStatus = getStatusKey(item);
+                    if (oldStatus !== newStatus) {
+                        stats[oldStatus] = Math.max(0, (stats[oldStatus] ?? 0) - 1);
+                        stats[newStatus] = (stats[newStatus] ?? 0) + 1;
+                    }
+                } else {
+                    needs_stats_refresh = true;
                 }
+            });
 
-                if (msg.data.is_reviewed != null) item.is_reviewed = msg.data.is_reviewed
-                if (msg.data.is_fuzzy != null) item.is_fuzzy = msg.data.is_fuzzy
-
-                const newStatus = getStatusKey(item)
-                if (oldStatus !== newStatus) {
-                    stats[oldStatus] = Math.max(0, (stats[oldStatus] ?? 0) - 1)
-                    stats[newStatus] = (stats[newStatus] ?? 0) + 1
-                }
-            } else {
-                fetchProjectStats()
+            if (needs_stats_refresh) {
+                fetchProjectStats();
             }
-            break
+            break;
         }
         case 'AI_STATUS_UPDATE': {
             const item = tableData.value.find(r => r.id === msg.data.ts_id)
@@ -205,7 +211,7 @@ const handleWsMsg = (msg) => {
             chatMessages.value.push(msg.data)
             saveChatHistory() // 保存到本地
             if (!isChatOpen.value && String(msg.data.user).trim() !== String(currentUser.name).trim()) {
-                unreadChatCount.value++ 
+                unreadChatCount.value++
                 toastShow(`${msg.data.user}: ${msg.data.text}`, 'info', 3000)
             }
             nextTick(() => {

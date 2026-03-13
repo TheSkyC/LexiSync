@@ -859,17 +859,29 @@ class WebServerService(QThread):
         plural_index: int = 0,
         user: str = "Host",
     ) -> None:
+        change_item = {
+            "ts_id": ts_id,
+            "new_text": new_text,
+            "is_reviewed": is_reviewed,
+            "is_fuzzy": is_fuzzy,
+            "plural_index": plural_index,
+        }
+        self.broadcast_bulk_data_change([change_item], user)
+
+    def broadcast_bulk_data_change(self, changes: list[dict], user: str = "Host"):
+        """
+        Broadcasts a list of changes.
+        """
+        if not changes:
+            return
+
         self._run_async(
             self.ws_manager.broadcast_json(
                 {
-                    "type": "DATA_UPDATE",
+                    "type": "BULK_DATA_UPDATE",
                     "data": {
-                        "ts_id": ts_id,
-                        "new_text": new_text,
-                        "is_reviewed": is_reviewed,
-                        "is_fuzzy": is_fuzzy,
-                        "plural_index": plural_index,
                         "user": user,
+                        "changes": changes,
                     },
                 }
             )

@@ -916,6 +916,7 @@ class LexiSyncApp(QMainWindow):
             logger.info(log_msg)
 
             if self.web_service and self.web_service.isRunning():
+                changes_to_broadcast = []
                 for tid in affected_ids:
                     target_ts = self._find_ts_obj_by_id(tid)
                     if not target_ts:
@@ -926,14 +927,18 @@ class LexiSyncApp(QMainWindow):
                         target_ts.plural_translations.get(p_idx, "") if target_ts.is_plural else target_ts.translation
                     )
 
-                    self.web_service.broadcast_data_change(
-                        ts_id=tid,
-                        new_text=b_text,
-                        is_reviewed=target_ts.is_reviewed,
-                        is_fuzzy=target_ts.is_fuzzy,
-                        plural_index=p_idx,
-                        user=data.user,
+                    changes_to_broadcast.append(
+                        {
+                            "ts_id": tid,
+                            "new_text": b_text,
+                            "is_reviewed": target_ts.is_reviewed,
+                            "is_fuzzy": target_ts.is_fuzzy,
+                            "plural_index": p_idx,
+                        }
                     )
+
+                if changes_to_broadcast:
+                    self.web_service.broadcast_bulk_data_change(changes_to_broadcast, user=data.user)
         else:
             logger.debug(f"No actual change detected for ts_id: {data.ts_id}")
 
@@ -2258,7 +2263,6 @@ class LexiSyncApp(QMainWindow):
                 )
                 changed_ids.add(obj_id)
 
-                # #[ADD] 广播撤销后的状态
                 if self.web_service and self.web_service.isRunning():
                     broadcast_payload = {"ts_id": obj_id}
                     if field == "translation":
@@ -2318,7 +2322,6 @@ class LexiSyncApp(QMainWindow):
                 )
                 changed_ids.add(obj_id)
 
-                # #[ADD] 广播重做后的状态
                 if self.web_service and self.web_service.isRunning():
                     broadcast_payload = {"ts_id": obj_id}
                     if field == "translation":
@@ -5406,22 +5409,29 @@ class LexiSyncApp(QMainWindow):
 
         if self.web_service and self.web_service.isRunning():
             if not source.startswith("cloud_user"):
+                changes_to_send = []
                 for tid in ids_to_update:
                     target_ts = self._find_ts_obj_by_id(tid)
                     if not target_ts:
                         continue
+
                     p_idx = plural_index if tid == ts_obj.id else 0
-                    final_broadcast_text = (
+                    b_text = (
                         target_ts.plural_translations.get(p_idx, "") if target_ts.is_plural else target_ts.translation
                     )
-                    self.web_service.broadcast_data_change(
-                        ts_id=tid,
-                        new_text=final_broadcast_text,
-                        is_reviewed=target_ts.is_reviewed,
-                        is_fuzzy=target_ts.is_fuzzy,
-                        plural_index=p_idx,
-                        user="Host",
+
+                    changes_to_send.append(
+                        {
+                            "ts_id": tid,
+                            "new_text": b_text,
+                            "is_reviewed": target_ts.is_reviewed,
+                            "is_fuzzy": target_ts.is_fuzzy,
+                            "plural_index": p_idx,
+                        }
                     )
+
+                if changes_to_send:
+                    self.web_service.broadcast_bulk_data_change(changes_to_send, user="Host")
         return processed_translation, True
 
     def apply_translation_from_button(self):
