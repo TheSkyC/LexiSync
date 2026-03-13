@@ -10,7 +10,17 @@ SPDX-License-Identifier: Apache-2.0
       <div class="lang-badge" v-if="project.source_lang">
         {{ project.source_lang }} <span class="sep">▶</span> {{ project.target_lang }}
       </div>
+      <!-- Role tag -->
       <el-tag size="small" type="info" style="margin-left: 10px;">{{ t(currentUser.role) }}</el-tag>
+      <!-- Scope restriction indicator: shown when the session has non-null scope constraints -->
+      <el-tooltip v-if="hasScopeRestriction" :content="scopeDescription" placement="bottom" :show-after="300">
+        <el-tag size="small" type="warning" class="scope-badge">
+          <el-icon style="margin-right:3px;">
+            <Lock/>
+          </el-icon>
+          {{ t('Scoped') }}
+        </el-tag>
+      </el-tooltip>
     </div>
 
     <div class="collab-wrap" v-if="onlineUsersArray.length">
@@ -47,7 +57,8 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 
 <script setup>
-import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon} from '@element-plus/icons-vue'
+import {computed} from 'vue'
+import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon, Lock} from '@element-plus/icons-vue'
 import {
   project,
   currentUser,
@@ -63,6 +74,20 @@ import {
   toggleTheme,
   t
 } from '../store.js'
+
+const hasScopeRestriction = computed(() => {
+  const s = currentUser.scope
+  return !!(s && (s.languages?.length || s.files?.length))
+})
+
+const scopeDescription = computed(() => {
+  const s = currentUser.scope
+  if (!s) return ''
+  const parts = []
+  if (s.languages?.length) parts.push(`${t('Languages')}: ${s.languages.join(', ')}`)
+  if (s.files?.length) parts.push(`${t('Files')}: ${s.files.join(', ')}`)
+  return parts.join('\n') || t('Restricted scope')
+})
 </script>
 
 <style scoped>
@@ -112,6 +137,12 @@ import {
 .lang-badge .sep {
   color: #409EFF;
   font-size: 9px;
+}
+
+.scope-badge {
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
 }
 
 .ws-status {
@@ -244,6 +275,10 @@ import {
   }
 
   .lang-badge {
+    display: none;
+  }
+
+  .scope-badge :deep(.el-tag__content) {
     display: none;
   }
 

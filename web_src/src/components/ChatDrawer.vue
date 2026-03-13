@@ -11,11 +11,14 @@ SPDX-License-Identifier: Apache-2.0
     <div :class="['chat-drawer', { open: isChatOpen }]">
       <div class="chat-header">
         <div class="header-title">
-          <el-icon><ChatDotRound /></el-icon>
+          <el-icon>
+            <ChatDotRound/>
+          </el-icon>
           <span>{{ t('Chat') }}</span>
         </div>
         <el-button :icon="Close" link @click="isChatOpen = false"></el-button>
       </div>
+
       <div id="chatMessages" class="chat-messages">
         <div v-for="(msg, i) in chatMessages" :key="i"
              :class="['chat-msg', msg.user === currentUser.name ? 'self' : 'other']">
@@ -23,17 +26,36 @@ SPDX-License-Identifier: Apache-2.0
           <div class="chat-bubble">{{ msg.text }}</div>
         </div>
       </div>
-      <div class="chat-input-area">
+
+      <!-- ── Input area: shown only when the user has the chat permission ── -->
+      <div class="chat-input-area" v-if="hasPermission('chat')">
         <el-input v-model="chatInput" :placeholder="t('Type a message...')" @keyup.enter="sendChatMessage"></el-input>
         <el-button :icon="Position" type="primary" @click="sendChatMessage"></el-button>
+      </div>
+
+      <!-- ── No-permission notice ── -->
+      <div class="chat-no-perm" v-else>
+        <el-icon>
+          <Lock/>
+        </el-icon>
+        <span>{{ t('No chat permission') }}</span>
       </div>
     </div>
   </Teleport>
 </template>
 
 <script setup>
-import {Close, Position, ChatDotRound} from '@element-plus/icons-vue'
-import {isChatOpen, chatMessages, currentUser, formatTime, chatInput, sendChatMessage, t} from '../store.js'
+import {Close, Position, ChatDotRound, Lock} from '@element-plus/icons-vue'
+import {
+  isChatOpen,
+  chatMessages,
+  currentUser,
+  formatTime,
+  chatInput,
+  sendChatMessage,
+  t,
+  hasPermission
+} from '../store.js'
 </script>
 
 <style scoped>
@@ -55,7 +77,7 @@ import {isChatOpen, chatMessages, currentUser, formatTime, chatInput, sendChatMe
   width: 380px;
   background: var(--card-bg);
   border-left: 1px solid var(--border);
-  box-shadow: -5px 0 20px rgba(0,0,0,0.1);
+  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
   z-index: 2000;
   display: flex;
   flex-direction: column;
@@ -139,14 +161,29 @@ import {isChatOpen, chatMessages, currentUser, formatTime, chatInput, sendChatMe
   border-bottom-left-radius: 2px;
 }
 
+/* ── Active input area ───────────────────────────────────────────────────── */
 .chat-input-area {
   padding: 15px;
-  /* 适配 iPhone 底部小黑条 (Safe Area) */
   padding-bottom: calc(15px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--border);
   background: var(--card-bg);
   display: flex;
   gap: 8px;
+}
+
+/* ── No-permission notice ─────────────────────────────────────────────────── */
+.chat-no-perm {
+  padding: 14px 20px;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--card-bg-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  user-select: none;
 }
 
 /* 移动端 */
@@ -158,6 +195,11 @@ import {isChatOpen, chatMessages, currentUser, formatTime, chatInput, sendChatMe
 }
 
 /* 动画 */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
 </style>

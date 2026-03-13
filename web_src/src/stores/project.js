@@ -4,7 +4,7 @@
  */
 
 import {ref, reactive, computed, nextTick} from 'vue'
-import {sessionToken, currentUser, t, authFetch} from './auth.js'
+import {currentUser, t, authFetch, hasPermission} from './auth.js'
 import {loading, toastShow} from './ui.js'
 import {wsSend} from './wsClient.js'
 
@@ -106,10 +106,11 @@ export const fetchData = async () => {
 }
 
 export const updateTranslation = async (item, pIdx = 0) => {
-    if (currentUser.role === 'viewer') return
+    // Guard: only users with translate permission may save
+    if (!hasPermission('translate')) return
     wsSend({action: 'blur', ts_id: item.id})
     activeRowId.value = null
-    
+
     if (item.conflictData) return
 
     const text = item.is_plural ? item.plural_translations[pIdx] : item.translation
@@ -126,11 +127,16 @@ export const updateTranslation = async (item, pIdx = 0) => {
 }
 
 export const toggleStatus = async (item, type) => {
-    if (currentUser.role === 'viewer') return
-    if (type === 'reviewed' && currentUser.role === 'translator') {
-        toastShow(t('Permission Denied'), 'error');
+    // Check the specific permission required for each status type
+    if (type === 'reviewed' && !hasPermission('review')) {
+        toastShow(t('Permission Denied'), 'error')
         return
     }
+    if (type === 'fuzzy' && !hasPermission('fuzzy')) {
+        toastShow(t('Permission Denied'), 'error')
+        return
+    }
+
     const payload = {ts_id: item.id}
     if (type === 'reviewed') {
         payload.is_reviewed = !item.is_reviewed
@@ -152,16 +158,18 @@ export const toggleStatus = async (item, type) => {
 }
 
 export const requestAITranslation = async (item) => {
-    if (currentUser.role === 'viewer') return
-    wsSend({ action: 'ai_start', ts_id: item.id })
+    if (!hasPermission('ai_translate')) return
+    wsSend({action: 'ai_start', ts_id: item.id})
 }
 
 export const onEditorFocus = (row) => {
-    if (currentUser.role !== 'viewer') {
+    // Only users who can actually translate should broadcast focus / lock the row
+    if (hasPermission('translate')) {
         activeRowId.value = row.id
         wsSend({action: 'focus', ts_id: row.id})
     }
 }
+
 export const setFilter = (key) => {
     statusFilter.value = key;
     currentPage.value = 1;

@@ -4,7 +4,7 @@
  */
 
 import {ref, computed, nextTick} from 'vue'
-import {sessionToken, currentUser, t, checkSessionAndInit, authFetch} from './auth.js'
+import {sessionToken, currentUser, t, checkSessionAndInit, authFetch, hasPermission} from './auth.js'
 import {
     tableData,
     globalActiveEditors,
@@ -98,10 +98,10 @@ const handleWsMsg = (msg) => {
                         }
                     }
                 }
-                
+
                 if (msg.data.is_reviewed != null) item.is_reviewed = msg.data.is_reviewed
                 if (msg.data.is_fuzzy != null) item.is_fuzzy = msg.data.is_fuzzy
-                
+
                 const newStatus = getStatusKey(item)
                 if (oldStatus !== newStatus) {
                     stats[oldStatus] = Math.max(0, (stats[oldStatus] ?? 0) - 1)
@@ -236,6 +236,8 @@ export const disconnectWebSocket = () => {
 }
 
 export const sendChatMessage = () => {
+    // Guard: silently abort if the user's effective permissions don't include chat
+    if (!hasPermission('chat')) return
     if (chatInput.value.trim()) {
         _wsSend({action: 'chat', message: chatInput.value})
         chatInput.value = ''

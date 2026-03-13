@@ -59,7 +59,9 @@ SPDX-License-Identifier: Apache-2.0
                 @click.stop="toggleConflict(row)"
                 :title="t('Conflict detected')"
             >
-              <el-icon class="conflict-icon-blink"><WarningFilled /></el-icon>
+              <el-icon class="conflict-icon-blink">
+                <WarningFilled/>
+              </el-icon>
             </div>
 
             <!-- ── Translation Inputs ─────────────────────────────── -->
@@ -73,7 +75,7 @@ SPDX-License-Identifier: Apache-2.0
                     class="editor-input"
                     @focus="onEditorFocus(row)"
                     @blur="updateTranslation(row, idx)"
-                    :disabled="currentUser.role === 'viewer' || row.isAiLoading"
+                    :disabled="!hasPermission('translate') || row.isAiLoading"
                 ></el-input>
               </div>
             </div>
@@ -85,7 +87,7 @@ SPDX-License-Identifier: Apache-2.0
                 class="editor-input"
                 @focus="onEditorFocus(row)"
                 @blur="updateTranslation(row)"
-                :disabled="currentUser.role === 'viewer' || row.isAiLoading"
+                :disabled="!hasPermission('translate') || row.isAiLoading"
             ></el-input>
 
             <!-- ── Conflict Resolution Panel ──────────────────────── -->
@@ -123,24 +125,28 @@ SPDX-License-Identifier: Apache-2.0
       <el-table-column :label="t('Status')" width="140" align="center" class-name="status-column">
         <template #default="{ row }">
           <div class="status-actions">
-            <el-tooltip :content="t('AI Translate')" placement="top" v-if="currentUser.role !== 'viewer'">
+            <!-- AI Translate: requires ai_translate permission -->
+            <el-tooltip :content="t('AI Translate')" placement="top" v-if="hasPermission('ai_translate')">
               <el-button type="primary" plain :icon="MagicStick" circle size="small"
                          @click="requestAITranslation(row)"
                          :loading="row.isAiLoading"></el-button>
             </el-tooltip>
 
-            <el-tooltip :content="t('Reviewed')" placement="top"
-                        v-if="['admin', 'reviewer'].includes(currentUser.role)">
+            <!-- Reviewed: interactive button for users with review permission -->
+            <el-tooltip :content="t('Reviewed')" placement="top" v-if="hasPermission('review')">
               <el-button :type="row.is_reviewed ? 'success' : 'info'" :icon="CircleCheckFilled" circle size="small"
                          @click="toggleStatus(row, 'reviewed')"></el-button>
             </el-tooltip>
+            <!-- Reviewed: read-only indicator for users without review permission -->
             <el-button v-else-if="row.is_reviewed" type="success" :icon="CircleCheckFilled" circle size="small"
                        disabled></el-button>
 
-            <el-tooltip :content="t('Fuzzy')" placement="top" v-if="currentUser.role !== 'viewer'">
+            <!-- Fuzzy: interactive button for users with fuzzy permission -->
+            <el-tooltip :content="t('Fuzzy')" placement="top" v-if="hasPermission('fuzzy')">
               <el-button :type="row.is_fuzzy ? 'warning' : 'info'" :icon="WarningFilled" circle size="small"
                          @click="toggleStatus(row, 'fuzzy')"></el-button>
             </el-tooltip>
+            <!-- Fuzzy: read-only indicator for users without fuzzy permission -->
             <el-button v-else-if="row.is_fuzzy" type="warning" :icon="WarningFilled" circle size="small"
                        disabled></el-button>
           </div>
@@ -196,7 +202,7 @@ import {MagicStick, CircleCheckFilled, WarningFilled} from '@element-plus/icons-
 import {
   tableData, loading, tableRowClassName, hlPh, currentUser,
   onEditorFocus, updateTranslation, requestAITranslation, toggleStatus,
-  searchQuery, statusFilter, t, avatarColor, activeRowId
+  searchQuery, statusFilter, t, avatarColor, activeRowId, hasPermission
 } from '../store.js'
 
 // ── Cell ref map: rowId → DOM element ──────────────────────────────────────
@@ -294,18 +300,18 @@ const computeDiff = (textA, textB) => {
     const e = escape(textA)
     return {htmlA: e, htmlB: e}
   }
-  
+
   const tokenize = (s) => s.match(/\S+|\s+/g) || []
   const tokA = tokenize(textA)
   const tokB = tokenize(textB)
-  
+
   if (tokA.length * tokB.length > 12000) {
     return {
       htmlA: `<mark class="diff-removed">${escape(textA)}</mark>`,
       htmlB: `<mark class="diff-added">${escape(textB)}</mark>`,
     }
   }
-  
+
   const n = tokA.length, m = tokB.length
   const dp = Array.from({length: n + 1}, () => new Uint16Array(m + 1))
   for (let i = 1; i <= n; i++) {
@@ -323,7 +329,8 @@ const computeDiff = (textA, textB) => {
     if (i > 0 && j > 0 && tokA[i - 1] === tokB[j - 1]) {
       opsA.unshift({tok: tokA[i - 1], type: 'same'})
       opsB.unshift({tok: tokB[j - 1], type: 'same'})
-      i--; j--
+      i--;
+      j--
     } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
       opsB.unshift({tok: tokB[j - 1], type: 'added'})
       j--
@@ -520,7 +527,7 @@ onBeforeUnmount(() => {
   border: 1.5px solid rgba(124, 58, 237, 0.28);
   border-radius: 6px;
   z-index: 10;
-  pointer-events: all; /* block interaction */
+  pointer-events: all;
   overflow: hidden;
   cursor: not-allowed;
 }

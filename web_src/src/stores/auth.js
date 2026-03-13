@@ -18,10 +18,14 @@ export const loginForm      = reactive({ username: '', password: '' })
 export const tokenForm      = reactive({ token: '', displayName: '' })
 export const rememberMe     = ref(true)
 export const sessionToken   = ref('')
-export const currentUser    = reactive({ name: '', role: 'viewer' })
+// permissions: string[] — effective permission keys from /api/v1/me
+// scope: { languages: string[]|null, files: string[]|null } | null
+export const currentUser    = reactive({ name: '', role: 'viewer', permissions: [], scope: null })
 export const i18n           = ref({})
 
 export const t = (key) => i18n.value[key] || key
+
+export const hasPermission = (perm) => currentUser.permissions.includes(perm)
 
 export const authFetch = (url, options = {}) => {
   const separator = url.includes('?') ? '&' : '?'
@@ -38,9 +42,17 @@ let _onLoginSuccess = null
 export const registerLoginSuccessHandler = (fn) => { _onLoginSuccess = fn }
 
 const afterLogin = async (data) => {
-  currentUser.name = data.name
-  currentUser.role = data.role
+  currentUser.name        = data.name
+  currentUser.role        = data.role
+  currentUser.permissions = Array.isArray(data.permissions) ? data.permissions : []
+  currentUser.scope       = data.scope ?? null
   await _onLoginSuccess?.()
+}
+
+const fetchMe = async () => {
+  const res = await authFetch('/api/v1/me', { cache: 'no-store' })
+  if (!res.ok) throw new Error('Session verification failed')
+  return res.json()
 }
 
 export const loginAccount = async () => {
@@ -55,6 +67,8 @@ export const loginAccount = async () => {
     const data = await res.json()
     saveSession(data.token)
       
+    const meData = await fetchMe()
+
     if (rememberMe.value) {
       localStorage.setItem('lexisync_auth', JSON.stringify({
         type: 'account', username: loginForm.username, password: btoa(loginForm.password)
@@ -62,7 +76,7 @@ export const loginAccount = async () => {
     } else {
       localStorage.removeItem('lexisync_auth')
     }
-    await afterLogin(data)
+    await afterLogin(meData)
   } catch (e) { authError.value = e.message }
   finally { loading.value = false }
 }
@@ -78,6 +92,8 @@ export const loginToken = async () => {
     if (!res.ok) throw new Error('Invalid or expired token')
     const data = await res.json()
     saveSession(data.token)
+      
+    const meData = await fetchMe()
 
     if (rememberMe.value) {
       localStorage.setItem('lexisync_auth', JSON.stringify({
@@ -88,7 +104,7 @@ export const loginToken = async () => {
     } else {
       localStorage.removeItem('lexisync_auth')
     }
-    await afterLogin(data)
+    await afterLogin(meData)
   } catch (e) { authError.value = e.message }
   finally { loading.value = false }
 }
@@ -106,7 +122,7 @@ export const checkSessionAndInit = async () => {
       if (res.ok) { await afterLogin(await res.json()); return }
     } catch (_) {}
   }
-  
+
   if (saved) {
     try {
       const auth = JSON.parse(saved)
