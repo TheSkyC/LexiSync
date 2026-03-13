@@ -318,7 +318,6 @@ class FileExplorerPanel(QWidget):
                 background-color: #E0E0E0;
                 border-radius: 3px;
             }
-            /* [ADD] Hide the menu indicator arrow */
             QToolButton::menu-indicator {
                 image: none;
             }

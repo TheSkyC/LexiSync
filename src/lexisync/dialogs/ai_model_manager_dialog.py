@@ -105,7 +105,6 @@ class AIModelManagerDialog(QDialog):
                 height: 12px;
             }}
             QComboBox::down-arrow:on {{
-                /* [CHANGED] Use UP arrow when expanded */
                 image: url("{icon_up}");
             }}
 

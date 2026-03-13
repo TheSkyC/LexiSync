@@ -289,7 +289,7 @@ class TestTranslationDialog(QDialog):
                 if src.lower() in text.lower():
                     glossary_lines.append(f"- {src}: {tgt}")
 
-        # 2. TM & RAG [FIX]
+        # 2. TM & RAG
         semantic_parts = []
 
         # TM
