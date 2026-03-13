@@ -861,7 +861,7 @@ class LexiSyncApp(QMainWindow):
         self.update_statusbar(_("Cloud service stopped."))
 
     def _handle_web_update(self, data):
-        """处理来自 Web 端的修改请求 (data 是 TranslationUpdate 对象)"""
+        """处理来自 Web 端的修改请求"""
         logger.debug(f"Received web update for ts_id: {data.ts_id} by {data.user}")
 
         ts_obj = self._find_ts_obj_by_id(data.ts_id)
@@ -869,17 +869,21 @@ class LexiSyncApp(QMainWindow):
             logger.error(f"Web update failed: ID {data.ts_id} not found in current project/file.")
             return
 
-        # 1. 捕获原始状态
         original_reviewed = ts_obj.is_reviewed
         original_fuzzy = ts_obj.is_fuzzy
         original_text = (
             ts_obj.plural_translations.get(data.plural_index, "") if ts_obj.is_plural else ts_obj.translation
         )
 
-        # 2. 应用所有请求的变更
+        affected_ids = {ts_obj.id}
+
         if data.new_text is not None:
             self._apply_translation_to_model(
-                ts_obj, data.new_text, source=f"cloud_user:{data.user}", plural_index=data.plural_index
+                ts_obj,
+                data.new_text,
+                source=f"cloud_user:{data.user}",
+                plural_index=data.plural_index,
+                out_propagated_ids=affected_ids,
             )
 
         if data.is_reviewed is not None:
@@ -888,7 +892,6 @@ class LexiSyncApp(QMainWindow):
         if data.is_fuzzy is not None:
             self._apply_status_change_from_web(ts_obj, "is_fuzzy", data.is_fuzzy)
 
-        # 3. 比较原始状态和最终状态，确定实际发生了什么变化
         final_text = ts_obj.plural_translations.get(data.plural_index, "") if ts_obj.is_plural else ts_obj.translation
         changed_fields = []
         if final_text != original_text:
@@ -898,28 +901,36 @@ class LexiSyncApp(QMainWindow):
         if ts_obj.is_fuzzy != original_fuzzy:
             changed_fields.append("is_fuzzy")
 
-        # 4. 根据实际变化执行后续操作
-        if changed_fields:
+        if changed_fields or len(affected_ids) > 1:
             self._update_view_for_ids({ts_obj.id})
             if ts_obj.id == self.current_selected_ts_id:
                 self.force_refresh_ui_for_current_selection()
 
             log_msg = _("Cloud update from {user} on {id}: {fields}").format(
-                user=data.user, id=data.ts_id[:8], fields=", ".join(changed_fields)
+                user=data.user, id=data.ts_id[:8], fields=", ".join(changed_fields) if changed_fields else "propagation"
             )
             self.update_statusbar(log_msg)
             logger.info(log_msg)
 
-            # 将最终确认的变更广播给所有客户端
             if self.web_service and self.web_service.isRunning():
-                self.web_service.broadcast_data_change(
-                    ts_id=ts_obj.id,
-                    new_text=final_text if "translation" in changed_fields else None,
-                    is_reviewed=ts_obj.is_reviewed,
-                    is_fuzzy=ts_obj.is_fuzzy,
-                    plural_index=data.plural_index,
-                    user=data.user,
-                )
+                for tid in affected_ids:
+                    target_ts = self._find_ts_obj_by_id(tid)
+                    if not target_ts:
+                        continue
+
+                    p_idx = data.plural_index if tid == ts_obj.id else 0
+                    b_text = (
+                        target_ts.plural_translations.get(p_idx, "") if target_ts.is_plural else target_ts.translation
+                    )
+
+                    self.web_service.broadcast_data_change(
+                        ts_id=tid,
+                        new_text=b_text,
+                        is_reviewed=target_ts.is_reviewed,
+                        is_fuzzy=target_ts.is_fuzzy,
+                        plural_index=p_idx,
+                        user=data.user,
+                    )
         else:
             logger.debug(f"No actual change detected for ts_id: {data.ts_id}")
 
@@ -5223,10 +5234,8 @@ class LexiSyncApp(QMainWindow):
         force_propagation_mode=None,
         collect_changes=None,
         plural_index=0,
+        out_propagated_ids=None,
     ):
-        """
-        collect_changes: 如果传入一个 list，则将变更记录存入该 list 而不直接 add_to_undo_history
-        """
         processed_translation = self.plugin_manager.run_hook(
             "process_string_for_save", new_translation_from_ui, ts_object=ts_obj, column="translation", source=source
         )
@@ -5373,12 +5382,16 @@ class LexiSyncApp(QMainWindow):
                 else:
                     self.add_to_undo_history(undo_action_type, undo_data_payload)
         self._update_view_for_ids(ids_to_update)
+        self.mark_modified()
+
         self.update_statusbar(
             _('Translation applied: "{original_semantic}..."').format(
                 original_semantic=ts_obj.original_semantic[:20].replace(chr(10), "↵")
             )
         )
-        self.mark_modified()
+
+        if out_propagated_ids is not None:
+            out_propagated_ids.update(ids_to_update)
 
         if self.current_selected_ts_id == ts_obj.id and hasattr(self, "details_panel"):
             self.details_panel.translation_edit_text.blockSignals(True)
@@ -5390,14 +5403,22 @@ class LexiSyncApp(QMainWindow):
 
         if self.web_service and self.web_service.isRunning():
             if not source.startswith("cloud_user"):
-                self.web_service.broadcast_data_change(
-                    ts_id=ts_obj.id,
-                    new_text=processed_translation,
-                    is_reviewed=ts_obj.is_reviewed,
-                    is_fuzzy=ts_obj.is_fuzzy,
-                    plural_index=plural_index,
-                    user="Host",
-                )
+                for tid in ids_to_update:
+                    target_ts = self._find_ts_obj_by_id(tid)
+                    if not target_ts:
+                        continue
+                    p_idx = plural_index if tid == ts_obj.id else 0
+                    final_broadcast_text = (
+                        target_ts.plural_translations.get(p_idx, "") if target_ts.is_plural else target_ts.translation
+                    )
+                    self.web_service.broadcast_data_change(
+                        ts_id=tid,
+                        new_text=final_broadcast_text,
+                        is_reviewed=target_ts.is_reviewed,
+                        is_fuzzy=target_ts.is_fuzzy,
+                        plural_index=p_idx,
+                        user="Host",
+                    )
         return processed_translation, True
 
     def apply_translation_from_button(self):
