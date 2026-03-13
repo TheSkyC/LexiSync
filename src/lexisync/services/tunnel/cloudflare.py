@@ -142,7 +142,9 @@ class CloudflareProvider(BaseTunnelProvider):
             status_callback(self.status, self.error_message)
 
     def _read_output(self, status_callback, log_callback, mode):
-        url_pattern = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
+        quick_url_pattern = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
+
+        named_host_pattern = re.compile(r'hostname[\\"\s:]+([a-zA-Z0-9\.-]+)')
 
         for line in iter(self.process.stdout.readline, ""):
             if self._stop_event.is_set():
@@ -155,21 +157,28 @@ class CloudflareProvider(BaseTunnelProvider):
             logger.debug(f"[cloudflared] {line}")
             log_callback(line)
 
-            if self.status == TunnelStatus.CONNECTING:
-                if mode == "quick":
-                    match = url_pattern.search(line)
-                    if match:
-                        found_url = match.group(0)
-                        logger.info(f"Detected Cloudflare Quick Tunnel URL: {found_url}")
-                        self.public_url = found_url
+            if mode == "quick":
+                match = quick_url_pattern.search(line)
+                if match:
+                    self.public_url = match.group(0)
+                    self.status = TunnelStatus.ONLINE
+                    status_callback(self.status, self.public_url)
+
+            elif mode == "named":
+                host_match = named_host_pattern.search(line)
+                if host_match:
+                    hostname = host_match.group(1)
+                    if hostname and hostname not in ("localhost", "127.0.0.1"):
+                        self.public_url = f"https://{hostname}"
+                        logger.info(f"Captured Public Hostname: {self.public_url}")
                         self.status = TunnelStatus.ONLINE
                         status_callback(self.status, self.public_url)
-                elif mode == "named":
-                    if "Registered tunnel connection" in line or "Connection established" in line:
-                        logger.info("Cloudflare Named Tunnel established.")
+
+                elif "Registered tunnel connection" in line and self.status != TunnelStatus.ONLINE:
+                    if not self.public_url:
                         self.public_url = "Custom Domain"
-                        self.status = TunnelStatus.ONLINE
-                        status_callback(self.status, self.public_url)
+                    self.status = TunnelStatus.ONLINE
+                    status_callback(self.status, self.public_url)
 
     def stop(self):
         self._stop_event.set()

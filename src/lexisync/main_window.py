@@ -823,11 +823,14 @@ class LexiSyncApp(QMainWindow):
 
         if status == TunnelStatus.ONLINE:
             self._current_cloud_url_type = "public"
-            full_url = f"{info}?token={self.cloud_token}"
-            logger.info(f"Public tunnel is ONLINE: {full_url}")
 
-            # 更新横幅
-            self._show_cloud_banner(_("Public Tunnel Active: {url}").format(url=full_url), full_url, is_public=True)
+            if info.startswith("http"):
+                full_url = f"{info}?token={self.cloud_token}"
+                msg = _("Public Tunnel Active: {url}").format(url=full_url)
+                self._show_cloud_banner(msg, full_url, is_public=True)
+            else:
+                msg = _("Public Tunnel Connected (Custom Domain)")
+                self._show_cloud_banner(msg, "", is_public=True)
 
         elif status == TunnelStatus.ERROR:
             logger.error(f"Tunnel Error: {info}")
