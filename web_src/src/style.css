@@ -257,6 +257,14 @@ html.dark .el-pagination {
     }
 }
 
+.el-button:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.el-button:focus, .el-button:active {
+    outline: none !important;
+}
+
 .back-to-top-btn:focus,
 .back-to-top-btn:active,
 .back-to-top-btn:focus-visible {
