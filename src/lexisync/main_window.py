@@ -5565,7 +5565,7 @@ class LexiSyncApp(QMainWindow):
                 old_value=old_po_comment_for_hook,
             )
         ts_obj.update_style_cache()
-        visual_row = self.sheet_model.get_visual_row_by_id(ts_obj, id)
+        visual_row = self.sheet_model.get_visual_row_by_id(ts_obj.id)
         if visual_row != -1:
             source_index = self.sheet_model.index(visual_row, 0)
         if source_index.isValid():
