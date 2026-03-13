@@ -17,7 +17,8 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 <script setup>
 import {Search} from '@element-plus/icons-vue'
-import {searchQuery, handleSearch, filterTabs, statusFilter, setFilter, t} from '../store.js'
+import {searchQuery, handleSearch, filterTabs, statusFilter, setFilter} from '../stores/project.js'
+import {t} from '../stores/auth.js'
 </script>
 <style scoped>
 .toolbar {

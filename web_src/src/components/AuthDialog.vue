@@ -47,11 +47,11 @@ import {
   loginForm,
   tokenForm,
   rememberMe,
-  loading,
   loginAccount,
   loginToken,
   t
-} from '../store.js'
+} from '../stores/auth.js'
+import {loading} from '../stores/ui.js'
 </script>
 <style scoped>
 .auth-error {

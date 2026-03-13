@@ -2,6 +2,7 @@
 Copyright (c) 2025, TheSkyC
 SPDX-License-Identifier: Apache-2.0
 -->
+
 <template>
   <div class="status-actions">
     <!-- AI Translate: requires ai_translate permission -->
@@ -33,7 +34,8 @@ SPDX-License-Identifier: Apache-2.0
 
 <script setup>
 import {MagicStick, CircleCheckFilled, WarningFilled} from '@element-plus/icons-vue'
-import {requestAITranslation, toggleStatus, t, hasPermission} from '../../store.js'
+import {requestAITranslation, toggleStatus} from '../../stores/project.js'
+import {t, hasPermission} from '../../stores/auth.js'
 
 const props = defineProps({
   row: {type: Object, required: true}

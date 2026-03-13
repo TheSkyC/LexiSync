@@ -33,7 +33,8 @@ SPDX-License-Identifier: Apache-2.0
   </div>
 </template>
 <script setup>
-import {stats, progressPct, t} from '../store.js'
+import {stats, progressPct} from '../stores/project.js'
+import {t} from '../stores/auth.js'
 </script>
 <style scoped>
 .progress-section {

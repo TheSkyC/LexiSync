@@ -19,6 +19,8 @@ export const stats = reactive({reviewed: 0, translated: 0, fuzzy: 0, untranslate
 export const activeRowId = ref(null)
 export const globalActiveEditors = reactive({})
 
+export const itemToFocus = ref(null)
+
 let fetchController = null
 let searchTimer = null
 
@@ -209,7 +211,7 @@ export const navigateNext = async (mode = 'untranslated') => {
     for (let i = startIdx; i < tableData.value.length; i++) {
         const item = tableData.value[i]
         if (matchesMode(item)) {
-            _focusItem(item);
+            itemToFocus.value = item.id;
             return
         }
     }
@@ -226,17 +228,9 @@ export const navigateNext = async (mode = 'untranslated') => {
     toastShow(t('Jumped to next page'), 'info', 2500)
 
     const firstMatch = tableData.value.find(matchesMode)
-    if (firstMatch) _focusItem(firstMatch)
-}
-
-const _focusItem = (item) => {
-    activeRowId.value = item.id
-    nextTick(() => {
-        const el = document.querySelector(`[data-row-id="${item.id}"]`)
-        if (!el) return
-        el.scrollIntoView({block: 'center', behavior: 'smooth'})
-        el.querySelector('textarea')?.focus()
-    })
+    if (firstMatch) {
+        itemToFocus.value = firstMatch.id;
+    }
 }
 
 export const toggleActiveStatus = (type) => {

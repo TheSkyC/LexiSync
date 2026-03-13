@@ -22,7 +22,7 @@ SPDX-License-Identifier: Apache-2.0
   </div>
 </template>
 <script setup>
-import {toasts, toastDismiss} from '../store.js'
+import {toasts, toastDismiss} from '../stores/ui.js'
 </script>
 <style scoped>
 .toast-container {

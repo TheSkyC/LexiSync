@@ -95,11 +95,11 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 
 <script setup>
-import {ref, reactive, computed} from 'vue'
+import {ref, reactive, computed, watch} from 'vue'
 import {WarningFilled} from '@element-plus/icons-vue'
-import {
-  currentUser, onEditorFocus, updateTranslation, t, avatarColor, activeRowId, hasPermission
-} from '../../store.js'
+import {currentUser, t, hasPermission} from '../../stores/auth.js'
+import {onEditorFocus, updateTranslation, activeRowId, itemToFocus} from '../../stores/project.js'
+import {avatarColor} from '../../stores/ui.js'
 import {useFloatingOverlay} from '../../composables/useFloatingOverlay.js'
 import ConflictPanel from './ConflictPanel.vue'
 
@@ -125,6 +125,20 @@ const othersEditing = computed(() =>
 )
 const overlayVisible = computed(() => baseOverlayVisible.value && othersEditing.value.length > 0)
 const aiChipVisible = computed(() => isTargetRow.value && props.row.isAiLoading)
+
+// --- Watcher for focusing ---
+watch(itemToFocus, (newId) => {
+  if (newId === props.row.id) {
+    const el = cellRef.value
+    if (el) {
+      el.scrollIntoView({block: 'center', behavior: 'smooth'})
+      const textarea = el.querySelector('textarea')
+      textarea?.focus()
+    }
+    // Reset the state after focusing
+    itemToFocus.value = null
+  }
+})
 
 // --- Methods ---
 const toggleConflict = () => {

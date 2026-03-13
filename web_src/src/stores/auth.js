@@ -5,6 +5,8 @@
 
 import { ref, reactive } from 'vue'
 import { loading } from './ui.js'
+import { fetchData } from './project.js'
+import { connectWebSocket, disconnectWebSocket } from './realtime.js'
 
 const checkInitialAuth = () => {
   if (new URLSearchParams(window.location.search).get('token')) return false
@@ -38,15 +40,35 @@ export const saveSession = (token) => {
   sessionStorage.setItem('cloud_session', token)
 }
 
-let _onLoginSuccess = null
-export const registerLoginSuccessHandler = (fn) => { _onLoginSuccess = fn }
+export const initApp = async () => {
+  loading.value = true
+  try {
+    const res = await authFetch('/api/v1/i18n', { cache: 'no-store' })
+    if (res.ok) i18n.value = await res.json()
+    await fetchData()
+    showAuthDialog.value = false
+    connectWebSocket()
+  } catch (_) {
+    authError.value = 'Failed to initialize app.'
+  } finally {
+    loading.value = false
+  }
+}
+
+export const logout = () => {
+  sessionStorage.removeItem('cloud_session')
+  localStorage.removeItem('lexisync_auth')
+  sessionToken.value = ''
+  disconnectWebSocket()
+  showAuthDialog.value = true
+}
 
 const afterLogin = async (data) => {
   currentUser.name        = data.name
   currentUser.role        = data.role
   currentUser.permissions = Array.isArray(data.permissions) ? data.permissions : []
   currentUser.scope       = data.scope ?? null
-  await _onLoginSuccess?.()
+  await initApp() // 登录成功后直接调用初始化
 }
 
 const fetchMe = async () => {

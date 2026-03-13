@@ -46,16 +46,9 @@ SPDX-License-Identifier: Apache-2.0
 
 <script setup>
 import {Close, Position, ChatDotRound, Lock} from '@element-plus/icons-vue'
-import {
-  isChatOpen,
-  chatMessages,
-  currentUser,
-  formatTime,
-  chatInput,
-  sendChatMessage,
-  t,
-  hasPermission
-} from '../store.js'
+import {currentUser, t, hasPermission} from '../stores/auth.js'
+import {isChatOpen, chatMessages, chatInput, sendChatMessage} from '../stores/realtime.js'
+import {formatTime} from '../stores/ui.js'
 </script>
 
 <style scoped>

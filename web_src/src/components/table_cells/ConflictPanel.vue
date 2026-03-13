@@ -31,7 +31,7 @@ SPDX-License-Identifier: Apache-2.0
 
 <script setup>
 import {computed} from 'vue'
-import {t} from '../../store.js'
+import {t} from '../../stores/auth.js'
 import {computeDiff} from '../../composables/useDiff.js'
 
 const props = defineProps({

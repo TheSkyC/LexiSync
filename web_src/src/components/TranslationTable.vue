@@ -43,7 +43,9 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 
 <script setup>
-import {tableData, loading, tableRowClassName, searchQuery, statusFilter, t} from '../store.js'
+import {tableData, tableRowClassName, searchQuery, statusFilter} from '../stores/project.js'
+import {loading} from '../stores/ui.js'
+import {t} from '../stores/auth.js'
 import SourceCell from './table_cells/SourceCell.vue'
 import EditorCell from './table_cells/EditorCell.vue'
 import StatusCell from './table_cells/StatusCell.vue'

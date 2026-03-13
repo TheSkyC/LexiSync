@@ -59,21 +59,10 @@ SPDX-License-Identifier: Apache-2.0
 <script setup>
 import {computed} from 'vue'
 import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon, Lock} from '@element-plus/icons-vue'
-import {
-  project,
-  currentUser,
-  onlineUsersArray,
-  avatarColor,
-  wsState,
-  wsStateLabel,
-  isChatOpen,
-  fetchData,
-  loading,
-  logout,
-  isDark,
-  toggleTheme,
-  t
-} from '../store.js'
+import {project, fetchData} from '../stores/project.js'
+import {currentUser, logout, t} from '../stores/auth.js'
+import {onlineUsersArray, wsState, wsStateLabel, isChatOpen} from '../stores/realtime.js'
+import {loading, isDark, toggleTheme, avatarColor} from '../stores/ui.js'
 
 const hasScopeRestriction = computed(() => {
   const s = currentUser.scope
