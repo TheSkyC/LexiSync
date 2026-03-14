@@ -52,7 +52,7 @@ class ProjectManager:
         shutil.copy2(source_file, destination_path)
 
         relative_path = destination_path.relative_to(proj_path).as_posix()
-        handler = FormatManager.get_handler_by_extension(file_to_add_path)
+        handler = FormatManager.get_handler_by_extension(file_to_add_path, sniff=True)
         if not handler:
             return False, _("Unsupported file format.")
 

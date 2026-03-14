@@ -45,16 +45,55 @@ class BaseFormatHandler:
         """保存文件"""
         raise NotImplementedError
 
-    def _detect_language_from_filename(self, filename: str) -> str:
-        """从文件名（如 data_zh_CN.csv）中尝试提取 BCP-47 语言代码"""
-        import regex as re
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / "project.json").is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
 
-        stem = os.path.splitext(filename)[0]
-        # 匹配常见的语言后缀，如 _zh, -en, .jp 等
-        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
+    def _detect_language_from_filename(self, filename: str) -> str:
+        name = os.path.splitext(filename)[0].lower()
+        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][a-zA-Z]{2,4})?)$", name, re.IGNORECASE)
         if m:
-            return m.group(1).replace("-", "_")
+            return m.group(1)
+        common = {"en", "zh", "ja", "ko", "fr", "de", "es", "it", "ru", "pt", "ar", "tr", "pl", "nl"}
+        parts = re.split(r"[_\-]", name)
+        for part in reversed(parts):
+            if part in common:
+                return part
         return "en"
+
+    def _detect_language_from_path(self, filepath: str) -> str:
+        for part in Path(filepath).parts:
+            if part.endswith(".lproj"):
+                return part[: -len(".lproj")]
+            if part.startswith("values-"):
+                lang = part[len("values-") :].replace("-r", "-")
+                if lang:
+                    return lang
+        return self._detect_language_from_filename(os.path.basename(filepath))
+
+    def _match_lang_code(self, code: str, available_codes: list[str]) -> str | None:
+        """模糊匹配语言代码，例如 zh -> zh-Hans, en -> en-US"""
+        if code in available_codes:
+            return code
+
+        for a_code in available_codes:
+            if a_code.startswith(f"{code}-") or a_code.startswith(f"{code}_"):
+                return a_code
+
+        if code == "zh":
+            for c in ["zh-Hans", "zh-CN", "zh_CN", "zh-Simplified"]:
+                if c in available_codes:
+                    return c
+        return None
 
     def get_initial_translation(self, value_from_file, app_instance):
         if self.is_monolingual:
@@ -114,7 +153,7 @@ class TsFormatHandler(BaseFormatHandler):
     badge_text_color = "#2E7D32"
 
     def load(self, filepath, **kwargs):
-        kwargs.get("app_instance")
+        app_instance = kwargs.get("app_instance")
         logger.debug(f"[TsFormatHandler] Loading TS file: {filepath}")
         tree = ET.parse(filepath)
         root = tree.getroot()
@@ -125,26 +164,7 @@ class TsFormatHandler(BaseFormatHandler):
         file_content_cache = {}
 
         relative_path = kwargs.get("relative_path")
-        if relative_path:
-            ts_file_rel_path = relative_path
-        else:
-            current_path = Path(filepath).parent
-            project_root = None
-            while True:
-                if (current_path / "project.json").is_file():
-                    project_root = str(current_path)
-                    break
-                if current_path.parent == current_path:
-                    break
-                current_path = current_path.parent
-
-            if project_root:
-                try:
-                    ts_file_rel_path = Path(filepath).relative_to(project_root).as_posix()
-                except ValueError:
-                    ts_file_rel_path = os.path.basename(filepath)
-            else:
-                ts_file_rel_path = os.path.basename(filepath)
+        ts_file_rel_path = relative_path if relative_path else self._get_relative_path(filepath)
 
         for context in root.findall("context"):
             context_name = context.findtext("name", "")
@@ -188,15 +208,13 @@ class TsFormatHandler(BaseFormatHandler):
                 translatorcomment = message.findtext("translatorcomment", "")
 
                 if locations:
-                    " ".join(f"{p}:{line}" for p, line in locations)
-                    "\n".join(line for line in full_code_lines).strip()
+                    src_context_lines = full_code_lines
 
                 key = (source, context_name)
                 current_index = occurrence_counters.get(key, 0)
                 occurrence_counters[key] = current_index + 1
 
                 stable_name_for_uuid = f"{ts_file_rel_path}::{context_name}::{source}::{current_index}"
-                import xxhash
 
                 obj_id = xxhash.xxh128(stable_name_for_uuid.encode("utf-8")).hexdigest()
 
@@ -512,7 +530,12 @@ class XliffFormatHandler(BaseFormatHandler):
             source, source, 0, 0, 0, [], f"{type_str} Import", rel_path, [(rel_path, uid)], idx, obj_id
         )
         # 使用基类方法填充译文
-        initial_trans = target if target else self.get_initial_translation(source, app_instance)
+        if target:
+            initial_trans = target
+        elif self.is_monolingual:
+            initial_trans = self.get_initial_translation(source, app_instance)
+        else:
+            initial_trans = ""
         ts.set_translation_internal(initial_trans, is_initial=True)
 
         ts.context = uid
@@ -525,70 +548,77 @@ class XliffFormatHandler(BaseFormatHandler):
     def save(self, filepath, translatable_objects, metadata, **kwargs):
         version = metadata.get("version", "1.2")
         uri = metadata.get("namespace_uri", "urn:oasis:names:tc:xliff:document:1.2")
-
+        body_elem = None
+        # 备份并恢复全局命名空间
+        old_ns_map = getattr(ET, "_namespace_map", {}).copy()
         # 注册命名空间，防止输出 ns0: 前缀
         ET.register_namespace("", uri)
 
-        root = ET.Element(f"{{{uri}}}xliff", version=version)
+        try:
+            root = ET.Element(f"{{{uri}}}xliff", version=version)
 
-        # 根据版本构建结构
-        if version.startswith("2"):
-            root.set("srcLang", metadata.get("source_language", "en"))
-            root.set("trgLang", metadata.get("target_language", "en"))
-            file_elem = ET.SubElement(root, f"{{{uri}}}file", id="f1")
-        else:
-            file_elem = ET.SubElement(root, f"{{{uri}}}file")
-            file_elem.set("source-language", metadata.get("source_language", "en"))
-            file_elem.set("target-language", metadata.get("target_language", "en"))
-            file_elem.set("datatype", "plaintext")
-            body_elem = ET.SubElement(file_elem, f"{{{uri}}}body")
-
-        for ts in translatable_objects:
-            if not ts.original_semantic or ts.id == "##NEW_ENTRY##":
-                continue
-
-            unit_id = ts.context or f"u{ts.id[:8]}"
-
+            # 根据版本构建结构
             if version.startswith("2"):
-                # XLIFF 2.0 Save
-                unit = ET.SubElement(file_elem, f"{{{uri}}}unit", id=unit_id)
-                if ts.comment:
-                    notes = ET.SubElement(unit, f"{{{uri}}}notes")
-                    ET.SubElement(notes, f"{{{uri}}}note").text = ts.comment
-
-                segment = ET.SubElement(unit, f"{{{uri}}}segment")
-                if ts.is_reviewed:
-                    segment.set("state", "translated")
-
-                ET.SubElement(segment, f"{{{uri}}}source").text = ts.original_semantic
-                ET.SubElement(segment, f"{{{uri}}}target").text = ts.translation
+                root.set("srcLang", metadata.get("source_language", "en"))
+                root.set("trgLang", metadata.get("target_language", "en"))
+                file_elem = ET.SubElement(root, f"{{{uri}}}file", id="f1")
             else:
-                # XLIFF 1.2 Save
-                unit = ET.SubElement(body_elem, f"{{{uri}}}trans-unit", id=unit_id)
-                ET.SubElement(unit, f"{{{uri}}}source").text = ts.original_semantic
-                target = ET.SubElement(unit, f"{{{uri}}}target")
-                target.text = ts.translation
+                file_elem = ET.SubElement(root, f"{{{uri}}}file")
+                file_elem.set("source-language", metadata.get("source_language", "en"))
+                file_elem.set("target-language", metadata.get("target_language", "en"))
+                file_elem.set("datatype", "plaintext")
+                body_elem = ET.SubElement(file_elem, f"{{{uri}}}body")
 
-                if ts.is_reviewed:
-                    target.set("state", "translated")
+            for ts in translatable_objects:
+                if not ts.original_semantic or ts.id == "##NEW_ENTRY##":
+                    continue
+
+                unit_id = ts.context or f"u{ts.id[:8]}"
+
+                if version.startswith("2"):
+                    # XLIFF 2.0 Save
+                    unit = ET.SubElement(file_elem, f"{{{uri}}}unit", id=unit_id)
+                    if ts.comment:
+                        notes = ET.SubElement(unit, f"{{{uri}}}notes")
+                        ET.SubElement(notes, f"{{{uri}}}note").text = ts.comment
+
+                    segment = ET.SubElement(unit, f"{{{uri}}}segment")
+                    if ts.is_reviewed:
+                        segment.set("state", "translated")
+
+                    ET.SubElement(segment, f"{{{uri}}}source").text = ts.original_semantic
+                    ET.SubElement(segment, f"{{{uri}}}target").text = ts.translation
                 else:
-                    target.set("state", "needs-translation")
+                    # XLIFF 1.2 Save
+                    unit = ET.SubElement(body_elem, f"{{{uri}}}trans-unit", id=unit_id)
+                    ET.SubElement(unit, f"{{{uri}}}source").text = ts.original_semantic
+                    target = ET.SubElement(unit, f"{{{uri}}}target")
+                    target.text = ts.translation
 
-                if ts.comment:
-                    ET.SubElement(unit, f"{{{uri}}}note").text = ts.comment
+                    if ts.is_reviewed:
+                        target.set("state", "translated")
+                    else:
+                        target.set("state", "needs-translation")
 
-        tree = ET.ElementTree(root)
-        if hasattr(ET, "indent"):
-            ET.indent(tree, space="  ")
+                    if ts.comment:
+                        ET.SubElement(unit, f"{{{uri}}}note").text = ts.comment
 
-        import io
+            tree = ET.ElementTree(root)
+            if hasattr(ET, "indent"):
+                ET.indent(tree, space="  ")
 
-        buffer = io.BytesIO()
-        tree.write(buffer, encoding="utf-8", xml_declaration=True)
-        xml_content = buffer.getvalue().decode("utf-8")
+            import io
 
-        with atomic_open(filepath, "w", encoding="utf-8") as f:
-            f.write(xml_content)
+            buffer = io.BytesIO()
+            tree.write(buffer, encoding="utf-8", xml_declaration=True)
+            xml_content = buffer.getvalue().decode("utf-8")
+
+            with atomic_open(filepath, "w", encoding="utf-8") as f:
+                f.write(xml_content)
+        finally:
+            if hasattr(ET, "_namespace_map"):
+                ET._namespace_map.clear()
+                ET._namespace_map.update(old_ns_map)
 
 
 class AndroidStringsFormatHandler(BaseFormatHandler):
@@ -655,31 +685,6 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
 
         logger.info(f"[AndroidStringsFormatHandler] Loaded {len(translatable_objects)} strings from {filepath}")
         return translatable_objects, metadata, language_code
-
-    def _get_relative_path(self, filepath: str) -> str:
-        """获取文件相对路径"""
-        current_path = Path(filepath).parent
-        while True:
-            if (current_path / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current_path).as_posix()
-                except ValueError:
-                    break
-            if current_path.parent == current_path:
-                break
-            current_path = current_path.parent
-        return os.path.basename(filepath)
-
-    def _detect_language_from_path(self, filepath: str) -> str:
-        """从文件路径检测语言 (例如: values-zh/strings.xml -> zh)"""
-        path_parts = Path(filepath).parts
-        for part in reversed(path_parts):
-            if part.startswith("values-"):
-                lang_code = part.replace("values-", "")
-                # 处理 values-zh-rCN -> zh-CN
-                lang_code = lang_code.replace("-r", "-")
-                return lang_code
-        return "en"  # 默认 values/ 目录是英语
 
     def _process_string_element(
         self,
@@ -866,11 +871,12 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
     def _unescape_android_xml(self, text: str) -> str:
         """解码 Android XML 转义字符"""
         # Android 特殊转义
+        text = text.replace(r"\\", "\x00BACKSLASH\x00")
         text = text.replace(r"\'", "'")
         text = text.replace(r"\"", '"')
         text = text.replace(r"\n", "\n")
         text = text.replace(r"\t", "\t")
-        text = text.replace(r"\\", "\\")
+        text = text.replace("\x00BACKSLASH\x00", "\\")
         return text
 
     def _escape_android_xml(self, text: str) -> str:
@@ -884,8 +890,6 @@ class AndroidStringsFormatHandler(BaseFormatHandler):
 
     def _detect_android_placeholders(self, text: str) -> list[str]:
         """检测 Android 格式化占位符"""
-        import re
-
         # 匹配 %1$s, %d, %2$f, %s 等
         pattern = r"%(\d+\$)?[diouxXeEfFgGaAcspn]"
         matches = re.findall(pattern, text)
@@ -977,7 +981,6 @@ class IosStringsFormatHandler(BaseFormatHandler):
     3. 注释提取: 块注释 /* ... */ 和行注释 // 均可作为 translator comment 保留
     4. 转义处理: 正确处理 \\n \\t \\\\ \\\" 等 Apple 转义序列的双向转换
     5. 状态检测: 自动将 value == key 或 value 为空的条目标记为待审阅
-    6. 路径语言检测: 从 xx.lproj/Localizable.strings 路径自动解析语言代码
     """
 
     format_id = "ios_strings"
@@ -997,7 +1000,8 @@ class IosStringsFormatHandler(BaseFormatHandler):
         return objects, meta, language_code
 
     def _load_strings(self, filepath, rel_path, app_instance=None):
-        with open(filepath, encoding="utf-8-sig", errors="replace") as f:
+        encoding = self._detect_encoding(filepath)
+        with open(filepath, encoding=encoding, errors="replace") as f:
             content = f.read()
 
         translatable_objects = []
@@ -1098,46 +1102,30 @@ class IosStringsFormatHandler(BaseFormatHandler):
             f.write("\n")
         logger.info(f"[IosStringsFormatHandler] Saved {len(translatable_objects)} strings to {filepath}")
 
+    def _detect_encoding(self, filepath: str) -> str:
+        """检测 Apple 文件的编码 (UTF-16LE 或 UTF-8)"""
+        with open(filepath, "rb") as f:
+            raw = f.read(4)
+        if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+            return "utf-16"
+        return "utf-8-sig"
+
     def _unescape(self, s: str) -> str:
         """将 .strings 转义序列还原为真实字符。"""
-        return (
-            s.replace('\\"', '"')
-            .replace("\\'", "'")
-            .replace("\\n", "\n")
-            .replace("\\r", "\r")
-            .replace("\\t", "\t")
-            .replace("\\\\", "\\")
-        )
+        s = s.replace("\\\\", "\x00ESC_BACKSLASH\x00")
+        s = s.replace('\\"', '"')
+        s = s.replace("\\'", "'")
+        s = s.replace("\\n", "\n")
+        s = s.replace("\\r", "\r")
+        s = s.replace("\\t", "\t")
+        s = s.replace("\x00ESC_BACKSLASH\x00", "\\")
+        return s
 
     def _escape(self, s: str) -> str:
         """将真实字符编码为 .strings 转义序列。"""
         return (
             s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
         )
-
-    def _detect_language_from_path(self, filepath: str) -> str:
-        """
-        从 Xcode 项目的 lproj 路径提取语言代码。
-        例: en.lproj/Localizable.strings  →  'en'
-            zh-Hans.lproj/...             →  'zh-Hans'
-        """
-        for part in Path(filepath).parts:
-            if part.endswith(".lproj"):
-                return part[: -len(".lproj")]
-        return "en"
-
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
-                    break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
 
 
 class XCStringsFormatHandler(BaseFormatHandler):
@@ -1193,10 +1181,14 @@ class XCStringsFormatHandler(BaseFormatHandler):
         source_language = data.get("sourceLanguage", "en")
         strings_dict: dict = data.get("strings", {})
 
-        # 确定目标语言 —— 优先用 app 当前目标语言，其次源语言
-        target_lang = source_language
+        # 确定目标语言
+        target_lang_req = "en"
         if app_instance and hasattr(app_instance, "current_target_language"):
-            target_lang = app_instance.current_target_language or source_language
+            target_lang_req = app_instance.current_target_language
+        all_locales = set()
+        for s in strings_dict.values():
+            all_locales.update(s.get("localizations", {}).keys())
+        target_lang = self._match_lang_code(target_lang_req, list(all_locales)) or target_lang_req
 
         translatable_objects: list[TranslatableString] = []
         occurrence_counters: dict = {}
@@ -1295,6 +1287,7 @@ class XCStringsFormatHandler(BaseFormatHandler):
 
             # 尝试复数
             has_plural = "variations" in loc_block and "plural" in loc_block["variations"]
+            has_device = "variations" in loc_block and "device" in loc_block["variations"]
             if has_plural:
                 plural_dict = loc_block["variations"]["plural"]
                 for cat in self.PLURAL_CATEGORIES:
@@ -1302,6 +1295,15 @@ class XCStringsFormatHandler(BaseFormatHandler):
                     ts = ts_map.get(ctx)
                     if ts and cat in plural_dict:
                         unit = plural_dict[cat].setdefault("stringUnit", {})
+                        unit["value"] = ts.translation or ts.original_semantic
+                        unit["state"] = "translated" if ts.is_reviewed else "needs_review"
+            elif has_device:
+                device_dict = loc_block["variations"]["device"]
+                for device_key in self.DEVICE_KEYS:
+                    ctx = f"{key}:device:{device_key}"
+                    ts = ts_map.get(ctx)
+                    if ts and device_key in device_dict:
+                        unit = device_dict[device_key].setdefault("stringUnit", {})
                         unit["value"] = ts.translation or ts.original_semantic
                         unit["state"] = "translated" if ts.is_reviewed else "needs_review"
             else:
@@ -1446,26 +1448,12 @@ class XCStringsFormatHandler(BaseFormatHandler):
         ts.update_sort_weight()
         return ts
 
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
-                    break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
-
 
 class StringsDictFormatHandler(BaseFormatHandler):
     """
     Apple .stringsdict 专用复数规则处理器
 
     .stringsdict 是 iOS/macOS 处理复数变体的标准格式（XML Plist），
-    相比 IosStringsFormatHandler 内置的基础支持，本处理器提供：
 
     1. 格式模板提取: NSStringLocalizedFormatKey 本身作为独立可翻译条目，
        译者可调整变量引用顺序（例如将 "%1$#@files@ in %2$#@folders@" 本地化
@@ -1476,7 +1464,6 @@ class StringsDictFormatHandler(BaseFormatHandler):
        "兄弟变量" 列表，帮助译者理解上下文
     4. 稳健回写: 基于原始 plist 数据深拷贝定向回填，未触及的键原样保留；
        同时回填格式模板，确保 RTL 语言等需要调整顺序的场景可正常工作
-    5. 语言检测: 优先从 xx.lproj/ 路径段提取，回退到文件名尾缀推断
     """
 
     format_id = "stringsdict"
@@ -1599,9 +1586,9 @@ class StringsDictFormatHandler(BaseFormatHandler):
             if not isinstance(top_value, dict):
                 continue
 
-            # 回填格式模板（支持调整变量引用顺序）
+            # 回填格式模板
             fmt_ctx = f"{top_key}.__format__"
-            if fmt_ctx in trans_map:
+            if fmt_ctx in trans_map and "NSStringLocalizedFormatKey" in top_value:
                 top_value["NSStringLocalizedFormatKey"] = trans_map[fmt_ctx]
 
             # 回填各变量块的复数条目
@@ -1667,19 +1654,6 @@ class StringsDictFormatHandler(BaseFormatHandler):
             if part.endswith(".lproj"):
                 return part[: -len(".lproj")]
         return self._detect_language_from_filename(os.path.basename(filepath))
-
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
-                    break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
 
 
 class ArbFormatHandler(BaseFormatHandler):
@@ -1872,19 +1846,6 @@ class ArbFormatHandler(BaseFormatHandler):
                 return part
         return "en"
 
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
-                    break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
-
 
 class JsonI18nFormatHandler(BaseFormatHandler):
     """
@@ -1955,41 +1916,25 @@ class JsonI18nFormatHandler(BaseFormatHandler):
                     return indent
         return 2  # 默认 2 空格
 
-    def _get_relative_path(self, filepath: str) -> str:
-        """获取文件相对于项目根目录的路径"""
-        current_path = Path(filepath).parent
-        while True:
-            if (current_path / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current_path).as_posix()
-                except ValueError:
-                    break
-            if current_path.parent == current_path:
-                break
-            current_path = current_path.parent
-        return os.path.basename(filepath)
-
     def _detect_language(self, data: dict, filename: str) -> str:
-        # 从文件名检测: en.json, zh-CN.json, messages_fr.json
-        name_lower = filename.lower().replace(".json", "")
-        common_langs = ["en", "zh", "ja", "ko", "fr", "de", "es", "it", "ru", "pt", "ar"]
-        for lang in common_langs:
-            if lang in name_lower:
-                return lang
-
-        # 从数据结构检测: {"locale": "en", ...} 或 {"en": {...}}
+        # 从数据结构优先检测
         if isinstance(data, dict):
-            if "locale" in data or "language" in data or "lang" in data:
-                lang_value = data.get("locale") or data.get("language") or data.get("lang")
-                if isinstance(lang_value, str):
-                    return lang_value
-
-            # 检查顶层键是否为语言代码
+            lang_value = data.get("locale") or data.get("language") or data.get("lang")
+            if isinstance(lang_value, str):
+                return lang_value
             top_keys = list(data.keys())
-            if len(top_keys) == 1 and top_keys[0] in common_langs:
+            if len(top_keys) == 1 and re.match(r"^[a-z]{2,3}(?:[_-][A-Za-z]{2,4})?$", top_keys[0]):
                 return top_keys[0]
 
-        return "en"  # 默认英语
+        # 从文件名检测
+        name_lower = os.path.splitext(filename)[0].lower()
+        m = re.search(r"(?:^|[_.\-])([a-z]{2,3}(?:[_\-][a-zA-Z]{2,4})?)(?:[_.\-]|$)", name_lower)
+        if m:
+            candidate = m.group(1)
+            common_langs = {"en", "zh", "ja", "ko", "fr", "de", "es", "it", "ru", "pt", "ar", "tr", "pl", "nl"}
+            if candidate in common_langs:
+                return candidate
+        return "en"
 
     def _extract_recursive(
         self,
@@ -2081,9 +2026,9 @@ class JsonI18nFormatHandler(BaseFormatHandler):
 
         # 创建翻译映射: key_path -> translation
         translation_map = {
-            ts.context: ts.translation
+            ts.context: (ts.translation if ts.translation else ts.original_semantic)
             for ts in translatable_objects
-            if ts.id != "##NEW_ENTRY##" and ts.context and ts.translation is not None
+            if ts.id != "##NEW_ENTRY##" and ts.context and ts.original_semantic
         }
 
         # 重建 JSON 结构
@@ -2619,26 +2564,13 @@ class YamlI18nFormatHandler(BaseFormatHandler):
 
         return "en"
 
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
-                    break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
-
     def save(self, filepath, translatable_objects, metadata, **kwargs):
         logger.debug(f"[YamlI18nFormatHandler] Saving YAML: {filepath}")
 
         translation_map = {
             ts.context: (ts.translation or ts.original_semantic)
             for ts in translatable_objects
-            if ts.original_semantic and ts.id != "##NEW_ENTRY##" and not ts.is_ignored and ts.context
+            if ts.original_semantic and ts.id != "##NEW_ENTRY##" and not getattr(ts, "is_ignored", False) and ts.context
         }
 
         raw_content = metadata.get("raw_content", "")
@@ -2680,12 +2612,7 @@ class TomlFormatHandler(BaseFormatHandler):
 
     def load(self, filepath, **kwargs):
         app_instance = kwargs.get("app_instance")
-        try:
-            import tomlkit
-        except ImportError as e:
-            raise ImportError(
-                _("The 'tomlkit' library is required to read TOML files. Please install it via 'pip install tomlkit'.")
-            ) from e
+        import tomlkit
 
         with open(filepath, encoding="utf-8") as f:
             content = f.read()
@@ -2807,7 +2734,7 @@ class IniFormatHandler(BaseFormatHandler):
     badge_text_color = "#37474F"
 
     _SECTION_RE = re.compile(r"^\[([^\]]+)\]\s*$")
-    _KV_RE = re.compile(r"^([^=:\n#;][^=:\n]*?)\s*[=:]\s*(.*?)(?:\s*[;#].*)?$")
+    _KV_RE = re.compile(r"^([^=:\n#;][^=:\n]*?)\s*[=:]\s*(.*)$")
 
     def load(self, filepath: str, **kwargs):
         app_instance = kwargs.get("app_instance")
@@ -2957,25 +2884,6 @@ class IniFormatHandler(BaseFormatHandler):
             f.write("\n")
 
         logger.info(f"[IniFormatHandler] Saved to {filepath}")
-
-    @staticmethod
-    def _detect_language_from_filename(filename: str) -> str:
-        stem = os.path.splitext(filename)[0]
-        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
-        return m.group(1).replace("-", "_") if m else "en"
-
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
-                    break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
 
 
 class JavaPropertiesFormatHandler(BaseFormatHandler):
@@ -3235,19 +3143,6 @@ class JavaPropertiesFormatHandler(BaseFormatHandler):
             return f"{lang}_{country}" if country else lang
         return "en"
 
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
-                    break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
-
 
 class ResxFormatHandler(BaseFormatHandler):
     """
@@ -3392,24 +3287,8 @@ class ResxFormatHandler(BaseFormatHandler):
             return m.group(1)
         return "en"
 
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
-                    break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
-
     def save(self, filepath, translatable_objects, metadata, **kwargs):
         logger.debug(f"[ResxFormatHandler] Saving RESX: {filepath}")
-
-        # 注册 .NET 标准命名空间
-        import xml.etree.ElementTree as ET
 
         ET.register_namespace("xsd", "http://www.w3.org/2001/XMLSchema")
         ET.register_namespace("msdata", "urn:schemas-microsoft-com:xml-msdata")
@@ -3752,25 +3631,6 @@ class PhpArrayFormatHandler(BaseFormatHandler):
         found += self._PH_SYMFONY.findall(text)
         return list(dict.fromkeys(found))  # 去重保序
 
-    @staticmethod
-    def _detect_language_from_filename(filename: str) -> str:
-        stem = os.path.splitext(filename)[0]
-        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
-        return m.group(1).replace("-", "_") if m else "en"
-
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
-                    break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
-
 
 class RcFormatHandler(BaseFormatHandler):
     """
@@ -4062,11 +3922,6 @@ class RcFormatHandler(BaseFormatHandler):
         encoding: str = metadata["encoding"]
         content = raw_bytes.decode(encoding, errors="replace")
 
-        {
-            ts.context: (ts.translation or ts.original_semantic)
-            for ts in translatable_objects
-            if ts.id != "##NEW_ENTRY##" and ts.context
-        }
         # original_semantic -> translation 直接字符串替换
         # 为防止误替换，从最长串开始替换
         for ts in sorted(translatable_objects, key=lambda t: -len(t.original_semantic)):
@@ -4090,8 +3945,6 @@ class RcFormatHandler(BaseFormatHandler):
 
     @staticmethod
     def _read_rc_file(filepath: str) -> tuple[bytes, str]:
-        from pathlib import Path
-
         raw = Path(filepath).read_bytes()
         if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
             return raw[2:], "utf-16-le" if raw[:2] == b"\xff\xfe" else "utf-16-be"
@@ -4139,7 +3992,7 @@ def _guess_column_mapping(headers, config):
     mapping = {}
     is_fuzzy = False
     if not headers:
-        return mapping
+        return mapping, is_fuzzy
 
     # 关键词
     default_pool = {
@@ -4423,7 +4276,7 @@ class CsvFormatHandler(BaseFormatHandler):
             rows[0].append("Translation")  # 追加表头
 
         # 建立行号映射
-        ts_map = {ts.line_num_in_file: ts for ts in translatable_objects if ts.id != "##NEW_ENTRY##"}
+        ts_map = {ts.line_num: ts for ts in translatable_objects if ts.id != "##NEW_ENTRY##"}
 
         for row_num, row in enumerate(rows[1:], start=2):
             ts = ts_map.get(row_num)
@@ -4577,7 +4430,7 @@ class XlsxFormatHandler(BaseFormatHandler):
             tgt_idx = ws.max_column
             ws.cell(row=1, column=tgt_idx + 1, value="Translation")
 
-        ts_map = {ts.line_num_in_file: ts for ts in translatable_objects if ts.id != "##NEW_ENTRY##"}
+        ts_map = {ts.line_num: ts for ts in translatable_objects if ts.id != "##NEW_ENTRY##"}
 
         for row_num in range(2, ws.max_row + 1):
             ts = ts_map.get(row_num)
@@ -4605,7 +4458,7 @@ class XlsxFormatHandler(BaseFormatHandler):
                     pass
 
 
-class SrtFormatHandler:
+class SrtFormatHandler(BaseFormatHandler):
     """
     SubRip 字幕 (.srt) 格式处理器
 
@@ -4704,12 +4557,8 @@ class SrtFormatHandler:
                 occurrence_index=idx,
                 id=obj_id,
             )
-            initial = (
-                text
-                if (app_instance and getattr(app_instance, "config", {}).get("fill_translation_with_source", False))
-                else ""
-            )
-            ts.set_translation_internal(initial, is_initial=True)
+            initial_trans = self.get_initial_translation(text, app_instance)
+            ts.set_translation_internal(initial_trans, is_initial=True)
             ts.context = timecode  # 时间码作为唯一上下文
             ts.comment = ""
             ts.po_comment = f"#: {seq_line} | {timecode}"
@@ -4742,14 +4591,6 @@ class SrtFormatHandler:
                 f.write("\n")
 
         logger.info(f"[SrtFormatHandler] Saved {len(ordered)} subtitles to {filepath}")
-
-    @staticmethod
-    def _detect_language_from_filename(filename: str) -> str:
-        stem = os.path.splitext(filename)[0]
-        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
-        if m:
-            return m.group(1).replace("-", "_")
-        return "en"
 
 
 class VttFormatHandler(BaseFormatHandler):
@@ -4915,12 +4756,6 @@ class VttFormatHandler(BaseFormatHandler):
 
         logger.info(f"[VttFormatHandler] Saved {len(ordered)} cues to {filepath}")
 
-    @staticmethod
-    def _detect_language_from_filename(filename: str) -> str:
-        stem = os.path.splitext(filename)[0]
-        m = re.search(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", stem)
-        return m.group(1).replace("-", "_") if m else "en"
-
 
 class HtmlFormatHandler(BaseFormatHandler):
     """
@@ -5026,9 +4861,8 @@ class HtmlFormatHandler(BaseFormatHandler):
 
         # ── 提取普通标签文本内容 ─────────────────────────────────────────
         tag_pattern = re.compile(
-            r"<(?P<tag>" + "|".join(self._TEXT_TAGS) + r")"
-            r"(?P<attrs>[^>]*)>"
-            r"(?P<inner>.*?)"
+            r"<(?P<tag>" + "|".join(self._TEXT_TAGS) + r")(?P<attrs>[^>]*)>"
+            r"(?P<inner>(?:[^<]+|<(?!/?(?P=tag)\b)[^>]*>|<(?P=tag)\b[^>]*>(?P>inner)</(?P=tag)>)*)"
             r"</(?P=tag)>",
             re.IGNORECASE | re.DOTALL,
         )
@@ -5052,6 +4886,15 @@ class HtmlFormatHandler(BaseFormatHandler):
             line_num = content[: m.start()].count("\n") + 1
             context = f"{tag}.{line_num}"
 
+            inner_abs_start = m.start("inner")
+            text_rel_start = inner.find(clean_text)
+            if text_rel_start == -1:
+                char_start = inner_abs_start
+                char_end = m.end("inner")
+            else:
+                char_start = inner_abs_start + text_rel_start
+                char_end = char_start + len(clean_text)
+
             self._make_entry(
                 clean_text,
                 context,
@@ -5062,6 +4905,8 @@ class HtmlFormatHandler(BaseFormatHandler):
                 translatable_objects,
                 occurrence_counters,
                 app_instance,
+                char_start=char_start,
+                char_end=char_end,
             )
 
         # ── 提取属性（alt / placeholder / title …） ─────────────────────
@@ -5077,6 +4922,11 @@ class HtmlFormatHandler(BaseFormatHandler):
                         continue
                     line_num = content[: m.start()].count("\n") + 1
                     context = f"{tag}@{attr}.{line_num}"
+
+                    # 记录属性值的精确偏移量
+                    char_start = m.start("val")
+                    char_end = m.end("val")
+
                     self._make_entry(
                         val,
                         context,
@@ -5087,6 +4937,8 @@ class HtmlFormatHandler(BaseFormatHandler):
                         translatable_objects,
                         occurrence_counters,
                         app_instance,
+                        char_start=char_start,
+                        char_end=char_end,
                     )
 
         metadata = {"raw_content": content}
@@ -5138,6 +4990,8 @@ class HtmlFormatHandler(BaseFormatHandler):
         results: list,
         counters: dict,
         app_instance,
+        char_start: int = 0,
+        char_end: int = 0,
     ):
         counter_key = (text, context)
         idx = counters.get(counter_key, 0)
@@ -5150,8 +5004,8 @@ class HtmlFormatHandler(BaseFormatHandler):
             original_raw=text,
             original_semantic=text,
             line_num=line_num,
-            char_pos_start_in_file=0,
-            char_pos_end_in_file=0,
+            char_pos_start_in_file=char_start,
+            char_pos_end_in_file=char_end,
             full_code_lines=[],
             string_type=string_type,
             source_file_path=rel_path,
@@ -5169,22 +5023,28 @@ class HtmlFormatHandler(BaseFormatHandler):
 
     def save(self, filepath: str, translatable_objects, metadata: dict, **kwargs):
         content: str = metadata["raw_content"]
+        replace_ops = []
+        for ts in translatable_objects:
+            if not ts.original_semantic or ts.id == "##NEW_ENTRY##":
+                continue
+            translation = ts.translation or ts.original_semantic
+            if translation == ts.original_semantic:
+                continue
+            if ts.char_pos_start_in_file > 0 or ts.char_pos_end_in_file > 0:
+                replace_ops.append(
+                    (ts.char_pos_start_in_file, ts.char_pos_end_in_file, ts.original_semantic, translation)
+                )
+        # 按起始位置降序排列
+        replace_ops.sort(key=lambda x: x[0], reverse=True)
 
-        # 按 original_semantic 长度降序替换，避免短串先替换破坏长串
-        entries = sorted(
-            [
-                ts
-                for ts in translatable_objects
-                if ts.id != "##NEW_ENTRY##" and ts.translation and ts.translation != ts.original_semantic
-            ],
-            key=lambda ts: -len(ts.original_semantic),
-        )
-        for ts in entries:
-            content = content.replace(ts.original_semantic, ts.translation, 1)
+        for start, end, original, translation in replace_ops:
+            if original in content[start:end]:
+                content = content[:start] + content[start:end].replace(original, translation, 1) + content[end:]
+            else:
+                content = content.replace(original, translation, 1)
 
         with atomic_open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
-
         logger.info(f"[HtmlFormatHandler] Saved to {filepath}")
 
     @staticmethod
@@ -5320,6 +5180,10 @@ class MarkdownFormatHandler(BaseFormatHandler):
 
         # 围栏代码块: ```...``` 或 ~~~...~~~
         for m in re.finditer(r"(?m)^(```+|~~~+)[^\n]*\n.*?\n\1[ \t]*$", content, re.DOTALL):
+            ranges.append((m.start(), m.end()))
+
+        # 行内代码: `...`
+        for m in re.finditer(r"`+[^`\n]+`+", content):
             ranges.append((m.start(), m.end()))
 
         # HTML 注释
@@ -5659,19 +5523,6 @@ class MarkdownFormatHandler(BaseFormatHandler):
         if m:
             return m.group(1)
         return "en"
-
-    def _get_relative_path(self, filepath: str) -> str:
-        current = Path(filepath).parent
-        while True:
-            if (current / "project.json").is_file():
-                try:
-                    return Path(filepath).relative_to(current).as_posix()
-                except ValueError:
-                    break
-            if current.parent == current:
-                break
-            current = current.parent
-        return os.path.basename(filepath)
 
     def save(self, filepath, translatable_objects, metadata, **kwargs):
         logger.debug(f"[MarkdownFormatHandler] Saving Markdown: {filepath}")
@@ -6757,7 +6608,7 @@ class OwCodeFormatHandler(BaseFormatHandler):
 
 
 class FormatManager:
-    _handlers = {}
+    _handlers: dict[str, BaseFormatHandler] = {}
 
     @classmethod
     def register_handler(cls, handler_class):
@@ -6770,24 +6621,48 @@ class FormatManager:
         return cls._handlers.get(format_id)
 
     @classmethod
-    def get_handler_by_extension(cls, filepath) -> BaseFormatHandler:
-        ext = os.path.splitext(filepath)[1].lower()
+    def get_handler_by_extension(cls, filepath: str, content: str = None, sniff: bool = False):
+        ext = Path(filepath).suffix.lower()
+
         if ext == ".json":
-            try:
-                with open(filepath, encoding="utf-8") as f:
-                    # 只读取前 1024 字节进行快速检查
-                    sample = f.read(1024)
-                    # i18next 的典型特征：含有 _one", _other", _plural" 或 {{count}}
-                    if any(feat in sample for feat in ['_one"', '_other"', '_plural"', "{{"]):
-                        return cls._handlers.get("i18next_json")
-            except Exception:
-                pass
+            if sniff:
+                if content is None:
+                    try:
+                        with open(filepath, encoding="utf-8", errors="ignore") as f:
+                            content = f.read(512000)
+                    except OSError as e:
+                        logger.warning(f"[FormatManager] Cannot read {filepath} for type detection: {e}")
+                        return cls._handlers.get("json_i18n")
+                if content:
+                    try:
+                        data = json.loads(content)
+                        if cls._is_i18next_structure(data):
+                            return cls._handlers.get("i18next_json")
+                    except json.JSONDecodeError:
+                        pass
             return cls._handlers.get("json_i18n")
 
         for handler in cls._handlers.values():
             if ext in handler.extensions:
                 return handler
         return None
+
+    @classmethod
+    def _is_i18next_structure(cls, data, depth=0):
+        if depth > 3:
+            return False
+        score = 0
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if key.endswith(("_one", "_other", "_few", "_many", "_zero", "_plural")):
+                    score += 2
+                if isinstance(value, str) and re.search(r"\{\{[^}]+\}\}", value):
+                    score += 1
+                if isinstance(value, dict) and cls._is_i18next_structure(value, depth + 1):
+                    score += 1
+                if score >= 2:
+                    return True
+        return False
 
     @classmethod
     def get_file_dialog_filters(cls, format_type=None):

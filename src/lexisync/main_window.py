@@ -1239,7 +1239,7 @@ class LexiSyncApp(QMainWindow):
                 self.open_project(path)
                 return True
             if os.path.isfile(path):
-                handler = FormatManager.get_handler_by_extension(path)
+                handler = FormatManager.get_handler_by_extension(path, sniff=True)
                 if handler:
                     if handler.format_type == "source":
                         self.open_code_file_path(path)
@@ -1255,7 +1255,7 @@ class LexiSyncApp(QMainWindow):
 
         if action_name == "open_specific_file":
             if path and os.path.isfile(path):
-                handler = FormatManager.get_handler_by_extension(path)
+                handler = FormatManager.get_handler_by_extension(path, sniff=True)
                 if handler:
                     if handler.format_type == "source":
                         self.open_code_file_path(path)
@@ -2751,7 +2751,7 @@ class LexiSyncApp(QMainWindow):
             if os.path.isdir(filepath) and os.path.exists(os.path.join(filepath, "project.json")):
                 self.open_project(filepath)
                 return True
-            handler = FormatManager.get_handler_by_extension(filepath)
+            handler = FormatManager.get_handler_by_extension(filepath, sniff=True)
             if handler:
                 if handler.format_type == "source":
                     self.open_code_file_path(filepath)
@@ -3173,7 +3173,7 @@ class LexiSyncApp(QMainWindow):
             self, dialog_title, self.config.get("last_dir", os.getcwd()), file_filters
         )
         if filepath:
-            handler = FormatManager.get_handler_by_extension(filepath)
+            handler = FormatManager.get_handler_by_extension(filepath, sniff=True)
             if handler and handler.format_type == "translation":
                 self.open_translation_file_with_path(filepath)
             else:
