@@ -982,7 +982,7 @@ class IosStringsFormatHandler(BaseFormatHandler):
 
     format_id = "ios_strings"
     is_monolingual = True
-    extensions = [".strings", ".stringsdict"]
+    extensions = [".strings"]
     format_type = "translation"
     display_name = _("Apple .strings / .stringsdict")
     badge_text = "iOS"
@@ -991,15 +991,9 @@ class IosStringsFormatHandler(BaseFormatHandler):
 
     def load(self, filepath, **kwargs):
         app_instance = kwargs.get("app_instance")
-        ext = os.path.splitext(filepath)[1].lower()
         relative_path = kwargs.get("relative_path") or self._get_relative_path(filepath)
         language_code = self._detect_language_from_path(filepath)
-
-        if ext == ".stringsdict":
-            objects, meta = self._load_stringsdict(filepath, relative_path, app_instance=app_instance)
-        else:
-            objects, meta = self._load_strings(filepath, relative_path, app_instance=app_instance)
-
+        objects, meta = self._load_strings(filepath, relative_path, app_instance=app_instance)
         return objects, meta, language_code
 
     def _load_strings(self, filepath, rel_path, app_instance=None):
@@ -1077,98 +1071,8 @@ class IosStringsFormatHandler(BaseFormatHandler):
         logger.info(f"[IosStringsFormatHandler] Loaded {len(translatable_objects)} entries from {filepath}")
         return translatable_objects, meta
 
-    def _load_stringsdict(self, filepath, rel_path, app_instance=None):
-        """
-        解析 .stringsdict (Binary / XML Plist)。
-        顶层结构:
-          {
-            "<key>": {
-              "NSStringLocalizedFormatKey": "%#@value@",
-              "value": {
-                "NSStringFormatSpecTypeKey": "NSStringPluralRuleType",
-                "NSStringFormatValueTypeKey": "d",
-                "zero": "...", "one": "...", "two": "...",
-                "few": "...", "many": "...", "other": "..."
-              }
-            }
-          }
-        """
-        with open(filepath, "rb") as f:
-            try:
-                data = plistlib.load(f)
-            except Exception as e:
-                logger.error(f"Failed to parse stringsdict plist: {e}")
-                return [], {"format": "stringsdict", "original_data": {}}
-
-        translatable_objects = []
-        occurrence_counters = {}
-        plural_categories = ["zero", "one", "two", "few", "many", "other"]
-
-        for top_key, top_value in data.items():
-            if not isinstance(top_value, dict):
-                continue
-
-            format_key = top_value.get("NSStringLocalizedFormatKey", "")
-
-            # 遍历所有变量规则块
-            for var_name, var_dict in top_value.items():
-                if var_name == "NSStringLocalizedFormatKey":
-                    continue
-                if not isinstance(var_dict, dict):
-                    continue
-                if var_dict.get("NSStringFormatSpecTypeKey") != "NSStringPluralRuleType":
-                    continue
-
-                value_type = var_dict.get("NSStringFormatValueTypeKey", "d")
-
-                for category in plural_categories:
-                    text = var_dict.get(category)
-                    if text is None:
-                        continue
-
-                    full_context = f"{top_key}.{var_name}.{category}"
-                    counter_key = (text, full_context)
-                    idx = occurrence_counters.get(counter_key, 0)
-                    occurrence_counters[counter_key] = idx + 1
-
-                    stable = f"{rel_path}::{full_context}::{text}::{idx}"
-                    obj_id = xxhash.xxh128(stable.encode()).hexdigest()
-
-                    ts = TranslatableString(
-                        original_raw=text,
-                        original_semantic=text,
-                        line_num=0,
-                        char_pos_start_in_file=0,
-                        char_pos_end_in_file=0,
-                        full_code_lines=[],
-                        string_type="iOS Plural",
-                        source_file_path=rel_path,
-                        occurrences=[(rel_path, full_context)],
-                        occurrence_index=idx,
-                        id=obj_id,
-                    )
-                    ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
-                    ts.context = full_context
-                    ts.comment = (
-                        f"Plural category: {category}\n"
-                        f"Format variable: {var_name} (type: %{value_type})\n"
-                        f"Format key: {format_key}"
-                    )
-                    ts.po_comment = f"#: stringsdict key: {top_key}, variable: {var_name}, category: {category}"
-                    ts.is_reviewed = False
-                    ts.update_sort_weight()
-                    translatable_objects.append(ts)
-
-        meta = {"format": "stringsdict", "original_data": data}
-        logger.info(f"[IosStringsFormatHandler] Loaded {len(translatable_objects)} plural entries from {filepath}")
-        return translatable_objects, meta
-
     def save(self, filepath, translatable_objects, metadata, **kwargs):
-        fmt = metadata.get("format", "strings")
-        if fmt == "stringsdict":
-            self._save_stringsdict(filepath, translatable_objects, metadata)
-        else:
-            self._save_strings(filepath, translatable_objects, metadata)
+        self._save_strings(filepath, translatable_objects, metadata)
 
     def _save_strings(self, filepath, translatable_objects, metadata):
         lines = []
@@ -1193,41 +1097,6 @@ class IosStringsFormatHandler(BaseFormatHandler):
             f.write("\n".join(lines))
             f.write("\n")
         logger.info(f"[IosStringsFormatHandler] Saved {len(translatable_objects)} strings to {filepath}")
-
-    def _save_stringsdict(self, filepath, translatable_objects, metadata):
-        """重建 plist 数据结构并写出。"""
-        original_data = metadata.get("original_data", {})
-
-        # 将翻译回填进原始结构的副本
-        import copy
-
-        new_data = copy.deepcopy(original_data)
-
-        # 建立 context -> translation 映射
-        trans_map = {
-            ts.context: ts.translation
-            for ts in translatable_objects
-            if ts.translation and not ts.is_ignored and ts.context
-        }
-
-        for top_key, top_value in new_data.items():
-            if not isinstance(top_value, dict):
-                continue
-            for var_name, var_dict in top_value.items():
-                if var_name == "NSStringLocalizedFormatKey":
-                    continue
-                if not isinstance(var_dict, dict):
-                    continue
-                for category in ["zero", "one", "two", "few", "many", "other"]:
-                    if category not in var_dict:
-                        continue
-                    ctx = f"{top_key}.{var_name}.{category}"
-                    if ctx in trans_map:
-                        var_dict[category] = trans_map[ctx]
-
-        with atomic_open(filepath, "wb") as f:
-            plistlib.dump(new_data, f, fmt=plistlib.FMT_XML)
-        logger.info(f"[IosStringsFormatHandler] Saved stringsdict to {filepath}")
 
     def _unescape(self, s: str) -> str:
         """将 .strings 转义序列还原为真实字符。"""
@@ -1576,6 +1445,228 @@ class XCStringsFormatHandler(BaseFormatHandler):
         ts.is_reviewed = is_reviewed
         ts.update_sort_weight()
         return ts
+
+    def _get_relative_path(self, filepath: str) -> str:
+        current = Path(filepath).parent
+        while True:
+            if (current / "project.json").is_file():
+                try:
+                    return Path(filepath).relative_to(current).as_posix()
+                except ValueError:
+                    break
+            if current.parent == current:
+                break
+            current = current.parent
+        return os.path.basename(filepath)
+
+
+class StringsDictFormatHandler(BaseFormatHandler):
+    """
+    Apple .stringsdict 专用复数规则处理器
+
+    .stringsdict 是 iOS/macOS 处理复数变体的标准格式（XML Plist），
+    相比 IosStringsFormatHandler 内置的基础支持，本处理器提供：
+
+    1. 格式模板提取: NSStringLocalizedFormatKey 本身作为独立可翻译条目，
+       译者可调整变量引用顺序（例如将 "%1$#@files@ in %2$#@folders@" 本地化
+       为 "%2$#@folders@ 中有 %1$#@files@"）
+    2. 复合字符串支持: 完整处理含多个 %#@var@ 引用的复合格式字符串，
+       每个变量块的所有复数类别均独立呈现
+    3. 注释富化: 每条条目均标注所属变量名、值类型、关联模板及
+       "兄弟变量" 列表，帮助译者理解上下文
+    4. 稳健回写: 基于原始 plist 数据深拷贝定向回填，未触及的键原样保留；
+       同时回填格式模板，确保 RTL 语言等需要调整顺序的场景可正常工作
+    5. 语言检测: 优先从 xx.lproj/ 路径段提取，回退到文件名尾缀推断
+    """
+
+    format_id = "stringsdict"
+    is_monolingual = True
+    extensions = [".stringsdict"]
+    format_type = "translation"
+    display_name = _("Apple .stringsdict Plural Rules")
+    badge_text = "SDICT"
+    badge_bg_color = "#FFF8E1"
+    badge_text_color = "#F57F17"
+
+    PLURAL_CATEGORIES = ["zero", "one", "two", "few", "many", "other"]
+
+    def load(self, filepath, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or self._get_relative_path(filepath)
+        language_code = self._detect_language_from_lproj(filepath)
+
+        with open(filepath, "rb") as f:
+            try:
+                data = plistlib.load(f)
+            except Exception as e:
+                logger.error(f"[StringsDictFormatHandler] Failed to parse plist: {e}")
+                return [], {"original_data": {}}, "en"
+
+        translatable_objects = []
+        occurrence_counters = {}
+
+        for top_key, top_value in data.items():
+            if not isinstance(top_value, dict):
+                continue
+
+            format_key_template = top_value.get("NSStringLocalizedFormatKey", "")
+
+            # --- 1. NSStringLocalizedFormatKey 本身作为可翻译条目 ---
+            # 这个模板控制变量的排列顺序，RTL 语言或某些目标语言可能需要调整顺序，
+            # 例如: "%1$#@files@ in %2$#@folders@" → "%2$#@folders@ 中有 %1$#@files@"
+            if format_key_template:
+                ctx = f"{top_key}.__format__"
+                ts = self._make_ts(
+                    text=format_key_template,
+                    context=ctx,
+                    string_type="Stringsdict Format",
+                    comment=(
+                        f'Format template for "{top_key}".\n'
+                        f"Controls variable order in the composed string.\n"
+                        f"Use %#@varName@ to reference plural variable blocks, e.g.:\n"
+                        f'  single var  → "%#@count@"\n'
+                        f'  compound    → "%1$#@files@ in %2$#@folders@"\n'
+                        f"Reorder references here for RTL languages or different grammar."
+                    ),
+                    po_comment=f"#: stringsdict key: {top_key}, field: NSStringLocalizedFormatKey",
+                    relative_path=relative_path,
+                    occurrence_counters=occurrence_counters,
+                    app_instance=app_instance,
+                )
+                translatable_objects.append(ts)
+
+            # --- 2. 变量规则块 ---
+            var_names = [k for k in top_value if k != "NSStringLocalizedFormatKey"]
+            for var_name in var_names:
+                var_dict = top_value[var_name]
+                if not isinstance(var_dict, dict):
+                    continue
+
+                spec_type = var_dict.get("NSStringFormatSpecTypeKey", "NSStringPluralRuleType")
+                value_type = var_dict.get("NSStringFormatValueTypeKey", "d")
+
+                # 仅处理复数规则型（最常见）
+                if spec_type not in ("NSStringPluralRuleType", ""):
+                    logger.debug(
+                        f"[StringsDictFormatHandler] Skipping unsupported spec type "
+                        f"'{spec_type}' in {top_key}.{var_name}"
+                    )
+                    continue
+
+                # 构建兄弟变量说明（仅多变量时才添加）
+                sibling_note = ""
+                if len(var_names) > 1:
+                    sibling_note = f"\nCompound string — {len(var_names)} variable block(s): {', '.join(var_names)}"
+
+                for category in self.PLURAL_CATEGORIES:
+                    text = var_dict.get(category)
+                    if text is None:
+                        continue
+
+                    full_context = f"{top_key}.{var_name}.{category}"
+                    comment = f"Plural category: {category}\nVariable name:   {var_name}  (value type: %{value_type})"
+                    if format_key_template:
+                        comment += f'\nFormat template: "{format_key_template}"'
+                    comment += sibling_note
+
+                    ts = self._make_ts(
+                        text=text,
+                        context=full_context,
+                        string_type="Stringsdict Plural",
+                        comment=comment,
+                        po_comment=(f"#: stringsdict key: {top_key}, variable: {var_name}, category: {category}"),
+                        relative_path=relative_path,
+                        occurrence_counters=occurrence_counters,
+                        app_instance=app_instance,
+                    )
+                    translatable_objects.append(ts)
+
+        metadata = {"original_data": data}
+        logger.info(f"[StringsDictFormatHandler] Loaded {len(translatable_objects)} entries from {filepath}")
+        return translatable_objects, metadata, language_code
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        original_data = metadata.get("original_data", {})
+        new_data = copy.deepcopy(original_data)
+
+        trans_map = {
+            ts.context: ts.translation
+            for ts in translatable_objects
+            if ts.translation and not getattr(ts, "is_ignored", False) and ts.context
+        }
+
+        for top_key, top_value in new_data.items():
+            if not isinstance(top_value, dict):
+                continue
+
+            # 回填格式模板（支持调整变量引用顺序）
+            fmt_ctx = f"{top_key}.__format__"
+            if fmt_ctx in trans_map:
+                top_value["NSStringLocalizedFormatKey"] = trans_map[fmt_ctx]
+
+            # 回填各变量块的复数条目
+            for var_name, var_dict in top_value.items():
+                if var_name == "NSStringLocalizedFormatKey":
+                    continue
+                if not isinstance(var_dict, dict):
+                    continue
+                for category in self.PLURAL_CATEGORIES:
+                    if category not in var_dict:
+                        continue
+                    ctx = f"{top_key}.{var_name}.{category}"
+                    if ctx in trans_map:
+                        var_dict[category] = trans_map[ctx]
+
+        with atomic_open(filepath, "wb") as f:
+            plistlib.dump(new_data, f, fmt=plistlib.FMT_XML)
+
+        logger.info(f"[StringsDictFormatHandler] Saved {len(trans_map)} entries to {filepath}")
+
+    def _make_ts(
+        self,
+        text,
+        context,
+        string_type,
+        comment,
+        po_comment,
+        relative_path,
+        occurrence_counters,
+        app_instance,
+    ) -> "TranslatableString":
+        counter_key = (text, context)
+        idx = occurrence_counters.get(counter_key, 0)
+        occurrence_counters[counter_key] = idx + 1
+
+        stable = f"{relative_path}::{context}::{text}::{idx}"
+        obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+        ts = TranslatableString(
+            original_raw=text,
+            original_semantic=text,
+            line_num=0,
+            char_pos_start_in_file=0,
+            char_pos_end_in_file=0,
+            full_code_lines=[],
+            string_type=string_type,
+            source_file_path=relative_path,
+            occurrences=[(relative_path, context)],
+            occurrence_index=idx,
+            id=obj_id,
+        )
+        ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
+        ts.context = context
+        ts.comment = comment
+        ts.po_comment = po_comment
+        ts.is_reviewed = False
+        ts.update_sort_weight()
+        return ts
+
+    def _detect_language_from_lproj(self, filepath: str) -> str:
+        """优先从 xx.lproj/ 路径段提取语言代码，回退到文件名推断。"""
+        for part in Path(filepath).parts:
+            if part.endswith(".lproj"):
+                return part[: -len(".lproj")]
+        return self._detect_language_from_filename(os.path.basename(filepath))
 
     def _get_relative_path(self, filepath: str) -> str:
         current = Path(filepath).parent
@@ -2027,6 +2118,276 @@ class JsonI18nFormatHandler(BaseFormatHandler):
             return translation_map.get(full_key, obj)
 
         return obj
+
+
+class I18nextJsonFormatHandler(BaseFormatHandler):
+    """
+    i18next JSON 格式处理器
+
+    i18next 是 JavaScript / TypeScript 生态最主流的 i18n 库（React, Vue, Node 通用）。
+    其 JSON 格式在通用 JSON i18n 基础上有以下约定：
+
+    1. 插值语法: {{ variable }} 双花括号，区别于 ICU 的单花括号；
+       count 是内置复数触发变量，出现 {{count}} 时自动进入复数选择逻辑
+    2. 复数键 (v4 / CLDR):  key_zero / key_one / key_two / key_few / key_many / key_other
+       复数键 (v3 兼容):    key / key_plural
+       本处理器识别两种格式，并将同一基础键的所有复数形式归组注释
+    3. 上下文变体: key_male / key_female / key_<context>（contextSeparator 默认 "_"）
+    4. 嵌套 JSON: 任意深度，保存时原样重建；键路径以 . 连接作为 context
+    5. Trans 组件: <0>标签</0> 格式的 React Trans 内嵌组件原样保留，注释中标注
+    6. 命名空间: 从文件名推断（去掉语言代码后缀），记录到注释
+    7. 保序保结构: 加载/保存使用相同原始结构，不改变键顺序或嵌套层级
+    """
+
+    format_id = "i18next_json"
+    is_monolingual = True
+    extensions = [".json"]
+    format_type = "translation"
+    display_name = _("i18next JSON")
+    badge_text = "i18n"
+    badge_bg_color = "#E8F5E9"
+    badge_text_color = "#1B5E20"
+
+    # i18next v4 CLDR 复数后缀（完整集合）
+    PLURAL_SUFFIXES_V4 = ("_zero", "_one", "_two", "_few", "_many", "_other")
+    # i18next v3 兼容后缀
+    PLURAL_SUFFIX_V3 = "_plural"
+    # {{variable}} 插值正则
+    INTERPOLATION_RE = re.compile(r"\{\{([^}]+?)\}\}")
+    # Trans 组件 HTML 数字标签
+    TRANS_TAG_RE = re.compile(r"<\d+>|</\d+>")
+    # Context 后缀：末尾 _<word>，但不是复数后缀
+    CONTEXT_SUFFIX_RE = re.compile(r"^(.+?)_([a-z][a-z0-9]*)$")
+
+    def load(self, filepath, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        logger.debug(f"[I18nextJsonFormatHandler] Loading: {filepath}")
+
+        with open(filepath, encoding="utf-8") as f:
+            content = f.read()
+
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError as e:
+            logger.error(f"[I18nextJsonFormatHandler] JSON parse error: {e}")
+            return [], {}, "en"
+
+        relative_path = kwargs.get("relative_path") or os.path.basename(filepath)
+        language_code = self._detect_language_from_filename(os.path.basename(filepath))
+        indent = self._detect_indent(content)
+        namespace = self._detect_namespace(os.path.basename(filepath))
+
+        translatable_objects = []
+        occurrence_counters = {}
+
+        self._extract_recursive(
+            data,
+            [],
+            translatable_objects,
+            occurrence_counters,
+            relative_path,
+            app_instance,
+            namespace,
+        )
+
+        # 后处理：为同一基础键的复数形式组互相补充注释
+        self._annotate_plural_groups(translatable_objects)
+
+        metadata = {
+            "indent": indent,
+            "original_structure": copy.deepcopy(data),
+            "namespace": namespace,
+        }
+        logger.info(
+            f"[I18nextJsonFormatHandler] Loaded {len(translatable_objects)} strings "
+            f"from {filepath} (namespace: {namespace})"
+        )
+        return translatable_objects, metadata, language_code
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        logger.debug(f"[I18nextJsonFormatHandler] Saving: {filepath}")
+        indent = metadata.get("indent", 2)
+        original_structure = metadata.get("original_structure", {})
+
+        trans_map = {
+            ts.context: (ts.translation if ts.translation else ts.original_semantic)
+            for ts in translatable_objects
+            if ts.id != "##NEW_ENTRY##" and ts.context
+        }
+
+        result = self._rebuild_structure(original_structure, trans_map)
+
+        with atomic_open(filepath, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=indent, ensure_ascii=False)
+            f.write("\n")
+
+        logger.info(f"[I18nextJsonFormatHandler] Saved {len(trans_map)} strings to {filepath}")
+
+    def _extract_recursive(self, obj, key_path, results, counters, rel_path, app_instance, namespace):
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                self._extract_recursive(
+                    value,
+                    [*key_path, key],
+                    results,
+                    counters,
+                    rel_path,
+                    app_instance,
+                    namespace,
+                )
+        elif isinstance(obj, list):
+            for idx, item in enumerate(obj):
+                self._extract_recursive(
+                    item,
+                    [*key_path, f"[{idx}]"],
+                    results,
+                    counters,
+                    rel_path,
+                    app_instance,
+                    namespace,
+                )
+        elif isinstance(obj, str) and obj.strip():
+            self._create_ts(obj, key_path, results, counters, rel_path, app_instance, namespace)
+
+    def _create_ts(self, text, key_path, results, counters, rel_path, app_instance, namespace):
+        # context 用完整键路径（含数组索引）
+        full_key = ".".join(key_path)
+
+        counter_key = (text, full_key)
+        idx = counters.get(counter_key, 0)
+        counters[counter_key] = idx + 1
+
+        stable = f"{rel_path}::{full_key}::{text}::{idx}"
+        obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+        leaf_key = key_path[-1] if key_path else ""
+
+        # --- 特征检测 ---
+        variables = self.INTERPOLATION_RE.findall(text)
+        has_count_var = "count" in variables
+        has_trans_tags = bool(self.TRANS_TAG_RE.search(text))
+
+        is_plural_v4 = any(leaf_key.endswith(s) for s in self.PLURAL_SUFFIXES_V4)
+        is_plural_v3 = leaf_key.endswith(self.PLURAL_SUFFIX_V3)
+        is_plural = is_plural_v4 or is_plural_v3
+
+        # Context 变体检测（排除已知复数后缀，避免误判）
+        is_context_variant = False
+        context_variant_name = ""
+        if not is_plural:
+            cm = self.CONTEXT_SUFFIX_RE.match(leaf_key)
+            if cm:
+                suffix = cm.group(2)
+                # 排除单字母后缀和语言代码，减少误报
+                if len(suffix) >= 2 and suffix not in {"en", "zh", "ja", "ko", "fr", "de"}:
+                    is_context_variant = True
+                    context_variant_name = suffix
+
+        # --- 注释构建 ---
+        comment_lines = []
+
+        if variables:
+            var_display = ", ".join(f"{{{{{v}}}}}" for v in variables)
+            comment_lines.append(f"Interpolation: {var_display}")
+
+        if has_count_var and not is_plural:
+            comment_lines.append(
+                "Contains {{count}} — i18next will auto-select plural variants "
+                f"(expected sibling keys: {leaf_key}_one, {leaf_key}_other, etc.)"
+            )
+
+        if is_plural_v4:
+            suffix = next(s for s in self.PLURAL_SUFFIXES_V4 if leaf_key.endswith(s))
+            base = leaf_key[: -len(suffix)]
+            comment_lines.append(f"Plural form (i18next v4 CLDR) — category: '{suffix[1:]}', base key: '{base}'")
+        elif is_plural_v3:
+            base = leaf_key[: -len(self.PLURAL_SUFFIX_V3)]
+            comment_lines.append(f"Plural form (i18next v3 compat) — '_plural' suffix, base key: '{base}'")
+
+        if is_context_variant:
+            base = leaf_key[: -(len(context_variant_name) + 1)]
+            comment_lines.append(f"Context variant '{context_variant_name}' of key '{base}'")
+
+        if has_trans_tags:
+            comment_lines.append(
+                "Contains React <Trans> component tags (<0>, </1>, ...) — preserve tag structure in translation"
+            )
+
+        if namespace and namespace not in ("translation", ""):
+            comment_lines.append(f"Namespace: {namespace}")
+
+        ts = TranslatableString(
+            original_raw=text,
+            original_semantic=text,
+            line_num=0,
+            char_pos_start_in_file=0,
+            char_pos_end_in_file=0,
+            full_code_lines=[],
+            string_type="i18next String",
+            source_file_path=rel_path,
+            occurrences=[(rel_path, full_key)],
+            occurrence_index=idx,
+            id=obj_id,
+        )
+        ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
+        ts.context = full_key
+        ts.comment = "\n".join(comment_lines)
+        ts.po_comment = f"#: i18next key: {full_key}"
+        ts.is_reviewed = False
+        ts.update_sort_weight()
+        results.append(ts)
+
+    def _annotate_plural_groups(self, objects: list):
+        """识别同一基础键的所有复数形式，互相标注兄弟键列表。"""
+        groups: dict[str, list] = {}
+        for ts in objects:
+            base = self._plural_base(ts.context)
+            if base != ts.context:
+                groups.setdefault(base, []).append(ts)
+
+        for base, members in groups.items():
+            if len(members) < 2:
+                continue
+            sibling_keys = ", ".join(m.context for m in members)
+            extra = f"Plural group ({len(members)} forms): [{sibling_keys}]"
+            for ts in members:
+                ts.comment = f"{ts.comment}\n{extra}".strip() if ts.comment else extra
+
+    def _plural_base(self, key: str) -> str:
+        for suffix in (*self.PLURAL_SUFFIXES_V4, self.PLURAL_SUFFIX_V3):
+            if key.endswith(suffix):
+                return key[: -len(suffix)]
+        return key
+
+    def _rebuild_structure(self, obj, trans_map, key_path=None):
+        if key_path is None:
+            key_path = []
+        if isinstance(obj, dict):
+            return {k: self._rebuild_structure(v, trans_map, [*key_path, k]) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [self._rebuild_structure(v, trans_map, [*key_path, f"[{i}]"]) for i, v in enumerate(obj)]
+        if isinstance(obj, str):
+            return trans_map.get(".".join(key_path), obj)
+        return obj
+
+    def _detect_indent(self, content: str) -> int:
+        for line in content.split("\n")[1:]:
+            stripped = line.lstrip()
+            if stripped and line != stripped:
+                n = len(line) - len(stripped)
+                if n > 0:
+                    return n
+        return 2
+
+    def _detect_namespace(self, filename: str) -> str:
+        """
+        从文件名推断 i18next 命名空间。
+        常见约定: translation.json, common.en.json, en/errors.json
+        """
+        stem = os.path.splitext(filename)[0]
+        # 去掉末尾语言代码: common.en → common, errors_zh_CN → errors
+        cleaned = re.sub(r"[._-]([a-z]{2,3}(?:[_-][A-Za-z]{2,4})?)$", "", stem, flags=re.IGNORECASE)
+        return cleaned or "translation"
 
 
 class YamlI18nFormatHandler(BaseFormatHandler):
@@ -5881,6 +6242,479 @@ class PptxFormatHandler(BaseFormatHandler):
         return m.group(1).replace("-", "_") if m else "en"
 
 
+class FluentFormatHandler(BaseFormatHandler):
+    """
+    Mozilla Fluent (.ftl) 本地化格式处理器
+
+    Fluent 是 Mozilla 设计的下一代本地化系统，被 Firefox、Thunderbird、
+    Zulip 等项目采用。其设计目标是让译者能够充分表达目标语言的语法自然性。
+
+    支持的特性:
+    1. 消息主值: message-id = value，单行与多行（缩进续行）均支持
+    2. 属性: .attr-name = value，每个属性作为独立条目，
+       context 格式为 "message-id.attr-name"
+    3. 选择表达式 (selector / plural): { $var -> [one] ... *[other] ... }
+       整体作为一个条目保留，译者可修改各分支文本；
+       注释中列出所有变体 key 供参考
+    4. 术语跳过: -term = value 开头的术语不进入翻译流程
+       （术语由开发者管理，译者通过 { -term } 引用）
+    5. 插值标注: 检测 { $variable } 变量引用和 { -term } 术语引用并记录注释
+    6. 注释保留: # 消息注释关联到下一条目并作为 comment 字段
+    7. 稳健回写: 以原始文本为基础做定向行级替换，保留所有注释、
+       空行及未翻译条目；支持单行值、属性值的原位替换
+
+    技术说明:
+    - 多行值的回写: 新译文若含换行，将以缩进续行格式写出
+    - 选择表达式的回写: 整体替换（译者须手动保持 { $var -> } 骨架）
+    - 纯注释块（## 群组注释、### 文件注释）不作为翻译条目提取
+    """
+
+    format_id = "fluent"
+    is_monolingual = True
+    extensions = [".ftl"]
+    format_type = "translation"
+    display_name = _("Mozilla Fluent File")
+    badge_text = "FTL"
+    badge_bg_color = "#EDE7F6"
+    badge_text_color = "#4527A0"
+
+    # 变量引用: { $name }
+    _VAR_RE = re.compile(r"\{\s*\$([a-zA-Z_][a-zA-Z0-9_-]*)\s*(?:\(.*?\))?\s*\}")
+    # 术语引用: { -term }
+    _TERM_REF_RE = re.compile(r"\{\s*-([a-zA-Z][a-zA-Z0-9_-]*)\s*\}")
+    # 选择表达式变体键: [key] 或 *[key]
+    _SELECTOR_KEY_RE = re.compile(r"\*?\[([^\]]+)\]")
+    # 数字字面量参数（函数调用中）
+    _FUNC_CALL_RE = re.compile(r"\{\s*[A-Z_]+\(")
+
+    def load(self, filepath, **kwargs):
+        app_instance = kwargs.get("app_instance")
+        relative_path = kwargs.get("relative_path") or os.path.basename(filepath)
+        language_code = self._detect_language_from_filename(os.path.basename(filepath))
+
+        with open(filepath, encoding="utf-8", errors="replace") as f:
+            content = f.read()
+
+        entries = self._parse_ftl(content)
+        translatable_objects = []
+        occurrence_counters = {}
+
+        for entry in entries:
+            if entry["type"] != "message":
+                continue
+
+            msg_id = entry["msg_id"]
+            msg_comment = entry.get("comment", "")
+
+            # 主值
+            if entry.get("value") is not None:
+                ts = self._make_ts(
+                    text=entry["value"],
+                    context=msg_id,
+                    string_type="Fluent Message",
+                    comment=msg_comment,
+                    msg_id=msg_id,
+                    results=translatable_objects,
+                    counters=occurrence_counters,
+                    rel_path=relative_path,
+                    app_instance=app_instance,
+                )
+                translatable_objects.append(ts)
+
+            # 属性（每个属性独立条目，context = "msg-id.attr-name"）
+            for attr_name, attr_value in entry.get("attributes", {}).items():
+                attr_ctx = f"{msg_id}.{attr_name}"
+                attr_comment = f"{msg_comment}\nAttribute: .{attr_name}".strip()
+                ts = self._make_ts(
+                    text=attr_value,
+                    context=attr_ctx,
+                    string_type="Fluent Attribute",
+                    comment=attr_comment,
+                    msg_id=msg_id,
+                    results=translatable_objects,
+                    counters=occurrence_counters,
+                    rel_path=relative_path,
+                    app_instance=app_instance,
+                )
+                translatable_objects.append(ts)
+
+        metadata = {
+            "raw_content": content,
+            "language_code": language_code,
+            # 存储每条消息的原始文本块，用于 save 时定向替换
+            "entry_originals": {e["msg_id"]: e["raw_block"] for e in entries if e["type"] == "message"},
+        }
+        logger.info(f"[FluentFormatHandler] Loaded {len(translatable_objects)} entries from {filepath}")
+        return translatable_objects, metadata, language_code
+
+    def save(self, filepath, translatable_objects, metadata, **kwargs):
+        raw_content = metadata.get("raw_content", "")
+        entry_originals = metadata.get("entry_originals", {})
+
+        trans_map: dict[str, str] = {
+            ts.context: ts.translation
+            for ts in translatable_objects
+            if ts.translation and not getattr(ts, "is_ignored", False) and ts.context
+        }
+
+        result = self._apply_translations(raw_content, trans_map, entry_originals)
+
+        with atomic_open(filepath, "w", encoding="utf-8") as f:
+            f.write(result)
+
+        logger.info(f"[FluentFormatHandler] Saved to {filepath}")
+
+    def _parse_ftl(self, content: str) -> list[dict]:
+        """
+        将 FTL 文本解析为条目列表。
+
+        每个条目的结构:
+          type: "message" | "term" | "comment" | "blank" | "junk"
+          msg_id: str          (message/term)
+          value:  str | None   (消息主值，可含选择表达式)
+          attributes: dict     (属性名 -> 值)
+          comment: str         (紧邻前置 # 注释)
+          raw_block: str       (该条目在原始文本中的完整文本，含前置注释)
+        """
+        entries = []
+        lines = content.split("\n")
+        n = len(lines)
+        i = 0
+        pending_comment_lines: list[str] = []
+        pending_comment_start = -1
+
+        while i < n:
+            line = lines[i]
+
+            # --- 文件/群组注释（## / ###）：不关联到消息，直接丢弃积累 ---
+            if re.match(r"^#{2,3}\s", line) or line in ("##", "###"):
+                pending_comment_lines = []
+                pending_comment_start = -1
+                i += 1
+                continue
+
+            # --- 消息注释（单 # ）---
+            if line.startswith("# ") or line == "#":
+                if not pending_comment_lines:
+                    pending_comment_start = i
+                pending_comment_lines.append(line[2:] if line.startswith("# ") else "")
+                i += 1
+                continue
+
+            # --- 空行：若此前有孤立注释，重置 ---
+            if not line.strip():
+                # 若注释后紧跟空行则认为是独立注释块，不关联下一消息
+                if pending_comment_lines:
+                    entries.append(
+                        {
+                            "type": "comment",
+                            "text": "\n".join(pending_comment_lines),
+                            "raw_block": "\n".join(lines[pending_comment_start:i] + [""]),
+                        }
+                    )
+                    pending_comment_lines = []
+                    pending_comment_start = -1
+                entries.append({"type": "blank", "raw_block": ""})
+                i += 1
+                continue
+
+            # --- 术语（-term = …）---
+            term_m = re.match(r"^(-[a-zA-Z][a-zA-Z0-9_-]*)\s*=", line)
+            if term_m:
+                term_id = term_m.group(1)
+                block_start = pending_comment_start if pending_comment_start >= 0 else i
+                j = i + 1
+                while j < n and (lines[j].startswith("    ") or lines[j].startswith("\t")):
+                    j += 1
+                raw_block = "\n".join(lines[block_start:j])
+                entries.append(
+                    {
+                        "type": "term",
+                        "msg_id": term_id,
+                        "raw_block": raw_block,
+                    }
+                )
+                pending_comment_lines = []
+                pending_comment_start = -1
+                i = j
+                continue
+
+            # --- 消息（message-id = …）---
+            msg_m = re.match(r"^([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(.*)", line)
+            if msg_m:
+                msg_id = msg_m.group(1)
+                inline_rest = msg_m.group(2)  # 等号之后的内容（可能为空）
+
+                block_start = pending_comment_start if pending_comment_start >= 0 else i
+                comment_text = "\n".join(pending_comment_lines).strip()
+                pending_comment_lines = []
+                pending_comment_start = -1
+
+                # 收集所有后续缩进行（消息体）
+                j = i + 1
+                while j < n and (lines[j].startswith("    ") or lines[j].startswith("\t")):
+                    j += 1
+
+                body_lines = [inline_rest] + [lines[k] for k in range(i + 1, j)]
+                value, attributes = self._parse_message_body(body_lines)
+
+                raw_block = "\n".join(lines[block_start:j])
+                entries.append(
+                    {
+                        "type": "message",
+                        "msg_id": msg_id,
+                        "value": value,
+                        "attributes": attributes,
+                        "comment": comment_text,
+                        "raw_block": raw_block,
+                    }
+                )
+                i = j
+                continue
+
+            # --- Junk（无法识别的行）---
+            entries.append({"type": "junk", "raw_block": line})
+            pending_comment_lines = []
+            pending_comment_start = -1
+            i += 1
+
+        return entries
+
+    def _parse_message_body(self, body_lines: list[str]) -> tuple:
+        """
+        解析消息体（等号后的行列表），返回 (value, attributes)。
+
+        消息体规则:
+          - 第一个非空行是内联值（若无则消息无独立值，仅有属性）
+          - .attr-name = value 行是属性定义
+          - 其余缩进行是上一个值/属性的续行
+        """
+        value_parts: list[str] = []
+        attributes: dict[str, str] = {}
+        current_attr: str | None = None
+        current_attr_parts: list[str] = []
+
+        def flush_attr():
+            if current_attr is not None:
+                attributes[current_attr] = self._normalize_multiline(current_attr_parts)
+
+        for line in body_lines:
+            stripped = line.strip()
+
+            # 属性行
+            attr_m = re.match(r"^\s*\.([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(.*)", line)
+            if attr_m:
+                flush_attr()
+                current_attr = attr_m.group(1)
+                current_attr_parts = [attr_m.group(2).strip()]
+                continue
+
+            if current_attr is not None:
+                # 属性续行
+                current_attr_parts.append(stripped)
+            else:
+                # 主值行
+                value_parts.append(stripped)
+
+        flush_attr()
+
+        value = self._normalize_multiline(value_parts) if value_parts else None
+        # 空字符串也算 None（无显式值的消息只有属性）
+        if value is not None and value.strip() == "":
+            value = None
+
+        return value, attributes
+
+    @staticmethod
+    def _normalize_multiline(parts: list[str]) -> str:
+        """去掉首尾空元素后合并多行。"""
+        while parts and not parts[0].strip():
+            parts = parts[1:]
+        while parts and not parts[-1].strip():
+            parts = parts[:-1]
+        return "\n".join(parts)
+
+    def _make_ts(
+        self,
+        text,
+        context,
+        string_type,
+        comment,
+        msg_id,
+        results,
+        counters,
+        rel_path,
+        app_instance,
+    ) -> "TranslatableString":
+        counter_key = (text, context)
+        idx = counters.get(counter_key, 0)
+        counters[counter_key] = idx + 1
+
+        stable = f"{rel_path}::{context}::{text}::{idx}"
+        obj_id = xxhash.xxh128(stable.encode()).hexdigest()
+
+        # 插值变量和术语引用分析
+        variables = self._VAR_RE.findall(text)
+        term_refs = self._TERM_REF_RE.findall(text)
+        selector_keys = self._SELECTOR_KEY_RE.findall(text)
+        has_func = bool(self._FUNC_CALL_RE.search(text))
+
+        comment_lines = [comment] if comment else []
+        if variables:
+            comment_lines.append("Variables: " + ", ".join(f"{{ ${v} }}" for v in sorted(set(variables))))
+        if term_refs:
+            comment_lines.append("Term refs: " + ", ".join(f"{{ -{t} }}" for t in sorted(set(term_refs))))
+        if selector_keys:
+            comment_lines.append(
+                f"Selector variants: [{', '.join(selector_keys)}] — preserve {{ $var -> }} skeleton when translating"
+            )
+        if has_func:
+            comment_lines.append("Contains Fluent built-in function call (e.g. NUMBER(), DATETIME())")
+
+        ts = TranslatableString(
+            original_raw=text,
+            original_semantic=text,
+            line_num=0,
+            char_pos_start_in_file=0,
+            char_pos_end_in_file=0,
+            full_code_lines=[],
+            string_type=string_type,
+            source_file_path=rel_path,
+            occurrences=[(rel_path, context)],
+            occurrence_index=idx,
+            id=obj_id,
+        )
+        ts.set_translation_internal(self.get_initial_translation(text, app_instance), is_initial=True)
+        ts.context = context
+        ts.comment = "\n".join(comment_lines)
+        ts.po_comment = f"#: Fluent id: {msg_id}"
+        ts.is_reviewed = False
+        ts.update_sort_weight()
+        return ts
+
+    def _apply_translations(
+        self,
+        content: str,
+        trans_map: dict[str, str],
+        entry_originals: dict[str, str],
+    ) -> str:
+        """
+        将翻译回写到 FTL 原始内容。
+
+        策略: 逐消息块定向替换，保留注释、空行和未触及的条目。
+        对于每条消息，若其主值或任何属性有翻译，则重建整个消息块文本。
+        """
+        result = content
+
+        for msg_id, original_block in entry_originals.items():
+            # 收集此消息的主值翻译和属性翻译
+            value_trans = trans_map.get(msg_id)
+            attr_trans = {
+                k[len(msg_id) + 1 :]: v
+                for k, v in trans_map.items()
+                if k.startswith(f"{msg_id}.") and "." not in k[len(msg_id) + 1 :]
+            }
+
+            if not value_trans and not attr_trans:
+                continue
+
+            new_block = self._rebuild_message_block(msg_id, original_block, value_trans, attr_trans)
+
+            if new_block != original_block:
+                # 用首次出现替换（防止相同文本的消息块互相干扰）
+                result = result.replace(original_block, new_block, 1)
+
+        return result
+
+    def _rebuild_message_block(
+        self,
+        msg_id: str,
+        original_block: str,
+        value_trans: str | None,
+        attr_trans: dict[str, str],
+    ) -> str:
+        """
+        在保留消息原有结构（注释、多行缩进、属性）的前提下替换值。
+
+        处理规则:
+          - 单行值 (message-id = old text)  → message-id = new text
+          - 多行值 (message-id =\n    line1) → message-id =\n    new_line1\n    new_line2
+          - 属性   (    .attr = old)         →     .attr = new
+          - 对于含选择表达式的值: 整体替换
+        """
+        lines = original_block.split("\n")
+        result_lines: list[str] = []
+        i = 0
+        message_line_handled = False
+
+        while i < len(lines):
+            line = lines[i]
+
+            # --- 消息定义行 ---
+            msg_m = re.match(r"^([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(.*)", line)
+            if msg_m and msg_m.group(1) == msg_id and not message_line_handled:
+                message_line_handled = True
+                inline_value = msg_m.group(2).strip()
+
+                # 找出属于此消息的所有后续缩进行
+                j = i + 1
+                while j < len(lines) and (lines[j].startswith("    ") or lines[j].startswith("\t")):
+                    j += 1
+                indented = lines[i + 1 : j]
+
+                # 判断是否有多行主值（区别于属性行）
+                has_multiline_value = bool(
+                    inline_value == "" and any(not l.strip().startswith(".") for l in indented if l.strip())
+                )
+
+                if value_trans is not None:
+                    new_val_lines = value_trans.split("\n")
+                    if inline_value and not has_multiline_value:
+                        # 单行值替换
+                        result_lines.append(f"{msg_id} = {new_val_lines[0]}")
+                        if len(new_val_lines) > 1:
+                            for extra in new_val_lines[1:]:
+                                result_lines.append(f"    {extra}")
+                    else:
+                        # 多行值或原本为空内联
+                        result_lines.append(f"{msg_id} =")
+                        for vl in new_val_lines:
+                            result_lines.append(f"    {vl}" if vl.strip() else "")
+                else:
+                    result_lines.append(line)
+
+                # 处理缩进块中的属性行
+                for attr_line in indented:
+                    attr_m = re.match(r"^(\s*)\.([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(.*)", attr_line)
+                    if attr_m:
+                        indent_ws = attr_m.group(1)
+                        attr_name = attr_m.group(2)
+                        if attr_name in attr_trans:
+                            new_attr_val = attr_trans[attr_name]
+                            # 属性值也可能多行
+                            attr_val_lines = new_attr_val.split("\n")
+                            result_lines.append(f"{indent_ws}.{attr_name} = {attr_val_lines[0]}")
+                            if len(attr_val_lines) > 1:
+                                for extra in attr_val_lines[1:]:
+                                    result_lines.append(f"{indent_ws}    {extra}" if extra.strip() else "")
+                        else:
+                            result_lines.append(attr_line)
+                    elif attr_line.strip() and value_trans is not None:
+                        # 多行主值的续行已在上面处理，跳过原始续行
+                        pass
+                    else:
+                        result_lines.append(attr_line)
+
+                i = j
+                continue
+
+            # --- 其余行（前置注释等）原样保留 ---
+            result_lines.append(line)
+            i += 1
+
+        return "\n".join(result_lines)
+
+
 class OwCodeFormatHandler(BaseFormatHandler):
     """
     守望先锋工坊代码格式处理器
@@ -5938,6 +6772,18 @@ class FormatManager:
     @classmethod
     def get_handler_by_extension(cls, filepath) -> BaseFormatHandler:
         ext = os.path.splitext(filepath)[1].lower()
+        if ext == ".json":
+            try:
+                with open(filepath, encoding="utf-8") as f:
+                    # 只读取前 1024 字节进行快速检查
+                    sample = f.read(1024)
+                    # i18next 的典型特征：含有 _one", _other", _plural" 或 {{count}}
+                    if any(feat in sample for feat in ['_one"', '_other"', '_plural"', "{{"]):
+                        return cls._handlers.get("i18next_json")
+            except Exception:
+                pass
+            return cls._handlers.get("json_i18n")
+
         for handler in cls._handlers.values():
             if ext in handler.extensions:
                 return handler
@@ -5978,10 +6824,12 @@ FormatManager.register_handler(XliffFormatHandler)
 FormatManager.register_handler(AndroidStringsFormatHandler)
 FormatManager.register_handler(IosStringsFormatHandler)
 FormatManager.register_handler(XCStringsFormatHandler)
+FormatManager.register_handler(StringsDictFormatHandler)
 FormatManager.register_handler(ArbFormatHandler)
 
 # 3. 数据序列化与通用配置格式 (Data Serialization & Configs)
 FormatManager.register_handler(JsonI18nFormatHandler)
+FormatManager.register_handler(I18nextJsonFormatHandler)
 FormatManager.register_handler(YamlI18nFormatHandler)
 FormatManager.register_handler(TomlFormatHandler)
 FormatManager.register_handler(IniFormatHandler)
@@ -6007,4 +6855,5 @@ FormatManager.register_handler(DocxFormatHandler)
 FormatManager.register_handler(PptxFormatHandler)
 
 # 8. 自定义代码与特殊格式 (Custom Code & Special)
+FormatManager.register_handler(FluentFormatHandler)
 FormatManager.register_handler(OwCodeFormatHandler)
