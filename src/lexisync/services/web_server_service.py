@@ -157,13 +157,23 @@ class ConnectionManager:
         return affected
 
     async def broadcast_json(self, message: dict) -> None:
-        dead = []
-        for ws in list(self.active_connections):
+        if not self.active_connections:
+            return
+
+        async def send_to_client(ws: WebSocket):
             try:
-                await ws.send_json(message)
-            except Exception:
-                dead.append(ws)
-        for ws in dead:
+                async with asyncio.timeout(3.0):
+                    await ws.send_json(message)
+                return None
+            except Exception as e:
+                logger.debug(f"Failed to send to a client, marking as dead: {e}")
+                return ws
+
+        tasks = [send_to_client(ws) for ws in self.active_connections]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        dead_connections = [res for res in results if isinstance(res, WebSocket)]
+        for ws in dead_connections:
             self.disconnect(ws)
 
 
