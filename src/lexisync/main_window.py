@@ -89,6 +89,7 @@ from lexisync.services.search_service import SearchService
 from lexisync.services.tm_service import TMService
 from lexisync.services.validation_service import placeholder_regex, run_validation_on_all
 from lexisync.ui_components.banner_overlay import BannerOverlay
+from lexisync.ui_components.cloud_dashboard_panel import CloudDashboardPanel
 from lexisync.ui_components.comment_status_panel import CommentStatusPanel
 from lexisync.ui_components.context_panel import ContextPanel
 from lexisync.ui_components.custom_cell_delegate import CustomCellDelegate
@@ -765,24 +766,35 @@ class LexiSyncApp(QMainWindow):
         self.web_service.signals.server_stopped.connect(self._on_cloud_stopped)
         self.web_service.signals.approval_requested.connect(self._handle_connection_approval)
         self.web_service.signals.ai_translate_requested.connect(self._handle_web_ai_translate)
+        self.web_service.signals.user_list_changed.connect(self.cloud_dashboard.update_user_list)
+        self.web_service.signals.audit_logged.connect(self.cloud_dashboard.add_log)
+        self.web_service.signals.user_focus_changed.connect(self.cloud_dashboard.update_user_focus)
 
         # 穿透服务信号
         self.web_service.tunnel_manager.status_changed.connect(self._on_tunnel_status_changed)
         self.web_service.tunnel_manager.download_progress.connect(self._on_tunnel_download_progress)
 
     def _handle_connection_approval(self, req_id, ip, context):
-        reply = QMessageBox.question(
-            self,
-            _("Connection Request"),
-            _(
-                "A new device is trying to connect to your project.\n\nIP Address: {ip}\nContext: {ctx}\n\nDo you want to allow this connection?"
-            ).format(ip=ip, ctx=context),
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+        self.cloud_dashboard.add_pending_approval(req_id, ip, context)
+
+        def resolve_from_banner(approved):
+            self.notification_banner.hide_banner()
+            self.cloud_dashboard.remove_pending_approval(req_id)
+            if self.web_service:
+                self.web_service.resolve_approval(req_id, approved)
+
+        self.notification_banner.clear_actions()
+        self.notification_banner.show_message(
+            _("New Connection: {ip}").format(ip=ip),
+            preset="warning",
+            layout_mode="top",
+            interactive=True,
+            margin=5,
+            fixed_height=45,
         )
-        approved = reply == QMessageBox.Yes
-        if self.web_service:
-            self.web_service.resolve_approval(req_id, approved)
+        self.notification_banner.add_action(_("Allow"), lambda: resolve_from_banner(True), "success")
+        self.notification_banner.add_action(_("Reject"), lambda: resolve_from_banner(False), "danger")
+        self.notification_banner.add_action(_("Ignore"), self.notification_banner.hide_banner, "default")
 
     def _on_tunnel_download_progress(self, percent):
         self.update_statusbar(_("Downloading tunnel component: {p}%").format(p=percent), persistent=True)
@@ -815,22 +827,37 @@ class LexiSyncApp(QMainWindow):
             return
         self._current_cloud_url_type = "local"
         full_url = f"{url}?token={self.cloud_token}"
+
+        self.cloud_dashboard.set_service_state(True, full_url)
+
+        self.cloud_dock.show()
+        self.cloud_dock.raise_()
+
         logger.info(f"Cloud server started at {full_url}")
         self._show_cloud_banner(_("Local Collaboration Active: {url}").format(url=full_url), full_url, is_public=False)
+
+    def _on_cloud_stopped(self):
+        self._current_cloud_url_type = "none"
+        if hasattr(self, "notification_banner"):
+            self.notification_banner.hide_banner()
+        self.update_statusbar(_("Cloud service stopped."))
+
+        self.cloud_dashboard.set_service_state(False)
 
     def _on_tunnel_status_changed(self, status, info):
         from lexisync.services.tunnel.base import TunnelStatus
 
         if status == TunnelStatus.ONLINE:
             self._current_cloud_url_type = "public"
-
             if info.startswith("http"):
                 full_url = f"{info}?token={self.cloud_token}"
                 msg = _("Public Tunnel Active: {url}").format(url=full_url)
                 self._show_cloud_banner(msg, full_url, is_public=True)
+                self.cloud_dashboard.set_service_state(True, full_url)
             else:
                 msg = _("Public Tunnel Connected (Custom Domain)")
                 self._show_cloud_banner(msg, "", is_public=True)
+                self.cloud_dashboard.set_service_state(True, _("Custom Domain Active"))
 
         elif status == TunnelStatus.ERROR:
             logger.error(f"Tunnel Error: {info}")
@@ -860,12 +887,6 @@ class LexiSyncApp(QMainWindow):
     def _copy_and_notify(self, text):
         QApplication.clipboard().setText(text)
         self.update_statusbar(_("Collaboration link copied to clipboard."))
-
-    def _on_cloud_stopped(self):
-        self._current_cloud_url_type = "none"
-        if hasattr(self, "notification_banner"):
-            self.notification_banner.hide_banner()
-        self.update_statusbar(_("Cloud service stopped."))
 
     def _handle_web_update(self, data):
         """处理来自 Web 端的修改请求"""
@@ -1709,6 +1730,16 @@ class LexiSyncApp(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.history_dock)
         self.history_dock.hide()
 
+        # Cloud Dashboard
+        self.cloud_dashboard = CloudDashboardPanel(self)
+        self.cloud_dock = QDockWidget(_("Cloud Collaboration"), self)
+        self.cloud_dock.setObjectName("cloudDashboardDock")
+        self.cloud_dock.setWidget(self.cloud_dashboard)
+
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.cloud_dock)
+        self.tabifyDockWidget(self.details_dock, self.cloud_dock)
+        self.details_dock.raise_()  # 默认显示编辑面板
+
         # Load Plugin Docks
         if hasattr(self, "plugin_manager"):
             dock_definitions = self.plugin_manager.run_hook("register_dock_widgets")
@@ -1783,6 +1814,23 @@ class LexiSyncApp(QMainWindow):
 
         self.history_panel.locate_requested.connect(self._locate_history_item)
 
+        self.cloud_dashboard.toggle_btn.clicked.connect(self.toggle_cloud_service)
+        self.cloud_dashboard.resolve_approval_signal.connect(
+            lambda req_id, apprv: self.web_service.resolve_approval(req_id, apprv) if self.web_service else None
+        )
+        self.cloud_dashboard.track_user_signal.connect(lambda ts_id: self.select_sheet_row_by_id(ts_id, see=True))
+        self.cloud_dashboard.kick_user_signal.connect(
+            lambda u: self.web_service.kick_user(u) if self.web_service else None
+        )
+        self.cloud_dashboard.ban_ip_signal.connect(lambda ip: self.web_service.ban_ip(ip) if self.web_service else None)
+
+        def _open_user_mgr():
+            from lexisync.dialogs.cloud_user_manager_dialog import CloudUserManagerDialog
+
+            CloudUserManagerDialog(self, self).exec()
+
+        self.cloud_dashboard.open_user_manager_signal.connect(_open_user_mgr)
+
         # 5. Create Actions
         # File Explorer Panel Action
         self.action_toggle_file_explorer = self.file_explorer_dock.toggleViewAction()
@@ -1819,6 +1867,11 @@ class LexiSyncApp(QMainWindow):
         self.action_toggle_history_panel.setText(_("History Panel"))
         self.panels_menu.addAction(self.action_toggle_history_panel)
 
+        # Cloud Panel Action
+        self.action_toggle_cloud_panel = self.cloud_dock.toggleViewAction()
+        self.action_toggle_cloud_panel.setText(_("Cloud Dashboard"))
+        self.panels_menu.addAction(self.action_toggle_cloud_panel)
+
         if self.default_window_state is None:
             self.default_window_state = self.saveState()
 
@@ -1835,6 +1888,7 @@ class LexiSyncApp(QMainWindow):
             self.file_explorer_dock,
             self.glossary_dock,
             self.details_dock,
+            self.cloud_dock,
             self.context_dock,
             self.tm_dock,
             self.comment_status_dock,
@@ -1843,10 +1897,6 @@ class LexiSyncApp(QMainWindow):
         for dock in docks_to_show:
             if dock:
                 dock.setVisible(True)
-
-        if hasattr(self, "history_dock"):
-            self.history_dock.hide()
-            self.history_dock.setFloating(True)
 
         main_width = self.size().width()
         main_height = self.size().height()

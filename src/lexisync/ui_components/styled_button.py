@@ -96,7 +96,18 @@ class StyledButton(QPushButton):
             "weight": font_weight or "500",
         }
 
+        self._current_size_config = size_config
+        self._current_font_config = font_config
+
         self._apply_css(palette, size_config, font_config)
+
+    def set_btn_type(self, btn_type="default"):
+        if btn_type in self.PRESETS:
+            preset = self.PRESETS[btn_type]
+            palette = self.generate_palette(preset["base"]) if "base" in preset else preset
+        else:
+            palette = self.PRESETS["default"]
+        self._apply_css(palette, self._current_size_config, self._current_font_config)
 
     def setToolTip(self, text):
         self._tooltip_text = text

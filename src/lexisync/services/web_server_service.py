@@ -143,7 +143,18 @@ class ConnectionManager:
     def get_online_users(self) -> list[dict]:
         seen: dict[str, dict] = {}
         for info in self._ws_user.values():
-            seen[info["name"]] = {"name": info["name"], "role": info["role"]}
+            username = info["name"]
+            editing_ts_id = None
+            for ts_id, editors in self.active_editors.items():
+                if username in editors:
+                    editing_ts_id = ts_id
+                    break
+            seen[username] = {
+                "name": username,
+                "role": info["role"],
+                "ip": info.get("ip", "Unknown"),
+                "editing_ts_id": editing_ts_id,
+            }
         return list(seen.values())
 
     def cleanup_user_editors(self, username: str) -> list[str]:
@@ -187,6 +198,9 @@ class WebServerSignals(QObject):
     server_stopped = Signal()
     ai_translate_requested = Signal(str)
     approval_requested = Signal(str, str, str)
+    user_list_changed = Signal(list)
+    audit_logged = Signal(dict)
+    user_focus_changed = Signal(str, str)  # username, ts_id
 
 
 # ─── Web Server Service ────────────────────────────────────────────────────────
@@ -211,6 +225,7 @@ class WebServerService(QThread):
 
         self.tunnel_manager = TunnelManager()
         self.audit_log = AuditLog()
+        self.banned_ips = set(app_instance.config.get("banned_ips", []))
 
         self.update_auth_data(
             app_instance.config.get("cloud_users", []),
@@ -300,6 +315,9 @@ class WebServerService(QThread):
         return data
 
     async def _check_approval(self, request: Request, context_info: str) -> None:
+        ip = self._get_client_ip(request)
+        if ip in self.banned_ips:
+            raise HTTPException(status_code=403, detail="Your IP is banned.")
         if not self.require_approval:
             return
         ip = self._get_client_ip(request)
@@ -435,8 +453,13 @@ class WebServerService(QThread):
             role = session["role"]
             perms = get_effective_permissions(session, self.cloud_groups)
 
+            client_ip = websocket.client.host if websocket.client else "unknown"
+            session["ip"] = client_ip
+
             self.ws_manager.active_connections.append(websocket)
             self.ws_manager._ws_user[id(websocket)] = session
+
+            self.signals.user_list_changed.emit(self.ws_manager.get_online_users())
 
             await self.ws_manager.broadcast_json(
                 {
@@ -471,6 +494,9 @@ class WebServerService(QThread):
                                     "data": {"ts_id": ts_id, "user": username, "status": "editing"},
                                 }
                             )
+                            self.signals.user_focus_changed.emit(username, ts_id)
+                            self.signals.user_list_changed.emit(self.ws_manager.get_online_users())
+
                             self.signals.focus_changed.emit(ts_id, username)
 
                     elif action == "blur":
@@ -480,6 +506,8 @@ class WebServerService(QThread):
                             await self.ws_manager.broadcast_json(
                                 {"type": "FOCUS_UPDATE", "data": {"ts_id": ts_id, "user": username, "status": "idle"}}
                             )
+                            self.signals.user_focus_changed.emit(username, "")
+                            self.signals.user_list_changed.emit(self.ws_manager.get_online_users())
 
                     elif action == "chat" and "chat" in perms:
                         msg = data.get("message", "").strip()
@@ -500,6 +528,7 @@ class WebServerService(QThread):
                 departed = self.ws_manager.disconnect(websocket)
                 if departed:
                     self.ws_manager.cleanup_user_editors(departed["name"])
+                    self.signals.user_list_changed.emit(self.ws_manager.get_online_users())
                     await self.ws_manager.broadcast_json(
                         {
                             "type": "USER_DISCONNECTED",
@@ -680,6 +709,11 @@ class WebServerService(QThread):
                 raise HTTPException(status_code=403, detail="Language not in your permitted scope")
 
             data.user = session["name"]
+            log_entry = self.audit_log.record(
+                user=data.user, action="update", ts_id=data.ts_id, ip=self._get_client_ip(request)
+            )
+            self.signals.audit_logged.emit(log_entry)
+
             self.signals.update_requested.emit(data)
             return {"status": "ok"}
 
@@ -754,6 +788,41 @@ class WebServerService(QThread):
         """广播主机状态改变（切换文件、切换语言等），要求前端刷新"""
         self._run_async(self.ws_manager.broadcast_json({"type": "HOST_STATE_CHANGED", "data": {}}))
 
+    async def _kick_user_async(self, username: str):
+        to_close = []
+        for ws in self.ws_manager.active_connections:
+            info = self.ws_manager._ws_user.get(id(ws))
+            if info and info["name"] == username:
+                to_close.append(ws)
+        for ws in to_close:
+            try:
+                await ws.close(code=1008, reason="Kicked by host")
+            except Exception:
+                pass
+
+    def kick_user(self, username: str):
+        self._run_async(self._kick_user_async(username))
+
+    def ban_ip(self, ip: str):
+        self.banned_ips.add(ip)
+        app = self._get_main_app()
+        app.config["banned_ips"] = list(self.banned_ips)
+        app.save_config()
+
+        async def _kick_ip():
+            to_close = []
+            for ws in self.ws_manager.active_connections:
+                info = self.ws_manager._ws_user.get(id(ws))
+                if info and info.get("ip") == ip:
+                    to_close.append(ws)
+            for ws in to_close:
+                try:
+                    await ws.close(code=1008, reason="IP Banned")
+                except Exception:
+                    pass
+
+        self._run_async(_kick_ip())
+
     def run(self) -> None:
         self.is_running = True
         config = uvicorn.Config(self.fastapi_app, host=self.host, port=self.port, log_level="warning", loop="asyncio")
@@ -789,12 +858,10 @@ class WebServerService(QThread):
             self.tunnel_manager.start_tunnel(provider, self.port, tunnel_cfg.get(provider, {}))
 
         self.server.run()
+        self.signals.server_stopped.emit()
 
     def stop(self) -> None:
         self.is_running = False
         self.tunnel_manager.stop_tunnel()
         if hasattr(self, "server"):
             self.server.should_exit = True
-
-
-# --- END OF FILE web_server_service.py ---

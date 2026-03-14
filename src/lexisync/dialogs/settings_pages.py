@@ -831,7 +831,7 @@ class CloudSettingsPage(BaseSettingsPage):
         auth_desc = QLabel(_("Manage user accounts, roles, and generate temporary access tokens."))
         auth_desc.setStyleSheet("color: gray; font-size: 12px; margin-bottom: 5px;")
         auth_layout.addWidget(auth_desc)
-        self.manage_btn = QPushButton(_("Manage Users & Tokens..."))
+        self.manage_btn = QPushButton(_("Manage Users && Tokens..."))
         self.manage_btn.setMinimumHeight(36)
         self.manage_btn.clicked.connect(self._open_user_manager)
         auth_layout.addWidget(self.manage_btn)
