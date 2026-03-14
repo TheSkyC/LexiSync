@@ -47,12 +47,12 @@ SPDX-License-Identifier: Apache-2.0
 <script setup>
 import {onMounted, onBeforeUnmount} from 'vue'
 import {Top} from '@element-plus/icons-vue'
-import { showAuthDialog, checkSessionAndInit, t } from './stores/auth.js'
-import { isDark, showFab, scrollToTop, toastShow } from './stores/ui.js'
-import { 
-  currentPage, pageSize, total, onPageChange, onPageSizeChange, 
-  activeRowId, toggleActiveStatus, requestActiveAI, navigateNext, 
-  fetchData, searchQuery, tableData, cleanupProject 
+import {showAuthDialog, checkSessionAndInit, t} from './stores/auth.js'
+import {isDark, showFab, scrollToTop, toastShow} from './stores/ui.js'
+import {
+  currentPage, pageSize, total, onPageChange, onPageSizeChange,
+  activeRowId, toggleActiveStatus, requestActiveAI, navigateNext,
+  fetchData, searchQuery, tableData, cleanupProject
 } from './stores/project.js'
 import ToastContainer from './components/ToastContainer.vue'
 import AuthDialog from './components/AuthDialog.vue'

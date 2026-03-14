@@ -590,6 +590,7 @@ class WebServerService(QThread):
                 "Restricted scope",
                 "Languages",
                 "Files",
+                "Host state changed. Refreshing...",
             ]
             return {k: _(k) for k in keys}
 
@@ -641,6 +642,10 @@ class WebServerService(QThread):
                 data = [ts for ts in data if q in ts._search_cache]
             data = self._apply_status_filter(data, status)
             total = len(data)
+
+            if (page - 1) * page_size >= total:
+                page = 1
+
             start = (page - 1) * page_size
 
             items = []
@@ -744,6 +749,10 @@ class WebServerService(QThread):
         self._run_async(
             self.ws_manager.broadcast_json({"type": "FORCE_BLUR", "data": {"ts_id": ts_id, "initiator": initiator}})
         )
+
+    def broadcast_host_state_changed(self) -> None:
+        """广播主机状态改变（切换文件、切换语言等），要求前端刷新"""
+        self._run_async(self.ws_manager.broadcast_json({"type": "HOST_STATE_CHANGED", "data": {}}))
 
     def run(self) -> None:
         self.is_running = True

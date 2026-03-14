@@ -853,6 +853,10 @@ class LexiSyncApp(QMainWindow):
         self.notification_banner.add_action(_("Copy Link"), lambda: self._copy_and_notify(url), btn_type="success")
         self.notification_banner.add_action(_("Dismiss"), self.notification_banner.hide_banner, btn_type="default")
 
+    def _notify_web_state_changed(self):
+        if self.web_service and self.web_service.isRunning():
+            self.web_service.broadcast_host_state_changed()
+
     def _copy_and_notify(self, text):
         QApplication.clipboard().setText(text)
         self.update_statusbar(_("Collaboration link copied to clipboard."))
@@ -3042,6 +3046,7 @@ class LexiSyncApp(QMainWindow):
         self._run_and_refresh_with_validation()
         self.update_title()
         self.update_statusbar(_("Switched to file: {filename}").format(filename=self.get_current_active_filename()))
+        self._notify_web_state_changed()
 
     def get_current_active_filename(self):
         if self.is_project_mode and self.current_active_source_file_id:
@@ -3272,6 +3277,7 @@ class LexiSyncApp(QMainWindow):
                 persistent=True,
             )
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
+            self._notify_web_state_changed()
 
         except Exception as e:
             QMessageBox.critical(
@@ -3528,6 +3534,7 @@ class LexiSyncApp(QMainWindow):
 
                 self.mark_modified(False)
                 self.update_statusbar(_("Project rebuilt and synchronized successfully."))
+                self._notify_web_state_changed()
             else:
                 self.update_statusbar(_("Rebuild cancelled."))
 
@@ -6415,6 +6422,7 @@ class LexiSyncApp(QMainWindow):
                 persistent=True,
             )
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
+            self._notify_web_state_changed()
 
         except Exception as e:
             logger.error("--- AN EXCEPTION OCCURRED DURING TRANSLATION IMPORT ---", exc_info=True)
@@ -6558,13 +6566,14 @@ class LexiSyncApp(QMainWindow):
             )
 
             self.update_ui_state_after_file_load(file_or_project_loaded=True)
-
+            self._notify_web_state_changed()
         except Exception as e:
             QMessageBox.critical(
                 self, _("Reload Error"), _("Error reloading translatable text: {error}").format(error=e)
             )
             self.update_statusbar(_("Reload failed."), persistent=True)
         self.update_counts_display()
+        self._notify_web_state_changed()
 
     def show_ai_model_manager(self):
         from lexisync.dialogs.ai_model_manager_dialog import AIModelManagerDialog

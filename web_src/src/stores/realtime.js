@@ -13,7 +13,8 @@ import {
     getStatusKey,
     fetchProjectStats,
     fetchData,
-    activeRowId
+    activeRowId,
+    currentPage
 } from './project.js'
 import {toastShow} from './ui.js'
 import {registerWsSend} from './wsClient.js'
@@ -218,6 +219,13 @@ const handleWsMsg = (msg) => {
                 const el = document.getElementById('chatMessages')
                 if (el) el.scrollTop = el.scrollHeight
             })
+            break
+        case 'HOST_STATE_CHANGED':
+            toastShow(t('Host state changed. Refreshing...'), 'warning', 3000)
+            activeRowId.value = null
+            currentPage.value = 1 
+            tableData.value = []
+            fetchData()
             break
     }
 }
