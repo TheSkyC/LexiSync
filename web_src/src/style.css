@@ -273,3 +273,111 @@ html.dark .el-pagination {
     border-color: var(--border) !important;
     color: var(--text-main) !important;
 }
+
+/* ── 协作者头像气泡 (Editors Overlay) ── */
+.editors-overlay-fixed {
+    position: fixed;
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 20px;
+    padding: 3px 8px 3px 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+    white-space: nowrap;
+    /* 向上偏移，浮在输入框上边缘 */
+    transform: translateY(calc(-100% - 4px));
+}
+
+.editors-overlay-fixed .editor-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.editors-overlay-fixed .editor-chip + .editor-chip::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--text-muted, #94a3b8);
+    margin-right: 1px;
+}
+
+.editors-overlay-fixed .editor-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.editors-overlay-fixed .editor-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-sec, #64748b);
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── AI 状态标签 (AI Chip) ── */
+.ai-chip-fixed {
+    position: fixed;
+    z-index: 9001;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(124, 58, 237, 0.1);
+    border: 1px solid rgba(124, 58, 237, 0.38);
+    color: #7c3aed;
+    border-radius: 20px;
+    padding: 3px 10px 3px 7px;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.18);
+    pointer-events: none;
+    white-space: nowrap;
+    transform: translateY(calc(-100% - 4px));
+    font-size: 12px;
+    font-weight: 600;
+}
+
+html.dark .ai-chip-fixed {
+    background: rgba(167, 139, 250, 0.14);
+    border-color: rgba(167, 139, 250, 0.45);
+    color: #a78bfa;
+}
+
+.ai-chip-sparkle {
+    display: inline-block;
+    animation: ai-sparkle 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes ai-sparkle {
+    from {
+        opacity: 0.55;
+        transform: scale(0.88);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1.14);
+    }
+}
+
+/* ── 动画效果 ── */
+.overlay-fade-enter-active, .overlay-fade-leave-active {
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.overlay-fade-enter-from, .overlay-fade-leave-to {
+    opacity: 0;
+    transform: translateY(calc(-100% - 1px));
+}

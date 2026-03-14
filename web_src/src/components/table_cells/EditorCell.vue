@@ -12,7 +12,7 @@ SPDX-License-Identifier: Apache-2.0
       'has-conflict': !!row.conflictData,
       'is-ai-loading': row.isAiLoading,
     }"
-      :ref="cellRef"
+      ref="cellRef"
       :data-row-id="row.id"
       @mouseenter="hoveredRowId = row.id"
       @mouseleave="hoveredRowId = null"
@@ -115,16 +115,16 @@ const conflictOpenMap = reactive({})
 const {
   cellRef,
   overlayStyle,
-  overlayVisible: baseOverlayVisible,
-  isTargetRow
+  isTargetRow,
+  isHoveredOrActive
 } = useFloatingOverlay(props.row, hoveredRowId, activeRowId)
 
 // --- Computed ---
 const othersEditing = computed(() =>
     (props.row.active_editors || []).filter(name => name !== currentUser.name)
 )
-const overlayVisible = computed(() => baseOverlayVisible.value && othersEditing.value.length > 0)
-const aiChipVisible = computed(() => isTargetRow.value && props.row.isAiLoading)
+const overlayVisible = computed(() => isHoveredOrActive.value && othersEditing.value.length > 0)
+const aiChipVisible = computed(() => props.row.isAiLoading)
 
 // --- Watcher for focusing ---
 watch(itemToFocus, (newId) => {
