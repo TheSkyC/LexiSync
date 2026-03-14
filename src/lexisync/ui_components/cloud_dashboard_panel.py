@@ -166,6 +166,7 @@ class CloudDashboardPanel(QWidget):
 
         self.log_list.setWordWrap(True)
         self.log_list.installEventFilter(self)
+        self.log_list.itemDoubleClicked.connect(self._on_log_double_clicked)
 
         right_layout.addWidget(self.log_list)
         main_layout.addWidget(right_panel, 3)
@@ -174,6 +175,11 @@ class CloudDashboardPanel(QWidget):
         if obj == self.log_list and event.type() == QEvent.Enter:
             self.red_dot.hide()
         return super().eventFilter(obj, event)
+
+    def _on_log_double_clicked(self, item):
+        ts_id = item.data(Qt.UserRole)
+        if ts_id:
+            self.track_user_signal.emit(ts_id)
 
     def set_service_state(self, is_running, url=""):
         if is_running:
@@ -279,6 +285,7 @@ class CloudDashboardPanel(QWidget):
             return
 
         item = QListWidgetItem()
+        item.setData(Qt.UserRole, entry.get("ts_id"))
         self.log_list.insertItem(0, item)
 
         lbl = QLabel(msg)
@@ -293,6 +300,12 @@ class CloudDashboardPanel(QWidget):
         # 触发红点
         if not self.log_list.underMouse():
             self.red_dot.show()
+
+    def load_history(self, entries):
+        self.log_list.clear()
+        for entry in reversed(entries):
+            self.add_log(entry)
+        self.red_dot.hide()
 
     def _show_user_context_menu(self, pos):
         item = self.user_table.itemAt(pos)

@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import collections
 from datetime import datetime
 import hashlib
+import json
 import logging
 import os
 import socket
+import sqlite3
+import threading
 import time
 import uuid
 import weakref
@@ -29,7 +31,7 @@ from lexisync.services.permissions import (
 )
 from lexisync.services.tunnel import TunnelManager
 from lexisync.utils.localization import _
-from lexisync.utils.path_utils import get_resource_path
+from lexisync.utils.path_utils import get_app_data_path, get_resource_path
 
 logger = logging.getLogger(__name__)
 
@@ -83,22 +85,61 @@ class AITranslateRequest(BaseModel):
 
 
 class AuditLog:
-    def __init__(self, maxlen: int = MAX_AUDIT_ENTRIES):
-        self._entries: collections.deque[dict] = collections.deque(maxlen=maxlen)
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        self._lock = threading.Lock()
+        self._create_schema()
+
+    def _create_schema(self):
+        with self._lock, sqlite3.connect(self.db_path, check_same_thread=False) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS audit_logs (
+                    id TEXT PRIMARY KEY,
+                    timestamp TEXT,
+                    user TEXT,
+                    action TEXT,
+                    ts_id TEXT,
+                    old_value TEXT,
+                    new_value TEXT,
+                    ip TEXT,
+                    extra TEXT
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp)")
 
     def record(
         self,
         user: str,
         action: str,
-        ts_id: str | None = None,
-        old_value: str | None = None,
-        new_value: str | None = None,
+        ts_id: str = None,
+        old_value: str = None,
+        new_value: str = None,
         ip: str = "",
-        extra: dict | None = None,
+        extra: dict = None,
     ) -> dict:
-        entry: dict = {
-            "id": str(uuid.uuid4())[:8],
-            "timestamp": datetime.now().isoformat(timespec="seconds"),
+        entry_id = str(uuid.uuid4())[:8]
+        timestamp = datetime.now().isoformat()
+        extra_json = json.dumps(extra) if extra else None
+
+        with self._lock, sqlite3.connect(self.db_path, check_same_thread=False) as conn:
+            conn.execute(
+                """
+                INSERT INTO audit_logs (id, timestamp, user, action, ts_id, old_value, new_value, ip, extra)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (entry_id, timestamp, user, action, ts_id, old_value, new_value, ip, extra_json),
+            )
+
+            # 自动清理：保留最近 5000 条
+            conn.execute("""
+                DELETE FROM audit_logs WHERE id IN (
+                    SELECT id FROM audit_logs ORDER BY timestamp DESC LIMIT -1 OFFSET 5000
+                )
+            """)
+
+        return {
+            "id": entry_id,
+            "timestamp": timestamp,
             "user": user,
             "action": action,
             "ts_id": ts_id,
@@ -106,24 +147,32 @@ class AuditLog:
             "new_value": new_value,
             "ip": ip,
         }
-        if extra:
-            entry.update(extra)
-        self._entries.appendleft(entry)
-        return entry
 
-    def get_entries(self, limit: int = 200, user: str | None = None, action: str | None = None) -> list[dict]:
-        result = list(self._entries)
+    def get_entries(self, limit: int = 200, user: str = None, action: str = None) -> list[dict]:
+        query = "SELECT * FROM audit_logs WHERE 1=1"
+        params = []
         if user:
-            result = [e for e in result if e["user"] == user]
+            query += " AND user = ?"
+            params.append(user)
         if action:
-            result = [e for e in result if e["action"] == action]
-        return result[:limit]
+            query += " AND action = ?"
+            params.append(action)
+        query += " ORDER BY timestamp DESC LIMIT ?"
+        params.append(limit)
+
+        try:
+            with self._lock, sqlite3.connect(self.db_path, check_same_thread=False) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute(query, params)
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Failed to fetch audit logs: {e}")
+            return []
 
     def clear(self) -> None:
-        self._entries.clear()
-
-    def __len__(self) -> int:
-        return len(self._entries)
+        with self._lock, sqlite3.connect(self.db_path, check_same_thread=False) as conn:
+            conn.execute("DELETE FROM audit_logs")
 
 
 # ─── Connection Manager ────────────────────────────────────────────────────────
@@ -231,8 +280,14 @@ class WebServerService(QThread):
         self.pending_approvals: dict[str, asyncio.Event] = {}
         self.approval_results: dict[str, bool] = {}
 
+        if app_instance.is_project_mode:
+            audit_db_dir = os.path.join(app_instance.current_project_path, "metadata")
+            os.makedirs(audit_db_dir, exist_ok=True)
+            audit_db_path = os.path.join(audit_db_dir, "audit.db")
+        else:
+            audit_db_path = os.path.join(get_app_data_path(), "global_audit.db")
+        self.audit_log = AuditLog(audit_db_path)
         self.tunnel_manager = TunnelManager()
-        self.audit_log = AuditLog()
         self.banned_ips = set(app_instance.config.get("banned_ips", []))
 
         self.update_auth_data(

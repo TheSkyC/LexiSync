@@ -830,6 +830,10 @@ class LexiSyncApp(QMainWindow):
 
         self.cloud_dashboard.set_service_state(True, full_url)
 
+        if self.web_service:
+            history = self.web_service.audit_log.get_entries(limit=50)
+            self.cloud_dashboard.load_history(history)
+
         self.cloud_dock.show()
         self.cloud_dock.raise_()
 
