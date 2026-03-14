@@ -119,12 +119,12 @@ class CloudDashboardPanel(QWidget):
         self.user_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.user_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.user_table.customContextMenuRequested.connect(self._show_user_context_menu)
-        self.user_table.setStyleSheet("border: none;")
+        self.user_table.setFrameShape(QFrame.NoFrame)
         self.tabs.addTab(self.user_table, _("Online Users (0)"))
 
         # 审批列表
         self.approval_list = QListWidget()
-        self.approval_list.setStyleSheet("border: none; outline: none;")
+        self.approval_list.setFrameShape(QFrame.NoFrame)
         self.tabs.addTab(self.approval_list, _("Pending (0)"))
 
         mid_layout.addWidget(self.tabs)
@@ -159,9 +159,12 @@ class CloudDashboardPanel(QWidget):
         right_layout.addLayout(log_header)
 
         self.log_list = QListWidget()
-        self.log_list.setStyleSheet("border: none; outline: none; font-family: Consolas, monospace; font-size: 12px;")
+        self.log_list.setFrameShape(QFrame.NoFrame)
+        from PySide6.QtGui import QFont
+
+        self.log_list.setFont(QFont("Consolas", 11))
+
         self.log_list.setWordWrap(True)
-        # 鼠标进入日志区域时消除红点
         self.log_list.installEventFilter(self)
 
         right_layout.addWidget(self.log_list)
@@ -256,14 +259,18 @@ class CloudDashboardPanel(QWidget):
 
         def trunc(text, max_len=25):
             if not text:
-                return ""
-            text = str(text).replace("\n", " ")
+                return "<i>Empty</i>"
+            text = str(text).replace("\n", "↵").replace("<", "&lt;").replace(">", "&gt;")
             return text[:max_len] + "..." if len(text) > max_len else text
 
-        if action == "update":
+        if action == "update_text":
             old_v = trunc(entry.get("old_value", ""))
             new_v = trunc(entry.get("new_value", ""))
             msg = f"[{time_str}] <b>{user}</b>: <span style='color:#F56C6C; text-decoration:line-through;'>{old_v}</span> ➔ <span style='color:#67C23A;'>{new_v}</span>"
+        elif action == "update_status":
+            old_s = _(entry.get("old_value", "None"))
+            new_s = _(entry.get("new_value", "None"))
+            msg = f"[{time_str}] <b>{user}</b> {_('changed status')}: <span style='color:#909399;'>[{old_s}]</span> ➔ <span style='color:#E6A23C;'>[{new_s}]</span>"
         elif action == "login":
             msg = f"[{time_str}] <b>{user}</b> <span style='color:#409EFF;'>{_('joined the session')}</span>"
         elif action == "login_denied":
@@ -274,7 +281,6 @@ class CloudDashboardPanel(QWidget):
         item = QListWidgetItem()
         self.log_list.insertItem(0, item)
 
-        # 使用 QLabel 支持富文本
         lbl = QLabel(msg)
         lbl.setWordWrap(True)
         lbl.setStyleSheet("background: transparent; border: none;")

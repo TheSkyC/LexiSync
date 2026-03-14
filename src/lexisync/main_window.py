@@ -929,6 +929,32 @@ class LexiSyncApp(QMainWindow):
         if ts_obj.is_fuzzy != original_fuzzy:
             changed_fields.append("is_fuzzy")
 
+        if final_text != original_text:
+            changed_fields.append("translation")
+            if self.web_service:
+                log_entry = self.web_service.audit_log.record(
+                    user=data.user,
+                    action="update_text",
+                    ts_id=data.ts_id,
+                    old_value=original_text,
+                    new_value=final_text,
+                )
+                self.web_service.signals.audit_logged.emit(log_entry)
+
+        if ts_obj.is_reviewed != original_reviewed or ts_obj.is_fuzzy != original_fuzzy:
+            if ts_obj.is_reviewed != original_reviewed:
+                changed_fields.append("is_reviewed")
+            if ts_obj.is_fuzzy != original_fuzzy:
+                changed_fields.append("is_fuzzy")
+
+            if self.web_service:
+                old_status = "Reviewed" if original_reviewed else ("Fuzzy" if original_fuzzy else "None")
+                new_status = "Reviewed" if ts_obj.is_reviewed else ("Fuzzy" if ts_obj.is_fuzzy else "None")
+                log_entry = self.web_service.audit_log.record(
+                    user=data.user, action="update_status", ts_id=data.ts_id, old_value=old_status, new_value=new_status
+                )
+                self.web_service.signals.audit_logged.emit(log_entry)
+
         if changed_fields or len(affected_ids) > 1:
             self._update_view_for_ids({ts_obj.id})
             if ts_obj.id == self.current_selected_ts_id:

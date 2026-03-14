@@ -279,7 +279,7 @@ class WebServerService(QThread):
         if perm not in get_effective_permissions(session, self.cloud_groups):
             raise HTTPException(status_code=403, detail=f"Permission denied: {perm}")
 
-    def _get_client_ip(self, request: Request) -> str:
+    def _get_client_ip(self, request) -> str:
         raw = (
             request.headers.get("CF-Connecting-IP")
             or request.headers.get("X-Forwarded-For")
@@ -461,11 +461,10 @@ class WebServerService(QThread):
             role = session["role"]
             perms = get_effective_permissions(session, self.cloud_groups)
 
-            client_ip = websocket.client.host if websocket.client else "unknown"
-            session["ip"] = client_ip
-
-            self.ws_manager.active_connections.append(websocket)
-            self.ws_manager._ws_user[id(websocket)] = session
+            client_ip = self._get_client_ip(websocket)
+            session_copy = session.copy()
+            session_copy["ip"] = client_ip
+            self.ws_manager._ws_user[id(websocket)] = session_copy
 
             self.signals.user_list_changed.emit(self.ws_manager.get_online_users())
 
@@ -715,13 +714,7 @@ class WebServerService(QThread):
             scope = get_effective_scope(session, self.cloud_groups)
             if not scope_allows_language(scope, main_app.current_target_language):
                 raise HTTPException(status_code=403, detail="Language not in your permitted scope")
-
             data.user = session["name"]
-            log_entry = self.audit_log.record(
-                user=data.user, action="update", ts_id=data.ts_id, ip=self._get_client_ip(request)
-            )
-            self.signals.audit_logged.emit(log_entry)
-
             self.signals.update_requested.emit(data)
             return {"status": "ok"}
 
