@@ -206,6 +206,14 @@ class WebServerSignals(QObject):
 # ─── Web Server Service ────────────────────────────────────────────────────────
 
 
+class ImmutableStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            response.headers["Cache-Control"] = "public, max-weight=31536000, immutable"
+        return response
+
+
 class WebServerService(QThread):
     def __init__(self, app_instance):
         super().__init__()
@@ -734,7 +742,7 @@ class WebServerService(QThread):
         if os.path.exists(web_path):
             assets_path = os.path.join(web_path, "assets")
             if os.path.exists(assets_path):
-                app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+                app.mount("/assets", ImmutableStaticFiles(directory=assets_path), name="assets")
 
             @app.get("/")
             async def index():
