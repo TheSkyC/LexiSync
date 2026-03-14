@@ -738,7 +738,10 @@ class WebServerService(QThread):
 
             @app.get("/")
             async def index():
-                return FileResponse(os.path.join(web_path, "index.html"))
+                return FileResponse(
+                    os.path.join(web_path, "index.html"),
+                    headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache"},
+                )
 
             app.mount("/", StaticFiles(directory=web_path), name="web_root")
 
