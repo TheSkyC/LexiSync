@@ -1,3 +1,4 @@
+# --- START OF FILE web_server_service.py ---
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -12,10 +13,9 @@ import time
 import uuid
 import weakref
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Security, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.security import APIKeyQuery
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from PySide6.QtCore import QObject, QThread, Signal
@@ -34,12 +34,8 @@ from lexisync.utils.path_utils import get_resource_path
 logger = logging.getLogger(__name__)
 
 MAX_AUDIT_ENTRIES = 2000
-
-# Focus locks older than this (seconds) will be evicted by the background cleaner.
 FOCUS_LOCK_TIMEOUT = 120.0
-# How often the cleanup coroutine runs (seconds).
 FOCUS_CLEANUP_INTERVAL = 30.0
-
 
 # ─── Auth Utils ────────────────────────────────────────────────────────────────
 
@@ -87,8 +83,6 @@ class AITranslateRequest(BaseModel):
 
 
 class AuditLog:
-    """Thread-safe in-memory audit log backed by a bounded deque."""
-
     def __init__(self, maxlen: int = MAX_AUDIT_ENTRIES):
         self._entries: collections.deque[dict] = collections.deque(maxlen=maxlen)
 
@@ -117,12 +111,7 @@ class AuditLog:
         self._entries.appendleft(entry)
         return entry
 
-    def get_entries(
-        self,
-        limit: int = 200,
-        user: str | None = None,
-        action: str | None = None,
-    ) -> list[dict]:
+    def get_entries(self, limit: int = 200, user: str | None = None, action: str | None = None) -> list[dict]:
         result = list(self._entries)
         if user:
             result = [e for e in result if e["user"] == user]
@@ -143,9 +132,8 @@ class AuditLog:
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
-        # active_editors[ts_id][username] = float  ← unix timestamp of the last focus action
         self.active_editors: dict[str, dict[str, float]] = {}
-        self._ws_user: dict[int, dict] = {}  # id(ws) → session dict
+        self._ws_user: dict[int, dict] = {}
 
     def disconnect(self, websocket: WebSocket) -> dict | None:
         if websocket in self.active_connections:
@@ -188,7 +176,7 @@ class WebServerSignals(QObject):
     server_started = Signal(str)
     server_stopped = Signal()
     ai_translate_requested = Signal(str)
-    approval_requested = Signal(str, str, str)  # req_id, ip, context
+    approval_requested = Signal(str, str, str)
 
 
 # ─── Web Server Service ────────────────────────────────────────────────────────
@@ -204,7 +192,6 @@ class WebServerService(QThread):
         self.is_running = False
         self.loop: asyncio.AbstractEventLoop | None = None
 
-        # Session store: session_id → full session dict (name, role, groups, scope, …)
         self.sessions: dict[str, dict] = {}
 
         self.require_approval = app_instance.config.get("cloud_require_approval", True)
@@ -226,8 +213,6 @@ class WebServerService(QThread):
         self.fastapi_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
         self._setup_routes()
 
-    # ── Public helpers ─────────────────────────────────────────────────────────
-
     def update_auth_data(self, users: list, tokens: list, groups: list | None = None) -> None:
         self.cloud_users = users
         self.cloud_tokens = tokens
@@ -238,9 +223,15 @@ class WebServerService(QThread):
             self.approval_results[req_id] = approved
             self.pending_approvals[req_id].set()
 
-    # ── Internal helpers ───────────────────────────────────────────────────────
+    def _verify_session(self, request: Request) -> dict:
+        token = None
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:]
 
-    def _verify_session(self, token: str | None = Security(APIKeyQuery(name="token", auto_error=False))) -> dict:
+        if not token:
+            token = request.query_params.get("token")
+
         if not token or token not in self.sessions:
             raise HTTPException(status_code=401, detail="Invalid or expired session")
         return self.sessions[token]
@@ -252,7 +243,6 @@ class WebServerService(QThread):
         return app
 
     def _require(self, session: dict, perm: str) -> None:
-        """Raise HTTP 403 when the session lacks *perm*."""
         if perm not in get_effective_permissions(session, self.cloud_groups):
             raise HTTPException(status_code=403, detail=f"Permission denied: {perm}")
 
@@ -265,26 +255,24 @@ class WebServerService(QThread):
         return raw.split(",")[0].strip()
 
     def _build_user_session(self, user_data: dict) -> dict:
-        """Build a session dict from a cloud_users entry."""
         return {
             "name": user_data["username"],
             "role": user_data["role"],
             "groups": user_data.get("groups", []),
             "custom_permissions": user_data.get("custom_permissions") or {},
             "scope": user_data.get("scope"),
-            "token_permissions": None,  # not a token login
+            "token_permissions": None,
         }
 
     def _build_token_session(self, display_name: str, token_data: dict) -> dict:
-        """Build a session dict from a cloud_tokens entry."""
         return {
             "name": display_name,
             "role": token_data["role"],
             "groups": [],
             "custom_permissions": {},
             "scope": token_data.get("scope"),
-            "token_permissions": token_data.get("permissions"),  # None → use role defaults
-            "_token_value": token_data["token"],  # for audit
+            "token_permissions": token_data.get("permissions"),
+            "_token_value": token_data["token"],
         }
 
     @staticmethod
@@ -320,19 +308,7 @@ class WebServerService(QThread):
             raise HTTPException(status_code=403, detail="Connection rejected by host.")
         self.approved_ips.add(ip)
 
-    # ── Stale-focus cleanup ────────────────────────────────────────────────────
-
     async def _focus_cleanup_loop(self) -> None:
-        """
-        Background coroutine: every FOCUS_CLEANUP_INTERVAL seconds it scans
-        active_editors and evicts any lock whose timestamp is older than
-        FOCUS_LOCK_TIMEOUT.  For each eviction it broadcasts a FOCUS_UPDATE
-        so that connected clients update their UI.
-
-        This handles the edge case where a client's WebSocket connection stays
-        alive but the browser tab freezes or the user simply walks away without
-        blurring the input.
-        """
         while self.is_running:
             await asyncio.sleep(FOCUS_CLEANUP_INTERVAL)
             now = time.time()
@@ -343,17 +319,11 @@ class WebServerService(QThread):
                 stale_users = [u for u, ts in list(editors.items()) if now - ts > FOCUS_LOCK_TIMEOUT]
                 for username in stale_users:
                     editors.pop(username, None)
-                    logger.debug("Evicted stale focus lock: ts_id=%s user=%s", ts_id, username)
                     await self.ws_manager.broadcast_json(
-                        {
-                            "type": "FOCUS_UPDATE",
-                            "data": {"ts_id": ts_id, "user": username, "status": "idle"},
-                        }
+                        {"type": "FOCUS_UPDATE", "data": {"ts_id": ts_id, "user": username, "status": "idle"}}
                     )
                 if not editors:
                     self.ws_manager.active_editors.pop(ts_id, None)
-
-    # ── Route Setup ────────────────────────────────────────────────────────────
 
     def _setup_routes(self) -> None:
         app = self.fastapi_app
@@ -361,10 +331,7 @@ class WebServerService(QThread):
         @app.on_event("startup")
         async def _startup():
             self.loop = asyncio.get_running_loop()
-            # Launch background focus-lock cleaner
             asyncio.create_task(self._focus_cleanup_loop())
-
-        # ── Auth ──────────────────────────────────────────────────────────────
 
         @app.post("/api/v1/login")
         async def login_account(req: LoginRequest, request: Request):
@@ -375,12 +342,18 @@ class WebServerService(QThread):
                     session = self._build_user_session(u)
                     self.sessions[sid] = session
                     self.audit_log.record(
-                        user=u["username"],
-                        action="login",
-                        ip=self._get_client_ip(request),
-                        extra={"method": "account"},
+                        user=u["username"], action="login", ip=self._get_client_ip(request), extra={"method": "account"}
                     )
-                    return {"token": sid, "name": session["name"], "role": session["role"]}
+
+                    main_app = self._get_main_app()
+                    remember_token = f"{u['username']}:{main_app.cloud_token}"
+
+                    return {
+                        "token": sid,
+                        "name": session["name"],
+                        "role": session["role"],
+                        "remember_token": remember_token,
+                    }
             raise HTTPException(status_code=401, detail="Invalid username or password")
 
         @app.post("/api/v1/login-remembered")
@@ -410,53 +383,28 @@ class WebServerService(QThread):
             for t in self.cloud_tokens:
                 if t["token"] != req.token:
                     continue
-
-                # Expiry
                 if t.get("expires_at") and current_time > t["expires_at"]:
                     raise HTTPException(status_code=401, detail="Token has expired")
 
-                # IP whitelist
                 ip_whitelist = t.get("ip_whitelist")
                 if ip_whitelist:
                     import fnmatch as _fnm
 
                     if not any(_fnm.fnmatch(client_ip, pat) for pat in ip_whitelist):
-                        self.audit_log.record(
-                            user=req.display_name or "Unknown",
-                            action="login_denied",
-                            ip=client_ip,
-                            extra={"reason": "ip_not_whitelisted", "token": t["token"]},
-                        )
                         raise HTTPException(status_code=403, detail="Access denied: IP not whitelisted")
 
-                # Max-uses guard
                 max_uses = t.get("max_uses")
                 use_count = t.get("use_count", 0)
                 if max_uses and max_uses > 0:
                     if use_count >= max_uses:
                         raise HTTPException(status_code=403, detail="Token usage limit reached")
                     t["use_count"] = use_count + 1
-                    try:
-                        self._get_main_app().save_config()
-                    except Exception:
-                        pass  # best-effort persist
 
                 display_name = req.display_name.strip() or "Guest"
                 sid = str(uuid.uuid4())
                 session = self._build_token_session(display_name, t)
                 self.sessions[sid] = session
-
-                self.audit_log.record(
-                    user=display_name,
-                    action="login",
-                    ip=client_ip,
-                    extra={
-                        "method": "token",
-                        "uses_remaining": (max_uses - t.get("use_count", 0)) if max_uses else "∞",
-                    },
-                )
                 return {"token": sid, "name": display_name, "role": session["role"]}
-
             raise HTTPException(status_code=401, detail="Invalid access token")
 
         @app.get("/api/v1/me")
@@ -464,8 +412,6 @@ class WebServerService(QThread):
             perms = list(get_effective_permissions(session, self.cloud_groups))
             scope = get_effective_scope(session, self.cloud_groups)
             return {"name": session["name"], "role": session["role"], "permissions": perms, "scope": scope}
-
-        # ── WebSocket ──────────────────────────────────────────────────────────
 
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket, token: str | None = None):
@@ -508,8 +454,6 @@ class WebServerService(QThread):
                     elif action == "focus" and "translate" in perms:
                         ts_id = data.get("ts_id")
                         if ts_id:
-                            # Store current wall-clock time so the cleanup loop
-                            # can detect locks that have gone stale.
                             self.ws_manager.active_editors.setdefault(ts_id, {})[username] = time.time()
                             await self.ws_manager.broadcast_json(
                                 {
@@ -524,10 +468,7 @@ class WebServerService(QThread):
                         if ts_id:
                             self.ws_manager.active_editors.get(ts_id, {}).pop(username, None)
                             await self.ws_manager.broadcast_json(
-                                {
-                                    "type": "FOCUS_UPDATE",
-                                    "data": {"ts_id": ts_id, "user": username, "status": "idle"},
-                                }
+                                {"type": "FOCUS_UPDATE", "data": {"ts_id": ts_id, "user": username, "status": "idle"}}
                             )
 
                     elif action == "chat" and "chat" in perms:
@@ -555,8 +496,6 @@ class WebServerService(QThread):
                             "data": {"user": departed["name"], "online_users": self.ws_manager.get_online_users()},
                         }
                     )
-
-        # ── i18n ───────────────────────────────────────────────────────────────
 
         @app.get("/api/v1/i18n")
         async def get_i18n(session: dict = Depends(self._verify_session)):
@@ -636,7 +575,6 @@ class WebServerService(QThread):
                 "Username",
                 "Password",
                 "Remember Me",
-                # ── New keys added for permission/scope UI ──────────────────
                 "No chat permission",
                 "Scoped",
                 "Restricted scope",
@@ -644,8 +582,6 @@ class WebServerService(QThread):
                 "Files",
             ]
             return {k: _(k) for k in keys}
-
-        # ── Data Endpoints ─────────────────────────────────────────────────────
 
         @app.get("/api/v1/project")
         async def get_project(session: dict = Depends(self._verify_session)):
@@ -682,23 +618,17 @@ class WebServerService(QThread):
         ):
             main_app = self._get_main_app()
             scope = get_effective_scope(session, self.cloud_groups)
-
-            # ── Scope: language axis ───────────────────────────────────────────
             target_lang = main_app.current_target_language
             if not scope_allows_language(scope, target_lang):
                 return {"items": [], "total": 0}
-
-            # ── Scope: file axis ───────────────────────────────────────────────
             current_file = os.path.basename(main_app.current_file_path or "")
             if scope.get("files") and not scope_allows_file(scope, current_file):
                 return {"items": [], "total": 0}
 
             data = list(main_app.translatable_objects)
-
             if search:
                 q = search.lower()
                 data = [ts for ts in data if q in ts._search_cache]
-
             data = self._apply_status_filter(data, status)
             total = len(data)
             start = (page - 1) * page_size
@@ -722,7 +652,6 @@ class WebServerService(QThread):
 
         @app.post("/api/v1/update")
         async def update(data: TranslationUpdate, request: Request, session: dict = Depends(self._verify_session)):
-            # ── Fine-grained permission checks ─────────────────────────────────
             if data.new_text is not None:
                 self._require(session, "translate")
             if data.is_reviewed is True:
@@ -730,59 +659,20 @@ class WebServerService(QThread):
             if data.is_fuzzy is not None:
                 self._require(session, "fuzzy")
 
-            # ── Scope check ────────────────────────────────────────────────────
             main_app = self._get_main_app()
             scope = get_effective_scope(session, self.cloud_groups)
             if not scope_allows_language(scope, main_app.current_target_language):
                 raise HTTPException(status_code=403, detail="Language not in your permitted scope")
 
-            # ── Capture old value for audit before dispatching ─────────────────
-            old_text: str | None = None
-            if data.new_text is not None:
-                ts_obj = next((ts for ts in main_app.translatable_objects if ts.id == data.ts_id), None)
-                old_text = ts_obj.translation if ts_obj else None
-
             data.user = session["name"]
             self.signals.update_requested.emit(data)
-
-            # ── Audit entries ──────────────────────────────────────────────────
-            ip = self._get_client_ip(request)
-            if data.new_text is not None:
-                self.audit_log.record(
-                    user=session["name"],
-                    action="translate",
-                    ts_id=data.ts_id,
-                    old_value=old_text,
-                    new_value=data.new_text,
-                    ip=ip,
-                )
-            if data.is_reviewed is not None:
-                self.audit_log.record(
-                    user=session["name"],
-                    action="set_reviewed",
-                    ts_id=data.ts_id,
-                    new_value=str(data.is_reviewed),
-                    ip=ip,
-                )
-            if data.is_fuzzy is not None:
-                self.audit_log.record(
-                    user=session["name"],
-                    action="set_fuzzy",
-                    ts_id=data.ts_id,
-                    new_value=str(data.is_fuzzy),
-                    ip=ip,
-                )
-
             return {"status": "ok"}
 
         @app.post("/api/v1/ai-translate")
         async def ai_translate(req: AITranslateRequest, session: dict = Depends(self._verify_session)):
             self._require(session, "ai_translate")
             await self.ws_manager.broadcast_json(
-                {
-                    "type": "AI_STATUS_UPDATE",
-                    "data": {"ts_id": req.ts_id, "status": "loading", "user": session["name"]},
-                }
+                {"type": "AI_STATUS_UPDATE", "data": {"ts_id": req.ts_id, "status": "loading", "user": session["name"]}}
             )
             self.signals.ai_translate_requested.emit(req.ts_id)
             return {"status": "accepted"}
@@ -790,47 +680,6 @@ class WebServerService(QThread):
         @app.get("/api/v1/users")
         async def get_users(session: dict = Depends(self._verify_session)):
             return {"users": self.ws_manager.get_online_users()}
-
-        @app.get("/api/v1/audit")
-        async def get_audit(
-            limit: int = 100,
-            user_filter: str | None = None,
-            action_filter: str | None = None,
-            session: dict = Depends(self._verify_session),
-        ):
-            self._require(session, "view_audit")
-            entries = self.audit_log.get_entries(
-                limit=min(limit, 500),
-                user=user_filter or None,
-                action=action_filter or None,
-            )
-            return {"entries": entries, "total": len(entries)}
-
-        @app.get("/api/v1/locate")
-        async def locate(
-            ts_id: str,
-            status: str | None = None,
-            search: str | None = None,
-            page_size: int = 50,
-            session: dict = Depends(self._verify_session),
-        ):
-            main_app = self._get_main_app()
-            data = list(main_app.translatable_objects)
-            if search:
-                q = search.lower()
-                data = [ts for ts in data if q in ts._search_cache]
-            data = self._apply_status_filter(data, status)
-            for idx, ts in enumerate(data):
-                if ts.id == ts_id:
-                    return {
-                        "found": True,
-                        "page": idx // page_size + 1,
-                        "index": idx,
-                        "total_pages": (len(data) + page_size - 1) // page_size,
-                    }
-            return {"found": False, "page": None, "index": None}
-
-        # ── Static Files ───────────────────────────────────────────────────────
 
         web_path = get_resource_path("resources/web")
         if os.path.exists(web_path):
@@ -844,11 +693,16 @@ class WebServerService(QThread):
 
             app.mount("/", StaticFiles(directory=web_path), name="web_root")
 
-    # ── Broadcast helpers ──────────────────────────────────────────────────────
-
     def _run_async(self, coro) -> None:
         if self.is_running and self.loop and self.ws_manager.active_connections:
             asyncio.run_coroutine_threadsafe(coro, self.loop)
+
+    def broadcast_bulk_data_change(self, changes: list[dict], user: str = "Host") -> None:
+        if not changes:
+            return
+        self._run_async(
+            self.ws_manager.broadcast_json({"type": "BULK_DATA_UPDATE", "data": {"user": user, "changes": changes}})
+        )
 
     def broadcast_data_change(
         self,
@@ -868,60 +722,24 @@ class WebServerService(QThread):
         }
         self.broadcast_bulk_data_change([change_item], user)
 
-    def broadcast_bulk_data_change(self, changes: list[dict], user: str = "Host"):
-        """
-        Broadcasts a list of changes.
-        """
-        if not changes:
-            return
-
-        self._run_async(
-            self.ws_manager.broadcast_json(
-                {
-                    "type": "BULK_DATA_UPDATE",
-                    "data": {
-                        "user": user,
-                        "changes": changes,
-                    },
-                }
-            )
-        )
-
     def broadcast_ai_status(self, ts_id: str, status: str, user: str = "AI") -> None:
         self._run_async(
             self.ws_manager.broadcast_json(
-                {
-                    "type": "AI_STATUS_UPDATE",
-                    "data": {"ts_id": ts_id, "status": status, "user": user},
-                }
+                {"type": "AI_STATUS_UPDATE", "data": {"ts_id": ts_id, "status": status, "user": user}}
             )
         )
 
     def broadcast_force_blur(self, ts_id: str, initiator: str = "System") -> None:
         self.ws_manager.active_editors.pop(ts_id, None)
         self._run_async(
-            self.ws_manager.broadcast_json(
-                {
-                    "type": "FORCE_BLUR",
-                    "data": {"ts_id": ts_id, "initiator": initiator},
-                }
-            )
+            self.ws_manager.broadcast_json({"type": "FORCE_BLUR", "data": {"ts_id": ts_id, "initiator": initiator}})
         )
-
-    # ── Thread entry point ─────────────────────────────────────────────────────
 
     def run(self) -> None:
         self.is_running = True
-        config = uvicorn.Config(
-            self.fastapi_app,
-            host=self.host,
-            port=self.port,
-            log_level="warning",
-            loop="asyncio",
-        )
+        config = uvicorn.Config(self.fastapi_app, host=self.host, port=self.port, log_level="warning", loop="asyncio")
         self.server = uvicorn.Server(config)
 
-        # Detect local LAN IP
         ip = "127.0.0.1"
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -954,7 +772,10 @@ class WebServerService(QThread):
         self.server.run()
 
     def stop(self) -> None:
-        self.is_running = False  # signals _focus_cleanup_loop to exit
+        self.is_running = False
         self.tunnel_manager.stop_tunnel()
         if hasattr(self, "server"):
             self.server.should_exit = True
+
+
+# --- END OF FILE web_server_service.py ---
