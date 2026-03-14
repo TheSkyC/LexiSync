@@ -3626,7 +3626,7 @@ class LexiSyncApp(QMainWindow):
     def handle_pot_file_drop(self, pot_filepath):
         if not self.translatable_objects:
             if self.prompt_save_if_modified():
-                self.import_po_file_dialog_with_path(pot_filepath)
+                self.open_translation_file_with_path(pot_filepath)
             return
         from lexisync.dialogs.pot_drop_dialog import POTDropDialog
 
@@ -3635,7 +3635,7 @@ class LexiSyncApp(QMainWindow):
             if dialog.result == "update":
                 self.run_comparison_with_file(pot_filepath)
             elif dialog.result == "import" and self.prompt_save_if_modified():
-                self.import_po_file_dialog_with_path(pot_filepath)
+                self.open_translation_file_with_path(pot_filepath)
 
     def run_comparison_with_file(self, filepath):
         self._run_comparison_logic(filepath)

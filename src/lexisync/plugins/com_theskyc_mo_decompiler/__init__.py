@@ -113,9 +113,7 @@ class MODecompilerPlugin(PluginBase):
             if not self.main_window.prompt_save_if_modified():
                 return
 
-            if len(decompiled_files) == 1:
-                self.main_window.import_po_file_dialog_with_path(decompiled_files[0])
-            else:
+            if len(decompiled_files) > 1:
                 QMessageBox.information(
                     self.main_window,
                     self._("Batch Decompile Complete"),
@@ -123,7 +121,7 @@ class MODecompilerPlugin(PluginBase):
                         "{count} files were successfully decompiled. The application will now open the first file:\n\n{first_file}"
                     ).format(count=len(decompiled_files), first_file=os.path.basename(decompiled_files[0])),
                 )
-                self.main_window.import_po_file_dialog_with_path(decompiled_files[0])
+            self.main_window.open_translation_file_with_path(decompiled_files[0])
 
     def _handle_single_file(
         self, mo_path: str, batch_save_choice: str | None, batch_conflict_choice: str | None, is_batch_mode: bool
