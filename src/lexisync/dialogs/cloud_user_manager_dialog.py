@@ -8,6 +8,7 @@ import time
 import uuid
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
@@ -37,6 +38,10 @@ from PySide6.QtWidgets import (
 
 from lexisync.services.permissions import ALL_PERMISSIONS, DEFAULT_ROLE_PERMISSIONS
 from lexisync.utils.localization import _
+
+# ─── Constants ────────────────────────────────────────────────────────────────
+
+AVAILABLE_ROLES = ["admin", "reviewer", "translator", "viewer"]
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -130,17 +135,11 @@ class PermissionSelectorWidget(QWidget):
 
 
 class ScopeEditorWidget(QWidget):
-    """
-    Two text areas for language codes and file patterns.
-    Empty  → no restriction (None in the data model).
-    """
-
     def __init__(self, scope: dict | None = None, parent: QWidget | None = None):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # Language axis
         lang_grp = QGroupBox(_("Language Scope  (empty = all languages)"))
         lang_ly = QVBoxLayout(lang_grp)
         hint_lang = QLabel(_("One BCP-47 / locale code per line, e.g.  zh_CN  /  ja_JP"))
@@ -152,7 +151,6 @@ class ScopeEditorWidget(QWidget):
         lang_ly.addWidget(self.lang_edit)
         layout.addWidget(lang_grp)
 
-        # File axis
         file_grp = QGroupBox(_("File Scope  (empty = all files, supports wildcards)"))
         file_ly = QVBoxLayout(file_grp)
         hint_file = QLabel(_("One pattern per line.  Examples:  messages.po  /  *.py  /  ui_*.ts"))
@@ -165,7 +163,6 @@ class ScopeEditorWidget(QWidget):
         layout.addWidget(file_grp)
         layout.addStretch()
 
-        # Pre-fill
         if scope:
             langs = scope.get("languages")
             if langs:
@@ -203,7 +200,7 @@ class UserEditDialog(QDialog):
         root = QVBoxLayout(self)
         tabs = QTabWidget()
 
-        # ── Tab: Basic ────────────────────────────────────────────────────────
+        # ── Tab: Basic ──
         basic_w = QWidget()
         basic_l = QFormLayout(basic_w)
         basic_l.setRowWrapPolicy(QFormLayout.WrapAllRows)
@@ -218,13 +215,17 @@ class UserEditDialog(QDialog):
         basic_l.addRow(_("Password:"), self.w_password)
 
         self.w_role = QComboBox()
-        self.w_role.addItems(["admin", "reviewer", "translator", "viewer"])
+        self.w_role.addItems(AVAILABLE_ROLES)
         self.w_role.setCurrentText(self._user.get("role", "translator"))
         basic_l.addRow(_("Base Role:"), self.w_role)
 
+        self.w_active = QCheckBox(_("Account is active"))
+        self.w_active.setChecked(self._user.get("is_active", True))
+        basic_l.addRow("", self.w_active)
+
         tabs.addTab(basic_w, _("Basic"))
 
-        # ── Tab: Groups ───────────────────────────────────────────────────────
+        # ── Tab: Groups ──
         grp_w = QWidget()
         grp_l = QVBoxLayout(grp_w)
         grp_l.addWidget(QLabel(_("Group membership:")))
@@ -243,27 +244,24 @@ class UserEditDialog(QDialog):
         self.w_role.currentIndexChanged.connect(self._refresh_permission_previews)
         self.w_groups.itemChanged.connect(self._refresh_permission_previews)
 
-        # ── Tab: Permissions ───────────────────────────────
+        # ── Tab: Permissions ──
         cp_inner = QWidget()
         cp_l = QVBoxLayout(cp_inner)
         cp_l.addWidget(
             QLabel(
                 _(
-                    "These are applied ON TOP OF (or REMOVED FROM) the permissions\n"
-                    "that come from the user's role + group memberships."
+                    "These are applied ON TOP OF (or REMOVED FROM) the permissions\nthat come from the user's role + group memberships."
                 )
             )
         )
         custom = self._user.get("custom_permissions") or {}
 
-        # 1. 创建 Grant 区域
         grant_grp = QGroupBox(_("Extra Grant  ＋"))
         grant_layout = QVBoxLayout(grant_grp)
         self.w_grant = PermissionSelectorWidget(initial_grants=set(custom.get("grant", [])))
         grant_layout.addWidget(self.w_grant)
         cp_l.addWidget(grant_grp)
 
-        # 2. 创建 Revoke 区域
         revoke_grp = QGroupBox(_("Force Revoke  −"))
         revoke_layout = QVBoxLayout(revoke_grp)
         self.w_revoke = PermissionSelectorWidget(initial_grants=set(custom.get("revoke", [])))
@@ -275,7 +273,7 @@ class UserEditDialog(QDialog):
 
         self._refresh_permission_previews()
 
-        # ── Tab: Scope ────────────────────────────────────────────────────────
+        # ── Tab: Scope ──
         scope_inner = QWidget()
         sl = QVBoxLayout(scope_inner)
         self.w_scope = ScopeEditorWidget(self._user.get("scope"))
@@ -287,11 +285,9 @@ class UserEditDialog(QDialog):
         self._add_ok_cancel(root)
 
     def _refresh_permission_previews(self):
-        # 1. 获取角色基础权限
         role = self.w_role.currentText()
         inherited = set(DEFAULT_ROLE_PERMISSIONS.get(role, set()))
 
-        # 2. 叠加已选组的权限
         selected_group_ids = [
             self.w_groups.item(i).data(Qt.UserRole)
             for i in range(self.w_groups.count())
@@ -303,10 +299,9 @@ class UserEditDialog(QDialog):
             if group_data:
                 inherited.update(group_data.get("permissions", []))
 
-        # 3. 更新 Grant 列表的显示
         if hasattr(self, "w_grant"):
             current_manual = set(self.w_grant.get_selected())
-            current_manual.difference_update(inherited)  # 移除冗余
+            current_manual.difference_update(inherited)
             self.w_grant.set_data(current_manual, inherited)
 
     def _add_ok_cancel(self, layout: QVBoxLayout) -> None:
@@ -329,6 +324,7 @@ class UserEditDialog(QDialog):
         data: dict = {
             "username": self.w_username.text().strip(),
             "role": self.w_role.currentText(),
+            "is_active": self.w_active.isChecked(),
             "groups": selected_groups,
             "custom_permissions": {
                 "grant": self.w_grant.get_selected(),
@@ -348,9 +344,10 @@ class UserEditDialog(QDialog):
 
 
 class GroupEditDialog(QDialog):
-    def __init__(self, parent: QWidget, group_data: dict | None = None):
+    def __init__(self, parent: QWidget, group_data: dict | None, all_users: list[dict]):
         super().__init__(parent)
         self._group = group_data or {}
+        self._all_users = all_users
         self._is_new = group_data is None
         self.setWindowTitle(
             _("New Group") if self._is_new else _("Edit Group — {n}").format(n=self._group.get("name", ""))
@@ -362,7 +359,7 @@ class GroupEditDialog(QDialog):
         root = QVBoxLayout(self)
         tabs = QTabWidget()
 
-        # ── Tab: Basic ────────────────────────────────────────────────────────
+        # ── Tab: Basic ──
         basic_w = QWidget()
         basic_l = QFormLayout(basic_w)
         basic_l.setRowWrapPolicy(QFormLayout.WrapAllRows)
@@ -374,11 +371,10 @@ class GroupEditDialog(QDialog):
         self.w_desc = QLineEdit(self._group.get("description", ""))
         basic_l.addRow(_("Description:"), self.w_desc)
 
-        # Role preset shortcut
         preset_row = QHBoxLayout()
         self.w_preset = QComboBox()
         self.w_preset.addItem(_("— apply role preset —"), "")
-        for r in ["admin", "reviewer", "translator", "viewer"]:
+        for r in AVAILABLE_ROLES:
             self.w_preset.addItem(r, r)
         apply_btn = QPushButton(_("Apply"))
         apply_btn.clicked.connect(self._apply_preset)
@@ -387,7 +383,23 @@ class GroupEditDialog(QDialog):
         basic_l.addRow(_("Permission Preset:"), preset_row)
         tabs.addTab(basic_w, _("Basic"))
 
-        # ── Tab: Permissions ──────────────────────────────────────────────────
+        # ── Tab: Members ──
+        mem_w = QWidget()
+        mem_l = QVBoxLayout(mem_w)
+        mem_l.addWidget(QLabel(_("Select users to add to this group:")))
+        self.w_members = QListWidget()
+        gid = self._group.get("id")
+        for u in self._all_users:
+            item = QListWidgetItem(u["username"])
+            item.setData(Qt.UserRole, u["username"])
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            is_member = gid in u.get("groups", []) if gid else False
+            item.setCheckState(Qt.Checked if is_member else Qt.Unchecked)
+            self.w_members.addItem(item)
+        mem_l.addWidget(self.w_members)
+        tabs.addTab(mem_w, _("Members"))
+
+        # ── Tab: Permissions ──
         perm_inner = QWidget()
         pl = QVBoxLayout(perm_inner)
         self.w_perms = PermissionSelectorWidget(initial_grants=set(self._group.get("permissions", [])))
@@ -395,7 +407,7 @@ class GroupEditDialog(QDialog):
         pl.addStretch()
         tabs.addTab(_make_scroll(perm_inner), _("Permissions"))
 
-        # ── Tab: Scope ────────────────────────────────────────────────────────
+        # ── Tab: Scope ──
         scope_inner = QWidget()
         sl = QVBoxLayout(scope_inner)
         self.w_scope = ScopeEditorWidget(self._group.get("scope"))
@@ -422,14 +434,20 @@ class GroupEditDialog(QDialog):
         bar.addWidget(cn_btn)
         layout.addLayout(bar)
 
-    def get_data(self) -> dict:
-        return {
+    def get_data(self) -> tuple[dict, list[str]]:
+        group_dict = {
             "id": self._group.get("id", str(uuid.uuid4())),
             "name": self.w_name.text().strip(),
             "description": self.w_desc.text().strip(),
             "permissions": self.w_perms.get_selected(),
             "scope": self.w_scope.get_scope(),
         }
+        selected_users = [
+            self.w_members.item(i).data(Qt.UserRole)
+            for i in range(self.w_members.count())
+            if self.w_members.item(i).checkState() == Qt.Checked
+        ]
+        return group_dict, selected_users
 
 
 # ─── Token Generate Dialog ────────────────────────────────────────────────────
@@ -447,13 +465,13 @@ class TokenGenerateDialog(QDialog):
         root = QVBoxLayout(self)
         tabs = QTabWidget()
 
-        # ── Tab: Basic ────────────────────────────────────────────────────────
+        # ── Tab: Basic ──
         basic_w = QWidget()
         basic_l = QFormLayout(basic_w)
         basic_l.setRowWrapPolicy(QFormLayout.WrapAllRows)
 
         self.w_role = QComboBox()
-        self.w_role.addItems(["admin", "reviewer", "translator", "viewer"])
+        self.w_role.addItems(AVAILABLE_ROLES)
         basic_l.addRow(_("Base Role:"), self.w_role)
 
         self.w_exp = QComboBox()
@@ -478,7 +496,7 @@ class TokenGenerateDialog(QDialog):
 
         tabs.addTab(basic_w, _("Basic"))
 
-        # ── Tab: Security ─────────────────────────────────────────────────────
+        # ── Tab: Security ──
         sec_w = QWidget()
         sec_l = QVBoxLayout(sec_w)
 
@@ -498,14 +516,13 @@ class TokenGenerateDialog(QDialog):
         sec_l.addStretch()
         tabs.addTab(sec_w, _("Security"))
 
-        # ── Tab: Permissions ──────────────────────────────────────────────────
+        # ── Tab: Permissions ──
         perm_w = QWidget()
         perm_l = QVBoxLayout(perm_w)
         self.w_override_perms = QCheckBox(_("Override role with explicit permission list"))
         self.w_override_perms.setToolTip(
             _(
-                "When checked, the token ignores the role's default permissions\n"
-                "and uses exactly the permissions you select below."
+                "When checked, the token ignores the role's default permissions\nand uses exactly the permissions you select below."
             )
         )
         perm_l.addWidget(self.w_override_perms)
@@ -528,7 +545,7 @@ class TokenGenerateDialog(QDialog):
         )
         tabs.addTab(perm_w, _("Permissions"))
 
-        # ── Tab: Scope ────────────────────────────────────────────────────────
+        # ── Tab: Scope ──
         scope_inner = QWidget()
         sl = QVBoxLayout(scope_inner)
         self.w_scope = ScopeEditorWidget()
@@ -549,15 +566,12 @@ class TokenGenerateDialog(QDialog):
         root.addLayout(bar)
 
     def get_data(self) -> dict:
-        # IP list
         ip_text = self.w_ip.toPlainText().strip()
         ip_whitelist = [ip.strip() for ip in ip_text.splitlines() if ip.strip()] or None
 
-        # Expiry
         exp_secs = self.w_exp.currentData()
         expires_at = time.time() + exp_secs if exp_secs > 0 else None
 
-        # Permissions override
         permissions = self.w_perms.get_selected() if self.w_override_perms.isChecked() else None
 
         max_uses = self.w_max_uses.value()
@@ -585,18 +599,17 @@ class CloudUserManagerDialog(QDialog):
         self.resize(860, 620)
         self.setModal(True)
 
-        # Ensure config keys exist
         for key, default in [("cloud_users", []), ("cloud_tokens", []), ("cloud_groups", [])]:
             if key not in self.app.config:
                 self.app.config[key] = default
 
-        # Bootstrap default admin
         if not self.app.config["cloud_users"]:
             self.app.config["cloud_users"].append(
                 {
                     "username": "admin",
                     "password_hash": hash_password("admin"),
                     "role": "admin",
+                    "is_active": True,
                     "groups": [],
                     "custom_permissions": {},
                     "scope": None,
@@ -607,8 +620,7 @@ class CloudUserManagerDialog(QDialog):
                 self,
                 _("Notice"),
                 _(
-                    "No users found. A default 'admin' user has been created "
-                    "with password 'admin'. Please change it immediately."
+                    "No users found. A default 'admin' user has been created with password 'admin'. Please change it immediately."
                 ),
             )
 
@@ -617,6 +629,17 @@ class CloudUserManagerDialog(QDialog):
         self.groups: list[dict] = self.app.config["cloud_groups"]
 
         self._build_ui()
+
+    def _filter_table(self, table: QTableWidget, text: str):
+        text = text.lower()
+        for row in range(table.rowCount()):
+            match = False
+            for col in range(table.columnCount() - 1):  # Skip actions column
+                item = table.item(row, col)
+                if item and text in item.text().lower():
+                    match = True
+                    break
+            table.setRowHidden(row, not match)
 
     # ── UI assembly ───────────────────────────────────────────────────────────
 
@@ -647,13 +670,21 @@ class CloudUserManagerDialog(QDialog):
         w = QWidget()
         ly = QVBoxLayout(w)
 
-        self.tbl_users = QTableWidget(0, 4)
-        self.tbl_users.setHorizontalHeaderLabels([_("Username"), _("Role"), _("Groups"), _("Actions")])
+        search_ly = QHBoxLayout()
+        self.search_users = QLineEdit()
+        self.search_users.setPlaceholderText(_("Search users..."))
+        self.search_users.textChanged.connect(lambda text: self._filter_table(self.tbl_users, text))
+        search_ly.addWidget(self.search_users)
+        ly.addLayout(search_ly)
+
+        self.tbl_users = QTableWidget(0, 5)
+        self.tbl_users.setHorizontalHeaderLabels([_("Username"), _("Role"), _("Groups"), _("Status"), _("Actions")])
         hdr = self.tbl_users.horizontalHeader()
         hdr.setSectionResizeMode(0, QHeaderView.Stretch)
         hdr.setSectionResizeMode(1, QHeaderView.ResizeToContents)
         hdr.setSectionResizeMode(2, QHeaderView.Stretch)
         hdr.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        hdr.setSectionResizeMode(4, QHeaderView.ResizeToContents)
         self.tbl_users.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tbl_users.setEditTriggers(QAbstractItemView.NoEditTriggers)
         ly.addWidget(self.tbl_users)
@@ -678,6 +709,12 @@ class CloudUserManagerDialog(QDialog):
             gnames = ", ".join(g["name"] for g in self.groups if g["id"] in gids) or "—"
             self.tbl_users.setItem(idx, 2, QTableWidgetItem(gnames))
 
+            is_active = user.get("is_active", True)
+            status_text = _("Active") if is_active else _("Disabled")
+            status_item = QTableWidgetItem(status_text)
+            status_item.setForeground(QColor("green") if is_active else QColor("red"))
+            self.tbl_users.setItem(idx, 3, status_item)
+
             aw = QWidget()
             al = QHBoxLayout(aw)
             al.setContentsMargins(2, 2, 2, 2)
@@ -687,7 +724,8 @@ class CloudUserManagerDialog(QDialog):
             db.clicked.connect(lambda _, u=user["username"]: self._delete_user(u))
             al.addWidget(eb)
             al.addWidget(db)
-            self.tbl_users.setCellWidget(idx, 3, aw)
+            self.tbl_users.setCellWidget(idx, 4, aw)
+        self._filter_table(self.tbl_users, self.search_users.text())
 
     def _add_user(self) -> None:
         dlg = UserEditDialog(self, None, self.groups)
@@ -736,6 +774,13 @@ class CloudUserManagerDialog(QDialog):
         w = QWidget()
         ly = QVBoxLayout(w)
 
+        search_ly = QHBoxLayout()
+        self.search_groups = QLineEdit()
+        self.search_groups.setPlaceholderText(_("Search groups..."))
+        self.search_groups.textChanged.connect(lambda text: self._filter_table(self.tbl_groups, text))
+        search_ly.addWidget(self.search_groups)
+        ly.addLayout(search_ly)
+
         self.tbl_groups = QTableWidget(0, 3)
         self.tbl_groups.setHorizontalHeaderLabels([_("Name"), _("Description"), _("Actions")])
         hdr = self.tbl_groups.horizontalHeader()
@@ -772,31 +817,44 @@ class CloudUserManagerDialog(QDialog):
             al.addWidget(eb)
             al.addWidget(db)
             self.tbl_groups.setCellWidget(idx, 2, aw)
+        self._filter_table(self.tbl_groups, self.search_groups.text())
+
+    def _update_group_members(self, gid: str, members: list[str]):
+        for u in self.users:
+            u_groups = u.get("groups", [])
+            if u["username"] in members:
+                if gid not in u_groups:
+                    u_groups.append(gid)
+            elif gid in u_groups:
+                u_groups.remove(gid)
+            u["groups"] = u_groups
 
     def _add_group(self) -> None:
-        dlg = GroupEditDialog(self)
+        dlg = GroupEditDialog(self, None, self.users)
         if not dlg.exec():
             return
-        data = dlg.get_data()
-        if not data["name"]:
+        g_data, members = dlg.get_data()
+        if not g_data["name"]:
             QMessageBox.warning(self, _("Error"), _("Group name cannot be empty."))
             return
-        self.groups.append(data)
+        self.groups.append(g_data)
+        self._update_group_members(g_data["id"], members)
         self._save()
 
     def _edit_group(self, gid: str) -> None:
         g = next((g for g in self.groups if g["id"] == gid), None)
         if not g:
             return
-        dlg = GroupEditDialog(self, dict(g))
+        dlg = GroupEditDialog(self, dict(g), self.users)
         if not dlg.exec():
             return
-        data = dlg.get_data()
-        data["id"] = gid
+        g_data, members = dlg.get_data()
+        g_data["id"] = gid
         for i, gr in enumerate(self.groups):
             if gr["id"] == gid:
-                self.groups[i] = data
+                self.groups[i] = g_data
                 break
+        self._update_group_members(gid, members)
         self._save()
 
     def _delete_group(self, gid: str) -> None:
@@ -823,6 +881,13 @@ class CloudUserManagerDialog(QDialog):
         w = QWidget()
         ly = QVBoxLayout(w)
 
+        search_ly = QHBoxLayout()
+        self.search_tokens = QLineEdit()
+        self.search_tokens.setPlaceholderText(_("Search tokens..."))
+        self.search_tokens.textChanged.connect(lambda text: self._filter_table(self.tbl_tokens, text))
+        search_ly.addWidget(self.search_tokens)
+        ly.addLayout(search_ly)
+
         self.tbl_tokens = QTableWidget(0, 6)
         self.tbl_tokens.setHorizontalHeaderLabels(
             [_("Token"), _("Role"), _("Expires"), _("Uses"), _("IP Whitelist"), _("Description")]
@@ -843,10 +908,14 @@ class CloudUserManagerDialog(QDialog):
         gen_btn.clicked.connect(self._add_token)
         revoke_btn = QPushButton(_("Revoke Selected"))
         revoke_btn.clicked.connect(self._revoke_token)
+        revoke_exp_btn = QPushButton(_("Revoke Expired"))
+        revoke_exp_btn.clicked.connect(self._revoke_expired_tokens)
         link_btn = QPushButton(_("Copy Login Link"))
         link_btn.clicked.connect(self._copy_link)
+
         btns.addWidget(gen_btn)
         btns.addWidget(revoke_btn)
+        btns.addWidget(revoke_exp_btn)
         btns.addStretch()
         btns.addWidget(link_btn)
         ly.addLayout(btns)
@@ -878,6 +947,7 @@ class CloudUserManagerDialog(QDialog):
             ips = t.get("ip_whitelist")
             self.tbl_tokens.setItem(idx, 4, QTableWidgetItem(", ".join(ips) if ips else _("Any")))
             self.tbl_tokens.setItem(idx, 5, QTableWidgetItem(t.get("description", "")))
+        self._filter_table(self.tbl_tokens, self.search_tokens.text())
 
     def _add_token(self) -> None:
         dlg = TokenGenerateDialog(self, self.groups)
@@ -901,6 +971,23 @@ class CloudUserManagerDialog(QDialog):
         if QMessageBox.question(self, _("Confirm"), _("Revoke this token?")) == QMessageBox.Yes:
             self.tokens = [t for t in self.tokens if t["token"] != val]
             self._save()
+
+    def _revoke_expired_tokens(self) -> None:
+        now = time.time()
+        valid_tokens = []
+        revoked_count = 0
+        for t in self.tokens:
+            if t.get("expires_at") and t["expires_at"] < now:
+                revoked_count += 1
+            else:
+                valid_tokens.append(t)
+
+        if revoked_count > 0:
+            self.tokens = valid_tokens
+            self._save()
+            QMessageBox.information(self, _("Success"), _("Revoked {n} expired tokens.").format(n=revoked_count))
+        else:
+            QMessageBox.information(self, _("Info"), _("No expired tokens found."))
 
     def _copy_link(self) -> None:
         row = self.tbl_tokens.currentRow()
@@ -936,7 +1023,7 @@ class CloudUserManagerDialog(QDialog):
         fb.addWidget(QLabel(_("Action:")))
         self.w_audit_action = QComboBox()
         self.w_audit_action.addItem(_("All"), "")
-        for a in ["login", "login_denied", "translate", "set_reviewed", "set_fuzzy"]:
+        for a in ["login", "login_denied", "update_text", "update_status"]:
             self.w_audit_action.addItem(a, a)
         fb.addWidget(self.w_audit_action)
         refresh_btn = QPushButton(_("Refresh"))
