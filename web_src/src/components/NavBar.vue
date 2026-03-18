@@ -61,7 +61,7 @@ SPDX-License-Identifier: Apache-2.0
                 {{ t('Keyboard Shortcuts') }}
               </el-dropdown-item>
               <el-dropdown-item command="theme" :icon="isDark ? Sunny : Moon">
-                {{ t(isDark ? 'Light Mode' : 'Dark Mode') }}
+                {{ isDark ? t('Light Mode') : t('Dark Mode') }}
               </el-dropdown-item>
               <el-dropdown-item divided command="logout" :icon="SwitchButton" class="logout-item">
                 {{ t('Logout') }}

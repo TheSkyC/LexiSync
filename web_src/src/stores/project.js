@@ -29,11 +29,11 @@ export const progressPct = computed(() =>
     stats.total ? Math.round((stats.reviewed + stats.translated) / stats.total * 100) : 0
 )
 export const filterTabs = computed(() => [
-    {key: 'all', label: 'All', count: stats.total},
-    {key: 'untranslated', label: 'Untranslated', count: stats.untranslated},
-    {key: 'fuzzy', label: 'Fuzzy', count: stats.fuzzy},
-    {key: 'translated', label: 'Translated', count: stats.translated},
-    {key: 'reviewed', label: 'Reviewed', count: stats.reviewed},
+    {key: 'all', label: t('All'), count: stats.total},
+    {key: 'untranslated', label: t('Untranslated'), count: stats.untranslated},
+    {key: 'fuzzy', label: t('Fuzzy'), count: stats.fuzzy},
+    {key: 'translated', label: t('Translated'), count: stats.translated},
+    {key: 'reviewed', label: t('Reviewed'), count: stats.reviewed},
 ])
 
 export const getStatusKey = (r) => {

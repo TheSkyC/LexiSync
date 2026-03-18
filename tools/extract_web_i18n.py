@@ -1,28 +1,27 @@
-# Copyright (c) 2025, TheSkyC
-# SPDX-License-Identifier: Apache-2.0
-
 import os
 from pathlib import Path
 import re
 
 
 def generate_i18n_function():
-    # 自动定位项目根目录
     root_path = Path(__file__).parent.parent
     web_src_path = root_path / "web_src"
 
-    # 1. 定义匹配正则和排除目录
-    pattern = re.compile(r"(?<![\w.])(?:\$t|t)\(\s*(['\"])((?:[^\\]|\\.)*?)\1\s*\)")
-    EXCLUDE_DIRS = {"node_modules", "dist", ".git", ".idea", ".vscode"}
+    # 1. 增强版正则
+    # 允许 t( 后面有换行、空格
+    # 捕获组 2 是内容
+    # 结尾允许是 ) 或 , (兼容 t('key', {n:1}) )
+    pattern = re.compile(r"(?<![\w.])(?:\$t|t)\(\s*(['\"])((?:[^\\]|\\.)*?)\1", re.DOTALL)
 
+    EXCLUDE_DIRS = {"node_modules", "dist", ".git", ".idea", ".vscode", "assets"}
     unique_keys = set()
-    extensions = {".vue", ".js"}
+    extensions = {".vue", ".js", ".ts"}  # 增加 .ts 支持
 
     if not web_src_path.exists():
         print(f"❌ 错误: 找不到目录 {web_src_path}")
         return
 
-    print(f"🔍 正在扫描目录: {web_src_path}")
+    print("🔍 正在扫描 Web 源码...")
 
     for root, dirs, files in os.walk(web_src_path):
         dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
@@ -30,32 +29,35 @@ def generate_i18n_function():
             file_path = Path(root) / file
             if file_path.suffix in extensions:
                 try:
-                    with open(file_path, encoding="utf-8") as f:
+                    # 使用 utf-8-sig 兼容带 BOM 的文件
+                    with open(file_path, encoding="utf-8-sig") as f:
                         content = f.read()
-                        matches = pattern.findall(content)
-                        for _, text in matches:
+                        # 使用 finditer 遍历所有匹配项
+                        for match in pattern.finditer(content):
+                            text = match.group(2)
+                            # 还原转义
                             clean_text = text.replace("\\'", "'").replace('\\"', '"')
-                            unique_keys.add(clean_text)
+                            if clean_text.strip():
+                                unique_keys.add(clean_text)
                 except Exception as e:
                     print(f"⚠️ 读取失败 {file_path}: {e}")
 
-    sorted_keys = sorted(unique_keys)
+    sorted_keys = sorted(list(unique_keys))
 
-    # 2. 准备目标文件
+    # 2. 准备更新目标文件
     server_file = root_path / "src" / "lexisync" / "services" / "web_server_service.py"
     if not server_file.exists():
         print(f"❌ 错误: 找不到目标文件 {server_file}")
         return
 
-    # 统一换行符
     raw_content = server_file.read_text(encoding="utf-8")
     content = "\n".join(raw_content.splitlines())
 
-    # 3. 自动检测原有缩进
+    # 3. 自动检测缩进
     indent_match = re.search(r"^([ \t]*)@app\.get\(\"/api/v1/i18n\"\)", content, re.MULTILINE)
     current_indent = indent_match.group(1) if indent_match else "        "
 
-    # 4. 生成代码块（内部相对缩进）
+    # 4. 生成代码块
     base_lines = [
         '@app.get("/api/v1/i18n")',
         "async def get_i18n(user: dict = Depends(self._verify_session)):",
@@ -63,16 +65,16 @@ def generate_i18n_function():
         "    keys = [",
     ]
     for key in sorted_keys:
-        safe_key = key.replace('"', '\\"')
+        # 这里的转义是为了让字符串能安全地放在 Python 的双引号内
+        safe_key = key.replace("\\", "\\\\").replace('"', '\\"')
         base_lines.append(f'        "{safe_key}",')
     base_lines.append("    ]")
     base_lines.append("    # -- i18n_end --")
     base_lines.append("    return {k: _(k) for k in keys}")
 
-    # 5. 组装最终代码
     new_function_code = "\n".join([current_indent + line for line in base_lines])
 
-    # 6. 执行替换
+    # 5. 执行替换
     replacement_pattern = re.compile(
         r"^[ \t]*@app\.get\(\"/api/v1/i18n\"\)\n\s*async def get_i18n.*?return \{k: _\(k\) for k in keys\}",
         re.DOTALL | re.MULTILINE,
@@ -80,13 +82,11 @@ def generate_i18n_function():
 
     if replacement_pattern.search(content):
         new_content = replacement_pattern.sub(new_function_code, content, count=1)
-
         with open(server_file, "w", encoding="utf-8", newline="\n") as f:
             f.write(new_content)
-
-        print(f"✅ 成功: 已完美对齐缩进并更新 {len(sorted_keys)} 个词条。")
+        print(f"✅ 成功: 提取并更新了 {len(sorted_keys)} 个词条。")
     else:
-        print("⚠️ 错误: 无法匹配到函数区域。请检查代码中是否已有该函数。")
+        print("⚠️ 匹配失败，请检查函数格式。")
 
 
 if __name__ == "__main__":
