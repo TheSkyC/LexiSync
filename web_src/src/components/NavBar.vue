@@ -1,8 +1,3 @@
-<!--
-Copyright (c) 2025, TheSkyC
-SPDX-License-Identifier: Apache-2.0
--->
-
 <template>
   <nav class="navbar">
     <div class="navbar-left">
@@ -10,9 +5,7 @@ SPDX-License-Identifier: Apache-2.0
       <div class="lang-badge" v-if="project.source_lang">
         {{ project.source_lang }} <span class="sep">▶</span> {{ project.target_lang }}
       </div>
-      <!-- Role tag -->
       <el-tag size="small" type="info" style="margin-left: 10px;">{{ t(currentUser.role) }}</el-tag>
-      <!-- Scope restriction indicator -->
       <el-tooltip v-if="hasScopeRestriction" :content="scopeDescription" placement="bottom" :show-after="300">
         <el-tag size="small" type="warning" class="scope-badge">
           <el-icon style="margin-right:3px;"><Lock/></el-icon>
@@ -21,7 +14,7 @@ SPDX-License-Identifier: Apache-2.0
       </el-tooltip>
     </div>
 
-    <div class="collab-wrap" v-if="onlineUsersArray.length">
+    <div class="collab-wrap" v-if="onlineUsersArray.length" @click="isUsersOpen = true" style="cursor: pointer;">
       <el-tooltip v-for="u in onlineUsersArray.slice(0, 5)" :key="u.name" :content="u.name + ' (' + t(u.role) + ')'"
                   placement="bottom">
         <div class="collab-avatar" :style="{ background: avatarColor(u.name) }">{{
@@ -39,7 +32,7 @@ SPDX-License-Identifier: Apache-2.0
         <span class="ws-label">{{ t(wsStateLabel) }}</span>
       </div>
       
-<div class="nav-actions">
+      <div class="nav-actions">
         <el-badge :value="unreadChatCount" :max="99" :hidden="unreadChatCount === 0" class="chat-badge">
           <el-button :icon="ChatDotRound" @click="isChatOpen = !isChatOpen" circle :title="t('Chat')"></el-button>
         </el-badge>
@@ -54,6 +47,9 @@ SPDX-License-Identifier: Apache-2.0
           
           <template #dropdown>
             <el-dropdown-menu class="custom-nav-dropdown">
+              <el-dropdown-item command="users" :icon="User">
+                {{ t('Online Users') }}
+              </el-dropdown-item>
               <el-dropdown-item command="history" :icon="Clock">
                 {{ t('Audit Log') }}
               </el-dropdown-item>
@@ -61,7 +57,7 @@ SPDX-License-Identifier: Apache-2.0
                 {{ t('Keyboard Shortcuts') }}
               </el-dropdown-item>
               <el-dropdown-item command="theme" :icon="isDark ? Sunny : Moon">
-                {{ isDark ? t('Light Mode') : t('Dark Mode') }}
+                {{ t(isDark ? 'Light Mode' : 'Dark Mode') }}
               </el-dropdown-item>
               <el-dropdown-item divided command="logout" :icon="SwitchButton" class="logout-item">
                 {{ t('Logout') }}
@@ -76,10 +72,10 @@ SPDX-License-Identifier: Apache-2.0
 
 <script setup>
 import {computed} from 'vue'
-import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon, Lock, Clock, Key, MoreFilled} from '@element-plus/icons-vue'
+import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon, Lock, Clock, Key, MoreFilled, User} from '@element-plus/icons-vue'
 import {project, fetchData, fetchAuditHistory} from '../stores/project.js'
 import {currentUser, logout, t} from '../stores/auth.js'
-import {onlineUsersArray, wsState, wsStateLabel, isChatOpen, unreadChatCount} from '../stores/realtime.js'
+import {onlineUsersArray, wsState, wsStateLabel, isChatOpen, unreadChatCount, isUsersOpen} from '../stores/realtime.js'
 import {loading, isDark, toggleTheme, avatarColor, isHistoryOpen, isShortcutsOpen} from '../stores/ui.js'
 
 const hasScopeRestriction = computed(() => {
@@ -103,6 +99,9 @@ const openHistory = () => {
 
 const handleCommand = (command) => {
   switch (command) {
+    case 'users':
+      isUsersOpen.value = true
+      break
     case 'history':
       openHistory()
       break
@@ -239,12 +238,8 @@ const handleCommand = (command) => {
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: .35;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
 }
 
 .collab-wrap {
@@ -265,7 +260,6 @@ const handleCommand = (command) => {
   justify-content: center;
   border: 2px solid var(--card-bg);
   margin-left: -6px;
-  cursor: default;
   transition: transform .2s;
 }
 

@@ -4,6 +4,7 @@
  */
 
 import {ref, computed, nextTick, watch} from 'vue'
+import { ElMessageBox } from 'element-plus'
 import {sessionToken, currentUser, t, checkSessionAndInit, authFetch, hasPermission} from './auth.js'
 import {
     project,
@@ -34,6 +35,7 @@ export const onlineUsersArray = computed(() =>
 )
 
 export const isChatOpen = ref(false)
+export const isUsersOpen = ref(false)
 export const chatMessages = ref([])
 export const chatInput = ref('')
 export const unreadChatCount = ref(0)
@@ -46,19 +48,16 @@ let hasConnectedOnce = false
 const MAX_WS_RETRY = 8
 const INITIAL_RECONNECT_DELAY = 2000
 
-// 监听聊天窗口打开，重置未读数
 watch(isChatOpen, (isOpen) => {
     if (isOpen) unreadChatCount.value = 0
 })
 
-// 生成唯一的本地存储 Key，区分项目和用户
 const getChatStorageKey = () => {
     const pName = project.name || 'default'
     const uName = currentUser.name || 'anonymous'
     return `lexisync_chat_${pName}_${uName}`
 }
 
-// 加载本地聊天记录
 const loadChatHistory = () => {
     try {
         const saved = localStorage.getItem(getChatStorageKey())
@@ -68,10 +67,8 @@ const loadChatHistory = () => {
     }
 }
 
-// 保存聊天记录到本地
 const saveChatHistory = () => {
     try {
-        // 限制最多保存 200 条
         if (chatMessages.value.length > 200) {
             chatMessages.value = chatMessages.value.slice(-200)
         }
@@ -80,12 +77,90 @@ const saveChatHistory = () => {
     }
 }
 
-// 清除聊天记录
 export const clearChatHistory = () => {
     chatMessages.value = []
     try {
         localStorage.removeItem(getChatStorageKey())
     } catch (_) {
+    }
+}
+
+// 踢人功能
+export const kickUser = async (username) => {
+    if (currentUser.role !== 'admin') return
+    try {
+        const res = await authFetch('/api/v1/kick', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username})
+        })
+        if (!res.ok) throw new Error(t('Failed to kick user'))
+        toastShow(t('User kicked successfully'), 'success')
+    } catch (e) { toastShow(e.message, 'error') }
+}
+
+// 封禁 IP 功能
+export const banUserIp = async (ip, username) => {
+    if (currentUser.role !== 'admin') return
+    try {
+        await new Promise((resolve, reject) => {
+            ElMessageBox.confirm(
+                `${t('Are you sure you want to ban the IP for')} ${username}?`,
+                t('Warning'),
+                { 
+                    confirmButtonText: t('Yes'), 
+                    cancelButtonText: t('Cancel'), 
+                    type: 'warning',
+                    // 拦截关闭事件，将 Promise 的 resolve 权交接过来
+                    beforeClose: (action, instance, done) => {
+                        if (action === 'confirm') {
+                            instance.confirmButtonLoading = true
+                            resolve()
+                            done()
+                        } else {
+                            reject('cancel')
+                            done()
+                        }
+                    }
+                }
+            )
+
+            // 弹窗渲染后，立即注入 3 秒倒计时逻辑
+            setTimeout(() => {
+                const btn = document.querySelector('.el-message-box__btns .el-button--primary')
+                if (btn) {
+                    const originalText = btn.innerText
+                    let countdown = 3
+                    
+                    // 初始禁用状态
+                    btn.disabled = true
+                    btn.classList.add('is-disabled')
+                    btn.innerHTML = `<span>${originalText} (${countdown}s)</span>`
+
+                    // 开始倒计时
+                    const timer = setInterval(() => {
+                        countdown--
+                        if (countdown <= 0) {
+                            clearInterval(timer)
+                            // 倒计时结束，恢复按钮可用状态
+                            btn.disabled = false
+                            btn.classList.remove('is-disabled')
+                            btn.innerHTML = `<span>${originalText}</span>`
+                        } else {
+                            btn.innerHTML = `<span>${originalText} (${countdown}s)</span>`
+                        }
+                    }, 1000)
+                }
+            }, 10)
+        })
+
+        const res = await authFetch('/api/v1/ban', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ip, username})
+        })
+        if (!res.ok) throw new Error(t('Failed to ban IP'))
+        toastShow(t('IP banned successfully'), 'success')
+    } catch (e) { 
+        if (e !== 'cancel') toastShow(e.message, 'error') 
     }
 }
 
@@ -99,7 +174,7 @@ export const rebuildOnlineUsers = (list) => {
     if (!Array.isArray(list)) return
     const onlineNames = list.map(u => u.name)
     const next = {}
-    for (const u of list) next[u.name] = {role: u.role, editingId: onlineUsers.value[u.name]?.editingId ?? null}
+    for (const u of list) next[u.name] = {role: u.role, ip: u.ip, editingId: onlineUsers.value[u.name]?.editingId ?? null}
     onlineUsers.value = next
     for (const id in globalActiveEditors) {
         globalActiveEditors[id] = globalActiveEditors[id].filter(n => onlineNames.includes(n))
@@ -123,12 +198,12 @@ const handleWsMsg = (msg) => {
             let needs_stats_refresh = false;
 
             const isFromMe = String(user).trim() === String(currentUser.name).trim();
-
             changes.forEach(change => {
                 const item = tableData.value.find(r => r.id === change.ts_id);
                 if (item) {
                     const oldStatus = getStatusKey(item);
                     item.isAiLoading = false;
+            
                     if (change.new_text != null) {
                         if (activeRowId.value === item.id && !isFromMe) {
                             item.conflictData = {
@@ -156,7 +231,6 @@ const handleWsMsg = (msg) => {
                     needs_stats_refresh = true;
                 }
             });
-
             if (needs_stats_refresh) {
                 fetchProjectStats();
             }
@@ -210,7 +284,7 @@ const handleWsMsg = (msg) => {
             break
         case 'CHAT_MESSAGE':
             chatMessages.value.push(msg.data)
-            saveChatHistory() // 保存到本地
+            saveChatHistory()
             if (!isChatOpen.value && String(msg.data.user).trim() !== String(currentUser.name).trim()) {
                 unreadChatCount.value++
                 toastShow(`${msg.data.user}: ${msg.data.text}`, 'info', 3000)

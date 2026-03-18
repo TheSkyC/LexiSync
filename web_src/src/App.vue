@@ -43,7 +43,7 @@ SPDX-License-Identifier: Apache-2.0
 
     <ChatDrawer/>
     <HistoryDrawer/>
-  </div>
+    <UsersDrawer/> </div>
 </template>
 
 <script setup>
@@ -66,6 +66,7 @@ import TranslationTable from './components/TranslationTable.vue'
 import ChatDrawer from './components/ChatDrawer.vue'
 import HistoryDrawer from './components/HistoryDrawer.vue'
 import ShortcutsDialog from './components/ShortcutsDialog.vue'
+import UsersDrawer from './components/UsersDrawer.vue' // 导入 UsersDrawer
 
 onMounted(() => {
   checkSessionAndInit()
@@ -79,7 +80,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleWindowScroll)
   window.removeEventListener('resize', setVHToken)
   window.removeEventListener('keydown', handleKeyDown)
-  cleanupStore()
+  cleanupProject() // 原先的 cleanupStore 已更名为 cleanupProject
 })
 
 const setVHToken = () => {
@@ -126,8 +127,7 @@ const handleKeyDown = (e) => {
   }
   
   if (isCtrl && e.key.toLowerCase() === 'z') {
-    e.preventDefault();
-    if (isShift) triggerRedo(); else triggerUndo();
+    e.preventDefault(); if (isShift) triggerRedo(); else triggerUndo();
   }
   if (isCtrl && !isShift && e.key.toLowerCase() === 'y') {
     e.preventDefault(); triggerRedo();

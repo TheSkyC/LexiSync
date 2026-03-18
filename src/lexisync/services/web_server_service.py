@@ -81,6 +81,15 @@ class AITranslateRequest(BaseModel):
     ts_id: str
 
 
+class KickRequest(BaseModel):
+    username: str
+
+
+class BanRequest(BaseModel):
+    ip: str
+    username: str
+
+
 # ─── Audit Log ─────────────────────────────────────────────────────────────────
 
 
@@ -874,6 +883,24 @@ class WebServerService(QThread):
         @app.get("/api/v1/users")
         async def get_users(session: dict = Depends(self._verify_session)):
             return {"users": self.ws_manager.get_online_users()}
+
+        @app.post("/api/v1/kick")
+        async def kick_user_api(req: KickRequest, session: dict = Depends(self._verify_session)):
+            if session["role"] != "admin":
+                raise HTTPException(status_code=403, detail="Only admins can kick users")
+            if req.username == session["name"]:
+                raise HTTPException(status_code=400, detail="Cannot kick yourself")
+            self.kick_user(req.username)
+            return {"status": "ok"}
+
+        @app.post("/api/v1/ban")
+        async def ban_user_api(req: BanRequest, session: dict = Depends(self._verify_session)):
+            if session["role"] != "admin":
+                raise HTTPException(status_code=403, detail="Only admins can ban IPs")
+            if req.username == session["name"]:
+                raise HTTPException(status_code=400, detail="Cannot ban yourself")
+            self.ban_ip(req.ip)
+            return {"status": "ok"}
 
         web_path = get_resource_path("resources/web")
         if os.path.exists(web_path):
