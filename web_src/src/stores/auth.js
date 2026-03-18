@@ -1,4 +1,3 @@
-// --- START OF FILE src/stores/auth.js ---
 /*
  * Copyright (c) 2025, TheSkyC
  * SPDX-License-Identifier: Apache-2.0

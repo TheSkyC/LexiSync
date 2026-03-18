@@ -1,4 +1,3 @@
-# --- START OF FILE web_server_service.py ---
 # Copyright (c) 2025, TheSkyC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -8,6 +7,7 @@ import hashlib
 import json
 import logging
 import os
+import random
 import socket
 import sqlite3
 import threading
@@ -120,11 +120,11 @@ class AuditLog:
         self,
         user: str,
         action: str,
-        ts_id: str = None,
-        old_value: str = None,
-        new_value: str = None,
+        ts_id: str | None = None,
+        old_value: str | None = None,
+        new_value: str | None = None,
         ip: str = "",
-        extra: dict = None,
+        extra: dict | None = None,
     ) -> dict:
         entry_id = str(uuid.uuid4())[:8]
         timestamp = datetime.now().isoformat()
@@ -140,11 +140,13 @@ class AuditLog:
             )
 
             # 自动清理：保留最近 5000 条
-            conn.execute("""
-                DELETE FROM audit_logs WHERE id IN (
-                    SELECT id FROM audit_logs ORDER BY timestamp DESC LIMIT -1 OFFSET 5000
-                )
-            """)
+            if random.random() < 0.02:
+                with self._lock, sqlite3.connect(self.db_path, check_same_thread=False) as conn:
+                    conn.execute("""
+                        DELETE FROM audit_logs WHERE timestamp < (
+                            SELECT timestamp FROM audit_logs ORDER BY timestamp DESC LIMIT 1 OFFSET 5000
+                        )
+                    """)
 
         return {
             "id": entry_id,
@@ -343,22 +345,28 @@ class WebServerService(QThread):
             raise HTTPException(status_code=401, detail="Invalid or expired session")
         return self.sessions[token]
 
-    def _get_main_app(self):
+    def _get_main_app(self, raise_http_error=True):
         app = self.app_ref()
         if not app:
-            raise HTTPException(status_code=503, detail="Application unavailable")
+            if raise_http_error:
+                raise HTTPException(status_code=503, detail="Application unavailable")
+            return None
         return app
 
     def _require(self, session: dict, perm: str) -> None:
         if perm not in get_effective_permissions(session, self.cloud_groups):
             raise HTTPException(status_code=403, detail=f"Permission denied: {perm}")
 
-    def _get_client_ip(self, request) -> str:
-        raw = (
-            request.headers.get("CF-Connecting-IP")
-            or request.headers.get("X-Forwarded-For")
-            or (request.client.host if request.client else "unknown")
-        )
+    def _get_client_ip(self, request: Request) -> str:
+        app = self.app_ref()
+        if app and app.config.get("cloud_trust_proxy", False):
+            raw = (
+                request.headers.get("CF-Connecting-IP")
+                or request.headers.get("X-Forwarded-For")
+                or (request.client.host if request.client else "unknown")
+            )
+        else:
+            raw = request.client.host if request.client else "unknown"
         return raw.split(",")[0].strip()
 
     def _build_user_session(self, user_data: dict) -> dict:
@@ -434,6 +442,38 @@ class WebServerService(QThread):
                     )
                 if not editors:
                     self.ws_manager.active_editors.pop(ts_id, None)
+
+    async def _handle_history_action(self, user_sess: dict, action_type: str):
+        if user_sess["role"] == "viewer":
+            raise HTTPException(status_code=403, detail=f"Viewers cannot {action_type}.")
+
+        main_app = self._get_main_app()
+        stack = main_app.undo_history if action_type == "undo" else main_app.redo_history
+
+        if not stack:
+            raise HTTPException(status_code=400, detail=f"Nothing to {action_type}.")
+
+        top_record = stack[-1]
+        record_user = top_record.get("user", "Host")
+
+        if user_sess["role"] != "admin" and record_user != user_sess["name"]:
+            raise HTTPException(status_code=403, detail=f"Cannot {action_type}. The action belongs to '{record_user}'.")
+
+        req_id = str(uuid.uuid4())
+        event = asyncio.Event()
+        self.pending_actions[req_id] = event
+        self.signals.action_requested.emit(action_type, req_id)
+
+        try:
+            await asyncio.wait_for(event.wait(), timeout=10.0)
+        except TimeoutError as e:
+            self.pending_actions.pop(req_id, None)
+            raise HTTPException(status_code=500, detail="Host timeout") from e
+
+        result = self.action_results.pop(req_id, {"success": False, "error": "Unknown error"})
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return {"status": "ok"}
 
     def _setup_routes(self) -> None:
         app = self.fastapi_app
@@ -524,70 +564,12 @@ class WebServerService(QThread):
             return {"name": session["name"], "role": session["role"], "permissions": perms, "scope": scope}
 
         @app.post("/api/v1/undo")
-        async def trigger_undo(user: dict = Depends(self._verify_session)):
-            if user["role"] == "viewer":
-                raise HTTPException(status_code=403, detail="Viewers cannot undo.")
-
-            main_app = self._get_main_app()
-            if not main_app.undo_history:
-                raise HTTPException(status_code=400, detail="Nothing to undo.")
-
-            top_record = main_app.undo_history[-1]
-            record_user = top_record.get("user", "Host")
-
-            if user["role"] != "admin" and record_user != user["name"]:
-                raise HTTPException(
-                    status_code=403, detail=f"Cannot undo. The last action was performed by '{record_user}'."
-                )
-
-            req_id = str(uuid.uuid4())
-            event = asyncio.Event()
-            self.pending_actions[req_id] = event
-            self.signals.action_requested.emit("undo", req_id)
-
-            try:
-                await asyncio.wait_for(event.wait(), timeout=10.0)
-            except TimeoutError as e:
-                self.pending_actions.pop(req_id, None)
-                raise HTTPException(status_code=500, detail="Action timed out on host") from e
-
-            result = self.action_results.pop(req_id, {"success": False, "error": "Unknown error"})
-            if not result["success"]:
-                raise HTTPException(status_code=500, detail=result["error"])
-
-            return {"status": "ok"}
+        async def route_undo(session: dict = Depends(self._verify_session)):
+            return await self._handle_history_action(session, "undo")
 
         @app.post("/api/v1/redo")
-        async def trigger_redo(user: dict = Depends(self._verify_session)):
-            if user["role"] == "viewer":
-                raise HTTPException(status_code=403, detail="Viewers cannot redo.")
-
-            main_app = self._get_main_app()
-            if not main_app.redo_history:
-                raise HTTPException(status_code=400, detail="Nothing to redo.")
-
-            top_record = main_app.redo_history[-1]
-            record_user = top_record.get("user", "Host")
-
-            if user["role"] != "admin" and record_user != user["name"]:
-                raise HTTPException(status_code=403, detail=f"Cannot redo. The next action belongs to '{record_user}'.")
-
-            req_id = str(uuid.uuid4())
-            event = asyncio.Event()
-            self.pending_actions[req_id] = event
-            self.signals.action_requested.emit("redo", req_id)
-
-            try:
-                await asyncio.wait_for(event.wait(), timeout=10.0)
-            except TimeoutError as e:
-                self.pending_actions.pop(req_id, None)
-                raise HTTPException(status_code=500, detail="Action timed out on host") from e
-
-            result = self.action_results.pop(req_id, {"success": False, "error": "Unknown error"})
-            if not result["success"]:
-                raise HTTPException(status_code=500, detail=result["error"])
-
-            return {"status": "ok"}
+        async def route_redo(session: dict = Depends(self._verify_session)):
+            return await self._handle_history_action(session, "redo")
 
         @app.get("/api/v1/history")
         async def get_history(user: dict = Depends(self._verify_session)):
