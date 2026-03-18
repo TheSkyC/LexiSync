@@ -612,6 +612,12 @@ class WebServerService(QThread):
 
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket, token: str | None = None):
+            client_ip = self._get_client_ip(websocket)
+            if client_ip in self.banned_ips:
+                await websocket.accept()
+                await websocket.close(code=1008, reason="IP Banned")
+                return
+
             await websocket.accept()
             if not token or token not in self.sessions:
                 await websocket.close(code=1008)
@@ -964,6 +970,10 @@ class WebServerService(QThread):
         self._run_async(self.ws_manager.broadcast_json({"type": "HOST_STATE_CHANGED", "data": {}}))
 
     async def _kick_user_async(self, username: str):
+        tokens_to_remove = [tok for tok, sess in self.sessions.items() if sess["name"] == username]
+        for tok in tokens_to_remove:
+            self.sessions.pop(tok, None)
+
         to_close = []
         for ws in self.ws_manager.active_connections:
             info = self.ws_manager._ws_user.get(id(ws))
@@ -979,12 +989,23 @@ class WebServerService(QThread):
         self._run_async(self._kick_user_async(username))
 
     def ban_ip(self, ip: str):
+        protected_ips = ("127.0.0.1", "::1", "localhost")
+        if ip in protected_ips:
+            logger.warning(f"Security: Blocked an attempt to ban host IP: {ip}")
+            app = self._get_main_app()
+            app.update_statusbar(_("Cannot ban host IP: {ip}").format(ip=ip), persistent=True)
+            return
+
         self.banned_ips.add(ip)
         app = self._get_main_app()
         app.config["banned_ips"] = list(self.banned_ips)
         app.save_config()
 
         async def _kick_ip():
+            tokens_to_remove = [tok for tok, sess in self.sessions.items() if sess.get("ip") == ip]
+            for tok in tokens_to_remove:
+                self.sessions.pop(tok, None)
+
             to_close = []
             for ws in self.ws_manager.active_connections:
                 info = self.ws_manager._ws_user.get(id(ws))

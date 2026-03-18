@@ -5,7 +5,7 @@
 
 import {ref, computed, nextTick, watch} from 'vue'
 import { ElMessageBox } from 'element-plus'
-import {sessionToken, currentUser, t, checkSessionAndInit, authFetch, hasPermission} from './auth.js'
+import {sessionToken, currentUser, t, checkSessionAndInit, authFetch, hasPermission, logout} from './auth.js'
 import {
     project,
     tableData,
@@ -342,7 +342,8 @@ export const connectWebSocket = () => {
         if (wsState.value === 'disconnected') return
         if (ev.code === 1008) {
             wsState.value = 'disconnected'
-            checkSessionAndInit()
+            logout()
+            toastShow(t('You have been disconnected by the host.'), 'error', 5000)
             return
         }
         if (++wsAttempts > MAX_WS_RETRY) {
