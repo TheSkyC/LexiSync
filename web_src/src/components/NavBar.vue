@@ -39,31 +39,36 @@ SPDX-License-Identifier: Apache-2.0
         <span class="ws-label">{{ t(wsStateLabel) }}</span>
       </div>
       
-      <div class="nav-actions">
-        <!-- 快捷键帮助 -->
-        <el-button @click="isShortcutsOpen = true" circle :title="t('Keyboard Shortcuts')">
-          <el-icon><Key/></el-icon>
-        </el-button>
-
-        <!-- 历史记录 (审计日志) -->
-        <el-button @click="openHistory" circle :title="t('Audit Log')">
-          <el-icon><Clock/></el-icon>
-        </el-button>
-
-        <el-button @click="toggleTheme" circle :title="t(isDark ? 'Light Mode' : 'Dark Mode')">
-          <el-icon>
-            <Sunny v-if="isDark"/>
-            <Moon v-else/>
-          </el-icon>
-        </el-button>
-        
+<div class="nav-actions">
         <el-badge :value="unreadChatCount" :max="99" :hidden="unreadChatCount === 0" class="chat-badge">
           <el-button :icon="ChatDotRound" @click="isChatOpen = !isChatOpen" circle :title="t('Chat')"></el-button>
         </el-badge>
         
         <el-button type="primary" :icon="RefreshRight" @click="fetchData" circle :loading="loading"
                    :title="t('Refresh')"></el-button>
-        <el-button type="danger" :icon="SwitchButton" @click="logout" circle :title="t('Logout')"></el-button>
+
+        <el-dropdown trigger="click" @command="handleCommand" placement="bottom-end">
+          <el-button circle class="more-btn" :title="t('More options')">
+            <el-icon><MoreFilled/></el-icon>
+          </el-button>
+          
+          <template #dropdown>
+            <el-dropdown-menu class="custom-nav-dropdown">
+              <el-dropdown-item command="history" :icon="Clock">
+                {{ t('Audit Log') }}
+              </el-dropdown-item>
+              <el-dropdown-item command="shortcuts" :icon="Key">
+                {{ t('Keyboard Shortcuts') }}
+              </el-dropdown-item>
+              <el-dropdown-item command="theme" :icon="isDark ? Sunny : Moon">
+                {{ t(isDark ? 'Light Mode' : 'Dark Mode') }}
+              </el-dropdown-item>
+              <el-dropdown-item divided command="logout" :icon="SwitchButton" class="logout-item">
+                {{ t('Logout') }}
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
   </nav>
@@ -71,7 +76,7 @@ SPDX-License-Identifier: Apache-2.0
 
 <script setup>
 import {computed} from 'vue'
-import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon, Lock, Clock, Key} from '@element-plus/icons-vue'
+import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon, Lock, Clock, Key, MoreFilled} from '@element-plus/icons-vue'
 import {project, fetchData, fetchAuditHistory} from '../stores/project.js'
 import {currentUser, logout, t} from '../stores/auth.js'
 import {onlineUsersArray, wsState, wsStateLabel, isChatOpen, unreadChatCount} from '../stores/realtime.js'
@@ -94,6 +99,23 @@ const scopeDescription = computed(() => {
 const openHistory = () => {
   isHistoryOpen.value = true
   fetchAuditHistory()
+}
+
+const handleCommand = (command) => {
+  switch (command) {
+    case 'history':
+      openHistory()
+      break
+    case 'shortcuts':
+      isShortcutsOpen.value = true
+      break
+    case 'theme':
+      toggleTheme()
+      break
+    case 'logout':
+      logout()
+      break
+  }
 }
 </script>
 
@@ -283,6 +305,31 @@ const openHistory = () => {
   top: 4px;
   right: 4px;
   transform: translateY(-50%) translateX(50%) scale(0.85);
+}
+
+.more-btn {
+  transition: transform 0.2s ease, background-color 0.2s;
+}
+.more-btn:hover {
+  transform: rotate(90deg);
+}
+
+:global(.custom-nav-dropdown) {
+  border-radius: 8px !important;
+  padding: 4px !important;
+}
+
+:global(.custom-nav-dropdown .logout-item) {
+  color: var(--st-untranslated, #ef4444) !important;
+  font-weight: 500;
+}
+:global(.custom-nav-dropdown .logout-item:hover) {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  color: #dc2626 !important;
+}
+html.dark :global(.custom-nav-dropdown .logout-item:hover) {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
 }
 
 @media (max-width: 768px) {

@@ -80,7 +80,7 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 
 <script setup>
-import {Close, Clock, Refresh, RefreshLeft, RefreshRight} from '@element-plus/icons-vue'
+import {Close, Clock, Refresh, RefreshLeft, RefreshRight, User} from '@element-plus/icons-vue'
 import {t, hasPermission} from '../stores/auth.js'
 import {isHistoryOpen} from '../stores/ui.js'
 import {auditHistory, isHistoryLoading, fetchAuditHistory, triggerUndo, triggerRedo} from '../stores/project.js'
