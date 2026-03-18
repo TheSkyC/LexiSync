@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 <template>
   <ToastContainer/>
   <AuthDialog/>
+  <ShortcutsDialog/>
 
   <div class="app-wrap" v-if="!showAuthDialog">
     <NavBar/>
@@ -41,6 +42,7 @@ SPDX-License-Identifier: Apache-2.0
     </el-button>
 
     <ChatDrawer/>
+    <HistoryDrawer/>
   </div>
 </template>
 
@@ -52,7 +54,8 @@ import {isDark, showFab, scrollToTop, toastShow} from './stores/ui.js'
 import {
   currentPage, pageSize, total, onPageChange, onPageSizeChange,
   activeRowId, toggleActiveStatus, requestActiveAI, navigateNext,
-  fetchData, searchQuery, tableData, cleanupProject
+  fetchData, searchQuery, tableData, cleanupProject,
+  triggerUndo, triggerRedo
 } from './stores/project.js'
 import ToastContainer from './components/ToastContainer.vue'
 import AuthDialog from './components/AuthDialog.vue'
@@ -61,6 +64,8 @@ import ProgressBar from './components/ProgressBar.vue'
 import ToolBar from './components/ToolBar.vue'
 import TranslationTable from './components/TranslationTable.vue'
 import ChatDrawer from './components/ChatDrawer.vue'
+import HistoryDrawer from './components/HistoryDrawer.vue'
+import ShortcutsDialog from './components/ShortcutsDialog.vue'
 
 onMounted(() => {
   checkSessionAndInit()
@@ -99,33 +104,33 @@ const handleKeyDown = (e) => {
   const isShift = e.shiftKey
 
   if (isCtrl && e.key.toLowerCase() === 'r') {
-    e.preventDefault();
-    toggleActiveStatus('reviewed')
+    e.preventDefault(); toggleActiveStatus('reviewed')
   }
   if (isCtrl && !isShift && e.key.toLowerCase() === 'f') {
-    e.preventDefault();
-    toggleActiveStatus('fuzzy')
+    e.preventDefault(); toggleActiveStatus('fuzzy')
   }
   if (isCtrl && e.key === 'Enter') {
-    e.preventDefault();
-    navigateNext('untranslated')
+    e.preventDefault(); navigateNext('untranslated')
   }
   if (isCtrl && e.key.toLowerCase() === 't') {
-    e.preventDefault();
-    requestActiveAI()
+    e.preventDefault(); requestActiveAI()
   }
   if (e.key === 'F5') {
-    e.preventDefault();
-    fetchData()
+    e.preventDefault(); fetchData()
   }
-
   if (isCtrl && isShift && e.key.toLowerCase() === 'c') {
     const item = tableData.value.find(r => r.id === activeRowId.value)
     if (item) {
-      e.preventDefault();
-      navigator.clipboard.writeText(item.source);
-      toastShow(t('Source copied'), 'success')
+      e.preventDefault(); navigator.clipboard.writeText(item.source); toastShow(t('Source copied'), 'success')
     }
+  }
+  
+  if (isCtrl && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    if (isShift) triggerRedo(); else triggerUndo();
+  }
+  if (isCtrl && !isShift && e.key.toLowerCase() === 'y') {
+    e.preventDefault(); triggerRedo();
   }
 }
 </script>

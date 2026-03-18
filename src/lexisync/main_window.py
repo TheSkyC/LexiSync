@@ -769,6 +769,7 @@ class LexiSyncApp(QMainWindow):
         self.web_service.signals.user_list_changed.connect(self.cloud_dashboard.update_user_list)
         self.web_service.signals.audit_logged.connect(self.cloud_dashboard.add_log)
         self.web_service.signals.user_focus_changed.connect(self.cloud_dashboard.update_user_focus)
+        self.web_service.signals.action_requested.connect(self._handle_web_action)
 
         # 穿透服务信号
         self.web_service.tunnel_manager.status_changed.connect(self._on_tunnel_status_changed)
@@ -1019,6 +1020,20 @@ class LexiSyncApp(QMainWindow):
 
     def _handle_web_focus(self, ts_id, user):
         self.update_statusbar(_("{user} is editing...").format(user=user))
+
+    def _handle_web_action(self, action_type: str, req_id: str):
+        try:
+            if action_type == "undo":
+                self.undo_action(update_history_ui=True, from_web=True)
+            elif action_type == "redo":
+                self.redo_action(update_history_ui=True, from_web=True)
+
+            if self.web_service:
+                self.web_service.resolve_action(req_id, True)
+        except Exception as e:
+            logger.error(f"Web action {action_type} failed: {e}", exc_info=True)
+            if self.web_service:
+                self.web_service.resolve_action(req_id, False, str(e))
 
     def on_file_changed_externally(self, filepath):
         """当监控的文件在外部被修改时触发。"""
@@ -2275,7 +2290,7 @@ class LexiSyncApp(QMainWindow):
             icon = "layers.svg"
         return desc, icon
 
-    def add_to_undo_history(self, action_type, data, description=None, icon_type=None):
+    def add_to_undo_history(self, action_type, data, description=None, icon_type=None, user="Host"):
         if self.redo_history:
             self.redo_history.clear()
             self.action_redo.setEnabled(False)
@@ -2293,6 +2308,7 @@ class LexiSyncApp(QMainWindow):
             "description": description,
             "icon_type": icon_type,
             "file_id": self.current_active_source_file_id,
+            "user": user,
         }
 
         self.undo_history.append(record)
@@ -2426,29 +2442,29 @@ class LexiSyncApp(QMainWindow):
 
         return True, changed_ids, action_log
 
-    def undo_action(self, checked=False, update_history_ui=True):
-        # 优先处理编辑器内部的撤销
-        if hasattr(self, "details_panel"):
-            trans_edit = self.details_panel.translation_edit_text
-            if trans_edit.hasFocus() and trans_edit.document().isUndoAvailable():
-                trans_edit.undo()
-                return
+    def undo_action(self, checked=False, update_history_ui=True, from_web=False):
+        if not from_web:
+            if hasattr(self, "details_panel"):
+                trans_edit = self.details_panel.translation_edit_text
+                if trans_edit.hasFocus() and trans_edit.document().isUndoAvailable():
+                    trans_edit.undo()
+                    return
 
-        if hasattr(self, "comment_status_panel"):
-            comment_edit = self.comment_status_panel.comment_edit_text
-            if comment_edit.hasFocus() and comment_edit.document().isUndoAvailable():
-                comment_edit.undo()
-                return
+            if hasattr(self, "comment_status_panel"):
+                comment_edit = self.comment_status_panel.comment_edit_text
+                if comment_edit.hasFocus() and comment_edit.document().isUndoAvailable():
+                    comment_edit.undo()
+                    return
 
-        focused_widget = QApplication.focusWidget()
-        if focused_widget:
-            if isinstance(focused_widget, QLineEdit):
-                if focused_widget.isUndoAvailable():
+            focused_widget = QApplication.focusWidget()
+            if focused_widget:
+                if isinstance(focused_widget, QLineEdit):
+                    if focused_widget.isUndoAvailable():
+                        focused_widget.undo()
+                        return
+                elif isinstance(focused_widget, QTextEdit) and focused_widget.document().isUndoAvailable():
                     focused_widget.undo()
                     return
-            elif isinstance(focused_widget, QTextEdit) and focused_widget.document().isUndoAvailable():
-                focused_widget.undo()
-                return
 
         def do_undo():
             success, changed_ids, action_log = self._do_undo_core()
@@ -2494,31 +2510,34 @@ class LexiSyncApp(QMainWindow):
             if update_history_ui:
                 self._update_history_panel()
 
-        QTimer.singleShot(0, do_undo)
+        if from_web:
+            do_undo()
+        else:
+            QTimer.singleShot(0, do_undo)
 
-    def redo_action(self, checked=False, update_history_ui=True):
-        # 优先处理编辑器内部的撤销
-        if hasattr(self, "details_panel"):
-            trans_edit = self.details_panel.translation_edit_text
-            if trans_edit.hasFocus() and trans_edit.document().isRedoAvailable():
-                trans_edit.redo()
-                return
+    def redo_action(self, checked=False, update_history_ui=True, from_web=False):
+        if not from_web:
+            if hasattr(self, "details_panel"):
+                trans_edit = self.details_panel.translation_edit_text
+                if trans_edit.hasFocus() and trans_edit.document().isRedoAvailable():
+                    trans_edit.redo()
+                    return
 
-        if hasattr(self, "comment_status_panel"):
-            comment_edit = self.comment_status_panel.comment_edit_text
-            if comment_edit.hasFocus() and comment_edit.document().isRedoAvailable():
-                comment_edit.redo()
-                return
+            if hasattr(self, "comment_status_panel"):
+                comment_edit = self.comment_status_panel.comment_edit_text
+                if comment_edit.hasFocus() and comment_edit.document().isRedoAvailable():
+                    comment_edit.redo()
+                    return
 
-        focused_widget = QApplication.focusWidget()
-        if focused_widget:
-            if isinstance(focused_widget, QLineEdit):
-                if focused_widget.isRedoAvailable():
+            focused_widget = QApplication.focusWidget()
+            if focused_widget:
+                if isinstance(focused_widget, QLineEdit):
+                    if focused_widget.isRedoAvailable():
+                        focused_widget.redo()
+                        return
+                elif isinstance(focused_widget, QTextEdit) and focused_widget.document().isRedoAvailable():
                     focused_widget.redo()
                     return
-            elif isinstance(focused_widget, QTextEdit) and focused_widget.document().isRedoAvailable():
-                focused_widget.redo()
-                return
 
         def do_redo():
             success, changed_ids, action_log = self._do_redo_core()
@@ -2534,7 +2553,6 @@ class LexiSyncApp(QMainWindow):
             action_data = action_log["data"]
 
             if action_type == "single_change":
-                action_data["new_value"]
                 obj_id = action_data["string_id"]
                 val = action_data["new_value"]
                 self.update_statusbar(
@@ -2564,7 +2582,10 @@ class LexiSyncApp(QMainWindow):
             if update_history_ui:
                 self._update_history_panel()
 
-        QTimer.singleShot(0, do_redo)
+        if from_web:
+            do_redo()
+        else:
+            QTimer.singleShot(0, do_redo)
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -5455,6 +5476,12 @@ class LexiSyncApp(QMainWindow):
                         )
                     ids_to_update.add(other_ts_obj.id)
 
+        action_user = "Host"
+        if source.startswith("cloud_user:"):
+            action_user = source.split(":", 1)[1]
+        elif source == "ai_translation":
+            action_user = "AI"
+
         if collect_changes is not None:
             collect_changes.extend(all_changes_for_undo_list)
         else:
@@ -5471,9 +5498,11 @@ class LexiSyncApp(QMainWindow):
                         else _("AI Translation")
                     )
                     icon = "feather.svg"
-                    self.add_to_undo_history(undo_action_type, undo_data_payload, description=desc, icon_type=icon)
+                    self.add_to_undo_history(
+                        undo_action_type, undo_data_payload, description=desc, icon_type=icon, user=action_user
+                    )
                 else:
-                    self.add_to_undo_history(undo_action_type, undo_data_payload)
+                    self.add_to_undo_history(undo_action_type, undo_data_payload, user=action_user)
         self._update_view_for_ids(ids_to_update)
         self.mark_modified()
 

@@ -15,9 +15,7 @@ SPDX-License-Identifier: Apache-2.0
       <!-- Scope restriction indicator -->
       <el-tooltip v-if="hasScopeRestriction" :content="scopeDescription" placement="bottom" :show-after="300">
         <el-tag size="small" type="warning" class="scope-badge">
-          <el-icon style="margin-right:3px;">
-            <Lock/>
-          </el-icon>
+          <el-icon style="margin-right:3px;"><Lock/></el-icon>
           {{ t('Scoped') }}
         </el-tag>
       </el-tooltip>
@@ -42,6 +40,16 @@ SPDX-License-Identifier: Apache-2.0
       </div>
       
       <div class="nav-actions">
+        <!-- 快捷键帮助 -->
+        <el-button @click="isShortcutsOpen = true" circle :title="t('Keyboard Shortcuts')">
+          <el-icon><Key/></el-icon>
+        </el-button>
+
+        <!-- 历史记录 (审计日志) -->
+        <el-button @click="openHistory" circle :title="t('Audit Log')">
+          <el-icon><Clock/></el-icon>
+        </el-button>
+
         <el-button @click="toggleTheme" circle :title="t(isDark ? 'Light Mode' : 'Dark Mode')">
           <el-icon>
             <Sunny v-if="isDark"/>
@@ -63,11 +71,11 @@ SPDX-License-Identifier: Apache-2.0
 
 <script setup>
 import {computed} from 'vue'
-import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon, Lock} from '@element-plus/icons-vue'
-import {project, fetchData} from '../stores/project.js'
+import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon, Lock, Clock, Key} from '@element-plus/icons-vue'
+import {project, fetchData, fetchAuditHistory} from '../stores/project.js'
 import {currentUser, logout, t} from '../stores/auth.js'
 import {onlineUsersArray, wsState, wsStateLabel, isChatOpen, unreadChatCount} from '../stores/realtime.js'
-import {loading, isDark, toggleTheme, avatarColor} from '../stores/ui.js'
+import {loading, isDark, toggleTheme, avatarColor, isHistoryOpen, isShortcutsOpen} from '../stores/ui.js'
 
 const hasScopeRestriction = computed(() => {
   const s = currentUser.scope
@@ -82,6 +90,11 @@ const scopeDescription = computed(() => {
   if (s.files?.length) parts.push(`${t('Files')}: ${s.files.join(', ')}`)
   return parts.join('\n') || t('Restricted scope')
 })
+
+const openHistory = () => {
+  isHistoryOpen.value = true
+  fetchAuditHistory()
+}
 </script>
 
 <style scoped>

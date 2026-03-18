@@ -18,8 +18,9 @@ export const project = reactive({name: '', source_lang: '', target_lang: ''})
 export const stats = reactive({reviewed: 0, translated: 0, fuzzy: 0, untranslated: 0, total: 0})
 export const activeRowId = ref(null)
 export const globalActiveEditors = reactive({})
-
 export const itemToFocus = ref(null)
+export const auditHistory = reactive({ undo: [], redo: [] })
+export const isHistoryLoading = ref(false)
 
 let fetchController = null
 let searchTimer = null
@@ -54,16 +55,11 @@ export const fetchProjectStats = async () => {
         if (res.ok) {
             const d = await res.json()
             Object.assign(stats, {
-                total: d.total,
-                reviewed: d.reviewed,
-                translated: d.translated,
-                fuzzy: d.fuzzy,
-                untranslated: d.untranslated
+                total: d.total, reviewed: d.reviewed, translated: d.translated,
+                fuzzy: d.fuzzy, untranslated: d.untranslated
             })
         }
-    } catch (e) {
-        console.error('Failed to sync stats:', e)
-    }
+    } catch (e) { console.error('Failed to sync stats:', e) }
 }
 
 export const fetchData = async () => {
@@ -85,11 +81,8 @@ export const fetchData = async () => {
         const pData = await pRes.json()
         Object.assign(project, pData)
         Object.assign(stats, {
-            total: pData.total,
-            reviewed: pData.reviewed,
-            translated: pData.translated,
-            fuzzy: pData.fuzzy,
-            untranslated: pData.untranslated
+            total: pData.total, reviewed: pData.reviewed, translated: pData.translated,
+            fuzzy: pData.fuzzy, untranslated: pData.untranslated
         })
         const sData = await sRes.json()
         tableData.value = (sData.items || []).map(item => ({
@@ -108,12 +101,10 @@ export const fetchData = async () => {
 }
 
 export const updateTranslation = async (item, pIdx = 0) => {
-    // Guard: only users with translate permission may save
     if (!hasPermission('translate')) return
     wsSend({action: 'blur', ts_id: item.id})
     activeRowId.value = null
-
-    if (item.conflictData) return
+    if (item.conflictData) item.conflictData = null
 
     const text = item.is_plural ? item.plural_translations[pIdx] : item.translation
     try {
@@ -123,21 +114,12 @@ export const updateTranslation = async (item, pIdx = 0) => {
         })
         if (!res.ok) throw new Error()
         toastShow(t('Saved'), 'success', 1400)
-    } catch (_) {
-        toastShow(t('Save failed'), 'error')
-    }
+    } catch (_) { toastShow(t('Save failed'), 'error') }
 }
 
 export const toggleStatus = async (item, type) => {
-    // Check the specific permission required for each status type
-    if (type === 'reviewed' && !hasPermission('review')) {
-        toastShow(t('Permission Denied'), 'error')
-        return
-    }
-    if (type === 'fuzzy' && !hasPermission('fuzzy')) {
-        toastShow(t('Permission Denied'), 'error')
-        return
-    }
+    if (type === 'reviewed' && !hasPermission('review')) { toastShow(t('Permission Denied'), 'error'); return }
+    if (type === 'fuzzy' && !hasPermission('fuzzy')) { toastShow(t('Permission Denied'), 'error'); return }
 
     const payload = {ts_id: item.id}
     if (type === 'reviewed') {
@@ -153,10 +135,7 @@ export const toggleStatus = async (item, type) => {
             body: JSON.stringify(payload)
         })
         if (!res.ok) toastShow(res.status === 403 ? t('Permission Denied') : t('Sync failed'), 'error')
-    } catch (_) {
-        toastShow(t('Sync failed'), 'error');
-        fetchData()
-    }
+    } catch (_) { toastShow(t('Sync failed'), 'error'); fetchData() }
 }
 
 export const requestAITranslation = async (item) => {
@@ -164,73 +143,77 @@ export const requestAITranslation = async (item) => {
     wsSend({action: 'ai_start', ts_id: item.id})
 }
 
+export const triggerUndo = async () => {
+    if (!hasPermission('translate')) return
+    try {
+        const res = await authFetch('/api/v1/undo', { method: 'POST' })
+        if (!res.ok) throw new Error(res.status === 400 ? t('Nothing to undo') : t('Sync failed'))
+        toastShow(t('Undo successful'), 'success', 1500)
+        fetchAuditHistory()
+    } catch (e) { toastShow(e.message, 'warning') }
+}
+
+export const triggerRedo = async () => {
+    if (!hasPermission('translate')) return
+    try {
+        const res = await authFetch('/api/v1/redo', { method: 'POST' })
+        if (!res.ok) throw new Error(res.status === 400 ? t('Nothing to redo') : t('Sync failed'))
+        toastShow(t('Redo successful'), 'success', 1500)
+        fetchAuditHistory()
+    } catch (e) { toastShow(e.message, 'warning') }
+}
+
+export const fetchAuditHistory = async () => {
+    isHistoryLoading.value = true
+    try {
+        const res = await authFetch('/api/v1/history', { cache: 'no-store' })
+        if (res.ok) {
+            const data = await res.json()
+            auditHistory.undo = data.undo_history || []
+            auditHistory.redo = data.redo_history || []
+        }
+    } catch (e) { console.error('Failed to fetch history', e) }
+    finally { isHistoryLoading.value = false }
+}
+
 export const onEditorFocus = (row) => {
-    // Only users who can actually translate should broadcast focus / lock the row
     if (hasPermission('translate')) {
         activeRowId.value = row.id
         wsSend({action: 'focus', ts_id: row.id})
     }
 }
 
-export const setFilter = (key) => {
-    statusFilter.value = key;
-    currentPage.value = 1;
-    fetchData()
-}
-export const onPageChange = () => {
-    fetchData()
-    document.getElementById('mainScroll')?.scrollTo(0, 0)
-}
-export const onPageSizeChange = (newSize) => {
-    pageSize.value = newSize;
-    currentPage.value = 1;
-    fetchData()
-}
+export const setFilter = (key) => { statusFilter.value = key; currentPage.value = 1; fetchData() }
+export const onPageChange = () => { fetchData(); document.getElementById('mainScroll')?.scrollTo(0, 0) }
+export const onPageSizeChange = (newSize) => { pageSize.value = newSize; currentPage.value = 1; fetchData() }
 export const handleSearch = () => {
     clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => {
-        currentPage.value = 1;
-        fetchData()
-    }, 450)
+    searchTimer = setTimeout(() => { currentPage.value = 1; fetchData() }, 450)
 }
 
 export const navigateNext = async (mode = 'untranslated') => {
     const matchesMode = (item) =>
-        mode === 'any' ||
-        (mode === 'untranslated' && !item.translation) ||
-        (mode === 'unreviewed' && !item.is_reviewed)
+        mode === 'any' || (mode === 'untranslated' && !item.translation) || (mode === 'unreviewed' && !item.is_reviewed)
 
-    if (!tableData.value.length) {
-        toastShow(t('No more items found'), 'info');
-        return
-    }
+    if (!tableData.value.length) { toastShow(t('No more items found'), 'info'); return }
 
     const currentIdx = tableData.value.findIndex(r => r.id === activeRowId.value)
     const startIdx = currentIdx + 1
 
     for (let i = startIdx; i < tableData.value.length; i++) {
         const item = tableData.value[i]
-        if (matchesMode(item)) {
-            itemToFocus.value = item.id;
-            return
-        }
+        if (matchesMode(item)) { itemToFocus.value = item.id; return }
     }
 
     const totalPages = Math.ceil(total.value / pageSize.value)
-
-    if (currentPage.value >= totalPages) {
-        toastShow(t('Reached the last page, no more items found'), 'info');
-        return
-    }
+    if (currentPage.value >= totalPages) { toastShow(t('Reached the last page, no more items found'), 'info'); return }
 
     currentPage.value++
     await fetchData()
     toastShow(t('Jumped to next page'), 'info', 2500)
 
     const firstMatch = tableData.value.find(matchesMode)
-    if (firstMatch) {
-        itemToFocus.value = firstMatch.id;
-    }
+    if (firstMatch) itemToFocus.value = firstMatch.id;
 }
 
 export const toggleActiveStatus = (type) => {
@@ -241,7 +224,4 @@ export const requestActiveAI = () => {
     const item = tableData.value.find(r => r.id === activeRowId.value)
     if (item) requestAITranslation(item)
 }
-export const cleanupProject = () => {
-    clearTimeout(searchTimer);
-    fetchController?.abort()
-}
+export const cleanupProject = () => { clearTimeout(searchTimer); fetchController?.abort() }

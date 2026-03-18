@@ -250,6 +250,7 @@ class WebServerSignals(QObject):
     user_list_changed = Signal(list)
     audit_logged = Signal(dict)
     user_focus_changed = Signal(str, str)  # username, ts_id
+    action_requested = Signal(str, str)  # action_type, req_id
 
 
 # ─── Web Server Service ────────────────────────────────────────────────────────
@@ -299,7 +300,16 @@ class WebServerService(QThread):
         self.ws_manager = ConnectionManager()
         self.fastapi_app = FastAPI()
         self.fastapi_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+        self.pending_actions: dict[str, asyncio.Event] = {}
+        self.action_results: dict[str, dict] = {}
+
         self._setup_routes()
+
+    def resolve_action(self, req_id: str, success: bool, error: str = None) -> None:
+        if req_id in self.pending_actions:
+            self.action_results[req_id] = {"success": success, "error": error}
+            self.pending_actions[req_id].set()
 
     def update_auth_data(self, users: list, tokens: list, groups: list | None = None) -> None:
         self.cloud_users = users
@@ -504,6 +514,93 @@ class WebServerService(QThread):
             scope = get_effective_scope(session, self.cloud_groups)
             return {"name": session["name"], "role": session["role"], "permissions": perms, "scope": scope}
 
+        @app.post("/api/v1/undo")
+        async def trigger_undo(user: dict = Depends(self._verify_session)):
+            if user["role"] == "viewer":
+                raise HTTPException(status_code=403, detail="Viewers cannot undo.")
+
+            main_app = self._get_main_app()
+            if not main_app.undo_history:
+                raise HTTPException(status_code=400, detail="Nothing to undo.")
+
+            top_record = main_app.undo_history[-1]
+            record_user = top_record.get("user", "Host")
+
+            if user["role"] != "admin" and record_user != user["name"]:
+                raise HTTPException(
+                    status_code=403, detail=f"Cannot undo. The last action was performed by '{record_user}'."
+                )
+
+            req_id = str(uuid.uuid4())
+            event = asyncio.Event()
+            self.pending_actions[req_id] = event
+            self.signals.action_requested.emit("undo", req_id)
+
+            try:
+                await asyncio.wait_for(event.wait(), timeout=10.0)
+            except TimeoutError as e:
+                self.pending_actions.pop(req_id, None)
+                raise HTTPException(status_code=500, detail="Action timed out on host") from e
+
+            result = self.action_results.pop(req_id, {"success": False, "error": "Unknown error"})
+            if not result["success"]:
+                raise HTTPException(status_code=500, detail=result["error"])
+
+            return {"status": "ok"}
+
+        @app.post("/api/v1/redo")
+        async def trigger_redo(user: dict = Depends(self._verify_session)):
+            if user["role"] == "viewer":
+                raise HTTPException(status_code=403, detail="Viewers cannot redo.")
+
+            main_app = self._get_main_app()
+            if not main_app.redo_history:
+                raise HTTPException(status_code=400, detail="Nothing to redo.")
+
+            top_record = main_app.redo_history[-1]
+            record_user = top_record.get("user", "Host")
+
+            if user["role"] != "admin" and record_user != user["name"]:
+                raise HTTPException(status_code=403, detail=f"Cannot redo. The next action belongs to '{record_user}'.")
+
+            req_id = str(uuid.uuid4())
+            event = asyncio.Event()
+            self.pending_actions[req_id] = event
+            self.signals.action_requested.emit("redo", req_id)
+
+            try:
+                await asyncio.wait_for(event.wait(), timeout=10.0)
+            except TimeoutError as e:
+                self.pending_actions.pop(req_id, None)
+                raise HTTPException(status_code=500, detail="Action timed out on host") from e
+
+            result = self.action_results.pop(req_id, {"success": False, "error": "Unknown error"})
+            if not result["success"]:
+                raise HTTPException(status_code=500, detail=result["error"])
+
+            return {"status": "ok"}
+
+        @app.get("/api/v1/history")
+        async def get_history(user: dict = Depends(self._verify_session)):
+            main_app = self._get_main_app()
+
+            def format_history(stack):
+                return [
+                    {
+                        "type": item.get("type", ""),
+                        "description": item.get("description", "Unknown Action"),
+                        "timestamp": item.get("timestamp", ""),
+                        "icon_type": item.get("icon_type", "layers.svg"),
+                        "user": item.get("user", "Host"),
+                    }
+                    for item in reversed(stack)
+                ]
+
+            return {
+                "undo_history": format_history(main_app.undo_history),
+                "redo_history": format_history(main_app.redo_history),
+            }
+
         @app.websocket("/ws")
         async def websocket_endpoint(websocket: WebSocket, token: str | None = None):
             await websocket.accept()
@@ -520,7 +617,7 @@ class WebServerService(QThread):
             session_copy = session.copy()
             session_copy["ip"] = client_ip
             self.ws_manager._ws_user[id(websocket)] = session_copy
-
+            self.ws_manager.active_connections.append(websocket)
             self.signals.user_list_changed.emit(self.ws_manager.get_online_users())
 
             await self.ws_manager.broadcast_json(
@@ -586,7 +683,8 @@ class WebServerService(QThread):
                                 }
                             )
 
-            except WebSocketDisconnect:
+            except (WebSocketDisconnect, Exception) as e:
+                logger.debug(f"WebSocket disconnected or error: {e}")
                 departed = self.ws_manager.disconnect(websocket)
                 if departed:
                     self.ws_manager.cleanup_user_editors(departed["name"])

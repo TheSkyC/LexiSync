@@ -7,18 +7,32 @@ SPDX-License-Identifier: Apache-2.0
   <div class="toolbar">
     <el-input class="search-input" v-model="searchQuery" :placeholder="t('Search source, translation, comment...')"
               :prefix-icon="Search" clearable @input="handleSearch"></el-input>
+    
     <div class="filter-group">
       <button v-for="f in filterTabs" :key="f.key" :class="['filter-btn', { active: statusFilter === f.key }]"
               @click="setFilter(f.key)">
         {{ t(f.label) }} <span class="filter-count">{{ f.count }}</span>
       </button>
     </div>
+
+    <!-- 撤销/重做按钮组 -->
+    <div class="action-group" v-if="hasPermission('translate')">
+      <el-button-group>
+        <el-tooltip :content="t('Undo') + ' (Ctrl+Z)'" placement="bottom">
+          <el-button :icon="RefreshLeft" size="small" @click="triggerUndo"></el-button>
+        </el-tooltip>
+        <el-tooltip :content="t('Redo') + ' (Ctrl+Y)'" placement="bottom">
+          <el-button :icon="RefreshRight" size="small" @click="triggerRedo"></el-button>
+        </el-tooltip>
+      </el-button-group>
+    </div>
+
   </div>
 </template>
 <script setup>
-import {Search} from '@element-plus/icons-vue'
-import {searchQuery, handleSearch, filterTabs, statusFilter, setFilter} from '../stores/project.js'
-import {t} from '../stores/auth.js'
+import {Search, RefreshLeft, RefreshRight} from '@element-plus/icons-vue'
+import {searchQuery, handleSearch, filterTabs, statusFilter, setFilter, triggerUndo, triggerRedo} from '../stores/project.js'
+import {t, hasPermission} from '../stores/auth.js'
 </script>
 <style scoped>
 .toolbar {
@@ -102,6 +116,10 @@ html.dark .filter-btn:hover {
   color: #409EFF;
 }
 
+.action-group {
+  margin-left: auto;
+}
+
 /* 移动端搜索独占一行，按钮横向平滑滚动 */
 @media (max-width: 768px) {
   .toolbar {
@@ -119,6 +137,10 @@ html.dark .filter-btn:hover {
     width: 100%;
     padding-bottom: 2px;
     -webkit-overflow-scrolling: touch;
+  }
+  
+  .action-group {
+    display: none;
   }
 }
 </style>

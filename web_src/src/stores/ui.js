@@ -9,6 +9,8 @@ export const isDark = ref(localStorage.getItem('lexisync-theme') === 'dark')
 export const showFab = ref(false)
 export const loading = ref(false)
 export const toasts = ref([])
+export const isHistoryOpen = ref(false)
+export const isShortcutsOpen = ref(false)
 
 let toastSeq = 0
 
