@@ -43,7 +43,8 @@ SPDX-License-Identifier: Apache-2.0
 
     <ChatDrawer/>
     <HistoryDrawer/>
-    <UsersDrawer/> </div>
+    <UsersDrawer/>
+  </div>
 </template>
 
 <script setup>
@@ -106,32 +107,41 @@ const handleKeyDown = (e) => {
   const isShift = e.shiftKey
 
   if (isCtrl && e.key.toLowerCase() === 'r') {
-    e.preventDefault(); toggleActiveStatus('reviewed')
+    e.preventDefault();
+    toggleActiveStatus('reviewed')
   }
   if (isCtrl && !isShift && e.key.toLowerCase() === 'f') {
-    e.preventDefault(); toggleActiveStatus('fuzzy')
+    e.preventDefault();
+    toggleActiveStatus('fuzzy')
   }
   if (isCtrl && e.key === 'Enter') {
-    e.preventDefault(); navigateNext('untranslated')
+    e.preventDefault();
+    navigateNext('untranslated')
   }
   if (isCtrl && e.key.toLowerCase() === 't') {
-    e.preventDefault(); requestActiveAI()
+    e.preventDefault();
+    requestActiveAI()
   }
   if (e.key === 'F5') {
-    e.preventDefault(); fetchData()
+    e.preventDefault();
+    fetchData()
   }
   if (isCtrl && isShift && e.key.toLowerCase() === 'c') {
     const item = tableData.value.find(r => r.id === activeRowId.value)
     if (item) {
-      e.preventDefault(); navigator.clipboard.writeText(item.source); toastShow(t('Source copied'), 'success')
+      e.preventDefault();
+      navigator.clipboard.writeText(item.source);
+      toastShow(t('Source copied'), 'success')
     }
   }
-  
+
   if (isCtrl && e.key.toLowerCase() === 'z') {
-    e.preventDefault(); if (isShift) triggerRedo(); else triggerUndo();
+    e.preventDefault();
+    if (isShift) triggerRedo(); else triggerUndo();
   }
   if (isCtrl && !isShift && e.key.toLowerCase() === 'y') {
-    e.preventDefault(); triggerRedo();
+    e.preventDefault();
+    triggerRedo();
   }
 }
 </script>

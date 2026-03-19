@@ -1,3 +1,8 @@
+<!--
+Copyright (c) 2025, TheSkyC
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <template>
   <nav class="navbar">
     <div class="navbar-left">
@@ -8,7 +13,9 @@
       <el-tag size="small" type="info" style="margin-left: 10px;">{{ t(currentUser.role) }}</el-tag>
       <el-tooltip v-if="hasScopeRestriction" :content="scopeDescription" placement="bottom" :show-after="300">
         <el-tag size="small" type="warning" class="scope-badge">
-          <el-icon style="margin-right:3px;"><Lock/></el-icon>
+          <el-icon style="margin-right:3px;">
+            <Lock/>
+          </el-icon>
           {{ t('Scoped') }}
         </el-tag>
       </el-tooltip>
@@ -27,24 +34,47 @@
     </div>
 
     <div class="navbar-right">
-      <div :class="['ws-status', `ws-${wsState}`]">
-        <span class="ws-dot"></span>
-        <span class="ws-label">{{ t(wsStateLabel) }}</span>
-      </div>
-      
+      <!-- WS 状态徽章：failed/reconnecting-fixed 状态下可点击手动重连 -->
+      <el-tooltip
+          :content="wsClickable ? t('Click to reconnect') : t(wsStateLabel)"
+          placement="bottom"
+          :show-after="300"
+      >
+        <div
+            :class="['ws-status', `ws-${wsState}`, { 'ws-clickable': wsClickable }]"
+            @click="handleWsClick"
+        >
+          <span class="ws-dot"></span>
+          <span class="ws-label">{{ t(wsStateLabel) }}</span>
+          <!-- 固定重连阶段显示倒计时 -->
+          <span v-if="wsState === 'reconnecting-fixed' && wsReconnectCountdown > 0" class="ws-countdown">
+            {{ wsReconnectCountdown }}s
+          </span>
+        </div>
+      </el-tooltip>
+
       <div class="nav-actions">
         <el-badge :value="unreadChatCount" :max="99" :hidden="unreadChatCount === 0" class="chat-badge">
           <el-button :icon="ChatDotRound" @click="isChatOpen = !isChatOpen" circle :title="t('Chat')"></el-button>
         </el-badge>
-        
-        <el-button type="primary" :icon="RefreshRight" @click="fetchData" circle :loading="loading"
-                   :title="t('Refresh')"></el-button>
+
+        <!-- 刷新按钮：同时刷新数据并（在连接断开时）触发手动重连 -->
+        <el-button
+            type="primary"
+            :icon="RefreshRight"
+            @click="handleRefresh"
+            circle
+            :loading="loading"
+            :title="t('Refresh')"
+        ></el-button>
 
         <el-dropdown trigger="click" @command="handleCommand" placement="bottom-end">
           <el-button circle class="more-btn" :title="t('More options')">
-            <el-icon><MoreFilled/></el-icon>
+            <el-icon>
+              <MoreFilled/>
+            </el-icon>
           </el-button>
-          
+
           <template #dropdown>
             <el-dropdown-menu class="custom-nav-dropdown">
               <el-dropdown-item command="users" :icon="User">
@@ -72,10 +102,25 @@
 
 <script setup>
 import {computed} from 'vue'
-import {ChatDotRound, RefreshRight, SwitchButton, Sunny, Moon, Lock, Clock, Key, MoreFilled, User} from '@element-plus/icons-vue'
+import {
+  ChatDotRound,
+  RefreshRight,
+  SwitchButton,
+  Sunny,
+  Moon,
+  Lock,
+  Clock,
+  Key,
+  MoreFilled,
+  User
+} from '@element-plus/icons-vue'
 import {project, fetchData, fetchAuditHistory} from '../stores/project.js'
 import {currentUser, logout, t} from '../stores/auth.js'
-import {onlineUsersArray, wsState, wsStateLabel, isChatOpen, unreadChatCount, isUsersOpen} from '../stores/realtime.js'
+import {
+  onlineUsersArray, wsState, wsStateLabel, wsReconnectCountdown,
+  isChatOpen, unreadChatCount, isUsersOpen,
+  manualReconnect
+} from '../stores/realtime.js'
 import {loading, isDark, toggleTheme, avatarColor, isHistoryOpen, isShortcutsOpen} from '../stores/ui.js'
 
 const hasScopeRestriction = computed(() => {
@@ -91,6 +136,23 @@ const scopeDescription = computed(() => {
   if (s.files?.length) parts.push(`${t('Files')}: ${s.files.join(', ')}`)
   return parts.join('\n') || t('Restricted scope')
 })
+
+const wsClickable = computed(() =>
+    wsState.value === 'failed' ||
+    wsState.value === 'reconnecting-fixed' ||
+    wsState.value === 'disconnected'
+)
+
+const handleWsClick = () => {
+  if (wsClickable.value) manualReconnect()
+}
+
+const handleRefresh = () => {
+  fetchData()
+  if (wsState.value !== 'connected' && wsState.value !== 'connecting') {
+    manualReconnect()
+  }
+}
 
 const openHistory = () => {
   isHistoryOpen.value = true
@@ -182,12 +244,34 @@ const handleCommand = (command) => {
   padding: 3px 10px;
   border-radius: 20px;
   border: 1px solid transparent;
+  transition: opacity 0.15s, transform 0.15s;
+  user-select: none;
+}
+
+.ws-status.ws-clickable {
+  cursor: pointer;
+}
+
+.ws-status.ws-clickable:hover {
+  opacity: 0.8;
+  transform: scale(1.04);
+}
+
+.ws-status.ws-clickable:active {
+  transform: scale(0.97);
 }
 
 .ws-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
+}
+
+.ws-countdown {
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: 2px;
+  opacity: 0.75;
 }
 
 .ws-status.ws-connected {
@@ -219,6 +303,17 @@ const handleCommand = (command) => {
   animation: pulse 1.2s infinite;
 }
 
+.ws-status.ws-reconnecting-fixed {
+  background: rgba(239, 68, 68, .08);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, .2);
+}
+
+.ws-status.ws-reconnecting-fixed .ws-dot {
+  background: #ef4444;
+  animation: pulse 2s infinite;
+}
+
 .ws-status.ws-disconnected {
   background: rgba(100, 116, 139, .1);
   color: #64748b;
@@ -238,8 +333,12 @@ const handleCommand = (command) => {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .35; }
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .35;
+  }
 }
 
 .collab-wrap {
@@ -304,6 +403,7 @@ const handleCommand = (command) => {
 .more-btn {
   transition: transform 0.2s ease, background-color 0.2s;
 }
+
 .more-btn:hover {
   transform: rotate(90deg);
 }
@@ -317,10 +417,12 @@ const handleCommand = (command) => {
   color: var(--st-untranslated, #ef4444) !important;
   font-weight: 500;
 }
+
 :global(.custom-nav-dropdown .logout-item:hover) {
   background-color: rgba(239, 68, 68, 0.08) !important;
   color: #dc2626 !important;
 }
+
 html.dark :global(.custom-nav-dropdown .logout-item:hover) {
   background-color: rgba(239, 68, 68, 0.15) !important;
   color: #f87171 !important;
@@ -348,6 +450,10 @@ html.dark :global(.custom-nav-dropdown .logout-item:hover) {
 
   .ws-label {
     display: none;
+  }
+  
+  .ws-status.ws-reconnecting-fixed .ws-countdown {
+    display: inline;
   }
 
   .ws-status {
