@@ -11,6 +11,7 @@ export const loading = ref(false)
 export const toasts = ref([])
 export const isHistoryOpen = ref(false)
 export const isShortcutsOpen = ref(false)
+export const isNavMenuOpen = ref(false)
 
 let toastSeq = 0
 
@@ -57,7 +58,7 @@ export const formatTime = (iso, tFn = (k) => k) => {
     if (diff < 60) return tFn('Just now')
     // 1小时内
     if (diff < 3600) return `${Math.floor(diff / 60)}${tFn('m ago')}`
-    
+
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const yesterday = new Date(today.getTime() - 86400000)
 

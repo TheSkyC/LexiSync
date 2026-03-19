@@ -462,7 +462,7 @@ export const connectWebSocket = () => {
             // ── 阶段二：固定间隔重连 ───────────────
             if (wsState.value !== 'reconnecting-fixed') {
                 if (failedToastId !== null) toastDismiss(failedToastId)
-                failedToastId = toastShow(t('Connection failed. Retrying every 30s...'), 'error', 0)
+                failedToastId = toastShow(t('Connection failed. Retrying...'), 'error', 0)
             }
             const delay = withJitter(FIXED_RECONNECT_INTERVAL, JITTER_RANGE)
             _scheduleReconnect(delay, 'reconnecting-fixed')

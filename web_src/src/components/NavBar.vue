@@ -68,7 +68,12 @@ SPDX-License-Identifier: Apache-2.0
             :title="t('Refresh')"
         ></el-button>
 
-        <el-dropdown trigger="click" @command="handleCommand" placement="bottom-end">
+        <el-dropdown
+            trigger="click"
+            @command="handleCommand"
+            @visible-change="(val) => isNavMenuOpen = val"
+            placement="bottom-end"
+        >
           <el-button circle class="more-btn" :title="t('More options')">
             <el-icon>
               <MoreFilled/>
@@ -121,7 +126,7 @@ import {
   isChatOpen, unreadChatCount, isUsersOpen,
   manualReconnect
 } from '../stores/realtime.js'
-import {loading, isDark, toggleTheme, avatarColor, isHistoryOpen, isShortcutsOpen} from '../stores/ui.js'
+import {loading, isDark, toggleTheme, avatarColor, isHistoryOpen, isShortcutsOpen, isNavMenuOpen} from '../stores/ui.js'
 
 const hasScopeRestriction = computed(() => {
   const s = currentUser.scope
@@ -451,7 +456,7 @@ html.dark :global(.custom-nav-dropdown .logout-item:hover) {
   .ws-label {
     display: none;
   }
-  
+
   .ws-status.ws-reconnecting-fixed .ws-countdown {
     display: inline;
   }
