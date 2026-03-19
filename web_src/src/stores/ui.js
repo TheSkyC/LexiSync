@@ -66,7 +66,7 @@ export const toastShow = (message, type = 'info', duration = 3000, dedupeKey = n
     const timerId = duration > 0 ? setTimeout(() => toastDismiss(id), duration) : null
     const MAX_TOASTS = 5
     if (toasts.value.filter(x => !x.leaving).length >= MAX_TOASTS) {
-        // 关掉最早的非持久 toast 
+        // 关掉最早的非持久 toast
         const oldest = toasts.value.find(x => !x.leaving && x.duration > 0)
         if (oldest) toastDismiss(oldest.id)
     }
@@ -85,6 +85,11 @@ export const toastShow = (message, type = 'info', duration = 3000, dedupeKey = n
         _timerId: timerId,
         _startTime: duration > 0 ? Date.now() : null,
         _nudgeTimer: null,
+        // ── 滑动关闭状态 ─────────────────────────────────────────
+        _swipeX: 0,
+        _swiping: false,
+        _swipeTransition: false,
+        _swipeDismissDir: null,
     })
     setTimeout(() => {
         const t = toasts.value.find(x => x.id === id)

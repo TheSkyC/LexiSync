@@ -8,9 +8,25 @@ SPDX-License-Identifier: Apache-2.0
     <div
         v-for="t in toasts"
         :key="t.id"
-        :class="['toast', `t-${t.type}`, { 'toast-leaving': t.leaving, 'toast-nudge': t.nudge,'toast-settled': t.settled }]"
+        :class="[
+          'toast',
+          `t-${t.type}`,
+          {
+            'toast-leaving'       : t.leaving,
+            'toast-nudge'         : t.nudge,
+            'toast-settled'       : t.settled,
+            'toast-swipe-out-left': t._swipeDismissDir === 'left',
+            'toast-swipe-out-right':t._swipeDismissDir === 'right',
+            'toast-swipe-return'  : t._swipeTransition,
+          }
+        ]"
+        :style="getSwipeStyle(t)"
         @mouseenter="toastPause(t.id)"
         @mouseleave="toastResume(t.id)"
+        @pointerdown="onPointerDown(t.id, $event)"
+        @pointermove="onPointerMove(t.id, $event)"
+        @pointerup="onPointerUp(t.id)"
+        @pointercancel="onPointerCancel(t.id)"
     >
       <!-- 状态图标 -->
       <svg class="toast-icon" viewBox="0 0 20 20">
@@ -70,6 +86,9 @@ SPDX-License-Identifier: Apache-2.0
           <line x1="8" y1="2" x2="2" y2="8" stroke-width="1.5" stroke-linecap="round" stroke="currentColor"/>
         </svg>
       </button>
+
+      <!-- 移动端滑动提示指示器 -->
+      <div class="swipe-hint" :class="{ visible: t._swiping }" aria-hidden="true"></div>
     </div>
   </div>
 </template>
@@ -79,15 +98,120 @@ import {computed} from 'vue'
 import {toasts, toastDismiss, toastPause, toastResume, isHistoryOpen, isNavMenuOpen} from '../stores/ui.js'
 import {isChatOpen, isUsersOpen} from '../stores/realtime.js'
 
+// ── Drawer shift ─────────────────────────────────────────────────────────────
 const isRealDrawerOpen = computed(() =>
     isChatOpen.value || isUsersOpen.value || isHistoryOpen.value
 )
-
 const shiftClass = computed(() => {
   if (isRealDrawerOpen.value) return 'is-shifted-drawer'
   if (isNavMenuOpen.value) return 'is-shifted-menu'
   return ''
 })
+
+// ── Swipe-to-dismiss ──────────────────────────────────────────────────────────
+// Threshold (px) to commit a dismiss
+const SWIPE_THRESHOLD = 72
+// At this distance the item is fully transparent
+const SWIPE_FADE_RANGE = 140
+const touchMap = new Map()
+const onPointerDown = (id, e) => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return
+  e.target.setPointerCapture(e.pointerId)
+
+  touchMap.set(id, {
+    startX: e.clientX,
+    startY: e.clientY,
+    lastX: e.clientX,
+    dir: null,
+  })
+  toastPause(id)
+}
+
+const onPointerMove = (id, e) => {
+  const state = touchMap.get(id)
+  if (!state) return
+
+  const dx = e.clientX - state.startX
+  const dy = e.clientY - state.startY
+  state.lastX = e.clientX
+
+  if (!state.dir) {
+    if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return
+    state.dir = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y'
+  }
+
+  if (state.dir === 'y') return
+
+  e.preventDefault()
+
+  const item = toasts.value.find(x => x.id === id)
+  if (!item || item.leaving || item._swipeDismissDir) return
+
+  item._swipeX = dx
+  item._swiping = true
+}
+
+const onPointerUp = (id) => {
+  const state = touchMap.get(id)
+  touchMap.delete(id)
+
+  const item = toasts.value.find(x => x.id === id)
+  if (!item) return
+
+  if (!state || state.dir !== 'x') {
+    item._swipeX = 0
+    item._swiping = false
+    toastResume(id)
+    return
+  }
+
+  item._swiping = false
+  const dx = item._swipeX ?? 0
+
+  if (Math.abs(dx) >= SWIPE_THRESHOLD) {
+    item._swipeDismissDir = dx < 0 ? 'left' : 'right'
+    setTimeout(() => toastDismiss(id), 240)
+  } else {
+    item._swipeTransition = true
+    item._swipeX = 0
+    setTimeout(() => {
+      const t = toasts.value.find(x => x.id === id)
+      if (t) t._swipeTransition = false
+    }, 320)
+    toastResume(id)
+  }
+}
+
+const onPointerCancel = (id) => {
+  touchMap.delete(id)
+  const item = toasts.value.find(x => x.id === id)
+  if (!item) return
+  item._swipeX = 0
+  item._swiping = false
+  item._swipeTransition = true
+  setTimeout(() => {
+    const t = toasts.value.find(x => x.id === id)
+    if (t) t._swipeTransition = false
+  }, 320)
+  toastResume(id)
+}
+
+const getSwipeStyle = (t) => {
+  if (t._swipeDismissDir || t.leaving) {
+    const dx = t._swipeX ?? 0
+    return dx !== 0 ? {'--toast-swipe-from': `${dx}px`} : {}
+  }
+
+  const dx = t._swipeX ?? 0
+  if (dx === 0 && !t._swipeTransition) return {}
+
+  const opacity = Math.max(0, 1 - Math.abs(dx) / SWIPE_FADE_RANGE)
+  return {
+    transform: `translateX(${dx}px)`,
+    opacity: opacity.toFixed(3),
+    willChange: 'transform, opacity',
+  }
+}
 </script>
 
 <style scoped>
@@ -115,6 +239,7 @@ const shiftClass = computed(() => {
 
 /* ── Toast 条目 ───────────────────────────────────────────────── */
 .toast {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -125,6 +250,11 @@ const shiftClass = computed(() => {
   box-shadow: var(--sh-lg);
   pointer-events: auto;
   animation: toast-in .3s both;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+
+  --toast-swipe-from: 0px;
 }
 
 @supports (backdrop-filter: blur(10px)) {
@@ -150,6 +280,21 @@ const shiftClass = computed(() => {
 
 .toast.toast-nudge {
   animation: toast-nudge 0.38s ease-out !important;
+}
+
+/* ── 滑动关闭动画 ─────────────────────────────────────────────── */
+.toast.toast-swipe-out-right {
+  animation: toast-swipe-right 0.24s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+}
+
+.toast.toast-swipe-out-left {
+  animation: toast-swipe-left 0.24s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+}
+
+/* 弹回过渡 */
+.toast.toast-swipe-return {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+  opacity 0.25s ease !important;
 }
 
 @keyframes toast-in {
@@ -182,6 +327,28 @@ const shiftClass = computed(() => {
   100% {
     transform: scale(1);
     box-shadow: var(--sh-lg);
+  }
+}
+
+@keyframes toast-swipe-right {
+  from {
+    opacity: 0.3;
+    transform: translateX(var(--toast-swipe-from, 0px));
+  }
+  to {
+    opacity: 0;
+    transform: translateX(120%) scale(0.92);
+  }
+}
+
+@keyframes toast-swipe-left {
+  from {
+    opacity: 0.3;
+    transform: translateX(var(--toast-swipe-from, 0px));
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-120%) scale(0.92);
   }
 }
 
@@ -338,16 +505,37 @@ const shiftClass = computed(() => {
   border-left: 3px solid var(--st-translated);
 }
 
+/* ── 移动端滑动提示轨道线 ─────────────────────────────────────── */
+.swipe-hint {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.15s, width 0.15s;
+  pointer-events: none;
+}
+
+.swipe-hint.visible {
+  opacity: 0.25;
+  width: 40px;
+}
+
 /* ── 移动端 ───────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .toast-container {
+    /* 水平居中、贴底部 */
     right: 50% !important;
     transform: translateX(50%);
     top: auto;
     bottom: 80px;
     width: 90vw;
     max-width: 400px;
-    align-items: center;
+    align-items: stretch;
     transition: none;
   }
 
@@ -356,10 +544,21 @@ const shiftClass = computed(() => {
     right: 50% !important;
   }
 
+  .toast {
+    padding: 12px 14px;
+    border-radius: 12px;
+    cursor: grab;
+  }
+
+  .toast:active {
+    cursor: grabbing;
+  }
+
+  /* 移动端进场：从底部升起 */
   @keyframes toast-in {
     from {
       opacity: 0;
-      transform: translateY(12px) scale(.95);
+      transform: translateY(14px) scale(.96);
     }
     to {
       opacity: 1;
@@ -367,11 +566,39 @@ const shiftClass = computed(() => {
     }
   }
 
+  /* 移动端默认离场（关闭按钮）：向下消失 */
   @keyframes toast-out {
     to {
       opacity: 0;
-      transform: translateY(8px) scale(.93);
+      transform: translateY(10px) scale(.93);
     }
+  }
+  
+  @keyframes toast-swipe-right {
+    from {
+      opacity: 0.3;
+      transform: translateX(var(--toast-swipe-from, 0px));
+    }
+    to {
+      opacity: 0;
+      transform: translateX(110%) scale(0.94);
+    }
+  }
+
+  @keyframes toast-swipe-left {
+    from {
+      opacity: 0.3;
+      transform: translateX(var(--toast-swipe-from, 0px));
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-110%) scale(0.94);
+    }
+  }
+
+  .toast.toast-swipe-return {
+    transition: transform 0.35s cubic-bezier(0.34, 1.8, 0.64, 1),
+    opacity 0.28s ease !important;
   }
 }
 </style>
