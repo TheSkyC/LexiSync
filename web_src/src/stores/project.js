@@ -19,7 +19,7 @@ export const stats = reactive({reviewed: 0, translated: 0, fuzzy: 0, untranslate
 export const activeRowId = ref(null)
 export const globalActiveEditors = reactive({})
 export const itemToFocus = ref(null)
-export const auditHistory = reactive({ undo: [], redo: [] })
+export const auditHistory = reactive({undo: [], redo: []})
 export const isHistoryLoading = ref(false)
 
 let fetchController = null
@@ -59,7 +59,9 @@ export const fetchProjectStats = async () => {
                 fuzzy: d.fuzzy, untranslated: d.untranslated
             })
         }
-    } catch (e) { console.error('Failed to sync stats:', e) }
+    } catch (e) {
+        console.error('Failed to sync stats:', e)
+    }
 }
 
 export const fetchData = async () => {
@@ -88,13 +90,12 @@ export const fetchData = async () => {
         tableData.value = (sData.items || []).map(item => ({
             ...item,
             active_editors: globalActiveEditors[item.id] || [],
-            // Non-persistent UI state fields
             isAiLoading: false,
             conflictData: null,
         }))
         total.value = sData.total ?? 0
     } catch (e) {
-        if (e.name !== 'AbortError') toastShow(t('Sync failed'), 'error')
+        if (e.name !== 'AbortError') toastShow(t('Sync failed'), 'error', 3000, 'sync-failed')
     } finally {
         if (!signal.aborted) loading.value = false
     }
@@ -113,13 +114,21 @@ export const updateTranslation = async (item, pIdx = 0) => {
             body: JSON.stringify({ts_id: item.id, new_text: text, plural_index: pIdx})
         })
         if (!res.ok) throw new Error()
-        toastShow(t('Saved'), 'success', 1400)
-    } catch (_) { toastShow(t('Save failed'), 'error') }
+        toastShow(t('Saved'), 'success', 1400, 'saved')
+    } catch (_) {
+        toastShow(t('Save failed'), 'error', 3000, 'save-failed')
+    }
 }
 
 export const toggleStatus = async (item, type) => {
-    if (type === 'reviewed' && !hasPermission('review')) { toastShow(t('Permission Denied'), 'error'); return }
-    if (type === 'fuzzy' && !hasPermission('fuzzy')) { toastShow(t('Permission Denied'), 'error'); return }
+    if (type === 'reviewed' && !hasPermission('review')) {
+        toastShow(t('Permission Denied'), 'error', 3000, 'permission-denied');
+        return
+    }
+    if (type === 'fuzzy' && !hasPermission('fuzzy')) {
+        toastShow(t('Permission Denied'), 'error', 3000, 'permission-denied');
+        return
+    }
 
     const payload = {ts_id: item.id}
     if (type === 'reviewed') {
@@ -134,8 +143,11 @@ export const toggleStatus = async (item, type) => {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
         })
-        if (!res.ok) toastShow(res.status === 403 ? t('Permission Denied') : t('Sync failed'), 'error')
-    } catch (_) { toastShow(t('Sync failed'), 'error'); fetchData() }
+        if (!res.ok) toastShow(res.status === 403 ? t('Permission Denied') : t('Sync failed'), 'error', 3000, res.status === 403 ? 'permission-denied' : 'sync-failed')
+    } catch (_) {
+        toastShow(t('Sync failed'), 'error', 3000, 'sync-failed');
+        fetchData()
+    }
 }
 
 export const requestAITranslation = async (item) => {
@@ -146,34 +158,41 @@ export const requestAITranslation = async (item) => {
 export const triggerUndo = async () => {
     if (!hasPermission('translate')) return
     try {
-        const res = await authFetch('/api/v1/undo', { method: 'POST' })
+        const res = await authFetch('/api/v1/undo', {method: 'POST'})
         if (!res.ok) throw new Error(res.status === 400 ? t('Nothing to undo') : t('Sync failed'))
-        toastShow(t('Undo successful'), 'success', 1500)
+        toastShow(t('Undo successful'), 'success', 1500, 'undo-success')
         fetchAuditHistory()
-    } catch (e) { toastShow(e.message, 'warning') }
+    } catch (e) {
+        toastShow(e.message, 'warning')
+    }
 }
 
 export const triggerRedo = async () => {
     if (!hasPermission('translate')) return
     try {
-        const res = await authFetch('/api/v1/redo', { method: 'POST' })
+        const res = await authFetch('/api/v1/redo', {method: 'POST'})
         if (!res.ok) throw new Error(res.status === 400 ? t('Nothing to redo') : t('Sync failed'))
-        toastShow(t('Redo successful'), 'success', 1500)
+        toastShow(t('Redo successful'), 'success', 1500, 'redo-success')
         fetchAuditHistory()
-    } catch (e) { toastShow(e.message, 'warning') }
+    } catch (e) {
+        toastShow(e.message, 'warning')
+    }
 }
 
 export const fetchAuditHistory = async () => {
     isHistoryLoading.value = true
     try {
-        const res = await authFetch('/api/v1/history', { cache: 'no-store' })
+        const res = await authFetch('/api/v1/history', {cache: 'no-store'})
         if (res.ok) {
             const data = await res.json()
             auditHistory.undo = data.undo_history || []
             auditHistory.redo = data.redo_history || []
         }
-    } catch (e) { console.error('Failed to fetch history', e) }
-    finally { isHistoryLoading.value = false }
+    } catch (e) {
+        console.error('Failed to fetch history', e)
+    } finally {
+        isHistoryLoading.value = false
+    }
 }
 
 export const onEditorFocus = (row) => {
@@ -183,34 +202,57 @@ export const onEditorFocus = (row) => {
     }
 }
 
-export const setFilter = (key) => { statusFilter.value = key; currentPage.value = 1; fetchData() }
-export const onPageChange = () => { fetchData(); document.getElementById('mainScroll')?.scrollTo(0, 0) }
-export const onPageSizeChange = (newSize) => { pageSize.value = newSize; currentPage.value = 1; fetchData() }
+export const setFilter = (key) => {
+    statusFilter.value = key;
+    currentPage.value = 1;
+    fetchData()
+}
+export const onPageChange = () => {
+    fetchData();
+    document.getElementById('mainScroll')?.scrollTo(0, 0)
+}
+export const onPageSizeChange = (newSize) => {
+    pageSize.value = newSize;
+    currentPage.value = 1;
+    fetchData()
+}
 export const handleSearch = () => {
     clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => { currentPage.value = 1; fetchData() }, 450)
+    searchTimer = setTimeout(() => {
+        currentPage.value = 1;
+        fetchData()
+    }, 450)
 }
 
 export const navigateNext = async (mode = 'untranslated') => {
     const matchesMode = (item) =>
         mode === 'any' || (mode === 'untranslated' && !item.translation) || (mode === 'unreviewed' && !item.is_reviewed)
 
-    if (!tableData.value.length) { toastShow(t('No more items found'), 'info'); return }
+    if (!tableData.value.length) {
+        toastShow(t('No more items found'), 'info', 3000, 'navigate-info')
+        return
+    }
 
     const currentIdx = tableData.value.findIndex(r => r.id === activeRowId.value)
     const startIdx = currentIdx + 1
 
     for (let i = startIdx; i < tableData.value.length; i++) {
         const item = tableData.value[i]
-        if (matchesMode(item)) { itemToFocus.value = item.id; return }
+        if (matchesMode(item)) {
+            itemToFocus.value = item.id;
+            return
+        }
     }
 
     const totalPages = Math.ceil(total.value / pageSize.value)
-    if (currentPage.value >= totalPages) { toastShow(t('Reached the last page, no more items found'), 'info'); return }
+    if (currentPage.value >= totalPages) {
+        toastShow(t('Reached the last page, no more items found'), 'info', 3000, 'navigate-info')
+        return
+    }
 
     currentPage.value++
     await fetchData()
-    toastShow(t('Jumped to next page'), 'info', 2500)
+    toastShow(t('Jumped to next page'), 'info', 2500, 'navigate-info')
 
     const firstMatch = tableData.value.find(matchesMode)
     if (firstMatch) itemToFocus.value = firstMatch.id;
@@ -224,4 +266,7 @@ export const requestActiveAI = () => {
     const item = tableData.value.find(r => r.id === activeRowId.value)
     if (item) requestAITranslation(item)
 }
-export const cleanupProject = () => { clearTimeout(searchTimer); fetchController?.abort() }
+export const cleanupProject = () => {
+    clearTimeout(searchTimer);
+    fetchController?.abort()
+}

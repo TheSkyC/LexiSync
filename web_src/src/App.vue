@@ -131,7 +131,7 @@ const handleKeyDown = (e) => {
     if (item) {
       e.preventDefault();
       navigator.clipboard.writeText(item.source);
-      toastShow(t('Source copied'), 'success')
+      toastShow(t('Source copied'), 'success', 3000, 'source-copied')
     }
   }
 

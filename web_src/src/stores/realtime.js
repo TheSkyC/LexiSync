@@ -17,7 +17,7 @@ import {
     activeRowId,
     currentPage
 } from './project.js'
-import {toastShow, toastDismiss} from './ui.js'
+import {toastShow, toastDismiss, toastDismissByKey} from './ui.js'
 import {registerWsSend} from './wsClient.js'
 
 export const wsState = ref('disconnected')
@@ -361,7 +361,12 @@ const handleWsMsg = (msg) => {
             saveChatHistory()
             if (!isChatOpen.value && String(msg.data.user).trim() !== String(currentUser.name).trim()) {
                 unreadChatCount.value++
-                toastShow(`${msg.data.user}: ${msg.data.text}`, 'info', 3000)
+                toastShow(
+                `${msg.data.user}: ${msg.data.text}`,
+                'info',
+                3000,
+                `chat-${msg.data.user}`
+                )
             }
             nextTick(() => {
                 const el = document.getElementById('chatMessages')
@@ -369,7 +374,7 @@ const handleWsMsg = (msg) => {
             })
             break
         case 'HOST_STATE_CHANGED':
-            toastShow(t('Host state changed. Refreshing...'), 'warning', 3000)
+            toastShow(t('Host state changed. Refreshing...'), 'warning', 3000, 'host-state')
             activeRowId.value = null
             currentPage.value = 1
             tableData.value = []
@@ -403,14 +408,15 @@ export const connectWebSocket = () => {
         wsState.value = 'connected'
         wsAttempts = 0
         _clearCountdown()
-
-        // 撤掉持久的"连接失败"toast
+        
+        toastDismissByKey('reconnecting')
+        
         if (failedToastId !== null) {
             toastDismiss(failedToastId)
             failedToastId = null
         }
 
-        toastShow(t('Connected'), 'success', 2200)
+        toastShow(t('Connected'), 'success', 2200, 'connected')
         fetchOnlineUsers()
         loadChatHistory()
 
@@ -455,11 +461,13 @@ export const connectWebSocket = () => {
             toastShow(
                 `${t('Reconnecting...')} (${wsAttempts}/${MAX_WS_RETRY})`,
                 'warning',
-                delay - 200
+                delay - 200,
+                'reconnecting'
             )
             _scheduleReconnect(delay, 'reconnecting')
         } else {
             // ── 阶段二：固定间隔重连 ───────────────
+            toastDismissByKey('reconnecting')
             if (wsState.value !== 'reconnecting-fixed') {
                 if (failedToastId !== null) toastDismiss(failedToastId)
                 failedToastId = toastShow(t('Connection failed. Retrying...'), 'error', 0)
