@@ -629,6 +629,10 @@ class WebServerService(QThread):
                     data = await websocket.receive_json()
                     action = data.get("action")
 
+                    if action == "ping":
+                        await websocket.send_json({"type": "PONG"})
+                        continue
+
                     if action == "ai_start" and "ai_translate" in perms:
                         ts_id = data.get("ts_id")
                         if ts_id:

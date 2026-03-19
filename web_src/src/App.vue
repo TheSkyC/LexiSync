@@ -80,7 +80,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleWindowScroll)
   window.removeEventListener('resize', setVHToken)
   window.removeEventListener('keydown', handleKeyDown)
-  cleanupProject() // 原先的 cleanupStore 已更名为 cleanupProject
+  cleanupProject()   // 清理项目相关的定时器
+  cleanupRealtime()  // 清理 WebSocket、心跳和重连定时器
 })
 
 const setVHToken = () => {

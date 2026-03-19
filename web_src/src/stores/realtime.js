@@ -44,6 +44,7 @@ let ws = null
 let wsReconnectTimer = null
 let wsAttempts = 0
 let hasConnectedOnce = false
+let pingInterval = null
 
 const MAX_WS_RETRY = 8
 const INITIAL_RECONNECT_DELAY = 2000
@@ -329,6 +330,11 @@ export const connectWebSocket = () => {
             fetchData()
         }
         hasConnectedOnce = true
+        
+        clearInterval(pingInterval)
+        pingInterval = setInterval(() => {
+            _wsSend({ action: 'ping' })
+        }, 20000)
     }
 
     ws.onmessage = (ev) => {
@@ -339,6 +345,7 @@ export const connectWebSocket = () => {
     }
 
     ws.onclose = (ev) => {
+        clearInterval(pingInterval)
         if (wsState.value === 'disconnected') return
         if (ev.code === 1008) {
             wsState.value = 'disconnected'
@@ -362,6 +369,7 @@ export const disconnectWebSocket = () => {
     wsState.value = 'disconnected'
     hasConnectedOnce = false
     clearTimeout(wsReconnectTimer)
+    clearInterval(pingInterval)
     onlineUsers.value = {}
     if (ws) {
         try {
@@ -382,6 +390,7 @@ export const sendChatMessage = () => {
 
 export const cleanupRealtime = () => {
     clearTimeout(wsReconnectTimer)
+    clearInterval(pingInterval)
     if (ws) {
         try {
             ws.close()
