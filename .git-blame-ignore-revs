@@ -6,3 +6,6 @@
 
 # refactor: update all internal imports to use absolute lexisync package path
 eccd93a2946ac1a2bd850bb1145203ecc8bd59bf
+
+# chore(license): update copyright year to 2025-2026
+df65b18fc1a8206b5bb35bd2f0875303bc5f2ccc
