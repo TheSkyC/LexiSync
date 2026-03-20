@@ -102,6 +102,8 @@ jobs:
           --noupx `
           --noconfirm `
           --hidden-import "rapidfuzz" `
+          --add-data "NOTICE;." `
+          --add-data "LICENSE;." `
           --add-data "src/lexisync/locales;lexisync/locales" `
           --add-data "src/lexisync/resources;lexisync/resources" `
           --add-data "src/lexisync/expansion_data;lexisync/expansion_data" `
@@ -148,6 +150,8 @@ jobs:
           --noupx \
           --noconfirm \
           --hidden-import "rapidfuzz" \
+          --add-data "NOTICE:." \
+          --add-data "LICENSE:." \
           --add-data "src/lexisync/locales:lexisync/locales" \
           --add-data "src/lexisync/resources:lexisync/resources" \
           --add-data "src/lexisync/expansion_data:lexisync/expansion_data" \
