@@ -4,6 +4,7 @@
  */
 
 import {ref} from 'vue'
+import {i18n} from "./auth.js";
 
 export const isDark = ref(localStorage.getItem('lexisync-theme') === 'dark')
 export const showFab = ref(false)
@@ -15,6 +16,7 @@ export const isNavMenuOpen = ref(false)
 
 let toastSeq = 0
 
+export const t = (key) => i18n.value[key] || key
 export const applyTheme = (dark) => {
     document.documentElement.classList.toggle('dark', dark)
     localStorage.setItem('lexisync-theme', dark ? 'dark' : 'light')
@@ -159,8 +161,8 @@ export const formatTime = (iso, tFn = (k) => k) => {
     const now = new Date()
     const diff = Math.max(0, Math.floor((now - d) / 1000))
 
-    if (diff < 60) return tFn('Just now')
-    if (diff < 3600) return `${Math.floor(diff / 60)}${tFn('m ago')}`
+    if (diff < 60) return t('Just now')
+    if (diff < 3600) return `${Math.floor(diff / 60)}${t('m ago')}`
 
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const yesterday = new Date(today.getTime() - 86400000)
@@ -168,8 +170,8 @@ export const formatTime = (iso, tFn = (k) => k) => {
     const pad = (n) => String(n).padStart(2, '0')
     const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`
 
-    if (d >= today) return `${tFn('Today')} ${timeStr}`
-    if (d >= yesterday) return `${tFn('Yesterday')} ${timeStr}`
+    if (d >= today) return `${t('Today')} ${timeStr}`
+    if (d >= yesterday) return `${t('Yesterday')} ${timeStr}`
 
     if (d.getFullYear() === now.getFullYear()) {
         return `${d.getMonth() + 1}-${pad(d.getDate())} ${timeStr}`

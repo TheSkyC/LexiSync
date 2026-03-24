@@ -79,7 +79,7 @@ export const fetchData = async () => {
                 {signal, cache: 'no-store'}
             )
         ])
-        if (!pRes.ok || !sRes.ok) throw new Error('Fetch failed')
+        if (!pRes.ok || !sRes.ok) throw new Error(t('Fetch failed'))
         const pData = await pRes.json()
         Object.assign(project, pData)
         Object.assign(stats, {

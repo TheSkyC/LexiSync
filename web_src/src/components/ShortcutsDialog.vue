@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
   <el-dialog v-model="isShortcutsOpen" :title="t('Keyboard Shortcuts')" width="500px" align-center>
     <div class="shortcuts-container">
       <div class="shortcut-row" v-for="(sc, i) in shortcuts" :key="i">
-        <div class="sc-desc">{{ t(sc.desc) }}</div>
+        <div class="sc-desc">{{ sc.desc }}</div>
         <div class="sc-keys">
           <kbd v-for="(k, j) in sc.keys" :key="j">{{ k }}</kbd>
         </div>
@@ -22,22 +22,23 @@ SPDX-License-Identifier: Apache-2.0
 </template>
 
 <script setup>
+import {computed} from 'vue'
 import {isShortcutsOpen} from '../stores/ui.js'
 import {t} from '../stores/auth.js'
 
 const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
 const ctrlKey = isMac ? 'Cmd' : 'Ctrl'
 
-const shortcuts = [
-  { desc: 'Save & Next Untranslated', keys: [ctrlKey, 'Enter'] },
-  { desc: 'Toggle Reviewed', keys: [ctrlKey, 'R'] },
-  { desc: 'Toggle Fuzzy', keys: [ctrlKey, 'F'] },
-  { desc: 'AI Translate Selected', keys: [ctrlKey, 'T'] },
-  { desc: 'Copy Source Text', keys: [ctrlKey, 'Shift', 'C'] },
-  { desc: 'Undo', keys: [ctrlKey, 'Z'] },
-  { desc: 'Redo', keys: [ctrlKey, 'Y'] },
-  { desc: 'Refresh Data', keys: ['F5'] },
-]
+const shortcuts = computed(() => [
+  {desc: t('Save & Next Untranslated'), keys: [ctrlKey, 'Enter']},
+  {desc: t('Toggle Reviewed'), keys: [ctrlKey, 'R']},
+  {desc: t('Toggle Fuzzy'), keys: [ctrlKey, 'F']},
+  {desc: t('AI Translate Selected'), keys: [ctrlKey, 'T']},
+  {desc: t('Copy Source Text'), keys: [ctrlKey, 'Shift', 'C']},
+  {desc: t('Undo'), keys: [ctrlKey, 'Z']},
+  {desc: t('Redo'), keys: [ctrlKey, 'Y']},
+  {desc: t('Refresh Data'), keys: ['F5']},
+])
 </script>
 
 <style scoped>
@@ -84,6 +85,7 @@ kbd {
   :deep(.el-dialog) {
     width: 92% !important;
   }
+
   .sc-desc {
     font-size: 13px;
   }

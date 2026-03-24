@@ -35,11 +35,7 @@ SPDX-License-Identifier: Apache-2.0
 
     <div class="navbar-right">
       <!-- WS 状态徽章：failed/reconnecting-fixed 状态下可点击手动重连 -->
-      <el-tooltip
-          :content="wsClickable ? t('Click to reconnect') : t(wsStateLabel)"
-          placement="bottom"
-          :show-after="300"
-      >
+      <el-tooltip :content="wsClickable ? t('Click to reconnect') : wsStateLabel" placement="bottom" :show-after="300">
         <div
             :class="['ws-status', `ws-${wsState}`, { 'ws-clickable': wsClickable }]"
             @click="handleWsClick"
@@ -92,7 +88,7 @@ SPDX-License-Identifier: Apache-2.0
                 {{ t('Keyboard Shortcuts') }}
               </el-dropdown-item>
               <el-dropdown-item command="theme" :icon="isDark ? Sunny : Moon">
-                {{ t(isDark ? 'Light Mode' : 'Dark Mode') }}
+                {{ isDark ? t('Light Mode') : t('Dark Mode') }}
               </el-dropdown-item>
               <el-dropdown-item divided command="logout" :icon="SwitchButton" class="logout-item">
                 {{ t('Logout') }}

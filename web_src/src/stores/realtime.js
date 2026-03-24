@@ -22,12 +22,12 @@ import {registerWsSend} from './wsClient.js'
 
 export const wsState = ref('disconnected')
 export const wsStateLabel = computed(() => ({
-    connecting: 'Connecting...',
-    connected: 'Connected',
-    reconnecting: 'Reconnecting...',
-    'reconnecting-fixed': 'Reconnecting...',
-    disconnected: 'Disconnected',
-    failed: 'Connection failed'
+    connecting: t('Connecting...'),
+    connected: t('Connected'),
+    reconnecting: t('Reconnecting...'),
+    'reconnecting-fixed': t('Reconnecting...'),
+    disconnected: t('Disconnected'),
+    failed: t('Connection failed')
 }[wsState.value] || ''))
 
 export const wsReconnectCountdown = ref(0)
@@ -282,7 +282,7 @@ const handleWsMsg = (msg) => {
                         if (activeRowId.value === item.id && !isFromMe) {
                             item.conflictData = {
                                 serverText: change.new_text,
-                                user: user || 'Someone',
+                                user: user || t('Someone'),
                                 plural_index: change.plural_index ?? 0,
                             };
                         } else {

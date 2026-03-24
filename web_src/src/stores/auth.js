@@ -24,6 +24,7 @@ export const currentUser = reactive({name: '', role: 'viewer', permissions: [], 
 export const i18n = ref({})
 
 export const t = (key) => i18n.value[key] || key
+const _roleNamesForI18n = [t('admin'), t('editor'), t('viewer')]
 
 export const hasPermission = (perm) => currentUser.permissions.includes(perm)
 
@@ -49,9 +50,21 @@ export const initApp = async () => {
         showAuthDialog.value = false
         connectWebSocket()
     } catch (_) {
-        authError.value = 'Failed to initialize app.'
+        authError.value = t('Failed to initialize app.')
     } finally {
         loading.value = false
+    }
+}
+
+export const fetchPublicI18n = async () => {
+    try {
+        const res = await fetch('/api/v1/public-i18n', {cache: 'no-store'})
+        if (res.ok) {
+            const data = await res.json()
+            i18n.value = {...i18n.value, ...data}
+        }
+    } catch (e) {
+        console.error('Failed to fetch public i18n', e)
     }
 }
 
@@ -73,13 +86,13 @@ const afterLogin = async (data) => {
 
 const fetchMe = async () => {
     const res = await authFetch('/api/v1/me', {cache: 'no-store'})
-    if (!res.ok) throw new Error('Session verification failed')
+    if (!res.ok) throw new Error(t('Session verification failed'))
     return res.json()
 }
 
 export const loginAccount = async () => {
     if (!loginForm.username || !loginForm.password) {
-        authError.value = 'Fill all fields';
+        authError.value = t('Fill all fields');
         return
     }
     loading.value = true;
@@ -89,10 +102,10 @@ export const loginAccount = async () => {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(loginForm)
         })
-        if (!res.ok) throw new Error('Invalid credentials')
+        if (!res.ok) throw new Error(t('Invalid credentials'))
         const data = await res.json()
         saveSession(data.token)
-        
+
         if (rememberMe.value) {
             localStorage.setItem('lexisync_auth', JSON.stringify({
                 type: 'account', remember_token: data.remember_token
@@ -110,7 +123,7 @@ export const loginAccount = async () => {
 
 export const loginToken = async () => {
     if (!tokenForm.token) {
-        authError.value = 'Token required';
+        authError.value = t('Token required');
         return
     }
     loading.value = true;
@@ -120,7 +133,7 @@ export const loginToken = async () => {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({token: tokenForm.token, display_name: tokenForm.displayName})
         })
-        if (!res.ok) throw new Error('Invalid or expired token')
+        if (!res.ok) throw new Error(t('Invalid or expired token'))
         const data = await res.json()
         saveSession(data.token)
 
@@ -204,7 +217,7 @@ export const checkSessionAndInit = async () => {
             localStorage.removeItem('lexisync_auth')
         }
     }
-
+    await fetchPublicI18n()
     loading.value = false
     showAuthDialog.value = true
 }
