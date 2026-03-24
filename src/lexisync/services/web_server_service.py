@@ -1076,7 +1076,9 @@ class WebServerService(QThread):
 
     def run(self) -> None:
         self.is_running = True
-        config = uvicorn.Config(self.fastapi_app, host=self.host, port=self.port, log_level="warning", loop="asyncio")
+        config = uvicorn.Config(
+            self.fastapi_app, host=self.host, port=self.port, log_level="warning", loop="asyncio", log_config=None
+        )
         self.server = uvicorn.Server(config)
 
         ip = "127.0.0.1"

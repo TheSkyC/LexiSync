@@ -128,6 +128,7 @@ class CloudflareProvider(BaseTunnelProvider):
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 encoding="utf-8",
                 creationflags=subprocess.CREATE_NO_WINDOW if platform.system() == "windows" else 0,
