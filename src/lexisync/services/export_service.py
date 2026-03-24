@@ -83,7 +83,7 @@ def export_to_html(filepath, translatable_objects, app_instance):
         rows_data.append(entry)
 
     report_data_json = json.dumps(rows_data, ensure_ascii=False, separators=(",", ":"))
-    template_path = get_resource_path("resources/templates/report_template.html")
+    template_path = get_resource_path("templates/report_template.html")
     try:
         with open(template_path, encoding="utf-8") as f:
             template_content = f.read()

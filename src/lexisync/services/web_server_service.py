@@ -963,7 +963,7 @@ class WebServerService(QThread):
             self.ban_ip(req.ip)
             return {"status": "ok"}
 
-        web_path = get_resource_path("resources/web")
+        web_path = get_resource_path("web")
         if os.path.exists(web_path):
             assets_path = os.path.join(web_path, "assets")
             if os.path.exists(assets_path):

@@ -9,9 +9,9 @@ import sys
 
 def get_resource_path(relative_path: str) -> str:
     if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, "lexisync", relative_path)
+        return os.path.join(sys._MEIPASS, "resources", relative_path)
     base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base_path, relative_path)
+    return os.path.join(base_path, "resources", relative_path)
 
 
 @cache
