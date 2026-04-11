@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  LexiSync\n"
 "Report-Msgid-Bugs-To: 0x4f6@gmail.com\n"
-"POT-Creation-Date: 2026-03-24 10:01+0000\n"
+"POT-Creation-Date: 2026-04-11 12:05+0000\n"
 "PO-Revision-Date: 2026-03-10 12:20+0000\n"
 "Last-Translator: TheSkyC\n"
 "Language: ru\n"
@@ -172,7 +172,7 @@ msgstr "Произошла критическая ошибка при попыт
 msgid "A file or directory with this name already exists."
 msgstr "Файл или каталог с таким именем уже существует."
 
-#: src/lexisync/dialogs/project_settings_dialog.py:412
+#: src/lexisync/dialogs/project_settings_dialog.py:410
 #: src/lexisync/services/project_manager.py:49
 msgid "A file with this name already exists in the project."
 msgstr "Файл с таким именем уже существует в проекте."
@@ -192,11 +192,11 @@ msgstr "Для доступа к настройкам проекта необх�
 msgid "A project must be open to build."
 msgstr "Для сборки необходимо открыть проект."
 
-#: src/lexisync/dialogs/project_settings_dialog.py:437
+#: src/lexisync/dialogs/project_settings_dialog.py:435
 msgid "A project must have at least one source file."
 msgstr "Проект должен содержать хотя бы один исходный файл."
 
-#: src/lexisync/dialogs/project_settings_dialog.py:262
+#: src/lexisync/dialogs/project_settings_dialog.py:260
 msgid "A project must have at least one target language."
 msgstr "Проект должен иметь хотя бы один целевой язык."
 
@@ -271,7 +271,7 @@ msgstr "ИИ-перевод всех непереведенных"
 #: src/lexisync/main_window.py:4107
 #: src/lexisync/ui_components/details_panel.py:333
 #: src/lexisync/ui_components/details_panel.py:700
-#: web_src/src/components/ShortcutsDialog.vue:35
+#: web_src/src/components/ShortcutsDialog.vue:36
 msgid "AI Translate Selected"
 msgstr "ИИ-перевод выбранного"
 
@@ -350,7 +350,7 @@ msgstr "ИИ не удалось обработать \"{text}...\": {error}"
 msgid "AI is fixing the translation..."
 msgstr "ИИ исправляет перевод..."
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:379
+#: src/lexisync/dialogs/interactive_review_dialog.py:376
 msgid "AI is translating..."
 msgstr "ИИ переводит..."
 
@@ -428,11 +428,11 @@ msgstr "Маркер(и) акселератора:"
 msgid "Accelerator Mismatch"
 msgstr "Несоответствие акселератора"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:331
+#: src/lexisync/dialogs/interactive_review_dialog.py:328
 msgid "Accept"
 msgstr "Принять"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:476
+#: src/lexisync/dialogs/interactive_review_dialog.py:473
 msgid "Accept (Enter)"
 msgstr "Принять (Enter)"
 
@@ -545,8 +545,8 @@ msgstr "Добавить в глоссарий..."
 #: src/lexisync/dialogs/new_project_dialog.py:194
 #: src/lexisync/dialogs/new_project_dialog.py:230
 #: src/lexisync/dialogs/new_project_dialog.py:256
-#: src/lexisync/dialogs/project_settings_dialog.py:180
-#: src/lexisync/dialogs/project_settings_dialog.py:353
+#: src/lexisync/dialogs/project_settings_dialog.py:178
+#: src/lexisync/dialogs/project_settings_dialog.py:351
 msgid "Add..."
 msgstr "Добавить..."
 
@@ -871,7 +871,7 @@ msgstr ""
 "\n"
 "После удаления потребуется перезапуск приложения."
 
-#: src/lexisync/dialogs/project_settings_dialog.py:447
+#: src/lexisync/dialogs/project_settings_dialog.py:445
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove '{file}' from the project?\n"
@@ -907,7 +907,7 @@ msgstr ""
 "Вы уверены, что хотите удалить запись из ТМ для:\n"
 "'{text}...'?"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:269
+#: src/lexisync/dialogs/project_settings_dialog.py:267
 #, python-brace-format
 msgid ""
 "Are you sure you want to remove the language '{lang}'?\n"
@@ -1001,15 +1001,15 @@ msgstr "Авто (Лучшее)"
 msgid "Auto Fix"
 msgstr "Автоматическое исправление"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:300
+#: src/lexisync/dialogs/interactive_review_dialog.py:297
 msgid "Auto-Run (Stop on Error)"
 msgstr "Автозапуск (Стоп при ошибке)"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:494
+#: src/lexisync/dialogs/interactive_review_dialog.py:491
 msgid "Auto-Run Paused due to Error"
 msgstr "Автозапуск приостановлен из-за ошибки"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:471
+#: src/lexisync/dialogs/interactive_review_dialog.py:468
 msgid "Auto-Running..."
 msgstr "Автозапуск..."
 
@@ -1127,11 +1127,11 @@ msgstr "Пакетное обновление ({count} элементов)"
 msgid "Bracket Mismatch"
 msgstr "Несоответствие скобок"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:205
+#: src/lexisync/dialogs/interactive_review_dialog.py:202
 msgid "Buffer: 0"
 msgstr "Буфер: 0"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:344
+#: src/lexisync/dialogs/interactive_review_dialog.py:341
 #, python-brace-format
 msgid "Buffer: {size}"
 msgstr "Буфер: {size}"
@@ -1195,7 +1195,7 @@ msgstr "Расчет завершен."
 #: src/lexisync/dialogs/management_tabs.py:613
 #: src/lexisync/dialogs/new_project_dialog.py:281
 #: src/lexisync/dialogs/pot_drop_dialog.py:33
-#: src/lexisync/dialogs/project_settings_dialog.py:597
+#: src/lexisync/dialogs/project_settings_dialog.py:595
 #: src/lexisync/dialogs/prompt_manager_dialog.py:170
 #: src/lexisync/dialogs/prompt_manager_dialog.py:566
 #: src/lexisync/dialogs/settings_dialog.py:120 src/lexisync/main_window.py:7961
@@ -1211,8 +1211,8 @@ msgstr "Отменить сохранение"
 msgid "Cancelling..."
 msgstr "Отмена..."
 
-#: src/lexisync/dialogs/project_settings_dialog.py:262
-#: src/lexisync/dialogs/project_settings_dialog.py:437
+#: src/lexisync/dialogs/project_settings_dialog.py:260
+#: src/lexisync/dialogs/project_settings_dialog.py:435
 msgid "Cannot Remove"
 msgstr "Невозможно удалить"
 
@@ -1586,8 +1586,8 @@ msgstr "Подтвердить перезагрузку"
 
 #: src/lexisync/dialogs/management_tabs.py:431
 #: src/lexisync/dialogs/management_tabs.py:651
-#: src/lexisync/dialogs/project_settings_dialog.py:267
-#: src/lexisync/dialogs/project_settings_dialog.py:445
+#: src/lexisync/dialogs/project_settings_dialog.py:265
+#: src/lexisync/dialogs/project_settings_dialog.py:443
 msgid "Confirm Removal"
 msgstr "Подтвердить удаление"
 
@@ -1688,7 +1688,7 @@ msgstr "Контекст и подсказки"
 msgid "Context / Usage"
 msgstr "Контекст / Использование"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:138
+#: src/lexisync/dialogs/translation_test_dialog.py:132
 msgid "Context Inspector"
 msgstr "Инспектор контекста"
 
@@ -1701,7 +1701,7 @@ msgstr "Предпросмотр контекста"
 msgid "Context Preview Panel"
 msgstr "Панель предпросмотра контекста"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:231
+#: src/lexisync/dialogs/interactive_review_dialog.py:228
 msgid "Context Reference"
 msgstr "Контекстная ссылка"
 
@@ -1771,7 +1771,7 @@ msgstr ""
 msgid "Copy Original"
 msgstr "Копировать оригинал"
 
-#: web_src/src/components/ShortcutsDialog.vue:36
+#: web_src/src/components/ShortcutsDialog.vue:37
 msgid "Copy Source Text"
 msgstr ""
 
@@ -1885,7 +1885,7 @@ msgstr "Создать структурированную папку проек�
 msgid "Created"
 msgstr "Создано"
 
-#: src/lexisync/utils/security_utils.py:109
+#: src/lexisync/utils/security_utils.py:182
 #, python-brace-format
 msgid ""
 "Critical Security Error: Could not save master key to Keyring OR local "
@@ -2322,7 +2322,7 @@ msgstr "Введите комментарий для {count} выбранных 
 msgid "Enter password..."
 msgstr "Введите пароль..."
 
-#: src/lexisync/dialogs/test_translation_dialog.py:93
+#: src/lexisync/dialogs/translation_test_dialog.py:91
 msgid "Enter text to test..."
 msgstr "Введите текст для теста..."
 
@@ -2348,7 +2348,7 @@ msgstr ""
 #: src/lexisync/dialogs/extraction_pattern_dialog.py:730
 #: src/lexisync/dialogs/extraction_pattern_dialog.py:930
 #: src/lexisync/dialogs/extraction_pattern_dialog.py:933
-#: src/lexisync/dialogs/project_settings_dialog.py:400
+#: src/lexisync/dialogs/project_settings_dialog.py:398
 #: src/lexisync/dialogs/prompt_manager_dialog.py:433
 #: src/lexisync/dialogs/resource_viewer_dialog.py:96
 #: src/lexisync/dialogs/resource_viewer_dialog.py:119
@@ -3003,7 +3003,7 @@ msgstr "Ошибка доступа к файлу"
 msgid "File Error"
 msgstr "Ошибка файла"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:412
+#: src/lexisync/dialogs/project_settings_dialog.py:410
 msgid "File Exists"
 msgstr "Файл существует"
 
@@ -3020,7 +3020,7 @@ msgstr "Панель проводника файлов"
 #: src/lexisync/dialogs/management_tabs.py:573
 #: src/lexisync/dialogs/new_project_dialog.py:52
 #: src/lexisync/dialogs/new_project_dialog.py:60
-#: src/lexisync/dialogs/project_settings_dialog.py:340
+#: src/lexisync/dialogs/project_settings_dialog.py:338
 msgid "File Name"
 msgstr "Имя файла"
 
@@ -3049,7 +3049,7 @@ msgstr "Не удалось загрузить файл"
 msgid "File modified externally: {filename}"
 msgstr "Файл изменён извне: {filename}"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:397
+#: src/lexisync/dialogs/project_settings_dialog.py:395
 #: src/lexisync/main_window.py:1274 src/lexisync/main_window.py:2779
 msgid "File not found"
 msgstr "Файл не найден"
@@ -3312,7 +3312,7 @@ msgstr ""
 msgid "Found {count} matches in {time:.1f}ms. Conflicts: {conflicts}"
 msgstr "Найдено {count} совпадений за {time:.1f} мс. Конфликты: {conflicts}"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:152
+#: src/lexisync/dialogs/translation_test_dialog.py:146
 msgid "Full Prompt"
 msgstr "Полный промпт"
 
@@ -3342,7 +3342,7 @@ msgstr "Нечеткий перевод"
 msgid "Fuzzy match, please review."
 msgstr "Нечеткое совпадение, требует проверки."
 
-#: src/lexisync/dialogs/project_settings_dialog.py:608
+#: src/lexisync/dialogs/project_settings_dialog.py:606
 #: src/lexisync/dialogs/settings_dialog.py:126
 msgid "General"
 msgstr "Общие"
@@ -3421,7 +3421,7 @@ msgstr "Глобальная ТМ"
 msgid "Glossaries"
 msgstr "Глоссарии"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:508
+#: src/lexisync/dialogs/project_settings_dialog.py:506
 #: src/lexisync/dialogs/resource_viewer_dialog.py:164
 #: src/lexisync/dialogs/resources_page.py:24 src/lexisync/main_window.py:1211
 #: src/lexisync/main_window.py:1723 src/lexisync/main_window.py:1887
@@ -3433,7 +3433,7 @@ msgstr "Глоссарий"
 msgid "Glossary Database"
 msgstr "База данных глоссария"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:408
+#: src/lexisync/dialogs/interactive_review_dialog.py:405
 msgid "Glossary Matches"
 msgstr "Совпадения глоссария"
 
@@ -3897,7 +3897,7 @@ msgstr "Инициализация для открытия {filename}..."
 msgid "Initializing..."
 msgstr "Инициализация..."
 
-#: src/lexisync/dialogs/test_translation_dialog.py:144
+#: src/lexisync/dialogs/translation_test_dialog.py:138
 msgid "Injected Glossary"
 msgstr "Внедрённый глоссарий"
 
@@ -3993,7 +3993,7 @@ msgstr "Интеллектуальное пакетное переведение
 msgid "Intelligent Translation..."
 msgstr "Интеллектуальный перевод..."
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:178
+#: src/lexisync/dialogs/interactive_review_dialog.py:175
 msgid "Interactive Review Mode"
 msgstr "Интерактивный режим проверки"
 
@@ -4380,7 +4380,7 @@ msgstr ""
 msgid "Logout"
 msgstr ""
 
-#: src/lexisync/dialogs/test_translation_dialog.py:81
+#: src/lexisync/dialogs/translation_test_dialog.py:79
 msgid "Longest Text"
 msgstr "Самый длинный текст"
 
@@ -4442,7 +4442,7 @@ msgstr ""
 
 #: src/lexisync/dialogs/management_tabs.py:466
 #: src/lexisync/dialogs/management_tabs.py:683
-#: src/lexisync/dialogs/test_translation_dialog.py:81
+#: src/lexisync/dialogs/translation_test_dialog.py:79
 msgid "Manual Input"
 msgstr "Ручной ввод"
 
@@ -4609,7 +4609,7 @@ msgstr "Имя модели:"
 msgid "Modified"
 msgstr "Изменено"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:111
+#: src/lexisync/dialogs/translation_test_dialog.py:108
 msgid "Modify Style Guide here for testing..."
 msgstr "Изменить Руководство по стилю здесь для тестирования..."
 
@@ -4617,7 +4617,7 @@ msgstr "Изменить Руководство по стилю здесь дл�
 msgid "More options"
 msgstr ""
 
-#: src/lexisync/dialogs/test_translation_dialog.py:81
+#: src/lexisync/dialogs/translation_test_dialog.py:79
 msgid "Most Complex (Variables/Tags)"
 msgstr "Наиболее сложные (Переменные/Теги)"
 
@@ -4670,7 +4670,7 @@ msgstr ""
 msgid "Navigation Error"
 msgstr "Ошибка навигации"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:424
+#: src/lexisync/dialogs/interactive_review_dialog.py:421
 msgid "Nearby Text"
 msgstr "Соседний текст"
 
@@ -4776,7 +4776,7 @@ msgstr "К следующей информации"
 msgid "Next Item"
 msgstr "К следующему элементу"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:85
+#: src/lexisync/dialogs/translation_test_dialog.py:83
 msgid "Next Sample"
 msgstr "К следующему образцу"
 
@@ -4809,8 +4809,8 @@ msgid "No Result"
 msgstr "Нет результата"
 
 #: src/lexisync/dialogs/project_settings_dialog.py:115
-#: src/lexisync/dialogs/project_settings_dialog.py:255
-#: src/lexisync/dialogs/project_settings_dialog.py:461
+#: src/lexisync/dialogs/project_settings_dialog.py:253
+#: src/lexisync/dialogs/project_settings_dialog.py:459
 msgid "No Selection"
 msgstr "Ничего не выбрано"
 
@@ -4818,7 +4818,7 @@ msgstr "Ничего не выбрано"
 msgid "No TM matches found."
 msgstr "В ТМ совпадений не найдено."
 
-#: src/lexisync/dialogs/test_translation_dialog.py:240
+#: src/lexisync/dialogs/translation_test_dialog.py:228
 msgid "No TM/RAG matches."
 msgstr "Нет совпадений в ТМ/RAG."
 
@@ -4899,7 +4899,7 @@ msgstr ""
 msgid "No glossary matches found."
 msgstr "Совпадений в глоссарии не найдено."
 
-#: src/lexisync/dialogs/test_translation_dialog.py:239
+#: src/lexisync/dialogs/translation_test_dialog.py:227
 msgid "No glossary terms injected."
 msgstr "Термины глоссария не внедрены."
 
@@ -5107,7 +5107,7 @@ msgstr "Согласованность чисел"
 #: src/lexisync/dialogs/keybinding_dialog.py:322
 #: src/lexisync/dialogs/language_pair_dialog.py:352
 #: src/lexisync/dialogs/new_project_dialog.py:280
-#: src/lexisync/dialogs/project_settings_dialog.py:595
+#: src/lexisync/dialogs/project_settings_dialog.py:593
 #: src/lexisync/dialogs/prompt_manager_dialog.py:166
 #: src/lexisync/dialogs/prompt_manager_dialog.py:562
 #: src/lexisync/dialogs/settings_dialog.py:117
@@ -5493,7 +5493,7 @@ msgstr "Вставить в перевод"
 #: src/lexisync/dialogs/management_tabs.py:573
 #: src/lexisync/dialogs/new_project_dialog.py:52
 #: src/lexisync/dialogs/new_project_dialog.py:60
-#: src/lexisync/dialogs/project_settings_dialog.py:340
+#: src/lexisync/dialogs/project_settings_dialog.py:338
 msgid "Path"
 msgstr "Путь"
 
@@ -5625,7 +5625,7 @@ msgstr "Сначала откройте проект или файл."
 msgid "Please provide both Sample Text and Target Content."
 msgstr "Пожалуйста, предоставьте как Пример текста, так и Целевое содержимое."
 
-#: src/lexisync/dialogs/project_settings_dialog.py:255
+#: src/lexisync/dialogs/project_settings_dialog.py:253
 msgid "Please select a language to remove."
 msgstr "Пожалуйста, выберите язык для удаления."
 
@@ -5633,7 +5633,7 @@ msgstr "Пожалуйста, выберите язык для удаления.
 msgid "Please select a language."
 msgstr "Пожалуйста, выберите язык."
 
-#: src/lexisync/dialogs/project_settings_dialog.py:461
+#: src/lexisync/dialogs/project_settings_dialog.py:459
 msgid "Please select a source file to re-scan."
 msgstr "Пожалуйста, выберите исходный файл для повторного сканирования."
 
@@ -5883,7 +5883,7 @@ msgstr "Проект обнаружен"
 msgid "Project Glossary"
 msgstr "Глоссарий проекта"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:222
+#: src/lexisync/dialogs/project_settings_dialog.py:220
 msgid "Project Maintenance"
 msgstr "Обслуживание проекта"
 
@@ -5905,12 +5905,12 @@ msgstr "Название проекта:"
 msgid "Project Resource"
 msgstr "Ресурсы проекта"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:614
+#: src/lexisync/dialogs/project_settings_dialog.py:612
 #: src/lexisync/main_window.py:2224
 msgid "Project Resources"
 msgstr "Ресурсы проекта"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:522
+#: src/lexisync/dialogs/project_settings_dialog.py:520
 #: src/lexisync/dialogs/settings_pages.py:273
 msgid "Project Settings"
 msgstr "Настройки проекта"
@@ -6152,7 +6152,7 @@ msgstr ""
 msgid "RESX Resource File (.NET)"
 msgstr "RESX-файл ресурсов (.NET)"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:81
+#: src/lexisync/dialogs/translation_test_dialog.py:79
 msgid "Random Sample"
 msgstr "Случайная выборка"
 
@@ -6185,11 +6185,11 @@ msgstr ""
 msgid "Re-scan Results"
 msgstr "Результаты повторного сканирования"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:355
+#: src/lexisync/dialogs/project_settings_dialog.py:353
 msgid "Re-scan Selected"
 msgstr "Повторное сканирование выбранного"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:227
+#: src/lexisync/dialogs/project_settings_dialog.py:225
 msgid ""
 "Re-scan all source files and fix broken IDs. Use this after changing "
 "extraction rules."
@@ -6247,7 +6247,7 @@ msgstr "Готово к сохранению {count} элементов."
 msgid "Reasoning"
 msgstr "Обоснование"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:225
+#: src/lexisync/dialogs/project_settings_dialog.py:223
 msgid "Rebuild Project..."
 msgstr "Перестроить проект..."
 
@@ -6287,7 +6287,7 @@ msgstr ""
 
 #: src/lexisync/main_window.py:544 src/lexisync/main_window.py:1120
 #: web_src/src/components/HistoryDrawer.vue:76
-#: web_src/src/components/ShortcutsDialog.vue:38
+#: web_src/src/components/ShortcutsDialog.vue:39
 #: web_src/src/components/ToolBar.vue:24
 msgid "Redo"
 msgstr "Повторить"
@@ -6327,7 +6327,7 @@ msgid "Refresh"
 msgstr "Обновить"
 
 #: src/lexisync/dialogs/statistics_dialog.py:385
-#: web_src/src/components/ShortcutsDialog.vue:39
+#: web_src/src/components/ShortcutsDialog.vue:40
 msgid "Refresh Data"
 msgstr "Обновить данные"
 
@@ -6407,8 +6407,8 @@ msgstr "Удаление завершено"
 #: src/lexisync/dialogs/new_project_dialog.py:196
 #: src/lexisync/dialogs/new_project_dialog.py:232
 #: src/lexisync/dialogs/new_project_dialog.py:258
-#: src/lexisync/dialogs/project_settings_dialog.py:181
-#: src/lexisync/dialogs/project_settings_dialog.py:354
+#: src/lexisync/dialogs/project_settings_dialog.py:179
+#: src/lexisync/dialogs/project_settings_dialog.py:352
 msgid "Remove"
 msgstr "Удалить"
 
@@ -6582,7 +6582,7 @@ msgstr "Откатить выбранные и последующие измен
 msgid "Reverted history, discarding {count} change(s)."
 msgstr "История возвращена, отменено {count} изменение(й)."
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:515
+#: src/lexisync/dialogs/interactive_review_dialog.py:512
 msgid "Review Complete"
 msgstr "Проверка завершена"
 
@@ -6682,7 +6682,7 @@ msgstr "Пример текста:"
 msgid "Save"
 msgstr "Сохранить"
 
-#: web_src/src/components/ShortcutsDialog.vue:32
+#: web_src/src/components/ShortcutsDialog.vue:33
 msgid "Save & Next Untranslated"
 msgstr ""
 
@@ -6880,7 +6880,7 @@ msgstr "Выберите архив плагина"
 msgid "Select Project Location"
 msgstr "Выберите расположение проекта"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:407
+#: src/lexisync/dialogs/project_settings_dialog.py:405
 msgid "Select Source File"
 msgstr "Выбрать исходный файл"
 
@@ -7055,7 +7055,7 @@ msgstr "Показать диалог для разрешения конфлик
 msgid "Showing"
 msgstr "Показано"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:417
+#: src/lexisync/dialogs/interactive_review_dialog.py:414
 msgid "Similar Texts (TM/RAG)"
 msgstr "Похожие тексты (ТМ/RAG)"
 
@@ -7088,7 +7088,7 @@ msgstr "Единственное число"
 
 #: src/lexisync/dialogs/new_project_dialog.py:52
 #: src/lexisync/dialogs/new_project_dialog.py:60
-#: src/lexisync/dialogs/project_settings_dialog.py:340
+#: src/lexisync/dialogs/project_settings_dialog.py:338
 msgid "Size"
 msgstr "Размер"
 
@@ -7096,7 +7096,7 @@ msgstr "Размер"
 msgid "Size:"
 msgstr "Размер:"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:329
+#: src/lexisync/dialogs/interactive_review_dialog.py:326
 #: src/lexisync/dialogs/resource_conflict_dialog.py:77
 #: src/lexisync/dialogs/resource_conflict_dialog.py:141
 msgid "Skip"
@@ -7152,7 +7152,7 @@ msgid "Source File Conflict"
 msgstr "Конфликт исходных файлов"
 
 #: src/lexisync/dialogs/import_package_dialog.py:156
-#: src/lexisync/dialogs/project_settings_dialog.py:611
+#: src/lexisync/dialogs/project_settings_dialog.py:609
 msgid "Source Files"
 msgstr "Исходные файлы"
 
@@ -7173,7 +7173,7 @@ msgstr "Исходный язык"
 #: src/lexisync/dialogs/add_glossary_entry_dialog.py:73
 #: src/lexisync/dialogs/import_configuration_dialog.py:73
 #: src/lexisync/dialogs/new_project_dialog.py:210
-#: src/lexisync/dialogs/project_settings_dialog.py:140
+#: src/lexisync/dialogs/project_settings_dialog.py:138
 #: src/lexisync/dialogs/tm_import_dialog.py:23
 msgid "Source Language:"
 msgstr "Исходный язык:"
@@ -7192,17 +7192,17 @@ msgstr "Исходный термин"
 msgid "Source Term:"
 msgstr "Исходный термин:"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:224
+#: src/lexisync/dialogs/interactive_review_dialog.py:221
 #: src/lexisync/dialogs/resource_conflict_dialog.py:52
 #: src/lexisync/dialogs/resource_viewer_dialog.py:266
-#: src/lexisync/dialogs/test_translation_dialog.py:75
+#: src/lexisync/dialogs/translation_test_dialog.py:73
 #: src/lexisync/services/export_service.py:115
 msgid "Source Text"
 msgstr "Исходный текст"
 
 #: src/lexisync/dialogs/add_glossary_entry_dialog.py:212
 #: src/lexisync/dialogs/import_configuration_dialog.py:142
-#: src/lexisync/dialogs/language_pair_dialog.py:481
+#: src/lexisync/dialogs/language_pair_dialog.py:478
 #: src/lexisync/dialogs/new_project_dialog.py:385
 #: src/lexisync/dialogs/tm_import_dialog.py:50
 msgid "Source and target languages cannot be the same."
@@ -7220,7 +7220,7 @@ msgstr "Исходный файл не существует."
 msgid "Source file re-scanned and updated successfully."
 msgstr "Исходный файл успешно пересканирован и обновлён."
 
-#: src/lexisync/dialogs/project_settings_dialog.py:139
+#: src/lexisync/dialogs/project_settings_dialog.py:137
 msgid "Source language cannot be changed after project creation."
 msgstr "Исходный язык нельзя изменить после создания проекта."
 
@@ -7317,7 +7317,7 @@ msgstr "Остановить пакетный перевод ИИ"
 msgid "Stop Cloud Service"
 msgstr ""
 
-#: src/lexisync/dialogs/test_translation_dialog.py:273
+#: src/lexisync/dialogs/translation_test_dialog.py:260
 msgid "Stopped by user"
 msgstr "Остановлено пользователем"
 
@@ -7351,7 +7351,7 @@ msgstr "Строки"
 msgid "Structural Content"
 msgstr "Структурное содержимое"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:113
+#: src/lexisync/dialogs/translation_test_dialog.py:110
 msgid "Style Guide:"
 msgstr "Руководство по стилю:"
 
@@ -7467,7 +7467,7 @@ msgstr "Файлы TBX"
 msgid "TM"
 msgstr "ТМ"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:148
+#: src/lexisync/dialogs/translation_test_dialog.py:142
 msgid "TM / RAG"
 msgstr "ТМ / RAG"
 
@@ -7534,7 +7534,7 @@ msgstr "Целевой язык:"
 msgid "Target Languages to Include"
 msgstr "Целевые языки для включения"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:215
+#: src/lexisync/dialogs/project_settings_dialog.py:213
 msgid "Target Languages:"
 msgstr "Целевые языки:"
 
@@ -7562,7 +7562,7 @@ msgstr "Целевая база данных не найдена."
 msgid "Technical details"
 msgstr "Технические детали"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:102
+#: src/lexisync/dialogs/translation_test_dialog.py:99
 msgid "Temperature:"
 msgstr "Температура:"
 
@@ -7570,7 +7570,7 @@ msgstr "Температура:"
 msgid "Template:"
 msgstr "Шаблон:"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:98
+#: src/lexisync/dialogs/translation_test_dialog.py:95
 msgid "Temporary Overrides"
 msgstr "Временные переопределения"
 
@@ -7926,7 +7926,7 @@ msgstr "Включить/Выключить"
 msgid "Toggle Filter"
 msgstr "Переключить фильтр"
 
-#: web_src/src/components/ShortcutsDialog.vue:34
+#: web_src/src/components/ShortcutsDialog.vue:35
 msgid "Toggle Fuzzy"
 msgstr ""
 
@@ -7938,7 +7938,7 @@ msgstr "Переключить статус нечёткого соответс�
 msgid "Toggle Ignored Status"
 msgstr "Переключить статус игнорирования"
 
-#: web_src/src/components/ShortcutsDialog.vue:33
+#: web_src/src/components/ShortcutsDialog.vue:34
 msgid "Toggle Reviewed"
 msgstr ""
 
@@ -8027,12 +8027,12 @@ msgstr "Перевод терминов: Пакет {c}/{t} завершён..."
 msgid "Translating {count} unique terms..."
 msgstr "Перевод {count} уникальных терминов..."
 
-#: src/lexisync/dialogs/test_translation_dialog.py:216
+#: src/lexisync/dialogs/translation_test_dialog.py:209
 msgid "Translating..."
 msgstr "Перевод..."
 
 #: src/lexisync/dialogs/add_glossary_entry_dialog.py:134
-#: src/lexisync/dialogs/interactive_review_dialog.py:253
+#: src/lexisync/dialogs/interactive_review_dialog.py:250
 #: src/lexisync/dialogs/prompt_manager_dialog.py:293
 #: src/lexisync/dialogs/prompt_manager_dialog.py:298
 #: src/lexisync/dialogs/search_dialog.py:73
@@ -8064,7 +8064,7 @@ msgstr "Шрифт редактора переводов"
 msgid "Translation Empty"
 msgstr "Перевод отсутствует"
 
-#: src/lexisync/dialogs/project_settings_dialog.py:510
+#: src/lexisync/dialogs/project_settings_dialog.py:508
 #: src/lexisync/dialogs/resource_viewer_dialog.py:163
 #: src/lexisync/dialogs/resources_page.py:27
 #: src/lexisync/dialogs/settings_pages.py:542
@@ -8103,11 +8103,11 @@ msgstr "Подсказка для перевода:"
 msgid "Translation Propagation:"
 msgstr "Распространение перевода:"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:129
+#: src/lexisync/dialogs/translation_test_dialog.py:124
 msgid "Translation Result"
 msgstr "Результат перевода"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:35
+#: src/lexisync/dialogs/translation_test_dialog.py:35
 msgid "Translation Test Lab"
 msgstr "Лаборатория тестирования перевода"
 
@@ -8187,7 +8187,7 @@ msgstr "Перевод должен начинаться со строчной �
 msgid "Translation should start with whitespace"
 msgstr "Перевод должен начинаться с пробела"
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:266
+#: src/lexisync/dialogs/interactive_review_dialog.py:263
 msgid "Translation will appear here..."
 msgstr "Здесь появится перевод..."
 
@@ -8214,7 +8214,7 @@ msgid "Two"
 msgstr "Два"
 
 #: src/lexisync/dialogs/new_project_dialog.py:52
-#: src/lexisync/dialogs/project_settings_dialog.py:340
+#: src/lexisync/dialogs/project_settings_dialog.py:338
 #: src/lexisync/dialogs/prompt_manager_dialog.py:151
 msgid "Type"
 msgstr "Тип"
@@ -8276,7 +8276,7 @@ msgstr ""
 
 #: src/lexisync/main_window.py:539 src/lexisync/main_window.py:1119
 #: web_src/src/components/HistoryDrawer.vue:75
-#: web_src/src/components/ShortcutsDialog.vue:37
+#: web_src/src/components/ShortcutsDialog.vue:38
 #: web_src/src/components/ToolBar.vue:21
 msgid "Undo"
 msgstr "Отменить"
@@ -8579,7 +8579,7 @@ msgstr "Ожидание завершения инициализации..."
 #: src/lexisync/dialogs/export_package_dialog.py:142
 #: src/lexisync/dialogs/export_package_dialog.py:222
 #: src/lexisync/dialogs/import_package_dialog.py:229
-#: src/lexisync/dialogs/language_pair_dialog.py:481
+#: src/lexisync/dialogs/language_pair_dialog.py:478
 #: src/lexisync/dialogs/management_tabs.py:415
 #: src/lexisync/dialogs/management_tabs.py:641
 #: src/lexisync/dialogs/prompt_manager_dialog.py:273
@@ -8705,7 +8705,7 @@ msgstr ""
 msgid "You have been disconnected by the host."
 msgstr ""
 
-#: src/lexisync/dialogs/interactive_review_dialog.py:515
+#: src/lexisync/dialogs/interactive_review_dialog.py:512
 msgid "You have reviewed all items in the list."
 msgstr "Вы проверили все элементы в списке."
 
@@ -8974,12 +8974,12 @@ msgstr ""
 msgid "⌖  Track User (Locate row)"
 msgstr ""
 
-#: src/lexisync/dialogs/test_translation_dialog.py:212
+#: src/lexisync/dialogs/translation_test_dialog.py:205
 msgid "⏹ Stop"
 msgstr "⏹ Остановить"
 
-#: src/lexisync/dialogs/test_translation_dialog.py:117
-#: src/lexisync/dialogs/test_translation_dialog.py:277
+#: src/lexisync/dialogs/translation_test_dialog.py:114
+#: src/lexisync/dialogs/translation_test_dialog.py:264
 msgid "▶ Run Test"
 msgstr "▶ Запустить тест"
 
