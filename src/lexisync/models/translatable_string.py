@@ -192,6 +192,12 @@ class TranslatableString:
 
         self._search_cache = " ".join(search_content).lower()
 
+    def sync_cached_text_fields(self):
+        if self.is_plural:
+            self.translation = self.plural_translations.get(0, self.translation)
+        self._display_translation = self.translation.replace("\n", "↵")
+        self.update_search_cache()
+
     @property
     def line_num_in_file(self):
         try:

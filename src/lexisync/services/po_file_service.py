@@ -99,7 +99,6 @@ def po_entry_to_translatable_string(
     ts.is_obsolete = is_obsolete
     if is_obsolete:
         ts.is_ignored = True
-    ts.update_search_cache()
     ts.update_sort_weight()
 
     # 默认显示 index 0
@@ -157,6 +156,7 @@ def po_entry_to_translatable_string(
     ts.comment = "\n".join(user_comment_lines) if user_comment_lines else ""
     ts.po_comment = "\n".join(po_meta_comment_lines) if po_meta_comment_lines else ""
 
+    ts.sync_cached_text_fields()
     ts.update_sort_weight()
     return ts
 

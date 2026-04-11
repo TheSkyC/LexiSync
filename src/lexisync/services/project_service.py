@@ -206,6 +206,7 @@ def load_project_data(
                 ts_obj.is_fuzzy = ts_data.get("is_fuzzy", False)
                 ts_obj.po_comment = ts_data.get("po_comment", "")
                 ts_obj.is_warning_ignored = ts_data.get("is_warning_ignored", False)
+                ts_obj.sync_cached_text_fields()
             loaded_strings.append(ts_obj)
 
     logger.debug(f"[load_project_data] Total strings loaded in this call: {len(loaded_strings)}")
@@ -444,6 +445,7 @@ def rebuild_project_structure(project_path: str, target_langs: list, new_pattern
                 ts.is_reviewed = old_item.get("is_reviewed", False)
                 ts.is_ignored = old_item.get("is_ignored", False)
                 ts.is_fuzzy = old_item.get("is_fuzzy", False)
+                ts.sync_cached_text_fields()
                 used_old_ids.add(ts.id)
 
             # 策略 B: 原文内容匹配
@@ -461,6 +463,7 @@ def rebuild_project_structure(project_path: str, target_langs: list, new_pattern
                     ts.set_translation_internal(old_item.get("translation", ""))
                 ts.comment = old_item.get("comment", "")
                 ts.is_fuzzy = True  # 标记为模糊，因为位置变了
+                ts.sync_cached_text_fields()
                 used_old_ids.add(old_item["id"])
 
             # 策略 C: 模糊匹配
@@ -489,6 +492,7 @@ def rebuild_project_structure(project_path: str, target_langs: list, new_pattern
                     else:
                         ts.set_translation_internal(best_match.get("translation", ""))
                     ts.is_fuzzy = True
+                    ts.sync_cached_text_fields()
                     used_old_ids.add(best_match["id"])
 
             final_lang_strings.append(ts)

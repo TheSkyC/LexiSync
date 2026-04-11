@@ -3976,6 +3976,7 @@ class LexiSyncApp(QMainWindow):
                     new_obj.is_fuzzy = old_obj.is_fuzzy
                     new_obj.po_comment = old_obj.po_comment
                     new_obj.is_warning_ignored = old_obj.is_warning_ignored
+                    new_obj.sync_cached_text_fields()
                     diff_results["unchanged"].append({"old_obj": old_obj, "new_obj": new_obj})
                 else:
                     truly_new_strings.append(new_obj)
@@ -5571,8 +5572,9 @@ class LexiSyncApp(QMainWindow):
                 char_pos_end_in_file=0,
                 full_code_lines=[],
             )
-            new_ts.translation = self.details_panel.translation_edit_text.toPlainText().strip()
+            new_ts.set_translation_internal(self.details_panel.translation_edit_text.toPlainText().strip(), is_initial=True)
             new_ts.comment = self.comment_status_panel.comment_edit_text.toPlainText().strip()
+            new_ts.sync_cached_text_fields()
 
             self.translatable_objects.append(new_ts)
             self.mark_modified()
@@ -8586,6 +8588,7 @@ class LexiSyncApp(QMainWindow):
                     new_obj.occurrences = old_obj.occurrences
                     new_obj.context_lines = old_obj.context_lines
                     new_obj.current_line_in_context_idx = old_obj.current_line_in_context_idx
+                    new_obj.sync_cached_text_fields()
 
                     diff_results["unchanged"].append({"old_obj": old_obj, "new_obj": new_obj})
                 else:
