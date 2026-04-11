@@ -35,7 +35,7 @@ from PySide6.QtWidgets import (
 from lexisync.services import project_service
 from lexisync.services.code_file_service import extract_translatable_strings
 from lexisync.services.format_manager import FormatManager
-from lexisync.utils.constants import SUPPORTED_LANGUAGES
+from lexisync.utils.constants import SUPPORTED_LANGUAGES, get_language_display_name
 from lexisync.utils.localization import _
 from lexisync.utils.text_utils import format_file_size
 
@@ -131,9 +131,7 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
 
         # 源语言
         source_lang_code = self.project_config.get("source_language", "")
-        source_lang_name = next(
-            (name for name, code in SUPPORTED_LANGUAGES.items() if code == source_lang_code), source_lang_code
-        )
+        source_lang_name = get_language_display_name(source_lang_code, source_lang_code)
         self.source_lang_display = QLineEdit(f"{source_lang_name} ({source_lang_code})")
         self.source_lang_display.setReadOnly(True)
         self.source_lang_display.setToolTip(_("Source language cannot be changed after project creation."))
@@ -236,7 +234,7 @@ class ProjectGeneralSettingsPage(BaseSettingsPage):
     def _populate_target_langs(self):
         self.target_langs_list.clear()
         for lang_code in self.project_config.get("target_languages", []):
-            lang_name = next((name for name, code in SUPPORTED_LANGUAGES.items() if code == lang_code), lang_code)
+            lang_name = get_language_display_name(lang_code, lang_code)
             self.target_langs_list.addItem(f"{lang_name} ({lang_code})")
 
     def _add_language(self):

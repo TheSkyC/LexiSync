@@ -25,6 +25,7 @@ from lexisync.models.translatable_string import TranslatableString
 from lexisync.services.ai_worker import AIWorker
 from lexisync.services.validation_service import validate_string
 from lexisync.ui_components.styled_button import StyledButton
+from lexisync.utils.constants import get_language_display_name
 from lexisync.utils.enums import AIOperationType
 from lexisync.utils.localization import _
 
@@ -95,11 +96,7 @@ class ReviewController(QObject):
 
         # 获取目标语言名称
         target_lang_code = self.app.current_target_language
-        from lexisync.utils.constants import SUPPORTED_LANGUAGES
-
-        target_lang_name = next(
-            (name for name, code in SUPPORTED_LANGUAGES.items() if code == target_lang_code), target_lang_code
-        )
+        target_lang_name = get_language_display_name(target_lang_code, target_lang_code)
 
         worker = AIWorker(
             self.app,

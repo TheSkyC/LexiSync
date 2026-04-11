@@ -394,6 +394,56 @@ SUPPORTED_LANGUAGES = {
     "Zulu": "zu",
 }
 
+SUPPORTED_LANGUAGE_NAMES_BY_CODE = {code: name for name, code in SUPPORTED_LANGUAGES.items()}
+
+LANGUAGE_CODE_ALIASES = {
+    "zh_cn": "zh",
+    "zh_hans": "zh",
+    "zh_hant": "zh_TW",
+}
+
+
+def normalize_language_code(lang_code: str | None) -> str | None:
+    if lang_code is None:
+        return None
+
+    normalized = lang_code.strip()
+    if not normalized:
+        return normalized
+
+    if normalized in SUPPORTED_LANGUAGE_NAMES_BY_CODE:
+        return normalized
+
+    normalized = normalized.replace("-", "_")
+    alias_key = normalized.lower()
+    alias = LANGUAGE_CODE_ALIASES.get(alias_key)
+    if alias:
+        return alias
+
+    if normalized in SUPPORTED_LANGUAGE_NAMES_BY_CODE:
+        return normalized
+
+    base_code, separator, suffix = normalized.partition("_")
+    if separator:
+        if base_code == "zh":
+            normalized_suffix = suffix.upper()
+            if normalized_suffix.startswith(("TW", "HK", "MO", "HANT")):
+                return "zh_TW"
+            return "zh"
+        if base_code in SUPPORTED_LANGUAGE_NAMES_BY_CODE:
+            return base_code
+
+    return normalized
+
+
+def get_language_display_name(lang_code: str | None, fallback: str | None = None) -> str:
+    normalized = normalize_language_code(lang_code)
+    if normalized in SUPPORTED_LANGUAGE_NAMES_BY_CODE:
+        return SUPPORTED_LANGUAGE_NAMES_BY_CODE[normalized]
+    if fallback is not None:
+        return fallback
+    return lang_code or ""
+
 AI_PROVIDER_PRESETS = {
     "DeepSeek": {"api_base_url": "https://api.deepseek.com", "model_name": "deepseek-chat", "concurrency": 8},
     "SiliconFlow": {

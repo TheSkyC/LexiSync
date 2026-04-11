@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from lexisync.utils.constants import SUPPORTED_LANGUAGES
+from lexisync.utils.constants import SUPPORTED_LANGUAGES, get_language_display_name
 from lexisync.utils.localization import _
 
 DIALOG_STYLESHEET = """
@@ -446,10 +446,7 @@ class LanguagePairDialog(QDialog):
             self.populate_favorites_list()
 
     def get_language_name(self, lang_code, fallback=""):
-        for name, code in self.lang_map.items():
-            if code == lang_code:
-                return name
-        return fallback
+        return get_language_display_name(lang_code, fallback)
 
     def _update_all_displays(self):
         source_name = self.get_language_name(self.source_lang, self.source_lang)
