@@ -38,7 +38,7 @@ class RetrievalEnhancerPlugin(PluginBase):
         return "https://github.com/TheSkyC/LexiSync/tree/master/plugins/com_theskyc_retrieval_enhancer"
 
     def compatible_app_version(self) -> str:
-        return "1.3"
+        return "1.4"
 
     def external_dependencies(self) -> dict:
         return {"scikit-learn": ">=1.0", "numpy": "", "onnxruntime": "", "tokenizers": ""}
