@@ -1,96 +1,101 @@
 <div align="center">
 
+![LexiSync Logo](https://img.shields.io/badge/LexiSync-409EFF?style=for-the-badge&logo=sync)
+
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/TheSkyC/LexiSync?style=flat-square)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
-![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python)
+![Python Version](https://img.shields.io/badge/Python-3.12%2B-blue?style=flat-square&logo=python)
+![Vue Version](https://img.shields.io/badge/Vue.js-3.x-4FC08D?style=flat-square&logo=vuedotjs)
 </div>
-  <p align="center">中文 | <a href="./docs/README.en.md">English</a> | <a href="./docs/README.ja.md">日本語</a><br></p>
+<p align="center">English | <a href="./docs/README.zh.md">中文</a> | <a href="./docs/README.ja.md">日本語</a><br></p>
 
 # LexiSync
-**LexiSync** 是一款功能强大的桌面应用程序。它提供了一套完整、高效的本地化解决方案，从智能提取文本，到 AI 辅助翻译，再到数据驱动的质量保证，极大简化了多语言内容的管理流程。
+**LexiSync** is a next-generation localization collaboration platform designed for developers, translators, and teams. It seamlessly combines powerful desktop performance with real-time Web cloud collaboration, providing a complete solution from text extraction, AI-assisted translation, and quality assurance to multi-device synchronization.
 
-本工具完全兼容行业标准的 PO/POT 文件，而且支持《守望先锋》工坊代码翻译，是一个通用的本地化编辑和管理平台。
+Whether you are a solo developer quickly handling strings in code or a distributed team collaborating on complex multi-language projects, LexiSync significantly streamlines your workflow.
 
 ---
 
-## 📥 下载
-您可以从 **[GitHub Releases](https://github.com/TheSkyC/LexiSync/releases/latest)** 页面下载最新版本。
+## 📥 Download
+You can download the latest versions for Windows, macOS, and Linux from the **[GitHub Releases](https://github.com/TheSkyC/LexiSync/releases/latest)** page.
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/TheSkyC/LexiSync?style=for-the-badge)](https://github.com/TheSkyC/LexiSync/releases/latest)
 
+## 🚀 Core Features
 
-## 🚀 核心特性
+### ☁️ Cloud Collaboration
+*   **One-Click Hosting**: Turn your local project into a server with one click. Team members can join directly via a browser (Web UI) without installing any clients.
+*   **Real-Time Sync**: Any modifications to translations, statuses (reviewed/fuzzy), and comments are broadcast to all online members in milliseconds. Supports collaborative undo/redo on the Web.
+*   **Collaborative Awareness & Anti-Conflict**: See which entries other members are editing in real-time (cursor locking). Built-in Myers diff algorithm elegantly resolves concurrent editing conflicts.
+*   **Tunneling & Security**: Natively integrates Cloudflare Tunnel to generate secure public access links without a public IP. Built-in Role-Based Access Control (RBAC), granular scope restrictions, IP banning, and persistent audit logs.
 
-### 📂 项目管理系统
-*   **多文件支持**：在一个项目中同时管理多个源文件。
-*   **项目结构**：架构清晰，便于版本控制。
-*   **智能重扫描**：当源文件更新时，智能检测变更
-*   **一键构建**：全自动构建流程，一键生成所有目标语言的翻译后文件。
+### 📂 Comprehensive Format Support (25+ Formats)
+*   **Massive Format Compatibility**: Natively supports over 25 industry standards, mainstream frameworks, multimedia, and office document localization files:
+    *   **Industry Standards & Desktop UI**: `PO/POT`, `XLIFF`, `Qt TS`
+    *   **Mobile & Cross-Platform**: `Android Strings (XML)`, `iOS/macOS (.strings, .stringsdict)`, `Xcode String Catalog (.xcstrings)`, `Flutter ARB`
+    *   **Data Serialization & Configs**: `JSON`, `i18next JSON`, `YAML`, `TOML`, `INI`
+    *   **Desktop & Backend**: `Java .properties`, `.NET RESX`, `PHP Array`, `Windows RC`
+    *   **Tables & Batch Processing**: `CSV`, `Excel (.xlsx)`
+    *   **Multimedia & Subtitles**: `SRT`, `VTT`
+    *   **Web & Rich Office Documents**: `HTML`, `Markdown/MDX`, `Word (.docx)`, `PowerPoint (.pptx)`
+    *   **Custom & Special Formats**: `Mozilla Fluent (.ftl)`, `OwCode(.ow)`
+*   **Native Pluralization**: Supports plural rules across languages (Zero/One/Two/Few/Many/Other). AI translation and validation engines are fully adapted to plural contexts.
 
-### 🖥️ 现代化的交互界面
-*   **双轨道标记栏**：
-    *   **点标记**：在滚动条左侧直观显示错误、警告和搜索结果。
-    *   **范围标记**：在右侧显示当前选中范围、Git 变更状态（新增/修改）。
-    *   **交互**：支持悬停预览详情和点击快速跳转。
-*   **上下文预览**：在翻译时实时显示代码或 PO 文件中的上下文行，支持关键词高亮和精确定位。
+### 🤖 AI-Driven Smart Workflow
+*   **Smart Batch Translation**: Deeply analyzes all text before translation, automatically generating a **style guide**, extracting **key terminology**, and combining **Translation Memory (TM)** and **Semantic Retrieval (RAG)** to provide rich context for AI, drastically improving translation quality and consistency.
+*   **Interactive Review Mode**: A brand-new semi-automated workflow. AI pre-translates in the background, and users simply confirm, correct, or skip entries one by one in the UI, balancing efficiency with manual control.
+*   **Automated QA**: Real-time detection of missing placeholders, inconsistent punctuation, leading/trailing spaces, etc., during input; supports one-click "Auto Fix" or "AI Fix".
 
-### 🤖 AI 与自动化
-*   **智能字符串提取**：可以自定义正则表达式，自动提取代码文件中的可翻译字符串。
-*   **AI 辅助翻译**：集成 OpenAI API，支持单条或批量翻译。智能识别占位符，并可引用项目术语库和上下文信息。
-*   **自动化 QA**：
-    *   **实时验证**：输入时即时检测占位符丢失、标点不一致、首尾空格等错误。
-    *   **膨胀率检查**：基于大数据模型检测翻译长度异常。
+### 🖥️ Modern Interactive Interface
+*   **Desktop**: Dual-track marker bar (intuitively displays errors, warnings, search results), real-time context preview, interactive history panel.
+*   **Web**: Responsive interface built with Vue 3, supporting dark mode and a built-in real-time chat drawer.
 
-### 🛠️ 高度可定制
-应用程序的配置存储在根目录的 `config.json` 文件中。可以通过应用程序的UI进行配置：
-*   **AI 翻译设置**: `工具(T) > AI翻译设置...`
-*   **提取规则管理器**: `工具(T) > 提取规则管理器...`
-*   **快捷键设置**: `设置(S) > 快捷键设置...`
-*   **字体设置**: `设置(S) > 字体设置...`
+## 📸 Screenshots
 
+*Desktop Main Interface*
 
-## 📸 截图
-*主界面*
+<img width="800" alt="Desktop UI" src="docs/assets/ui-desktop.png" />
 
-<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/3d45751c-1b48-47a9-9a9c-df3f62a6d912" />
-<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/8fc10914-0417-4165-b2ae-874fa433963d" />
+*Web Real-Time Collaboration*
 
+<img width="800" alt="Web UI" src="docs/assets/ui-web.png" />
 
 <details>
-<summary><b>► 点击查看更多截图</b></summary>
+<summary><b>► Click to view more screenshots</b></summary>
 
-*自定义 AI 配置*
+*Welcome Screen & Formats*
 
-<img width="800" height="700" alt="image" src="https://github.com/user-attachments/assets/71384ff5-cd27-415f-b549-31ffec65c5cc" />
+<img width="800" alt="Welcome Screen & Formats" src="docs/assets/ui-welcome.png" />
 
-*项目统计*
+*Smart Translation*
 
-<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/4d6cf519-d5c9-4269-ba40-bd567854e0b1" />
+<img width="800" alt="Smart Translation" src="docs/assets/feature-smart-translation.png" />
 
-*语言对设置*
+*AI Models Management*
 
-<img width="550" height="680" alt="image" src="https://github.com/user-attachments/assets/4a353f79-7b3f-445f-9c94-b4027f6fea73" />
+<img width="800" alt="AI Models Management" src="docs/assets/feature-ai-models.png" />
 
-*插件设置*
+*Plugins Management*
 
-<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/9ac8965e-c980-43e1-9961-99c4033affcf" />
+<img width="800" alt="Plugins Management" src="docs/assets/feature-plugins.png" />
+
 </details>
 
+## 🛠️ Development Setup
 
-## 🛠️ 开发环境设置
+### Prerequisites
+*   Python 3.12 or higher
+*   Node.js 20.x or higher (for building the Web frontend)
+*   Git (optional, for cloning the repository)
 
-### 前提条件
-*   Python 3.8 或更高版本
-*   Git (可选，用于克隆仓库)
-
-### 步骤
-1.  **克隆仓库 (或下载 ZIP)**
+### Steps
+1.  **Clone the repository (or download ZIP)**
     ```bash
     git clone https://github.com/TheSkyC/LexiSync.git
     cd LexiSync
     ```
 
-2.  **创建并激活虚拟环境 (推荐)**
+2.  **Create and activate a virtual environment (Recommended)**
     ```bash
     python -m venv venv
     # Windows
@@ -99,52 +104,65 @@
     source venv/bin/activate
     ```
 
-3.  **安装依赖**
+3.  **Install Python dependencies**
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **运行**
+4.  **Build the Web frontend**
     ```bash
-    python main.py
+    cd web_src
+    npm ci
+    npm run build
+    cd ..
     ```
 
-## 🚀 快速上手
+5.  **Run the application**
+    ```bash
+    python src/lexisync/main.py
+    ```
 
-LexiSync 提供两种灵活的工作模式，以满足不同的使用场景：
+## 🚀 Quick Start
 
-### 1. ⚡ 快速编辑模式
-*适用于单文件的快速修改、临时查看或轻量级任务。*
+LexiSync offers three flexible working modes to suit different scenarios:
 
-1.  **打开**: 直接将单个源文件拖入主界面，或点击菜单栏的 `文件 > 打开文件`。
-2.  **翻译**: 像往常一样利用 AI 辅助和术语提示进行翻译。
-3.  **保存**: 按 `Ctrl+S` 直接保存修改。
+### 1. ⚡ Quick Edit Mode (Single File)
+*Ideal for quick modifications, temporary viewing, or lightweight tasks.*
+*   Drag and drop a single file (e.g., `.po`, `.json`, `.strings`) directly into the main interface.
+*   Translate using AI assistance and terminology hints as usual.
+*   Press `Ctrl+S` to save modifications directly.
 
-### 2. 📂 项目模式
-*适用于多文件、多语言、需要长期维护和版本控制的大型项目。*
+### 2. 📂 Project Mode (Local Multi-file)
+*Ideal for large projects requiring long-term maintenance and version control across multiple files and languages.*
+*   Click `New Project` (Ctrl+Shift+N) and drag in your source files in bulk.
+*   Double-click in the left file browser to seamlessly switch between different source files.
+*   Once confirmed, click `File > Build Project` (Ctrl+B), and the program will automatically generate the final translated files for all target languages.
 
-1.  **创建项目**: 点击 `新建项目` (Ctrl+Shift+N)，批量拖入你的源文件。你还可以直接拖入 `.tbx` 或 `.xlsx` 文件来绑定项目专属的术语库和记忆库。
-2.  **管理与翻译**: 在左侧文件浏览器中双击可在不同源文件间无缝切换。利用右侧的**标记栏** (MarkerBar) 快速定位错误、警告和当前编辑位置。
-3.  **构建交付**: 确认无误后，点击 `文件 > 构建项目` (Ctrl+B)。程序会自动在后台为所有目标语言生成翻译后的最终文件，并整齐地输出到 `target/` 目录中。
+### 3. ☁️ Cloud Collaboration Mode (Team Multi-client)
+*Ideal for team projects requiring simultaneous translation and review by multiple people.*
+*   In Quick/Project mode, open the **"Cloud Collaboration"** panel at the bottom.
+*   Click **"Start Cloud Service"**. If external access is needed, check "Enable Public URL (Tunneling)" in the settings.
+*   Generate exclusive access Tokens for team members in "Manage Users & Permissions".
+*   Members can join the real-time collaboration by visiting the generated link via their browser.
 
-## 🌐 支持的语言
-本工具支持对任意语言的翻译，并为以下语言的UI提供了本地化界面：
+## 🌐 Supported UI Languages
+This tool supports translating into any language, and provides localized UI interfaces for the following languages:
 *   **English** (`en_US`)
 *   **简体中文** (`zh_CN`)
 *   **日本語** (`ja_JP`)
 *   **한국어** (`ko_KR`)
-*   **le français** (`fr_FR`)
+*   **Français** (`fr_FR`)
 *   **Deutsch** (`de_DE`)
-*   **русский язык** (`ru_RU`)
-*   **español (España)** (`es_ES`)
-*   **italiano** (`it_IT`)
+*   **Русский** (`ru_RU`)
+*   **Español (España)** (`es_ES`)
+*   **Italiano** (`it_IT`)
 
-## 🤝 贡献
-欢迎任何形式的贡献！如果您有任何问题、功能建议或发现 Bug，请随时通过 GitHub Issues 提交。
+## 🤝 Contributing
+Contributions of any kind are welcome! If you have any questions, feature suggestions, or find a bug, please feel free to submit them via GitHub Issues.
 
-## 📄 许可证
-本项目基于 [Apache 2.0](LICENSE) 开源，允许自由使用、修改和分发，但需保留版权声明。
+## 📄 License
+This project is open-sourced under the [Apache 2.0](LICENSE) license, allowing free use, modification, and distribution, provided the copyright notice is retained.
 
-## 📞 联系
-- 作者：骰子掷上帝 (TheSkyC)
-- 邮箱：0x4fe6@gmail.com
+## 📞 Contact
+- Author: TheSkyC
+- Email: 0x4fe6@gmail.com
