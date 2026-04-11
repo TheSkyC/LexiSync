@@ -37,7 +37,7 @@ from PySide6.QtWidgets import (
 from lexisync.dialogs.interactive_review_dialog import InteractiveReviewDialog
 from lexisync.dialogs.resource_conflict_dialog import ResourceConflictDialog
 from lexisync.dialogs.resource_save_options_dialog import ResourceSaveOptionsDialog
-from lexisync.dialogs.test_translation_dialog import TestTranslationDialog
+from lexisync.dialogs.translation_test_dialog import TestTranslationDialog
 from lexisync.services.smart_translation_service import SmartTranslationService
 from lexisync.ui_components.styled_button import StyledButton
 from lexisync.ui_components.tooltip import Tooltip

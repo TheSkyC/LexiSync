@@ -67,11 +67,9 @@ class TestTranslationDialog(QDialog):
 
         splitter = QSplitter(Qt.Horizontal)
 
-        # --- Left Panel: Input & Config ---
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
 
-        # 1. Source Selection
         src_group = QGroupBox(_("Source Text"))
         src_layout = QVBoxLayout(src_group)
 
@@ -94,7 +92,6 @@ class TestTranslationDialog(QDialog):
         src_layout.addWidget(self.input_edit)
         left_layout.addWidget(src_group)
 
-        # 2. Temporary Overrides
         override_group = QGroupBox(_("Temporary Overrides"))
         override_layout = QVBoxLayout(override_group)
 
@@ -121,11 +118,9 @@ class TestTranslationDialog(QDialog):
 
         splitter.addWidget(left_widget)
 
-        # --- Right Panel: Result & Context ---
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
 
-        # 1. Result
         res_group = QGroupBox(_("Translation Result"))
         res_layout = QVBoxLayout(res_group)
         self.output_view = QTextEdit()
@@ -134,7 +129,6 @@ class TestTranslationDialog(QDialog):
         res_layout.addWidget(self.output_view)
         right_layout.addWidget(res_group)
 
-        # 2. Context Inspector
         ctx_group = QGroupBox(_("Context Inspector"))
         ctx_layout = QVBoxLayout(ctx_group)
         self.ctx_tabs = QTabWidget()
@@ -175,8 +169,7 @@ class TestTranslationDialog(QDialog):
 
         selected = None
 
-        if mode == 0:  # Complex
-            # 简单的复杂度评分：长度 + 变量数 * 5
+        if mode == 0:
             def complexity(ts):
                 return (
                     len(ts.original_semantic) + (ts.original_semantic.count("%") + ts.original_semantic.count("{")) * 10
@@ -186,15 +179,15 @@ class TestTranslationDialog(QDialog):
             pool = sorted_items[:20]
             selected = random.choice(pool)
 
-        elif mode == 1:  # Longest
+        elif mode == 1:
             sorted_items = sorted(items, key=lambda x: len(x.original_semantic), reverse=True)
             pool = sorted_items[:20]
             selected = random.choice(pool)
 
-        elif mode == 2:  # Random
+        elif mode == 2:
             selected = random.choice(items)
 
-        elif mode == 3:  # Manual
+        elif mode == 3:
             self.input_edit.clear()
             self.input_edit.setFocus()
             self.current_ts_obj = None
@@ -219,27 +212,21 @@ class TestTranslationDialog(QDialog):
         self.tab_tm.clear()
         self.tab_full_prompt.clear()
 
-        # 1. 准备上下文
         ts_id = self.current_ts_obj.id if self.current_ts_obj else "manual_test"
 
-        # 临时替换 Style Guide
         original_style = self.parent_dialog.edit_style.toPlainText()
         self.parent_dialog.edit_style.setPlainText(self.style_override.toPlainText())
 
-        # 获取上下文
         if self.current_ts_obj:
             config_snapshot = self.parent_dialog._capture_context_config()
             context_dict = self.app._generate_universal_context(ts_id, config_snapshot)
         else:
-            # 手动输入的模拟上下文
             context_dict = self._simulate_context(text)
         self.parent_dialog.edit_style.setPlainText(original_style)
 
-        # 2. 展示上下文到 Inspector
         self.tab_glossary.setPlainText(context_dict.get("[Glossary]", _("No glossary terms injected.")))
         self.tab_tm.setPlainText(context_dict.get("[Semantic Context]", _("No TM/RAG matches.")))
 
-        # 3. 启动 Worker
         target_lang = self.parent_dialog._get_target_language()
 
         self._current_worker = AIWorker(
@@ -282,24 +269,20 @@ class TestTranslationDialog(QDialog):
         self.reset_button_state()
 
     def _simulate_context(self, text):
-        # 1. Glossary
         glossary_lines = []
         if self.parent_dialog._cached_glossary_dict:
             for src, tgt in self.parent_dialog._cached_glossary_dict.items():
                 if src.lower() in text.lower():
                     glossary_lines.append(f"- {src}: {tgt}")
 
-        # 2. TM & RAG
         semantic_parts = []
 
-        # TM
         if self.parent_dialog.chk_use_tm.isChecked():
             tm_limit = self.parent_dialog.spin_retrieval.value()
             tm_context = self.parent_dialog._fetch_tm_context(text, limit=tm_limit)
             if tm_context:
                 semantic_parts.append(tm_context)
 
-        # RAG
         if self.parent_dialog.chk_retrieval.isChecked() and self.parent_dialog.retrieval_enabled:
             rag_result = self.app.plugin_manager.run_hook(
                 "retrieve_context",
@@ -307,7 +290,6 @@ class TestTranslationDialog(QDialog):
                 limit=self.parent_dialog.spin_retrieval.value(),
                 mode=self.parent_dialog.combo_retrieval_mode.currentData(),
             )
-            # 格式化结果
             if rag_result:
                 lines = []
                 for r in rag_result:
