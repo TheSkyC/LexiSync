@@ -65,7 +65,10 @@ SPDX-License-Identifier: Apache-2.0
           <circle
               class="ring-progress"
               :class="{ 'ring-paused': t.paused }"
-              :style="{ animationDuration: t.remaining + 'ms' }"
+              :style="{
+                animationDuration: t.duration + 'ms',
+                animationDelay: -(t.duration - t.remaining) + 'ms',
+              }"
               cx="12" cy="12" r="9"
           />
         </svg>

@@ -39,14 +39,16 @@ export const toastShow = (message, type = 'info', duration = 3000, dedupeKey = n
     if (dedupeKey) {
         const existing = toasts.value.find(x => x.dedupeKey === dedupeKey && !x.leaving)
         if (existing) {
+            const now = Date.now()
             existing.message = message
             existing.type = type
             existing.duration = duration
 
             if (existing._timerId) clearTimeout(existing._timerId)
             existing.remaining = duration
-            existing._startTime = existing.paused ? null : Date.now()
-            existing._timerId = (duration > 0 && !existing.paused)
+            existing.deadline = duration > 0 ? now + duration : null
+            existing.paused = false
+            existing._timerId = duration > 0
                 ? setTimeout(() => toastDismiss(existing.id), duration)
                 : null
 
@@ -65,6 +67,7 @@ export const toastShow = (message, type = 'info', duration = 3000, dedupeKey = n
 
     // ── 新建 ────────────────────────────────────────────────────
     const id = ++toastSeq
+    const now = Date.now()
     const timerId = duration > 0 ? setTimeout(() => toastDismiss(id), duration) : null
     const MAX_TOASTS = 5
     if (toasts.value.filter(x => !x.leaving).length >= MAX_TOASTS) {
@@ -80,12 +83,12 @@ export const toastShow = (message, type = 'info', duration = 3000, dedupeKey = n
         dedupeKey: dedupeKey ?? null,
         duration,
         remaining: duration,
+        deadline: duration > 0 ? now + duration : null,
         paused: false,
         nudge: false,
         settled: false,
         timerKey: 0,
         _timerId: timerId,
-        _startTime: duration > 0 ? Date.now() : null,
         _nudgeTimer: null,
         // ── 滑动关闭状态 ─────────────────────────────────────────
         _swipeX: 0,
@@ -104,10 +107,12 @@ export const toastPause = (id) => {
     const item = toasts.value.find(x => x.id === id)
     if (!item || item.paused || item.duration <= 0 || item.leaving) return
 
-    const elapsed = item._startTime ? (Date.now() - item._startTime) : 0
-    item.remaining = Math.max(80, item.remaining - elapsed)
-    item._startTime = null
+    const now = Date.now()
+    const remaining = item.deadline !== null ? Math.max(0, item.deadline - now) : item.remaining
+    item.remaining = remaining
+    item.deadline = null
     item.paused = true
+    item.timerKey++
 
     if (item._timerId) {
         clearTimeout(item._timerId)
@@ -119,8 +124,10 @@ export const toastResume = (id) => {
     const item = toasts.value.find(x => x.id === id)
     if (!item || !item.paused || item.duration <= 0 || item.leaving) return
 
+    const now = Date.now()
     item.paused = false
-    item._startTime = Date.now()
+    item.deadline = now + item.remaining
+    item.timerKey++
     item._timerId = setTimeout(() => toastDismiss(item.id), item.remaining)
 }
 
